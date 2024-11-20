@@ -70,3 +70,20 @@ class ProctoringPIISignature(TimeStampedModel):
 
     class Meta:
         app_label = 'agreements'
+
+
+class UserAgreementRecord(models.Model):
+    """
+    This model stores the agreements a user has accepted or acknowledged.
+
+    Each record here represents a user agreeing to the agreement type represented
+    by `agreement_type` at a particular time.
+
+    .. no_pii:
+    """
+    user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
+    agreement_type = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        app_label = 'agreements'

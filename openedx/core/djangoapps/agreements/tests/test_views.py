@@ -2,26 +2,28 @@
 Tests for agreements views
 """
 
+import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from django.conf import settings
 from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
 from freezegun import freeze_time
-import json
+from rest_framework import status
+from rest_framework.test import APITestCase
 
-from common.djangoapps.student.tests.factories import UserFactory, AdminFactory
 from common.djangoapps.student.roles import CourseStaffRole
-from openedx.core.djangoapps.agreements.api import (
+from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
+
+from ..api import (
     create_integrity_signature,
+    create_user_agreement_record,
     get_integrity_signatures_for_course,
     get_lti_pii_signature
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
 @skip_unless_lms
@@ -289,3 +291,54 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
         signature = get_lti_pii_signature(self.user.username, self.course_id)
         self.assertEqual(signature.user.username, self.user.username)
         self.assertEqual(signature.lti_tools, self.lti_tools)
+
+
+@skip_unless_lms
+class UserAgreementsViewTests(APITestCase):
+    """
+    Tests for the UserAgreementsView
+    """
+
+    def setUp(self):
+        self.user = UserFactory(username="testuser", password="password")
+        self.url = reverse('user_agreements', kwargs={'agreement_type': 'sample_agreement'})
+        self.login()
+
+    def login(self):
+        self.client.login(username="testuser", password="password")
+
+    def test_get_user_agreement_record_no_data(self):
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_get_user_agreement_record_invalid_date(self):
+        response = self.client.get(self.url, {'after': 'invalid_date'})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_get_user_agreement_record(self):
+        create_user_agreement_record(self.user, 'sample_agreement')
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert 'accepted_at' in response.data
+
+        response = self.client.get(self.url, {"after": str(datetime.now() + timedelta(days=1))})
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_post_user_agreement(self):
+        with freeze_time("2024-11-21 12:00:00"):
+            response = self.client.post(self.url)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        self.login()
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+
+        response = self.client.get(self.url, {"after": "2024-11-21T13:00:00Z"})
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        response = self.client.post(self.url)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        response = self.client.get(self.url, {"after": "2024-11-21T13:00:00Z"})
+        assert response.status_code == status.HTTP_200_OK
