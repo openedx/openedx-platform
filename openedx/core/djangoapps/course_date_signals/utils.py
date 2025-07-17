@@ -6,11 +6,24 @@ get_expected_duration: return the expected duration of a course (absent any user
 
 from datetime import timedelta
 
+from django.conf import settings
 from openedx.core.djangoapps.catalog.utils import get_course_run_details
+from openedx.core.djangoapps.catalog.models import CatalogIntegration
+
+MIN_DURATION = timedelta(
+    weeks=getattr(settings, 'COURSE_DURATION_MIN_WEEKS', 4)
+)
+MAX_DURATION = timedelta(
+    weeks=getattr(settings, 'COURSE_DURATION_MAX_WEEKS', 18)
+)
 
 
-MIN_DURATION = timedelta(weeks=4)
-MAX_DURATION = timedelta(weeks=18)
+def catalog_integration_enabled():
+    """
+    Check if catalog integration is enabled
+    """
+    catalog_integration = CatalogIntegration.current()
+    return catalog_integration.is_enabled()
 
 
 def get_expected_duration(course_id):
@@ -20,12 +33,13 @@ def get_expected_duration(course_id):
 
     access_duration = MIN_DURATION
 
-    # The user course expiration date is the content availability date
-    # plus the weeks_to_complete field from course-discovery.
-    discovery_course_details = get_course_run_details(course_id, ['weeks_to_complete'])
-    expected_weeks = discovery_course_details.get('weeks_to_complete')
-    if expected_weeks:
-        access_duration = timedelta(weeks=expected_weeks)
+    if catalog_integration_enabled():
+        discovery_course_details = get_course_run_details(
+            course_id, ['weeks_to_complete']
+        )
+        expected_weeks = discovery_course_details.get('weeks_to_complete')
+        if expected_weeks:
+            access_duration = timedelta(weeks=expected_weeks)
 
     # Course access duration is bounded by the min and max duration.
     access_duration = max(MIN_DURATION, min(MAX_DURATION, access_duration))
