@@ -1,7 +1,0 @@
-<label class='transcript-preferance-label' for='transcript-provider'><%- gettext('Automated Transcripts') %></label>
-<div class="transcript-provider-group" id="transcript-provider">
-    <% for (var i = 0; i < providers.length; i++) { %>
-    <input type='radio' id='transcript-provider-<%- providers[i].key %>' name='transcript-provider' value='<%- providers[i].value %>' <%- providers[i].checked %>>
-    <label for='transcript-provider-<%- providers[i].key %>'><%- providers[i].name %></label>
-    <% } %>
-</div>

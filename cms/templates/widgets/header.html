@@ -46,7 +46,6 @@
                 certificates_url = reverse('certificates_list_handler', kwargs={'course_key_string': str(course_key)})
             checklists_url = reverse('checklists_handler', kwargs={'course_key_string': str(course_key)})
             pages_and_resources_mfe_enabled = ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(context_course.id)
-            video_upload_mfe_enabled = toggles.use_new_video_uploads_page(context_course.id)
             schedule_details_mfe_enabled = toggles.use_new_schedule_details_page(context_course.id)
             grading_mfe_enabled = toggles.use_new_grading_page(context_course.id)
             course_team_mfe_enabled = toggles.use_new_course_team_page(context_course.id)
@@ -103,12 +102,7 @@
                     <a href="${textbooks_url}">${_("Textbooks")}</a>
                   </li>
                   % endif
-                  % if context_course.video_pipeline_configured and not video_upload_mfe_enabled:
-                  <li class="nav-item nav-course-courseware-videos">
-                    <a href="${videos_url}">${_("Video Uploads")}</a>
-                  </li>
-                  % endif
-                  % if context_course.video_pipeline_configured and video_upload_mfe_enabled:
+                  % if context_course.video_pipeline_configured:
                   <li class="nav-item nav-course-courseware-videos">
                     <a href="${get_video_uploads_url(course_key)}">${_("Videos")}</a>
                   </li>
