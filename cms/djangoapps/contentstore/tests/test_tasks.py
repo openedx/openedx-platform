@@ -8,10 +8,12 @@ from unittest import mock
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import ddt
 import pytest
 from celery import Task
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.db import models
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
@@ -25,6 +27,8 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -45,6 +49,7 @@ from ..tasks import (
     export_olx,
     extract_content_URLs_from_course,
     rerun_course,
+    sync_discussion_settings,
     update_special_exams_and_publish,
 )
 
@@ -672,3 +677,136 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             "https://another-valid.com"
         ]
         self.assertEqual(extract_content_URLs_from_course(content), set(expected))
+
+
+@ddt.ddt
+@override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
+class SyncDiscussionSettingsTaskTestCase(CourseTestCase):
+    """Tests for the `sync_discussion_settings` task."""
+
+    def setUp(self):
+        super().setUp()
+        self.discussion_config = DiscussionsConfiguration.objects.create(context_key=self.course.id)
+
+    def _update_discussion_settings(self, discussions_settings: dict):
+        """Helper method to set discussion settings in the course."""
+        self.course.discussions_settings = discussions_settings
+        modulestore().update_item(self.course, self.user.id)
+
+    def test_sync_settings(self):
+        """Test syncing discussion settings to DiscussionsConfiguration."""
+        self._update_discussion_settings(
+            {
+                "enable_graded_units": True,
+                "unit_level_visibility": False,
+                "enable_in_context": True,
+                "posting_restrictions": "enabled",
+            }
+        )
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.enable_graded_units is True
+        assert self.discussion_config.unit_level_visibility is False
+        assert self.discussion_config.enable_in_context is True
+        assert self.discussion_config.posting_restrictions == "enabled"
+        assert self.discussion_config.provider_type == Provider.LEGACY
+
+    def test_sync_plugin_configuration(self):
+        """Test syncing plugin configuration from provider settings."""
+        # Set up course discussion settings with provider-specific config
+        provider_config = {"test_key": "test_value", "test_key_2": "test_value_2"}
+        self._update_discussion_settings({self.discussion_config.provider_type: provider_config})
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.plugin_configuration == provider_config
+
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_auto_migrate_to_new_structure(self):
+        """Test automatic migration to the `OPEN_EDX` provider when new structure is enabled."""
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert any(migration_log in log for log in logs.output)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.provider_type == Provider.OPEN_EDX
+
+        course = modulestore().get_course(self.course.id)
+        assert course.discussions_settings.get("provider_type") == Provider.OPEN_EDX
+
+    @ddt.data(
+        {"provider_type": Provider.OPEN_EDX},  # Using the `provider_type` field.
+        {"provider": Provider.OPEN_EDX},  # Using the `provider` field as fallback.
+    )
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_no_provider_migration_when_already_openedx(self, provider_settings: dict):
+        """Test no migration occurs when provider is already `OPEN_EDX`."""
+        self._update_discussion_settings(provider_settings)
+
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert not any(migration_log in log for log in logs.output)
+
+    def test_all_syncable_fields_are_overridden(self):
+        """
+        Verify that all syncable DiscussionsConfiguration fields are updated during course import.
+
+        If this test fails after adding a new field, update `sync_discussion_settings` to handle it.
+        """
+
+        excluded_fields = {
+            "context_key",  # Primary key - not synced.
+            "enabled",  # Handled separately in `update_discussions_settings_from_course`.
+            "created",  # Auto-generated by TimeStampedModel.
+            "modified",  # Auto-generated by TimeStampedModel.
+            "plugin_configuration",  # Custom logic. Already tested in `test_sync_plugin_configuration`.
+            "provider_type",  # Custom logic. Already tested in `test_auto_migrate_to_new_structure`.
+        }
+
+        test_values = {}
+        for field in DiscussionsConfiguration._meta.get_fields():
+            if not getattr(field, "concrete", False):
+                continue
+            if field.primary_key or field.name in excluded_fields:
+                continue
+            if isinstance(field, (models.ForeignKey, models.ManyToManyField)):
+                continue
+
+            if isinstance(field, models.BooleanField):
+                test_values[field.name] = not field.default
+            elif isinstance(field, models.CharField) and field.choices:
+                test_values[field.name] = next(v for v, _ in field.choices if v != field.default)
+            elif isinstance(field, models.CharField):
+                test_values[field.name] = "test_sync_value"
+            else:
+                test_values[field.name] = {"synced_key": "synced_value"}
+
+        self._update_discussion_settings(test_values)
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        for name, expected in test_values.items():
+            assert getattr(self.discussion_config, name) == expected, (
+                f"Field '{name}' was not synced during course import. "
+                f"Update sync_discussion_settings to handle this field.",
+            )
+
+    def test_handling_exceptions(self):
+        """Test that exceptions are caught and logged properly."""
+        test_error_message = "Test error"
+
+        with mock.patch.object(DiscussionsConfiguration.objects, "get", side_effect=Exception(test_error_message)):
+            with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+                sync_discussion_settings(self.course.id, self.user)
+
+                expected_log = (
+                    f"Course import {self.course.id}: DiscussionsConfiguration sync failed: {test_error_message}"
+                )
+                assert any(expected_log in log for log in logs.output)
