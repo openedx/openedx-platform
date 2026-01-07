@@ -312,17 +312,17 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
     @property
     def course_id(self):
         """Return the course key for this block."""
-        return self.location.course_key
+        return self.context_key
 
     @property
     def category(self):
         """Return the block type/category."""
-        return self.scope_ids.block_type
+        return self.usage_key.block_type
 
     @property
     def location(self):
         """Return the usage key identifying this block instance."""
-        return self.scope_ids.usage_id
+        return self.usage_key
 
     @location.setter
     def location(self, value):
@@ -335,7 +335,7 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
     @property
     def url_name(self):
         """Return the URL-friendly name for this block."""
-        return block_metadata_utils.url_name_for_block(self)
+        return self.usage_key.block_id
 
     @property
     def display_name_with_default(self):
