@@ -81,7 +81,7 @@ class Migration(migrations.Migration):
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
                         related_name='links',
-                        to='oel_publishing.publishableentity',
+                        to='oel_authoring.publishableentity',
                     ),
                 ),
             ],

@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 help_text='The target entity of this block migration, set to null if it fails to migrate',
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='oel_publishing.publishableentity',
+                to='oel_authoring.publishableentity',
             ),
         ),
         migrations.AddField(
