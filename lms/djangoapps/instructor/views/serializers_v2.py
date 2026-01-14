@@ -475,3 +475,98 @@ class ORASummarySerializer(serializers.Serializer):
     waiting = serializers.IntegerField()
     staff = serializers.IntegerField()
     final_grade_received = serializers.IntegerField()
+
+
+class LearnerSerializer(serializers.Serializer):
+    """
+    Serializer for learner information.
+
+    Provides comprehensive learner data including profile, enrollment status,
+    and current progress in a course.
+    """
+    username = serializers.CharField(
+        help_text="Learner's username"
+    )
+    email = serializers.EmailField(
+        help_text="Learner's email address"
+    )
+    first_name = serializers.CharField(
+        help_text="Learner's first name"
+    )
+    last_name = serializers.CharField(
+        help_text="Learner's last name"
+    )
+    progress_url = serializers.URLField(
+        allow_null=True,
+        required=False,
+        help_text="URL to learner's progress page"
+    )
+    gradebook_url = serializers.URLField(
+        allow_null=True,
+        required=False,
+        help_text="URL to learner's gradebook view"
+    )
+    current_score = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Current score information with 'score' and 'total' fields"
+    )
+    attempts = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Attempts information with 'current' and 'total' fields"
+    )
+
+
+class ProblemSerializer(serializers.Serializer):
+    """
+    Serializer for problem metadata and location.
+
+    Provides problem information including display name and course hierarchy.
+    """
+    id = serializers.CharField(
+        help_text="Problem usage key"
+    )
+    name = serializers.CharField(
+        help_text="Problem display name"
+    )
+    breadcrumbs = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="Course hierarchy breadcrumbs showing problem location"
+    )
+
+
+class TaskStatusSerializer(serializers.Serializer):
+    """
+    Serializer for background task status.
+
+    Provides status and progress information for asynchronous operations.
+    """
+    task_id = serializers.CharField(
+        help_text="Task identifier"
+    )
+    state = serializers.ChoiceField(
+        choices=['pending', 'running', 'completed', 'failed'],
+        help_text="Current state of the task"
+    )
+    progress = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Progress information with 'current' and 'total' fields"
+    )
+    result = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Task result (present when state is 'completed')"
+    )
+    error = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Error information (present when state is 'failed')"
+    )
+    created_at = serializers.DateTimeField(
+        help_text="Task creation timestamp"
+    )
+    updated_at = serializers.DateTimeField(
+        help_text="Last update timestamp"
+    )
