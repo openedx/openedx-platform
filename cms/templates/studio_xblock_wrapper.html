@@ -25,7 +25,7 @@ has_not_configured_message = messages.get('summary',{}).get('type', None) == 'no
 block_is_unit = is_unit(xblock)
 
 upstream_info = UpstreamLink.try_get_for_block(xblock, log_error=False)
-can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_parent
+can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_key
 %>
 
 <%namespace name='static' file='static_content.html'/>

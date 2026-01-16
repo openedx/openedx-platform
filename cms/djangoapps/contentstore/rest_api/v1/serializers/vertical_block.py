@@ -125,7 +125,7 @@ class UpstreamLinkSerializer(serializers.Serializer):
     error_message = serializers.CharField(allow_null=True)
     ready_to_sync = serializers.BooleanField()
     downstream_customized = serializers.ListField(child=serializers.CharField(), allow_empty=True)
-    has_top_level_parent = serializers.BooleanField()
+    top_level_parent_key = serializers.CharField(allow_null=True)
     ready_to_sync_children = UpstreamChildrenInfoSerializer(many=True, required=False)
 
 

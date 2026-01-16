@@ -1331,7 +1331,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
             # Disable adding or removing children component if xblock is imported from library
             xblock_actions["childAddable"] = False
             # Enable unlinking only for top level imported components
-            xblock_actions["unlinkable"] = not upstream_info["has_top_level_parent"]
+            xblock_actions["unlinkable"] = not upstream_info["top_level_parent_key"]
 
         if is_xblock_unit:
             # if xblock is a Unit we add the discussion_enabled option

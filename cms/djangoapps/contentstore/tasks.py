@@ -1641,11 +1641,7 @@ def handle_create_xblock_upstream_link(usage_key):
         return
     if xblock.top_level_downstream_parent_key is not None:
         block_key = BlockKey.from_string(xblock.top_level_downstream_parent_key)
-        top_level_parent_usage_key = BlockUsageLocator(
-            xblock.course_id,
-            block_key.type,
-            block_key.id,
-        )
+        top_level_parent_usage_key = block_key.to_usage_key(xblock.course_id)
         try:
             ContainerLink.get_by_downstream_usage_key(top_level_parent_usage_key)
         except ContainerLink.DoesNotExist:

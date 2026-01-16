@@ -3,10 +3,11 @@ Utilities for working with opaque-keys.
 
 Consider moving these into opaque-keys if they generalize well.
 """
+from opaque_keys.edx.locator import BlockUsageLocator
 import hashlib
 from typing import NamedTuple, Self
 
-from opaque_keys.edx.keys import UsageKey
+from opaque_keys.edx.keys import UsageKey, CourseKey
 
 
 class BlockKey(NamedTuple):
@@ -39,6 +40,16 @@ class BlockKey(NamedTuple):
         if len(parts) != 2 or not parts[0] or not parts[1]:
             raise ValueError(f"Invalid string format for BlockKey: {s}")
         return cls(parts[0], parts[1])
+
+    def to_usage_key(self, course_key: CourseKey) -> UsageKey:
+        """
+        Converts this BlockKey into a UsageKey.
+        """
+        return BlockUsageLocator(
+            course_key,
+            self.type,
+            self.id,
+        )
 
 
 def derive_key(source: UsageKey, dest_parent: BlockKey) -> BlockKey:
