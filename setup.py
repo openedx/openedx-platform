@@ -14,25 +14,6 @@ setup(
             "team = lms.djangoapps.teams.team_partition_scheme:TeamPartitionScheme",
             "verification = openedx.core.djangoapps.user_api.partition_schemes:ReturnGroup1PartitionScheme",
         ],
-        "openedx.block_structure_transformer": [
-            "library_content = lms.djangoapps.course_blocks.transformers.library_content:ContentLibraryTransformer",
-            "library_content_randomize = lms.djangoapps.course_blocks.transformers.library_content:ContentLibraryOrderTransformer",  # lint-amnesty, pylint: disable=line-too-long
-            "split_test = lms.djangoapps.course_blocks.transformers.split_test:SplitTestTransformer",
-            "start_date = lms.djangoapps.course_blocks.transformers.start_date:StartDateTransformer",
-            "user_partitions = lms.djangoapps.course_blocks.transformers.user_partitions:UserPartitionTransformer",
-            "visibility = lms.djangoapps.course_blocks.transformers.visibility:VisibilityTransformer",
-            "hidden_content = lms.djangoapps.course_blocks.transformers.hidden_content:HiddenContentTransformer",
-            "course_blocks_api = lms.djangoapps.course_api.blocks.transformers.blocks_api:BlocksAPITransformer",
-            "milestones = lms.djangoapps.course_api.blocks.transformers.milestones:MilestonesAndSpecialExamsTransformer",  # lint-amnesty, pylint: disable=line-too-long
-            "grades = lms.djangoapps.grades.transformer:GradesTransformer",
-            "completion = lms.djangoapps.course_api.blocks.transformers.block_completion:BlockCompletionTransformer",
-            "load_override_data = lms.djangoapps.course_blocks.transformers.load_override_data:OverrideDataTransformer",
-            "content_type_gate = openedx.features.content_type_gating.block_transformers:ContentTypeGateTransformer",
-            "access_denied_message_filter = lms.djangoapps.course_blocks.transformers.access_denied_filter:AccessDeniedMessageFilterTransformer",  # lint-amnesty, pylint: disable=line-too-long
-            "open_assessment_transformer = lms.djangoapps.courseware.transformers:OpenAssessmentDateTransformer",
-            'effort_estimation = openedx.features.effort_estimation.api:EffortEstimationTransformer',
-            'discussions_link = openedx.core.djangoapps.discussions.transformers:DiscussionsTopicLinkTransformer',
-        ],
         "openedx.ace.policy": [
             "bulk_email_optout = lms.djangoapps.bulk_email.policies:CourseEmailOptout",
             "course_push_notification_optout = openedx.core.djangoapps.notifications.policies:CoursePushNotificationOptout",  # lint-amnesty, pylint: disable=line-too-long
