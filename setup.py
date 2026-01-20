@@ -6,20 +6,6 @@ from setuptools import setup
 
 setup(
     entry_points={
-        "openedx.course_app": [
-            "calculator = lms.djangoapps.courseware.plugins:CalculatorCourseApp",
-            "custom_pages = lms.djangoapps.courseware.plugins:CustomPagesCourseApp",
-            "dates = lms.djangoapps.courseware.plugins:DatesCourseApp",
-            "discussion = openedx.core.djangoapps.discussions.plugins:DiscussionCourseApp",
-            "edxnotes = lms.djangoapps.edxnotes.plugins:EdxNotesCourseApp",
-            "live = openedx.core.djangoapps.course_live.plugins:LiveCourseApp",
-            "ora_settings = lms.djangoapps.courseware.plugins:ORASettingsApp",
-            "proctoring = lms.djangoapps.courseware.plugins:ProctoringCourseApp",
-            "progress = lms.djangoapps.courseware.plugins:ProgressCourseApp",
-            "teams = lms.djangoapps.teams.plugins:TeamsCourseApp",
-            "textbooks = lms.djangoapps.courseware.plugins:TextbooksCourseApp",
-            "wiki = lms.djangoapps.course_wiki.plugins.course_app:WikiCourseApp",
-        ],
         "openedx.course_tool": [
             "calendar_sync_toggle = openedx.features.calendar_sync.plugins:CalendarSyncToggleTool",
             "course_bookmarks = openedx.features.course_bookmarks.plugins:CourseBookmarksTool",
