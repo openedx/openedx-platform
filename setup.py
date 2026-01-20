@@ -41,28 +41,6 @@ setup(
         "openedx.call_to_action": [
             "personalized_learner_schedules = openedx.features.personalized_learner_schedules.call_to_action:PersonalizedLearnerScheduleCallToAction"  # lint-amnesty, pylint: disable=line-too-long
         ],
-        "cms.djangoapp": [
-            "ace_common = openedx.core.djangoapps.ace_common.apps:AceCommonConfig",
-            "bookmarks = openedx.core.djangoapps.bookmarks.apps:BookmarksConfig",
-            "course_live = openedx.core.djangoapps.course_live.apps:CourseLiveConfig",
-            "content_libraries = openedx.core.djangoapps.content_libraries.apps:ContentLibrariesConfig",
-            "content_staging = openedx.core.djangoapps.content_staging.apps:ContentStagingAppConfig",
-            "course_apps = openedx.core.djangoapps.course_apps.apps:CourseAppsConfig",
-            # Importing an LMS app into the Studio process is not a good
-            # practice. We're ignoring this for Discussions here because its
-            # placement in LMS is a historical artifact. The eventual goal is to
-            # consolidate the multiple discussions-related Django apps and
-            # either put them in the openedx/ dir, or in another repo entirely.
-            "discussion = lms.djangoapps.discussion.apps:DiscussionConfig",
-            "discussions = openedx.core.djangoapps.discussions.apps:DiscussionsConfig",
-            "instructor = lms.djangoapps.instructor.apps:InstructorConfig",
-            "olx_rest_api = openedx.core.djangoapps.olx_rest_api.apps:OlxRestApiAppConfig",
-            "password_policy = openedx.core.djangoapps.password_policy.apps:PasswordPolicyConfig",
-            "plugins = openedx.core.djangoapps.plugins.apps:PluginsConfig",
-            "theming = openedx.core.djangoapps.theming.apps:ThemingConfig",
-            "user_authn = openedx.core.djangoapps.user_authn.apps:UserAuthnConfig",
-            "zendesk_proxy = openedx.core.djangoapps.zendesk_proxy.apps:ZendeskProxyConfig",
-        ],
         'openedx.learning_context': [
             'lib = openedx.core.djangoapps.content_libraries.library_context:LibraryContextImpl',
         ],
