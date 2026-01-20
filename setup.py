@@ -4,11 +4,6 @@ Setup script for the Open edX package.
 
 from setuptools import setup
 
-XBLOCKS_ASIDES = [
-    'tagging_aside = cms.lib.xblock.tagging:StructuredTagsAside',
-]
-
-
 setup(
     entry_points={
         "openedx.course_tab": [
@@ -136,7 +131,6 @@ setup(
             'enrollment_track = xmodule.partitions.enrollment_track_partition_generator:create_enrollment_track_partition',  # lint-amnesty, pylint: disable=line-too-long
             'team = openedx.core.lib.teams_config:create_team_set_partition',
         ],
-        'xblock_asides.v1': XBLOCKS_ASIDES,
         'console_scripts': [
             'xmodule_assets = xmodule.static_content:main',
         ],

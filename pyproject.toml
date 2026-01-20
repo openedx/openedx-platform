@@ -48,3 +48,6 @@ videoalpha = "xmodule.video_block:VideoBlock"
 videodev = "xmodule.template_block:TranslateCustomTagBlock"
 word_cloud = "xmodule.word_cloud_block:WordCloudBlock"
 wrapper = "xmodule.wrapper_block:WrapperBlock"
+
+[project.entry-points."xblock_asides.v1"]
+tagging_aside = "cms.lib.xblock.tagging:StructuredTagsAside"
