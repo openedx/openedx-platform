@@ -41,25 +41,6 @@ setup(
         "openedx.call_to_action": [
             "personalized_learner_schedules = openedx.features.personalized_learner_schedules.call_to_action:PersonalizedLearnerScheduleCallToAction"  # lint-amnesty, pylint: disable=line-too-long
         ],
-        "lms.djangoapp": [
-            "ace_common = openedx.core.djangoapps.ace_common.apps:AceCommonConfig",
-            "content_libraries = openedx.core.djangoapps.content_libraries.apps:ContentLibrariesConfig",
-            "course_apps = openedx.core.djangoapps.course_apps.apps:CourseAppsConfig",
-            "course_live = openedx.core.djangoapps.course_live.apps:CourseLiveConfig",
-            "courseware_api = openedx.core.djangoapps.courseware_api.apps:CoursewareAPIConfig",
-            "credentials = openedx.core.djangoapps.credentials.apps:CredentialsConfig",
-            "discussion = lms.djangoapps.discussion.apps:DiscussionConfig",
-            "discussions = openedx.core.djangoapps.discussions.apps:DiscussionsConfig",
-            "grades = lms.djangoapps.grades.apps:GradesConfig",
-            "plugins = openedx.core.djangoapps.plugins.apps:PluginsConfig",
-            "theming = openedx.core.djangoapps.theming.apps:ThemingConfig",
-            "bookmarks = openedx.core.djangoapps.bookmarks.apps:BookmarksConfig",
-            "zendesk_proxy = openedx.core.djangoapps.zendesk_proxy.apps:ZendeskProxyConfig",
-            "instructor = lms.djangoapps.instructor.apps:InstructorConfig",
-            "password_policy = openedx.core.djangoapps.password_policy.apps:PasswordPolicyConfig",
-            "user_authn = openedx.core.djangoapps.user_authn.apps:UserAuthnConfig",
-            "program_enrollments = lms.djangoapps.program_enrollments.apps:ProgramEnrollmentsConfig",
-        ],
         "cms.djangoapp": [
             "ace_common = openedx.core.djangoapps.ace_common.apps:AceCommonConfig",
             "bookmarks = openedx.core.djangoapps.bookmarks.apps:BookmarksConfig",
