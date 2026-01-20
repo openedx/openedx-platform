@@ -1,3 +1,15 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "openedx-platform"
+version = "0.13"
+requires-python = ">=3.11"
+dependencies = ["setuptools"]
+
+[tool.setuptools]
+packages = ["cms", "common", "lms", "openedx", "xmodule"]
+
+[tool.setuptools.package-data]
+xmodule = ["js/module/*"]

@@ -45,22 +45,6 @@ XBLOCKS_ASIDES = [
 
 
 setup(
-    name="Open edX",
-    version='0.13',
-    install_requires=["setuptools"],
-    requires=[],
-    # NOTE: These are not the names we should be installing.  This tree should
-    # be reorganized to be a more conventional Python tree.
-    packages=[
-        "cms",
-        "common",
-        "lms",
-        "openedx",
-        "xmodule",
-    ],
-    package_data={
-        'xmodule': ['js/module/*'],
-    },
     entry_points={
         "openedx.course_tab": [
             "ccx = lms.djangoapps.ccx.plugins:CcxCourseTab",
