@@ -86,3 +86,9 @@ progress = "lms.djangoapps.courseware.plugins:ProgressCourseApp"
 teams = "lms.djangoapps.teams.plugins:TeamsCourseApp"
 textbooks = "lms.djangoapps.courseware.plugins:TextbooksCourseApp"
 wiki = "lms.djangoapps.course_wiki.plugins.course_app:WikiCourseApp"
+
+[project.entry-points."openedx.course_tool"]
+calendar_sync_toggle = "openedx.features.calendar_sync.plugins:CalendarSyncToggleTool"
+course_bookmarks = "openedx.features.course_bookmarks.plugins:CourseBookmarksTool"
+course_updates = "openedx.features.course_experience.plugins:CourseUpdatesTool"
+financial_assistance = "lms.djangoapps.courseware.course_tools:FinancialAssistanceTool"
