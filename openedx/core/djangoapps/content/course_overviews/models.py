@@ -944,6 +944,13 @@ class CourseOverview(TimeStampedModel):
         return self._original_course.hide_progress_tab
 
     @property
+    def hide_dates_tab(self):
+        """
+        TODO: move this to the model.
+        """
+        return self._original_course.hide_dates_tab
+
+    @property
     def edxnotes(self):
         """
         TODO: move this to the model.

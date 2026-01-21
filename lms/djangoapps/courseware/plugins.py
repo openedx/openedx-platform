@@ -65,6 +65,51 @@ class ProgressCourseApp(CourseApp):
         }
 
 
+class DatesCourseApp(CourseApp):
+    """Course app stub for course dates."""
+
+    app_id = "dates"
+    name = _("Dates")
+    description = _("Provide learners a summary of important course dates.")
+    documentation_links = {
+        "learn_more_configuration": getattr(settings, "DATES_HELP_URL", ""),
+    }
+
+    @classmethod
+    def is_available(cls, course_key: CourseKey) -> bool:  # pylint: disable=unused-argument
+        """
+        Dates app is available when explicitly enabled via settings.
+        """
+        return settings.FEATURES.get("ENABLE_DATES_COURSE_APP", False)
+
+    @classmethod
+    def is_enabled(cls, course_key: CourseKey) -> bool:
+        """
+        The dates course status is stored in the course block.
+        """
+        return not CourseOverview.get_from_id(course_key).hide_dates_tab
+
+    @classmethod
+    def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:
+        """
+        The dates course enabled/disabled status is stored in the course block.
+        """
+        course = get_course_by_id(course_key)
+        course.hide_dates_tab = not enabled
+        modulestore().update_item(course, user.id)
+        return enabled
+
+    @classmethod
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument
+        """
+        Returns the allowed operations for the app.
+        """
+        return {
+            "enable": True,
+            "configure": True,
+        }
+
+
 class TextbooksCourseApp(CourseApp):
     """
     Course app config for textbooks app.

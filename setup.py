@@ -86,6 +86,7 @@ setup(
         "openedx.course_app": [
             "calculator = lms.djangoapps.courseware.plugins:CalculatorCourseApp",
             "custom_pages = lms.djangoapps.courseware.plugins:CustomPagesCourseApp",
+            "dates = lms.djangoapps.courseware.plugins:DatesCourseApp",
             "discussion = openedx.core.djangoapps.discussions.plugins:DiscussionCourseApp",
             "edxnotes = lms.djangoapps.edxnotes.plugins:EdxNotesCourseApp",
             "live = openedx.core.djangoapps.course_live.plugins:LiveCourseApp",
