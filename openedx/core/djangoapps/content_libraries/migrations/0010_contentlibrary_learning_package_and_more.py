@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('oel_publishing', '0001_initial'),
+        ('oel_authoring', '0001_initial'),
         ('content_libraries', '0009_alter_contentlibrary_authorized_lti_configs'),
     ]
 
@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contentlibrary',
             name='learning_package',
-            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_publishing.learningpackage'),
+            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_authoring.learningpackage'),
         ),
         migrations.AlterField(
             model_name='contentlibrary',

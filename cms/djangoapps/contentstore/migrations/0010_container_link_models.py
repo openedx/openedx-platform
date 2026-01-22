@@ -10,8 +10,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('oel_publishing', '0003_containers'),
-        ('oel_components', '0003_remove_componentversioncontent_learner_downloadable'),
+        ('oel_authoring', '0001_initial'),
         ('contentstore', '0009_learningcontextlinksstatus_publishableentitylink'),
     ]
 
@@ -32,7 +31,7 @@ class Migration(migrations.Migration):
                 null=True,
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name='links',
-                to='oel_components.component',
+                to='oel_authoring.component',
             ),
         ),
         migrations.CreateModel(
@@ -48,7 +47,7 @@ class Migration(migrations.Migration):
                 ('created', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
                 ('updated', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
                 ('upstream_container_key', opaque_keys.edx.django.models.ContainerKeyField(help_text='Upstream block key (e.g. lct:...), this value cannot be null and is useful to track upstream library blocks that do not exist yet or were deleted.', max_length=255)),
-                ('upstream_container', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='oel_publishing.container')),
+                ('upstream_container', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='oel_authoring.container')),
             ],
             options={
                 'abstract': False,

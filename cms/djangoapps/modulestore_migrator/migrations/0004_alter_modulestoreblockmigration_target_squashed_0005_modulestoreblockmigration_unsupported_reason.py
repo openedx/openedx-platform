@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
     dependencies = [
         ('modulestore_migrator', '0003_modulestoremigration_is_failed'),
-        ('oel_publishing', '0008_alter_draftchangelogrecord_options_and_more'),
+        ('oel_authoring', '0001_initial'),
     ]
 
     operations = [
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 help_text='The target entity of this block migration, set to null if it fails to migrate',
                 null=True,
                 on_delete=django.db.models.deletion.CASCADE,
-                to='oel_publishing.publishableentity',
+                to='oel_authoring.publishableentity',
             ),
         ),
         migrations.AddField(

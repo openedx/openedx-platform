@@ -13,8 +13,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('content_staging', '0006_alter_userclipboard_source_usage_key'),
-        ('oel_collections', '0005_alter_collection_options_alter_collection_enabled'),
-        ('oel_publishing', '0008_alter_draftchangelogrecord_options_and_more'),
+        ('oel_authoring', '0001_initial'),
         ('user_tasks', '0004_url_textfield'),
     ]
 
@@ -25,7 +24,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),
                 ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
-                ('change_log_record', models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_publishing.draftchangelogrecord')),
+                ('change_log_record', models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.draftchangelogrecord')),
             ],
         ),
         migrations.CreateModel(
@@ -36,7 +35,7 @@ class Migration(migrations.Migration):
                 ('composition_level', models.CharField(choices=[('component', 'Component'), ('unit', 'Unit'), ('subsection', 'Subsection'), ('section', 'Section')], default='component', help_text='Maximum hierachy level at which content should be aggregated in target library', max_length=255)),
                 ('repeat_handling_strategy', models.CharField(choices=[('skip', 'Skip'), ('fork', 'Fork'), ('update', 'Update')], default='skip', help_text='If a piece of content already exists in the content library, choose how to handle it.', max_length=24)),
                 ('preserve_url_slugs', models.BooleanField(default=False, help_text='Should the migration preserve the location IDs of the existing blocks?If not, then new, unique human-readable IDs will be generated based on the block titles.')),
-                ('change_log', models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_publishing.draftchangelog')),
+                ('change_log', models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.draftchangelog')),
             ],
         ),
         migrations.CreateModel(
@@ -60,12 +59,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='modulestoremigration',
             name='target',
-            field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='oel_publishing.learningpackage'),
+            field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='oel_authoring.learningpackage'),
         ),
         migrations.AddField(
             model_name='modulestoremigration',
             name='target_collection',
-            field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_collections.collection'),
+            field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.collection'),
         ),
         migrations.AddField(
             model_name='modulestoremigration',
@@ -99,7 +98,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='modulestoreblockmigration',
             name='target',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='oel_publishing.publishableentity'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='oel_authoring.publishableentity'),
         ),
         migrations.AlterUniqueTogether(
             name='modulestoreblockmigration',
