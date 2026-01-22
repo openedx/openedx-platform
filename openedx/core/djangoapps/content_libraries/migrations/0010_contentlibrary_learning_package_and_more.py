@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contentlibrary',
             name='learning_package',
-            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_authoring.learningpackage'),
+            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_publishing.learningpackage'),
         ),
         migrations.AlterField(
             model_name='contentlibrary',
