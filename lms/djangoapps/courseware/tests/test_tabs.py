@@ -870,6 +870,7 @@ class DatesTabTestCase(TabListTestCase):
         """Test cases for making sure no persisted dates tab is surfaced"""
         user = self.create_mock_user()
         self.course.tabs = self.all_valid_tab_list
+        self.course.hide_dates_tab = False
         self.course.save()
 
         # Verify that there is a dates tab in the modulestore
