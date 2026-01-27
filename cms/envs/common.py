@@ -45,7 +45,7 @@ from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
 
 from django.utils.translation import gettext_lazy as _
-from openedx_learning.api.django import learning_core_apps_to_install
+from openedx_learning.api.django import openedx_learning_apps_to_install
 
 from openedx.envs.common import *  # pylint: disable=wildcard-import
 
@@ -898,8 +898,7 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    # Learning Core Apps, used by v2 content libraries (content_libraries app)
-    *learning_core_apps_to_install(),
+    *openedx_learning_apps_to_install(),
 ]
 
 ### Apps only installed in some instances

@@ -60,7 +60,7 @@ from enterprise.constants import (
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
 )
-from openedx_learning.api.django import learning_core_apps_to_install
+from openedx_learning.api.django import openedx_learning_apps_to_install
 
 from openedx.core.lib.derived import Derived
 from openedx.envs.common import *  # pylint: disable=wildcard-import
@@ -2020,8 +2020,12 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    # Learning Core Apps, used by v2 content libraries (content_libraries app)
-    *learning_core_apps_to_install(),
+    # These go together as a unit.
+    *openedx_learning_apps_to_install(),
+    'cms.djangoapps.contentstore',
+    'cms.djangoapps.modulestore_migrator',
+    'openedx.core.djangoapps.content.search',
+    'openedx.core.djangoapps.content_staging',
 ]
 
 # Add LMS specific optional apps
@@ -2875,8 +2879,24 @@ USER_STATE_BATCH_SIZE = 5000
 
 from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
+
+for app in INSTALLED_APPS:
+    if 'content_libraries' in app:
+        print("Found it before plugin application!")
+
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
+
+for app in INSTALLED_APPS:
+    if 'content_libraries' in app:
+        print("Found it after extension!")
+
+
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
+
+for app in INSTALLED_APPS:
+    if 'content_libraries' in app:
+        print("Found it after plugin application!")
+
 
 PROCTORED_EXAM_VIEWABLE_PAST_DUE = False
 

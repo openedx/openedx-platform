@@ -2,19 +2,25 @@
 
 import django.db.models.deletion
 from django.db import migrations, models
+from django.db.migrations.operations.special import SeparateDatabaseAndState
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('content_libraries', '0011_remove_contentlibrary_bundle_uuid_and_more'),
-        ('oel_authoring', '0002_rename_tables_to_oel_authoring'),
+        ('oel_authoring', '0001_initial'),
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='contentlibrary',
-            name='learning_package',
-            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_authoring.learningpackage'),
+        SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='contentlibrary',
+                    name='learning_package',
+                    field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_authoring.learningpackage'),
+                ),
+            ]
         ),
     ]
