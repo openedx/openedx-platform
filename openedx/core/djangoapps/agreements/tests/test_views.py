@@ -14,16 +14,16 @@ from rest_framework.test import APITestCase
 
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
-
-from ..api import (
+from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
     create_user_agreement_record,
     get_integrity_signatures_for_course,
-    get_lti_pii_signature
+    get_lti_pii_signature,
 )
+from openedx.core.djangoapps.agreements.models import UserAgreement
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @skip_unless_lms
@@ -301,30 +301,52 @@ class UserAgreementsViewTests(APITestCase):
 
     def setUp(self):
         self.user = UserFactory(username="testuser", password="password")
-        self.url = reverse('user_agreements', kwargs={'agreement_type': 'sample_agreement'})
+        self.agreement = UserAgreement.objects.create(
+            type="sample_agreement",
+            name="sample agreement",
+            summary="sample summary",
+            text="sample text",
+            updated="2024-11-21 11:00:00",
+        )
+        self.url = reverse("user_agreement_record", kwargs={"agreement_type": "sample_agreement"})
         self.login()
 
     def login(self):
         self.client.login(username="testuser", password="password")
 
-    def test_get_user_agreement_record_no_data(self):
-        response = self.client.get(self.url)
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    def test_get_user_agreement_record_for_missing_agreement(self):
+        """
+        Tests that the view returns a non-acceptance record for a missing agreement
+        """
+        response = self.client.get(reverse("user_agreement_record", kwargs={"agreement_type": "missing_agreement"}))
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is False
+        assert response.data["accepted_at"] is None
 
-    def test_get_user_agreement_record_invalid_date(self):
-        response = self.client.get(self.url, {'after': 'invalid_date'})
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_get_user_agreement_record(self):
-        create_user_agreement_record(self.user, 'sample_agreement')
+    def test_get_user_agreement_record_missing_record(self):
+        """
+        Tests that the view returns a non-acceptance record for a missing user agreement record
+        """
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
-        assert 'accepted_at' in response.data
+        assert response.data["is_current"] is False
+        assert response.data["accepted_at"] is None
 
-        response = self.client.get(self.url, {"after": str(datetime.now() + timedelta(days=1))})
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    def test_get_user_agreement_record(self):
+        """
+        Tests that the view returns a user agreement record for a valid agreement.
+        """
+        create_user_agreement_record(self.user, "sample_agreement")
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "accepted_at" in response.data
 
     def test_post_user_agreement(self):
+        """
+        Tests that the view creates a new user agreement record and returns it
+        and marks the agreement record as non-current if the agreement is newer
+        than the agreement record.
+        """
         with freeze_time("2024-11-21 12:00:00"):
             response = self.client.post(self.url)
         assert response.status_code == status.HTTP_201_CREATED
@@ -333,12 +355,18 @@ class UserAgreementsViewTests(APITestCase):
 
         response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is True
 
-        response = self.client.get(self.url, {"after": "2024-11-21T13:00:00Z"})
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        self.agreement.updated = datetime.now()
+        self.agreement.save()
+
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is False
 
         response = self.client.post(self.url)
         assert response.status_code == status.HTTP_201_CREATED
 
-        response = self.client.get(self.url, {"after": "2024-11-21T13:00:00Z"})
+        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
+        assert response.data["is_current"] is True

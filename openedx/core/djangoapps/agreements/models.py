@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
+from simple_history.models import HistoricalRecords
 
 User = get_user_model()
 
@@ -72,6 +73,63 @@ class ProctoringPIISignature(TimeStampedModel):
         app_label = 'agreements'
 
 
+class UserAgreement(models.Model):
+    """
+    This model stores agreements that the user can accept, which can gate certain
+    platform features.
+
+    .. no_pii:
+    """
+
+    type = models.CharField(max_length=255, unique=True)
+    name = models.CharField(
+        max_length=255,
+        help_text=(
+            "Human-readable name for the agreement type. "
+            "Will be displayed to users in an alert to accept/reject the agreement."
+        ),
+    )
+    summary = models.TextField(
+        max_length=1024,
+        help_text=(
+            "Brief summary of the agreement content. Will be displayed to users in alert to accept the agreement."
+        ),
+    )
+    text = models.TextField(
+        help_text="Full text of the agreement. (Required if url is not provided)",
+        null=True,
+        blank=True,
+    )
+    url = models.URLField(
+        help_text=(
+            "URL where the full agreement can be accessed. "
+            'Will be used for "Learn More" link in alert to accept the agreement.'
+        ),
+        null=True,
+        blank=True,
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(
+        help_text=(
+            "Timestamp of the last update to this agreement. "
+            "If changed users will be prompted to accept the agreement again."
+        )
+    )
+    history = HistoricalRecords()
+
+    @property
+    def has_text(self):
+        return bool(self.text)
+
+    class Meta:
+        app_label = "agreements"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(text__isnull=False) | models.Q(url__isnull=False), name="agreement_has_text_or_url"
+            )
+        ]
+
+
 class UserAgreementRecord(models.Model):
     """
     This model stores the agreements a user has accepted or acknowledged.
@@ -81,9 +139,14 @@ class UserAgreementRecord(models.Model):
 
     .. no_pii:
     """
+
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
-    agreement_type = models.CharField(max_length=255)
+    agreement = models.ForeignKey(UserAgreement, on_delete=models.CASCADE, related_name="records")
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def is_current(self):
+        return self.agreement.updated < self.timestamp
+
     class Meta:
-        app_label = 'agreements'
+        app_label = "agreements"

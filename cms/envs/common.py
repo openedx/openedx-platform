@@ -786,6 +786,9 @@ INSTALLED_APPS = [
 
     'common.djangoapps.xblock_django',
 
+    # Agreements
+    'openedx.core.djangoapps.agreements',
+
     # Catalog integration
     'openedx.core.djangoapps.catalog',
 

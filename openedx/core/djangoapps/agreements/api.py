@@ -4,14 +4,24 @@ Agreements API
 
 import logging
 from datetime import datetime
-from typing import Iterable, Optional
+from typing import Iterator
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import CourseKey
 
-from .data import LTIPIISignatureData, LTIToolsReceivingPIIData, UserAgreementRecordData
-from .models import IntegritySignature, LTIPIISignature, LTIPIITool, UserAgreementRecord
+from openedx.core.djangoapps.agreements.data import (
+    LTIPIISignatureData,
+    LTIToolsReceivingPIIData,
+    UserAgreementRecordData,
+)
+from openedx.core.djangoapps.agreements.models import (
+    IntegritySignature,
+    LTIPIISignature,
+    LTIPIITool,
+    UserAgreementRecord,
+    UserAgreement,
+)
 
 log = logging.getLogger(__name__)
 User = get_user_model()
@@ -240,46 +250,44 @@ def _user_signature_out_of_date(username, course_id):
         return user_lti_pii_signature_hash != course_lti_pii_tools_hash
 
 
-def get_user_agreements(user: User) -> Iterable[UserAgreementRecordData]:
+def get_user_agreement_records(user: User) -> Iterator[UserAgreementRecordData]:
     """
     Retrieves all the agreements that the specified user has acknowledged.
     """
-    for agreement_record in UserAgreementRecord.objects.filter(user=user):
+    for agreement_record in UserAgreementRecord.objects.filter(user=user).select_related("agreement", "user"):
         yield UserAgreementRecordData.from_model(agreement_record)
 
 
 def get_latest_user_agreement_record(
     user: User,
     agreement_type: str,
-    agreed_after: datetime = None,
-) -> Optional[UserAgreementRecordData]:
+) -> UserAgreementRecordData:
     """
     Retrieve the user agreement record for the specified user and agreement type.
 
     An agreement update timestamp can be provided to return a record only if it
     was signed after that timestamp.
     """
-    try:
-        record_query = UserAgreementRecord.objects.filter(
-            user=user,
-            agreement_type=agreement_type,
-        )
-        if agreed_after:
-            record_query = record_query.filter(timestamp__gte=agreed_after)
-        record = record_query.latest("timestamp")
-        return UserAgreementRecordData.from_model(record)
-    except UserAgreementRecord.DoesNotExist:
-        return None
+    record_query = UserAgreementRecord.objects.filter(
+        user=user,
+        agreement__type=agreement_type,
+    )
+    if record_query.exists():
+        return UserAgreementRecordData.from_model(record_query.latest("timestamp"))
+    return UserAgreementRecordData(
+        username=user.get_username(),
+        agreement_type=agreement_type,
+    )
 
 
 def create_user_agreement_record(user: User, agreement_type: str) -> UserAgreementRecordData:
     """
-    Creates a user agreement record if one doesn't already exist, or updates existing
-    record to current timestamp.
+    Creates a user agreement record with current timestamp.
     """
+    agreement = UserAgreement.objects.get(type=agreement_type)
     record = UserAgreementRecord.objects.create(
         user=user,
-        agreement_type=agreement_type,
+        agreement=agreement,
         timestamp=datetime.now(),
     )
     return UserAgreementRecordData.from_model(record)
