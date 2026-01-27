@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contentstore', '0014_remove_componentlink_downstream_is_modified_and_more'),
-        ('oel_authoring', '0001_initial'),
+        ('openedx_content', '0001_initial'),
     ]
 
     operations = [
@@ -19,12 +19,12 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name='componentlink',
                     name='upstream_block',
-                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='oel_authoring.component'),
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.component'),
                 ),
                 migrations.AlterField(
                     model_name='containerlink',
                     name='upstream_container',
-                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='oel_authoring.container'),
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.container'),
                 ),
             ]
         ),

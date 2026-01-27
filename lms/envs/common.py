@@ -2879,24 +2879,8 @@ USER_STATE_BATCH_SIZE = 5000
 
 from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
-
-for app in INSTALLED_APPS:
-    if 'content_libraries' in app:
-        print("Found it before plugin application!")
-
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
-
-for app in INSTALLED_APPS:
-    if 'content_libraries' in app:
-        print("Found it after extension!")
-
-
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
-
-for app in INSTALLED_APPS:
-    if 'content_libraries' in app:
-        print("Found it after plugin application!")
-
 
 PROCTORED_EXAM_VIEWABLE_PAST_DUE = False
 

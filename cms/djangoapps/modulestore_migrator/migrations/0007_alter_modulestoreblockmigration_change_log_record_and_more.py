@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('modulestore_migrator', '0006_alter_modulestoreblocksource_forwarded_and_more'),
-        ('oel_authoring', '0001_initial'),
+        ('openedx_content', '0001_initial'),
     ]
 
     operations = [
@@ -19,27 +19,27 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name='modulestoreblockmigration',
                     name='change_log_record',
-                    field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.draftchangelogrecord'),
+                    field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelogrecord'),
                 ),
                 migrations.AlterField(
                     model_name='modulestoreblockmigration',
                     name='target',
-                    field=models.ForeignKey(blank=True, help_text='The target entity of this block migration, set to null if it fails to migrate', null=True, on_delete=django.db.models.deletion.CASCADE, to='oel_authoring.publishableentity'),
+                    field=models.ForeignKey(blank=True, help_text='The target entity of this block migration, set to null if it fails to migrate', null=True, on_delete=django.db.models.deletion.CASCADE, to='openedx_content.publishableentity'),
                 ),
                 migrations.AlterField(
                     model_name='modulestoremigration',
                     name='change_log',
-                    field=models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.draftchangelog'),
+                    field=models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelog'),
                 ),
                 migrations.AlterField(
                     model_name='modulestoremigration',
                     name='target',
-                    field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='oel_authoring.learningpackage'),
+                    field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='openedx_content.learningpackage'),
                 ),
                 migrations.AlterField(
                     model_name='modulestoremigration',
                     name='target_collection',
-                    field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='oel_authoring.collection'),
+                    field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.collection'),
                 ),
             ]
         ),

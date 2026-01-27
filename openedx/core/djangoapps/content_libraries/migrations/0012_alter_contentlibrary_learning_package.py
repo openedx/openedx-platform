@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('content_libraries', '0011_remove_contentlibrary_bundle_uuid_and_more'),
-        ('oel_authoring', '0001_initial'),
+        ('openedx_content', '0001_initial'),
     ]
 
     operations = [
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 migrations.AlterField(
                     model_name='contentlibrary',
                     name='learning_package',
-                    field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='oel_authoring.learningpackage'),
+                    field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='openedx_content.learningpackage'),
                 ),
             ]
         ),
