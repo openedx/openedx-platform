@@ -240,7 +240,7 @@ def _user_signature_out_of_date(username, course_id):
         return user_lti_pii_signature_hash != course_lti_pii_tools_hash
 
 
-def get_user_agreement_records(user: User) -> Iterable[UserAgreementRecordData]:
+def get_user_agreement_records(user: User) ->Iterator[UserAgreementRecordData]:
     """
     Retrieves all the agreements that the specified user has acknowledged.
     """
