@@ -1,0 +1,172 @@
+swagger: '2.0'
+info:
+  title: Content Groups API v2
+  version: 2.0.0
+  description: |
+    REST API for managing content group configurations.
+
+    Content groups allow course authors to restrict access to specific
+    course content based on cohort membership.
+
+host: courses.example.com
+basePath: /
+schemes:
+  - https
+
+securityDefinitions:
+  JWTAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: JWT token authentication.
+
+security:
+  - JWTAuth: []
+
+tags:
+  - name: Content Groups
+    description: Content group configuration management
+
+parameters:
+  CourseId:
+    name: course_id
+    in: path
+    required: true
+    type: string
+    description: The course key (e.g., course-v1:org+course+run)
+  ConfigurationId:
+    name: configuration_id
+    in: path
+    required: true
+    type: integer
+    description: The ID of the content group configuration
+
+paths:
+  /api/cohorts/v2/courses/{course_id}/group_configurations:
+    get:
+      tags:
+        - Content Groups
+      summary: List content group configurations
+      description: |
+        Returns all content group configurations (scheme='cohort') for a course.
+        If no content group exists, an empty one is automatically created.
+      operationId: listGroupConfigurations
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+      responses:
+        200:
+          description: Content groups retrieved successfully
+          schema:
+            $ref: '#/definitions/ContentGroupsListResponse'
+        400:
+          description: Invalid course key
+        401:
+          description: Authentication required
+        403:
+          description: User lacks instructor permission
+        404:
+          description: Course not found
+
+  /api/cohorts/v2/courses/{course_id}/group_configurations/{configuration_id}:
+    get:
+      tags:
+        - Content Groups
+      summary: Get content group configuration details
+      description: |
+        Retrieve a specific content group configuration by ID.
+        Only returns configurations with scheme='cohort'.
+      operationId: getGroupConfiguration
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ConfigurationId'
+      responses:
+        200:
+          description: Configuration retrieved successfully
+          schema:
+            $ref: '#/definitions/ContentGroupConfiguration'
+        400:
+          description: Invalid course key
+        401:
+          description: Authentication required
+        403:
+          description: User lacks instructor permission
+        404:
+          description: Configuration not found
+
+definitions:
+  Group:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for the group
+      name:
+        type: string
+        description: Display name of the group
+      version:
+        type: integer
+        description: Version number of the group
+      usage:
+        type: array
+        items:
+          type: object
+        description: List of content blocks using this group
+
+  ContentGroupConfiguration:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique identifier for the configuration
+      name:
+        type: string
+        description: Display name (typically "Content Groups")
+      scheme:
+        type: string
+        enum: [cohort]
+        description: Partition scheme type
+      description:
+        type: string
+        description: Human-readable description
+      parameters:
+        type: object
+        description: Additional configuration parameters
+      groups:
+        type: array
+        items:
+          $ref: '#/definitions/Group'
+        description: List of groups in this configuration
+      active:
+        type: boolean
+        description: Whether this configuration is active
+      version:
+        type: integer
+        description: Version number of the configuration
+      read_only:
+        type: boolean
+        description: Whether this configuration is system-managed
+
+  ContentGroupsListResponse:
+    type: object
+    properties:
+      all_group_configurations:
+        type: array
+        items:
+          $ref: '#/definitions/ContentGroupConfiguration'
+        description: List of content group configurations
+      should_show_enrollment_track:
+        type: boolean
+        description: Whether enrollment track groups should be displayed
+      should_show_experiment_groups:
+        type: boolean
+        description: Whether experiment groups should be displayed
+      group_configuration_url:
+        type: string
+        description: Base URL for accessing individual configurations
+      course_outline_url:
+        type: string
+        description: URL to the course outline
