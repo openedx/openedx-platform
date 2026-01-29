@@ -75,7 +75,7 @@ class ProctoringPIISignature(TimeStampedModel):
 
 class UserAgreement(models.Model):
     """
-    This model stores agreements that as user can accept that can gate certain
+    This model stores agreements that the user can accept, which can gate certain
     platform features.
 
     .. no_pii:
