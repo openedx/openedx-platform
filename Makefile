@@ -55,7 +55,8 @@ pull_translations: clean_translations  ## pull translations via atlas
 	make pull_xblock_translations
 	make pull_plugin_translations
 	atlas pull $(ATLAS_OPTIONS) \
-	    translations/edx-platform/conf/locale:conf/locale
+	    translations/edx-platform/conf/locale:conf/locale \
+	    $(ATLAS_EXTRA_SOURCES)
 	python manage.py lms compilemessages
 	python manage.py lms compilejsi18n
 	python manage.py cms compilejsi18n
