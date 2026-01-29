@@ -13,7 +13,9 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.cache import cache
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from enterprise.models import (
     EnterpriseCourseEnrollment,
@@ -1095,16 +1097,31 @@ class TestAccountRetirementCleanup(RetirementTestCase):
     def test_redaction_before_deletion(self):
         """
         Verify that redaction (UPDATE) happens before deletion (DELETE).
-        Uses assertNumQueries to verify UPDATE queries execute before DELETE queries.
-        This protects PII from being exposed in soft-deletes to downstream data warehouses.
+        Captures actual SQL queries to ensure UPDATE queries contain redacted values.
         """
-        # Use assertNumQueries to capture and verify the SQL queries execute in correct order.
-        with self.assertNumQueries(53):  # Full request with 9 UPDATEs (redaction) + 9 DELETEs
+        with CaptureQueriesContext(connection) as context:
             self.cleanup_and_assert_status()
 
         # Verify records are deleted after redaction
         retirements = UserRetirementStatus.objects.all()
         assert retirements.count() == 0
+
+        # Verify UPDATE queries exist with default 'redacted' value
+        queries = context.captured_queries
+        update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
+        delete_queries = [q for q in queries if 'DELETE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
+
+        # Should have 9 UPDATE and 9 DELETE queries
+        assert len(update_queries) == 9, f"Expected 9 UPDATE queries, found {len(update_queries)}"
+        assert len(delete_queries) == 9, f"Expected 9 DELETE queries, found {len(delete_queries)}"
+
+        # Verify UPDATE queries contain the redacted values
+        for update_query in update_queries:
+            sql = update_query['sql']
+            assert "'redacted'" in sql, f"UPDATE query missing 'redacted' value: {sql}"
+            assert 'original_username' in sql, f"UPDATE query missing original_username field: {sql}"
+            assert 'original_email' in sql, f"UPDATE query missing original_email field: {sql}"
+            assert 'original_name' in sql, f"UPDATE query missing original_name field: {sql}"
 
     def test_custom_redacted_values(self):
         """Test that custom redacted values are applied before deletion."""
@@ -1118,11 +1135,25 @@ class TestAccountRetirementCleanup(RetirementTestCase):
             'redacted_email': custom_email,
             'redacted_name': custom_name
         }
-        self.cleanup_and_assert_status(data=data)
 
-        # Records should be deleted after redaction
+        with CaptureQueriesContext(connection) as context:
+            self.cleanup_and_assert_status(data=data)
+
+        # Verify records are deleted after redaction
         retirements = UserRetirementStatus.objects.all()
         assert retirements.count() == 0
+
+        # Verify UPDATE queries contain the custom redacted values
+        queries = context.captured_queries
+        update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
+
+        assert len(update_queries) == 9, f"Expected 9 UPDATE queries, found {len(update_queries)}"
+
+        for update_query in update_queries:
+            sql = update_query['sql']
+            assert custom_username in sql, f"UPDATE query missing custom username '{custom_username}': {sql}"
+            assert custom_email in sql, f"UPDATE query missing custom email '{custom_email}': {sql}"
+            assert custom_name in sql, f"UPDATE query missing custom name '{custom_name}': {sql}"
 
     def test_leaves_other_users(self):
         remaining_usernames = []
