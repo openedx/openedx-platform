@@ -218,7 +218,7 @@ def _prepare_runtime_for_preview(request, block):
         "cache": CacheService(cache),
         'replace_urls': ReplaceURLService,
         'video_config': VideoConfigService(),
-        'discussion_config': DiscussionConfigService(),
+        'discussion_config_service': DiscussionConfigService(),
     }
 
     block.runtime.get_block_for_descriptor = partial(_load_preview_block, request)

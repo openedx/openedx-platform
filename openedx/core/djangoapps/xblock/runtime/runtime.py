@@ -347,7 +347,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
             # Import here to avoid circular dependency
             from openedx.core.djangoapps.video_config.services import VideoConfigService
             return VideoConfigService()
-        elif service_name == 'discussion_config':
+        elif service_name == 'discussion_config_service':
             from openedx.core.djangoapps.discussions.services import DiscussionConfigService
             return DiscussionConfigService()
 
