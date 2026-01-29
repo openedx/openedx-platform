@@ -50,7 +50,7 @@
     "babel-loader": "^9.1.3",
     "babel-plugin-transform-class-properties": "6.24.1",
     "babel-polyfill": "6.26.0",
-    "backbone": "1.6.0",
+    "backbone": "1.6.1",
     "backbone-associations": "0.6.2",
     "backbone.paginator": "2.0.8",
     "bootstrap": "4.0.0",
