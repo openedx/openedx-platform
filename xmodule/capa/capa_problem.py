@@ -244,15 +244,6 @@ class LoncapaProblem:  # pylint: disable=too-many-public-methods,too-many-instan
             if extract_tree:
                 self.extracted_tree = self._extract_html(self.tree)
 
-    @property
-    def is_grading_method_enabled(self) -> bool:
-        """
-        Returns whether the grading method feature is enabled. If the
-        feature is not enabled, the grading method field will not be shown in
-        Studio settings and the default grading method will be used.
-        """
-        return settings.FEATURES.get("ENABLE_GRADING_METHOD_IN_PROBLEMS", False)
-
     def make_xml_compatible(self, tree):
         """
         Adjust tree xml in-place for compatibility before creating
@@ -503,7 +494,7 @@ class LoncapaProblem:  # pylint: disable=too-many-public-methods,too-many-instan
         and student_answers_history). The correct map will always be updated, depending on
         the student answers. The student answers will always remain the same over time.
         """
-        oldcmap = correct_map if self.is_grading_method_enabled else self.correct_map
+        oldcmap = correct_map if correct_map is not None else self.correct_map
 
         # start new with empty CorrectMap
         newcmap = CorrectMap()
@@ -524,12 +515,7 @@ class LoncapaProblem:  # pylint: disable=too-many-public-methods,too-many-instan
             # submission that would not exist in the persisted "student_answers".
             # If grading method is enabled, we need to pass each student answers and the
             # correct map in the history fields.
-            if (
-                "filesubmission" in responder.allowed_inputfields and student_answers is not None
-            ) or self.is_grading_method_enabled:
-                results = responder.evaluate_answers(student_answers, oldcmap)
-            else:
-                results = responder.evaluate_answers(self.student_answers, oldcmap)
+            results = responder.evaluate_answers(student_answers, oldcmap)
             newcmap.update(results)
 
         return newcmap
