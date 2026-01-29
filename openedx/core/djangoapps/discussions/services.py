@@ -7,6 +7,7 @@ for the extracted discussion block in xblocks-contrib repository.
 """
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
@@ -17,7 +18,7 @@ class DiscussionConfigService:
     Service for providing discussion-related configuration and feature flags.
     """
 
-    def has_permission(self, user, permission, course_id: CourseKey = None) -> bool:
+    def has_permission(self, user: User, permission: str, course_id: CourseKey = None) -> bool:
         """
         Return whether the user has the given discussion permission for a given course.
         """
