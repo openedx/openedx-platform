@@ -8,6 +8,15 @@ Accepted
 
 Implementation tracked by: https://github.com/openedx/edx-platform/issues/36215
 
+Context for Readers
+*******************
+
+This document describes a long-term architectural effort to simplify how Django settings are structured and derived within edx-platform.
+
+It is primarily intended for platform maintainers and operators. Contributors who are new to edx-platform, Tutor, or Open edX configuration may find it helpful to first review the general configuration documentation before diving into this proposal.
+
+This decision focuses on architectural direction and incremental refactoring rather than immediate user-facing behavior changes.
+
 Context
 *******
 
