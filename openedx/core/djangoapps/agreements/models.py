@@ -83,7 +83,7 @@ class UserAgreement(models.Model):
     type = models.CharField(max_length=255, unique=True)
     name = models.CharField(
         max_length=255,
-        help_text='Human-readable name for the agreement type. Will be displayed to users in alert to accept the agreement.',
+        help_text='Human-readable name for the agreement type. Will be displayed to users in an alert to accept/reject the agreement.',
     )
     summary = models.TextField(
         max_length=1024,
