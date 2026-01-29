@@ -244,7 +244,7 @@ def get_user_agreement_records(user: User) -> Iterable[UserAgreementRecordData]:
     """
     Retrieves all the agreements that the specified user has acknowledged.
     """
-    for agreement_record in UserAgreementRecord.objects.filter(user=user).select_related("agreement"):
+    for agreement_record in UserAgreementRecord.objects.filter(user=user).select_related("agreement", "user"):
         yield UserAgreementRecordData.from_model(agreement_record)
 
 
