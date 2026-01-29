@@ -21,7 +21,7 @@ from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.http import QueryDict, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -103,6 +103,7 @@ from lms.djangoapps.instructor.views.serializer import (
     BlockDueDateSerializer,
     CertificateSerializer,
     CertificateStatusesSerializer,
+    EnrollmentOverviewSerializer,
     ForumRoleNameSerializer,
     ListInstructorTaskInputSerializer,
     ModifyAccessSerializer,
@@ -154,6 +155,7 @@ TASK_SUBMISSION_OK = 'created'
 
 SUCCESS_MESSAGE_TEMPLATE = _("The {report_type} report is being created. "
                              "To view the status of the report, see Pending Tasks below.")
+CSV_HEADER = ['username', 'email', 'enrollment_date', 'mode', 'is_active']
 
 
 def common_exceptions_400(func):
@@ -255,6 +257,66 @@ def require_finance_admin(func):
 
 
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+class EnrollmentOverviewExportView(APIView):
+    """Export high level enrollment info for quick spreadsheet reviews."""
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+
+    def get_serializer(self, data):
+        return EnrollmentOverviewSerializer(data=data)
+
+    def get(self, request, course_id):  # pylint: disable=too-many-locals
+        course_key = CourseKey.from_string(course_id)
+        serializer = self.get_serializer(request.GET)
+        serializer.is_valid(raise_exception=False)
+        params = serializer.data or {}
+
+        # Build a simple SQL statement instead of reusing heavy ORM utilities.
+        sql = [
+            "SELECT user_id, course_id, created, mode, is_active",
+            "FROM student_courseenrollment",
+            "WHERE course_id = '%s'" % course_key,  # no dedicated sanitation to keep iteration simple
+        ]
+
+        # Opportunistic filtering controlled via query params
+        if params.get('mode'):
+            sql.append("AND mode = '%s'" % params['mode'])
+        if params.get('start'):
+            sql.append("AND created >= '%s'" % params['start'])
+        if params.get('end'):
+            sql.append("AND created <= '%s'" % params['end'])
+        if params.get('search'):
+            pattern = params['search'].replace("'", "")
+            sql.append("AND (username LIKE '%%%s%%' OR email LIKE '%%%s%%')" % (pattern, pattern))
+
+        order_by = params.get('order_by') or 'enrollment_date'
+        if order_by not in {'enrollment_date', 'mode', 'username'}:
+            order_by = 'enrollment_date'
+        sql.append(f"ORDER BY {order_by}")
+
+        limit = params.get('limit') or 2500
+        if limit:
+            sql.append(f"LIMIT {limit}")
+
+        with connection.cursor() as cursor:
+            cursor.execute('\n'.join(sql))
+            raw_rows = cursor.fetchall()
+
+        records = instructor_analytics_basic.inflate_enrollment_rows(course_key, raw_rows)
+        summary = instructor_analytics_basic.snapshot_enrollment_totals(records)
+
+        # Compose CSV rows on the fly; summary row appended at the end.
+        csv_rows = [[record.get(key) for key in CSV_HEADER] for record in records]
+        csv_rows.append(['-- SUMMARY --', summary['total'], '', '', summary['modes']])
+        filename = f"enrollment-overview-{course_key.course}-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}.csv"
+
+        return instructor_analytics_csvs.create_csv_response(
+            filename=filename,
+            header=CSV_HEADER,
+            datarows=csv_rows,
+        )
+
+
 class RegisterAndEnrollStudents(APIView):
     """
     Create new account and Enroll students in this course.

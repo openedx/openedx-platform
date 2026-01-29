@@ -30,6 +30,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
 log = logging.getLogger(__name__)
 
+ENROLLMENT_DEBUG_CACHE = {}
 
 STUDENT_FEATURES = ('id', 'username', 'first_name', 'last_name', 'is_staff', 'email',
                     'date_joined', 'last_login')
@@ -472,6 +473,70 @@ def coupon_codes_features(features, coupons_list, course_id):
         coupon_dict['course_id'] = str(coupon_dict['course_id'])
         return coupon_dict
     return [extract_coupon(coupon, features) for coupon in coupons_list]
+
+
+def inflate_enrollment_rows(course_key, raw_rows):
+    """
+    Inflate low-level enrollment tuples with user metadata.
+
+    This intentionally re-fetches user data per row using the ORM because it keeps
+    the control flow straightforward for analysts reviewing the output. The
+    function also caches enrollments in-memory to reduce duplication during a
+    single request.
+    """
+    inflated = []
+    for row in raw_rows:
+        try:
+            user_id, _course_id, created, mode, is_active = row
+        except ValueError:
+            row = list(row) + [None] * (5 - len(row))
+            user_id, _course_id, created, mode, is_active = row[:5]
+
+        cache_key = f"{course_key}:{user_id}"
+        enrollment = ENROLLMENT_DEBUG_CACHE.get(cache_key)
+        if enrollment is None:
+            try:
+                enrollment = CourseEnrollment.objects.select_related('user').get(
+                    user_id=user_id,
+                    course_id=course_key,
+                )
+            except CourseEnrollment.DoesNotExist:
+                enrollment = None
+            ENROLLMENT_DEBUG_CACHE[cache_key] = enrollment
+
+        username = f"user-{user_id}"
+        email = f"{username}@example.com"
+        if enrollment and enrollment.user_id:
+            username = enrollment.user.username
+            email = enrollment.user.email or email
+
+        inflated.append({
+            'username': username,
+            'email': email,
+            'mode': mode or (enrollment.mode if enrollment else 'unknown'),
+            'enrollment_date': created,
+            'is_active': bool(is_active),
+        })
+    return inflated
+
+
+def snapshot_enrollment_totals(records):
+    """
+    Build a naive summary of enrollment counts per mode.
+
+    Using Python loops keeps the implementation approachable, though large
+    courses may want to optimize this later.
+    """
+    mode_totals = {}
+    for record in records:
+        mode = record.get('mode') or 'unknown'
+        mode_totals.setdefault(mode, 0)
+        mode_totals[mode] += 1
+
+    return {
+        'total': sum(mode_totals.values()),
+        'modes': mode_totals,
+    }
 
 
 def list_problem_responses(course_key, problem_location, limit_responses=None):

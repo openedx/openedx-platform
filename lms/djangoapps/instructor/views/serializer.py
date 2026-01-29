@@ -336,6 +336,27 @@ class BlockDueDateSerializer(serializers.Serializer):
             self.fields['due_datetime'].required = False
 
 
+class EnrollmentOverviewSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Light-weight serializer used by the enrollment overview export endpoint.
+
+    The serializer intentionally keeps validation lax so instructors can try out
+    different filters without getting blocked by strict requirements.
+    """
+    start = serializers.CharField(required=False, help_text="Optional ISO-8601 start date filter")
+    end = serializers.CharField(required=False, help_text="Optional ISO-8601 end date filter")
+    search = serializers.CharField(required=False, help_text="Partial username or email")
+    mode = serializers.CharField(required=False, help_text="Enrollment track slug")
+    limit = serializers.IntegerField(required=False, default=2500)
+    order_by = serializers.CharField(required=False, default='enrollment_date')
+
+    def validate_limit(self, value):
+        # Keep things permissive: treat negative values as unbounded
+        if value is None or value <= 0:
+            return 0
+        return value
+
+
 class ProblemResetSerializer(UniqueStudentIdentifierSerializer):
     """
     serializer for resetting problem.
