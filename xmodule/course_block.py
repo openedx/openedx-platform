@@ -12,7 +12,7 @@ import dateutil.parser
 import requests
 from django.conf import settings
 from django.core.validators import validate_email
-from edx_toggles.toggles import SettingDictToggle
+from edx_toggles.toggles import SettingToggle
 from lazy import lazy
 from lxml import etree
 from path import Path as path
@@ -59,8 +59,8 @@ COURSE_VISIBILITY_PRIVATE = 'private'
 COURSE_VISIBILITY_PUBLIC_OUTLINE = 'public_outline'
 COURSE_VISIBILITY_PUBLIC = 'public'
 
-# .. toggle_name: FEATURES['CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: The default behavior, when this is disabled, is that a newly created course has no
 #   enrollment_start date set. When the feature is enabled - the newly created courses will have the
@@ -71,8 +71,8 @@ COURSE_VISIBILITY_PUBLIC = 'public'
 #   the newly created (empty) course from appearing in the course listing.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2023-06-22
-CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE = SettingDictToggle(
-    "FEATURES", "CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE", default=False, module_name=__name__
+CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE = SettingToggle(
+    "CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE", default=False, module_name=__name__
 )
 
 

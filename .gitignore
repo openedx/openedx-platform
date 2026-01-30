@@ -12,6 +12,8 @@ requirements/edx/private.txt
 lms/envs/private.py
 cms/envs/private.py
 .venv/
+CLAUDE.md
+AGENTS.md
 # end-noclean
 
 ### Python artifacts

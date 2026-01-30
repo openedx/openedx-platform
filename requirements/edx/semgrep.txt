@@ -166,11 +166,11 @@ ruamel-yaml==0.19.1
     # via semgrep
 ruamel-yaml-clib==0.2.14
     # via semgrep
-semgrep==1.147.0
+semgrep==1.148.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.1.2
+sse-starlette==3.2.0
     # via mcp
-starlette==0.51.0
+starlette==0.52.1
     # via
     #   mcp
     #   sse-starlette

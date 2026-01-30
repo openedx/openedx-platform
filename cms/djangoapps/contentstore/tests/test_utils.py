@@ -892,8 +892,8 @@ class UpdateCourseDetailsTests(ModuleStoreTestCase):
 
     @patch.dict("django.conf.settings.FEATURES", {
         "ENABLE_PREREQUISITE_COURSES": False,
-        "ENTRANCE_EXAMS": False,
     })
+    @override_settings(ENTRANCE_EXAMS=False)
     @patch("cms.djangoapps.contentstore.utils.CourseDetails.update_from_json")
     def test_update_course_details_self_paced(self, mock_update):
         """
@@ -918,8 +918,8 @@ class UpdateCourseDetailsTests(ModuleStoreTestCase):
 
     @patch.dict("django.conf.settings.FEATURES", {
         "ENABLE_PREREQUISITE_COURSES": False,
-        "ENTRANCE_EXAMS": False,
     })
+    @override_settings(ENTRANCE_EXAMS=False)
     @patch("cms.djangoapps.contentstore.utils.CourseDetails.update_from_json")
     def test_update_course_details_instructor_paced(self, mock_update):
         """

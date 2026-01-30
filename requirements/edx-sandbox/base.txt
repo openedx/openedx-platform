@@ -56,7 +56,7 @@ numpy==1.26.4
     #   matplotlib
     #   openedx-calc
     #   scipy
-openedx-calc==4.0.2
+openedx-calc==4.0.3
     # via -r requirements/edx-sandbox/base.in
 packaging==25.0
     # via matplotlib
@@ -74,7 +74,7 @@ python-dateutil==2.9.0.post0
     # via matplotlib
 random2==1.0.2
     # via -r requirements/edx-sandbox/base.in
-regex==2025.11.3
+regex==2026.1.15
     # via nltk
 scipy==1.17.0
     # via

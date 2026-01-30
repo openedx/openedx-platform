@@ -289,3 +289,18 @@ class BlockMigrationInfoSerializer(serializers.Serializer):
     source_key = serializers.CharField()
     target_key = serializers.CharField(allow_null=True)
     unsupported_reason = serializers.CharField(allow_null=True)
+
+
+class PreviewMigrationSerializer(serializers.Serializer):
+    """
+    Serializer for the preview migration response.
+    """
+    state = serializers.CharField()
+    unsupported_blocks = serializers.IntegerField()
+    unsupported_percentage = serializers.FloatField()
+    blocks_limit = serializers.IntegerField()
+    total_blocks = serializers.IntegerField()
+    total_components = serializers.IntegerField()
+    sections = serializers.IntegerField()
+    subsections = serializers.IntegerField()
+    units = serializers.IntegerField()

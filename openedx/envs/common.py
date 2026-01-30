@@ -1347,15 +1347,6 @@ MARK_LIBRARY_CONTENT_BLOCK_COMPLETE_ON_VIEW = False
 # .. toggle_tickets: 'https://github.com/open-craft/edx-platform/pull/429'
 DISABLE_UNENROLLMENT = False
 
-# .. toggle_name: ENABLE_GRADING_METHOD_IN_PROBLEMS
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Enables the grading method feature in capa problems.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2024-03-22
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/33911
-ENABLE_GRADING_METHOD_IN_PROBLEMS = False
-
 # .. toggle_name: BADGES_ENABLED
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

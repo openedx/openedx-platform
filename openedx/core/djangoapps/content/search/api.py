@@ -5,10 +5,11 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import Callable, Generator
+from typing import Callable, Generator, cast
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -60,6 +61,8 @@ log = logging.getLogger(__name__)
 User = get_user_model()
 
 STUDIO_INDEX_SUFFIX = "studio_content"
+
+Filter = str | list[str | list[str]]
 
 if hasattr(settings, "MEILISEARCH_INDEX_PREFIX"):
     STUDIO_INDEX_NAME = settings.MEILISEARCH_INDEX_PREFIX + STUDIO_INDEX_SUFFIX
@@ -981,3 +984,96 @@ def generate_user_token_for_studio_search(request):
         "index_name": STUDIO_INDEX_NAME,
         "api_key": restricted_api_key,
     }
+
+
+def force_array(extra_filter: Filter | None = None) -> list[str]:
+    """
+    Convert a filter value into a list of strings.
+
+    Strings are wrapped in a list, lists are returned as-is (cast to `list[str]`),
+    and None results in an empty list.
+    """
+    if isinstance(extra_filter, str):
+        return [extra_filter]
+    if isinstance(extra_filter, list):
+        return cast(list[str], extra_filter)
+    return []
+
+
+def fetch_block_types(extra_filter: Filter | None = None):
+    """
+    Fetch the block types facet distribution for the search results.
+
+    This data may not always be 100% accurate / up to date because it's based
+    on the search index, so this should only be used for analysis/estimation
+    purposes.
+
+    Params:
+    - extra_filter: Filters the query. Example: ['context_key = "course-v1:SampleTaxonomyOrg1+CC22+CC22"']
+
+    Return example:
+    {
+        ...
+        'estimatedTotalHits': 5,
+        'facetDistribution': {
+            'block_type': {
+                'html': 2,
+                'problem': 1,
+                'video': 2,
+            }
+        },
+    }
+    """
+    extra_filter_formatted = force_array(extra_filter)
+
+    client = _get_meilisearch_client()
+    index = client.get_index(STUDIO_INDEX_NAME)
+
+    response = index.search(
+        "",
+        {
+            "facets": ["block_type"],
+            "filter": extra_filter_formatted,
+            "limit": 0,
+        }
+    )
+
+    return response
+
+
+def get_all_blocks_from_context(
+    context_key: str,
+    extra_attributes_to_retrieve: list[str] | None = None,
+) -> Iterator[dict]:
+    """
+    Lazily yields all blocks for a given context key using Meilisearch pagination.
+    Meilisearch works with limits of 1000 maximum; ensuring we obtain all blocks
+    requires making several queries.
+
+    This data may not always be 100% accurate / up to date because it's based
+    on the search index, so this should only be used for analysis/estimation
+    purposes.
+    """
+    limit = 1000
+    offset = 0
+
+    client = _get_meilisearch_client()
+    index = client.get_index(STUDIO_INDEX_NAME)
+
+    while True:
+        response = index.search(
+            "",
+            {
+                "filter": [f'context_key = "{context_key}"'],
+                "limit": limit,
+                "offset": offset,
+                "attributesToRetrieve": ["usage_key"] + (extra_attributes_to_retrieve or []),
+            }
+        )
+
+        yield from response["hits"]
+
+        if response["estimatedTotalHits"] <= offset + limit:
+            break
+
+        offset += limit

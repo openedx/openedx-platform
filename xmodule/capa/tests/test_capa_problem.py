@@ -8,8 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import ddt
 import pytest
-from django.conf import settings
-from django.test import override_settings
 from lxml import etree
 from markupsafe import Markup
 
@@ -18,9 +16,6 @@ from xmodule.capa.correctmap import CorrectMap
 from xmodule.capa.responsetypes import LoncapaProblemError
 from xmodule.capa.tests.helpers import new_loncapa_problem
 from xmodule.capa.tests.test_util import UseUnsafeCodejail
-
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS = settings.FEATURES.copy()
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS["ENABLE_GRADING_METHOD_IN_PROBLEMS"] = True
 
 
 @ddt.ddt
@@ -752,7 +747,6 @@ class CAPAProblemReportHelpersTest(unittest.TestCase):
         # function can eventualy be serialized to json without issues.
         assert isinstance(problem.get_question_answers()["1_solution_1"], str)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_get_grade_from_current_answers(self):
         """
         Verify that `responder.evaluate_answers` is called with `student_answers`
@@ -786,7 +780,6 @@ class CAPAProblemReportHelpersTest(unittest.TestCase):
             self.assertDictEqual(result.get_dict(), correct_map.get_dict())
             responder_mock.evaluate_answers.assert_called_once_with(student_answers, correct_map)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_get_grade_from_current_answers_without_student_answers(self):
         """
         Verify that `responder.evaluate_answers` is called with appropriate arguments.
@@ -820,7 +813,6 @@ class CAPAProblemReportHelpersTest(unittest.TestCase):
             self.assertDictEqual(result.get_dict(), correct_map.get_dict())
             responder_mock.evaluate_answers.assert_called_once_with(None, correct_map)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_get_grade_from_current_answers_with_filesubmission(self):
         """
         Verify that an exception is raised when `responder.evaluate_answers` is called

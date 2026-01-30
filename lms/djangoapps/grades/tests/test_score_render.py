@@ -1,5 +1,5 @@
 """
-Test for xmodule.capa.score_render module
+Test for lms.djangoapps.grades.score_render module
 """
 
 import json
@@ -10,8 +10,11 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from common.djangoapps.student.models import AnonymousUserId
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.grades.score_render import (
+    get_block_for_descriptor_without_access_check,
+    load_xblock_for_external_grader
+)
 from lms.djangoapps.grades.signals.handlers import handle_external_grader_score
-from xmodule.capa.score_render import get_block_for_descriptor_without_access_check, load_xblock_for_external_grader
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -59,8 +62,8 @@ class TestScoreRender(ModuleStoreTestCase):
             user=self.user, anonymous_user_id=self.anonymous_user_id, course_id=self.course.id
         )
 
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.FieldDataCache")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.FieldDataCache")
     def test_load_xblock_for_external_grader(self, mock_field_data_cache, mock_modulestore):
         """
         Test loading an XBlock for external grading.
@@ -70,7 +73,9 @@ class TestScoreRender(ModuleStoreTestCase):
         mock_modulestore.return_value.get_item.return_value = MagicMock()
         mock_field_data_cache.cache_for_block_descendents.return_value = MagicMock()
 
-        with patch("xmodule.capa.score_render.get_block_for_descriptor_without_access_check") as mock_get_block:
+        with patch(
+            "lms.djangoapps.grades.score_render.get_block_for_descriptor_without_access_check"
+        ) as mock_get_block:
             mock_get_block.return_value = MagicMock()
 
             # Call the function
@@ -84,8 +89,8 @@ class TestScoreRender(ModuleStoreTestCase):
             mock_field_data_cache.cache_for_block_descendents.assert_called_once()
             mock_get_block.assert_called_once()
 
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.AnonymousUserId.objects.get")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.AnonymousUserId.objects.get")
     def test_load_xblock_for_external_grader_missing_block(self, mock_anon_user, mock_modulestore):
         """
         Test that Http404 is raised when the block is not found.
@@ -101,7 +106,7 @@ class TestScoreRender(ModuleStoreTestCase):
                 self.anonymous_user_id, str(self.course.id), str(self.problem.location), self.course
             )
 
-    @patch("xmodule.capa.score_render.prepare_runtime_for_user")
+    @patch("lms.djangoapps.grades.score_render.prepare_runtime_for_user")
     def test_get_block_for_descriptor_without_access_check(self, mock_prepare_runtime):
         """
         Test initializing an XBlock instance without access checks.
@@ -121,8 +126,8 @@ class TestScoreRender(ModuleStoreTestCase):
         mock_prepare_runtime.assert_called_once()
         block.bind_for_student.assert_called_once()
 
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.load_xblock_for_external_grader")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.load_xblock_for_external_grader")
     def test_handle_external_grader_score_json_string(self, mock_load_xblock, mock_modulestore):
         """
         Test handling an external grader score with a JSON string message.
@@ -166,8 +171,8 @@ class TestScoreRender(ModuleStoreTestCase):
         self.assertIn("queuekey", ajax_args[1])
         mock_instance.save.assert_called_once()
 
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.load_xblock_for_external_grader")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.load_xblock_for_external_grader")
     def test_handle_external_grader_score_plain_text(self, mock_load_xblock, mock_modulestore):
         """
         Test handling an external grader score with a plain text message.
@@ -200,8 +205,8 @@ class TestScoreRender(ModuleStoreTestCase):
 
         mock_instance.save.assert_not_called()
 
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.load_xblock_for_external_grader")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.load_xblock_for_external_grader")
     def test_handle_external_grader_score_exception(self, mock_load_xblock, mock_modulestore):
         """
         Test handling an exception during score processing.
@@ -225,10 +230,10 @@ class TestScoreRender(ModuleStoreTestCase):
         with self.assertRaises(Exception):
             handle_external_grader_score(None, None, score)
 
-    @patch("xmodule.capa.score_render.AnonymousUserId.objects.get")
-    @patch("xmodule.capa.score_render.modulestore")
-    @patch("xmodule.capa.score_render.FieldDataCache")
-    @patch("xmodule.capa.score_render.get_block_for_descriptor_without_access_check")
+    @patch("lms.djangoapps.grades.score_render.AnonymousUserId.objects.get")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.FieldDataCache")
+    @patch("lms.djangoapps.grades.score_render.get_block_for_descriptor_without_access_check")
     def test_load_xblock_for_external_grader_none_instance(
         self, mock_get_block, mock_field_data_cache, mock_modulestore, mock_anon_user
     ):
@@ -276,13 +281,13 @@ class TestScoreRenderIntegration(ModuleStoreTestCase):
             user=self.user, anonymous_user_id=self.anonymous_user_id, course_id=self.course.id
         )
 
-    @patch("xmodule.capa.score_render.modulestore")
+    @patch("lms.djangoapps.grades.score_render.modulestore")
     def test_end_to_end_grading_flow(self, mock_modulestore):  # pylint: disable=unused-argument
         """
         Test the end-to-end flow from receiving a score event to updating the grade.
         """
         # Mock the internal call to load_xblock_for_external_grader
-        with patch("xmodule.capa.score_render.load_xblock_for_external_grader") as mock_load_xblock:
+        with patch("lms.djangoapps.grades.score_render.load_xblock_for_external_grader") as mock_load_xblock:
             # Setup the mock XBlock instance
             mock_instance = MagicMock()
             mock_load_xblock.return_value = mock_instance

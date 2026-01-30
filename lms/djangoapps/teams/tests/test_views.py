@@ -16,6 +16,7 @@ from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.signals import post_save
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import translation
 from elasticsearch.exceptions import ConnectionError  # lint-amnesty, pylint: disable=redefined-builtin
@@ -1673,7 +1674,7 @@ class TestUpdateTeamAPI(EventTestMixin, TeamAPITestCase):
             assert team['name'] == 'foo'
 
 
-@patch.dict(settings.FEATURES, {'ENABLE_ORA_TEAM_SUBMISSIONS': True})
+@override_settings(ENABLE_ORA_TEAM_SUBMISSIONS=True)
 @ddt.ddt
 class TestTeamAssignmentsView(TeamAPITestCase):
     """ Tests for the TeamAssignmentsView """
@@ -1756,7 +1757,7 @@ class TestTeamAssignmentsView(TeamAPITestCase):
         expected_status = 404
         self.get_team_assignments(team_id, expected_status, user=user)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_ORA_TEAM_SUBMISSIONS': False})
+    @override_settings(ENABLE_ORA_TEAM_SUBMISSIONS=False)
     def test_get_assignments_feature_not_enabled(self):
         # Given the team submissions feature is not enabled
         user = 'student_enrolled'

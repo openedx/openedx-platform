@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import ddt
 import pytest
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.test import override_settings
 from milestones import api as milestones_api
 from milestones.exceptions import InvalidCourseKeyException, InvalidUserException
 from milestones.models import MilestoneRelationshipType
@@ -16,7 +16,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-a
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
-@patch.dict(settings.FEATURES, {'MILESTONES_APP': False})
+@override_settings(MILESTONES_APP=False)
 @ddt.ddt
 class MilestonesHelpersTestCase(ModuleStoreTestCase):
     """
@@ -61,8 +61,7 @@ class MilestonesHelpersTestCase(ModuleStoreTestCase):
 
         with patch.dict("django.conf.settings.FEATURES", {
             'ENABLE_PREREQUISITE_COURSES': feature_flags[0],
-            'MILESTONES_APP': feature_flags[1]
-        }):
+        }), override_settings(MILESTONES_APP=feature_flags[1]):
             assert feature_flags[2] == milestones_helpers.is_prerequisite_courses_enabled()
 
     def test_add_milestone_returns_none_when_app_disabled(self):
@@ -123,7 +122,7 @@ class MilestonesHelpersTestCase(ModuleStoreTestCase):
         response = milestones_helpers.get_service()
         assert response is None
 
-    @patch.dict(settings.FEATURES, {'MILESTONES_APP': True})
+    @override_settings(MILESTONES_APP=True)
     def test_any_unfulfilled_milestones(self):
         """
         Tests any_unfulfilled_milestones for invalid arguments with the app enabled.
@@ -137,7 +136,7 @@ class MilestonesHelpersTestCase(ModuleStoreTestCase):
         with pytest.raises(InvalidUserException):
             milestones_helpers.any_unfulfilled_milestones(self.course.id, None)
 
-    @patch.dict(settings.FEATURES, {'MILESTONES_APP': True})
+    @override_settings(MILESTONES_APP=True)
     def test_get_required_content_with_anonymous_user(self):
         course = CourseFactory()
 

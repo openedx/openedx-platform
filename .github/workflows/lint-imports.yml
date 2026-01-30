@@ -42,7 +42,7 @@ jobs:
       - name: Install python dependencies
         run: make dev-requirements
 
-      # As long there are sub-projects[1] in edx-platform, we analyze each
+      # As long there are sub-projects[1] in openedx-platform, we analyze each
       # project separately here, in order to make import-linting errors easier
       # to pinpoint.
       #

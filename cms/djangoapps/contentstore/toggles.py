@@ -1,13 +1,13 @@
 """
 CMS feature toggles.
 """
-from edx_toggles.toggles import SettingDictToggle, WaffleFlag
+from edx_toggles.toggles import SettingToggle, WaffleFlag
 from openedx.core.djangoapps.content.search import api as search_api
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 
-# .. toggle_name: FEATURES['ENABLE_EXPORT_GIT']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: ENABLE_EXPORT_GIT
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: When enabled, a "Export to Git" menu item is added to the course studio for courses that have a
 #   valid "giturl" attribute. Exporting a course to git causes the course to be exported in the directory indicated by
@@ -17,8 +17,8 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 #   existing directory.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2014-02-13
-EXPORT_GIT = SettingDictToggle(
-    "FEATURES", "ENABLE_EXPORT_GIT", default=False, module_name=__name__
+EXPORT_GIT = SettingToggle(
+    "ENABLE_EXPORT_GIT", default=False, module_name=__name__
 )
 
 # Namespace for studio dashboard waffle flags.
@@ -406,8 +406,8 @@ def default_enable_flexible_peer_openassessments(course_key):
     return DEFAULT_ENABLE_FLEXIBLE_PEER_OPENASSESSMENTS.is_enabled(course_key)
 
 
-# .. toggle_name: FEATURES['ENABLE_CONTENT_LIBRARIES']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: ENABLE_CONTENT_LIBRARIES
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: True
 # .. toggle_description: Enables use of the legacy and v2 libraries waffle flags.
 #    Note that legacy content libraries are only supported in courses using split mongo.
@@ -416,8 +416,8 @@ def default_enable_flexible_peer_openassessments(course_key):
 # .. toggle_target_removal_date: 2025-04-09
 # .. toggle_warning: This flag is deprecated in Sumac, and will be removed in favor of the disable_legacy_libraries and
 #    disable_new_libraries waffle flags.
-ENABLE_CONTENT_LIBRARIES = SettingDictToggle(
-    "FEATURES", "ENABLE_CONTENT_LIBRARIES", default=True, module_name=__name__
+ENABLE_CONTENT_LIBRARIES = SettingToggle(
+    "ENABLE_CONTENT_LIBRARIES", default=True, module_name=__name__
 )
 
 # .. toggle_name: contentstore.new_studio_mfe.disable_legacy_libraries

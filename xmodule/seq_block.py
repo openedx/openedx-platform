@@ -23,7 +23,7 @@ from xblock.exceptions import NoSuchServiceError
 from xblock.fields import Boolean, Date, Integer, List, Scope, String
 from xblock.progress import Progress
 
-from edx_toggles.toggles import WaffleFlag, SettingDictToggle
+from edx_toggles.toggles import WaffleFlag, SettingToggle
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
 from xmodule.x_module import (
     ResourceTemplates,
@@ -54,14 +54,14 @@ TIMED_EXAM_GATING_WAFFLE_FLAG = WaffleFlag(  # lint-amnesty, pylint: disable=tog
     'xmodule.rev_1377_rollout', __name__
 )
 
-# .. toggle_name: FEATURES['SHOW_PROGRESS_BAR']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: SHOW_PROGRESS_BAR
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: Set to True to show progress bar.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2022-02-09
 # .. toggle_target_removal_date: None
-SHOW_PROGRESS_BAR = SettingDictToggle("FEATURES", "SHOW_PROGRESS_BAR", default=False, module_name=__name__)
+SHOW_PROGRESS_BAR = SettingToggle("SHOW_PROGRESS_BAR", default=False, module_name=__name__)
 
 
 class SequenceFields:  # lint-amnesty, pylint: disable=missing-class-docstring

@@ -9,7 +9,6 @@ import pytest
 import ddt
 from zoneinfo import ZoneInfo
 
-from django.conf import settings
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
@@ -33,10 +32,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
 
     @ddt.data(True, False)
     def test_virgin_fetch(self, should_have_default_enroll_start):
-        features = settings.FEATURES.copy()
-        features['CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE'] = should_have_default_enroll_start
-
-        with override_settings(FEATURES=features):
+        with override_settings(CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE=should_have_default_enroll_start):
             course = CourseFactory.create(default_enrollment_start=should_have_default_enroll_start)
             details = CourseDetails.fetch(course.id)
             wrong_enrollment_start_msg = (

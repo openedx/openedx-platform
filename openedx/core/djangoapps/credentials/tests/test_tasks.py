@@ -549,7 +549,7 @@ class TestSendGradeIfInteresting(TestCase):
         _mock_is_learner_issuance_enabled
     ):
         assert is_learner_records_enabled()
-        with override_settings(FEATURES={"ENABLE_LEARNER_RECORDS": False}):
+        with override_settings(ENABLE_LEARNER_RECORDS=False):
             assert not is_learner_records_enabled()
             tasks.send_grade_if_interesting(self.user, self.key, 'verified', 'downloadable', None, None)
         assert not mock_send_grade_to_credentials.delay.called

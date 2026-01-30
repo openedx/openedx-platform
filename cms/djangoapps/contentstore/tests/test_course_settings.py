@@ -388,15 +388,15 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         (True, True, True),
     )
     @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
+    @override_settings(MILESTONES_APP=False)
     def test_visibility_of_entrance_exam_section(self, feature_flags):
         """
         Tests entrance exam section is available if ENTRANCE_EXAMS feature is enabled no matter any other
         feature is enabled or disabled i.e ENABLE_PUBLISHER.
         """
         with patch.dict("django.conf.settings.FEATURES", {
-            'ENTRANCE_EXAMS': feature_flags[0],
             'ENABLE_PUBLISHER': feature_flags[1]
-        }):
+        }), override_settings(ENTRANCE_EXAMS=feature_flags[0]):
             course_details_url = get_url(self.course.id)
             resp = self.client.get_html(course_details_url)
             self.assertEqual(
@@ -405,14 +405,15 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
             )
 
     @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
+    @override_settings(MILESTONES_APP=False)
+    @override_settings(ENTRANCE_EXAMS=False)
     def test_marketing_site_fetch(self):
         settings_details_url = get_url(self.course.id)
 
         with mock.patch.dict('django.conf.settings.FEATURES', {
             'ENABLE_PUBLISHER': True,
             'ENABLE_MKTG_SITE': True,
-            'ENTRANCE_EXAMS': False,
-            'ENABLE_PREREQUISITE_COURSES': False
+            'ENABLE_PREREQUISITE_COURSES': False,
         }):
             response = self.client.get_html(settings_details_url)
             self.assertNotContains(response, "Course Summary Page")
@@ -1128,7 +1129,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('showanswer', test_model, 'showanswer field ')
         self.assertIn('xqa_key', test_model, 'xqa_key field ')
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': True})
+    @override_settings(ENABLE_EXPORT_GIT=True)
     def test_fetch_giturl_present(self):
         """
         If feature flag ENABLE_EXPORT_GIT is on, show the setting as a non-deprecated Advanced Setting.
@@ -1136,7 +1137,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertIn('giturl', test_model)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': False})
+    @override_settings(ENABLE_EXPORT_GIT=False)
     def test_fetch_giturl_not_present(self):
         """
         If feature flag ENABLE_EXPORT_GIT is off, don't show the setting at all on the Advanced Settings page.
@@ -1172,7 +1173,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         test_model = CourseMetadata.fetch(self.fullcourse)
         self.assertNotIn('proctoring_escalation_email', test_model)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': False})
+    @override_settings(ENABLE_EXPORT_GIT=False)
     def test_validate_update_filtered_off(self):
         """
         If feature flag is off, then giturl must be filtered.
@@ -1187,7 +1188,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertNotIn('giturl', test_model)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': True})
+    @override_settings(ENABLE_EXPORT_GIT=True)
     def test_validate_update_filtered_on(self):
         """
         If feature flag is on, then giturl must not be filtered.
@@ -1202,7 +1203,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('giturl', test_model)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': True})
+    @override_settings(ENABLE_EXPORT_GIT=True)
     def test_update_from_json_filtered_on(self):
         """
         If feature flag is on, then giturl must be updated.
@@ -1216,7 +1217,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         )
         self.assertIn('giturl', test_model)
 
-    @patch.dict(settings.FEATURES, {'ENABLE_EXPORT_GIT': False})
+    @override_settings(ENABLE_EXPORT_GIT=False)
     def test_update_from_json_filtered_off(self):
         """
         If feature flag is on, then giturl must not be updated.

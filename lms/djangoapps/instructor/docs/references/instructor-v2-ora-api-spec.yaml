@@ -220,6 +220,7 @@ definitions:
       - waiting
       - staff
       - final_grade_received
+      - staff_ora_grading_url
     properties:
       block_id:
         type: string
@@ -268,7 +269,11 @@ definitions:
         minimum: 0
         description: Responses with final grade assigned
         example: 20
-
+      staff_ora_grading_url:
+        type: string
+        format: uri
+        description: URL to the staff grading interface for this ORA assessment
+        example: "http://apps.local.openedx.io:1993/ora-grading/block-v1:WGU+CS002+2025_T1+type@openassessment+block@ff4f5fddf42d4b9787e69c1a8cbeb058"
   Error:
     type: object
     description: Error response

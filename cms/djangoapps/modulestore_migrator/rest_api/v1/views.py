@@ -41,6 +41,7 @@ from .serializers import (
     MigrationInfoResponseSerializer,
     ModulestoreMigrationSerializer,
     StatusWithModulestoreMigrationsSerializer,
+    PreviewMigrationSerializer,
 )
 
 log = logging.getLogger(__name__)
@@ -667,4 +668,89 @@ class BlockMigrationInfo(APIView):
             ]
         ]
         serializer = BlockMigrationInfoSerializer(data, many=True)
+        return Response(serializer.data)
+
+
+class PreviewMigration(APIView):
+    """
+    Retrieve the summary preview of the migration given a source key and a target key
+
+    It returns the migration block information for each block migrated by a specific task.
+
+    API Endpoints
+    -------------
+    GET /api/modulestore_migrator/v1/migration_preview/
+        Retrieve the summary preview of the migration given a source key and a target key
+
+        Query parameters:
+            source_key (str): Source content key
+                Example: ?source_key=course-v1:UNIX+UX1+2025_T3
+            target_key (str): target content key
+                Example: ?target_key=lib:UNIX:CIT1
+
+        Example request:
+            GET /api/modulestore_migrator/v1/migration_blocks/?source_key=course_key&target_key=library_key
+
+        Example response:
+    """
+
+    permission_classes = (IsAuthenticated,)
+    authentication_classes = (
+        BearerAuthenticationAllowInactiveUser,
+        JwtAuthentication,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                "target_key",
+                apidocs.ParameterLocation.QUERY,
+                description="Target key of the migration",
+            ),
+            apidocs.string_parameter(
+                "source_key",
+                apidocs.ParameterLocation.QUERY,
+                description="Source key of the migration",
+            ),
+        ],
+        responses={
+            200: PreviewMigrationSerializer,
+            400: "Missing required parameter: target_key/source_key",
+            401: "The requester is not authenticated.",
+        },
+    )
+    def get(self, request: Request):
+        """
+        Handle the migration info `GET` request
+        """
+        target_key: LibraryLocatorV2 | None
+        if target_key_param := request.query_params.get("target_key"):
+            try:
+                target_key = LibraryLocatorV2.from_string(target_key_param)
+            except InvalidKeyError:
+                return Response({"error": f"Bad target_key: {target_key_param}"}, status=400)
+        else:
+            return Response({"error": "Target key cannot be blank."}, status=400)
+        source_key: SourceContextKey | None = None
+        if source_key_param := request.query_params.get("source_key"):
+            try:
+                source_key = CourseLocator.from_string(source_key_param)
+            except InvalidKeyError:
+                try:
+                    source_key = LibraryLocator.from_string(source_key_param)
+                except InvalidKeyError:
+                    return Response({"error": f"Bad source: {source_key_param}"}, status=400)
+        else:
+            return Response({"error": "Source key cannot be blank."}, status=400)
+
+        lib_api.require_permission_for_library_key(
+            target_key,
+            request.user,
+            lib_api.permissions.CAN_EDIT_THIS_CONTENT_LIBRARY,
+        )
+        result = migrator_api.preview_migration(source_key, target_key)
+
+        serializer = PreviewMigrationSerializer(result)
+
         return Response(serializer.data)

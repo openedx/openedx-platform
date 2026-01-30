@@ -5,6 +5,7 @@ Tests use cases related to LMS Entrance Exam behavior, such as gated content acc
 
 from unittest.mock import patch
 from crum import set_current_request
+from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
 from lms.djangoapps.courseware.entrance_exams import (
@@ -36,7 +37,7 @@ from common.djangoapps.util.milestones_helpers import (
 )
 
 
-@patch.dict('django.conf.settings.FEATURES', {'ENTRANCE_EXAMS': True})
+@override_settings(ENTRANCE_EXAMS=True)
 class EntranceExamTestCases(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTestCaseMixin):
     """
     Check that content is properly gated.
@@ -44,7 +45,7 @@ class EntranceExamTestCases(LoginEnrollmentTestCase, ModuleStoreTestCase, Milest
     Creates a test course from scratch. The tests below are designed to execute
     workflows regardless of the feature flag settings.
     """
-    @patch.dict('django.conf.settings.FEATURES', {'ENTRANCE_EXAMS': True})
+    @override_settings(ENTRANCE_EXAMS=True)
     def setUp(self):
         """
         Test case scaffolding
