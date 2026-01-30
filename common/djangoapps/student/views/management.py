@@ -89,6 +89,7 @@ from common.djangoapps.util.db import outer_atomic
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.student.signals import USER_EMAIL_CHANGED
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_toggles.toggles import WaffleFlag
 
 log = logging.getLogger("edx.student")
 
@@ -109,6 +110,19 @@ REGISTRATION_UTM_PARAMETERS = {
 }
 REGISTRATION_UTM_CREATED_AT = 'registration_utm_created_at'
 USER_ACCOUNT_ACTIVATED = 'edx.user.account.activated'
+
+# .. toggle_name: user_authn.enable_ses_for_account_activation
+# .. toggle_implementation: WaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Route account activation emails via SES using ACE.
+# .. toggle_use_cases: opt_in, temporary
+# .. toggle_creation_date: 2026-01-22
+# .. toggle_target_removal_date: None
+# .. toggle_warning: This toggle controls email delivery routing and should be enabled cautiously.
+ENABLE_SES_FOR_ACCOUNT_ACTIVATION = WaffleFlag(
+    'user_authn.enable_ses_for_account_activation',
+    __name__,
+)
 
 
 def csrf_token(context):
@@ -229,6 +243,21 @@ def compose_activation_email(
         language=preferences_api.get_user_preference(user, LANGUAGE_KEY),
         user_context=message_context,
     )
+    if ENABLE_SES_FOR_ACCOUNT_ACTIVATION.is_enabled():
+        log.info(
+            "ACCOUNT ACTIVATION EMAIL | SES flag=%s | override_channel=%s",
+            ENABLE_SES_FOR_ACCOUNT_ACTIVATION.is_enabled(),
+            msg.options.get('override_default_channel')
+        )
+        msg.options.update({
+            'transactional': True,
+            'override_default_channel': 'django_email',
+            'from_address': configuration_helpers.get_value(
+                'ACTIVATION_EMAIL_FROM_ADDRESS'
+            ) or configuration_helpers.get_value(
+                'email_from_address', settings.DEFAULT_FROM_EMAIL
+            ),
+        })
 
     return msg
 
