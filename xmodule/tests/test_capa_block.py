@@ -17,7 +17,6 @@ import pytest
 import requests
 import webob
 from codejail.safe_exec import SafeExecException
-from django.conf import settings
 from django.test import override_settings
 from django.utils.encoding import smart_str
 from lxml import etree
@@ -44,9 +43,6 @@ from xmodule.tests import DATA_DIR
 
 from ..capa_block import RANDOMIZATION, SHOWANSWER
 from . import get_test_system
-
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS = settings.FEATURES.copy()
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS["ENABLE_GRADING_METHOD_IN_PROBLEMS"] = True
 
 
 class CapaFactory:
@@ -835,16 +831,14 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         # and that this was considered attempt number 2 for grading purposes
         assert block.lcp.context["attempt"] == 2
 
-    @patch("xmodule.capa_block.ProblemBlock.get_score_with_grading_method")
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_with_grading_method_disable(
-        self, mock_html: Mock, mock_is_correct: Mock, mock_get_score: Mock
+        self, mock_html: Mock, mock_is_correct: Mock
     ):
         """
-        Test that the grading method is disabled by default. Then, the
-        `get_score_with_grading_method` method should not be called, and
-        always the last attempt as the final score.
+        Test that without a specific grading method, the score behaves as
+        standard (Last Attempt).
         """
         block = CapaFactory.create(attempts=0, max_attempts=3)
         mock_html.return_value = "Test HTML"
@@ -858,7 +852,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.attempts == 1
         assert block.lcp.context["attempt"] == 1
         assert block.score == Score(raw_earned=1, raw_possible=1)
-        mock_get_score.assert_not_called()
 
         # Second Attempt
         mock_is_correct.return_value = False
@@ -869,7 +862,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.attempts == 2
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
-        mock_get_score.assert_not_called()
 
         # Third Attempt
         mock_is_correct.return_value = True
@@ -880,9 +872,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.attempts == 3
         assert block.lcp.context["attempt"] == 3
         assert block.score == Score(raw_earned=1, raw_possible=1)
-        mock_get_score.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_with_grading_method_enable(self, mock_html: Mock, mock_is_correct: Mock):
@@ -907,126 +897,110 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
-    def test_submit_problem_grading_method_disable_to_enable(self, mock_html: Mock, mock_is_correct: Mock):
+    def test_submit_problem_grading_method_always_enabled(self, mock_html: Mock, mock_is_correct: Mock):
         """
-        Test when the grading method is disabled and then enabled.
+        Test problem submission when grading method is always enabled by default.
 
-        When the grading method is disabled, the final score is always the last attempt.
-        When the grading method is enabled, the final score is calculated according to the grading method.
-        """
-        block = CapaFactory.create(attempts=0, max_attempts=4)
-        mock_html.return_value = "Test HTML"
-
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # First Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 1
-            assert block.lcp.context["attempt"] == 1
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-            # Second Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.50"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 2
-            assert block.lcp.context["attempt"] == 2
-            assert block.score == Score(raw_earned=0, raw_possible=1)
-
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            # Third Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.96"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 3
-            assert block.lcp.context["attempt"] == 3
-            assert block.score == Score(raw_earned=0, raw_possible=1)
-
-            # Fourth Attempt
-            block.grading_method = "highest_score"
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.99"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 4
-            assert block.lcp.context["attempt"] == 4
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
-    def test_submit_problem_grading_method_enable_to_disable(self, mock_html: Mock, mock_is_correct: Mock):
-        """
-        Test when the grading method is enabled and then disabled.
-
-        When the grading method is enabled, the final score is calculated according to the grading method.
-        When the grading method is disabled, the final score is always the last attempt.
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
         """
         block = CapaFactory.create(attempts=0, max_attempts=4, grading_method="highest_score")
         mock_html.return_value = "Test HTML"
 
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            # First Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
+        # First Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 1
-            assert block.lcp.context["attempt"] == 1
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 1
+        assert block.lcp.context["attempt"] == 1
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-            # Second Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.50"}
+        # Second Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.50"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 2
-            assert block.lcp.context["attempt"] == 2
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 2
+        assert block.lcp.context["attempt"] == 2
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # Third Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.96"}
+        # Third Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.96"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 3
-            assert block.lcp.context["attempt"] == 3
-            assert block.score == Score(raw_earned=0, raw_possible=1)
+        assert block.attempts == 3
+        assert block.lcp.context["attempt"] == 3
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-            # Fourth Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
+        # Fourth Attempt
+        block.grading_method = "highest_score"
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.99"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 4
-            assert block.lcp.context["attempt"] == 4
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 4
+        assert block.lcp.context["attempt"] == 4
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
+    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    def test_submit_problem_grading_method_always_enabled_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
+        """
+        Test problem submission when grading method is always enabled by default
+        with 'highest_score' grading method.
+
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
+        """
+        block = CapaFactory.create(attempts=0, max_attempts=4, grading_method="highest_score")
+        mock_html.return_value = "Test HTML"
+
+        # First Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 1
+        assert block.lcp.context["attempt"] == 1
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Second Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.50"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 2
+        assert block.lcp.context["attempt"] == 2
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Third Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.96"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 3
+        assert block.lcp.context["attempt"] == 3
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Fourth Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 4
+        assert block.lcp.context["attempt"] == 4
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_correct_last_score(self, mock_html: Mock, mock_is_correct: Mock):
@@ -1060,7 +1034,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_correct_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
@@ -1093,7 +1066,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_correct_first_score(self, mock_html: Mock, mock_is_correct: Mock):
@@ -1126,7 +1098,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
     @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
     def test_submit_problem_correct_average_score(self, mock_html: Mock, mock_is_correct: Mock):
@@ -1692,21 +1663,17 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         # and that this is treated as the first attempt for grading purposes
         assert block.lcp.context["attempt"] == 1
 
-    @patch("xmodule.capa_block.ProblemBlock.get_rescore_with_grading_method")
-    def test_rescore_problem_with_grading_method_disable(self, mock_get_rescore: Mock):
+    def test_rescore_problem_with_grading_method_disable(self):
         """
-        Test the rescore method with grading method disabled.
-        In this case, the rescore method should not call `get_rescore_with_grading_method` method.
+        Test the rescore method with grading method logic enabled by default.
         """
-        block = CapaFactory.create(attempts=0, done=True)
+        block = CapaFactory.create(attempts=0, done=True, grading_method="highest_score")
 
         block.rescore(only_if_higher=False)
 
         assert block.attempts == 0
         assert block.lcp.context["attempt"] == 1
-        mock_get_rescore.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_rescore_problem_with_grading_method_enable(self):
         """
         Test the rescore method with grading method enabled.
@@ -1725,12 +1692,12 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             mock_get_rescore.assert_called()
 
     @patch("xmodule.capa_block.ProblemBlock.publish_grade")
-    def test_rescore_problem_grading_method_disable_to_enable(self, mock_publish_grade: Mock):
+    def test_rescore_problem_grading_method_always_enabled(self, mock_publish_grade: Mock):
         """
-        Test the rescore method the grading method is disabled and then enabled.
+        Test the rescore method when grading method is always enabled by default.
 
-        When the grading method is disabled, the final score is always the last score.
-        When the grading method is enabled, the final score is the score based on the grading method.
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
         """
         block = CapaFactory.create(attempts=0, max_attempts=3)
 
@@ -1743,54 +1710,39 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         get_request_dict = {CapaFactory.input_key(): "3.14"}
         block.submit_problem(get_request_dict)
 
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # Score is the last score
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        # Score is calculated according to the grading method
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+        block.rescore(only_if_higher=False)
 
-            block.rescore(only_if_higher=False)
+        # Still Score is the last score
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
 
-            # Still Score is the last score
-            mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
+        # Rescore with different grading methods
+        block.grading_method = "first_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
 
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            with patch(
-                "xmodule.capa.capa_problem.LoncapaProblem.is_grading_method_enabled",
-                new_callable=PropertyMock,
-                return_value=True,
-            ):
-                # Change grading method to 'first_score'
-                block.grading_method = "first_score"
-                block.rescore(only_if_higher=False)
+        # Change grading method to 'highest_score'
+        block.grading_method = "highest_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
+        # Change grading method to 'average_score'
+        block.grading_method = "average_score"
+        block.rescore(only_if_higher=False)
 
-                # Change grading method to 'highest_score'
-                block.grading_method = "highest_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
-
-                # Change grading method to 'average_score'
-                block.grading_method = "average_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(
-                    score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False
-                )
+        mock_publish_grade.assert_called_with(
+            score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False
+        )
 
     @patch("xmodule.capa_block.ProblemBlock.publish_grade")
-    def test_rescore_problem_grading_method_enable_to_disable(self, mock_publish_grade: Mock):
+    def test_rescore_problem_grading_method_always_enabled_with_various_methods(self, mock_publish_grade: Mock):
         """
-        Test the rescore method the grading method is enabled and then disabled.
+        Test the rescore method when grading method is always enabled by default
+        with different grading methods.
 
-        When the grading method is enabled, the final score is the score based on the grading method.
-        When the grading method is disabled, the final score is always the last score.
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
         """
         block = CapaFactory.create(attempts=0, max_attempts=3)
 
@@ -1803,48 +1755,28 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         get_request_dict = {CapaFactory.input_key(): "3.14"}
         block.submit_problem(get_request_dict)
 
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            with patch(
-                "xmodule.capa.capa_problem.LoncapaProblem.is_grading_method_enabled",
-                new_callable=PropertyMock,
-                return_value=True,
-            ):
-                # Grading method is 'last_score'
-                assert block.grading_method == "last_score"
-                assert block.score == Score(raw_earned=1, raw_possible=1)
+        # Grading method is 'last_score' by default
+        assert block.grading_method == "last_score"
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-                # Change grading method to 'first_score'
-                block.grading_method = "first_score"
-                block.rescore(only_if_higher=False)
+        # Change grading method to 'first_score'
+        block.grading_method = "first_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
+        # Change grading method to 'highest_score'
+        block.grading_method = "highest_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
 
-                # Change grading method to 'highest_score'
-                block.grading_method = "highest_score"
-                block.rescore(only_if_higher=False)
+        # Change grading method to 'average_score'
+        block.grading_method = "average_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
+        block.rescore(only_if_higher=False)
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-                # Change grading method to 'average_score'
-                block.grading_method = "average_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(
-                    score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False
-                )
-
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            block.rescore(only_if_higher=False)
-            # The score is the last score
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     @patch("xmodule.capa_block.ProblemBlock.publish_grade")
     def test_rescore_problem_update_grading_method(self, mock_publish_grade: Mock):
         """
@@ -1976,7 +1908,6 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             self.assertEqual(block.lcp.context["attempt"], 1)
             block.lcp.get_grade_from_current_answers.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_get_rescore_with_grading_method(self):
         """
         Test that the `get_rescore_with_grading_method` method returns the correct score.
@@ -4046,9 +3977,10 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         """Verify tracking data for file submission and custom response inputs."""
         fnames = ["prog1.py", "prog2.py", "prog3.py"]
         fpaths = [os.path.join(DATA_DIR, "capa", fname) for fname in fnames]
-        fileobjs = [open(fpath, encoding="utf-8") for fpath in fpaths]  # pylint: disable=consider-using-with
-        for fileobj in fileobjs:
-            self.addCleanup(fileobj.close)
+        fileobjs = []
+        for fpath in fpaths:
+            with open(fpath, encoding="utf-8") as f:
+                fileobjs.append(f.read())
 
         factory = CapaFactoryWithFiles
         block = factory.create()
@@ -4065,7 +3997,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         assert event["submission"] == {
             factory.answer_key(2): {
                 "question": "",
-                "answer": fpaths,
+                "answer": fileobjs,
                 "response_type": "coderesponse",
                 "input_type": "filesubmission",
                 "correct": False,

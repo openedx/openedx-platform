@@ -1,6 +1,7 @@
 """
 Signal handlers for course apps.
 """
+from django.db import transaction
 from django.dispatch import receiver
 from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.django import SignalHandler
@@ -16,7 +17,9 @@ def update_course_apps(sender, course_key, **kwargs):  # pylint: disable=unused-
     Whenever the course is published, update the status of course apps in the
     django models to match their status in the course.
     """
-    update_course_apps_status.delay(str(course_key))
+    # Adding transaction.on_commit to ensure that the course publish operations
+    # are fully complete before we attempt to read the course data.
+    transaction.on_commit(lambda: update_course_apps_status.delay(str(course_key)))
 
 
 # pylint: disable=unused-argument

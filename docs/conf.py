@@ -13,6 +13,7 @@ from subprocess import check_call
 
 import django
 import git
+from django.db.models.query import QuerySet
 
 from path import Path
 
@@ -379,7 +380,14 @@ def on_init(app):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-
         check_call(args)
 
 
+def skip_querysets(app, what, name, obj, skip, options):
+    # If the object is a Django QuerySet, skip it
+    if isinstance(obj, QuerySet):
+        return True
+    return skip
+
+
 def setup(app):  # lint-amnesty, pylint: disable=redefined-outer-name
     """Sphinx extension: run sphinx-apidoc."""
-    event = 'builder-inited'
-    app.connect(event, on_init)
+    app.connect('builder-inited', on_init)
+    app.connect('autodoc-skip-member', skip_querysets)

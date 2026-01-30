@@ -86,7 +86,7 @@ jobs:
           key: docker-${{ runner.os }}-mongo-${{ matrix.mongo-version }}
 
       - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.12.0
+        uses: supercharge/mongodb-github-action@1.12.1
         with:
           mongodb-version: ${{ matrix.mongo-version }}
 
@@ -205,7 +205,7 @@ jobs:
         if: ${{ env.root_all_unit_tests_count != env.shards_all_unit_tests_count }}
         run: |
           echo "::error title='Unit test modules in unit-test-shards.json (unit-tests.yml workflow) are outdated'::unit tests running in unit-tests
-          workflow don't match the count for unit tests for entire edx-platform suite, please update the unit-test-shards.json under .github/workflows
+          workflow don't match the count for unit tests for entire openedx-platform suite, please update the unit-test-shards.json under .github/workflows
           to add any missing apps and match the count. for more details please take a look at scripts/gha-shards-readme.md"
           exit 1
 
@@ -272,7 +272,7 @@ jobs:
 
   # Combine and upload coverage reports.
   coverage:
-    if: (github.repository == 'edx/edx-platform-private') || (github.repository == 'openedx/edx-platform' && (startsWith(github.base_ref, 'open-release') == false))
+    if: (github.repository == 'edx/edx-platform-private') || (github.repository == 'openedx/openedx-platform' && (startsWith(github.base_ref, 'release') == false))
     runs-on: ubuntu-24.04
     needs: [run-tests]
     strategy:

@@ -48,7 +48,7 @@ def add_info_to_notification_config(config_obj):
         }
 
     For each notification type:
-    - If the type is 'core', its info is fetched from `COURSE_NOTIFICATION_APPS[notification_app]['core_info']`.
+    - If the type is 'core', its info is fetched from `COURSE_NOTIFICATION_APPS[notification_app]['info']`.
     - For all other types, info is fetched from `COURSE_NOTIFICATION_TYPES[notification_type]['info']`.
 
     Parameters:
@@ -63,7 +63,7 @@ def add_info_to_notification_config(config_obj):
         notification_types = app_prefs.get('notification_types', {})
         for notification_type, type_prefs in notification_types.items():
             if notification_type == "core":
-                type_info = COURSE_NOTIFICATION_APPS.get(notification_app, {}).get('core_info', '')
+                type_info = COURSE_NOTIFICATION_APPS.get(notification_app, {}).get('info', '')
             else:
                 type_info = COURSE_NOTIFICATION_TYPES.get(notification_type, {}).get('info', '')
             type_prefs['info'] = type_info
@@ -209,13 +209,16 @@ class UserNotificationPreferenceUpdateAllSerializer(serializers.Serializer):
             })
 
         # Validate notification type
-        if all([not COURSE_NOTIFICATION_TYPES.get(notification_type), notification_type != "core"]):
+        if all([
+            not COURSE_NOTIFICATION_TYPES.get(notification_type),
+            notification_type != "core",
+            notification_type != "grouped_notification",
+        ]):
             raise ValidationError(f'{notification_type} is not a valid notification type.')
 
         # Validate notification type and channel is editable
         if notification_channel and notification_type:
             if not is_notification_type_channel_editable(
-                notification_app,
                 notification_type,
                 "email" if notification_channel == "email_cadence" else notification_channel
             ):

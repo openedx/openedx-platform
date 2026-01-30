@@ -25,13 +25,13 @@ class ToggleStateViewTests(TestCase):  # lint-amnesty, pylint: disable=missing-c
         response = get_toggle_state_response(is_staff=False)
         assert response.status_code == 403
 
-    def test_response_with_existing_setting_dict_toggle(self):
+    def test_response_with_existing_setting_toggle(self):
         response = get_toggle_state_response()
         assert {
-            "name": "FEATURES['MILESTONES_APP']",
+            "name": "MILESTONES_APP",
             "is_active": True,
             "module": "common.djangoapps.util.milestones_helpers",
-            "class": "SettingDictToggle",
+            "class": "SettingToggle",
         } in response.data["django_settings"]
 
     def test_response_with_course_override(self):

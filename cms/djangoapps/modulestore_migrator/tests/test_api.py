@@ -3,7 +3,8 @@ Test cases for the modulestore migrator API.
 """
 
 import pytest
-from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
+from unittest.mock import patch
+from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2, CourseLocator
 from openedx_learning.api import authoring as authoring_api
 from organizations.tests.factories import OrganizationFactory
 
@@ -29,7 +30,11 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         self.user = UserFactory(password=self.user_password, is_staff=True)
         self.organization = OrganizationFactory(name="My Org", short_name="myorg")
         self.lib_key_v1 = LibraryLocator.from_string("library-v1:myorg+old")
+        self.lib_key_v1_2 = LibraryLocator.from_string("library-v1:myorg+old2")
+        self.lib_key_v1_3 = LibraryLocator.from_string("library-v1:myorg+old3")
         LibraryFactory.create(org="myorg", library="old", display_name="Old Library", modulestore=self.store)
+        LibraryFactory.create(org="myorg", library="old2", display_name="Old Library 2", modulestore=self.store)
+        LibraryFactory.create(org="myorg", library="old3", display_name="Old Library 3", modulestore=self.store)
         self.lib_key_v2_1 = LibraryLocatorV2.from_string("lib:myorg:1")
         self.lib_key_v2_2 = LibraryLocatorV2.from_string("lib:myorg:2")
         lib_api.create_library(org=self.organization, slug="1", title="Test Library 1")
@@ -58,6 +63,90 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         ]
         # We load this last so that it has an updated list of children.
         self.lib_v1 = self.store.get_library(self.lib_key_v1)
+        self.course_key = CourseLocator.from_string('course-v1:TestOrg+TestCourse+TestRun')
+
+        # Create containers and blocks for legacy libraries
+        # Old Library 2
+        for c in ["X", "Y", "Z"]:
+            BlockFactory.create(
+                display_name=f"Unit {c}",
+                category="vertical",
+                location=self.lib_key_v1_2.make_usage_key("vertical", c),
+                parent_location=self.lib_key_v1_2.make_usage_key("library", "library"),
+                user_id=self.user.id, publish_item=False,
+            )
+        for c in ["X", "Y"]:
+            BlockFactory.create(
+                display_name=f"Subsection {c}",
+                category="sequential",
+                location=self.lib_key_v1_2.make_usage_key("sequential", c),
+                parent_location=self.lib_key_v1_2.make_usage_key("library", "library"),
+                user_id=self.user.id, publish_item=False,
+            )
+        BlockFactory.create(
+            display_name="Section X",
+            category="chapter",
+            location=self.lib_key_v1_2.make_usage_key("chapter", "X"),
+            parent_location=self.lib_key_v1_2.make_usage_key("library", "library"),
+            user_id=self.user.id, publish_item=False,
+        )
+        for c in ["X", "Y", "Z"]:
+            BlockFactory.create(
+                display_name=f"HTML {c}",
+                category="html",
+                location=self.lib_key_v1_2.make_usage_key("html", c),
+                parent_location=self.lib_key_v1_2.make_usage_key("vertical", c),
+                user_id=self.user.id, publish_item=False,
+            )
+
+        # Old Library 3
+        for c in ["X", "Y", "Z"]:
+            BlockFactory.create(
+                display_name=f"Unit {c}",
+                category="vertical",
+                location=self.lib_key_v1_3.make_usage_key("vertical", c),
+                parent_location=self.lib_key_v1_3.make_usage_key("library", "library"),
+                user_id=self.user.id, publish_item=False,
+            )
+        for c in ["X", "Y"]:
+            BlockFactory.create(
+                display_name=f"Subsection {c}",
+                category="sequential",
+                location=self.lib_key_v1_3.make_usage_key("sequential", c),
+                parent_location=self.lib_key_v1_3.make_usage_key("library", "library"),
+                user_id=self.user.id, publish_item=False,
+            )
+        BlockFactory.create(
+            display_name="Section X",
+            category="chapter",
+            location=self.lib_key_v1_3.make_usage_key("chapter", "X"),
+            parent_location=self.lib_key_v1_3.make_usage_key("library", "library"),
+            user_id=self.user.id, publish_item=False,
+        )
+        for c in ["X", "Y", "Z"]:
+            BlockFactory.create(
+                display_name=f"Html {c}",
+                category="html",
+                location=self.lib_key_v1_3.make_usage_key("html", c),
+                parent_location=self.lib_key_v1_3.make_usage_key("vertical", c),
+                user_id=self.user.id, publish_item=False,
+            )
+        for c in ["A"]:
+            BlockFactory.create(
+                display_name=f"Item Bank {c}",
+                category="item_bank",
+                location=self.lib_key_v1_3.make_usage_key("item_bank", c),
+                parent_location=self.lib_key_v1_3.make_usage_key("vertical", "X"),
+                user_id=self.user.id, publish_item=False,
+            )
+        for c in ["B"]:
+            BlockFactory.create(
+                display_name=f"Invalid {c}",
+                category="invalid",
+                location=self.lib_key_v1_3.make_usage_key("invalid", c),
+                parent_location=self.lib_key_v1_3.make_usage_key("vertical", "X"),
+                user_id=self.user.id, publish_item=False,
+            )
 
     def test_start_migration_to_library(self):
         """
@@ -566,3 +655,296 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         forwarded_blocks = api.get_forwarding_for_blocks(all_source_usage_keys)
         assert forwarded_blocks[self.source_html_keys[1]].target_key.context_key == self.lib_key_v2_1
         assert forwarded_blocks[self.source_unit_keys[1]].target_key.context_key == self.lib_key_v2_1
+
+    def _get_summary_from_migration(self, migration, expected_state, blocks_limit):
+        """
+        Manually calculate the summary from the migration data
+        """
+        blocks = api.get_migration_blocks(migration.pk)
+
+        summary = {
+            "state": expected_state,
+            "unsupported_blocks": 0,
+            "unsupported_percentage": 0,
+            "blocks_limit": blocks_limit,
+            "total_blocks": 0,
+            "total_components": 0,
+            "sections": 0,
+            "subsections": 0,
+            "units": 0,
+        }
+
+        for key, block in blocks.items():
+            block_type = key.block_type
+            print(block_type)
+            summary['total_blocks'] += 1
+            if block_type not in ['vertical', 'sequential', 'chapter']:
+                summary['total_components'] += 1
+                if block.is_failed:
+                    summary['unsupported_blocks'] += 1
+            elif block_type == 'vertical':
+                summary['units'] += 1
+            elif block_type == 'sequential':
+                summary['subsections'] += 1
+            elif block_type == 'chapter':
+                summary['sections'] += 1
+
+        if summary['unsupported_blocks']:
+            summary['unsupported_percentage'] = summary['unsupported_blocks'] * 100 / summary['total_blocks']
+
+        return summary
+
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.fetch_block_types')
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.get_all_blocks_from_context')
+    def test_preview_migration_success(self, mock_get_blocks, mock_fetch_block_types):
+        """
+        Test the preview migration summary in the success state
+
+        This tests compare the summary generated by `preview_migration` with the
+        data generated by a migration.
+        """
+        user = UserFactory()
+        api.start_migration_to_library(
+            user=user,
+            source_key=self.lib_key_v1_2,
+            target_library_key=self.lib_key_v2_1,
+            target_collection_slug=None,
+            composition_level=CompositionLevel.Section,
+            repeat_handling_strategy=RepeatHandlingStrategy.Skip,
+            preserve_url_slugs=True,
+            forward_source_to_target=False,
+        )
+        migration = list(api.get_migrations(self.lib_key_v1_2))[0]
+        summary = self._get_summary_from_migration(migration, "success", 1000)
+
+        mock_get_blocks.return_value = [
+            {
+                'block_type': 'html',
+                'block_id': '16',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@16',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '17',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@17',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '18',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@18',
+            },
+            {
+                'block_type': 'chapter',
+                'block_id': '19',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@chapter+block@19',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '20',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@20',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '21',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@21',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '22',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@22',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@23',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@2',
+            },
+        ]
+        mock_fetch_block_types.return_value = {
+            "estimatedTotalHits": 0,
+        }
+
+        with self.settings(MAX_BLOCKS_PER_CONTENT_LIBRARY=1000):
+            results = api.preview_migration(self.course_key, self.lib_key_v2_1)
+            assert results == summary
+
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.fetch_block_types')
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.get_all_blocks_from_context')
+    def test_preview_migration_partial(self, mock_get_blocks, mock_fetch_block_types):
+        """
+        Test the preview migration summary in the partial state
+
+        This tests compare the summary generated by `preview_migration` with the
+        data generated by a migration.
+        """
+        user = UserFactory()
+        api.start_migration_to_library(
+            user=user,
+            source_key=self.lib_key_v1_3,
+            target_library_key=self.lib_key_v2_1,
+            target_collection_slug=None,
+            composition_level=CompositionLevel.Section,
+            repeat_handling_strategy=RepeatHandlingStrategy.Skip,
+            preserve_url_slugs=True,
+            forward_source_to_target=False,
+        )
+        migration = list(api.get_migrations(self.lib_key_v1_3))[0]
+        summary = self._get_summary_from_migration(migration, "partial", 1000)
+
+        mock_get_blocks.return_value = [
+            {
+                'block_type': 'html',
+                'block_id': '16',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@16',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '17',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@17',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '18',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@18',
+            },
+            {
+                'block_type': 'chapter',
+                'block_id': '19',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@chapter+block@19',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '20',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@20',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '21',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@21',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '22',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@22',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@23',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@2',
+            },
+            {
+                'block_type': 'invalid',
+                'block_id': '24',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@invalid+block@24',
+            },  # Invalid
+            {
+                'block_type': 'item_bank',
+                'block_id': '25',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@item_bank+block@25',
+            },  # Invalid
+            {
+                'block_type': 'html',
+                'block_id': '26',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@26',
+            },  # Child of item bank
+            {
+                'block_type': 'html',
+                'block_id': '27',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@27',
+            },  # Child of item bank
+        ]
+        mock_fetch_block_types.return_value = {
+            "estimatedTotalHits": 2,
+        }
+
+        # The unsupported children are not included in the summary
+        with self.settings(MAX_BLOCKS_PER_CONTENT_LIBRARY=1000):
+            results = api.preview_migration(self.course_key, self.lib_key_v2_1)
+            assert results == summary
+
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.fetch_block_types')
+    @patch('cms.djangoapps.modulestore_migrator.api.read_api.get_all_blocks_from_context')
+    def test_preview_migration_block_limit(self, mock_get_blocks, mock_fetch_block_types):
+        """
+        Test the preview migration summary in the block_limit_reached state
+
+        This tests compare the summary generated by `preview_migration` with the
+        data generated by a migration.
+        """
+        user = UserFactory()
+        api.start_migration_to_library(
+            user=user,
+            source_key=self.lib_key_v1_2,
+            target_library_key=self.lib_key_v2_1,
+            target_collection_slug=None,
+            composition_level=CompositionLevel.Section,
+            repeat_handling_strategy=RepeatHandlingStrategy.Skip,
+            preserve_url_slugs=True,
+            forward_source_to_target=False,
+        )
+        migration = list(api.get_migrations(self.lib_key_v1_2))[0]
+        summary = self._get_summary_from_migration(migration, "block_limit_reached", 10)
+
+        mock_get_blocks.return_value = [
+            {
+                'block_type': 'html',
+                'block_id': '16',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@16',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '17',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@17',
+            },
+            {
+                'block_type': 'html',
+                'block_id': '18',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@html+block@18',
+            },
+            {
+                'block_type': 'chapter',
+                'block_id': '19',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@chapter+block@19',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '20',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@20',
+            },
+            {
+                'block_type': 'sequential',
+                'block_id': '21',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@sequential+block@21',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '22',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@22',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@23',
+            },
+            {
+                'block_type': 'vertical',
+                'block_id': '23',
+                'usage_key': 'block-v1:edX+DemoX+Demo_Course+type@vertical+block@2',
+            },
+        ]
+        mock_fetch_block_types.return_value = {
+            "estimatedTotalHits": 0,
+        }
+
+        with self.settings(MAX_BLOCKS_PER_CONTENT_LIBRARY=10):
+            results = api.preview_migration(self.course_key, self.lib_key_v2_1)
+            assert results == summary

@@ -3,7 +3,7 @@
 @import 'neat/neat'; // lib - Neat
 @import 'vendor/bi-app/bi-app-ltr'; // set the layout for left to right languages
 @import 'build-v1'; // shared app style assets/rendering
-@import 'cms/theme/variables-v1';
+@import './partials/cms/theme/_variables-v1.scss';
 @import 'elements/course-unit-mfe-iframe';
 
 html {
@@ -92,7 +92,7 @@ body,
         padding: ($baseline * .15) ($baseline / 2);
 
         &:hover {
-          background-color: $primary;
+          background-color: $primary-base;
           color: $white;
         }
 
@@ -147,7 +147,7 @@ body,
             }
 
             a {
-                color: $primary;
+                color: $primary-base;
             }
         }
 
@@ -192,14 +192,14 @@ body,
       .action-item .action-button {
         @extend %button-styles;
 
-        color: $primary;
+        color: $primary-base;
 
         .fa-ellipsis-v {
           font-size: $base-font-size;
         }
 
         &:hover {
-          background-color: $primary;
+          background-color: $primary-base;
           color: $white;
           border-color: $transparent;
         }
@@ -207,8 +207,8 @@ body,
         &:focus {
           outline: 2px $transparent;
           background-color: $transparent;
-          box-shadow: inset 0 0 0 2px $primary;
-          color: $primary;
+          box-shadow: inset 0 0 0 2px $primary-base;
+          color: $primary-base;
           border-color: $transparent;
         }
 
@@ -249,7 +249,7 @@ body,
         }
 
         &:active {
-          background-color: $primary;
+          background-color: $primary-base;
 
           a {
             color: $white;
@@ -278,7 +278,6 @@ body,
   &.wrapper-modal-window .modal-window .modal-actions a {
     color: $text-color;
     background-color: $transparent;
-    border-color: $transparent;
     box-shadow: none;
     font-weight: 500;
     border: 1px solid $transparent;
@@ -317,13 +316,21 @@ body,
         background-color: $white;
         color: $text-color;
         outline: 0;
-        box-shadow: 0 0 0 1px $primary;
+        box-shadow: 0 0 0 1px $primary-base;
       }
     }
 
-    input:not([type="radio"], [type="checkbox"], [type="submit"]) {
+    input:not([type="radio"],
+    [type="checkbox"],
+    [type="submit"]),
+    textarea,
+    select.setting-input,
+    select.problem-mode {
       @extend %input-styles;
 
+      box-shadow: none;
+      border-radius: $btn-border-radius !important;
+      border-color: $border-color-base !important;
       line-height: 20px;
       height: 44px;
 
@@ -334,13 +341,51 @@ body,
       &:focus {
         color: $text-color;
         background-color: $white;
-        border-color: $primary;
+        border-color: $primary-base !important;
         outline: 0;
-        box-shadow: 0 0 0 1px $primary;
+        box-shadow: 0 0 0 1px $primary-base;
       }
     }
 
-    #student_training_settings_editor .openassessment_training_example .openassessment_training_example_body
+    #poll-question-editor,
+    #poll-feedback-editor {
+      width: 100%;
+    }
+
+    .poll-move {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .poll-move-up,
+    .poll-move-down,
+    .poll-delete-answer {
+      @extend .btn-primary;
+
+      border-color: $primary-base;
+      background: $primary-base;
+    }
+
+    .poll-move-up,
+    .poll-move-down {
+      font-size: 10px;
+      padding: 8px;
+      line-height: 1;
+    }
+
+    .poll-delete-answer {
+      border-color: $red;
+      background: $red;
+
+      &:focus,
+      &:hover {
+        border-color: $red-d1;
+        background: $red-d1;
+      }
+    }
+
+    #student_training_settings_editor .openassessment_training_example .openassessment_training_example_body,
     .openassessment_training_example_essay_wrapper textarea {
       @extend %input-styles;
 
@@ -359,9 +404,9 @@ body,
         &:focus {
           color: $text-color;
           background-color: $white;
-          border-color: $primary;
+          border-color: $primary-base;
           outline: 0;
-          box-shadow: 0 0 0 1px $primary;
+          box-shadow: 0 0 0 1px $primary-base;
         }
       }
 
@@ -372,9 +417,9 @@ body,
       &:focus {
         color: $text-color;
         background-color: $white;
-        border-color: $primary;
+        border-color: $primary-base;
         outline: 0;
-        box-shadow: 0 0 0 1px $primary;
+        box-shadow: 0 0 0 1px $primary-base;
       }
     }
 
@@ -399,7 +444,10 @@ body,
     }
 
     .xblock-actions {
+      border-top: 1px solid $border-color;
       background-color: $white;
+      display: flex;
+      justify-content: flex-end;
 
       .action-button {
         background-color: $transparent;
@@ -422,8 +470,7 @@ body,
       .action-save,
       .continue-button {
         color: $white;
-        background-color: $primary;
-        border-color: $primary;
+        background-color: $primary-base;
         box-shadow: none;
         font-weight: 500;
         border: 1px solid $transparent;
@@ -439,13 +486,13 @@ body,
         display: block;
 
         &:hover {
-          background: darken($primary, 5%);
+          background: darken($primary-base, 5%);
           border-color: $transparent;
           color: $white;
         }
 
         &:focus {
-          background: $primary;
+          background: $primary-base;
           outline: none;
         }
       }
@@ -455,7 +502,6 @@ body,
       .cancel-button {
         color: $text-color;
         background-color: $transparent;
-        border-color: $transparent;
         box-shadow: none;
         font-weight: 500;
         border: 1px solid $transparent;
@@ -628,7 +674,7 @@ input.xblock-inline-title-editor {
   }
 
   &:hover {
-    background-color: $primary;
+    background-color: $primary-base;
     border-color: $transparent;
 
     &::before {
@@ -639,7 +685,7 @@ input.xblock-inline-title-editor {
   &:focus {
     outline: 2px $transparent;
     background-color: $transparent;
-    box-shadow: inset 0 0 0 2px $primary;
+    box-shadow: inset 0 0 0 2px $primary-base;
     border-color: $transparent;
 
     &:hover {
@@ -647,7 +693,7 @@ input.xblock-inline-title-editor {
       border-color: $transparent;
 
       &::before {
-        background-color: $primary;
+        background-color: $primary-base;
       }
     }
   }
@@ -683,7 +729,7 @@ input.xblock-inline-title-editor {
     }
 
     &:hover {
-      background-color: $primary;
+      background-color: $primary-base;
       border-color: $transparent;
 
       &::before {
@@ -694,7 +740,7 @@ input.xblock-inline-title-editor {
     &:focus {
       outline: 2px $transparent;
       background-color: $transparent;
-      box-shadow: inset 0 0 0 2px $primary;
+      box-shadow: inset 0 0 0 2px $primary-base;
       border-color: $transparent;
 
       &:hover {
@@ -702,7 +748,7 @@ input.xblock-inline-title-editor {
         border-color: $transparent;
 
         &::before {
-          background-color: $primary;
+          background-color: $primary-base;
         }
       }
     }
@@ -742,8 +788,18 @@ body [class*="view-"] .openassessment_editor_buttons.xblock-actions {
       }
   }
 
-  .wrapper.wrapper-modal-window .modal-window .modal-actions .action-primary {
-    @extend %primary-button;
+  .wrapper.wrapper-modal-window .modal-window .modal-actions {
+    ul {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .action-primary {
+      @extend %primary-button;
+
+      background: $primary-base;
+      border-color: $primary-base;
+    }
   }
 
   #openassessment-editor {
@@ -763,27 +819,31 @@ body [class*="view-"] .openassessment_editor_buttons.xblock-actions {
     .metadata-list-enum .create-setting {
       @extend %modal-actions-button;
 
-      background-color: $primary;
+      background-color: $primary-base;
       color: $white;
-      border: 1px solid $primary;
+      border: 1px solid $primary-base;
       cursor: pointer;
 
       &:hover {
-        background: darken($primary, 5%);
+        background: darken($primary-base, 5%);
         border-color: #2d494e;
       }
 
       &:focus {
-        background: $primary;
+        background: $primary-base;
         outline: none;
       }
     }
   }
 
   .list-input.settings-list {
-    .field.comp-setting-entry.is-set .setting-input {
-      color: $text-color;
-      margin-bottom: ($baseline * .25);
+    .field.comp-setting-entry {
+      overflow: auto;
+
+      &.is-set .setting-input {
+        color: $text-color;
+        margin-bottom: ($baseline * .25);
+      }
     }
 
     select {
@@ -796,7 +856,7 @@ body [class*="view-"] .openassessment_editor_buttons.xblock-actions {
         background-color: $white;
         color: $text-color;
         outline: 0;
-        box-shadow: 0 0 0 1px $primary;
+        box-shadow: 0 0 0 1px $primary-base;
       }
     }
 
@@ -815,11 +875,11 @@ body [class*="view-"] .openassessment_editor_buttons.xblock-actions {
       @extend %button-styles;
 
       background-color: $transparent;
-      color: $primary;
+      color: $primary-base;
       border: none;
 
       &:hover {
-        background-color: $primary;
+        background-color: $primary-base;
         color: $white;
         border: none;
       }
@@ -827,14 +887,14 @@ body [class*="view-"] .openassessment_editor_buttons.xblock-actions {
       &:focus {
         outline: 2px $transparent;
         background-color: $transparent;
-        box-shadow: inset 0 0 0 2px $primary;
-        color: $primary;
+        box-shadow: inset 0 0 0 2px $primary-base;
+        color: $primary-base;
       }
     }
   }
 
   .list-input.settings-list .metadata-list-enum .remove-setting .fa-times-circle {
-    color: $primary;
+    color: $primary-base;
   }
 }
 
@@ -849,7 +909,7 @@ select {
     background-color: $white;
     color: $text-color;
     outline: 0;
-    box-shadow: 0 0 0 1px $primary;
+    box-shadow: 0 0 0 1px $primary-base;
   }
 }
 
@@ -869,7 +929,7 @@ select {
     .openassessment_criterion_option .openassessment_criterion_option_name_wrapper label input,
     .openassessment_criterion .openassessment_criterion_basic_editor .comp-setting-entry .wrapper-comp-settings .openassessment_criterion_prompt,
     #openassessment_rubric_feedback_wrapper textarea,
-    .openassessment_criterion_option
+    .openassessment_criterion_option,
     .openassessment_criterion_option_explanation_wrapper label textarea,
     input[type=number] {
       font-size: $base-font-size;
@@ -891,7 +951,7 @@ select {
     }
 
     #oa_schedule_editor_wrapper #dates_config_new_badge {
-      background-color: $primary;
+      background-color: $primary-base;
     }
 
     .openassessment_description {
@@ -916,11 +976,11 @@ select {
     }
 
     .openassessment_assessment_module_settings_editor:hover {
-      border-color: $primary;
+      border-color: $primary-base;
 
       .drag-handle {
-        background-color: $primary;
-        border-color: $primary;
+        background-color: $primary-base;
+        border-color: $primary-base;
       }
     }
 
@@ -938,6 +998,12 @@ select {
   #student_training_settings_editor .openassessment_add_training_example {
     @extend %primary-button;
   }
+}
+
+.openassessment_modal_window .xblock #openassessment-editor .openassessment_container_add_button:not(.is--disabled) {
+  background: $primary-base;
+  border-color: $primary-base;
+  color: $white;
 }
 
 .xblock-header:not(.xblock-header-library_content, .xblock-header-split_test) .xblock-header-primary {
@@ -960,7 +1026,7 @@ select {
 
   .spin,
   .copy {
-    color: $primary;
+    color: $primary-base;
   }
 }
 
@@ -1032,8 +1098,8 @@ select {
           box-shadow: 0 1px 2px rgba(0, 0, 0, .15), 0 1px 4px rgba(0, 0, 0, .15);
           width: 176px;
           height: 110px;
-          color: $primary;
-          border-color: $primary;
+          color: $primary-base;
+          border-color: $primary-base;
           background: transparent;
           margin: 0;
           display: inline-flex;
@@ -1043,15 +1109,15 @@ select {
           gap: ($baseline * .4);
 
           &:hover {
-            color: darken($primary, 10%);
-            background-color: lighten($primary, 80%);
-            border-color: darken($primary, 15%);
+            color: darken($primary-base, 10%);
+            background-color: lighten($primary-base, 80%);
+            border-color: darken($primary-base, 15%);
           }
 
           .large-template-icon {
             width: 24px;
             height: 24px;
-            background: $primary;
+            background: $primary-base;
 
             @each $name, $file in $template-icon-map {
               &.large-#{$name}-icon {
@@ -1068,7 +1134,7 @@ select {
 
           .beta {
             color: $white;
-            background-color: $primary;
+            background-color: $primary-base;
             padding: ($baseline * .1) ($baseline * .4) ($baseline * .2);
             font-size: 13.5px;
             font-weight: 700;
@@ -1087,7 +1153,7 @@ select {
       overflow: hidden;
 
       .button-component:hover {
-        background: $primary;
+        background: $primary-base;
       }
 
       .cancel-button {

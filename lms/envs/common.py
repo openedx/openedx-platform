@@ -279,6 +279,8 @@ ENABLED_PAYMENT_REPORTS = [
     "certificate_status"
 ]
 
+ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = True
+
 # Hide any Personally Identifiable Information from application logs
 SQUELCH_PII_IN_LOGS = True
 

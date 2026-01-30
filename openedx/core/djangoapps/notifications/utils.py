@@ -1,11 +1,12 @@
 """
 Utils function for notifications app
 """
-from typing import Dict, List, Set
+from typing import Dict, List
 
 from common.djangoapps.student.models import CourseAccessRole
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
+from openedx.core.djangoapps.notifications.models import create_notification_preference, NotificationPreference
 from openedx.core.lib.cache_utils import request_cached
 
 
@@ -23,17 +24,6 @@ def get_list_in_batches(input_list, batch_size):
     list_length = len(input_list)
     for index in range(0, list_length, batch_size):
         yield input_list[index: index + batch_size]
-
-
-def get_user_forum_roles(user_id: int, course_id: str) -> List[str]:
-    """
-    Get forum roles for the given user in the specified course.
-
-    :param user_id: User ID
-    :param course_id: Course ID
-    :return: List of forum roles
-    """
-    return list(Role.objects.filter(course_id=course_id, users__id=user_id).values_list('name', flat=True))
 
 
 @request_cached()
@@ -85,32 +75,6 @@ def filter_out_visible_notifications(
     return user_preferences
 
 
-def remove_preferences_with_no_access(preferences: dict, user) -> dict:
-    """
-    Filter out notifications visible to forum roles from user preferences.
-
-    :param preferences: User preferences dictionary
-    :param user: User object
-    :return: Updated user preferences dictionary
-    """
-    user_preferences = preferences['notification_preference_config']
-    user_forum_roles = get_user_forum_roles(user.id, preferences['course_id'])
-    notifications_with_visibility_settings = get_notification_types_with_visibility_settings()
-    user_course_roles = CourseAccessRole.objects.filter(
-        user=user,
-        course_id=preferences['course_id']
-    ).values_list('role', flat=True)
-
-    user_preferences = filter_out_visible_notifications(
-        user_preferences,
-        notifications_with_visibility_settings,
-        user_forum_roles,
-        user_course_roles
-    )
-
-    return preferences
-
-
 def clean_arguments(kwargs):
     """
     Returns query arguments from command line arguments
@@ -122,79 +86,6 @@ def clean_arguments(kwargs):
     if kwargs.get('created', {}):
         clean_kwargs.update(kwargs.get('created'))
     return clean_kwargs
-
-
-def update_notification_types(
-    app_config: Dict,
-    user_app_config: Dict,
-) -> None:
-    """
-    Update notification types for a specific category configuration.
-    """
-    if "notification_types" not in user_app_config:
-        return
-
-    for type_key, type_config in user_app_config["notification_types"].items():
-        if type_key not in app_config["notification_types"]:
-            continue
-
-        update_notification_fields(
-            app_config["notification_types"][type_key],
-            type_config,
-        )
-
-
-def update_notification_fields(
-    target_config: Dict,
-    source_config: Dict,
-) -> None:
-    """
-    Update individual notification fields (web, push, email) and email_cadence.
-    """
-    for field in ["web", "push", "email"]:
-        if field in source_config:
-            target_config[field] |= source_config[field]
-    if "email_cadence" in source_config:
-        if not target_config.get("email_cadence") or isinstance(target_config.get("email_cadence"), str):
-            target_config["email_cadence"] = set()
-
-        target_config["email_cadence"].add(source_config["email_cadence"])
-
-
-def update_core_notification_types(app_config: Dict, user_config: Dict) -> None:
-    """
-    Update core notification types by merging existing and new types.
-    """
-    if "core_notification_types" not in user_config:
-        return
-
-    existing_types: Set = set(app_config.get("core_notification_types", []))
-    existing_types.update(user_config["core_notification_types"])
-    app_config["core_notification_types"] = list(existing_types)
-
-
-def process_app_config(
-    app_config: Dict,
-    user_config: Dict,
-    app: str,
-    default_config: Dict,
-) -> None:
-    """
-    Process a single category configuration against another config.
-    """
-    if app not in user_config:
-        return
-
-    user_app_config = user_config[app]
-
-    # Update enabled status
-    app_config["enabled"] |= user_app_config.get("enabled", False)
-
-    # Update core notification types
-    update_core_notification_types(app_config, user_app_config)
-
-    # Update notification types
-    update_notification_types(app_config, user_app_config)
 
 
 def get_user_forum_access_roles(user_id: int) -> List[str]:
@@ -229,3 +120,54 @@ def exclude_inaccessible_preferences(user_preferences: dict, user):
         course_roles
     )
     return user_preferences
+
+
+def _get_missing_preference_objects(user_ids, existing_prefs, target_types):
+    """
+    Compares existing data against target needs and returns
+    a list of unsaved model instances.
+    """
+    already_exists = {f"{p.user_id}-{p.type}" for p in existing_prefs}
+
+    to_create = []
+    for user_id in user_ids:
+        for n_type in target_types:
+            key = f"{int(user_id)}-{n_type}"
+
+            if key not in already_exists:
+                new_obj = create_notification_preference(
+                    user_id=int(user_id),
+                    notification_type=n_type
+                )
+                to_create.append(new_obj)
+                already_exists.add(key)
+
+    return to_create
+
+
+def create_account_notification_pref_if_not_exists(user_ids, existing_preferences, notification_types):
+    """
+    Ensures that NotificationPreference objects exist for the given user IDs
+    and notification types. Creates any missing preferences in bulk.
+    Args:
+        user_ids: Iterable of user IDs to check/create preferences for.
+        existing_preferences: QuerySet of existing NotificationPreference objects.
+        notification_types: Iterable of notification type strings to ensure exist.
+    Returns:
+        List of NotificationPreference objects including both existing and newly created ones.
+    """
+    new_prefs_to_save = _get_missing_preference_objects(
+        user_ids,
+        existing_preferences,
+        notification_types
+    )
+
+    if not new_prefs_to_save:
+        return list(existing_preferences)
+
+    NotificationPreference.objects.bulk_create(
+        new_prefs_to_save,
+        ignore_conflicts=True
+    )
+
+    return list(existing_preferences) + new_prefs_to_save

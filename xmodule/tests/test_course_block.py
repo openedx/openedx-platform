@@ -42,9 +42,7 @@ class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=
 
     @ddt.data(True, False)
     def test_default_enrollment_start_date(self, should_have_default_enroll_start):
-        features = settings.FEATURES.copy()
-        features['CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE'] = should_have_default_enroll_start
-        with override_settings(FEATURES=features):
+        with override_settings(CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE=should_have_default_enroll_start):
             # reimport, so settings override could take effect
             del sys.modules['xmodule.course_block']
             import xmodule.course_block  # lint-amnesty, pylint: disable=redefined-outer-name, reimported

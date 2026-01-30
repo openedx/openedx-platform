@@ -58,5 +58,5 @@ def get_notification_apps_config() -> Dict[str, Any]:
     return _apply_overrides(
         default_config=DEFAULT_APPS,
         setting_name='NOTIFICATION_APPS_OVERRIDE',
-        allowed_keys={'core_web', 'core_email', 'core_push', 'non_editable', 'core_email_cadence'}
+        allowed_keys={'web', 'email', 'push', 'non_editable', 'email_cadence'}
     )

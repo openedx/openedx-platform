@@ -3,24 +3,38 @@
 
 import datetime
 import textwrap
-import unittest
+from django.conf import settings
+from django.test import TestCase, override_settings
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
 from xblock.field_data import DictFieldData
 
-from xmodule.lti_2_util import LTIError
-from xmodule.lti_block import LTIBlock
+from xmodule import lti_block
 from xmodule.tests.helpers import StubUserService
 
 from . import get_test_system
 
 
-class LTI20RESTResultServiceTest(unittest.TestCase):
+from xmodule.lti_2_util import LTIError as BuiltInLTIError
+from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
+
+
+class _LTI20RESTResultServiceTestBase(TestCase):
     """Logic tests for LTI block. LTI2.0 REST ResultService"""
 
+    __test__ = False
     USER_STANDIN = Mock()
     USER_STANDIN.id = 999
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.lti_class = lti_block.reset_class()
+        if settings.USE_EXTRACTED_LTI_BLOCK:
+            cls.LTIError = ExtractedLTIError
+        else:
+            cls.LTIError = BuiltInLTIError
 
     def setUp(self):
         super().setUp()
@@ -29,7 +43,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         self.runtime.publish = Mock()
         self.runtime._services['rebind_user'] = Mock()  # pylint: disable=protected-access
 
-        self.xblock = LTIBlock(self.runtime, DictFieldData({}), Mock())
+        self.xblock = self.lti_class(self.runtime, DictFieldData({}), Mock())
         self.lti_id = self.xblock.lti_id
         self.xblock.due = None
         self.xblock.graceperiod = None
@@ -56,7 +70,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         """
         Input with bad content type
         """
-        with self.assertRaisesRegex(LTIError, "Content-Type must be"):
+        with self.assertRaisesRegex(self.LTIError, "Content-Type must be"):
             request = Mock(headers={'Content-Type': 'Non-existent'})
             self.xblock.verify_lti_2_0_result_rest_headers(request)
 
@@ -65,8 +79,8 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         Input with bad oauth body hash verification
         """
         err_msg = "OAuth body verification failed"
-        self.xblock.verify_oauth_body_sign = Mock(side_effect=LTIError(err_msg))
-        with self.assertRaisesRegex(LTIError, err_msg):
+        self.xblock.verify_oauth_body_sign = Mock(side_effect=self.LTIError(err_msg))
+        with self.assertRaisesRegex(self.LTIError, err_msg):
             request = Mock(headers={'Content-Type': 'application/vnd.ims.lis.v2.result+json'})
             self.xblock.verify_lti_2_0_result_rest_headers(request)
 
@@ -99,7 +113,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         fit the form user/<anon_id>
         """
         for einput in self.BAD_DISPATCH_INPUTS:
-            with self.assertRaisesRegex(LTIError, "No valid user id found in endpoint URL"):
+            with self.assertRaisesRegex(self.LTIError, "No valid user id found in endpoint URL"):
                 self.xblock.parse_lti_2_0_handler_suffix(einput)
 
     GOOD_DISPATCH_INPUTS = [
@@ -160,7 +174,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         """
         for error_inputs, error_message in self.BAD_JSON_INPUTS:
             for einput in error_inputs:
-                with self.assertRaisesRegex(LTIError, error_message):
+                with self.assertRaisesRegex(self.LTIError, error_message):
                     self.xblock.parse_lti_2_0_result_json(einput)
 
     GOOD_JSON_INPUTS = [
@@ -341,7 +355,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         Test that we get a 401 when header verification fails
         """
         self.setup_system_xblock_mocks_for_lti20_request_test()
-        self.xblock.verify_lti_2_0_result_rest_headers = Mock(side_effect=LTIError())
+        self.xblock.verify_lti_2_0_result_rest_headers = Mock(side_effect=self.LTIError())
         mock_request = self.get_signed_lti20_mock_request(self.GOOD_JSON_PUT)
         response = self.xblock.lti_2_0_result_rest_handler(mock_request, "user/abcd")
         assert response.status_code == 401
@@ -360,7 +374,7 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         Test that we get a 404 when json verification fails
         """
         self.setup_system_xblock_mocks_for_lti20_request_test()
-        self.xblock.parse_lti_2_0_result_json = Mock(side_effect=LTIError())
+        self.xblock.parse_lti_2_0_result_json = Mock(side_effect=self.LTIError())
         mock_request = self.get_signed_lti20_mock_request(self.GOOD_JSON_PUT)
         response = self.xblock.lti_2_0_result_rest_handler(mock_request, "user/abcd")
         assert response.status_code == 404
@@ -385,3 +399,13 @@ class LTI20RESTResultServiceTest(unittest.TestCase):
         mock_request = self.get_signed_lti20_mock_request(self.GOOD_JSON_PUT)
         response = self.xblock.lti_2_0_result_rest_handler(mock_request, "user/abcd")
         assert response.status_code == 404
+
+
+@override_settings(USE_EXTRACTED_LTI_BLOCK=True)
+class TestLTI20RESTResultServiceWithExtracted(_LTI20RESTResultServiceTestBase):
+    __test__ = True
+
+
+@override_settings(USE_EXTRACTED_LTI_BLOCK=False)
+class TestLTI20RESTResultServiceWithBuiltIn(_LTI20RESTResultServiceTestBase):
+    __test__ = True

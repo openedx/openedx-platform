@@ -44,7 +44,7 @@ def is_cross_domain_request_allowed(request):
             return False
 
         if not referer_parts.scheme == 'https':
-            log.debug("Referer '%s' must have the scheme 'https'")
+            log.debug("Referer '%s' must have the scheme 'https'", str(referer))
             return False
 
     # Reduce the referer URL to just the scheme and authority

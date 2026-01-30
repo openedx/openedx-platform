@@ -10,15 +10,13 @@ attrs==25.4.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.42.18
+boto3==1.42.30
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.42.18
+botocore==1.42.30
     # via
     #   boto3
     #   s3transfer
-cachetools==6.2.4
-    # via google-auth
-certifi==2025.11.12
+certifi==2026.1.4
     # via requests
 cffi==2.0.0
     # via
@@ -34,7 +32,7 @@ cryptography==45.0.7
     # via
     #   -c requirements/constraints.txt
     #   pyjwt
-django==5.2.9
+django==5.2.10
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -49,11 +47,11 @@ edx-django-utils==8.0.1
     # via edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.in
-google-api-core==2.28.1
+google-api-core==2.29.0
     # via google-api-python-client
-google-api-python-client==2.187.0
+google-api-python-client==2.188.0
     # via -r scripts/user_retirement/requirements/base.in
-google-auth==2.45.0
+google-auth==2.47.0
     # via
     #   google-api-core
     #   google-api-python-client
@@ -62,7 +60,7 @@ google-auth-httplib2==0.3.0
     # via google-api-python-client
 googleapis-common-protos==1.72.0
     # via google-api-core
-httplib2==0.31.0
+httplib2==0.31.1
     # via
     #   google-api-python-client
     #   google-auth-httplib2
@@ -86,14 +84,14 @@ platformdirs==4.5.1
     # via zeep
 proto-plus==1.27.0
     # via google-api-core
-protobuf==6.33.2
+protobuf==6.33.4
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   proto-plus
 psutil==7.2.1
     # via edx-django-utils
-pyasn1==0.6.1
+pyasn1==0.6.2
     # via
     #   pyasn1-modules
     #   rsa
@@ -105,7 +103,7 @@ pyjwt[crypto]==2.10.1
     # via
     #   edx-rest-api-client
     #   simple-salesforce
-pynacl==1.6.1
+pynacl==1.6.2
     # via edx-django-utils
 pyparsing==3.3.1
     # via httplib2
@@ -151,7 +149,7 @@ unicodecsv==0.14.1
     # via -r scripts/user_retirement/requirements/base.in
 uritemplate==4.2.0
     # via google-api-python-client
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   botocore
     #   requests

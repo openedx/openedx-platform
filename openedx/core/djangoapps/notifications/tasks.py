@@ -3,7 +3,6 @@ This file contains celery tasks for notifications.
 """
 import uuid
 from datetime import datetime, timedelta
-from typing import List
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -15,7 +14,6 @@ from zoneinfo import ZoneInfo
 
 from openedx.core.djangoapps.notifications.audience_filters import NotificationFilter
 from openedx.core.djangoapps.notifications.base_notification import (
-    COURSE_NOTIFICATION_APPS,
     COURSE_NOTIFICATION_TYPES,
     get_default_values_of_preference,
     get_notification_content
@@ -35,10 +33,14 @@ from openedx.core.djangoapps.notifications.grouping_notifications import (
 )
 from openedx.core.djangoapps.notifications.models import (
     Notification,
-    NotificationPreference,
+    NotificationPreference, create_notification_preference,
 )
 from openedx.core.djangoapps.notifications.push.tasks import send_ace_msg_to_push_channel
-from openedx.core.djangoapps.notifications.utils import clean_arguments, get_list_in_batches
+from openedx.core.djangoapps.notifications.utils import (
+    clean_arguments,
+    get_list_in_batches,
+    create_account_notification_pref_if_not_exists
+)
 
 logger = get_task_logger(__name__)
 
@@ -145,7 +147,7 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
         preferences = list(preferences)
         if default_web_config:
             preferences = create_account_notification_pref_if_not_exists(
-                batch_user_ids, preferences, notification_type
+                batch_user_ids, preferences, [notification_type]
             )
 
         if not preferences:
@@ -263,71 +265,3 @@ def update_account_user_preference(user_id: int) -> None:
     # Bulk create all new preferences
     NotificationPreference.objects.bulk_create(new_preferences)
     return
-
-
-def create_notification_preference(user_id: int, notification_type: str) -> NotificationPreference:
-    """
-    Create a single notification preference with appropriate defaults.
-
-    Args:
-        user_id: ID of the user
-        notification_type: Type of notification
-
-    Returns:
-        NotificationPreference instance
-    """
-    notification_config = COURSE_NOTIFICATION_TYPES.get(notification_type, {})
-    is_core = notification_config.get('is_core', False)
-    app = COURSE_NOTIFICATION_TYPES[notification_type]['notification_app']
-    email_cadence = notification_config.get('email_cadence', EmailCadence.DAILY)
-    if is_core:
-        email_cadence = COURSE_NOTIFICATION_APPS[app]['core_email_cadence']
-    return NotificationPreference(
-        user_id=user_id,
-        type=notification_type,
-        app=app,
-        web=_get_channel_default(is_core, notification_type, 'web'),
-        push=_get_channel_default(is_core, notification_type, 'push'),
-        email=_get_channel_default(is_core, notification_type, 'email'),
-        email_cadence=email_cadence,
-    )
-
-
-def _get_channel_default(is_core: bool, notification_type: str, channel: str) -> bool:
-    """
-    Get the default value for a notification channel.
-
-    Args:
-        is_core: Whether this is a core notification
-        notification_type: Type of notification
-        channel: Channel name (web, push, email)
-
-    Returns:
-        Default boolean value for the channel
-    """
-    if is_core:
-        notification_app = COURSE_NOTIFICATION_TYPES[notification_type]['notification_app']
-        return COURSE_NOTIFICATION_APPS[notification_app][f'core_{channel}']
-
-    return COURSE_NOTIFICATION_TYPES[notification_type][channel]
-
-
-def create_account_notification_pref_if_not_exists(user_ids: List, preferences: List, notification_type: str):
-    """
-    Create account level notification preference if not exist.
-    """
-    new_preferences = []
-
-    for user_id in user_ids:
-        if not any(preference.user_id == int(user_id) for preference in preferences):
-            new_preferences.append(create_notification_preference(
-                user_id=int(user_id),
-                notification_type=notification_type,
-
-            ))
-    if new_preferences:
-        # ignoring conflicts because it is possible that preference is already created by another process
-        # conflicts may arise because of constraint on user_id and course_id fields in model
-        NotificationPreference.objects.bulk_create(new_preferences, ignore_conflicts=True)
-        preferences = preferences + new_preferences
-    return preferences

@@ -19,29 +19,28 @@ class SettingsOverrideIntegrationTest(TestCase):
     """
 
     @override_settings(NOTIFICATION_TYPES_OVERRIDE={
-        'new_discussion_post': {
+        'new_comment_on_response': {
             'email': True,
             'email_cadence': 'immediately',
-            'is_core': True
+            'use_app_defaults': False
         }
     })
     def test_override_notification_types_real_config(self):
         """
-        Test overriding 'new_discussion_post' which exists in the real config.
-        We verify that allowed keys change and forbidden keys (is_core) do not.
+        Test overriding 'new_comment_on_response' which exists in the real config.
+        We verify that allowed keys change and forbidden keys (use_app_defaults) do not.
         """
         config = get_notification_types_config()
 
-        target_notification = config['new_discussion_post']
+        target_notification = config['new_comment_on_response']
 
         self.assertTrue(
             target_notification['email'],
             "The 'email' setting should be overridden to True."
         )
-
-        self.assertFalse(
-            target_notification['is_core'],
-            "The 'is_core' field should not be overridable via settings."
+        self.assertTrue(
+            target_notification['use_app_defaults'],
+            "The 'use_app_defaults' field should not be overridable via settings."
         )
 
         # IMMUTABILITY CHECK: Ensure the global module variable wasn't touched
@@ -63,7 +62,7 @@ class SettingsOverrideIntegrationTest(TestCase):
 
     @override_settings(NOTIFICATION_APPS_OVERRIDE={
         'discussion': {
-            'core_email': False,
+            'email': False,
             'enabled': False
         }
     })
@@ -76,8 +75,8 @@ class SettingsOverrideIntegrationTest(TestCase):
         target_app = config['discussion']
 
         self.assertFalse(
-            target_app['core_email'],
-            "The 'core_email' setting should be overridden to False."
+            target_app['email'],
+            "The 'email' setting should be overridden to False."
         )
 
         self.assertTrue(
@@ -86,7 +85,7 @@ class SettingsOverrideIntegrationTest(TestCase):
         )
 
         self.assertTrue(
-            _COURSE_NOTIFICATION_APPS['discussion']['core_email'],
+            _COURSE_NOTIFICATION_APPS['discussion']['email'],
             "The original global _COURSE_NOTIFICATION_APPS must remain immutable."
         )
 
@@ -128,19 +127,19 @@ class SettingsOverrideIntegrationTest(TestCase):
 
     @override_settings(NOTIFICATION_APPS_OVERRIDE={
         'discussion': {
-            'core_email_cadence': 'Immediately'
+            'email_cadence': 'Immediately'
         }
     })
     def test_override_notification_apps_email_cadence(self):
         """
-        Test overriding core_email_cadence for an existing notification app.
+        Test overriding email_cadence for an existing notification app.
         Ensures the override is applied and the module-level default isn't mutated.
         """
         config = get_notification_apps_config()
         target_app = config['discussion']
 
         self.assertEqual(
-            target_app.get('core_email_cadence'),
+            target_app.get('email_cadence'),
             'Immediately',
-            "The 'core_email_cadence' setting should be overridden to 'Immediately'."
+            "The 'email_cadence' setting should be overridden to 'Immediately'."
         )

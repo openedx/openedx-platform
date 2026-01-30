@@ -20,7 +20,7 @@ from openedx.core.djangoapps.notifications.models import NotificationPreference
 from openedx.core.djangoapps.notifications.permissions import allow_any_authenticated_user
 
 from .base_notification import COURSE_NOTIFICATION_APPS, NotificationAppManager, COURSE_NOTIFICATION_TYPES, \
-    NotificationTypeManager
+    NotificationTypeManager, filter_notification_types_by_app
 from .events import (
     notification_preference_update_event,
     notification_read_event,
@@ -37,7 +37,7 @@ from .serializers import (
 from .tasks import create_notification_preference
 from .utils import (
     get_show_notifications_tray,
-    exclude_inaccessible_preferences
+    exclude_inaccessible_preferences, create_account_notification_pref_if_not_exists
 )
 
 
@@ -365,6 +365,176 @@ class NotificationPreferencesView(APIView):
                 notification_app=validated_data['notification_app']
             )
             query_set = query_set.filter(type__in=core_types)
+        else:
+            # Filter by single notification type
+            query_set = query_set.filter(type=validated_data['notification_type'])
+
+        # Prepare update data based on channel type
+        updated_data = self._prepare_update_data(validated_data)
+
+        # Update preferences
+        query_set.update(**updated_data)
+
+        # Log the event
+        self._log_preference_update_event(request.user, validated_data)
+
+        # Prepare and return response
+        response_data = self._prepare_response_data(validated_data)
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def _prepare_update_data(self, validated_data):
+        """
+        Prepare the data dictionary for updating notification preferences.
+
+        Args:
+            validated_data (dict): Validated serializer data
+
+        Returns:
+            dict: Dictionary with update data
+        """
+        channel = validated_data['notification_channel']
+
+        if channel == 'email_cadence':
+            return {channel: validated_data['email_cadence']}
+        else:
+            return {channel: validated_data['value']}
+
+    def _log_preference_update_event(self, user, validated_data):
+        """
+        Log the notification preference update event.
+
+        Args:
+            user: The user making the update
+            validated_data (dict): Validated serializer data
+        """
+        event_data = {
+            'notification_app': validated_data['notification_app'],
+            'notification_type': validated_data['notification_type'],
+            'notification_channel': validated_data['notification_channel'],
+            'value': validated_data.get('value'),
+            'email_cadence': validated_data.get('email_cadence'),
+        }
+        notification_preference_update_event(user, [], event_data)
+
+    def _prepare_response_data(self, validated_data):
+        """
+        Prepare the response data dictionary.
+
+        Args:
+            validated_data (dict): Validated serializer data
+
+        Returns:
+            dict: Response data dictionary
+        """
+        email_cadence = validated_data.get('email_cadence', None)
+        # Determine the updated value
+        updated_value = validated_data.get('value', email_cadence if email_cadence else None)
+
+        # Determine the channel
+        channel = validated_data.get('notification_channel')
+        if not channel and validated_data.get('email_cadence'):
+            channel = 'email_cadence'
+
+        return {
+            'status': 'success',
+            'message': 'Notification preferences update completed',
+            'show_preferences': get_show_notifications_tray(),
+            'data': {
+                'updated_value': updated_value,
+                'notification_type': validated_data['notification_type'],
+                'channel': channel,
+                'app': validated_data['notification_app'],
+            }
+        }
+
+
+@allow_any_authenticated_user()
+class NotificationPreferencesViewV3(APIView):
+    """
+    API view to retrieve and structure the notification preferences for the
+    authenticated user.
+    """
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve notification preferences.
+
+        This method fetches the user's active notification preferences and
+        merges them with a default structure provided by NotificationAppManager.
+        This provides a complete view of all possible notifications and the
+        user's current settings for them.
+
+        Returns:
+            Response: A DRF Response object containing the structured
+                      notification preferences or an error message.
+        """
+        user_preferences_qs = NotificationPreference.objects.filter(user=request.user)
+
+        # Ensure all notification types are present in the user's preferences.
+        user_preferences_qs = create_account_notification_pref_if_not_exists(
+            user_ids=[request.user.id],
+            existing_preferences=user_preferences_qs,
+            notification_types=COURSE_NOTIFICATION_TYPES.keys()
+        )
+        structured_preferences = {
+            app_name: {
+                'notification_types': {},
+                'enabled': COURSE_NOTIFICATION_APPS[app_name].get('enabled', True),
+                'non_editable': []
+
+            } for app_name in COURSE_NOTIFICATION_APPS.keys()}
+
+        for user_preference in user_preferences_qs:
+            app_name = user_preference.app
+            type_name = user_preference.type
+
+            if user_preference.is_grouped:
+                structured_preferences[app_name]['notification_types']['grouped_notification'] = {
+                    **user_preference.config
+                }
+                continue
+
+            structured_preferences[app_name]['notification_types'][type_name] = {**user_preference.config}
+
+        exclude_inaccessible_preferences(structured_preferences, request.user)
+        structured_preferences = add_non_editable_in_preference(structured_preferences)
+
+        return Response({
+            'status': 'success',
+            'message': 'Notification preferences retrieved successfully.',
+            'show_preferences': get_show_notifications_tray(),
+            'data': structured_preferences
+        }, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """
+        Handles PUT requests to update notification preferences.
+
+        This method updates the user's notification preferences based on the
+        provided data in the request body. It expects a dictionary with
+        notification types and their settings.
+
+        Returns:
+            Response: A DRF Response object indicating success or failure.
+        """
+        # Validate incoming data
+        serializer = UserNotificationPreferenceUpdateAllSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response({
+                'status': 'error',
+                'message': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get validated data for easier access
+        validated_data = serializer.validated_data
+
+        # Build query set based on notification type
+        query_set = NotificationPreference.objects.filter(user_id=request.user.id)
+
+        if validated_data['notification_type'] == 'grouped_notification':
+            # Get core notification types for the app
+            grouped_types = filter_notification_types_by_app(validated_data['notification_app'], use_app_defaults=True)
+            query_set = query_set.filter(type__in=grouped_types.keys())
         else:
             # Filter by single notification type
             query_set = query_set.filter(type=validated_data['notification_type'])

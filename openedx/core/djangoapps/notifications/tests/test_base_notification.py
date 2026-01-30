@@ -15,13 +15,13 @@ class NotificationPreferenceValidationTest(ModuleStoreTestCase):
         Tests if COURSE_NOTIFICATION_APPS constant has all required keys with valid
         data type for new notification app
         """
-        bool_keys = ['enabled', 'core_web', 'core_push', 'core_email']
+        bool_keys = ['enabled', 'web', 'push', 'email']
         notification_apps = base_notification.COURSE_NOTIFICATION_APPS
         assert "" not in notification_apps
         for app_data in notification_apps.values():
-            assert 'core_info' in app_data.keys()
+            assert 'info' in app_data.keys()
             assert isinstance(app_data['non_editable'], list)
-            assert isinstance(app_data['core_email_cadence'], str)
+            assert isinstance(app_data['email_cadence'], str)
             for key in bool_keys:
                 assert isinstance(app_data[key], bool)
 
@@ -30,13 +30,13 @@ class NotificationPreferenceValidationTest(ModuleStoreTestCase):
         Tests if COURSE_NOTIFICATION_TYPES constant has all required keys with valid
         data type for core notification type
         """
-        str_keys = ['notification_app', 'name', 'email_template']
+        str_keys = ['notification_app', 'name']
         notification_types = base_notification.COURSE_NOTIFICATION_TYPES
         assert "" not in notification_types
         for notification_type in notification_types.values():
-            if not notification_type['is_core']:
+            if not notification_type.get('use_app_defaults', False):
                 continue
-            assert isinstance(notification_type['is_core'], bool)
+            assert isinstance(notification_type['use_app_defaults'], bool)
             assert isinstance(notification_type['content_context'], dict)
             assert 'content_template' in notification_type.keys()
             for key in str_keys:
@@ -47,12 +47,12 @@ class NotificationPreferenceValidationTest(ModuleStoreTestCase):
         Tests if COURSE_NOTIFICATION_TYPES constant has all required keys with valid
         data type for non-core notification type
         """
-        str_keys = ['notification_app', 'name', 'info', 'email_template']
-        bool_keys = ['is_core', 'web', 'email', 'push']
+        str_keys = ['notification_app', 'name', 'info']
+        bool_keys = ['web', 'email', 'push']
         notification_types = base_notification.COURSE_NOTIFICATION_TYPES
         assert "" not in notification_types
         for notification_type in notification_types.values():
-            if notification_type['is_core']:
+            if notification_type.get('use_app_defaults', False):
                 continue
             assert 'content_template' in notification_type.keys()
             assert isinstance(notification_type['content_context'], dict)

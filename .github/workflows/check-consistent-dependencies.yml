@@ -65,7 +65,7 @@ jobs:
           developers.
 
           Please see the requirements README for information on how to resolve this:
-          https://github.com/openedx/edx-platform/blob/master/requirements/README.rst#inconsistent-dependencies
+          https://github.com/openedx/openedx-platform/blob/master/requirements/README.rst#inconsistent-dependencies
           EOMARKDOWN
           )
 

@@ -2529,10 +2529,36 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             if original_structure['root'] == block_key:
                 raise ValueError("Cannot delete the root of a course")
             if block_key not in original_structure['blocks']:
-                raise ValueError("Cannot delete block_key {} from course {}, because that block does not exist.".format(
-                    block_key,
-                    usage_locator,
-                ))
+                # When user move a full sub-section to another section
+                # These changes are in draft-branch only and when user delete this moved
+                # section, we need to delete it from draft-branch
+                draft_course_key = usage_locator.course_key.for_branch(ModuleStoreEnum.BranchName.draft)
+                try:
+                    draft_structure = self._lookup_course(draft_course_key).structure
+                    if block_key in draft_structure['blocks']:
+                        # Block exists in draft, use draft structure instead
+                        original_structure = draft_structure
+                        log.info("Block %s found in draft branch, proceeding with deletion from draft", block_key)
+                    else:
+                        raise ValueError(
+                            (
+                                "Cannot delete block_key {} from course {}, "
+                                "because that block does not exist in either branch."
+                            ).format(
+                                block_key,
+                                usage_locator,
+                            )
+                        )
+                except ItemNotFoundError as exc:
+                    raise ValueError(
+                        (
+                            "Cannot delete block_key {} from course {}, "
+                            "because that block does not exist."
+                        ).format(
+                            block_key,
+                            usage_locator,
+                        )
+                    ) from exc
             index_entry = self._get_index_if_valid(usage_locator.course_key, force)
             new_structure = self.version_structure(usage_locator.course_key, original_structure, user_id)
             new_blocks = new_structure['blocks']

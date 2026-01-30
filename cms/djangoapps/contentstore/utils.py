@@ -27,6 +27,7 @@ from milestones import api as milestones_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import BlockUsageLocator, LibraryContainerLocator, LibraryLocator
+from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.learning.data import CourseNotificationData
@@ -1314,7 +1315,8 @@ def load_services_for_studio(runtime, user):
         "settings": SettingsService(),
         "lti-configuration": ConfigurationService(CourseAllowPIISharingInLTIFlag),
         "teams_configuration": TeamsConfigurationService(),
-        "library_tools": LegacyLibraryToolsService(modulestore(), user.id)
+        "library_tools": LegacyLibraryToolsService(modulestore(), user.id),
+        "video_config": VideoConfigService(),
     }
 
     runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access

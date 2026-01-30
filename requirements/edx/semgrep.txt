@@ -6,7 +6,7 @@
 #
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.0
+anyio==4.12.1
     # via
     #   httpx
     #   mcp
@@ -25,7 +25,7 @@ boltons==21.0.0
     #   semgrep
 bracex==2.6
     # via wcmatch
-certifi==2025.11.12
+certifi==2026.1.4
     # via
     #   httpcore
     #   httpx
@@ -89,6 +89,7 @@ opentelemetry-api==1.37.0
     #   opentelemetry-exporter-otlp-proto-http
     #   opentelemetry-instrumentation
     #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-threading
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
     #   semgrep
@@ -97,8 +98,12 @@ opentelemetry-exporter-otlp-proto-common==1.37.0
 opentelemetry-exporter-otlp-proto-http==1.37.0
     # via semgrep
 opentelemetry-instrumentation==0.58b0
-    # via opentelemetry-instrumentation-requests
+    # via
+    #   opentelemetry-instrumentation-requests
+    #   opentelemetry-instrumentation-threading
 opentelemetry-instrumentation-requests==0.58b0
+    # via semgrep
+opentelemetry-instrumentation-threading==0.58b0
     # via semgrep
 opentelemetry-proto==1.37.0
     # via
@@ -119,9 +124,9 @@ packaging==25.0
     # via
     #   opentelemetry-instrumentation
     #   semgrep
-peewee==3.18.3
+peewee==3.19.0
     # via semgrep
-protobuf==6.33.2
+protobuf==6.33.4
     # via
     #   googleapis-common-protos
     #   opentelemetry-proto
@@ -157,17 +162,15 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-ruamel-yaml==0.18.16
+ruamel-yaml==0.19.1
     # via semgrep
 ruamel-yaml-clib==0.2.14
-    # via
-    #   ruamel-yaml
-    #   semgrep
-semgrep==1.146.0
+    # via semgrep
+semgrep==1.148.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.1.1
+sse-starlette==3.2.0
     # via mcp
-starlette==0.50.0
+starlette==0.52.1
     # via
     #   mcp
     #   sse-starlette
@@ -192,7 +195,7 @@ typing-inspection==0.4.2
     #   mcp
     #   pydantic
     #   pydantic-settings
-urllib3==2.6.2
+urllib3==2.6.3
     # via
     #   requests
     #   semgrep
@@ -201,6 +204,8 @@ uvicorn==0.40.0
 wcmatch==8.5.2
     # via semgrep
 wrapt==1.17.3
-    # via opentelemetry-instrumentation
+    # via
+    #   opentelemetry-instrumentation
+    #   opentelemetry-instrumentation-threading
 zipp==3.23.0
     # via importlib-metadata

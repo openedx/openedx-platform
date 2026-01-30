@@ -1880,8 +1880,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'taxonomy_id': taxonomy.pk,
             'can_tag_object': True,
             'tags': [
-                {'value': 'Tag 1', 'lineage': ['Tag 1'], 'can_delete_objecttag': True},
-                {'value': 'Tag 2', 'lineage': ['Tag 2'], 'can_delete_objecttag': True},
+                {
+                    'value': 'Tag 1',
+                    'lineage': ['Tag 1'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
+                {
+                    'value': 'Tag 2',
+                    'lineage': ['Tag 2'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
             ],
         }]
 
@@ -1913,8 +1923,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'can_tag_object': True,
             'export_id': self.t1.export_id,
             'tags': [
-                {'value': 'android', 'lineage': ['ALPHABET', 'android'], 'can_delete_objecttag': False},
-                {'value': 'anvil', 'lineage': ['ALPHABET', 'anvil'], 'can_delete_objecttag': True}
+                {
+                    'value': 'android',
+                    'lineage': ['ALPHABET', 'android'],
+                    'can_delete_objecttag': False,
+                    'is_copied': True,
+                },
+                {
+                    'value': 'anvil',
+                    'lineage': ['ALPHABET', 'anvil'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
             ]
         }]
 
@@ -1952,8 +1972,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         object_id = str(object_key)
         tagging_api.tag_object(object_id=object_id, taxonomy=self.t1, tags=["anvil", "android"])
         expected_tags = [
-            {"value": "android", "lineage": ["ALPHABET", "android"], "can_delete_objecttag": expected_perm},
-            {"value": "anvil", "lineage": ["ALPHABET", "anvil"], "can_delete_objecttag": expected_perm},
+            {
+                "value": "android",
+                "lineage": ["ALPHABET", "android"],
+                "can_delete_objecttag": expected_perm,
+                "is_copied": False,
+            },
+            {
+                "value": "anvil",
+                "lineage": ["ALPHABET", "anvil"],
+                "can_delete_objecttag": expected_perm,
+                "is_copied": False,
+            },
         ]
         url = OBJECT_TAGS_URL.format(object_id=object_id)
         user = getattr(self, user_attr)

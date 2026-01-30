@@ -8,6 +8,7 @@ import pytest
 from crum import set_current_request
 from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
+from django.test import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from milestones.tests.utils import MilestonesTestCaseMixin
@@ -333,12 +334,12 @@ class StaticTabDateTestCaseXML(LoginEnrollmentTestCase, ModuleStoreTestCase):
         self.assertContains(resp, self.xml_data)
 
 
-@patch.dict('django.conf.settings.FEATURES', {'ENTRANCE_EXAMS': True})
+@override_settings(ENTRANCE_EXAMS=True)
 class EntranceExamsTabsTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTestCaseMixin):
     """
     Validate tab behavior when dealing with Entrance Exams
     """
-    @patch.dict('django.conf.settings.FEATURES', {'ENTRANCE_EXAMS': True})
+    @override_settings(ENTRANCE_EXAMS=True)
     def setUp(self):
         """
         Test case scaffolding

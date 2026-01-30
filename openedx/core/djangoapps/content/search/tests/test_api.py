@@ -1233,3 +1233,68 @@ class TestSearchApi(ModuleStoreTestCase):
             ],
             any_order=True,
         )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_fetch_block_types(self, mock_meilisearch):
+        from openedx.core.djangoapps.content.search.api import fetch_block_types
+
+        mock_index = mock_meilisearch.return_value.get_index.return_value
+        fetch_block_types('context_key = test')
+
+        mock_index.search.assert_called_once_with(
+            "",
+            {
+                "facets": ["block_type"],
+                "filter": ['context_key = test'],
+                "limit": 0,
+            }
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_get_all_blocks_from_context(self, mock_meilisearch):
+        from openedx.core.djangoapps.content.search.api import get_all_blocks_from_context
+
+        mock_index = mock_meilisearch.return_value.get_index.return_value
+        expected_result = [
+            {"usage_key": "block-v1:test+type@html+block@1"},
+            {"usage_key": "block-v1:test+type@video+block@2"},
+        ]
+
+        # Simulate two pages: one with results and one empty (while loop ends)
+        mock_index.search.side_effect = [
+            {
+                "hits": expected_result,
+                "estimatedTotalHits": 1200,
+            },
+            {
+                "hits": [],
+                "estimatedTotalHits": 1200,
+            },
+        ]
+
+        result = list(get_all_blocks_from_context(
+            context_key="course-v1:TestOrg+TestCourse+TestRun",
+            extra_attributes_to_retrieve=["display_name"],
+        ))
+
+        assert result == expected_result
+        assert mock_index.search.call_count == 2
+        mock_index.search.assert_any_call(
+            "",
+            {
+                "filter": ['context_key = "course-v1:TestOrg+TestCourse+TestRun"'],
+                "limit": 1000,
+                "offset": 0,
+                "attributesToRetrieve": ["usage_key", "display_name"],
+            }
+        )
+
+        mock_index.search.assert_any_call(
+            "",
+            {
+                "filter": ['context_key = "course-v1:TestOrg+TestCourse+TestRun"'],
+                "limit": 1000,
+                "offset": 1000,
+                "attributesToRetrieve": ["usage_key", "display_name"],
+            }
+        )

@@ -12,50 +12,47 @@ This document explains how to override notification preferences defaults for new
 
 **Notification apps:** For organization purposes, notification preferences are grouped by apps/platform workflows that they are related to. As of now, we have 3 apps: discussions, grading, and updates. Note that there is no app-level on/off switch for notifications types in it.
 
-**Bundled preferences:** Each app discussed above has a set of preferences that start with `core_*` (e.g., `core_web`, `core_email`, `core_email_cadence`). A notification type marked `is_core: True` inherits its preferences from the app's `core_*` preferences instead of using its own default preferences. This enables us to bundle several notification types under one row of preferences visible to the user. For example, in case of discussions, 7 notifications types are controlled by `core_*` preference of the discussions app, which appears on the Account Settings page as a single row labeled "Activity Notifications" (see details here: https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4750475268/Current+state+of+OpenedX+Notifications#Activities%2C-Preferences-and-Defaults). This reduces clutter on the settings page.
+**App-level defaults / Bundled preferences:** Each app discussed above has a set of app-level defaults (bundled preferences). A notification type marked `use_app_defaults: True` inherits its preferences from the app's app-level defaults instead of using its own default preferences. This enables grouping several notification types under one row of preferences visible to the user. For example, in case of discussions, 7 notification types are controlled by the app-level defaults of the discussions app, which appears on the Account Settings page as a single row labeled "Activity Notifications". This reduces clutter on the settings page.
 
 ### What you can override
 
 The table below lists all the preferences that you can override for each notification along with possible values. You can override defaults for both using the following dictionaries in your `lms.yml`, `cms.yml`, or `settings.py`:
 
-- Use `NOTIFICATION_TYPES_OVERRIDE` to override defaults for notifications.
-- Use `NOTIFICATION_APPS_OVERRIDE` to override defaults for notifications marked as core (`is_core: True`). Instead of notification key, use the app key here. At present, there are 3 apps whose keys are as follows:
-  - discussion
-  - updates
-  - grading
+- Use `NOTIFICATION_TYPES_OVERRIDE` to override defaults for individual notification types.
+- Use `NOTIFICATION_APPS_OVERRIDE` to override app-level defaults for notification types marked as `use_app_defaults: True`. Use the internal keys listed below (`web`, `email`, `push`, `email_cadence`, `non_editable`).
 
-| Key | Key for notifications marked as core | Type | Possible values | What it does |
-|-----|--------------------------------------|------|-----------------|--------------|
-| web | core_web | bool | True OR False | Determines if the user gets notifications in the tray. |
-| email | core_email | bool | True OR False | Determines if the user gets notification in email. |
-| push | core_push | bool | True OR False | Determines if user gets push notification in mobile apps (not implemented) |
-| email_cadence | core_email_cadence | string | 'Immediately' OR 'Daily' OR 'Weekly' | Determines when a user receives email notification. |
-| non_editable | non_editable | list of strings | Any subset of ['web','email','push'] e.g. ['email', 'web'] | Determines toggles of which of the 3 channels will not be editable by the user. |
+| Key | Type | Possible values | What it does |
+|-----|------|-----------------|--------------|
+| web | bool | True OR False | Determines if the user gets notifications in the tray. |
+| email | bool | True OR False | Determines if the user gets notification in email. |
+| push | bool | True OR False | Determines if user gets push notification in mobile apps (not implemented) |
+| email_cadence | string | 'Immediately' OR 'Daily' OR 'Weekly' OR 'Never' | Determines when a user receives email notification. |
+| non_editable | list of strings | Any subset of ['web','email','push'] e.g. ['email', 'web'] | Determines toggles of which of the 3 channels will not be editable by the user. |
 
 Notification keys are listed in the table below. More notifications may be added in the future. You can find notification keys in this code: https://github.com/openedx/edx-platform/blob/2aeac459945e3e11c153fdb5203ea020514548d5/openedx/core/djangoapps/notifications/base_notification.py#L66
 
-| # | Notification app | Notification key | is_core True? | Appears on Account Settings page as |
-|---|------------------|------------------|---------------|-------------------------------------|
-| 1 | discussion | new_response | Yes | Activity Notifications |
-| 2 | discussion | new_comment | Yes | Activity Notifications |
-| 3 | discussion | new_comment_on_response | Yes | Activity Notifications |
-| 4 | discussion | response_on_followed_post | Yes | Activity Notifications |
-| 5 | discussion | comment_on_followed_post | Yes | Activity Notifications |
-| 6 | discussion | response_endorsed_on_thread | Yes | Activity Notifications |
-| 7 | discussion | response_endorsed | Yes | Activity Notifications |
-| 8 | discussion | content_reported | No | Reported content |
-| 9 | discussion | new_question_post | No | New question posts |
-| 10 | discussion | new_discussion_post | No | New discussion posts |
-| 11 | discussion | new_instructor_all_learners_post | No | New posts from instructors |
-| 12 | updates | course_updates | No | Course updates |
-| 13 | grading | ora_staff_notifications | No | New ORA submission for staff |
-| 14 | grading | ora_grade_assigned | No | ORA grade received |
+| # | Notification app | Notification key | uses app defaults | Appears on Account Settings page as |
+|---|------------------|------------------|-------------------|-------------------------------------|
+| 1 | discussion | new_response | True              | Activity Notifications |
+| 2 | discussion | new_comment | True              | Activity Notifications |
+| 3 | discussion | new_comment_on_response | True              | Activity Notifications |
+| 4 | discussion | response_on_followed_post | True              | Activity Notifications |
+| 5 | discussion | comment_on_followed_post | True              | Activity Notifications |
+| 6 | discussion | response_endorsed_on_thread | True              | Activity Notifications |
+| 7 | discussion | response_endorsed | True              | Activity Notifications |
+| 8 | discussion | content_reported | False             | Reported content |
+| 9 | discussion | new_question_post | False             | New question posts |
+| 10 | discussion | new_discussion_post | False             | New discussion posts |
+| 11 | discussion | new_instructor_all_learners_post | False             | New posts from instructors |
+| 12 | updates | course_updates | False             | Course updates |
+| 13 | grading | ora_staff_notifications | False             | New ORA submission for staff |
+| 14 | grading | ora_grade_assigned | False             | ORA grade received |
 
 ### Example configuration for overriding notification preferences:
 
 ```python
 NOTIFICATION_TYPES_OVERRIDE = {
-    # Turn off tray and and turn on email notifications for new discussion posts and set daily cadence.
+    # Turn off tray and turn on email notifications for new discussion posts and set daily cadence.
     'new_discussion_post': {
         'email': True,
         'web': False,
@@ -69,14 +66,15 @@ NOTIFICATION_TYPES_OVERRIDE = {
 }
 ```
 
-### Example configuration for overriding notification preference marked as core:
+### Example configuration for overriding app-level defaults for notifications marked as use_app_defaults: True
 
 ```python
 NOTIFICATION_APPS_OVERRIDE = {
-    # Turn on tray and turn off email for 7 discussion notification types that appear on Account Settings page as "Activity Notifications".
+    # For the 'discussion' app, set tray on and email off for all app-default notifications.
     'discussion': {
-        'core_email': False,
-        'core_web': True
+        'email': False,
+        'web': True,
+        'email_cadence': 'Immediately',
     }
 }
 ```
@@ -84,4 +82,4 @@ NOTIFICATION_APPS_OVERRIDE = {
 ### Why isn't my override working?
 
 - See if you are using the exact key name (e.g. `new_discussion_post` and not `New_discussion_post`).
-- If a notification is marked as core (`is_core: True`) in the code, it will ignore overrides in `NOTIFICATION_TYPES_OVERRIDE`. You must override using `NOTIFICATION_APPS_OVERRIDE` instead.
+- If a notification is marked as `use_app_defaults: True` in the code, it will ignore overrides in `NOTIFICATION_TYPES_OVERRIDE`. You must override using `NOTIFICATION_APPS_OVERRIDE` instead.

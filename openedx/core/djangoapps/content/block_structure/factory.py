@@ -31,7 +31,8 @@ class BlockStructureFactory:
             xmodule.modulestore.exceptions.ItemNotFoundError if a block for
                 root_block_usage_key is not found in the modulestore.
         """
-        block_structure = BlockStructureModulestoreData(root_block_usage_key)
+        root_xblock = modulestore.get_item(root_block_usage_key, depth=None, lazy=False)
+        block_structure = BlockStructureModulestoreData(root_block_usage_key.for_branch(None))
         blocks_visited = set()
 
         def build_block_structure(xblock):
@@ -41,19 +42,26 @@ class BlockStructureFactory:
             """
             # Check if the xblock was already visited (can happen in
             # DAGs).
-            if xblock.location in blocks_visited:
+            # Normalize location to remove branch/version information
+            # When create_from_modulestore is wrapped in published_only branch decorator,
+            # "xblock being changed" location contains branch and version info which causes
+            # mismatch when removing inaccessible blocks in
+            # CourseNavigationBlocksView.filter_inaccessible_blocks
+            # while fetching course navigation.
+            location = xblock.location.for_branch(None)
+            if location in blocks_visited:
                 return
 
             # Add the xBlock.
-            blocks_visited.add(xblock.location)
-            block_structure._add_xblock(xblock.location, xblock)  # pylint: disable=protected-access
+            blocks_visited.add(location)
+            block_structure._add_xblock(location, xblock)  # pylint: disable=protected-access
 
             # Add relations with its children and recurse.
             for child in xblock.get_children():
-                block_structure._add_relation(xblock.location, child.location)  # pylint: disable=protected-access
+                child_location = child.location.for_branch(None)
+                block_structure._add_relation(location, child_location)  # pylint: disable=protected-access
                 build_block_structure(child)
 
-        root_xblock = modulestore.get_item(root_block_usage_key, depth=None, lazy=False)
         build_block_structure(root_xblock)
         return block_structure
 

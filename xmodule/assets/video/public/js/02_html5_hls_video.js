@@ -8,7 +8,7 @@
 
 import _ from 'underscore';
 import HTML5Video from './02_html5_video.js';
-import HLS from 'hls';
+import Hls from 'hls.js';
 
 let HLSVideo = {};
 
@@ -52,16 +52,16 @@ HLSVideo.Player = (function() {
         } else {
             // load auto start if auto_advance is enabled
             if (config.state.auto_advance) {
-                this.hls = new HLS({autoStartLoad: true});
+                this.hls = new Hls({autoStartLoad: true});
             } else {
-                this.hls = new HLS({autoStartLoad: false});
+                this.hls = new Hls({autoStartLoad: false});
             }
             this.hls.loadSource(config.videoSources[0]);
             this.hls.attachMedia(this.video);
 
-            this.hls.on(HLS.Events.ERROR, this.onError.bind(this));
+            this.hls.on(Hls.Events.ERROR, this.onError.bind(this));
 
-            this.hls.on(HLS.Events.MANIFEST_PARSED, function(event, data) {
+            this.hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
                 console.log(
                     '[HLS Video]: MANIFEST_PARSED, qualityLevelsInfo: ',
                     data.levels.map(function(level) {
@@ -73,7 +73,7 @@ HLSVideo.Player = (function() {
                 );
                 self.config.onReadyHLS();
             });
-            this.hls.on(HLS.Events.LEVEL_SWITCHED, function(event, data) {
+            this.hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
                 let level = self.hls.levels[data.level];
                 console.log(
                     '[HLS Video]: LEVEL_SWITCHED, qualityLevelInfo: ',
@@ -121,14 +121,14 @@ HLSVideo.Player = (function() {
     Player.prototype.onError = function(event, data) {
         if (data.fatal) {
             switch (data.type) {
-            case HLS.ErrorTypes.NETWORK_ERROR:
+            case Hls.ErrorTypes.NETWORK_ERROR:
                 console.error(
                     '[HLS Video]: Fatal network error encountered, try to recover. Details: %s',
                     data.details
                 );
                 this.hls.startLoad();
                 break;
-            case HLS.ErrorTypes.MEDIA_ERROR:
+            case Hls.ErrorTypes.MEDIA_ERROR:
                 console.error(
                     '[HLS Video]: Fatal media error encountered, try to recover. Details: %s',
                     data.details

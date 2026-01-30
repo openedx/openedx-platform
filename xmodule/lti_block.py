@@ -992,8 +992,17 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         return close_date is not None and datetime.datetime.now(ZoneInfo("UTC")) > close_date
 
 
-LTIBlock = (
-    _ExtractedLTIBlock if settings.USE_EXTRACTED_LTI_BLOCK
-    else _BuiltInLTIBlock
-)
+LTIBlock = None
+
+
+def reset_class():
+    """Reset class as per django settings flag"""
+    global LTIBlock
+    LTIBlock = (
+        _ExtractedLTIBlock if settings.USE_EXTRACTED_LTI_BLOCK
+        else _BuiltInLTIBlock
+    )
+    return LTIBlock
+
+reset_class()
 LTIBlock.__name__ = "LTIBlock"

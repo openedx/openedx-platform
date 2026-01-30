@@ -21,16 +21,29 @@ from xblock.fields import ScopeIds, Timedelta
 
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID
-from xmodule.lti_2_util import LTIError
-from xmodule.lti_block import LTIBlock
+from xmodule import lti_block
 from xmodule.tests.helpers import StubUserService
 
 from . import get_test_system
 
+from xmodule.lti_2_util import LTIError as BuiltInLTIError
+from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
+
 
 @override_settings(LMS_BASE="edx.org")
-class LTIBlockTest(TestCase):
+class _TestLTIBase(TestCase):
     """Logic tests for LTI block."""
+
+    __test__ = False
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.lti_class = lti_block.reset_class()
+        if settings.USE_EXTRACTED_LTI_BLOCK:
+            cls.LTIError = ExtractedLTIError
+        else:
+            cls.LTIError = BuiltInLTIError
 
     def setUp(self):
         super().setUp()
@@ -66,7 +79,7 @@ class LTIBlockTest(TestCase):
         self.runtime.publish = Mock()
         self.runtime._services['rebind_user'] = Mock()  # pylint: disable=protected-access
 
-        self.xblock = LTIBlock(
+        self.xblock = self.lti_class(
             self.runtime,
             DictFieldData({}),
             ScopeIds(None, None, None, BlockUsageLocator(self.course_id, 'lti', 'name'))
@@ -374,7 +387,7 @@ class LTIBlockTest(TestCase):
         runtime = Mock(modulestore=modulestore)
         self.xblock.runtime = runtime
         self.xblock.lti_id = 'lti_id'
-        with pytest.raises(LTIError):
+        with pytest.raises(self.LTIError):
             self.xblock.get_client_key_secret()
 
     @patch('xmodule.lti_block.signature.verify_hmac_sha1', Mock(return_value=True))
@@ -468,7 +481,7 @@ class LTIBlockTest(TestCase):
         """
         Oauth signing verify fail.
         """
-        with pytest.raises(LTIError):
+        with pytest.raises(self.LTIError):
             req = self.get_signed_grade_mock_request()
             self.xblock.verify_oauth_body_sign(req)
 
@@ -523,7 +536,7 @@ class LTIBlockTest(TestCase):
         self.xblock.custom_parameters = bad_custom_params
         self.xblock.get_client_key_secret = Mock(return_value=('test_client_key', 'test_client_secret'))
         self.xblock.oauth_params = Mock()
-        with pytest.raises(LTIError):
+        with pytest.raises(self.LTIError):
             self.xblock.get_input_fields()
 
     def test_max_score(self):
@@ -541,3 +554,13 @@ class LTIBlockTest(TestCase):
         Tests that LTI parameter context_id is equal to course_id.
         """
         assert str(self.course_id) == self.xblock.context_id
+
+
+@override_settings(USE_EXTRACTED_LTI_BLOCK=True)
+class TestLTIExtracted(_TestLTIBase):
+    __test__ = True
+
+
+@override_settings(USE_EXTRACTED_LTI_BLOCK=False)
+class TestLTIBuiltIn(_TestLTIBase):
+    __test__ = True

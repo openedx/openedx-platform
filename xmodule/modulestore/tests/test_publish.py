@@ -810,14 +810,8 @@ class ElementalDeleteItemTests(DraftPublishedOpBaseTestSetup):
             self.assertOLXIsDraftOnly(block_list_to_delete)
             # MODULESTORE_DIFFERENCE:
             if self.is_split_modulestore:
-                if revision in (ModuleStoreEnum.RevisionOption.published_only, ModuleStoreEnum.RevisionOption.all):
-                    # Split throws an exception when trying to delete an item from the published branch
-                    # that isn't yet published.
-                    with pytest.raises(ValueError):
-                        self.delete_item(block_list_to_delete, revision=revision)
-                else:
-                    self.delete_item(block_list_to_delete, revision=revision)
-                    self._check_for_item_deletion(block_list_to_delete, result)
+                self.delete_item(block_list_to_delete, revision=revision)
+                self._check_for_item_deletion(block_list_to_delete, result)
             else:
                 raise Exception("Must test either Old Mongo or Split modulestore!")
 
@@ -846,11 +840,8 @@ class ElementalDeleteItemTests(DraftPublishedOpBaseTestSetup):
             # The vertical is a draft.
             self.assertOLXIsDraftOnly(block_list_to_delete)
             if revision in (ModuleStoreEnum.RevisionOption.published_only, ModuleStoreEnum.RevisionOption.all):
-                # MODULESTORE_DIFFERENCE:
-                # Split throws an exception when trying to delete an item from the published branch
-                # that isn't yet published.
-                with pytest.raises(ValueError):
-                    self.delete_item(block_list_to_delete, revision=revision)
+                self.delete_item(block_list_to_delete, revision=revision)
+                self._check_for_item_deletion(block_list_to_delete, result)
             else:
                 self.delete_item(block_list_to_delete, revision=revision)
                 self._check_for_item_deletion(block_list_to_delete, result)

@@ -15,7 +15,10 @@ from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffl
 from lms.djangoapps.branding.api import get_logo_url_for_email
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, UsernameDecryptionException
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
-from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES
+from openedx.core.djangoapps.notifications.base_notification import (
+    COURSE_NOTIFICATION_TYPES,
+    get_default_values_of_preferences
+)
 from openedx.core.djangoapps.notifications.config.waffle import ENABLE_EMAIL_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
@@ -26,7 +29,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from xmodule.modulestore.django import modulestore
 
 from .notification_icons import NotificationTypeIcons
-
+from ..utils import create_account_notification_pref_if_not_exists
 
 User = get_user_model()
 
@@ -291,79 +294,15 @@ def get_unique_course_ids(notifications):
     return course_ids
 
 
-def get_enabled_notification_types_for_cadence(preferences, cadence_type=EmailCadence.DAILY):
-    """
-    Returns a dictionary that returns notification_types with cadence_types for course_ids
-    """
-    if cadence_type not in [EmailCadence.DAILY, EmailCadence.WEEKLY]:
-        raise ValueError('Invalid cadence_type')
-    course_types = {}
-    for preference in preferences:
-        key = preference.course_id
-        value = []
-        config = preference.notification_preference_config
-        for app_data in config.values():
-            for notification_type, type_dict in app_data['notification_types'].items():
-                if (type_dict['email_cadence'] == cadence_type) and type_dict['email']:
-                    value.append(notification_type)
-            if 'core' in value:
-                value.remove('core')
-                value.extend(app_data['core_notification_types'])
-        course_types[key] = value
-    return course_types
-
-
-def filter_notification_with_email_enabled_preferences(notifications, preferences, cadence_type=EmailCadence.DAILY):
-    """
-    Filter notifications for types with email cadence preference enabled
-    """
-    enabled_course_prefs = get_enabled_notification_types_for_cadence(preferences, cadence_type)
-    filtered_notifications = []
-    for notification in notifications:
-        if notification.notification_type in enabled_course_prefs[notification.course_id]:
-            filtered_notifications.append(notification)
-    filtered_notifications.sort(key=lambda elem: elem.created, reverse=True)
-    return filtered_notifications
-
-
-def create_missing_account_level_preferences(notifications, preferences, user):
-    """
-    Creates missing account level preferences for notifications
-    """
-    preferences = list(preferences)
-    notification_types = list(set(notification.notification_type for notification in notifications))
-    missing_prefs = []
-    for notification_type in notification_types:
-        if not any(preference.type == notification_type for preference in preferences):
-            type_pref = COURSE_NOTIFICATION_TYPES.get(notification_type, {})
-            app_name = type_pref["notification_app"]
-            if type_pref.get('is_core', False):
-                app_pref = COURSE_NOTIFICATION_APPS.get(app_name, {})
-                default_pref = {
-                    "web": app_pref["core_web"],
-                    "push": app_pref["core_push"],
-                    "email": app_pref["core_email"],
-                    "email_cadence": app_pref["core_email_cadence"]
-                }
-            else:
-                default_pref = COURSE_NOTIFICATION_TYPES.get(notification_type, {})
-            missing_prefs.append(
-                NotificationPreference(
-                    user=user, type=notification_type, app=app_name, web=default_pref['web'],
-                    push=default_pref['push'], email=default_pref['email'], email_cadence=default_pref['email_cadence'],
-                )
-            )
-    if missing_prefs:
-        created_prefs = NotificationPreference.objects.bulk_create(missing_prefs, ignore_conflicts=True)
-        preferences = preferences + list(created_prefs)
-    return preferences
-
-
 def filter_email_enabled_notifications(notifications, preferences, user, cadence_type=EmailCadence.DAILY):
     """
     Filter notifications with email enabled in account level preferences
     """
-    preferences = create_missing_account_level_preferences(notifications, preferences, user)
+    preferences = create_account_notification_pref_if_not_exists(
+        [user.id],
+        preferences,
+        [notification.notification_type for notification in notifications]
+    )
     enabled_course_prefs = [
         preference.type
         for preference in preferences
@@ -426,16 +365,12 @@ def update_user_preferences_from_patch(encrypted_username):
     UserPreference.objects.get_or_create(user_id=user.id, key=ONE_CLICK_EMAIL_UNSUB_KEY)
 
 
-def is_notification_type_channel_editable(app_name, notification_type, channel):
+def is_notification_type_channel_editable(notification_type, channel):
     """
     Returns if notification type channel is editable
     """
-    notification_type = 'core'\
-        if COURSE_NOTIFICATION_TYPES.get(notification_type, {}).get("is_core", False)\
-        else notification_type
-    if notification_type == 'core':
-        return channel not in COURSE_NOTIFICATION_APPS[app_name]['non_editable']
-    return channel not in COURSE_NOTIFICATION_TYPES[notification_type]['non_editable']
+    default_preferences = get_default_values_of_preferences()
+    return channel not in default_preferences.get(notification_type, {}).get('non_editable', [])
 
 
 def get_translated_app_title(name):

@@ -17,11 +17,13 @@
 # Stay on LTS version, remove once this is added to common constraint
 Django<6.0
 
-# Date: 2020-02-26
-# As it is not clarified what exact breaking changes will be introduced as per
-# the next major release, ensure the installed version is within boundaries.
+# Date: 2026-01-13
+# We would normally pin celery to <6.0.0 to avoid auto-updating across a major
+# version boundary without more thorough testing. The reason it's currently also
+# pinned to !=5.6.1 is because of a celery bug related to the eta and countdown
+# parameters. This bug caused operational issues in MIT's deployment.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35280
-celery>=5.2.2,<6.0.0
+celery>=5.2.2,!=5.6.1,<6.0.0
 
 # Date: 2020-02-10
 # django-oauth-toolkit version >=2.0.0 has breaking changes. More details
@@ -42,7 +44,7 @@ django-stubs<6
 # The team that owns this package will manually bump this package rather than having it pulled in automatically.
 # This is to allow them to better control its deployment and to do it in a process that works better
 # for them.
-edx-enterprise==6.5.1
+edx-enterprise==6.6.2
 
 # Date: 2023-07-26
 # Our legacy Sass code is incompatible with anything except this ancient libsass version.
@@ -136,3 +138,12 @@ django-debug-toolbar<6.0.0
 # Issue: https://github.com/openedx/edx-platform/issues/37435
 cryptography<46.0.0
 pact-python<3.0.0
+
+# Date 2026-01-13
+# Sphinx-autoapi changed the version of astroid it needs
+# but the newer version is not compatible with the current pylint version
+# which wants a newer version of astroid.  This can be removed once we're
+# building requirements with Python 3.12
+# https://github.com/openedx/edx-platform/issues/37880
+sphinx-autoapi<3.6.1
+
