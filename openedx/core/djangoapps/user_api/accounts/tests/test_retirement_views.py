@@ -1102,11 +1102,15 @@ class TestAccountRetirementCleanup(RetirementTestCase):
             sql = update_query['sql'].upper()
             sql_lower = update_query['sql']
             # Check that SET clause contains the redacted values
-            assert redacted_username in sql_lower, f"UPDATE query missing redacted username '{redacted_username}': {sql_lower}"
+            assert redacted_username in sql_lower, (
+                f"UPDATE query missing redacted username '{redacted_username}': {sql_lower}"
+            )
             assert redacted_email in sql_lower, f"UPDATE query missing redacted email '{redacted_email}': {sql_lower}"
             assert redacted_name in sql_lower, f"UPDATE query missing redacted name '{redacted_name}': {sql_lower}"
             # Verify it's an UPDATE on the correct table
-            assert 'original_username' in sql_lower or 'original_email' in sql_lower, f"UPDATE query doesn't appear to update retirement fields: {sql_lower}"
+            assert 'original_username' in sql_lower or 'original_email' in sql_lower, (
+                f"UPDATE query doesn't appear to update retirement fields: {sql_lower}"
+            )
 
     def test_simple_success(self):
         """
@@ -1158,7 +1162,9 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         assert retirements.count() == 0
 
         # Verify UPDATE and DELETE queries with custom redacted values
-        self._assert_redacted_update_delete_queries(context.captured_queries, custom_username, custom_email, custom_name)
+        self._assert_redacted_update_delete_queries(
+            context.captured_queries, custom_username, custom_email, custom_name
+        )
 
     def test_leaves_other_users(self):
         remaining_usernames = []
