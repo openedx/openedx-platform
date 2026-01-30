@@ -251,6 +251,9 @@ class DarkLangMiddlewareTests(CacheIsolationTestCase):
         """
         Sends a post request to set the preview language
         """
+        # @@TODO make this call set_user_preference,
+        # and then have a small separate LMS-only test class just to call the
+        # POST and ensure it sets the user preference.
         return self.client.post('/update_lang/', {'preview_language': preview_language, 'action': 'set_preview_language'})  # lint-amnesty, pylint: disable=line-too-long
 
     def _post_clear_preview_lang(self):

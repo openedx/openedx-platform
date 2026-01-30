@@ -9,6 +9,7 @@ from django.urls import include
 from django.urls import path, re_path
 from django.utils.translation import gettext_lazy as _
 from django.contrib import admin
+from django.shortcuts import redirect
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from auth_backends.urls import oauth2_urlpatterns
 from edx_api_doc_tools import make_docs_urls
@@ -87,7 +88,7 @@ urlpatterns = oauth2_urlpatterns + [
          ),
 
     # Darklang View to change the preview language (or dark language)
-    path('update_lang/', include('openedx.core.djangoapps.dark_lang.urls', namespace='dark_lang')),
+    path('update_lang/', lambda request: redirect(f'{settings.LMS_ROOT_URL}/update_lang/')),
 
     # For redirecting to help pages.
     path('help_token/', include('help_tokens.urls')),
