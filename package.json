@@ -42,7 +42,7 @@
     "@edx/brand": "npm:@openedx/brand-openedx@^1.2.2",
     "@edx/edx-bootstrap": "1.0.4",
     "@edx/edx-proctoring": "^4.18.1",
-    "@edx/frontend-component-cookie-policy-banner": "2.2.0",
+    "@edx/frontend-component-cookie-policy-banner": "2.6.0",
     "@edx/paragon": "2.6.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^12.1.5",
