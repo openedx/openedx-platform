@@ -27,6 +27,7 @@ from pytz import UTC
 import openedx.core.djangoapps.user_api.course_tag.api as course_tag_api
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.course_blocks.transformers import library_content
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
@@ -523,6 +524,48 @@ class TestProblemResponsesReport(TestReportMixin, InstructorTaskModuleTestCase):
         )
 
         assert len(student_data) == 4
+
+    @patch('lms.djangoapps.instructor_task.tasks_helper.grades.list_problem_responses', return_value=[])
+    def test_problem_responses_excludes_library_content_transformers(self, _mock_list_problem_responses):
+        """Ensure ProblemResponses bypasses per-user library_content transformers.
+
+        The default course block access transformers include library_content transformers
+        that filter children based on the requesting user's selections. Reports must exclude
+        those transformers so output is not dependent on the instructor running the report.
+        """
+        problem = self.define_option_problem('Problem1')
+
+        captured = {}
+
+        class _FakeCourseBlocks:
+            """Minimal fake CourseBlocks object for testing."""
+            def get_xblock_field(self, _usage_key, field_name):
+                if field_name == 'display_name':
+                    return 'Problem1'
+                return None
+
+            def get_children(self, _usage_key):
+                return []
+
+        def _fake_get_course_blocks(_user, _usage_key, transformers=None, **_kwargs):
+            captured['transformers'] = transformers
+            return _FakeCourseBlocks()
+
+        with patch(
+            'lms.djangoapps.instructor_task.tasks_helper.grades.get_course_blocks',
+            side_effect=_fake_get_course_blocks,
+        ):
+            ProblemResponses._build_student_data(
+                user_id=self.instructor.id,
+                course_key=self.course.id,
+                usage_key_str_list=[str(problem.location)],
+            )
+
+        transformers = captured.get('transformers')
+        assert transformers is not None
+        all_transformers = transformers._transformers['supports_filter'] + transformers._transformers['no_filter']
+        assert not any(isinstance(t, library_content.ContentLibraryTransformer) for t in all_transformers)
+        assert not any(isinstance(t, library_content.ContentLibraryOrderTransformer) for t in all_transformers)
 
     @patch(
         'lms.djangoapps.instructor_task.tasks_helper.grades.list_problem_responses',
