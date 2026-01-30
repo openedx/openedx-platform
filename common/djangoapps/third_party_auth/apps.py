@@ -12,15 +12,9 @@ class ThirdPartyAuthConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-
         # Import signal handlers to register them
         from .signals import handlers  # noqa: F401 pylint: disable=unused-import
 
-        # To override the settings before loading social_django.
-        if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH', False):
-            self._enable_third_party_auth()
-
-    def _enable_third_party_auth(self):
-        """
-        Enable the use of third_party_auth, which allows users to sign in to edX
-        using other identity providers. For configuration details, see
-        common/djangoapps/third_party_auth/settings.py.
-        """
-        from common.djangoapps.third_party_auth import settings as auth_settings
-        auth_settings.apply_settings(settings)
+        # Note: Third-party auth settings are now defined statically in lms/envs/common.py
+        # However, the enterprise pipeline step must be inserted dynamically because
+        # it requires checking if enterprise is enabled, which can't be done at
+        # settings load time.
+        from openedx.features.enterprise_support.api import insert_enterprise_pipeline_elements
+        insert_enterprise_pipeline_elements(settings.SOCIAL_AUTH_PIPELINE)
