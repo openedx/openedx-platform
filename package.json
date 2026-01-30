@@ -120,7 +120,7 @@
     "react-test-renderer": "16.14.0",
     "selenium-webdriver": "4.30.0",
     "sinon": "19.0.5",
-    "squirejs": "0.1.0",
+    "squirejs": "0.2.1",
     "string-replace-loader": "^3.1.0",
     "stylelint-formatter-pretty": "4.0.1",
     "webpack-cli": "^5.1.4"
