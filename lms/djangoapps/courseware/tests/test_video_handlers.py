@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 import ddt
 import freezegun
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
 from django.test import RequestFactory
@@ -47,6 +48,13 @@ SRT_content = textwrap.dedent("""
         00:00:00,12 --> 00:00:00,100
         Привіт, edX вітає вас.
     """)
+
+if settings.USE_EXTRACTED_VIDEO_BLOCK:
+    path_video_handlers = 'xblocks_contrib.video.video_handlers'
+    path_transcripts_utils = 'xblocks_contrib.video.video_transcripts_utils'
+else:
+    path_video_handlers = 'xmodule.video_block.video_handlers'
+    path_transcripts_utils = 'openedx.core.djangoapps.video_config.transcripts_utils'
 
 
 def _create_srt_file(content=None):
@@ -206,10 +214,17 @@ class TestVideo(BaseTestVideoXBlock):
             {'demoo�': 'sample'}
         ]
         for sample in data:
-            response = self.clients[self.users[0].username].post(
-                self.get_url('save_user_state'),
-                sample,
-                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            if settings.USE_EXTRACTED_VIDEO_BLOCK:
+                handler_url = self.get_url('save_user_state', handler_name='ajax_handler')
+                response = self.clients[self.users[0].username].post(
+                    handler_url,
+                    sample,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            else:
+                response = self.clients[self.users[0].username].post(
+                    self.get_url('save_user_state'),
+                    sample,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             assert response.status_code == 200
 
         assert self.block.speed is None
@@ -320,7 +335,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
         assert sorted(json.loads(response.body.decode('utf-8'))) == sorted(['en', 'uk'])
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_video_transcript_content')
-    @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_available_transcript_languages')
+    @patch(f'{path_transcripts_utils}.get_available_transcript_languages')
     @ddt.data(
         (
             ['en', 'uk', 'ro'],
@@ -504,7 +519,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         assert response.status == '404 Not Found'
 
     @patch(
-        'xmodule.video_block.video_handlers.get_transcript',
+        f'{path_video_handlers}.get_transcript',
         return_value=('Subs!', 'test_filename.srt', 'application/x-subrip; charset=utf-8')
     )
     def test_download_srt_exist(self, __):
@@ -515,7 +530,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         assert response.headers['Content-Language'] == 'en'
 
     @patch(
-        'xmodule.video_block.video_handlers.get_transcript',
+        f'{path_video_handlers}.get_transcript',
         return_value=('Subs!', 'txt', 'text/plain; charset=utf-8')
     )
     def test_download_txt_exist(self, __):

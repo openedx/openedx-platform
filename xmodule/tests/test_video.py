@@ -82,6 +82,15 @@ ALL_LANGUAGES = (
     ["ur", "Urdu"]
 )
 
+if settings.USE_EXTRACTED_VIDEO_BLOCK:
+    get_available_transcript_languages_path = (
+        'xblocks_contrib.video.video_transcripts_utils.get_available_transcript_languages'
+    )
+else:
+    get_available_transcript_languages_path = (
+        'openedx.core.djangoapps.video_config.transcripts_utils.get_available_transcript_languages'
+    )
+
 
 def instantiate_block(**field_data):
     """
@@ -320,7 +329,7 @@ class VideoBlockImportTestCase(TestCase):
 
     @XBlockAside.register_temp_plugin(AsideTestType, "test_aside")
     @patch('xmodule.video_block.video_block.VideoBlock.load_file')
-    @patch('xmodule.video_block.video_block.is_pointer_tag')
+    @patch(f'{VideoBlock.__module__}.is_pointer_tag')
     @ddt.data(True, False)
     def test_parse_xml_with_asides(self, video_xml_has_aside, mock_is_pointer_tag, mock_load_file):
         """Test that `parse_xml` parses asides from the video xml"""
@@ -642,7 +651,7 @@ class VideoBlockImportTestCase(TestCase):
             'data': ''
         })
 
-    @patch('xmodule.video_block.video_block.edxval_api')
+    @patch(f'{VideoBlock.__module__}.edxval_api')
     def test_import_val_data(self, mock_val_api):
         """
         Test that `parse_xml` works method works as expected.
@@ -687,7 +696,7 @@ class VideoBlockImportTestCase(TestCase):
             course_id='test_course_id'
         )
 
-    @patch('xmodule.video_block.video_block.edxval_api')
+    @patch(f'{VideoBlock.__module__}.edxval_api')
     def test_import_val_data_invalid(self, mock_val_api):
         mock_val_api.ValCannotCreateError = _MockValCannotCreateError
         mock_val_api.import_from_xml = Mock(side_effect=mock_val_api.ValCannotCreateError)
@@ -715,7 +724,7 @@ class VideoExportTestCase(VideoBlockTestBase):
         self.file_system = OSFS(self.temp_dir)
         self.addCleanup(shutil.rmtree, self.temp_dir)
 
-    @patch('xmodule.video_block.video_block.edxval_api')
+    @patch(f'{VideoBlock.__module__}.edxval_api')
     def test_export_to_xml(self, mock_val_api):
         """
         Test that we write the correct XML on export.
@@ -815,7 +824,7 @@ class VideoExportTestCase(VideoBlockTestBase):
         expected = etree.XML(xml_string, parser=parser)
         self.assertXmlEqual(expected, xml)
 
-    @patch('xmodule.video_block.video_block.edxval_api')
+    @patch(f'{VideoBlock.__module__}.edxval_api')
     def test_export_to_xml_val_error(self, mock_val_api):
         # Export should succeed without VAL data if video does not exist
         mock_val_api.ValVideoNotFoundError = _MockValVideoNotFoundError
@@ -948,8 +957,7 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
         'openedx.core.djangoapps.video_config.services.VideoConfigService.is_hls_playback_enabled',
         Mock(return_value=True)
     )
-    @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_available_transcript_languages',
-           Mock(return_value=['es']))
+    @patch(get_available_transcript_languages_path, Mock(return_value=['es']))
     @patch('edxval.api.get_video_info_for_course_and_profiles', Mock(return_value={}))
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_video_transcript_content')
     @patch('edxval.api.get_video_info')
