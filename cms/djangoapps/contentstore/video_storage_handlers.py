@@ -50,7 +50,6 @@ from rest_framework.response import Response
 from tempfile import NamedTemporaryFile, mkdtemp
 from wsgiref.util import FileWrapper
 
-from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
@@ -62,8 +61,8 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .models import VideoUploadConfig
-from .toggles import use_new_video_uploads_page, use_mock_video_uploads
-from .utils import get_video_uploads_url, get_course_videos_context
+from .toggles import use_mock_video_uploads
+from .utils import get_video_uploads_url
 from .video_utils import validate_video_image
 from .views.course import get_course_and_check_access
 
@@ -740,13 +739,7 @@ def videos_index_html(course, pagination_conf=None):
     """
     Returns an HTML page to display previous video uploads and allow new ones
     """
-    if use_new_video_uploads_page(course.id):
-        return redirect(get_video_uploads_url(course.id))
-    context = get_course_videos_context(
-        course,
-        pagination_conf,
-    )
-    return render_to_response('videos_index.html', context)
+    return redirect(get_video_uploads_url(course.id))
 
 
 def videos_index_json(course):

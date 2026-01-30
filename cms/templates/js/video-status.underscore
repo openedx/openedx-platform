@@ -1,5 +1,0 @@
-<span class='video-status'><%- status %></span>
-<% if (show_error && error_description) { %>
-    </br>
-    <span class='message-error'><%- error_description %></span>
-<% }%>

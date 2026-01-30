@@ -256,26 +256,6 @@ def use_new_export_page(course_key):
     return not LEGACY_STUDIO_EXPORT.is_enabled(course_key)
 
 
-# .. toggle_name: contentstore.new_studio_mfe.use_new_video_uploads_page
-# .. toggle_implementation: CourseWaffleFlag
-# .. toggle_default: False
-# .. toggle_description: This flag enables the use of the new studio video uploads page mfe
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2023-5-15
-# .. toggle_target_removal_date: 2023-8-31
-# .. toggle_tickets: TNL-10619
-# .. toggle_warning:
-ENABLE_NEW_STUDIO_VIDEO_UPLOADS_PAGE = CourseWaffleFlag(
-    f'{CONTENTSTORE_NAMESPACE}.new_studio_mfe.use_new_video_uploads_page', __name__)
-
-
-def use_new_video_uploads_page(course_key):
-    """
-    Returns a boolean if new studio video uploads mfe is enabled
-    """
-    return ENABLE_NEW_STUDIO_VIDEO_UPLOADS_PAGE.is_enabled(course_key)
-
-
 # .. toggle_name: legacy_studio.course_outline
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
