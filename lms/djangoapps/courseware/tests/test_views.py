@@ -71,8 +71,6 @@ from lms.djangoapps.courseware.block_render import get_block, handle_xblock_call
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin, get_expiration_banner_text
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.courseware.toggles import (
-    COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR,
-    COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR,
     COURSEWARE_MICROFRONTEND_SEARCH_ENABLED,
     COURSEWARE_OPTIMIZED_RENDER_XBLOCK,
 )
@@ -3251,13 +3249,10 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         self.client = APIClient()
         self.apiUrl = reverse('courseware_navigation_sidebar_toggles_view', kwargs={'course_id': str(self.course.id)})
 
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=True)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=False)
     @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=False)
-    def test_courseware_mfe_navigation_sidebar_enabled_aux_disabled_completion_track_disabled(self):
+    def test_courseware_mfe_navigation_sidebar_completion_track_disabled(self):
         """
-        Getter to check if it is allowed to show the Courseware navigation sidebar to a user
-        and auxiliary sidebar doesn't open.
+        Getter to check if completion tracking is disabled.
         """
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
@@ -3266,40 +3261,14 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         self.assertEqual(
             body,
             {
-                "enable_navigation_sidebar": True,
-                "always_open_auxiliary_sidebar": False,
                 "enable_completion_tracking": False,
             },
         )
 
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=True)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=False)
     @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=True)
-    def test_courseware_mfe_navigation_sidebar_enabled_aux_disabled_completion_track_enabled(self):
+    def test_courseware_mfe_navigation_sidebar_completion_track_enabled(self):
         """
-        Getter to check if it is allowed to show the Courseware navigation sidebar to a user
-        and auxiliary sidebar doesn't open.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": True,
-                "always_open_auxiliary_sidebar": False,
-                "enable_completion_tracking": True,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=True)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=True)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=False)
-    def test_courseware_mfe_navigation_sidebar_enabled_aux_enabled_completion_track_disabled(self):
-        """
-        Getter to check if it is allowed to show the Courseware navigation sidebar to a user
-        and auxiliary sidebar should always open.
+        Getter to check if completion tracking is enabled.
         """
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
@@ -3308,111 +3277,6 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         self.assertEqual(
             body,
             {
-                "enable_navigation_sidebar": True,
-                "always_open_auxiliary_sidebar": True,
-                "enable_completion_tracking": False,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=True)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=True)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=True)
-    def test_courseware_mfe_navigation_sidebar_enabled_aux_enabled_completion_track_enabled(self):
-        """
-        Getter to check if it is allowed to show the Courseware navigation sidebar to a user
-        and auxiliary sidebar should always open.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": True,
-                "always_open_auxiliary_sidebar": True,
-                "enable_completion_tracking": True,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=False)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=True)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=False)
-    def test_courseware_mfe_navigation_sidebar_disabled_aux_enabled_completion_track_disabled(self):
-        """
-        Getter to check if the Courseware navigation sidebar shouldn't be shown to a user
-        and auxiliary sidebar should always open.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": False,
-                "always_open_auxiliary_sidebar": True,
-                "enable_completion_tracking": False,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=False)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=True)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=True)
-    def test_courseware_mfe_navigation_sidebar_disabled_aux_enabled_completion_track_enabled(self):
-        """
-        Getter to check if the Courseware navigation sidebar shouldn't be shown to a user
-        and auxiliary sidebar should always open.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": False,
-                "always_open_auxiliary_sidebar": True,
-                "enable_completion_tracking": True,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=False)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=False)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=False)
-    def test_courseware_mfe_navigation_sidebar_toggles_disabled_completion_track_disabled(self):
-        """
-        Getter to check if neither navigation sidebar nor auxiliary sidebar is shown.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": False,
-                "always_open_auxiliary_sidebar": False,
-                "enable_completion_tracking": False,
-            },
-        )
-
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR, active=False)
-    @override_waffle_flag(COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR, active=False)
-    @override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, active=True)
-    def test_courseware_mfe_navigation_sidebar_toggles_disabled_completion_track_enabled(self):
-        """
-        Getter to check if neither navigation sidebar nor auxiliary sidebar is shown.
-        """
-        response = self.client.get(self.apiUrl, content_type='application/json')
-        body = json.loads(response.content.decode('utf-8'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            body,
-            {
-                "enable_navigation_sidebar": False,
-                "always_open_auxiliary_sidebar": False,
                 "enable_completion_tracking": True,
             },
         )

@@ -1174,3 +1174,11 @@ select {
     @extend %button-primary-outline;
   }
 }
+
+.tooltip {
+  background: $primary-base;
+  white-space: normal;
+  max-width: 200px;
+  line-height: 1.5;
+  text-align: center;
+}

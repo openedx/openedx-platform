@@ -15,7 +15,7 @@ import json
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import escapejs
 
-from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
 from openedx.core.djangolib.markup import HTML
 from openedx.features.course_experience import course_home_page_title

@@ -69,8 +69,10 @@
             pageX = typeof pageX !== 'undefined' ? pageX : element.offset().left + element.width() / 2;
             pageY = typeof pageY !== 'undefined' ? pageY : element.offset().top + element.height() / 2;
             var tooltipText = $(element).attr('data-tooltip');
+            // Tooltip content comes from data-tooltip attributes which are server-rendered
+            // with proper escaping using Text() and HTML() from openedx.core.djangolib.markup
             this.tooltip
-                .text(tooltipText)
+                .html(tooltipText)  // xss-lint: disable=javascript-jquery-html
                 .css(this.getCoords(pageX, pageY));
         },
 

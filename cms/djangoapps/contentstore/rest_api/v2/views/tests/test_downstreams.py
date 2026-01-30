@@ -50,7 +50,7 @@ def _get_upstream_link_good_and_syncable(downstream):
         version_declined=downstream.upstream_version_declined,
         error_message=None,
         downstream_customized=[],
-        has_top_level_parent=False,
+        top_level_parent_key=None,
         upstream_name=downstream.upstream_display_name,
     )
 

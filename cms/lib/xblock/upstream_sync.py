@@ -86,7 +86,7 @@ class UpstreamLink:
     version_declined: int | None  # Latest version which the user has declined to sync with, if any.
     error_message: str | None  # If link is valid, None. Otherwise, a localized, human-friendly error message.
     downstream_customized: list[str] | None  # List of fields modified in downstream
-    has_top_level_parent: bool  # True if this Upstream link has a top-level parent
+    top_level_parent_key: str | None  # key of top-level parent if Upstream link has a one.
 
     @property
     def is_upstream_deleted(self) -> bool:
@@ -153,7 +153,7 @@ class UpstreamLink:
         from xmodule.modulestore.django import modulestore
 
         # If this component/container has top-level parent, so we need to sync the parent
-        if self.has_top_level_parent:
+        if self.top_level_parent_key:
             return False
 
         if isinstance(self.upstream_key, LibraryUsageLocatorV2):
@@ -222,6 +222,10 @@ class UpstreamLink:
                     downstream.usage_key,
                     downstream.upstream,
                 )
+            if top_level_parent_key := getattr(downstream, "top_level_downstream_parent_key", None):
+                top_level_parent_key = str(
+                    BlockKey.from_string(top_level_parent_key).to_usage_key(downstream.usage_key.context_key)
+                )
             return cls(
                 upstream_ref=getattr(downstream, "upstream", None),
                 upstream_name=getattr(downstream, "upstream_display_name", None),
@@ -232,7 +236,7 @@ class UpstreamLink:
                 version_declined=None,
                 error_message=str(exc),
                 downstream_customized=getattr(downstream, "downstream_customized", []),
-                has_top_level_parent=getattr(downstream, "top_level_downstream_parent_key", None) is not None,
+                top_level_parent_key=top_level_parent_key,
             )
 
     @classmethod
@@ -306,6 +310,10 @@ class UpstreamLink:
                 )
             )
 
+        if top_level_parent_key := getattr(downstream, "top_level_downstream_parent_key", None):
+            top_level_parent_key = str(
+                BlockKey.from_string(top_level_parent_key).to_usage_key(downstream.usage_key.context_key)
+            )
         result = cls(
             upstream_ref=downstream.upstream,
             upstream_key=upstream_key,
@@ -316,7 +324,7 @@ class UpstreamLink:
             version_declined=downstream.upstream_version_declined,
             error_message=None,
             downstream_customized=getattr(downstream, "downstream_customized", []),
-            has_top_level_parent=downstream.top_level_downstream_parent_key is not None,
+            top_level_parent_key=top_level_parent_key,
         )
 
         return result
