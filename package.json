@@ -102,7 +102,7 @@
   "devDependencies": {
     "@edx/stylelint-config-edx": "2.3.3",
     "babel-jest": "29.7.0",
-    "jasmine-core": "2.6.4",
+    "jasmine-core": "2.99.1",
     "jasmine-jquery": "git+https://git@github.com/velesin/jasmine-jquery.git#ebad463d592d3fea00c69f26ea18a930e09c7b58",
     "jest": "29.7.0",
     "karma": "0.13.22",
