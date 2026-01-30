@@ -56,6 +56,21 @@ v2_api_urls = [
         api_v2.ORASummaryView.as_view(),
         name='ora_summary'
     ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/learners/(?P<email_or_username>[^/]+)$',
+        api_v2.LearnerView.as_view(),
+        name='learner_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/problems/(?P<location>.+)$',
+        api_v2.ProblemView.as_view(),
+        name='problem_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/tasks/(?P<task_id>[^/]+)$',
+        api_v2.TaskStatusView.as_view(),
+        name='task_status'
+    )
 ]
 
 urlpatterns = [

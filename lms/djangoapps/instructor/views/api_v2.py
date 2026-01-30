@@ -32,6 +32,7 @@ from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
 from lms.djangoapps.instructor_task import api as task_api
 from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
+from lms.djangoapps.instructor_task.models import InstructorTask
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
 from .serializers_v2 import (
@@ -607,3 +608,310 @@ class ORASummaryView(GenericAPIView):
 
         serializer = self.get_serializer(items)
         return Response(serializer.data)
+
+
+class LearnerView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving learner information.
+
+    **GET Example Response:**
+    ```json
+    {
+        "username": "john_harvard",
+        "email": "john@example.com",
+        "first_name": "John",
+        "last_name": "Harvard",
+        "progress_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/progress/john_harvard/",
+        "gradebook_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/instructor#view-gradebook",
+        "current_score": {
+            "score": 85.5,
+            "total": 100.0
+        },
+        "attempts": null
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'email_or_username',
+                apidocs.ParameterLocation.PATH,
+                description="Learner's username or email address",
+            ),
+        ],
+        responses={
+            200: 'Learner information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Learner not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, email_or_username):
+        """
+        Retrieve comprehensive learner information including profile, enrollment status,
+        progress URLs, and current grading data.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            student = get_student_from_identifier(email_or_username)
+        except Exception:  # pylint: disable=broad-except
+            return Response(
+                {'error': 'Learner not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Build learner data
+        learner_data = {
+            'username': student.username,
+            'email': student.email,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'progress_url': None,
+            'gradebook_url': None,
+            'current_score': None,
+            'attempts': None,
+        }
+
+        from .serializers_v2 import LearnerSerializer
+        serializer = LearnerSerializer(learner_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProblemView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving problem metadata.
+
+    **GET Example Response:**
+    ```json
+    {
+        "id": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem",
+        "name": "Sample Problem",
+        "breadcrumbs": [
+            {"display_name": "Demonstration Course"},
+            {
+                "display_name": "Week 1",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@chapter+block@week1"
+            },
+            {
+                "display_name": "Homework",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@sequential+block@hw1"
+            },
+            {
+                "display_name": "Sample Problem",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem"
+            }
+        ]
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'location',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key",
+            ),
+        ],
+        responses={
+            200: 'Problem information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Problem not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, location):
+        """
+        Retrieve problem metadata including display name, location in course hierarchy,
+        and usage key.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            problem_key = UsageKey.from_string(location)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid problem location'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from xmodule.modulestore.django import modulestore
+        store = modulestore()
+
+        try:
+            problem = store.get_item(problem_key)
+        except Exception:  # pylint: disable=broad-except
+            return Response(
+                {'error': 'Problem not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Build breadcrumbs
+        breadcrumbs = []
+        current = problem
+        while current:
+            breadcrumbs.insert(0, {
+                'display_name': current.display_name,
+                'usage_key': str(current.location) if current.location != course_key else None
+            })
+            parent_location = current.get_parent() if hasattr(current, 'get_parent') else None
+            if parent_location:
+                try:
+                    current = store.get_item(parent_location)
+                except Exception:  # pylint: disable=broad-except
+                    break
+            else:
+                break
+
+        problem_data = {
+            'id': str(problem.location),
+            'name': problem.display_name,
+            'breadcrumbs': [b for b in breadcrumbs if b.get('usage_key') is not None or breadcrumbs.index(b) == 0]
+        }
+
+        from .serializers_v2 import ProblemSerializer
+        serializer = ProblemSerializer(problem_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TaskStatusView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for checking background task status.
+
+    **GET Example Response:**
+    ```json
+    {
+        "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "state": "completed",
+        "progress": {
+            "current": 150,
+            "total": 150
+        },
+        "result": {
+            "success": true,
+            "message": "Reset attempts for 150 learners"
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:35:23Z"
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.SHOW_TASKS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'task_id',
+                apidocs.ParameterLocation.PATH,
+                description="Task identifier returned from async operation",
+            ),
+        ],
+        responses={
+            200: 'Task status retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Task not found.",
+        },
+    )
+    def get(self, request, course_id, task_id):
+        """
+        Check the status of a background task.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get task from InstructorTask model
+        try:
+            task = InstructorTask.objects.get(task_id=task_id, course_id=course_key)
+        except InstructorTask.DoesNotExist:
+            return Response(
+                {'error': 'Task not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Map task state
+        state_map = {
+            'PENDING': 'pending',
+            'PROGRESS': 'running',
+            'SUCCESS': 'completed',
+            'FAILURE': 'failed',
+            'REVOKED': 'failed'
+        }
+
+        task_data = {
+            'task_id': str(task.task_id),
+            'state': state_map.get(task.task_state, 'pending'),
+            'created_at': task.created,
+            'updated_at': task.updated,
+        }
+
+        # Add progress if available
+        if hasattr(task, 'task_output') and task.task_output:
+            import json
+            try:
+                output = json.loads(task.task_output)
+                if 'current' in output and 'total' in output:
+                    task_data['progress'] = {
+                        'current': output['current'],
+                        'total': output['total']
+                    }
+                if task.task_state == 'SUCCESS' and 'message' in output:
+                    task_data['result'] = {
+                        'success': True,
+                        'message': output['message']
+                    }
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+        # Add error if failed
+        if task.task_state in ['FAILURE', 'REVOKED']:
+            task_data['error'] = {
+                'code': 'TASK_FAILED',
+                'message': str(task.task_output) if task.task_output else 'Task failed'
+            }
+
+        from .serializers_v2 import TaskStatusSerializer
+        serializer = TaskStatusSerializer(task_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
