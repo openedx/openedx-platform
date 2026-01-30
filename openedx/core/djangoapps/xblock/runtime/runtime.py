@@ -20,7 +20,7 @@ from xblock.core import XBlock
 from xblock.exceptions import NoSuchServiceError
 from xblock.field_data import DictFieldData, FieldData, SplitFieldData
 from xblock.fields import Scope, ScopeIds
-from xblock.runtime import IdReader, KvsFieldData, MemoryIdManager, Runtime
+from xblock.runtime import IdReader, KvsFieldData, Runtime
 
 from xmodule.errortracker import make_error_tracker
 from xmodule.contentstore.django import contentstore
@@ -127,7 +127,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
             ),
             default_class=None,
             select=None,
-            id_generator=MemoryIdManager(),  # We don't really use id_generator until we need to support asides
+            id_generator=None,  # We won't need an id_generator until we need to support asides
         )
         assert student_data_mode in (StudentDataMode.Ephemeral, StudentDataMode.Persisted)
         self.authored_data_mode = authored_data_mode

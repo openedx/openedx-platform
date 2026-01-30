@@ -10,7 +10,7 @@ from io import StringIO
 import ddt
 from django.test.client import RequestFactory
 from lxml import etree
-from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
+from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2, UsageKey
 from pytz import UTC
 from xblock.fields import ScopeIds
 from xblock.runtime import DictKeyValueStore, KvsFieldData
@@ -118,10 +118,12 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         """
         Checks that available_tags list is not empty
         """
-        sids = ScopeIds(user_id="bob",
-                        block_type="bobs-type",
-                        def_id="definition-id",
-                        usage_id="usage-id")
+        sids = ScopeIds(
+            user_id="bob",
+            block_type="bobs-type",
+            def_id="definition-id",
+            usage_id=UsageKey.from_string("block-v1:myOrg+myCourse+myRun+type@bobs-type+block@usage-id"),
+        )
         key_store = DictKeyValueStore()
         field_data = KvsFieldData(key_store)
         runtime = TestRuntime(services={'field-data': field_data})

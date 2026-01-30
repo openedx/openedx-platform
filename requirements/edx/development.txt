@@ -2264,7 +2264,7 @@ wrapt==2.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-xblock[django]==5.3.0
+git+https://github.com/kdmccormick/XBlock.git@kdmccormick/scope-id-types#egg=xblock[django]==6.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
