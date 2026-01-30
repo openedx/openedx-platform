@@ -27,7 +27,7 @@ exports[`ReportStatus component render in progress status 1`] = `
       <span
         aria-hidden={true}
         className="fa fa-refresh fa-spin fa-fw"
-        id="Icon2"
+        id="Icon1"
       />
     </div>
   </div>
@@ -50,7 +50,7 @@ exports[`ReportStatus component render success status 1`] = `
         <span
           aria-hidden={true}
           className="fa fa-link"
-          id="Icon2"
+          id="Icon1"
         />
       </div>
       View Report
