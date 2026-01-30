@@ -1024,14 +1024,20 @@ class AccountRetirementStatusView(ViewSet):
 
         ```
         {
-            'usernames': ['user1', 'user2', ...]
+            'usernames': ['user1', 'user2', ...],
+            'redacted_username': 'Value to store in username field',
+            'redacted_email': 'Value to store in email field',
+            'redacted_name': 'Value to store in name field'
         }
         ```
 
-        Deletes a batch of retirement requests by username.
+        Redacts a batch of retirement requests by redacting PII fields.
         """
         try:
             usernames = request.data["usernames"]
+            redacted_username = request.data.get("redacted_username", "redacted")
+            redacted_email = request.data.get("redacted_email", "redacted")
+            redacted_name = request.data.get("redacted_name", "redacted")
 
             if not isinstance(usernames, list):
                 raise TypeError("Usernames should be an array.")
@@ -1045,7 +1051,16 @@ class AccountRetirementStatusView(ViewSet):
             if len(usernames) != len(retirements):
                 raise UserRetirementStatus.DoesNotExist("Not all usernames exist in the COMPLETE state.")
 
-            retirements.delete()
+            # Redact PII fields first, then delete. In case an ETL tool is syncing data
+            # to a downstream data warehouse, and treats the deletes as soft-deletes,
+            # the data will have first been redacted, protecting the sensitive PII.
+            for retirement in retirements:
+                retirement.original_username = redacted_username
+                retirement.original_email = redacted_email
+                retirement.original_name = redacted_name
+                retirement.save()
+                retirement.delete()
+
             return Response(status=status.HTTP_204_NO_CONTENT)
         except (RetirementStateError, UserRetirementStatus.DoesNotExist, TypeError) as exc:
             return Response(str(exc), status=status.HTTP_400_BAD_REQUEST)
