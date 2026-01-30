@@ -87,7 +87,7 @@ If you wish to customize aspects of the learner or educator experiences, you'll 
 
 Most python plugins are enabled using one of two methods:
 
-1. A Python Entry point: the core Open edX platform provides a standard plugin loading mechanism in |edx_django_utils.plugins|_ which uses `stevedore`_ to find all installed python packages that declare a specific "entry point" in their setup.py file. See the ``entry_points`` defined in edx-platform's own ``setup.py`` for examples.
+1. A Python Entry point: the core Open edX platform provides a standard plugin loading mechanism in |edx_django_utils.plugins|_ which uses `stevedore`_ to find all installed python packages that declare a specific "entry point" in their package configuration (typically ``pyproject.toml`` or ``setup.py``). See the ``entry_points`` defined in edx-platform's own ``pyproject.toml`` for examples.
 2. A Django setting: Some plugins require modification of Django settings, which is typically done by editing ``/edx/etc/lms.yml`` (in Production) or ``edx-platform/lms/envs/private.py`` (on Devstack).
 
 .. |edx_django_utils.plugins| replace:: ``edx_django_utils.plugins``

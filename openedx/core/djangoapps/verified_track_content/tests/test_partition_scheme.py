@@ -94,7 +94,7 @@ class EnrollmentTrackPartitionSchemeTest(SharedModuleStoreTestCase):
 
     def test_get_scheme(self):
         """
-        Ensure that the scheme extension is correctly plugged in (via entry point in setup.py)
+        Ensure that the scheme extension is correctly plugged in (via entry point in pyproject.toml)
         """
         assert UserPartition.get_scheme('enrollment_track') == EnrollmentTrackPartitionScheme
 

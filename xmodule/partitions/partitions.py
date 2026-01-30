@@ -17,7 +17,7 @@ from stevedore.extension import ExtensionManager
 # * 1 -> 49: Unused/Reserved
 # * 50: The enrollment track partition
 # * 51: The content type gating partition (defined elsewhere)
-# * 52-99: Available for other single user partitions, plugged in via setup.py.
+# * 52-99: Available for other single user partitions, plugged in via entry points.
 #          Operators, beware of conflicting IDs between plugins!
 # * 100 -> 2^31-1: General namespace for generating IDs at runtime.
 #                  This includes, at least: content partitions, the cohort partition, and teamset partitions.
