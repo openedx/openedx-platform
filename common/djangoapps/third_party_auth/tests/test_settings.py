@@ -5,8 +5,10 @@ from django.test import TestCase, override_settings
 
 from common.djangoapps.third_party_auth import provider
 from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
+@skip_unless_lms
 class SettingsUnitTest(TestCase):
     """Unit tests for third-party auth settings defined in lms/envs/common.py."""
 
