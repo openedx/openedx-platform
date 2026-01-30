@@ -12,24 +12,9 @@ from lms.djangoapps.teams.models import CourseTeam
 from openedx.core.djangoapps.django_comment_common.comment_client import Thread
 from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
-    all_permissions_for_user_in_course
+    has_permission
 )
 from openedx.core.lib.cache_utils import request_cached
-
-
-def has_permission(user, permission, course_id=None):  # lint-amnesty, pylint: disable=missing-function-docstring
-    assert isinstance(course_id, (type(None), CourseKey))
-    request_cache_dict = DEFAULT_REQUEST_CACHE.data
-    cache_key = "django_comment_client.permissions.has_permission.all_permissions.{}.{}".format(
-        user.id, course_id
-    )
-    if cache_key in request_cache_dict:
-        all_permissions = request_cache_dict[cache_key]
-    else:
-        all_permissions = all_permissions_for_user_in_course(user, course_id)
-        request_cache_dict[cache_key] = all_permissions
-
-    return permission in all_permissions
 
 
 CONDITIONS = ['is_open', 'is_author', 'is_question_author', 'is_team_member_if_applicable']

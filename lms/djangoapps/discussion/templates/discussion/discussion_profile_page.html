@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _, ngettext
 from django.template.defaultfilters import escapejs
 from django.urls import reverse
 
-from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
 %>
 
