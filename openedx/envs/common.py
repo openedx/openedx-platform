@@ -2065,7 +2065,7 @@ USE_EXTRACTED_POLL_QUESTION_BLOCK = True
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_LTI_BLOCK = False
+USE_EXTRACTED_LTI_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_HTML_BLOCK
 # .. toggle_default: False
@@ -2085,7 +2085,7 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_DISCUSSION_BLOCK = False
+USE_EXTRACTED_DISCUSSION_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_PROBLEM_BLOCK
 # .. toggle_default: False
@@ -2095,7 +2095,7 @@ USE_EXTRACTED_DISCUSSION_BLOCK = False
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_PROBLEM_BLOCK = False
+USE_EXTRACTED_PROBLEM_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_VIDEO_BLOCK
 # .. toggle_default: False
@@ -2105,7 +2105,7 @@ USE_EXTRACTED_PROBLEM_BLOCK = False
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_VIDEO_BLOCK = False
+USE_EXTRACTED_VIDEO_BLOCK = True
 
 ############################## Marketing Site ##############################
 
