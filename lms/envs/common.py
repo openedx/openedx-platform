@@ -2025,10 +2025,10 @@ INSTALLED_APPS = [
     # not here and LMS migrations are run before CMS migrations, it will cause
     # errors (certain openedx_learning apps )
     *openedx_learning_apps_to_install(),
-    'cms.djangoapps.contentstore',
-    'cms.djangoapps.modulestore_migrator',
-    'openedx.core.djangoapps.content.search',
-    'openedx.core.djangoapps.content_staging',
+#    'cms.djangoapps.contentstore',
+#    'cms.djangoapps.modulestore_migrator',
+#    'openedx.core.djangoapps.content.search',
+#   'openedx.core.djangoapps.content_staging',
 ]
 
 # Add LMS specific optional apps
