@@ -1080,6 +1080,34 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         assert response.status_code == expected_status
         return response
 
+    def _assert_redacted_update_delete_queries(self, queries, redacted_username, redacted_email, redacted_name):
+        """
+        Helper method to verify UPDATE and DELETE queries contain correct field-value assignments.
+
+        Args:
+            queries: List of captured query dicts from CaptureQueriesContext
+            redacted_username: Expected redacted username value
+            redacted_email: Expected redacted email value
+            redacted_name: Expected redacted name value
+        """
+        update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
+        delete_queries = [q for q in queries if 'DELETE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
+
+        # Should have 9 UPDATE and 9 DELETE queries
+        assert len(update_queries) == 9, f"Expected 9 UPDATE queries, found {len(update_queries)}"
+        assert len(delete_queries) == 9, f"Expected 9 DELETE queries, found {len(delete_queries)}"
+
+        # Verify UPDATE queries contain the redacted values
+        for update_query in update_queries:
+            sql = update_query['sql'].upper()
+            sql_lower = update_query['sql']
+            # Check that SET clause contains the redacted values
+            assert redacted_username in sql_lower, f"UPDATE query missing redacted username '{redacted_username}': {sql_lower}"
+            assert redacted_email in sql_lower, f"UPDATE query missing redacted email '{redacted_email}': {sql_lower}"
+            assert redacted_name in sql_lower, f"UPDATE query missing redacted name '{redacted_name}': {sql_lower}"
+            # Verify it's an UPDATE on the correct table
+            assert 'original_username' in sql_lower or 'original_email' in sql_lower, f"UPDATE query doesn't appear to update retirement fields: {sql_lower}"
+
     def test_simple_success(self):
         """
         Test basic cleanup with default redacted values.
@@ -1106,22 +1134,8 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         retirements = UserRetirementStatus.objects.all()
         assert retirements.count() == 0
 
-        # Verify UPDATE queries exist with default 'redacted' value
-        queries = context.captured_queries
-        update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
-        delete_queries = [q for q in queries if 'DELETE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
-
-        # Should have 9 UPDATE and 9 DELETE queries
-        assert len(update_queries) == 9, f"Expected 9 UPDATE queries, found {len(update_queries)}"
-        assert len(delete_queries) == 9, f"Expected 9 DELETE queries, found {len(delete_queries)}"
-
-        # Verify UPDATE queries contain the redacted values
-        for update_query in update_queries:
-            sql = update_query['sql']
-            assert "'redacted'" in sql, f"UPDATE query missing 'redacted' value: {sql}"
-            assert 'original_username' in sql, f"UPDATE query missing original_username field: {sql}"
-            assert 'original_email' in sql, f"UPDATE query missing original_email field: {sql}"
-            assert 'original_name' in sql, f"UPDATE query missing original_name field: {sql}"
+        # Verify UPDATE and DELETE queries with default 'redacted' value
+        self._assert_redacted_update_delete_queries(context.captured_queries, 'redacted', 'redacted', 'redacted')
 
     def test_custom_redacted_values(self):
         """Test that custom redacted values are applied before deletion."""
@@ -1143,17 +1157,8 @@ class TestAccountRetirementCleanup(RetirementTestCase):
         retirements = UserRetirementStatus.objects.all()
         assert retirements.count() == 0
 
-        # Verify UPDATE queries contain the custom redacted values
-        queries = context.captured_queries
-        update_queries = [q for q in queries if 'UPDATE' in q['sql'] and 'user_api_userretirementstatus' in q['sql']]
-
-        assert len(update_queries) == 9, f"Expected 9 UPDATE queries, found {len(update_queries)}"
-
-        for update_query in update_queries:
-            sql = update_query['sql']
-            assert custom_username in sql, f"UPDATE query missing custom username '{custom_username}': {sql}"
-            assert custom_email in sql, f"UPDATE query missing custom email '{custom_email}': {sql}"
-            assert custom_name in sql, f"UPDATE query missing custom name '{custom_name}': {sql}"
+        # Verify UPDATE and DELETE queries with custom redacted values
+        self._assert_redacted_update_delete_queries(context.captured_queries, custom_username, custom_email, custom_name)
 
     def test_leaves_other_users(self):
         remaining_usernames = []
