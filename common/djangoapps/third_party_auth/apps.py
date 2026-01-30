@@ -16,5 +16,7 @@ class ThirdPartyAuthConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-
         # However, the enterprise pipeline step must be inserted dynamically because
         # it requires checking if enterprise is enabled, which can't be done at
         # settings load time.
-        from openedx.features.enterprise_support.api import insert_enterprise_pipeline_elements
-        insert_enterprise_pipeline_elements(settings.SOCIAL_AUTH_PIPELINE)
+        # Only insert enterprise elements if SOCIAL_AUTH_PIPELINE exists (LMS only, not CMS).
+        if hasattr(settings, 'SOCIAL_AUTH_PIPELINE'):
+            from openedx.features.enterprise_support.api import insert_enterprise_pipeline_elements
+            insert_enterprise_pipeline_elements(settings.SOCIAL_AUTH_PIPELINE)
