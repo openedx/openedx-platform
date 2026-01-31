@@ -3,7 +3,7 @@ Django admin page for the Agreements app
 """
 
 from django.contrib import admin
-from openedx.core.djangoapps.agreements.models import IntegritySignature
+from openedx.core.djangoapps.agreements.models import IntegritySignature, UserAgreement
 from openedx.core.djangoapps.agreements.models import LTIPIITool
 from openedx.core.djangoapps.agreements.models import LTIPIISignature
 from openedx.core.djangoapps.agreements.models import ProctoringPIISignature
@@ -62,3 +62,17 @@ class ProctoringPIISignatureAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ProctoringPIISignature, ProctoringPIISignatureAdmin)
+
+
+class UserAgreementAdmin(admin.ModelAdmin):
+    """
+    Admin for the UserAgreement Model
+    """
+
+    list_display = ('type', 'name', 'url', 'created', 'updated')
+
+    class Meta:
+        model = UserAgreement
+
+
+admin.site.register(UserAgreement, UserAgreementAdmin)

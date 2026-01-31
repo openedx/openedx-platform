@@ -2,25 +2,29 @@
 Tests for the Agreements API
 """
 import logging
+from datetime import datetime, timedelta
 
+from django.test import TestCase
+from opaque_keys.edx.keys import CourseKey
 from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.agreements.api import (
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
+
+from ..api import (
     create_integrity_signature,
+    create_lti_pii_signature,
+    create_user_agreement_record,
     get_integrity_signature,
     get_integrity_signatures_for_course,
+    get_lti_pii_signature,
     get_pii_receiving_lti_tools,
-    create_lti_pii_signature,
-    get_lti_pii_signature
+    get_latest_user_agreement_record,
+    get_user_agreement_records
 )
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from ..models import (
-    LTIPIITool,
-)
-from opaque_keys.edx.keys import CourseKey
+from ..models import LTIPIITool
 
 LOGGER_NAME = "openedx.core.djangoapps.agreements.api"
 
@@ -186,3 +190,37 @@ class TestLTIPIIToolsApi(SharedModuleStoreTestCase):
         Helper function to assert the returned list has the correct tools
         """
         self.assertEqual(self.lti_tools, lti_list)
+
+
+@skip_unless_lms
+class UserAgreementsTests(TestCase):
+    """
+    Tests for the python APIs related to user agreements.
+    """
+    def setUp(self):
+        self.user = UserFactory()
+
+    def test_get_user_agreements(self, ):
+        result = list(get_user_agreement_records(self.user))
+        assert len(result) == 0
+
+        record = create_user_agreement_record(self.user, 'test_type')
+        result = list(get_user_agreement_records(self.user))
+
+        assert len(result) == 1
+        assert result[0].agreement_type == 'test_type'
+        assert result[0].username == self.user.username
+        assert result[0].accepted_at == record.accepted_at
+
+    def test_get_user_agreement_record(self):
+        record = create_user_agreement_record(self.user, 'test_type')
+        result = get_latest_user_agreement_record(self.user, 'test_type')
+
+        assert result == record
+
+        result = get_latest_user_agreement_record(self.user, 'test_type', datetime.now() + timedelta(days=1))
+
+        assert result is None
+
+    def tearDown(self):
+        self.user.delete()
