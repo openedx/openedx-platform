@@ -30,6 +30,27 @@ class BrazeApi:
         # https://www.braze.com/docs/api/basics/#endpoints
         self.base_url = 'https://rest.{instance}.braze.com'.format(instance=braze_instance)
 
+    @staticmethod
+    def get_instance(config):
+        """
+        This function is used to get instance of BrazeApi.
+
+        Returns:
+            BrazeApi: Returns instance of BrazeApi.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Raises:
+            KeyError: If braze_api_key or braze_instance is not present in config.
+        """
+        braze_api_key = config.get('braze_api_key', None)
+        braze_instance = config.get('braze_instance', None)
+        if not braze_api_key or not braze_instance:
+            raise KeyError("braze_api_key or braze_instance is not present in config.")
+
+        return BrazeApi(braze_api_key, braze_instance)
+
     def auth_headers(self):
         """Returns authorization headers suitable for passing to the requests library"""
         return {

@@ -37,6 +37,31 @@ class SalesforceApi:
         if not self.assignee_id:
             raise Exception("Could not find Salesforce user with username " + assignee_username)
 
+    @staticmethod
+    def get_instance(config):
+        """
+        This function is used to get instance of SalesforceApi.
+
+        Returns:
+            SalesforceApi: Returns instance of SalesforceApi.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Raises:
+            KeyError: If salesforce_username, salesforce_password, salesforce_security_token, salesforce_domain, or salesforce_assignee is not present in config.
+        """
+        salesforce_username = config.get('salesforce_username', None)
+        salesforce_password = config.get('salesforce_password', None)
+        salesforce_security_token = config.get('salesforce_security_token', None)
+        salesforce_domain = config.get('salesforce_domain', None)
+        salesforce_assignee = config.get('salesforce_assignee', None)
+
+        if not salesforce_username or not salesforce_password or not salesforce_security_token or not salesforce_domain or not salesforce_assignee:
+            raise KeyError("salesforce_username, salesforce_password, salesforce_security_token, salesforce_domain, or salesforce_assignee is not present in config.")
+
+        return SalesforceApi(salesforce_username, salesforce_password, salesforce_security_token, salesforce_domain, salesforce_assignee)
+
     @backoff.on_exception(
         backoff.expo,
         RequestsConnectionError,

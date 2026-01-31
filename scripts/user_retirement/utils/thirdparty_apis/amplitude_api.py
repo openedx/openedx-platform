@@ -36,6 +36,26 @@ class AmplitudeApi:
         self.base_url = "https://amplitude.com/"
         self.delete_user_path = "api/2/deletions/users"
 
+    @staticmethod
+    def get_instance(config):
+        """
+        This function is used to get instance of AmplitudeApi.
+
+        Returns:
+            AmplitudeApi: Returns instance of AmplitudeApi.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Raises:
+            KeyError: If amplitude_api_key or amplitude_secret_key is not present in config.
+        """
+        amplitude_api_key = config.get('amplitude_api_key', None)
+        amplitude_secret_key = config.get('amplitude_secret_key', None)
+        if not amplitude_api_key or not amplitude_secret_key:
+            raise KeyError("amplitude_api_key or amplitude_secret_key is not present in config.")
+        return AmplitudeApi(amplitude_api_key, amplitude_secret_key)
+
     def auth(self):
         """
         Returns auth credentials for Amplitude authorization.
