@@ -727,6 +727,13 @@ class CourseFields:  # lint-amnesty, pylint: disable=missing-class-docstring
         deprecated=True
     )
 
+    hide_dates_tab = Boolean(
+        display_name=_("Hide Dates Tab"),
+        help=_("Allows hiding of the dates tab."),
+        scope=Scope.settings,
+        deprecated=True
+    )
+
     display_organization = String(
         display_name=_("Course Organization Display String"),
         help=_(

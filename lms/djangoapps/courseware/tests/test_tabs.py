@@ -870,6 +870,7 @@ class DatesTabTestCase(TabListTestCase):
         """Test cases for making sure no persisted dates tab is surfaced"""
         user = self.create_mock_user()
         self.course.tabs = self.all_valid_tab_list
+        self.course.hide_dates_tab = False
         self.course.save()
 
         # Verify that there is a dates tab in the modulestore
@@ -886,3 +887,16 @@ class DatesTabTestCase(TabListTestCase):
             if tab.type == 'dates':
                 num_dates_tabs += 1
         assert num_dates_tabs == 1
+
+    @patch('common.djangoapps.student.models.course_enrollment.CourseEnrollment.is_enrolled')
+    def test_dates_tab_respects_hide_flag(self, is_enrolled):
+        tab = DatesTab({'type': DatesTab.type, 'name': 'dates'})
+
+        is_enrolled.return_value = True
+        user = self.create_mock_user(is_staff=False, is_enrolled=True)
+
+        self.course.hide_dates_tab = False
+        assert self.is_tab_enabled(tab, self.course, user)
+
+        self.course.hide_dates_tab = True
+        assert not self.is_tab_enabled(tab, self.course, user)

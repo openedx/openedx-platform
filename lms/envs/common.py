@@ -2783,6 +2783,15 @@ DISCUSSION_SPAM_URLS = []
 # .. setting_description: Content to replace spam posts with
 CONTENT_FOR_SPAM_POSTS = ""
 
+# .. toggle_name: settings.FEATURES['ENABLE_DATES_COURSE_APP']
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Controls whether the Dates course app is surfaced via the course apps API/UI.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-01-21
+# .. toggle_tickets: None
+FEATURES['ENABLE_DATES_COURSE_APP'] = False
+
 # .. toggle_name: ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False
