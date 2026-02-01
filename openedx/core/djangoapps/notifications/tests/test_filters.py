@@ -3,6 +3,7 @@ Test for the NotificationFilter class.
 """
 from datetime import timedelta
 from unittest import mock
+from unittest.mock import patch
 
 import ddt
 from django.utils.timezone import now
@@ -43,6 +44,12 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
 
     def setUp(self):
         super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        self.catalog_patch = patch(
+            'openedx.core.djangoapps.catalog.models.CatalogIntegration.is_enabled',
+            return_value=True
+        )
+        self.catalog_patch.start()
+
         self.course = CourseFactory(
             start=now() - timedelta(weeks=10),
         )
@@ -57,6 +64,10 @@ class CourseExpirationTestCase(ModuleStoreTestCase):
         expired_audit = CourseEnrollment.enroll(self.user, self.course.id, CourseMode.AUDIT)
         expired_audit.created = now() - timedelta(weeks=6)
         expired_audit.save()
+
+    def tearDown(self):
+        self.catalog_patch.stop()
+        super().tearDown()
 
     @mock.patch("openedx.core.djangoapps.course_date_signals.utils.get_course_run_details")
     def test_audit_expired_filter_with_no_role(

@@ -708,6 +708,18 @@ DEFAULT_GROUPS = []
 # .. setting_description: Sets the number of days after which the gradebook will freeze following the course's end.
 GRADEBOOK_FREEZE_DAYS = 30
 
+# .. setting_name: COURSE_ACCESS_DURATION_MIN_WEEKS
+# .. setting_default: 4
+# .. setting_description: Minimum course duration in weeks when Discovery service data is unavailable or course has no
+# .. weeks_to_complete value. Used as fallback for course access duration calculations.
+COURSE_ACCESS_DURATION_MIN_WEEKS = 4
+
+# .. setting_name: COURSE_ACCESS_DURATION_MAX_WEEKS
+# .. setting_default: 18
+# .. setting_description: Maximum course duration in weeks. Course access duration is bounded by this upper limit
+# .. regardless of Discovery service data.
+COURSE_ACCESS_DURATION_MAX_WEEKS = 18
+
 RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 
 ############################# SET PATH INFORMATION #############################
