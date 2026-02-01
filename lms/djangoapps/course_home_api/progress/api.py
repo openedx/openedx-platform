@@ -40,7 +40,7 @@ class _AssignmentBucket:
     """
     assignment_type: str
     num_total: int
-    last_grade_publish_date: datetime
+    last_grade_publish_date: datetime | None
     scores: list[float] = field(default_factory=list)
     visibilities: list[bool | None] = field(default_factory=list)
     included: list[bool | None] = field(default_factory=list)
@@ -52,7 +52,7 @@ class _AssignmentBucket:
         return cls(
             assignment_type=assignment_type,
             num_total=num_total,
-            last_grade_publish_date=now,
+            last_grade_publish_date=None,
             scores=[0] * num_total,
             visibilities=[None] * num_total,
             included=[None] * num_total,
@@ -168,8 +168,13 @@ class _AssignmentTypeGradeAggregator:
                 bucket.add_subsection(score, is_visible, is_included)
                 visibilities_with_due_dates = [ShowCorrectness.PAST_DUE, ShowCorrectness.NEVER_BUT_INCLUDE_GRADE]
                 if subsection_grade.show_correctness in visibilities_with_due_dates:
-                    if subsection_grade.due and subsection_grade.due > bucket.last_grade_publish_date:
-                        bucket.last_grade_publish_date = subsection_grade.due
+                    if subsection_grade.due:
+                        should_update = (
+                            bucket.last_grade_publish_date is None or
+                            subsection_grade.due > bucket.last_grade_publish_date
+                        )
+                        if should_update:
+                            bucket.last_grade_publish_date = subsection_grade.due
 
     def build_results(self) -> dict:
         """Apply drops, compute averages, and return aggregated results and total grade."""
