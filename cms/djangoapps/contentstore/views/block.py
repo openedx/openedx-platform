@@ -13,6 +13,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_http_methods
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
+from rest_framework.decorators import api_view
 
 from cms.djangoapps.contentstore.utils import load_services_for_studio
 from cms.lib.xblock.authoring_mixin import VISIBILITY_VIEW
@@ -28,6 +29,7 @@ from openedx.core.lib.xblock_utils import (
     wrap_xblock,
     wrap_xblock_aside,
 )
+from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import (
     modulestore,
 )  # lint-amnesty, pylint: disable=wrong-import-order
@@ -84,9 +86,10 @@ ALWAYS = lambda x: True
 # ends, which end up reading from an outdated state of the database. For more information see the discussion in the
 # following PR: https://github.com/openedx/edx-platform/pull/34020
 @transaction.non_atomic_requests
-@require_http_methods(("DELETE", "GET", "PUT", "POST", "PATCH"))
-@login_required
+# @require_http_methods(("DELETE", "GET", "PUT", "POST", "PATCH"))
+@view_auth_classes()
 @expect_json
+@api_view(http_method_names=["DELETE", "GET", "PUT", "POST", "PATCH"])
 def xblock_handler(request, usage_key_string=None):
     """
     The restful handler for xblock requests.
@@ -145,9 +148,9 @@ def xblock_handler(request, usage_key_string=None):
     return handle_xblock(request, usage_key_string)
 
 
-@require_http_methods("GET")
-@login_required
+@view_auth_classes()
 @expect_json
+@api_view(http_method_names=["GET"])
 def xblock_view_handler(request, usage_key_string, view_name):
     """
     The restful handler for requests for rendered xblock views.
@@ -306,8 +309,9 @@ def xblock_view_handler(request, usage_key_string, view_name):
 
 
 @xframe_options_exempt
-@require_http_methods(["GET"])
-@login_required
+@view_auth_classes()
+@expect_json
+@api_view(http_method_names=["GET"])
 def xblock_edit_view(request, usage_key_string):
     """
     Return rendered xblock edit view.
@@ -338,9 +342,9 @@ def xblock_edit_view(request, usage_key_string):
         return render_to_response('container_editor.html', container_handler_context)
 
 
-@require_http_methods("GET")
-@login_required
+@view_auth_classes()
 @expect_json
+@api_view(http_method_names=["GET"])
 def xblock_outline_handler(request, usage_key_string):
     """
     The restful handler for requests for XBlock information about the block and its children.
@@ -371,9 +375,9 @@ def xblock_outline_handler(request, usage_key_string):
         raise Http404
 
 
-@require_http_methods("GET")
-@login_required
+@view_auth_classes()
 @expect_json
+@api_view(http_method_names=["GET"])
 def xblock_container_handler(request, usage_key_string):
     """
     The restful handler for requests for XBlock information about the block and its children.
@@ -400,8 +404,9 @@ def xblock_container_handler(request, usage_key_string):
         raise Http404
 
 
-@login_required
-@require_http_methods(("GET", "DELETE"))
+@view_auth_classes()
+@expect_json
+@api_view(http_method_names=["GET", "DELETE"])
 def orphan_handler(request, course_key_string):
     """
     View for handling orphan related requests. GET gets all of the current orphans.
