@@ -18,11 +18,14 @@ from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from django.utils.timezone import timezone
 from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys.edx.keys import CourseKey
 from six import StringIO
 
+from openedx_events.content_authoring.data import CourseData
+from openedx_events.content_authoring.signals import COURSE_CREATED
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseCcxCoachRole
@@ -237,6 +240,14 @@ def create_ccx(request, course, ccx=None):
     )
     for rec, response in responses:
         log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
+
+    # .. event_implemented_name: COURSE_CREATED
+    COURSE_CREATED.send_event(
+        time=datetime.datetime.now(tz=timezone.utc),
+        course=CourseData(
+            course_key=ccx_id,
+        )
+    )
 
     return redirect(url)
 
