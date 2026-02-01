@@ -14,7 +14,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
-from ..utils import format_social_link, validate_social_link
+from ..utils import format_social_link, validate_social_link, get_named_storage
+from django.conf import settings
+from django.core.files.storage import default_storage
 
 
 @ddt.ddt
@@ -128,3 +130,95 @@ class CompletionUtilsTestCase(SharedModuleStoreTestCase, CompletionWaffleTestMix
                )
 
         assert empty_block_url is None
+
+
+@ddt.ddt
+class TestGetNamedStorage(TestCase):
+    """
+    Tests for the get_named_storage utility.
+    """
+
+    @ddt.data(
+        # STORAGES dict config for avatars
+        (
+            'avatars',
+            'AVATAR_BACKEND',
+            {'avatars': {
+                'BACKEND': 'django.core.files.storage.FileSystemStorage',
+                'OPTIONS': {'location': '/tmp/avatars'}
+            }},
+            None,  # No legacy config
+            '/tmp/avatars'
+        ),
+        # Legacy config for avatars
+        (
+            'avatars',
+            'AVATAR_BACKEND',
+            {},  # Empty STORAGES dict
+            {
+                'class': 'django.core.files.storage.FileSystemStorage',
+                'options': {'location': '/tmp/legacy_avatars'}
+            },
+            '/tmp/legacy_avatars'
+        ),
+        # STORAGES dict config for certificates
+        (
+            'certificates',
+            'CERTIFICATE_BACKEND',
+            {'certificates': {
+                'BACKEND': 'django.core.files.storage.FileSystemStorage',
+                'OPTIONS': {'location': '/tmp/certificates'}
+            }},
+            None,
+            '/tmp/certificates'
+        ),
+        # ✅ Legacy config for certificates
+        (
+            'certificates',
+            'CERTIFICATE_BACKEND',
+            {},  # Empty STORAGES dict
+            {
+                'class': 'django.core.files.storage.FileSystemStorage',
+                'options': {'location': '/tmp/legacy_certificates'}
+            },
+            '/tmp/legacy_certificates'
+        ),
+    )
+    @ddt.unpack
+    def test_get_named_storage(
+        self,
+        storage_name,
+        legacy_setting_name,
+        storages_config,
+        legacy_config,
+        expected_location
+    ):
+        """
+        Test get_named_storage with both STORAGES dict and legacy config.
+        """
+        # Apply dynamic settings
+        with override_settings(STORAGES=storages_config or {}):
+            if legacy_config:
+                setattr(settings, legacy_setting_name, legacy_config)
+            elif hasattr(settings, legacy_setting_name):
+                delattr(settings, legacy_setting_name)
+
+            storage = get_named_storage(storage_name, legacy_setting_name=legacy_setting_name)
+            self.assertEqual(storage.location, expected_location)
+
+    def test_fallback_to_default_storage(self):
+        """
+        Test fallback to default_storage when neither STORAGES dict nor legacy config is defined.
+        """
+        with override_settings(STORAGES={}):
+            for legacy_setting in ['AVATAR_BACKEND', 'CERTIFICATE_BACKEND', 'PROFILE_IMAGE_BACKEND']:
+                if hasattr(settings, legacy_setting):
+                    delattr(settings, legacy_setting)
+
+            for storage_name, legacy_setting_name in [
+                ('avatars', 'AVATAR_BACKEND'),
+                ('certificates', 'CERTIFICATE_BACKEND'),
+                ('profile_image', 'PROFILE_IMAGE_BACKEND'),
+            ]:
+                storage = get_named_storage(storage_name, legacy_setting_name=legacy_setting_name)
+                self.assertEqual(storage, default_storage)
