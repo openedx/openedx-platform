@@ -129,8 +129,11 @@ class StaticPdfBookTest(StaticBookTest):
         url = self.make_url('pdf_book', book_index=0)
         response = self.client.get(url)
         self.assertContains(response, "Chapter 1 for PDF")
-        self.assertNotContains(response, "options.chapterNum =")
-        self.assertNotContains(response, "page=")
+        # Verify file parameter is not present (security fix)
+        self.assertNotContains(response, "file=")
+        # Verify postMessage infrastructure is in place
+        self.assertContains(response, "request_pdf_url")
+        self.assertContains(response, "pdf_url_response")
 
     def test_book_chapter(self):
         # We can access a book at a particular chapter.
@@ -138,8 +141,10 @@ class StaticPdfBookTest(StaticBookTest):
         url = self.make_url('pdf_book', book_index=0, chapter=2)
         response = self.client.get(url)
         self.assertContains(response, "Chapter 2 for PDF")
-        self.assertContains(response, "file={}".format(PDF_BOOK['chapters'][1]['url']))
-        self.assertNotContains(response, "page=")
+        # Verify file parameter is not present anywhere (security fix)
+        self.assertNotContains(response, "file=")
+        # Verify postMessage infrastructure is in place
+        self.assertContains(response, "request_pdf_url")
 
     def test_book_page(self):
         # We can access a book at a particular page.
@@ -147,7 +152,9 @@ class StaticPdfBookTest(StaticBookTest):
         url = self.make_url('pdf_book', book_index=0, page=17)
         response = self.client.get(url)
         self.assertContains(response, "Chapter 1 for PDF")
-        self.assertNotContains(response, "options.chapterNum =")
+        # Verify file parameter is not present (security fix)
+        self.assertNotContains(response, "file=")
+        # Page parameter is still used in viewer_params
         self.assertContains(response, "page=17")
 
     def test_book_chapter_page(self):
@@ -156,7 +163,9 @@ class StaticPdfBookTest(StaticBookTest):
         url = self.make_url('pdf_book', book_index=0, chapter=2, page=17)
         response = self.client.get(url)
         self.assertContains(response, "Chapter 2 for PDF")
-        self.assertContains(response, "file={}".format(PDF_BOOK['chapters'][1]['url']))
+        # Verify file parameter is not present (security fix)
+        self.assertNotContains(response, "file=")
+        # Page parameter is still used in viewer_params
         self.assertContains(response, "page=17")
 
     def test_bad_book_id(self):
@@ -202,29 +211,32 @@ class StaticPdfBookTest(StaticBookTest):
 
     def test_static_url_map_contentstore(self):
         """
-        This ensure static  URL mapping is happening properly for
-        a course that uses the contentstore
+        This ensure static URL mapping is happening properly for
+        a course that uses the contentstore.
+        URLs are remapped in backend but not exposed via file parameter (security fix).
         """
         self.make_course(pdf_textbooks=[PORTABLE_PDF_BOOK])
         url = self.make_url('pdf_book', book_index=0, chapter=1)
         response = self.client.get(url)
-        self.assertNotContains(response, 'file={}'.format(PORTABLE_PDF_BOOK['chapters'][0]['url']))
-        self.assertContains(response, 'file=/asset-v1:{0.org}+{0.course}+{0.run}+type@asset+block/{1}'.format(
+        # Verify file parameter is not present in response (security fix)
+        self.assertNotContains(response, 'file=')
+        # Verify the chapter URL is in the sidebar for postMessage communication
+        self.assertContains(response, '/asset-v1:{0.org}+{0.course}+{0.run}+type@asset+block/{1}'.format(
             self.course.location,
             PORTABLE_PDF_BOOK['chapters'][0]['url'].replace('/static/', '')))
 
     def test_static_url_map_static_asset_path(self):
         """
-        Like above, but used when the course has set a static_asset_path
+        Like above, but used when the course has set a static_asset_path.
+        URLs are remapped in backend but not exposed via file parameter (security fix).
         """
         self.make_course(pdf_textbooks=[PORTABLE_PDF_BOOK], static_asset_path='awesomesauce')
         url = self.make_url('pdf_book', book_index=0, chapter=1)
         response = self.client.get(url)
-        self.assertNotContains(response, 'file={}'.format(PORTABLE_PDF_BOOK['chapters'][0]['url']))
-        self.assertNotContains(response, 'file=/c4x/{0.org}/{0.course}/asset/{1}'.format(
-            self.course.location,
-            PORTABLE_PDF_BOOK['chapters'][0]['url'].replace('/static/', '')))
-        self.assertContains(response, 'file=/static/awesomesauce/{}'.format(
+        # Verify file parameter is not present anywhere (security fix)
+        self.assertNotContains(response, 'file=')
+        # Verify the remapped URL is in the sidebar for postMessage communication
+        self.assertContains(response, '/static/awesomesauce/{}'.format(
             PORTABLE_PDF_BOOK['chapters'][0]['url'].replace('/static/', '')))
 
     def test_invalid_chapter_id(self):
