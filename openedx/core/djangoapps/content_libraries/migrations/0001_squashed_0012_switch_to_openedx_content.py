@@ -8,7 +8,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [('content_libraries', '0001_initial'), ('content_libraries', '0002_group_permissions'), ('content_libraries', '0003_contentlibrary_type'), ('content_libraries', '0004_contentlibrary_license'), ('content_libraries', '0005_ltigradedresource_ltiprofile'), ('content_libraries', '0006_auto_20210615_1916'), ('content_libraries', '0005_contentlibraryblockimporttask'), ('content_libraries', '0007_merge_20210818_0614'), ('content_libraries', '0008_auto_20210818_2148'), ('content_libraries', '0009_alter_contentlibrary_authorized_lti_configs'), ('content_libraries', '0010_contentlibrary_learning_package_and_more'), ('content_libraries', '0011_remove_contentlibrary_bundle_uuid_and_more'), ('content_libraries', '0012_alter_contentlibrary_learning_package')]
+    replaces = [('content_libraries', '0001_initial'), ('content_libraries', '0002_group_permissions'), ('content_libraries', '0003_contentlibrary_type'), ('content_libraries', '0004_contentlibrary_license'), ('content_libraries', '0005_ltigradedresource_ltiprofile'), ('content_libraries', '0006_auto_20210615_1916'), ('content_libraries', '0005_contentlibraryblockimporttask'), ('content_libraries', '0007_merge_20210818_0614'), ('content_libraries', '0008_auto_20210818_2148'), ('content_libraries', '0009_alter_contentlibrary_authorized_lti_configs'), ('content_libraries', '0010_contentlibrary_learning_package_and_more'), ('content_libraries', '0011_remove_contentlibrary_bundle_uuid_and_more'), ('content_libraries', '0012_switch_to_openedx_content')]
 
     initial = True
 
