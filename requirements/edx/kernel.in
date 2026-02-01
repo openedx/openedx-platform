@@ -123,6 +123,7 @@ path
 piexif                              # Exif image metadata manipulation, used in the profile_images app
 Pillow                              # Image manipulation library; used for course assets, profile images, invoice PDFs, etc.
 psutil                              # Library for retrieving information on running processes and system utilization
+pyarrow                             # Required for numpy and other packages; avoids failed wheel builds
 pycountry
 pycryptodomex
 # PyJWT 1.6.3 contains PyJWTError, which is required by Apple auth in social-auth-core
