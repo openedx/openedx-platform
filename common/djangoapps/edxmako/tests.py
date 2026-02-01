@@ -34,9 +34,9 @@ class ShortcutsTests(UrlResetMixin, TestCase):
     @override_settings(MKTG_URLS={'ROOT': 'https://dummy-root', 'ABOUT': '/about-us'})
     def test_marketing_link(self):
         with override_settings(MKTG_URL_LINK_MAP={'ABOUT': self._get_test_url_name()}):
-            # test marketing site on
+            # test marketing site on - relative paths are returned directly to avoid redirect loops
             with patch.dict('django.conf.settings.FEATURES', {'ENABLE_MKTG_SITE': True}):
-                expected_link = 'https://dummy-root/about-us'
+                expected_link = '/about-us'
                 link = marketing_link('ABOUT')
                 assert link == expected_link
             # test marketing site off

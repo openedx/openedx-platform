@@ -80,7 +80,15 @@ def marketing_link(name):
         # a site ROOT, but still specify absolute URLs for other marketing
         # URLs in the MKTG_URLS setting
         # e.g. urljoin('https://marketing.com', 'https://open-edx.org/about') >>> 'https://open-edx.org/about'
-        return urljoin(marketing_urls.get('ROOT'), marketing_urls.get(name))
+        marketing_root = marketing_urls.get('ROOT')
+        marketing_path = marketing_urls.get(name)
+        if not marketing_path:
+            # If marketing_path is not set, return empty string
+            return ''
+        # If marketing_path is a relative path, return it directly to avoid redirect loops
+        if marketing_path.startswith('/'):
+            return marketing_path
+        return urljoin(marketing_root, marketing_path)
     # only link to the old pages when the marketing site isn't on
     elif not enable_mktg_site and name in link_map:
         # don't try to reverse disabled marketing links

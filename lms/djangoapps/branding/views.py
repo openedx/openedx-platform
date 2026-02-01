@@ -54,13 +54,14 @@ def index(request):
     )
 
     if enable_mktg_site:
-        marketing_urls = configuration_helpers.get_value(
-            'MKTG_URLS',
-            settings.MKTG_URLS
-        )
-        root_url = marketing_urls.get("ROOT")
-        if root_url != getattr(settings, "LMS_ROOT_URL", None):
-            return redirect(root_url)
+        root_url = marketing_link('ROOT')
+        if root_url and not root_url.startswith('/'):
+            lms_root = getattr(settings, 'LMS_ROOT_URL', None)
+            if root_url and lms_root:
+                root_url_normalized = root_url.rstrip('/')
+                lms_root_normalized = lms_root.rstrip('/')
+                if root_url_normalized != lms_root_normalized:
+                    return redirect(root_url)
 
     domain = request.headers.get('Host')
 
@@ -102,7 +103,10 @@ def courses(request):
     )
 
     if enable_mktg_site:
-        return redirect(marketing_link('COURSES'), permanent=True)
+        course_url = marketing_link('COURSES')
+        if not course_url or course_url.startswith('/'):
+            return courseware_views.courses(request)
+        return redirect(course_url, permanent=True)
 
     if not settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
         raise Http404
