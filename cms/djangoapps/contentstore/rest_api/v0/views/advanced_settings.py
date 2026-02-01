@@ -172,7 +172,7 @@ class AdvancedCourseSettingsView(DeveloperErrorViewMixin, APIView):
                     "lti_consumer"
                 ]
             },
-            "show_calculator": {
+            "course_survey_required": {
                 "value": true
             }
         }

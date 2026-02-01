@@ -87,6 +87,10 @@ class CourseMetadata:
         "upstream_version",
         "upstream_version_declined",
         "upstream_display_name",
+
+        # Settings that are being handled through course plugin (Pages & Resources)
+        "edxnotes",
+        "show_calculator",
     ]
 
     @classmethod
@@ -101,10 +105,6 @@ class CourseMetadata:
         # Do not show giturl if feature is not enabled.
         if not toggles.EXPORT_GIT.is_enabled():
             exclude_list.append('giturl')
-
-        # Do not show edxnotes if the feature is disabled.
-        if not settings.FEATURES.get('ENABLE_EDXNOTES'):
-            exclude_list.append('edxnotes')
 
         # Do not show video auto advance if the feature is disabled
         if not settings.FEATURES.get('ENABLE_OTHER_COURSE_SETTINGS'):
