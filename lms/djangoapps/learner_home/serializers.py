@@ -13,7 +13,10 @@ from rest_framework import serializers
 from openedx_filters.learning.filters import CourseEnrollmentAPIRenderStarted, CourseRunAPIRenderStarted
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.util.course import get_link_for_about_page
+from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
 from openedx.features.course_experience import course_home_url
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.data import CertificatesDisplayBehaviors
 from lms.djangoapps.learner_home.utils import course_progress_url
 
@@ -166,6 +169,7 @@ class CoursewareAccessSerializer(serializers.Serializer):
     hasUnmetPrerequisites = serializers.SerializerMethodField()
     isTooEarly = serializers.SerializerMethodField()
     isStaff = serializers.SerializerMethodField()
+    hasUnmetPrerequisitesList = serializers.SerializerMethodField()
 
     def _get_course_access_checks(self, enrollment):
         """Internal helper to unpack access object for this particular enrollment"""
@@ -190,6 +194,41 @@ class CoursewareAccessSerializer(serializers.Serializer):
         return self._get_course_access_checks(enrollment).get(
             "user_has_staff_access", False
         )
+
+    def _get_course_about_url_for_key(self, course_key):
+        """Return the course about page URL for the supplied course key."""
+        try:
+            course_overview = CourseOverview.get_from_id(course_key)
+        except CourseOverview.DoesNotExist:
+            return urljoin(
+                settings.LMS_ROOT_URL,
+                f"/courses/{course_key}/about",
+            )
+
+        return get_link_for_about_page(course_overview)
+
+    def get_hasUnmetPrerequisitesList(self, enrollment):
+        """
+        Return serialized info for any prerequisite courses the learner
+        has not completed.
+        """
+        prerequisite_courses = get_pre_requisite_courses_not_completed(
+            enrollment.user,
+            [enrollment.course_id],
+        )
+        prerequisite_courses = prerequisite_courses.get(
+            enrollment.course_id,
+            {},
+        ).get('courses', [])
+        serialized_prerequisites = [
+            {
+                "display": course_info["display"],
+                "url": course_home_url(course_info["key"]),
+                "about_url": self._get_course_about_url_for_key(course_info["key"]),
+            }
+            for course_info in prerequisite_courses
+        ]
+        return serialized_prerequisites
 
 
 class EnrollmentSerializer(serializers.Serializer):
