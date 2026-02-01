@@ -4,6 +4,7 @@
 from datetime import timedelta
 import logging
 
+from django.db import transaction
 from django.dispatch import receiver
 from edx_when.api import FIELDS_TO_EXTRACT, set_dates_for_course
 from xblock.fields import Scope
@@ -181,3 +182,15 @@ def extract_dates(sender, course_key, **kwargs):  # pylint: disable=unused-argum
         set_dates_for_course(course_key, date_items)
     except Exception:  # pylint: disable=broad-except
         log.exception('Unable to set dates for %s on course publish', course_key)
+
+
+@receiver(SignalHandler.course_published)
+def update_assignment_dates(sender, course_key, **kwargs):  # pylint: disable=unused-argument
+    """
+    Receive the course_published signal and update assignment dates for the course.
+    """
+    # import here, because signal is registered at startup, but items in tasks are not available yet
+    from .tasks import update_assignment_dates_for_course
+
+    course_key_str = str(course_key)
+    transaction.on_commit(lambda: update_assignment_dates_for_course.delay(course_key_str))
