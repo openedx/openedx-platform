@@ -13,7 +13,8 @@
             var filterBar = new FilterBar({collection: filters});
             var refineSidebar = new RefineSidebar({
                 collection: search.discovery.facetOptions,
-                meanings: meanings
+                meanings: meanings || {},
+                filtersCollection: filters
             });
             var listing;
             var courseListingModel = search.discovery;
@@ -40,12 +41,19 @@
 
             dispatcher.listenTo(refineSidebar, 'selectOption', function(type, query, name) {
                 form.showLoadingIndicator();
-                if (filters.get(type)) {
-                    removeFilter(type);
+                const exist = filters.findWhere({ type: type, query: query });
+                if (exist) {
+                    filters.remove(exist);
                 } else {
-                    filters.add({type: type, query: query, name: name});
-                    search.refineSearch(filters.getTerms());
+                    filters.add({ type: type, query: query, name: name });
+                    refineSidebar.render();
                 }
+
+                const terms = groupTerms(filters.toJSON()); 
+                const queryString = flattenTermsToQuery(terms);
+                Backbone.history.navigate('search?' + queryString, { trigger: true });
+
+                search.refineSearch(terms);
             });
 
             dispatcher.listenTo(filterBar, 'clearFilter', removeFilter);
@@ -98,9 +106,31 @@
                     search.refineSearch(filters.getTerms());
                 }
             }
+ // Group flat list of terms into { type: [queries...] }
+            function groupTerms(termsList) {
+                const grouped = {};
+                _.each(termsList, function(termObj) {
+                    if (!grouped[termObj.type]) {
+                        grouped[termObj.type] = [];
+                    }
+                    grouped[termObj.type].push(termObj.query);
+                });
+                return grouped;
+            }
 
-            function quote(string) {
-                return '"' + string + '"';
+            // Flatten grouped terms into query string 
+            function flattenTermsToQuery(terms) {
+                const pairs = [];
+                _.each(terms, function(values, key) {
+                    _.each(values, function(val) {
+                        pairs.push(encodeURIComponent(key) + '=' + encodeURIComponent(val));
+                    });
+                });
+                return pairs.join('&');
+            }
+
+            function quote(str) {
+                return '"' + str + '"';
             }
         };
     });
