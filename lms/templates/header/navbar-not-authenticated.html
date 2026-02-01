@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 %>
 
 <%
@@ -50,7 +51,7 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
         % if allow_public_account_creation and not disable_register_button:
           % if should_redirect_to_authn_mfe:
             <div class="mobile-nav-item hidden-mobile nav-item">
-                <a class="register-btn btn" href="${settings.AUTHN_MICROFRONTEND_URL}/register${login_query()}">${_("Register for free")}</a>
+                <a class="register-btn btn" href="${configuration_helpers.get_value('AUTHN_MICROFRONTEND_URL', settings.AUTHN_MICROFRONTEND_URL)}/register${login_query()}">${_("Register for free")}</a>
             </div>
           % else:
             <div class="mobile-nav-item hidden-mobile nav-item">
@@ -60,7 +61,7 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
         % endif
         % if should_redirect_to_authn_mfe:
           <div class="mobile-nav-item hidden-mobile nav-item">
-              <a class="sign-in-btn btn" href="${settings.AUTHN_MICROFRONTEND_URL}/login${login_query()}">${_("Sign in")}</a>
+              <a class="sign-in-btn btn" href="${configuration_helpers.get_value('AUTHN_MICROFRONTEND_URL', settings.AUTHN_MICROFRONTEND_URL)}/login${login_query()}">${_("Sign in")}</a>
           </div>
         % else:
           <div class="mobile-nav-item hidden-mobile nav-item">

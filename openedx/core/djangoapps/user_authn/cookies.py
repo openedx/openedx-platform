@@ -23,6 +23,7 @@ from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_from_token
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
 
@@ -246,7 +247,13 @@ def _get_user_info_cookie_data(request, user):
     # (most likely just hiding the links).
     try:
         header_urls['account_settings'] = settings.ACCOUNT_MICROFRONTEND_URL
-        header_urls['learner_profile'] = urljoin(settings.PROFILE_MICROFRONTEND_URL, f'/u/{user.username}')
+        header_urls['learner_profile'] = urljoin(
+            configuration_helpers.get_value(
+                'PROFILE_MICROFRONTEND_URL',
+                settings.PROFILE_MICROFRONTEND_URL,
+            ),
+            f'/u/{user.username}',
+        )
     except NoReverseMatch:
         pass
 
