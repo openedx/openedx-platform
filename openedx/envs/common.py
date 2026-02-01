@@ -1770,7 +1770,7 @@ CONTENT_TYPE_GATE_GROUP_IDS = {
 
 ########################## Enterprise Api Client ###########################
 
-ENTERPRISE_CATALOG_INTERNAL_ROOT_URL = 'http://enterprise.catalog.app:18160'
+ENTERPRISE_CATALOG_INTERNAL_ROOT_URL = 'http://edx.devstack.enterprise-catalog:18160'
 
 ENTERPRISE_BACKEND_SERVICE_EDX_OAUTH2_KEY = "enterprise-backend-service-key"
 ENTERPRISE_BACKEND_SERVICE_EDX_OAUTH2_SECRET = "enterprise-backend-service-secret"
