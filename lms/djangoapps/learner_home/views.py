@@ -73,8 +73,12 @@ def get_platform_settings():
     """Get settings used for platform level connections: emails, url routes, etc."""
 
     course_search_url = marketing_link("COURSES")
+    catalog_microfrontend_url = configuration_helpers.get_value(
+        "CATALOG_MICROFRONTEND_URL",
+        settings.CATALOG_MICROFRONTEND_URL,
+    )
     if toggles.use_catalog_mfe():
-        course_search_url = f"{settings.CATALOG_MICROFRONTEND_URL}/courses"
+        course_search_url = f"{catalog_microfrontend_url}/courses"
 
     return {
         "supportEmail": settings.DEFAULT_FEEDBACK_EMAIL,

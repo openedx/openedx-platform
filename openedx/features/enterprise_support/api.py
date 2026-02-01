@@ -895,7 +895,10 @@ def get_enterprise_learner_portal_enabled_message(enterprise_customer):
         return None
 
     learner_portal_url = "{base_url}/{slug}?utm_source=lms_dashboard_banner".format(
-        base_url=settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+        base_url=configuration_helpers.get_value(
+            'ENTERPRISE_LEARNER_PORTAL_BASE_URL',
+            settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+        ),
         slug=enterprise_customer['slug']
     )
 
@@ -935,7 +938,10 @@ def get_enterprise_learner_portal_context(request):
         'enterprise_customer_slug': enterprise_customer.get('slug'),
         'enterprise_customer_learner_portal_enabled': enterprise_customer.get('enable_learner_portal', False),
         'enterprise_customer_uuid': enterprise_customer.get('uuid'),
-        'enterprise_learner_portal_base_url': settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+        'enterprise_learner_portal_base_url': configuration_helpers.get_value(
+            'ENTERPRISE_LEARNER_PORTAL_BASE_URL',
+            settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL,
+        ),
         'enterprise_learner_portal_enabled_message': enterprise_learner_portal_enabled_message,
     })
     return context

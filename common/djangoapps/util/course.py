@@ -53,7 +53,10 @@ def get_link_for_about_page(course):
     ).get('CUSTOM_COURSE_URLS')
 
     if use_catalog_mfe():
-        about_base_url = settings.CATALOG_MICROFRONTEND_URL
+        about_base_url = configuration_helpers.get_value(
+            'CATALOG_MICROFRONTEND_URL',
+            settings.CATALOG_MICROFRONTEND_URL,
+        )
     else:
         about_base_url = configuration_helpers.get_value('LMS_ROOT_URL', settings.LMS_ROOT_URL)
 

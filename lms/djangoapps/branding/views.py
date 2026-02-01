@@ -28,6 +28,19 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 log = logging.getLogger(__name__)
 
 
+def _catalog_mfe_base_url() -> str:
+    """
+    Return the site-aware base URL for the Catalog MFE.
+
+    Reads `CATALOG_MICROFRONTEND_URL` from Site Configuration when available;
+    otherwise falls back to `settings.CATALOG_MICROFRONTEND_URL`.
+    """
+    return configuration_helpers.get_value(
+        'CATALOG_MICROFRONTEND_URL',
+        settings.CATALOG_MICROFRONTEND_URL,
+    )
+
+
 @ensure_csrf_cookie
 @transaction.non_atomic_requests
 @cache_if_anonymous()
@@ -46,7 +59,10 @@ def index(request):
             return redirect('dashboard')
 
     if use_catalog_mfe():
-        return redirect(f'{settings.CATALOG_MICROFRONTEND_URL}/', permanent=True)
+        return redirect(
+            f'{_catalog_mfe_base_url()}/',
+            permanent=True,
+        )
 
     enable_mktg_site = configuration_helpers.get_value(
         'ENABLE_MKTG_SITE',
@@ -94,7 +110,10 @@ def courses(request):
     profile page. Otherwise, it's the edX courseware.views.views.courses page
     """
     if use_catalog_mfe():
-        return redirect(f'{settings.CATALOG_MICROFRONTEND_URL}/courses', permanent=True)
+        return redirect(
+            f'{_catalog_mfe_base_url()}/',
+            permanent=True,
+        )
 
     enable_mktg_site = configuration_helpers.get_value(
         'ENABLE_MKTG_SITE',

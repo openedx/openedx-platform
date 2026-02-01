@@ -20,7 +20,7 @@ enterprise_customer_link = get_enterprise_learner_portal(request)
 
 <h1 class="header-logo">
   % if enterprise_customer_link:
-    <a href="${settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL}/${enterprise_customer_link.get('slug')}">
+    <a href="${configuration_helpers.get_value('ENTERPRISE_LEARNER_PORTAL_BASE_URL', settings.ENTERPRISE_LEARNER_PORTAL_BASE_URL)}/${enterprise_customer_link.get('slug')}">
       <img class="logo" src="${enterprise_customer_link.get('logo')}" alt="${_('{name} Dashboard').format(name=enterprise_customer_link.get('name'))}"/>
         % if settings.LOGO_IMAGE_EXTRA_TEXT == 'edge':
             <span class="font-italic"> | EDGE</span>
