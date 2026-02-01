@@ -20,6 +20,7 @@ SKIP_DIRS = (
     'spec',
     'test_root',
     'vendor',
+    'venv',
 )
 
 

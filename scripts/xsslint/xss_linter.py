@@ -71,12 +71,15 @@ def _process_file(full_path, template_linters, options, summary_results, out):
     num_violations = 0
     directory = os.path.dirname(full_path)
     file_name = os.path.basename(full_path)
+    violations = []
     try:
         for template_linter in template_linters:
             results = template_linter.process_file(directory, file_name)
+            violations += results.violations
             results.print_results(options, summary_results, out)
     except BaseException as e:
         raise Exception(f"Failed to process path: {full_path}") from e
+    return violations
 
 
 def _process_os_dir(directory, files, template_linters, options, summary_results, out):
@@ -92,9 +95,11 @@ def _process_os_dir(directory, files, template_linters, options, summary_results
         out: output file
 
     """
+    violations = []
     for current_file in sorted(files, key=lambda s: s.lower()):
         full_path = os.path.join(directory, current_file)
-        _process_file(full_path, template_linters, options, summary_results, out)
+        violations += _process_file(full_path, template_linters, options, summary_results, out)
+    return violations
 
 
 def _process_os_dirs(starting_dir, template_linters, options, summary_results, out):
@@ -109,13 +114,15 @@ def _process_os_dirs(starting_dir, template_linters, options, summary_results, o
         out: output file
 
     """
+    violations = []
     skip_dirs = options.get('skip_dirs', ())
     for root, dirs, files in os.walk(starting_dir):
         if is_skip_dir(skip_dirs, root):
             del dirs
             continue
         dirs.sort(key=lambda s: s.lower())
-        _process_os_dir(root, files, template_linters, options, summary_results, out)
+        violations += _process_os_dir(root, files, template_linters, options, summary_results, out)
+    return violations
 
 
 def _get_xsslint_counts(result_contents):
@@ -233,7 +240,7 @@ def _lint(file_or_dir, template_linters, options, summary_results, out):
     """
 
     if file_or_dir is not None and os.path.isfile(file_or_dir):
-        _process_file(file_or_dir, template_linters, options, summary_results, out)
+        violations = _process_file(file_or_dir, template_linters, options, summary_results, out)
     else:
         directory = "."
         if file_or_dir is not None:
@@ -241,8 +248,10 @@ def _lint(file_or_dir, template_linters, options, summary_results, out):
                 directory = file_or_dir
             else:
                 raise ValueError(f"Path [{file_or_dir}] is not a valid file or directory.")
-        _process_os_dirs(directory, template_linters, options, summary_results, out)
+        violations = _process_os_dirs(directory, template_linters, options, summary_results, out)
 
+    for violation in violations:
+        violation.print_results(options, sys.stdout)
     summary_results.print_results(options, out)
     result_output = _get_xsslint_counts(out.getvalue())
     _check_violations(options, result_output)
