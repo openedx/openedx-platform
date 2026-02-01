@@ -14,6 +14,8 @@ from importlib.metadata import entry_points
 from tempfile import NamedTemporaryFile, mkdtemp
 from urllib.parse import urlparse
 
+import logging
+
 import aiohttp
 import olxcleaner
 from ccx_keys.locator import CCXLocator
@@ -172,6 +174,8 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
     """
     # import here, at top level this import prevents the celery workers from starting up correctly
     from edxval.api import copy_course_videos
+
+    logging.info("ESHE : rerun_course - tasks.py")
 
     source_course_key = CourseKey.from_string(source_course_key_string)
     destination_course_key = CourseKey.from_string(destination_course_key_string)

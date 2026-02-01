@@ -1754,9 +1754,17 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         In split, other than copying the assets, this is cheap as it merely creates a new version of the
         existing course.
         """
+        logging.info("ESHE : clone_course - split.py")
         source_index = self.get_course_index_info(source_course_id)
         if source_index is None:
             raise ItemNotFoundError(f"Cannot find a course at {source_course_id}. Aborting")
+        logging.info(f"ESHE : source_index {source_index}")
+        logging.info(f"ESHE : fields {fields}")
+        d_course = self.get_course(source_course_id, 4)
+        logging.info(f"ESHE : d_course {d_course}")
+
+        ## TODO Extract prererequisite contents from source course
+        ## TODO Apply prerequisite subsection contents to new course
 
         with self.bulk_operations(dest_course_id):
             new_course = self.create_course(
@@ -1770,6 +1778,9 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             )
             # don't copy assets until we create the course in case something's awry
             super().clone_course(source_course_id, dest_course_id, user_id, fields, **kwargs)
+
+            logging.info(f"ESHE : new_course - {new_course}")
+
             return new_course
 
     DEFAULT_ROOT_COURSE_BLOCK_ID = 'course'
