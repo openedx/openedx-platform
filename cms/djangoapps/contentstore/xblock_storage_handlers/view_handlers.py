@@ -685,36 +685,37 @@ def _create_block(request):
                 status=400,
             )
 
-    created_block = create_xblock(
-        parent_locator=parent_locator,
-        user=request.user,
-        category=category,
-        display_name=request.json.get("display_name"),
-        boilerplate=request.json.get("boilerplate"),
-    )
+    store = modulestore()
+    with store.bulk_operations(usage_key.course_key):
+        created_block = create_xblock(
+            parent_locator=parent_locator,
+            user=request.user,
+            category=category,
+            display_name=request.json.get("display_name"),
+            boilerplate=request.json.get("boilerplate"),
+        )
 
-    response = {
-        "locator": str(created_block.location),
-        "courseKey": str(created_block.location.course_key),
-    }
-    # If it contains library_content_key, the block is being imported from a v2 library
-    # so it needs to be synced with upstream block.
-    if upstream_ref := request.json.get("library_content_key"):
-        # Set `created_block.upstream` and then sync this with the upstream (library) version.
-        created_block.upstream = upstream_ref
-        try:
-            store = modulestore()
-            static_file_notices = sync_library_content(created_block, request, store)
-        except BadUpstream as exc:
-            _delete_item(created_block.location, request.user)
-            log.exception(
-                f"Could not sync to new block at '{created_block.usage_key}' "
-                f"using provided library_content_key='{upstream_ref}'"
-            )
-            return JsonResponse({"error": str(exc)}, status=400)
-        response["upstreamRef"] = upstream_ref
-        response["static_file_notices"] = asdict(static_file_notices)
-        response["parent_locator"] = parent_locator
+        response = {
+            "locator": str(created_block.location),
+            "courseKey": str(created_block.location.course_key),
+        }
+        # If it contains library_content_key, the block is being imported from a v2 library
+        # so it needs to be synced with upstream block.
+        if upstream_ref := request.json.get("library_content_key"):
+            # Set `created_block.upstream` and then sync this with the upstream (library) version.
+            created_block.upstream = upstream_ref
+            try:
+                static_file_notices = sync_library_content(created_block, request, store)
+            except BadUpstream as exc:
+                _delete_item(created_block.location, request.user)
+                log.exception(
+                    f"Could not sync to new block at '{created_block.usage_key}' "
+                    f"using provided library_content_key='{upstream_ref}'"
+                )
+                return JsonResponse({"error": str(exc)}, status=400)
+            response["upstreamRef"] = upstream_ref
+            response["static_file_notices"] = asdict(static_file_notices)
+            response["parent_locator"] = parent_locator
 
     return JsonResponse(response)
 
