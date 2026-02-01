@@ -1267,7 +1267,7 @@ xblock-utils==4.0.0
     # via
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.10.2
+git+https://github.com/openedx/xblocks-contrib.git@farhan/remove-legacy-xmodule-mixin-attributes#egg=xblocks-contrib
     # via -r requirements/edx/bundled.in
 xmlsec==1.3.14
     # via
