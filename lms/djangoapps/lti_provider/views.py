@@ -56,12 +56,14 @@ def lti_launch(request, course_id, usage_id):
           pair
     """
     if not settings.FEATURES['ENABLE_LTI_PROVIDER']:
+        log.info('LTI provider feature is disabled.')
         return HttpResponseForbidden()
 
     # Check the LTI parameters, and return 400 if any required parameters are
     # missing
     params = get_required_parameters(request.POST)
     if not params:
+        log.info('Missing required LTI parameters in LTI request path: %s', request.path)
         return HttpResponseBadRequest()
     params.update(get_optional_parameters(request.POST))
     params.update(get_custom_parameters(request.POST))
@@ -74,10 +76,21 @@ def lti_launch(request, course_id, usage_id):
             params['oauth_consumer_key']
         )
     except LtiConsumer.DoesNotExist:
+        log.error(
+            'LTI consumer lookup failed because no matching consumer was found against '
+            'consumer key: %s and instance GUID: %s for request path: %s',
+            params['oauth_consumer_key'],
+            params.get('tool_consumer_instance_guid', None),
+            request.path
+        )
         return HttpResponseForbidden()
 
     # Check the OAuth signature on the message
     if not SignatureValidator(lti_consumer).verify(request):
+        log.error(
+            'Invalid OAuth signature for LTI launch from request path: %s',
+            request.path
+        )
         return HttpResponseForbidden()
 
     # Add the course and usage keys to the parameters array
@@ -85,20 +98,26 @@ def lti_launch(request, course_id, usage_id):
         course_key, usage_key = parse_course_and_usage_keys(course_id, usage_id)
     except InvalidKeyError:
         log.error(
-            'Invalid course key %s or usage key %s from request %s',
+            'Invalid course key %s or usage key %s from request path %s',
             course_id,
             usage_id,
-            request
+            request.path
         )
         raise Http404()  # lint-amnesty, pylint: disable=raise-missing-from
     params['course_key'] = course_key
     params['usage_key'] = usage_key
 
-    # Create an edX account if the user identifed by the LTI launch doesn't have
+    # Create an edX account if the user identified by the LTI launch doesn't have
     # one already, and log the edX account into the platform.
     try:
-        authenticate_lti_user(request, params['user_id'], lti_consumer)
+        user_id = params["user_id"]
+        authenticate_lti_user(request, user_id, lti_consumer)
     except PermissionDenied:
+        log.info(
+            'LTI user authentication failed for user Id: %s from request path: %s',
+            user_id,
+            request.path
+        )
         request.session.flush()
         context = {
             "login_link": request.build_absolute_uri(settings.LOGIN_URL),
