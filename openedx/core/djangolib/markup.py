@@ -6,6 +6,8 @@ import markupsafe
 import nh3
 from lxml.html.clean import Cleaner
 from mako.filters import decode
+from django.conf import settings
+
 
 # Text() can be used to declare a string as plain text, as HTML() is used
 # for HTML.  It simply wraps markupsafe's escape, which will HTML-escape if
@@ -60,7 +62,23 @@ def strip_all_tags_but_br(string_to_strip):
 def clean_dangerous_html(html):
     """
     Mark a string as already HTML and remove unsafe tags, so that it won't be escaped before output.
-        Usage:
+
+    Allows embedded content (iframes) only from domains configured in the
+    ALLOWED_EMBED_HOSTS setting. This provides security while enabling
+    legitimate video embeds in course about pages.
+
+    Configuration:
+        Set ALLOWED_EMBED_HOSTS in your settings to control which domains
+        can embed content:
+
+        ALLOWED_EMBED_HOSTS = [
+            'youtube.com',
+            'www.youtube.com',
+            'vimeo.com',
+            'custom-video-service.com',  # Add your own
+        ]
+
+    Usage:
         <%page expression_filter="h"/>
         <%!
         from openedx.core.djangolib.markup import clean_dangerous_html
@@ -69,6 +87,15 @@ def clean_dangerous_html(html):
     """
     if not html:
         return html
-    cleaner = Cleaner(style=True, inline_style=False, safe_attrs_only=False)
+
+    # Get allowed hosts from settings, with sensible defaults
+    allowed_hosts = getattr(settings, 'ALLOWED_EMBED_HOSTS', [])
+
+    cleaner = Cleaner(
+        style=True,
+        inline_style=False,
+        safe_attrs_only=False,
+        host_whitelist=allowed_hosts,
+    )
     html = cleaner.clean_html(html)
     return HTML(html)

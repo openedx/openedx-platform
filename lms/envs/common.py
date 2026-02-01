@@ -3176,3 +3176,18 @@ SSL_AUTH_EMAIL_DOMAIN = "MIT.EDU"
 SSL_AUTH_DN_FORMAT_STRING = (
     "/C=US/ST=Massachusetts/O=Massachusetts Institute of Technology/OU=Client CA v1/CN={0}/emailAddress={1}"
 )
+
+# HTML Sanitization Settings
+# Trusted domains for embedded content (iframes) in course about pages and similar content
+# These domains are considered safe for embedding videos and other interactive content
+ALLOWED_EMBED_HOSTS = [
+    'youtube.com',
+    'www.youtube.com',
+    'youtube-nocookie.com',
+    'www.youtube-nocookie.com',
+    'youtu.be',  # YouTube short links
+    'vimeo.com',
+    'player.vimeo.com',
+    'dailymotion.com',
+    'www.dailymotion.com',
+]
