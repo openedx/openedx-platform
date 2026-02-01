@@ -144,13 +144,14 @@
         };
 
         extensions.prototype.display_grid = function(data) {
-            var $tablePlaceholder, col, columns, gridData, options;
+            var $tablePlaceholder, col, columns, gridData, options, grid;
             this.clear_display();
             this.$grid_text.text(data.title);
             options = {
                 enableCellNavigation: true,
                 enableColumnReorder: false,
-                forceFitColumns: true
+                forceFitColumns: true,
+                autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
             };
             columns = (function() {
                 var i, len, ref, results;
@@ -172,7 +173,8 @@
                 style: 'min-height: 400px'
             });
             this.$grid_table.append($tablePlaceholder);
-            return new window.Slick.Grid($tablePlaceholder, gridData, columns, options);
+            grid = new window.Slick.Grid($tablePlaceholder[0], gridData, columns, options);
+            return grid.autosizeColumns();
         };
 
         extensions.prototype.clear_display = function() {

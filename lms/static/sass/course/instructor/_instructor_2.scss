@@ -42,7 +42,6 @@
     font-size: 15px;
     color: theme-color("primary");
     text-decoration: underline;
-    padding: ($baseline/4);
   }
 
   // system feedback - messages
@@ -270,7 +269,6 @@
     .slick-cell {
       border: 1px dotted silver;
       border-collapse: collapse;
-      white-space: normal;
       word-wrap: break-word;
     }
   }
@@ -1634,7 +1632,6 @@
     .report-downloads-table {
       .slickgrid {
         height: 300px;
-        padding: ($baseline/4);
       }
       // Disable horizontal scroll bar when grid only has 1 column. Remove this CSS class when more columns added.
       .slick-viewport {

@@ -199,13 +199,14 @@
              * render data table on dashboard UI with given data.
              */
             this.buildDataTable = function(data) {
-                var $tablePlaceholder, columns, feature, gridData, options;
+                var $tablePlaceholder, columns, feature, gridData, options, grid;
                 dataDownloadObj.clear_display();
                 options = {
                     enableCellNavigation: true,
                     enableColumnReorder: false,
                     forceFitColumns: true,
-                    rowHeight: 35
+                    rowHeight: 35,
+                    autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
                 };
                 columns = (function() {
                     var i, len, ref, results;
@@ -226,7 +227,8 @@
                     class: 'slickgrid'
                 });
                 dataDownloadObj.$download_display_table.append($tablePlaceholder);
-                return new window.Slick.Grid($tablePlaceholder, gridData, columns, options);
+                grid = new window.Slick.Grid($tablePlaceholder[0], gridData, columns, options);
+                return grid.autosizeColumns();
             };
         }
 

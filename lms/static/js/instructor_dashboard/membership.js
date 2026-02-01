@@ -905,7 +905,9 @@ such that the value can be defined later than this assignment (file load order).
                 options = {
                     enableCellNavigation: true,
                     enableColumnReorder: false,
-                    forceFitColumns: true
+                    forceFitColumns: true,
+                    autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
+
                 };
                 WHICH_CELL_IS_REVOKE = 3;
                 columns = [
@@ -935,7 +937,8 @@ such that the value can be defined later than this assignment (file load order).
                     class: 'slickgrid'
                 });
                 ths.$display_table.append($tablePlaceholder);
-                grid = new window.Slick.Grid($tablePlaceholder, tableData, columns, options);
+                grid = new window.Slick.Grid($tablePlaceholder[0], tableData, columns, options);
+                grid.autosizeColumns();
                 return grid.onClick.subscribe(function(e, args) {
                     var item;
                     item = args.grid.getDataItem(args.row);

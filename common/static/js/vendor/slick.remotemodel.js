@@ -1,164 +1,94 @@
-(function ($) {
-  /***
-   * A sample AJAX data store implementation.
-   * Right now, it's hooked up to load all Apple-related Digg stories, but can
-   * easily be extended to support and JSONP-compatible backend that accepts paging parameters.
-   */
-  function RemoteModel() {
-    // private
-    var PAGESIZE = 50;
-    var data = {length: 0};
-    var searchstr = "apple";
-    var sortcol = null;
-    var sortdir = 1;
-    var h_request = null;
-    var req = null; // ajax request
+"use strict";
+(() => {
+  var __defProp = Object.defineProperty;
+  var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: !0, configurable: !0, writable: !0, value }) : obj[key] = value;
+  var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key != "symbol" ? key + "" : key, value);
 
-    // events
-    var onDataLoading = new Slick.Event();
-    var onDataLoaded = new Slick.Event();
-
-
-    function init() {
+  // src/slick.remotemodel.ts
+  var SlickRemoteModel = class {
+    constructor() {
+      // private
+      __publicField(this, "PAGESIZE", 50);
+      __publicField(this, "data", { length: 0 });
+      __publicField(this, "searchstr", "");
+      __publicField(this, "sortcol", null);
+      __publicField(this, "sortdir", 1);
+      __publicField(this, "h_request");
+      __publicField(this, "req", null);
+      // ajax request
+      // events
+      __publicField(this, "onDataLoading", new Slick.Event("onDataLoading"));
+      __publicField(this, "onDataLoaded", new Slick.Event("onDataLoaded"));
+      if (!(window.$ || window.jQuery) || !window.$.jsonp)
+        throw new Error("SlickRemoteModel requires both jQuery and jQuery jsonp library to be loaded.");
+      this.init();
     }
-
-
-    function isDataLoaded(from, to) {
-      for (var i = from; i <= to; i++) {
-        if (data[i] == undefined || data[i] == null) {
-          return false;
-        }
-      }
-
-      return true;
+    init() {
     }
-
-
-    function clear() {
-      for (var key in data) {
-        delete data[key];
-      }
-      data.length = 0;
+    isDataLoaded(from, to) {
+      for (let i = from; i <= to; i++)
+        if (this.data[i] === void 0 || this.data[i] === null)
+          return !1;
+      return !0;
     }
-
-
-    function ensureData(from, to) {
-      if (req) {
-        req.abort();
-        for (var i = req.fromPage; i <= req.toPage; i++)
-          data[i * PAGESIZE] = undefined;
+    clear() {
+      for (let key in this.data)
+        delete this.data[key];
+      this.data.length = 0;
+    }
+    ensureData(from, to) {
+      if (this.req) {
+        this.req.abort();
+        for (let i = this.req.fromPage; i <= this.req.toPage; i++)
+          this.data[i * this.PAGESIZE] = void 0;
       }
-
-      if (from < 0) {
-        from = 0;
-      }
-
-      var fromPage = Math.floor(from / PAGESIZE);
-      var toPage = Math.floor(to / PAGESIZE);
-
-      while (data[fromPage * PAGESIZE] !== undefined && fromPage < toPage)
+      from < 0 && (from = 0), this.data.length > 0 && (to = Math.min(to, this.data.length - 1));
+      let fromPage = Math.floor(from / this.PAGESIZE), toPage = Math.floor(to / this.PAGESIZE);
+      for (; this.data[fromPage * this.PAGESIZE] !== void 0 && fromPage < toPage; )
         fromPage++;
-
-      while (data[toPage * PAGESIZE] !== undefined && fromPage < toPage)
+      for (; this.data[toPage * this.PAGESIZE] !== void 0 && fromPage < toPage; )
         toPage--;
-
-      if (fromPage > toPage || ((fromPage == toPage) && data[fromPage * PAGESIZE] !== undefined)) {
-        // TODO:  look-ahead
+      if (fromPage > toPage || fromPage === toPage && this.data[fromPage * this.PAGESIZE] !== void 0) {
+        this.onDataLoaded.notify({ from, to });
         return;
       }
-
-      var url = "http://services.digg.com/search/stories?query=" + searchstr + "&offset=" + (fromPage * PAGESIZE) + "&count=" + (((toPage - fromPage) * PAGESIZE) + PAGESIZE) + "&appkey=http://slickgrid.googlecode.com&type=javascript";
-
-      switch (sortcol) {
-        case "diggs":
-          url += ("&sort=" + ((sortdir > 0) ? "digg_count-asc" : "digg_count-desc"));
-          break;
-      }
-
-      if (h_request != null) {
-        clearTimeout(h_request);
-      }
-
-      h_request = setTimeout(function () {
-        for (var i = fromPage; i <= toPage; i++)
-          data[i * PAGESIZE] = null; // null indicates a 'requested but not available yet'
-
-        onDataLoading.notify({from: from, to: to});
-
-        req = $.jsonp({
-          url: url,
+      let url = "http://octopart.com/api/v3/parts/search?apikey=68b25f31&include[]=short_description&show[]=uid&show[]=manufacturer&show[]=mpn&show[]=brand&show[]=octopart_url&show[]=short_description&q=" + this.searchstr + "&start=" + fromPage * this.PAGESIZE + "&limit=" + ((toPage - fromPage) * this.PAGESIZE + this.PAGESIZE);
+      this.sortcol !== null && (url += "&sortby=" + this.sortcol + (this.sortdir > 0 ? "+asc" : "+desc")), this.h_request && window.clearTimeout(this.h_request), this.h_request = window.setTimeout(() => {
+        for (let i = fromPage; i <= toPage; i++)
+          this.data[i * this.PAGESIZE] = null;
+        this.onDataLoading.notify({ from, to }), this.req = window.$.jsonp({
+          url,
           callbackParameter: "callback",
-          cache: true, // Digg doesn't accept the autogenerated cachebuster param
-          success: onSuccess,
-          error: function () {
-            onError(fromPage, toPage)
-          }
-        });
-        req.fromPage = fromPage;
-        req.toPage = toPage;
+          cache: !0,
+          success: this.onSuccess,
+          error: () => this.onError(fromPage, toPage)
+        }), this.req.fromPage = fromPage, this.req.toPage = toPage;
       }, 50);
     }
-
-
-    function onError(fromPage, toPage) {
+    onError(fromPage, toPage) {
       alert("error loading pages " + fromPage + " to " + toPage);
     }
-
-    function onSuccess(resp) {
-      var from = this.fromPage * PAGESIZE, to = from + resp.count;
-      data.length = parseInt(resp.total);
-
-      for (var i = 0; i < resp.stories.length; i++) {
-        data[from + i] = resp.stories[i];
-        data[from + i].index = from + i;
+    onSuccess(resp) {
+      let from = resp.request.start, to = from + resp.results.length;
+      this.data.length = Math.min(parseInt(resp.hits), 1e3);
+      for (let i = 0; i < resp.results.length; i++) {
+        let item = resp.results[i].item;
+        this.data[from + i] = item, this.data[from + i].index = from + i;
       }
-
-      req = null;
-
-      onDataLoaded.notify({from: from, to: to});
+      this.req = null, this.onDataLoaded.notify({ from, to });
     }
-
-
-    function reloadData(from, to) {
-      for (var i = from; i <= to; i++)
-        delete data[i];
-
-      ensureData(from, to);
+    reloadData(from, to) {
+      for (let i = from; i <= to; i++)
+        delete this.data[i];
+      this.ensureData(from, to);
     }
-
-
-    function setSort(column, dir) {
-      sortcol = column;
-      sortdir = dir;
-      clear();
+    setSort(column, dir) {
+      this.sortcol = column, this.sortdir = dir, this.clear();
     }
-
-    function setSearch(str) {
-      searchstr = str;
-      clear();
+    setSearch(str) {
+      this.searchstr = str, this.clear();
     }
-
-
-    init();
-
-    return {
-      // properties
-      "data": data,
-
-      // methods
-      "clear": clear,
-      "isDataLoaded": isDataLoaded,
-      "ensureData": ensureData,
-      "reloadData": reloadData,
-      "setSort": setSort,
-      "setSearch": setSearch,
-
-      // events
-      "onDataLoading": onDataLoading,
-      "onDataLoaded": onDataLoaded
-    };
-  }
-
-  // Slick.Data.RemoteModel
-  $.extend(true, window, { Slick: { Data: { RemoteModel: RemoteModel }}});
-})(jQuery);
+  };
+  window.Slick && (window.Slick.Data = window.Slick.Data || {}, window.Slick.Data.RemoteModel = SlickRemoteModel);
+})();
+//# sourceMappingURL=slick.remotemodel.js.map

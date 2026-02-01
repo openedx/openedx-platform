@@ -96,6 +96,7 @@
             // Common edx utils
             'common/js/utils/edx.utils.validate': 'common/js/utils/edx.utils.validate',
             'slick.core': 'xmodule_js/common_static/js/vendor/slick.core',
+            'slick.interactions': 'xmodule_js/common_static/js/vendor/slick.interactions',
             'slick.grid': 'xmodule_js/common_static/js/vendor/slick.grid'
         },
         shim: {
@@ -284,7 +285,7 @@
             },
             'js/instructor_dashboard/util': {
                 exports: 'js/instructor_dashboard/util',
-                deps: ['jquery', 'underscore', 'slick.core', 'slick.grid'],
+                deps: ['jquery', 'underscore', 'slick.core', 'slick.interactions', 'slick.grid'],
                 init: function() {
                     // Set global variables that the util code is expecting to be defined
                     require([ // eslint-disable-line global-require
@@ -510,8 +511,13 @@
                 deps: ['jquery'],
                 exports: 'Slick'
             },
+            'slick.interactions': {
+                deps: ['jquery'],
+                exports: 'Slick'
+            },
             'slick.grid': {
                 deps: ['jquery', 'jquery.eventDrag', 'slick.core'],
+                deps: ['jquery', 'slick.core', 'slick.interactions'],
                 exports: 'Slick'
             },
             // Discussions

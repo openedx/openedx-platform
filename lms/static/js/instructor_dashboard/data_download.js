@@ -42,13 +42,14 @@
                         });
                     },
                     success: function(data) {
-                        var $tablePlaceholder, columns, feature, gridData, options;
+                        var $tablePlaceholder, columns, feature, gridData, options, grid;
                         dataDownloadCert.clear_ui();
                         options = {
                             enableCellNavigation: true,
                             enableColumnReorder: false,
                             forceFitColumns: true,
-                            rowHeight: 35
+                            rowHeight: 35,
+                            autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
                         };
                         columns = (function() {
                             var i, len, ref, results;
@@ -69,7 +70,8 @@
                             class: 'slickgrid'
                         });
                         dataDownloadCert.$certificate_display_table.append($tablePlaceholder);
-                        return new window.Slick.Grid($tablePlaceholder, gridData, columns, options);
+                        grid = new window.Slick.Grid($tablePlaceholder[0], gridData, columns, options);
+                        return grid.autosizeColumns();
                     }
                 });
             });
@@ -240,34 +242,28 @@
                         });
                     },
                     success: function(data) {
-                        var $tablePlaceholder, columns, feature, gridData, options;
+                        var $tablePlaceholder, columns, feature, gridData, options, grid;
                         dataDownloadObj.clear_display();
                         options = {
                             enableCellNavigation: true,
                             enableColumnReorder: false,
-                            forceFitColumns: true,
-                            rowHeight: 35
+                            autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
                         };
-                        columns = (function() {
-                            var i, len, ref, results;
-                            ref = data.queried_features;
-                            results = [];
-                            for (i = 0, len = ref.length; i < len; i++) {
-                                feature = ref[i];
-                                results.push({
-                                    id: feature,
-                                    field: feature,
-                                    name: data.feature_names[feature]
-                                });
-                            }
-                            return results;
-                        }());
+                        columns = data.queried_features.map(function(feature) {
+                            return {
+                                id: feature,
+                                field: feature,
+                                name: data.feature_names[feature],
+                                resizable: false,
+                            };
+                        });
                         gridData = data.students;
                         $tablePlaceholder = $('<div/>', {
                             class: 'slickgrid'
                         });
                         dataDownloadObj.$download_display_table.append($tablePlaceholder);
-                        return new window.Slick.Grid($tablePlaceholder, gridData, columns, options);
+                        grid = new window.Slick.Grid($tablePlaceholder[0], gridData, columns, options);
+                        return grid.autosizeColumns();
                     }
                 });
             });

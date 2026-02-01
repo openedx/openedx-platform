@@ -44,14 +44,15 @@
     };
 
     this.createTaskListTable = function($tableTasks, tasksData) {
-        var $tablePlaceholder, columns, options, tableData;
+        var $tablePlaceholder, columns, options, tableData, grid;
         $tableTasks.empty();
         options = {
             enableCellNavigation: true,
             enableColumnReorder: false,
             autoHeight: true,
             rowHeight: 100,
-            forceFitColumns: true
+            forceFitColumns: true,
+            autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
         };
         columns = [
             {
@@ -142,7 +143,8 @@
             class: 'slickgrid'
         });
         $tableTasks.append($tablePlaceholder);
-        return new Slick.Grid($tablePlaceholder, tableData, columns, options);
+        grid = new Slick.Grid($tablePlaceholder[0], tableData, columns, options);
+        return grid.autosizeColumns();
     };
 
     subjectFormatter = function(row, cell, value) {
@@ -183,7 +185,7 @@
     };
 
     createEmailContentTable = function($tableEmails, $tableEmailsInner, emailData) {
-        var $tablePlaceholder, columns, options, tableData;
+        var $tablePlaceholder, columns, options, tableData, grid;
         $tableEmailsInner.empty();
         $tableEmails.show();
         options = {
@@ -191,7 +193,8 @@
             enableColumnReorder: false,
             autoHeight: true,
             rowHeight: 50,
-            forceFitColumns: true
+            forceFitColumns: true,
+            autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
         };
         columns = [
             {
@@ -239,7 +242,8 @@
             class: 'slickgrid'
         });
         $tableEmailsInner.append($tablePlaceholder);
-        Slick.Grid($tablePlaceholder, tableData, columns, options);
+        grid = Slick.Grid($tablePlaceholder[0], tableData, columns, options);
+        grid.autosizeColumns();
         return $tableEmails.append($('<br/>'));
     };
 
@@ -491,8 +495,9 @@
             options = {
                 enableCellNavigation: true,
                 enableColumnReorder: false,
-                rowHeight: 30,
-                forceFitColumns: true
+                forceFitColumns: true,
+                height: 50,
+                autosizeColsMode: window.Slick.GridAutosizeColsMode.IgnoreViewport
             };
             columns = [
                 {
@@ -500,8 +505,6 @@
                     field: 'link',
                     name: gettext('File Name'),
                     toolTip: gettext('Links are generated on demand and expire within 5 minutes due to the sensitive nature of student information.'), //  eslint-disable-line max-len
-                    sortable: false,
-                    minWidth: 150,
                     cssClass: 'file-download-link',
                     formatter: function(row, cell, value, columnDef, dataContext) {
                         return edx.HtmlUtils.joinHtml(edx.HtmlUtils.HTML(
@@ -515,7 +518,7 @@
                 class: 'slickgrid'
             });
             this.$report_downloads_table.append($tablePlaceholder);
-            grid = new Slick.Grid($tablePlaceholder, reportDownloadsData, columns, options);
+            grid = new Slick.Grid($tablePlaceholder[0], reportDownloadsData, columns, options);
             grid.onClick.subscribe(function(event) {
                 var reportUrl;
                 reportUrl = event.target.href;
