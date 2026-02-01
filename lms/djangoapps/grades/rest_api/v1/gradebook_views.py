@@ -20,9 +20,9 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.student.auth import has_course_author_access, is_ccx_course
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment, CourseMode
-from common.djangoapps.student.roles import BulkRoleCache
+from common.djangoapps.student.roles import BulkRoleCache, CourseInstructorRole, CourseStaffRole
 from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
@@ -227,6 +227,13 @@ def course_author_access_required(view):
         """
         course_key = CourseKey.from_string(course_id)
         if not has_course_author_access(request.user, course_key):
+            user_has_gradebook_access = any([
+                CourseStaffRole(course_key).has_user(request.user),
+                CourseInstructorRole(course_key).has_user(request.user),
+            ])
+            if is_ccx_course(course_key) and user_has_gradebook_access:
+                return view(self, request, course_key, *args, **kwargs)
+
             raise DeveloperErrorViewMixin.api_error(
                 status_code=status.HTTP_403_FORBIDDEN,
                 developer_message='The requesting user does not have course author permissions.',
