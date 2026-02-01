@@ -10,6 +10,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core import types
 from openedx.core.djangoapps.content.learning_sequences.api.processors.base import OutlineProcessor
 from openedx.core.lib.teams_config import create_team_set_partitions_with_course_id, CONTENT_GROUPS_FOR_TEAMS
+from xmodule.modulestore.django import modulestore
 from xmodule.partitions.partitions import Group
 from xmodule.partitions.partitions_service import get_user_partition_groups
 
@@ -37,7 +38,8 @@ class TeamPartitionGroupsOutlineProcessor(OutlineProcessor):
         """
         Pull team groups for this course and which group the user is in.
         """
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(self.course_key):
+        course = modulestore().get_course(self.course_key)
+        if not course.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(self.course_key):
             return
 
         user_partitions = create_team_set_partitions_with_course_id(self.course_key)
@@ -61,7 +63,8 @@ class TeamPartitionGroupsOutlineProcessor(OutlineProcessor):
             The user is excluded from the content if and only if, for a non-empty
             partition group, the user is not in any of the groups for that partition.
         """
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(self.course_key):
+        course = modulestore().get_course(self.course_key)
+        if not course.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(self.course_key):
             return False
 
         if not user_partition_groups:

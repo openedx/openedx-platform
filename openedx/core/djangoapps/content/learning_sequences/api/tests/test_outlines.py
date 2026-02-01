@@ -21,6 +21,8 @@ from openedx.core.djangoapps.content.learning_sequences.api.processors.team_part
     TeamPartitionGroupsOutlineProcessor,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 import pytest
 
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
@@ -57,6 +59,7 @@ from ..outlines import (
 )
 from ..processors.enrollment_track_partition_groups import EnrollmentTrackPartitionGroupsOutlineProcessor
 from .test_data import generate_sections
+from openedx.core.lib.teams_config import TeamsConfig
 
 
 class OutlineSupportTestCase(unittest.TestCase):
@@ -159,14 +162,14 @@ class CourseOutlineTestCase(CacheIsolationTestCase):
             assert new_version_outline == new_version_outline  # lint-amnesty, pylint: disable=comparison-with-itself
 
 
-class UserCourseOutlineTestCase(CacheIsolationTestCase):
+class UserCourseOutlineTestCase(CacheIsolationTestCase, ModuleStoreTestCase):
     """
     Tests for basic UserCourseOutline functionality.
     """
 
     @classmethod
     def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
-        course_key = CourseKey.from_string("course-v1:OpenEdX+Outline+T1")
+        cls.course_key = CourseKey.from_string("course-v1:OpenEdX+Outline+T1")
         # Users...
         cls.global_staff = UserFactory.create(
             username='global_staff', email='gstaff@example.com', is_staff=True
@@ -174,11 +177,10 @@ class UserCourseOutlineTestCase(CacheIsolationTestCase):
         cls.student = UserFactory.create(
             username='student', email='student@example.com', is_staff=False
         )
-        cls.beta_tester = BetaTesterFactory(course_key=course_key)
+        cls.beta_tester = BetaTesterFactory(course_key=cls.course_key)
         cls.anonymous_user = AnonymousUser()
 
         # Seed with data
-        cls.course_key = course_key
         cls.simple_outline = CourseOutlineData(
             course_key=cls.course_key,
             title="User Outline Test Course!",
@@ -196,6 +198,15 @@ class UserCourseOutlineTestCase(CacheIsolationTestCase):
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
         # Enroll beta tester in the course
         cls.beta_tester.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            course=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Team Partitions Test Course {self.course_key.run}",
+        )
 
     def test_simple_outline(self):
         """This outline is the same for everyone."""
@@ -264,7 +275,7 @@ class OutlineProcessorTestCase(CacheIsolationTestCase):  # lint-amnesty, pylint:
         return [key for key in self.all_seq_keys if key not in exclude]
 
 
-class ContentGatingTestCase(OutlineProcessorTestCase):
+class ContentGatingTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """
     Content Gating specific outline tests
     """
@@ -384,6 +395,15 @@ class ContentGatingTestCase(OutlineProcessorTestCase):
     This logic matches the existing transformer. Is this right?
     """
 
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
+
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.EntranceExamConfiguration.user_can_skip_entrance_exam')  # lint-amnesty, pylint: disable=line-too-long
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.milestones_helpers.get_required_content')  # lint-amnesty, pylint: disable=line-too-long
     def test_user_can_skip_entrance_exam(self, required_content_mock, user_can_skip_entrance_exam_mock):
@@ -417,7 +437,7 @@ class ContentGatingTestCase(OutlineProcessorTestCase):
             assert key not in student_details.outline.accessible_sequences
 
 
-class MilestonesTestCase(OutlineProcessorTestCase):
+class MilestonesTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """
     Milestones specific outline tests
     """
@@ -496,6 +516,15 @@ class MilestonesTestCase(OutlineProcessorTestCase):
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
+
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.milestones.milestones_helpers.get_course_content_milestones')  # lint-amnesty, pylint: disable=line-too-long
     def test_user_can_skip_entrance_exam(self, get_course_content_milestones_mock):
         # Only return that there are milestones required for the
@@ -518,7 +547,7 @@ class MilestonesTestCase(OutlineProcessorTestCase):
         assert self.milestone_required_seq_key not in student_details.outline.accessible_sequences
 
 
-class ScheduleTestCase(OutlineProcessorTestCase):
+class ScheduleTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """
     Schedule-specific Outline tests.
 
@@ -647,6 +676,15 @@ class ScheduleTestCase(OutlineProcessorTestCase):
         cls.beta_tester.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
         assert user_has_role(cls.beta_tester, CourseBetaTesterRole(cls.course_key))
         assert cls.outline.days_early_for_beta is None
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
 
     def test_before_course_starts(self):
         staff_details, student_details, beta_tester_details = self.get_details(
@@ -799,7 +837,7 @@ class ScheduleTestCase(OutlineProcessorTestCase):
         assert len(beta_tester_details.outline.accessible_sequences) == 4
 
 
-class SelfPacedTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SelfPacedTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpTestData(cls):
@@ -879,6 +917,15 @@ class SelfPacedTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disa
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
+
     def test_sequences_accessible_after_due(self):
         at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable
 
@@ -895,7 +942,7 @@ class SelfPacedTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disa
         assert len(student_details.outline.accessible_sequences) == 2
 
 
-class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SpecialExamsTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpTestData(cls):
@@ -997,6 +1044,15 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
 
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
 
     @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
     def test_special_exams_enabled_all_sequences_visible(self):
@@ -1105,7 +1161,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
         assert attempt_summary["short_description"] == "Proctored Exam"
 
 
-class VisbilityTestCase(OutlineProcessorTestCase):
+class VisbilityTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """
     Visibility-related tests.
     """
@@ -1189,6 +1245,15 @@ class VisbilityTestCase(OutlineProcessorTestCase):
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
+
     def test_visibility(self):
         at_time = datetime(2020, 5, 21, tzinfo=timezone.utc)  # Exact value doesn't matter  # lint-amnesty, pylint: disable=unused-variable
 
@@ -1206,7 +1271,7 @@ class VisbilityTestCase(OutlineProcessorTestCase):
         assert self.normal_in_normal_key in student_details.outline.sequences
 
 
-class SequentialVisibilityTestCase(CacheIsolationTestCase):
+class SequentialVisibilityTestCase(CacheIsolationTestCase, ModuleStoreTestCase):
     """
     Tests sequentials visibility under different course visibility settings i.e public, public_outline, private
     and different types of users e.g unenrolled, enrolled, anonymous, staff
@@ -1248,6 +1313,15 @@ class SequentialVisibilityTestCase(CacheIsolationTestCase):
 
         # enroll student into the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+        )
 
     @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
     def test_public_course_outline(self):
@@ -1324,7 +1398,7 @@ class SequentialVisibilityTestCase(CacheIsolationTestCase):
 
 
 @ddt.ddt
-class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
     """Tests for enrollment track partitions outline processor that affect outlines"""
 
     @classmethod
@@ -1333,6 +1407,15 @@ class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase):  # lint-
         cls.visibility = VisibilityData(
             hide_from_toc=False,
             visible_to_staff_only=False
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
         )
 
     def _add_course_mode(
@@ -1725,7 +1808,7 @@ class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase):  # lint-
 
 
 @ddt.ddt
-class CohortPartitionGroupsTestCase(OutlineProcessorTestCase):
+class CohortPartitionGroupsTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """Tests for cohort partitions outline processor that affects outlines"""
 
     @classmethod
@@ -1734,6 +1817,16 @@ class CohortPartitionGroupsTestCase(OutlineProcessorTestCase):
         cls.visibility = VisibilityData(
             hide_from_toc=False,
             visible_to_staff_only=False
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.course_key = CourseKey.from_string("course-v1:OpenEdX+Outlines+2021")
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Cohort User Partition Test Course {self.course_key.run}",
         )
 
     def _create_and_enroll_learner(self, username, is_staff=False):
@@ -1974,7 +2067,7 @@ class ContentErrorTestCase(CacheIsolationTestCase):
     lambda _: True
 )
 @skip_unless_lms
-class TeamPartitionGroupsTestCase(OutlineProcessorTestCase):
+class TeamPartitionGroupsTestCase(OutlineProcessorTestCase, ModuleStoreTestCase):
     """Tests for team partitions processor that affects outlines."""
 
     @classmethod
@@ -2087,6 +2180,25 @@ class TeamPartitionGroupsTestCase(OutlineProcessorTestCase):
                     ]
                 )
             ]
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name=f"Outline Test Course {self.course_key.run}",
+            teams_configuration=TeamsConfig({
+                "max_team_size": 4,
+                "topics": [
+                    {
+                        "name": "General Discussion",
+                        "id": "general",
+                        "description": "General team topic"
+                    }
+                ]
+            })
         )
 
     @patch("lms.djangoapps.teams.team_partition_scheme.TeamsConfigurationService")

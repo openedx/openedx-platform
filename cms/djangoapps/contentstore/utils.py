@@ -2216,8 +2216,10 @@ def get_group_configurations_context(course, store):
             if should_show_enrollment_track:
                 displayable_partitions.insert(0, partition)
         elif partition['scheme'] == TEAM_SCHEME:
-            should_show_team_partitions = len(partition['groups']) > 0 and CONTENT_GROUPS_FOR_TEAMS.is_enabled(
-                course_key
+            should_show_team_partitions = (
+                course.teams_enabled
+                and len(partition["groups"]) > 0
+                and CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key)
             )
             if should_show_team_partitions:
                 displayable_partitions.append(partition)

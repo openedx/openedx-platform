@@ -3,15 +3,15 @@ Test the partitions and partitions services. The partitions tested
 in this file are the following:
 - TeamPartitionScheme
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from lms.djangoapps.teams.team_partition_scheme import TeamPartitionScheme
-from openedx.core.lib.teams_config import create_team_set_partitions_with_course_id
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import ToyCourseFactory
+from lms.djangoapps.teams.tests.factories import CourseTeamFactory
+from openedx.core.lib.teams_config import TeamsConfig, create_team_set_partitions_with_course_id
 from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import ToyCourseFactory
 from xmodule.partitions.partitions import Group
 
 
@@ -30,25 +30,45 @@ class TestTeamPartitionScheme(ModuleStoreTestCase):
         and a student for each test.
         """
         super().setUp()
+        self.teams_config = TeamsConfig(
+            {
+                "default_max_team_size": 4,
+                "topics": [
+                    {
+                        "name": "1st TeamSet",
+                        "description": "1st TeamSet",
+                        "id": 1,
+                        "type": "open",
+                        "max_team_size": 4,
+                        "user_partition_id": 51,
+                    },
+                    {
+                        "name": "2nd TeamSet",
+                        "description": "2nd TeamSet",
+                        "id": 2,
+                        "type": "open",
+                        "max_team_size": 4,
+                        "user_partition_id": 52,
+                    },
+                ],
+                "enabled": True,
+            }
+        )
+        self.team_sets = self.teams_config.teamsets
         self.course_key = ToyCourseFactory.create().id
         self.course = modulestore().get_course(self.course_key)
+        self.course.teams_configuration = self.teams_config
         self.student = UserFactory.create()
         self.student.courseenrollment_set.create(course_id=self.course_key, is_active=True)
-        self.team_sets = [
-            MagicMock(name="1st TeamSet", teamset_id=1, user_partition_id=51),
-            MagicMock(name="2nd TeamSet", teamset_id=2, user_partition_id=52),
-        ]
+        modulestore().update_item(self.course, self.student.id)
 
-    @patch("lms.djangoapps.teams.team_partition_scheme.TeamsConfigurationService")
-    def test_create_user_partition_with_course_id(self, mock_teams_configuration_service):
+    def test_create_user_partition_with_course_id(self):
         """
         Test that create_user_partition returns the correct user partitions for the input data.
 
         Expected result:
         - There's a user partition matching the ID given.
         """
-        mock_teams_configuration_service().get_teams_configuration.return_value.teamsets = self.team_sets
-
         partition = TeamPartitionScheme.create_user_partition(
             id=self.team_sets[0].user_partition_id,
             name=f"Team Group: {self.team_sets[0].name}",
@@ -91,15 +111,13 @@ class TestTeamPartitionScheme(ModuleStoreTestCase):
             ),
         ]
 
-    @patch("lms.djangoapps.teams.team_partition_scheme.TeamsConfigurationService")
-    def test_get_partition_groups(self, mock_teams_configuration_service):
+    def test_get_partition_groups(self):
         """
         Test that the TeamPartitionScheme returns the correct groups for a team set.
 
         Expected result:
         - The groups in the partition match the teams in the team set.
         """
-        mock_teams_configuration_service().get_teams_configuration.return_value.teamsets = self.team_sets
         team_1 = CourseTeamFactory.create(
             name="Team 1 in TeamSet",
             course_id=self.course_key,
@@ -125,8 +143,7 @@ class TestTeamPartitionScheme(ModuleStoreTestCase):
             Group(team_2.id, str(team_2.name)),
         ]
 
-    @patch("lms.djangoapps.teams.team_partition_scheme.TeamsConfigurationService")
-    def test_get_group_for_user(self, mock_teams_configuration_service):
+    def test_get_group_for_user(self):
         """
         Test that the TeamPartitionScheme returns the correct group for a
         student in a team when the team is linked to a partition group.
@@ -134,7 +151,6 @@ class TestTeamPartitionScheme(ModuleStoreTestCase):
         Expected result:
         - The group returned matches the team the student is in.
         """
-        mock_teams_configuration_service().get_teams_configuration.return_value.teamsets = self.team_sets
         team = CourseTeamFactory.create(
             name="Team in 1st TeamSet",
             course_id=self.course_key,

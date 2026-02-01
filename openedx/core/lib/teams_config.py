@@ -400,7 +400,7 @@ def create_team_set_partition(course):
     """
     Get the dynamic enrollment track user partition based on the team-sets of the course.
     """
-    if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course.id):
+    if not course.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course.id):
         return []
     return create_team_set_partitions_with_course_id(
         course.id,

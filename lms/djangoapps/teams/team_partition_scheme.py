@@ -14,6 +14,7 @@ from lms.djangoapps.teams.api import get_teams_in_teamset
 from lms.djangoapps.teams.models import CourseTeamMembership
 from openedx.core.lib.teams_config import CONTENT_GROUPS_FOR_TEAMS
 
+from xmodule.modulestore.django import modulestore
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     Group,
     UserPartition
@@ -37,7 +38,8 @@ class TeamUserPartition(UserPartition):
             list of Group: The groups in this partition.
         """
         course_key = CourseKey.from_string(self.parameters["course_id"])
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
+        course = modulestore().get_course(course_key)
+        if not course.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
             return []
 
         # Get the team-set for this partition via the partition parameters and then get the teams in that team-set
@@ -81,7 +83,8 @@ class TeamPartitionScheme:
         Returns:
             Group: The group in the specified user partition
         """
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
+        course = modulestore().get_course(course_key)
+        if not course.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
             return None
 
         # First, check if we have to deal with masquerading.
@@ -128,7 +131,8 @@ class TeamPartitionScheme:
             TeamUserPartition: The user partition.
         """
         course_key = CourseKey.from_string(parameters["course_id"])
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
+        course = modulestore().get_course(course_key)
+        if not course.teams_enabled and not CONTENT_GROUPS_FOR_TEAMS.is_enabled(course_key):
             return None
 
         # Team-set used to create partition was created before this feature was

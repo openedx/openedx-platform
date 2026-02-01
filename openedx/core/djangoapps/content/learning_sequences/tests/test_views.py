@@ -25,6 +25,8 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..api import replace_course_outline
 from ..api.tests.test_data import generate_sections
@@ -32,7 +34,7 @@ from ..data import CourseOutlineData, CourseVisibility
 
 
 @skip_unless_lms
-class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
+class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase, ModuleStoreTestCase):
     """
     General tests for the CourseOutline.
     """
@@ -62,6 +64,9 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
 
     def setUp(self):
         super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org, number=self.course_key.course, run=self.course_key.run, display_name="Test Course"
+        )
         self.client = APIClient()
 
     def test_non_existent_course_404(self):
@@ -122,7 +127,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
 
 @ddt.ddt
 @skip_unless_lms
-class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
+class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase, ModuleStoreTestCase):
     """
     Tests permissions of specifying a target user via url parameter.
     """
@@ -181,6 +186,15 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
 
     def setUp(self):
         super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org, number=self.course_key.course, run=self.course_key.run, display_name="Test Course"
+        )
+        self.not_staff_course = CourseFactory.create(
+            org=self.not_staff_course_key.org,
+            number=self.not_staff_course_key.course,
+            run=self.not_staff_course_key.run,
+            display_name="Test Course",
+        )
         self.client = APIClient()
 
     def test_global_staff(self):
@@ -245,7 +259,7 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
 
 @ddt.ddt
 @skip_unless_lms
-class CourseOutlineViewMasqueradingTest(MasqueradeMixin, CacheIsolationTestCase):
+class CourseOutlineViewMasqueradingTest(MasqueradeMixin, CacheIsolationTestCase, ModuleStoreTestCase):
     """
     Tests permissions of session masquerading.
     """
@@ -279,6 +293,12 @@ class CourseOutlineViewMasqueradingTest(MasqueradeMixin, CacheIsolationTestCase)
 
     def setUp(self):
         super().setUp()
+        self.course = CourseFactory.create(
+            org=self.course_key.org,
+            number=self.course_key.course,
+            run=self.course_key.run,
+            display_name="Test Course"
+        )
         self.client.login(username=self.staff.username, password='test')
 
     def test_masquerading_works(self):

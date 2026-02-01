@@ -326,7 +326,7 @@ class CourseMetadata:
         This is used by the Dynamic Team Partition Generator to create the dynamic user partitions
         based on the team-sets defined in the course.
         """
-        if not CONTENT_GROUPS_FOR_TEAMS.is_enabled(block.id):
+        if not block.teams_enabled or not CONTENT_GROUPS_FOR_TEAMS.is_enabled(block.id):
             return teams_config
 
         for team_set in teams_config.teamsets:
