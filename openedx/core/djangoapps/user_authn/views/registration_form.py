@@ -5,6 +5,7 @@ Objects and utilities used to construct registration forms.
 import copy
 import re
 from importlib import import_module
+import logging
 
 from django import forms
 from django.conf import settings
@@ -15,6 +16,8 @@ from django.forms import widgets
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django_countries import countries
+from django.db.models import Model
+from typing import Optional, Type
 from eventtracking import tracker
 
 from common.djangoapps import third_party_auth
@@ -34,6 +37,8 @@ from openedx.core.djangoapps.user_authn.utils import is_registration_api_v1 as i
 from openedx.core.djangoapps.user_authn.views.utils import remove_disabled_country_from_list
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
+
+logger = logging.getLogger(__name__)
 
 
 class TrueCheckbox(widgets.CheckboxInput):
@@ -323,6 +328,34 @@ def get_registration_extension_form(*args, **kwargs):
     module, klass = settings.REGISTRATION_EXTENSION_FORM.rsplit('.', 1)
     module = import_module(module)
     return getattr(module, klass)(*args, **kwargs)
+
+
+def get_extended_profile_model() -> Optional[Type[Model]]:
+    """
+    Get the model class for the extended profile form.
+
+    Returns the Django model class associated with the form specified in
+    the `REGISTRATION_EXTENSION_FORM` setting.
+
+    Returns:
+        Optional[Type[Model]]: The model class if found and valid, None otherwise.
+
+    Example:
+        # In settings.py: REGISTRATION_EXTENSION_FORM = 'myapp.forms.ExtendedForm'
+        model_class = get_extended_profile_model()
+    """
+    setting_value = getattr(settings, "REGISTRATION_EXTENSION_FORM", None)
+    if not setting_value:
+        return None
+
+    try:
+        module_path, klass_name = setting_value.rsplit(".", 1)
+        module = import_module(module_path)
+        form_class = getattr(module, klass_name)
+        return getattr(form_class.Meta, "model", None)
+    except (ValueError, ImportError, ModuleNotFoundError, AttributeError) as e:
+        logger.warning("Could not load extended profile model from '%s': %s", setting_value, e)
+        return None
 
 
 class RegistrationFormFactory:

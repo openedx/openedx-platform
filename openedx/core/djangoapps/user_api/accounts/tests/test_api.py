@@ -597,6 +597,105 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         result = get_name_validation_error("A" * 256)
         assert result == "Full name can't be longer than 255 symbols"
 
+    def test_update_extended_profile_with_meta_only(self):
+        """
+        Test updating extended profile using only the meta field (legacy behavior)
+        """
+        update_data = {
+            "extended_profile": [
+                {"field_name": "department", "field_value": "Engineering"},
+                {"field_name": "title", "field_value": "Software Engineer"},
+            ],
+            "bio": "Updated bio",
+        }
+
+        update_account_settings(self.user, update_data)
+
+        user_profile = UserProfile.objects.get(user=self.user)
+        meta = user_profile.get_meta()
+        self.assertEqual(meta["department"], "Engineering")
+        self.assertEqual(meta["title"], "Software Engineer")
+        self.assertEqual(user_profile.bio, "Updated bio")
+
+    def test_update_extended_profile_with_form(self):
+        """
+        Test updating extended profile with a validated form
+        """
+        mock_form = Mock()
+        mock_instance = Mock()
+        mock_instance.user = self.user
+        mock_form.save.return_value = mock_instance
+        update_data = {"extended_profile": [{"field_name": "department", "field_value": "Engineering"}]}
+
+        update_account_settings(self.user, update_data, extended_profile_form=mock_form)
+
+        mock_form.save.assert_called_once_with(commit=False)
+        mock_instance.save.assert_called_once()
+        user_profile = UserProfile.objects.get(user=self.user)
+        meta = user_profile.get_meta()
+        self.assertEqual(meta["department"], "Engineering")
+
+    def test_update_extended_profile_with_form_new_instance(self):
+        """
+        Test updating extended profile with a form for a new instance
+        """
+        mock_form = Mock()
+        mock_instance = Mock()
+        mock_instance.user = None
+        mock_form.save.return_value = mock_instance
+        update_data = {"extended_profile": [{"field_name": "department", "field_value": "Engineering"}]}
+
+        update_account_settings(self.user, update_data, extended_profile_form=mock_form)
+
+        self.assertEqual(mock_instance.user, self.user)
+        mock_form.save.assert_called_once_with(commit=False)
+        mock_instance.save.assert_called_once()
+
+    @patch("openedx.core.djangoapps.user_api.accounts.api.logger")
+    def test_update_extended_profile_form_save_error(self, mock_logger):
+        """
+        Test that errors during form save are logged but don't crash
+        """
+        mock_form = Mock()
+        mock_form.save.side_effect = Exception("Database error")
+        update_data = {"extended_profile": [{"field_name": "department", "field_value": "Engineering"}]}
+
+        update_account_settings(self.user, update_data, extended_profile_form=mock_form)
+
+        mock_logger.error.assert_called_once()
+        self.assertIn("Error saving extended profile model", str(mock_logger.error.call_args))
+        user_profile = UserProfile.objects.get(user=self.user)
+        meta = user_profile.get_meta()
+        self.assertEqual(meta["department"], "Engineering")
+
+    def test_update_extended_profile_without_extended_profile_data(self):
+        """
+        Test that update_account_settings works when no extended_profile is provided
+        """
+        update_data = {"bio": "Updated bio"}
+
+        update_account_settings(self.user, update_data)
+
+        user_profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(user_profile.bio, "Updated bio")
+
+    def test_update_extended_profile_form_without_data_in_update(self):
+        """
+        Test that form is saved even if extended_profile is not in update data
+        """
+        mock_form = Mock()
+        mock_instance = Mock()
+        mock_instance.user = self.user
+        mock_form.save.return_value = mock_instance
+        update_data = {"bio": "Updated bio"}
+
+        update_account_settings(self.user, update_data, extended_profile_form=mock_form)
+
+        mock_form.save.assert_called_once_with(commit=False)
+        mock_instance.save.assert_called_once()
+        user_profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(user_profile.bio, "Updated bio")
+
 
 @patch('openedx.core.djangoapps.user_api.accounts.image_helpers._PROFILE_IMAGE_SIZES', [50, 10])
 @patch.dict(

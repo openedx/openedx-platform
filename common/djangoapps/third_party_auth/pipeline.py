@@ -92,7 +92,6 @@ from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_gene
 from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
 from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
 from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
-from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 from common.djangoapps.third_party_auth.utils import (
     get_associated_user_by_email_response,
     get_user_from_email,
@@ -1010,6 +1009,8 @@ def get_username(strategy, details, backend, user=None, *args, **kwargs):  # lin
             slug_func = lambda val: val
 
         if is_auto_generated_username_enabled() and details.get('username') is None:
+            # Lazy import to avoid circular dependency
+            from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
             username = get_auto_generated_username(details)
         else:
             if email_as_username and details.get('email'):

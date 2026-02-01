@@ -1372,6 +1372,130 @@ class TestAccountAPITransactions(TransactionTestCase):
         assert 'm' == data['gender']
 
 
+@skip_unless_lms
+class TestAccountsAPIExtendedProfile(UserAPITestCase):
+    """
+    Tests for extended profile validation in the Accounts API
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("accounts_api", kwargs={"username": self.user.username})
+        self.client.login(username=self.user.username, password=TEST_PASSWORD)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.views.validate_and_get_extended_profile_form")
+    def test_patch_account_with_valid_extended_profile(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with valid extended_profile data succeeds
+        """
+        mock_form = mock.Mock()
+        mock_validate_form.return_value = (mock_form, {})
+        extended_profile_data = [
+            {"field_name": "department", "field_value": "Engineering"},
+            {"field_name": "title", "field_value": "Software Engineer"},
+        ]
+        json_data = {"extended_profile": extended_profile_data, "bio": "Test bio"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.views.validate_and_get_extended_profile_form")
+    def test_patch_account_with_invalid_extended_profile(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with invalid extended_profile data returns 400
+        """
+        field_errors = {
+            "department": {"developer_message": "This field is required", "user_message": "This field is required"}
+        }
+        mock_validate_form.return_value = (None, field_errors)
+        extended_profile_data = [{"field_name": "department", "field_value": ""}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("field_errors", response.data)
+        self.assertIn("department", response.data["field_errors"])
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    def test_patch_account_without_extended_profile(self: UserAPITestCase):
+        """
+        Test that PATCH without extended_profile data works normally
+        """
+        json_data = {"bio": "Test bio without extended profile"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["bio"], "Test bio without extended profile")
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.views.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_with_empty_list(self, mock_validate_form: mock.Mock):
+        """
+        Test that PATCH with empty extended_profile list works
+        """
+        mock_validate_form.return_value = (None, {})
+        json_data = {"extended_profile": [], "bio": "Test bio"}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)
+        mock_validate_form.assert_called_once_with([], self.user)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.views.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_form_exception(self, mock_validate_form: mock.Mock):
+        """
+        Test that exceptions in form validation return appropriate errors
+        """
+        field_errors = {
+            "extended_profile": {"developer_message": "Unexpected error", "user_message": "An error occurred"}
+        }
+        mock_validate_form.return_value = (None, field_errors)
+        extended_profile_data = [{"field_name": "department", "field_value": "Engineering"}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("field_errors", response.data)
+
+    @mock.patch("openedx.core.djangoapps.user_api.accounts.views.validate_and_get_extended_profile_form")
+    def test_patch_account_extended_profile_multiple_fields(self, mock_validate_form: mock.Mock):
+        """
+        Test PATCH with multiple extended_profile fields
+        """
+        mock_form = mock.Mock()
+        mock_validate_form.return_value = (mock_form, {})
+        extended_profile_data = [
+            {"field_name": "department", "field_value": "Engineering"},
+            {"field_name": "title", "field_value": "Software Engineer"},
+            {"field_name": "company", "field_value": "EdX"},
+            {"field_name": "location", "field_value": "Remote"},
+        ]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.client.patch(self.url, data=json.dumps(json_data), content_type="application/merge-patch+json")
+
+        self.assertEqual(response.status_code, 200)
+        mock_validate_form.assert_called_once_with(extended_profile_data, self.user)
+
+    def test_patch_account_extended_profile_unauthorized(self):
+        """
+        Test that unauthorized users cannot update extended_profile
+        """
+        self.different_client.login(username=self.different_user.username, password=TEST_PASSWORD)
+        extended_profile_data = [{"field_name": "department", "field_value": "Engineering"}]
+        json_data = {"extended_profile": extended_profile_data}
+
+        response = self.different_client.patch(
+            self.url, data=json.dumps(json_data), content_type="application/merge-patch+json"
+        )
+
+        self.assertIn(response.status_code, [403, 404])
+
+
 @ddt.ddt
 class NameChangeViewTests(UserAPITestCase):
     """ NameChangeView tests """

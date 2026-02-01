@@ -81,6 +81,7 @@ from ..models import (
     UserRetirementStatus,
 )
 from .api import get_account_settings, update_account_settings
+from .forms import validate_and_get_extended_profile_form
 from .permissions import (
     CanCancelUserRetirement,
     CanDeactivateUser,
@@ -408,9 +409,17 @@ class AccountViewSet(ViewSet):
                 ):
                     return Response({"error": "Too many requests"}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
+        extended_profile_form = None
+        if "extended_profile" in request.data:
+            extended_profile_form, form_errors = validate_and_get_extended_profile_form(
+                request.data["extended_profile"], request.user
+            )
+            if form_errors:
+                return Response({"field_errors": form_errors}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             with transaction.atomic():
-                update_account_settings(request.user, request.data, username=username)
+                update_account_settings(request.user, request.data, username, extended_profile_form)
                 account_settings = get_account_settings(request, [username])[0]
         except UserNotAuthorized:
             return Response(status=status.HTTP_403_FORBIDDEN)
