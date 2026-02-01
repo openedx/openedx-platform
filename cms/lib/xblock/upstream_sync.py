@@ -30,6 +30,8 @@ from xblock.fields import Integer, List, Scope, String
 
 from xmodule.util.keys import BlockKey
 
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
 if t.TYPE_CHECKING:
     from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 
@@ -420,7 +422,10 @@ def _get_library_xblock_url(usage_key: LibraryUsageLocatorV2):
     Gets authoring url for given library_key.
     """
     library_url = None
-    if mfe_base_url := settings.COURSE_AUTHORING_MICROFRONTEND_URL:  # type: ignore
+    if mfe_base_url := configuration_helpers.get_value(  # type: ignore
+        'COURSE_AUTHORING_MICROFRONTEND_URL',
+        settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+    ):
         library_key = usage_key.lib_key
         library_url = f'{mfe_base_url}/library/{library_key}/components?usageKey={usage_key}'
     return library_url
@@ -431,7 +436,10 @@ def _get_library_container_url(container_key: LibraryContainerLocator):
     Gets authoring url for given container_key.
     """
     library_url = None
-    if mfe_base_url := settings.COURSE_AUTHORING_MICROFRONTEND_URL:  # type: ignore
+    if mfe_base_url := configuration_helpers.get_value(  # type: ignore
+        'COURSE_AUTHORING_MICROFRONTEND_URL',
+        settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+    ):
         library_key = container_key.lib_key
         if container_key.container_type == "unit":
             library_url = f'{mfe_base_url}/library/{library_key}/units/{container_key}'

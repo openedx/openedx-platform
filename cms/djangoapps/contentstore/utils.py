@@ -294,7 +294,10 @@ def get_studio_home_url():
     """
     Gets course authoring microfrontend URL for Studio Home view.
     """
-    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    mfe_base_url = configuration_helpers.get_value(
+        'COURSE_AUTHORING_MICROFRONTEND_URL',
+        settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+    )
     if mfe_base_url:
         studio_home_url = f'{mfe_base_url}/home'
         return studio_home_url
@@ -541,7 +544,10 @@ def get_taxonomy_list_url() -> str | None:
     if is_tagging_feature_disabled():
         return None
 
-    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    mfe_base_url = configuration_helpers.get_value(
+        'COURSE_AUTHORING_MICROFRONTEND_URL',
+        settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+    )
 
     if not mfe_base_url:
         return None
@@ -561,7 +567,10 @@ def get_taxonomy_tags_widget_url(course_locator=None) -> str | None:
     if course_locator:
         mfe_base_url = get_course_authoring_url(course_locator)
     else:
-        mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+        mfe_base_url = configuration_helpers.get_value(
+            'COURSE_AUTHORING_MICROFRONTEND_URL',
+            settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+        )
 
     if not mfe_base_url:
         return None

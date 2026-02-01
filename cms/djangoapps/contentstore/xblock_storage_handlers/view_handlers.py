@@ -53,6 +53,7 @@ from openedx.core.djangoapps.bookmarks import api as bookmarks_api
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.xblock_utils import get_icon
@@ -1366,7 +1367,10 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
         xblock_info["is_tagging_feature_disabled"] = is_tagging_feature_disabled()
         if not is_tagging_feature_disabled():
             xblock_info["taxonomy_tags_widget_url"] = get_taxonomy_tags_widget_url()
-            xblock_info["course_authoring_url"] = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+            xblock_info["course_authoring_url"] = configuration_helpers.get_value(
+                'COURSE_AUTHORING_MICROFRONTEND_URL',
+                settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+            )
 
         if course_outline:
             if xblock_info["has_explicit_staff_lock"]:

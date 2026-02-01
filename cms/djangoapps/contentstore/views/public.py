@@ -10,6 +10,8 @@ from django.shortcuts import redirect
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
 from ..config.waffle import ENABLE_ACCESSIBILITY_POLICY_PAGE
 from ..toggles import use_legacy_logged_out_home
 
@@ -76,7 +78,10 @@ def accessibility(request):
     Display the accessibility accommodation form.
     """
     if ENABLE_ACCESSIBILITY_POLICY_PAGE.is_enabled():
-        mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+        mfe_base_url = configuration_helpers.get_value(
+            'COURSE_AUTHORING_MICROFRONTEND_URL',
+            settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+        )
         if mfe_base_url:
             studio_accessbility_url = f'{mfe_base_url}/accessibility'
             return redirect(studio_accessbility_url)

@@ -306,8 +306,12 @@ def _section_special_exams(course, access):
     escalation_email = None
     mfe_view_url = None
     show_dashboard = None
+    exam_dashboard_microfrontend_url = configuration_helpers.get_value(
+        'EXAMS_DASHBOARD_MICROFRONTEND_URL',
+        settings.EXAMS_DASHBOARD_MICROFRONTEND_URL,
+    )
     if proctoring_provider == 'lti_external':
-        mfe_view_url = f'{settings.EXAMS_DASHBOARD_MICROFRONTEND_URL}/course/{course_key}/exams/embed'
+        mfe_view_url = f'{exam_dashboard_microfrontend_url}/course/{course_key}/exams/embed'
         # NOTE: LTI proctoring doesn't support onboarding. If that changes, this value should change to True.
         show_onboarding = False
         # Dashboard should always appear with LTI proctoring
@@ -567,6 +571,10 @@ def _section_student_admin(course, access):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
     is_small_course = CourseEnrollment.objects.is_small_course(course_key)
+    WRITABLE_GRADEBOOK_URL = configuration_helpers.get_value(
+        'WRITABLE_GRADEBOOK_URL',
+        settings.WRITABLE_GRADEBOOK_URL,
+    )
 
     section_data = {
         'section_key': 'student_admin',
@@ -607,8 +615,8 @@ def _section_student_admin(course, access):
         ),
         'spoc_gradebook_url': reverse('spoc_gradebook', kwargs={'course_id': str(course_key)}),
     }
-    if is_writable_gradebook_enabled(course_key) and settings.WRITABLE_GRADEBOOK_URL:
-        section_data['writable_gradebook_url'] = f'{settings.WRITABLE_GRADEBOOK_URL}/{str(course_key)}'
+    if is_writable_gradebook_enabled(course_key) and WRITABLE_GRADEBOOK_URL:
+        section_data['writable_gradebook_url'] = f'{WRITABLE_GRADEBOOK_URL}/{str(course_key)}'
     return section_data
 
 

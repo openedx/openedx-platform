@@ -8,6 +8,8 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.auth import has_course_author_access
 
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+
 __all__ = ['checklists_handler']
 
 
@@ -20,7 +22,10 @@ def checklists_handler(request, course_key_string=None):
     course_key = CourseKey.from_string(course_key_string)
     if not has_course_author_access(request.user, course_key):
         raise PermissionDenied()
-    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    mfe_base_url = configuration_helpers.get_value(
+        'COURSE_AUTHORING_MICROFRONTEND_URL',
+        settings.COURSE_AUTHORING_MICROFRONTEND_URL,
+    )
     if mfe_base_url:
         studio_checklist_url = f'{mfe_base_url}/course/{course_key_string}/checklists'
         return redirect(studio_checklist_url)
