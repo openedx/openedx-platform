@@ -60,6 +60,7 @@ from enterprise.constants import (
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
 )
+from openedx_learning.api.django import openedx_learning_apps_to_install
 
 from openedx.core.lib.derived import Derived
 from openedx.envs.common import *  # pylint: disable=wildcard-import
@@ -2019,14 +2020,15 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    # Learning Core Apps, used by v2 content libraries (content_libraries app)
-    "openedx_learning.apps.authoring.collections",
-    "openedx_learning.apps.authoring.components",
-    "openedx_learning.apps.authoring.contents",
-    "openedx_learning.apps.authoring.publishing",
-    "openedx_learning.apps.authoring.units",
-    "openedx_learning.apps.authoring.subsections",
-    "openedx_learning.apps.authoring.sections",
+    # The openedx_learning apps require contentstore, modulestore_migrator,
+    # content.search, and content_staging to be in INSTALLED_APPS. If they are
+    # not here and LMS migrations are run before CMS migrations, it will cause
+    # errors (certain openedx_learning apps )
+    *openedx_learning_apps_to_install(),
+#    'cms.djangoapps.contentstore',
+#    'cms.djangoapps.modulestore_migrator',
+#    'openedx.core.djangoapps.content.search',
+#   'openedx.core.djangoapps.content_staging',
 ]
 
 # Add LMS specific optional apps
