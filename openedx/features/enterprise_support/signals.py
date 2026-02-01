@@ -10,10 +10,6 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomer
-from integrated_channels.integrated_channel.tasks import (
-    transmit_single_learner_data,
-    transmit_single_subsection_learner_data
-)
 from slumber.exceptions import HttpClientError
 
 from common.djangoapps.student.signals import UNENROLL_DONE
@@ -21,6 +17,18 @@ from openedx.core.djangoapps.commerce.utils import ecommerce_api_client
 from openedx.core.djangoapps.signals.signals import COURSE_ASSESSMENT_GRADE_CHANGED, COURSE_GRADE_NOW_PASSED
 from openedx.features.enterprise_support.tasks import clear_enterprise_customer_data_consent_share_cache
 from openedx.features.enterprise_support.utils import clear_data_consent_share_cache, is_enterprise_learner
+
+# This is a temporary import path while we transition from integrated_channels to channel_integrations
+if getattr(settings, 'ENABLE_LEGACY_INTEGRATED_CHANNELS', True):
+    from integrated_channels.integrated_channel.tasks import (
+        transmit_single_learner_data,
+        transmit_single_subsection_learner_data
+    )
+else:
+    from channel_integrations.integrated_channel.tasks import (
+        transmit_single_learner_data,
+        transmit_single_subsection_learner_data
+    )
 
 log = logging.getLogger(__name__)
 

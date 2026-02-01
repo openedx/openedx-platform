@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 from consent.models import DataSharingConsent
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
+from django.conf import settings
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase
@@ -21,7 +22,6 @@ from enterprise.models import (
     EnterpriseCustomerUser,
     PendingEnterpriseCustomerUser
 )
-from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from social_django.models import UserSocialAuth
@@ -86,6 +86,12 @@ from .retirement_helpers import (  # pylint: disable=unused-import
     fake_completed_retirement,
     setup_retirement_states
 )
+
+# This is a temporary import path while we transition from integrated_channels to channel_integrations
+if getattr(settings, 'ENABLE_LEGACY_INTEGRATED_CHANNELS', True):
+    from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
+else:
+    from channel_integrations.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 
 
 def build_jwt_headers(user):
