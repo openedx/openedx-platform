@@ -18,9 +18,11 @@
 
             initialize: function(options) {
                 this.meanings = options.meanings || {};
+                this.filtersCollection = options.filtersCollection || null;   //initialize filterCollection colled in discovery_factory
                 this.$container = this.$el.find('.search-facets-lists');
                 this.facetTpl = HtmlUtils.template($('#facet-tpl').html());
                 this.facetOptionTpl = HtmlUtils.template($('#facet_option-tpl').html());
+                this.fullOptions = {};
             },
 
             facetName: function(key) {
@@ -39,6 +41,11 @@
                 return HtmlUtils.joinHtml.apply(this, _.map(options, function(option) {
                     var data = _.clone(option.attributes);
                     data.name = this.termName(data.facet, data.term);
+                //  this added to handle selected orgs as selected  // replaced with returns 
+                data.selected = this.filtersCollection && this.filtersCollection.any(function(filter) {
+                return filter.get('type') === data.facet && filter.get('query') === data.term;
+                });
+
                     return this.facetOptionTpl(data);
                 }, this));
             },
@@ -54,6 +61,26 @@
 
             render: function() {
                 var grouped = this.collection.groupBy('facet');
+                // added tho render for each selected orgs 
+                 _.each(grouped, function(currentOptions, facetKey) {
+                    var termMap = {};
+                    _.each(currentOptions, function(model) {
+                        termMap[model.get('term')] = model;
+                    });
+
+                    if (this.fullOptions[facetKey]) {
+                        _.each(this.fullOptions[facetKey], function(model) {
+                            var term = model.get('term');
+                            if (!termMap[term]) {
+                                termMap[term] = model;
+                            }
+                        });
+                    }
+
+                    this.fullOptions[facetKey] = _.values(termMap);
+                    grouped[facetKey] = this.fullOptions[facetKey];
+                }, this);
+
                 var htmlSnippet = HtmlUtils.joinHtml.apply(
                     this, _.map(grouped, function(options, facetKey) {
                         if (options.length > 0) {

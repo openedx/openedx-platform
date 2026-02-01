@@ -1,4 +1,4 @@
-  <button data-value="<%- query %>" class="facet-option discovery-button" data-type="<%- type %>">
+  <button data-value="<%- query %>"data-query="<%- query %>" class="facet-option discovery-button" data-type="<%- type %>">
     <span class="query"><%- name %></span>
     <span aria-hidden="true" class="fa fa-times" aria-hidden="true"></span>
   </button>

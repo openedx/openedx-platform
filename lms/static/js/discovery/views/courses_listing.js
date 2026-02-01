@@ -39,6 +39,8 @@
                     var item = new CourseCardView({model: result});
                     return item.render().el;
                 }, this);
+                console.log("Rendering", items.length, "course cards");
+
                 HtmlUtils.append(
                     this.$list,
                     HtmlUtils.HTML(items)
