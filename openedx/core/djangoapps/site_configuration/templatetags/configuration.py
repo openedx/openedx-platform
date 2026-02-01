@@ -74,3 +74,12 @@ def google_analytics_4_id():
     {% google_analytics_4_id %}
     """
     return configuration_helpers.get_value("GOOGLE_ANALYTICS_4_ID", settings.GOOGLE_ANALYTICS_4_ID)
+
+
+@register.simple_tag
+def google_tag_manager_id():
+    """
+    Django template tag that outputs the GOOGLE_TAG_MANAGER_ID:
+    {% google_tag_manager_id %}
+    """
+    return configuration_helpers.get_value("GOOGLE_TAG_MANAGER_ID", settings.GOOGLE_TAG_MANAGER_ID)

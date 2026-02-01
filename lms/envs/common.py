@@ -867,6 +867,18 @@ GOOGLE_ANALYTICS_LINKEDIN = None
 GOOGLE_ANALYTICS_TRACKING_ID = None
 GOOGLE_ANALYTICS_4_ID = None
 
+################### GOOGLE TAG MANAGER ##################
+# .. setting_name: GOOGLE_TAG_MANAGER_ID
+# .. setting_default: None
+# .. setting_description: The container ID for Google Tag Manager.
+#    Set this in the site configuration, if you want to enable Google Tag Manager (GTM) on your site.
+#    GTM allows you to manage marketing and analytics tags (like Google Analytics).
+#    When set, the GTM script will be injected into pages.
+#    Example: "GOOGLE_TAG_MANAGER_ID": "GTM-XXXXXXX" or with environment-specific parameters:
+#    "GOOGLE_TAG_MANAGER_ID": "GTM-XXXXXXX&gtm_auth=abc&gtm_preview=env-1&gtm_cookies_win=x"
+#    If you don’t use GTM, you can leave this setting as None.
+GOOGLE_TAG_MANAGER_ID = None
+
 ######################## BRANCH.IO ###########################
 BRANCH_IO_KEY = None
 

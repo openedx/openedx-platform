@@ -177,6 +177,15 @@ from common.djangoapps.pipeline_mako import render_require_js_path_overrides
   </script>
 % endif
 
+<% gtm_id = static.get_value("GOOGLE_TAG_MANAGER_ID", settings.GOOGLE_TAG_MANAGER_ID) %>
+% if gtm_id:
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+      j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+      'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer', '${gtm_id}');</script>
+% endif
+
 <% branch_key = static.get_value("BRANCH_IO_KEY", settings.BRANCH_IO_KEY) %>
 % if branch_key and not is_from_mobile_app:
     <script type="text/javascript">

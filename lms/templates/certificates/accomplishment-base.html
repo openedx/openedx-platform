@@ -42,6 +42,15 @@ course_mode_class = course_mode if course_mode else ''
             gtag('config', '${ga_4_id | n, js_escaped_string}');
         </script>
     % endif
+
+    <% gtm_id = static.get_value("GOOGLE_TAG_MANAGER_ID", settings.GOOGLE_TAG_MANAGER_ID) %>
+    % if gtm_id:
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer', '${gtm_id}');</script>
+    % endif
 </head>
 
 <body class="layout-accomplishment view-valid-accomplishment ${dir_rtl} certificate certificate-${course_mode_class}" data-view="valid-accomplishment">
