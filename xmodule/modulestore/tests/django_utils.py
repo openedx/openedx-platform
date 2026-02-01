@@ -19,7 +19,7 @@ from django.test.utils import override_settings
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import _CONTENTSTORE
 from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import SignalHandler, clear_existing_modulestores, modulestore
+from xmodule.modulestore.django import SignalHandler, modulestore
 from xmodule.modulestore.tests.factories import XMODULE_FACTORY_LOCK
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
 
@@ -321,7 +321,6 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         override.__enter__()  # pylint: disable=unnecessary-dunder-call
         cls.__settings_overrides.append(override)
         XMODULE_FACTORY_LOCK.enable()
-        clear_existing_modulestores()
         cls.store = modulestore()
 
     @classmethod
@@ -525,10 +524,6 @@ class ModuleStoreTestCase(
 
           The reason is: XML courses are not editable, so to reset
           a course you have to reload it from disk, which is slow.
-
-          If you do need to reset an XML course, use
-          `clear_existing_modulestores()` directly in
-          your `setUp()` method.
     """
 
     CREATE_USER = True

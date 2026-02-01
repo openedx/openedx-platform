@@ -324,44 +324,26 @@ def create_modulestore_instance(
     )
 
 
-# A singleton instance of the Mixed Modulestore
-_MIXED_MODULESTORE = None
-
-
 def modulestore():
     """
     Returns the Mixed modulestore
     """
-    global _MIXED_MODULESTORE  # pylint: disable=global-statement
-    if _MIXED_MODULESTORE is None:
-        _MIXED_MODULESTORE = create_modulestore_instance(
-            settings.MODULESTORE['default']['ENGINE'],
-            contentstore(),
-            settings.MODULESTORE['default'].get('DOC_STORE_CONFIG', {}),
-            settings.MODULESTORE['default'].get('OPTIONS', {})
-        )
+    mixed_modulestore = create_modulestore_instance(
+        settings.MODULESTORE['default']['ENGINE'],
+        contentstore(),
+        settings.MODULESTORE['default'].get('DOC_STORE_CONFIG', {}),
+        settings.MODULESTORE['default'].get('OPTIONS', {})
+    )
+    if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+        # TODO: This import prevents a circular import issue, but is
+        # symptomatic of a lib having a dependency on code in lms.  This
+        # should be updated to have a setting that enumerates modulestore
+        # wrappers and then uses that setting to wrap the modulestore in
+        # appropriate wrappers depending on enabled features.
+        from lms.djangoapps.ccx.modulestore import CCXModulestoreWrapper
+        mixed_modulestore = CCXModulestoreWrapper(mixed_modulestore)
 
-        if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
-            # TODO: This import prevents a circular import issue, but is
-            # symptomatic of a lib having a dependency on code in lms.  This
-            # should be updated to have a setting that enumerates modulestore
-            # wrappers and then uses that setting to wrap the modulestore in
-            # appropriate wrappers depending on enabled features.
-            from lms.djangoapps.ccx.modulestore import CCXModulestoreWrapper
-            _MIXED_MODULESTORE = CCXModulestoreWrapper(_MIXED_MODULESTORE)
-
-    return _MIXED_MODULESTORE
-
-
-def clear_existing_modulestores():
-    """
-    Clear the existing modulestore instances, causing
-    them to be re-created when accessed again.
-
-    This is useful for flushing state between unit tests.
-    """
-    global _MIXED_MODULESTORE  # pylint: disable=global-statement
-    _MIXED_MODULESTORE = None
+    return mixed_modulestore
 
 
 class XBlockI18nService:

@@ -639,13 +639,14 @@ def find_release_date_source(xblock):
     if xblock.category == 'chapter':
         return xblock
 
-    parent_location = modulestore().get_parent_location(xblock.location,
-                                                        revision=ModuleStoreEnum.RevisionOption.draft_preferred)
+    store = modulestore()
+    parent_location = store.get_parent_location(xblock.location,
+                                                revision=ModuleStoreEnum.RevisionOption.draft_preferred)
     # Orphaned xblocks set their own release date
     if not parent_location:
         return xblock
 
-    parent = modulestore().get_item(parent_location)
+    parent = store.get_item(parent_location)
     if parent.start != xblock.start:
         return xblock
     else:
@@ -666,13 +667,14 @@ def find_staff_lock_source(xblock):
     if xblock.category == 'chapter':
         return None
 
-    parent_location = modulestore().get_parent_location(xblock.location,
+    store = modulestore()
+    parent_location = store.get_parent_location(xblock.location,
                                                         revision=ModuleStoreEnum.RevisionOption.draft_preferred)
     # Orphaned xblocks set their own staff lock
     if not parent_location:
         return None
 
-    parent = modulestore().get_item(parent_location)
+    parent = store.get_item(parent_location)
     return find_staff_lock_source(parent)
 
 
@@ -681,12 +683,13 @@ def ancestor_has_staff_lock(xblock, parent_xblock=None):
     Returns True iff one of xblock's ancestors has staff lock.
     Can avoid mongo query by passing in parent_xblock.
     """
+    store = modulestore()
     if parent_xblock is None:
-        parent_location = modulestore().get_parent_location(xblock.location,
-                                                            revision=ModuleStoreEnum.RevisionOption.draft_preferred)
+        parent_location = store.get_parent_location(xblock.location,
+                                                    revision=ModuleStoreEnum.RevisionOption.draft_preferred)
         if not parent_location:
             return False
-        parent_xblock = modulestore().get_item(parent_location)
+        parent_xblock = store.get_item(parent_location)
     return parent_xblock.visible_to_staff_only
 
 
@@ -1117,9 +1120,10 @@ def get_subsections_by_assignment_type(course_key):
     the display name of the section they are in
     """
     subsections_by_assignment_type = defaultdict(list)
+    store = modulestore()
 
-    with modulestore().bulk_operations(course_key):
-        course = modulestore().get_course(course_key, depth=3)
+    with store.bulk_operations(course_key):
+        course = store.get_course(course_key, depth=3)
         sections = course.get_children()
         for section in sections:
             subsections = section.get_children()

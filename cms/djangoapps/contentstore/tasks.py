@@ -229,7 +229,7 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
 
         try:
             # cleanup any remnants of the course
-            modulestore().delete_course(destination_course_key, user_id)
+            store.delete_course(destination_course_key, user_id)
         except ItemNotFoundError:
             # it's possible there was an error even before the course block was created
             pass
@@ -380,10 +380,11 @@ def export_olx(self, user_id, course_key_string, language):
             self.status.fail(UserErrors.PERMISSION_DENIED)
         return
 
+    store = modulestore()
     if isinstance(courselike_key, LibraryLocator):
-        courselike_block = modulestore().get_library(courselike_key)
+        courselike_block = store.get_library(courselike_key)
     else:
-        courselike_block = modulestore().get_course(courselike_key)
+        courselike_block = store.get_course(courselike_key)
 
     try:
         self.status.set_state('Exporting')
@@ -413,11 +414,12 @@ def create_export_tarball(course_block, course_key, context, status=None):
     root_dir = path(mkdtemp())
 
     try:
+        store = modulestore()
         if isinstance(course_key, LibraryLocator):
-            export_library_to_xml(modulestore(), contentstore(), course_key, root_dir, name)
+            export_library_to_xml(store, contentstore(), course_key, root_dir, name)
         else:
             set_custom_attribute("exporting_course_to_xml_started", str(course_key))
-            export_course_to_xml(modulestore(), contentstore(), course_block.id, root_dir, name)
+            export_course_to_xml(store, contentstore(), course_block.id, root_dir, name)
 
             set_custom_attribute("exporting_course_to_xml_completed", str(course_key))
         if status:
@@ -432,11 +434,11 @@ def create_export_tarball(course_block, course_key, context, status=None):
         LOGGER.exception('There was an error exporting %s', course_key, exc_info=True)
         parent = None
         try:
-            failed_item = modulestore().get_item(exc.location)
-            parent_loc = modulestore().get_parent_location(failed_item.location)
+            failed_item = store.get_item(exc.location)
+            parent_loc = store.get_parent_location(failed_item.location)
 
             if parent_loc is not None:
-                parent = modulestore().get_item(parent_loc)
+                parent = store.get_item(parent_loc)
         except:  # pylint: disable=bare-except
             # if we have a nested exception, then we'll show the more generic error message
             pass
@@ -505,7 +507,8 @@ def sync_discussion_settings(course_key, user):
     """
     Syncs the discussion settings for a course with the DiscussionsConfiguration model.
     """
-    course = modulestore().get_course(course_key)
+    store = modulestore()
+    course = store.get_course(course_key)
     try:
         discussion_config = DiscussionsConfiguration.objects.get(context_key=course_key)
         discussion_settings = course.discussions_settings
@@ -519,7 +522,7 @@ def sync_discussion_settings(course_key, user):
             course.discussions_settings['enable_graded_units'] = False
             course.discussions_settings['unit_level_visibility'] = True
             course.discussions_settings['provider_type'] = Provider.OPEN_EDX
-            modulestore().update_item(course, user.id)
+            store.update_item(course, user.id)
 
             discussion_config.provider_type = Provider.OPEN_EDX
 
@@ -641,13 +644,14 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
 
     is_library = isinstance(courselike_key, LibraryLocator)
     is_course = not is_library
+    store = modulestore()
     if is_library:
         root_name = LIBRARY_ROOT
-        courselike_block = modulestore().get_library(courselike_key)
+        courselike_block = store.get_library(courselike_key)
         import_func = import_library_from_xml
     else:
         root_name = COURSE_ROOT
-        courselike_block = modulestore().get_course(courselike_key)
+        courselike_block = store.get_course(courselike_key)
         import_func = import_course_from_xml
 
     # Locate the uploaded OLX archive (and download it from S3 if necessary)
@@ -733,7 +737,7 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
         LOGGER.info(f'{log_prefix}: Extracted file verified. Updating course started')
 
         courselike_items = import_func(
-            modulestore(), user.id,
+            store, user.id,
             settings.GITHUB_REPO_ROOT, [dirpath],
             load_error_blocks=False,
             static_content_store=contentstore(),
@@ -757,9 +761,9 @@ def import_olx(self, user_id, course_key_string, archive_path, archive_name, lan
 
         if self.status.state == 'Updating' and is_course:
             # Reload the course so we have the latest state
-            course = modulestore().get_course(courselike_key)
+            course = store.get_course(courselike_key)
             if course.entrance_exam_enabled:
-                entrance_exam_chapter = modulestore().get_items(
+                entrance_exam_chapter = store.get_items(
                     course.id,
                     qualifiers={'category': 'chapter'},
                     settings={'is_entrance_exam': True}
@@ -1241,14 +1245,15 @@ def _scan_course_for_links(course_key):
         ...
     ]
     """
-    verticals = modulestore().get_items(
+    store = modulestore()
+    verticals = store.get_items(
         course_key,
         qualifiers={'category': 'vertical'},
         revision=ModuleStoreEnum.RevisionOption.published_only
     )
     blocks = []
     urls_to_validate = []
-    course = modulestore().get_course(course_key)
+    course = store.get_course(course_key)
 
     for vertical in verticals:
         blocks.extend(vertical.get_children())

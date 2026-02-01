@@ -31,12 +31,14 @@ def register_exams(course_key):
         # if feature is not enabled then do a quick exit
         return
 
-    course = modulestore().get_course(course_key)
+    store = modulestore()
+
+    course = store.get_course(course_key)
     if course is None:
         raise ItemNotFoundError("Course {} does not exist", str(course_key))  # lint-amnesty, pylint: disable=raising-format-tuple
 
     # get all sequences, since they can be marked as timed/proctored exams
-    _timed_exams = modulestore().get_items(
+    _timed_exams = store.get_items(
         course_key,
         qualifiers={
             'category': 'sequential',
