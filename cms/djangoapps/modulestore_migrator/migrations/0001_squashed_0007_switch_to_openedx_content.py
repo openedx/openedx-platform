@@ -9,7 +9,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [('modulestore_migrator', '0001_initial'), ('modulestore_migrator', '0002_alter_modulestoremigration_task_status'), ('modulestore_migrator', '0003_modulestoremigration_is_failed'), ('modulestore_migrator', '0004_alter_modulestoreblockmigration_target_squashed_0005_modulestoreblockmigration_unsupported_reason'), ('modulestore_migrator', '0006_alter_modulestoreblocksource_forwarded_and_more'), ('modulestore_migrator', '0007_alter_modulestoreblockmigration_change_log_record_and_more')]
+    replaces = [('modulestore_migrator', '0001_initial'), ('modulestore_migrator', '0002_alter_modulestoremigration_task_status'), ('modulestore_migrator', '0003_modulestoremigration_is_failed'), ('modulestore_migrator', '0004_alter_modulestoreblockmigration_target_squashed_0005_modulestoreblockmigration_unsupported_reason'), ('modulestore_migrator', '0006_alter_modulestoreblocksource_forwarded_and_more'), ('modulestore_migrator', '0007_switch_to_openedx_content')]
 
     initial = True
 
