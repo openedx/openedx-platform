@@ -789,6 +789,41 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         manual_enrollments = ManualEnrollmentAudit.objects.all()
         assert manual_enrollments.count() == 0
 
+    def test_invalid_country_code_in_csv(self):
+        """
+        Test failure case when an invalid country code is provided
+        """
+        csv_content = b"test_student@example.com,test_student_1,tester1,INVALID"
+        uploaded_file = SimpleUploadedFile("temp.csv", csv_content)
+        response = self.client.post(self.url, {'students_list': uploaded_file})
+        data = json.loads(response.content.decode('utf-8'))
+        assert response.status_code == 200
+        assert len(data['row_errors']) == 1
+        assert len(data['warnings']) == 0
+        assert len(data['general_errors']) == 0
+        assert data['row_errors'][0]['response'] == (
+            'Invalid country: INVALID. Please enter a valid country code. e.g., US, GB'
+        )
+
+        manual_enrollments = ManualEnrollmentAudit.objects.all()
+        assert manual_enrollments.count() == 0
+
+    def test_valid_country_code_in_csv(self):
+        """
+        Test success case with valid country codes
+        """
+        csv_content = b"test_student@example.com,test_student_1,tester1,GB"
+        uploaded_file = SimpleUploadedFile("temp.csv", csv_content)
+        response = self.client.post(self.url, {'students_list': uploaded_file})
+        data = json.loads(response.content.decode('utf-8'))
+        assert response.status_code == 200
+        assert len(data['row_errors']) == 0
+        assert len(data['warnings']) == 0
+        assert len(data['general_errors']) == 0
+
+        manual_enrollments = ManualEnrollmentAudit.objects.all()
+        assert manual_enrollments.count() == 1
+
     @patch('lms.djangoapps.instructor.views.api.log.info')
     def test_csv_user_exist_and_not_enrolled(self, info_log):
         """
