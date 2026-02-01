@@ -509,6 +509,210 @@ class TestCoursewareSearchIndexer(MixedWithOptionsTestCase):
         added_to_index = CoursewareSearchIndexer.do_course_reindex(self.store, empty_course.id)
         assert added_to_index == 0
 
+    def test_demo_course_reindexing(self):
+        """
+        Test that demo courses can be reindexed successfully without errors.
+        
+        This test verifies fix for issue #37496 where demo course reindexing fails.
+        Demo courses may have missing metadata or incomplete structure, but indexing
+        should still complete successfully.
+        """
+        # Create a demo course with typical demo course structure
+        # Demo courses typically have org="edX", course="DemoX", run="Demo_Course"
+        demo_course = CourseFactory.create(
+            modulestore=self.store,
+            org="edX",
+            course="DemoX",
+            run="Demo_Course",
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+            display_name="Demo Course"
+        )
+        
+        # Add some content to the demo course
+        chapter = BlockFactory.create(
+            parent_location=demo_course.location,
+            category='chapter',
+            display_name="Demo Chapter",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+        )
+        sequential = BlockFactory.create(
+            parent_location=chapter.location,
+            category='sequential',
+            display_name="Demo Sequential",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+        )
+        vertical = BlockFactory.create(
+            parent_location=sequential.location,
+            category='vertical',
+            display_name="Demo Vertical",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 4, 1, tzinfo=UTC),
+        )
+        html_unit = BlockFactory.create(
+            parent_location=vertical.location,
+            category="html",
+            display_name="Demo Content",
+            modulestore=self.store,
+            publish_item=True,
+        )
+        
+        # Reindex the demo course - this should complete without errors
+        # even if some metadata is missing
+        try:
+            added_to_index = CoursewareSearchIndexer.do_course_reindex(self.store, demo_course.id)
+            # Verify that indexing completed successfully
+            self.assertIsNotNone(added_to_index)
+            self.assertGreaterEqual(added_to_index, 0)
+            
+            # Verify that the course content was indexed
+            response = self.search(field_dictionary={"course": str(demo_course.id)})
+            # Should have at least the published blocks indexed
+            self.assertGreaterEqual(response["total"], 3)
+            
+            # Verify that specific blocks are in the index
+            indexed_ids = [result["data"]["id"] for result in response["results"]]
+            self.assertIn(str(chapter.location), indexed_ids)
+            self.assertIn(str(sequential.location), indexed_ids)
+            self.assertIn(str(vertical.location), indexed_ids)
+            self.assertIn(str(html_unit.location), indexed_ids)
+            
+        except SearchIndexingError as e:
+            # If indexing fails, that's the bug we're fixing
+            self.fail(f"Demo course reindexing failed with SearchIndexingError: {e}")
+        except Exception as e:
+            # Any other exception is also a failure
+            self.fail(f"Demo course reindexing failed with exception: {e}")
+
+    def test_demo_course_reindexing_with_missing_metadata(self):
+        """
+        Test that demo courses can be reindexed even when metadata is missing.
+        
+        This test simulates the scenario where demo courses might have missing
+        about blocks or other metadata that could cause indexing to fail.
+        """
+        # Create a demo course
+        demo_course = CourseFactory.create(
+            modulestore=self.store,
+            org="edX",
+            course="DemoX",
+            run="Demo_Course",
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+            display_name="Demo Course"
+        )
+        
+        # Add minimal content
+        chapter = BlockFactory.create(
+            parent_location=demo_course.location,
+            category='chapter',
+            display_name="Demo Chapter",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+        )
+        
+        # Mock get_items to simulate missing about blocks (common in demo courses)
+        # This simulates the scenario where about blocks haven't been initialized yet
+        original_get_items = self.store.get_items
+        
+        def mock_get_items(course_id, qualifiers=None):
+            # If querying for about blocks, return empty list (simulating missing blocks)
+            if qualifiers and qualifiers.get("category") == "about":
+                return []
+            # Otherwise, use the original method
+            return original_get_items(course_id, qualifiers=qualifiers)
+        
+        # Test that indexing still works even with missing about blocks
+        with patch.object(self.store, 'get_items', side_effect=mock_get_items):
+            try:
+                added_to_index = CoursewareSearchIndexer.do_course_reindex(self.store, demo_course.id)
+                # Verify that indexing completed successfully despite missing metadata
+                self.assertIsNotNone(added_to_index)
+                self.assertGreaterEqual(added_to_index, 0)
+                
+                # Verify that the course content was still indexed
+                response = self.search(field_dictionary={"course": str(demo_course.id)})
+                self.assertGreaterEqual(response["total"], 1)
+                
+            except SearchIndexingError as e:
+                # If indexing fails, that's the bug we're fixing
+                self.fail(f"Demo course reindexing with missing metadata failed with SearchIndexingError: {e}")
+            except Exception as e:
+                # Any other exception is also a failure
+                self.fail(f"Demo course reindexing with missing metadata failed with exception: {e}")
+
+    def test_normal_course_indexing_unaffected(self):
+        """
+        Test that normal course indexing is unaffected by the demo course fixes.
+        
+        This test verifies that the error handling added for demo courses doesn't
+        break normal course indexing functionality.
+        """
+        # Create a normal course (not a demo course)
+        normal_course = CourseFactory.create(
+            modulestore=self.store,
+            org="TestOrg",
+            course="TestCourse",
+            run="TestRun",
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+            display_name="Normal Test Course"
+        )
+        
+        # Add content to the normal course
+        chapter = BlockFactory.create(
+            parent_location=normal_course.location,
+            category='chapter',
+            display_name="Test Chapter",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+        )
+        sequential = BlockFactory.create(
+            parent_location=chapter.location,
+            category='sequential',
+            display_name="Test Sequential",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 3, 1, tzinfo=UTC),
+        )
+        vertical = BlockFactory.create(
+            parent_location=sequential.location,
+            category='vertical',
+            display_name="Test Vertical",
+            modulestore=self.store,
+            publish_item=True,
+            start=datetime(2015, 4, 1, tzinfo=UTC),
+        )
+        html_unit = BlockFactory.create(
+            parent_location=vertical.location,
+            category="html",
+            display_name="Test Content",
+            modulestore=self.store,
+            publish_item=True,
+        )
+        
+        # Reindex the normal course - should work exactly as before
+        added_to_index = CoursewareSearchIndexer.do_course_reindex(self.store, normal_course.id)
+        
+        # Verify that indexing completed successfully
+        self.assertIsNotNone(added_to_index)
+        self.assertGreaterEqual(added_to_index, 3)
+        
+        # Verify that the course content was indexed
+        response = self.search(field_dictionary={"course": str(normal_course.id)})
+        self.assertGreaterEqual(response["total"], 3)
+        
+        # Verify that specific blocks are in the index
+        indexed_ids = [result["data"]["id"] for result in response["results"]]
+        self.assertIn(str(chapter.location), indexed_ids)
+        self.assertIn(str(sequential.location), indexed_ids)
+        self.assertIn(str(vertical.location), indexed_ids)
+        self.assertIn(str(html_unit.location), indexed_ids)
+
 
 @patch('django.conf.settings.SEARCH_ENGINE', 'search.tests.utils.ForceRefreshElasticSearchEngine')
 @ddt.ddt

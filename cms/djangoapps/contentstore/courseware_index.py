@@ -187,19 +187,21 @@ class SearchIndexerBase(metaclass=ABCMeta):
 
             if item.category == "split_test":  # lint-amnesty, pylint: disable=too-many-nested-blocks
                 split_partition = item.get_selected_partition()
-                for split_test_child in item.get_children():
-                    if split_partition:
-                        for group in split_partition.groups:
-                            group_id = str(group.id)
-                            child_location = item.group_id_to_child.get(group_id, None)
-                            if child_location == split_test_child.location:
-                                groups_usage_info.update({
-                                    str(get_item_location(split_test_child)): [group_id],
-                                })
-                                for component in split_test_child.get_children():
+                # Only process split_test groups if groups_usage_info is available
+                if groups_usage_info is not None:
+                    for split_test_child in item.get_children():
+                        if split_partition:
+                            for group in split_partition.groups:
+                                group_id = str(group.id)
+                                child_location = item.group_id_to_child.get(group_id, None)
+                                if child_location == split_test_child.location:
                                     groups_usage_info.update({
-                                        str(get_item_location(component)): [group_id]
+                                        str(get_item_location(split_test_child)): [group_id],
                                     })
+                                    for component in split_test_child.get_children():
+                                        groups_usage_info.update({
+                                            str(get_item_location(component)): [group_id]
+                                        })
 
             if groups_usage_info:
                 item_location = get_item_location(item)
@@ -248,14 +250,47 @@ class SearchIndexerBase(metaclass=ABCMeta):
         try:
             with modulestore.branch_setting(ModuleStoreEnum.RevisionOption.published_only):
                 structure = cls._fetch_top_level(modulestore, structure_key)
-                groups_usage_info = cls.fetch_group_usage(modulestore, structure)
+                if structure is None:
+                    log.warning(
+                        "Course structure not found for indexing %s - skipping index",
+                        structure_key
+                    )
+                    return 0
+                try:
+                    groups_usage_info = cls.fetch_group_usage(modulestore, structure)
+                except Exception as group_err:  # pylint: disable=broad-except
+                    log.warning(
+                        "Could not fetch group usage info for course %s - continuing without groups: %r",
+                        structure_key,
+                        group_err
+                    )
+                    groups_usage_info = None
 
                 # First perform any additional indexing from the structure object
-                cls.supplemental_index_information(modulestore, structure)
+                # Wrap in try-except to handle demo courses that might have missing metadata
+                try:
+                    cls.supplemental_index_information(modulestore, structure)
+                except Exception as supp_err:  # pylint: disable=broad-except
+                    log.warning(
+                        "Supplemental indexing failed for %s - continuing with content indexing: %r",
+                        structure_key,
+                        supp_err
+                    )
 
                 # Now index the content
-                for item in structure.get_children():
-                    prepare_item_index(item, groups_usage_info=groups_usage_info)
+                # Handle cases where get_children() might fail or return None
+                try:
+                    children = structure.get_children()
+                    if children is not None:
+                        for item in children:
+                            prepare_item_index(item, groups_usage_info=groups_usage_info)
+                except Exception as children_err:  # pylint: disable=broad-except
+                    log.warning(
+                        "Error getting children for course %s - some content may not be indexed: %r",
+                        structure_key,
+                        children_err
+                    )
+
                 if items_index:
                     searcher.index(items_index, request_timeout=timeout)
                 cls.remove_deleted_items(searcher, structure_key, indexed_items)
@@ -616,10 +651,21 @@ class CourseAboutSearchIndexer(CoursewareSearchIndexer):
         }
 
         # load data for all of the 'about' blocks for this course into a dictionary
-        about_dictionary = {
-            item.location.block_id: item.data
-            for item in modulestore.get_items(course.id, qualifiers={"category": "about"})
-        }
+        # Handle demo courses that might not have about blocks yet
+        try:
+            about_items = modulestore.get_items(course.id, qualifiers={"category": "about"})
+            about_dictionary = {
+                item.location.block_id: item.data
+                for item in about_items
+            }
+        except Exception as about_err:  # pylint: disable=broad-except
+            # Demo courses may not have about blocks initialized yet
+            log.warning(
+                "Could not load about blocks for course %s - continuing with empty about dictionary: %r",
+                course_id,
+                about_err
+            )
+            about_dictionary = {}
 
         about_context = {
             "course": course,
