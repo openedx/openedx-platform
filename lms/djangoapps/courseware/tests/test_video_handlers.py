@@ -667,37 +667,11 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
 
         # youtube 1_0 request, will generate for all speeds for existing ids
         self.block.youtube_id_1_0 = subs_id
-        self.block.youtube_id_0_75 = '0_75'
         self.store.update_item(self.block, self.user.id)
         request = _create_djangowebobrequest_object_for_url(f'/translation/uk?videoId={subs_id}')
         response = self.block.transcript(request=request, dispatch='translation/uk')
         self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)
 
-        # 0_75 subs are exist
-        request = _create_djangowebobrequest_object_for_url('/translation/uk?videoId={}'.format('0_75'))
-        response = self.block.transcript(request=request, dispatch='translation/uk')
-        calculated_0_75 = {
-            'end': [75],
-            'start': [9],
-            'text': [
-                '\u041f\u0440\u0438\u0432\u0456\u0442, edX \u0432\u0456\u0442\u0430\u0454 \u0432\u0430\u0441.'
-            ]
-        }
-
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_0_75)
-        # 1_5 will be generated from 1_0
-        self.block.youtube_id_1_5 = '1_5'
-        self.store.update_item(self.block, self.user.id)
-        request = _create_djangowebobrequest_object_for_url('/translation/uk?videoId={}'.format('1_5'))
-        response = self.block.transcript(request=request, dispatch='translation/uk')
-        calculated_1_5 = {
-            'end': [150],
-            'start': [18],
-            'text': [
-                '\u041f\u0440\u0438\u0432\u0456\u0442, edX \u0432\u0456\u0442\u0430\u0454 \u0432\u0430\u0441.'
-            ]
-        }
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_1_5)
 
     @ddt.data(
         ('translation/en', 'translation/en', attach_sub),

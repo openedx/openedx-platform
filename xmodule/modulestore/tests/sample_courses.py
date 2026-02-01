@@ -144,28 +144,19 @@ TOY_BLOCK_INFO_TREE = [
                 }, [
                     BlockInfo(
                         "sample_video", "video", {
-                            "youtube_id_1_25": "AKqURZnYqpk",
-                            "youtube_id_0_75": "JMD_ifUUfsU",
                             "youtube_id_1_0": "OEoXaMPEzfM",
                             "display_name": "default",
-                            "youtube_id_1_5": "DYpADpL7jAY"
                         }, []),
                     BlockInfo(
                         "separate_file_video", "video", {
-                            "youtube_id_1_25": "AKqURZnYqpk",
-                            "youtube_id_0_75": "JMD_ifUUfsU",
                             "youtube_id_1_0": "OEoXaMPEzfM",
                             "display_name": "default",
-                            "youtube_id_1_5": "DYpADpL7jAY"
                         }, []),
                     BlockInfo(
                         "video_with_end_time", "video", {
-                            "youtube_id_1_25": "AKqURZnYqpk",
                             "display_name": "default",
                             "youtube_id_1_0": "OEoXaMPEzfM",
                             "end_time": datetime.timedelta(seconds=10),
-                            "youtube_id_1_5": "DYpADpL7jAY",
-                            "youtube_id_0_75": "JMD_ifUUfsU"
                         }, []),
                     BlockInfo(
                         "T1_changemind_poll_foo_2", "poll_question", {

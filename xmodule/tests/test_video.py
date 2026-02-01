@@ -203,21 +203,16 @@ class TestCreateYoutubeString(VideoBlockTestBase):
         """
         Test that Youtube ID strings are correctly created when writing back out to XML.
         """
-        self.block.youtube_id_0_75 = 'izygArpw-Qo'
         self.block.youtube_id_1_0 = 'p2Q6BrNhdh8'
-        self.block.youtube_id_1_25 = '1EeWXzPdhSA'
-        self.block.youtube_id_1_5 = 'rABDYkeK0x8'
-        expected = "0.75:izygArpw-Qo,1.00:p2Q6BrNhdh8,1.25:1EeWXzPdhSA,1.50:rABDYkeK0x8"
+        expected = "1.00:p2Q6BrNhdh8"
         assert create_youtube_string(self.block) == expected
 
     def test_create_youtube_string_missing(self):
         """
         Test that Youtube IDs which aren't explicitly set aren't included in the output string.
         """
-        self.block.youtube_id_0_75 = 'izygArpw-Qo'
         self.block.youtube_id_1_0 = 'p2Q6BrNhdh8'
-        self.block.youtube_id_1_25 = '1EeWXzPdhSA'
-        expected = "0.75:izygArpw-Qo,1.00:p2Q6BrNhdh8,1.25:1EeWXzPdhSA"
+        expected = "1.00:p2Q6BrNhdh8"
         assert create_youtube_string(self.block) == expected
 
 

@@ -155,7 +155,7 @@ class CommandsTestBase(SharedModuleStoreTestCase):
         video_metadata.pop('edx_video_id', None)
         self.assertCountEqual(
             list(video_metadata.keys()),
-            ['youtube_id_0_75', 'youtube_id_1_0', 'youtube_id_1_25', 'youtube_id_1_5']
+            ['youtube_id_1_0']
         )
         assert 'youtube_id_1_0' in dump[video_id]['metadata']
 

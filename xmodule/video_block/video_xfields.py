@@ -34,24 +34,6 @@ class VideoFields:
         scope=Scope.settings,
         default="3_yD_cEKoCk"
     )
-    youtube_id_0_75 = String(
-        help=_("Optional, for older browsers: the YouTube ID for the .75x speed video."),
-        display_name=_("YouTube ID for .75x speed"),
-        scope=Scope.settings,
-        default=""
-    )
-    youtube_id_1_25 = String(
-        help=_("Optional, for older browsers: the YouTube ID for the 1.25x speed video."),
-        display_name=_("YouTube ID for 1.25x speed"),
-        scope=Scope.settings,
-        default=""
-    )
-    youtube_id_1_5 = String(
-        help=_("Optional, for older browsers: the YouTube ID for the 1.5x speed video."),
-        display_name=_("YouTube ID for 1.5x speed"),
-        scope=Scope.settings,
-        default=""
-    )
     start_time = RelativeTime(  # datetime.timedelta object
         help=_(
             "Time you want the video to start if you don't want the entire video to play. "
