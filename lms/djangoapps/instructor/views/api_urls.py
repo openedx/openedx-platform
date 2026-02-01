@@ -124,7 +124,11 @@ urlpatterns = [
     path('certificate_task/<action>', api.CertificateTask.as_view(), name='certificate_task'),
 
     # Certificates
-    path('enable_certificate_generation', api.enable_certificate_generation, name='enable_certificate_generation'),
+    path(
+        'enable_certificate_generation',
+        api.EnableCertificateGenerationAPIView.as_view(),
+        name='enable_certificate_generation',
+    ),
     path('start_certificate_generation', api.StartCertificateGeneration.as_view(), name='start_certificate_generation'),
     path('start_certificate_regeneration', api.StartCertificateRegeneration.as_view(),
          name='start_certificate_regeneration'),

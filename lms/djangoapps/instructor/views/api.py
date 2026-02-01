@@ -101,6 +101,7 @@ from lms.djangoapps.instructor_task.models import ReportStore
 from lms.djangoapps.instructor.views.serializer import (
     AccessSerializer,
     BlockDueDateSerializer,
+    CertificateGenerationSerializer,
     CertificateSerializer,
     CertificateStatusesSerializer,
     ForumRoleNameSerializer,
@@ -3403,62 +3404,38 @@ def _instructor_dash_url(course_key, section=None):
     return url
 
 
-class HasCertificateActionPermission(BasePermission):
-    """
-    DRF permission class to validate course-level certificate task permissions
-    based on the `action` URL parameter.
-    """
+class EnableCertificateGenerationAPIView(APIView):
+    """Enable/disable self-generated certificates for a course."""
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.ENABLE_CERTIFICATE_GENERATION
+    serializer_class = CertificateGenerationSerializer
 
-    permission_map = {
-        'toggle': permissions.ENABLE_CERTIFICATE_GENERATION,
-        'generate': permissions.START_CERTIFICATE_GENERATION,
-        'regenerate': permissions.START_CERTIFICATE_REGENERATION,
-    }
-
-    def has_permission(self, request, view):
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request, course_id=None):
         """
-        Check whether the user has permission to perform the requested certificate action
-        on the specified course.
+        Once self-generated certificates have been enabled, students
+        who have passed the course will be able to generate certificates.
+
+        Parameters:
+        - `certificates-enabled`: The true/false value based on user action.
+        - `course_id`: The ID of the course for which the extensions are being queried.
+
+        Redirects back to the instructor dashboard once the
+        setting has been updated.
         """
-        course_id = view.kwargs.get('course_id')
-        action = view.kwargs.get('action')
+        course_key = CourseKey.from_string(course_id)
+        data = {
+            "certificates_enabled": request.data.get("certificates-enabled", False)
+        }
+        serializer = self.serializer_class(data=data)
 
-        if not course_id or not action:
-            return False
+        if not serializer.is_valid():
+            return HttpResponseBadRequest(reason=serializer.errors)
 
-        required_perm = self.permission_map.get(action)
-        if required_perm is None:
-            return False
+        is_enabled = serializer.validated_data.get("certificates_enabled")
+        certs_api.set_cert_generation_enabled(course_key, is_enabled)
 
-        try:
-            course_key = CourseKey.from_string(course_id)
-        except (ValueError, TypeError):
-            return False
-
-        return request.user.has_perm(required_perm, course_key)
-
-
-def toggle_certificate_generation(request, course_id):
-    """
-    Enable or disable student-generated certificates for a course.
-
-    Based on the value of the POST field `certificates-enabled`, this function
-    updates the course setting to allow or prevent students from generating their
-    own certificates. This function assumes that permission checks
-    have already been performed.
-
-    Args:
-        request (HttpRequest): The incoming POST request.
-        course_id (str): The course identifier in string format.
-
-    Returns:
-        HttpResponseRedirect: Redirects back to the instructor dashboard
-        (certificates section) after updating the course setting.
-    """
-    course_key = CourseKey.from_string(course_id)
-    is_enabled = (request.POST.get('certificates-enabled', 'false') == 'true')
-    certs_api.set_cert_generation_enabled(course_key, is_enabled)
-    return redirect(_instructor_dash_url(course_key, section='certificates'))
+        return redirect(_instructor_dash_url(course_key, section='certificates'))
 
 
 def start_certificate_generation(request, course_id):

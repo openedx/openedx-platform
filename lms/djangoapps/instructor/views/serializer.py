@@ -478,6 +478,15 @@ class CertificateSerializer(serializers.Serializer):
         return user
 
 
+class CertificateGenerationSerializer(serializers.Serializer):
+    """Serializer for enabling or disabling self-generated certificates for a course."""
+    certificates_enabled = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Enable or disable self-generated certificates for this course."
+    )
+
+
 class RescoreEntranceExamSerializer(serializers.Serializer):
     """Serializer for entrance exam rescoring"""
     unique_student_identifier = serializers.CharField(required=False, allow_null=True)
