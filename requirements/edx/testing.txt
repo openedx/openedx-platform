@@ -1160,6 +1160,8 @@ psutil==7.2.1
     #   edx-django-utils
     #   pact-python
     #   pytest-xdist
+psycopg2-binary==2.9.10
+    # via -r requirements/edx/base.txt
 py==1.11.0
     # via -r requirements/edx/testing.in
 pyasn1==0.6.2

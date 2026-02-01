@@ -33,5 +33,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(move_overrides_to_edx_when)
+        migrations.RunPython(move_overrides_to_edx_when, reverse_code=migrations.RunPython.noop)
     ]
