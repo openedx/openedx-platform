@@ -339,6 +339,62 @@ class TestCoursewareAccessSerializer(LearnerDashboardBaseTest):
         # Then "isTooEarly" serializes properly
         self.assertEqual(output_data["isTooEarly"], is_too_early)
 
+    @mock.patch(
+        "lms.djangoapps.learner_home.serializers.get_pre_requisite_courses_not_completed"
+    )
+    def test_has_unmet_prerequisites_list_empty(self, mock_get_prereqs):
+        """Serializer should emit an empty list when no prerequisites are returned."""
+        mock_get_prereqs.return_value = {}
+        enrollment = self.create_test_enrollment()
+        context = self.create_test_context(enrollment.course)
+
+        output_data = CoursewareAccessSerializer(enrollment, context=context).data
+
+        self.assertEqual(output_data["hasUnmetPrerequisitesList"], [])
+
+    @mock.patch(
+        "lms.djangoapps.learner_home.serializers.CoursewareAccessSerializer._get_course_about_url_for_key"
+    )
+    @mock.patch("lms.djangoapps.learner_home.serializers.course_home_url")
+    @mock.patch(
+        "lms.djangoapps.learner_home.serializers.get_pre_requisite_courses_not_completed"
+    )
+    def test_has_unmet_prerequisites_list_serialization(
+        self,
+        mock_get_prereqs,
+        mock_course_home_url,
+        mock_get_about_url,
+    ):
+        """Serializer should include display, course home, and about URLs for each prerequisite."""
+        enrollment = self.create_test_enrollment()
+        context = self.create_test_context(enrollment.course)
+        prerequisite_course = CourseFactory()
+        expected_display = "Prerequisite Course"
+        mock_get_prereqs.return_value = {
+            enrollment.course_id: {
+                "courses": [
+                    {
+                        "display": expected_display,
+                        "key": prerequisite_course.id,
+                    }
+                ]
+            }
+        }
+        mock_course_home_url.return_value = "https://example.com/home"
+        mock_get_about_url.return_value = "https://example.com/about"
+
+        output_data = CoursewareAccessSerializer(enrollment, context=context).data
+
+        self.assertEqual(len(output_data["hasUnmetPrerequisitesList"]), 1)
+        self.assertDictEqual(
+            output_data["hasUnmetPrerequisitesList"][0],
+            {
+                "display": expected_display,
+                "url": "https://example.com/home",
+                "about_url": "https://example.com/about",
+            },
+        )
+
 
 @ddt.ddt
 class TestEnrollmentSerializer(LearnerDashboardBaseTest):
