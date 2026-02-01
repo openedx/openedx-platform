@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 from uuid import uuid4
 from celery import Task
 
+import ddt
 import pytest
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -25,6 +26,8 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -35,13 +38,14 @@ from ..tasks import (
     export_olx,
     update_special_exams_and_publish,
     rerun_course,
+    sync_discussion_settings,
     _validate_urls_access_in_batches,
     _filter_by_status,
     _check_broken_links,
     _is_studio_url,
     _scan_course_for_links,
     _convert_to_standard_url,
-    extract_content_URLs_from_course
+    extract_content_URLs_from_course,
 )
 
 logging = logging.getLogger(__name__)
@@ -668,3 +672,110 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             "https://another-valid.com"
         ]
         self.assertEqual(extract_content_URLs_from_course(content), set(expected))
+
+
+@ddt.ddt
+@override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
+class SyncDiscussionSettingsTaskTestCase(CourseTestCase):
+    """Tests for the `sync_discussion_settings` task."""
+
+    def setUp(self):
+        super().setUp()
+        self.discussion_config = DiscussionsConfiguration.objects.create(context_key=self.course.id)
+
+    def _update_discussion_settings(self, discussions_settings: dict):
+        """Helper method to set discussion settings in the course."""
+        self.course.discussions_settings = discussions_settings
+        modulestore().update_item(self.course, self.user.id)
+
+    def test_sync_settings(self):
+        """Test syncing discussion settings to DiscussionsConfiguration."""
+        self._update_discussion_settings(
+            {
+                "enable_graded_units": True,
+                "unit_level_visibility": False,
+                "enable_in_context": True,
+                "posting_restrictions": "enabled",
+            }
+        )
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.enable_graded_units is True
+        assert self.discussion_config.unit_level_visibility is False
+        assert self.discussion_config.enable_in_context is True
+        assert self.discussion_config.posting_restrictions == "enabled"
+        assert self.discussion_config.provider_type == Provider.LEGACY
+
+    def test_sync_plugin_configuration(self):
+        """Test syncing plugin configuration from provider settings."""
+        # Set up course discussion settings with provider-specific config
+        provider_config = {"test_key": "test_value", "test_key_2": "test_value_2"}
+        self._update_discussion_settings({self.discussion_config.provider_type: provider_config})
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.plugin_configuration == provider_config
+
+    @ddt.data(
+        (False, True),  # When the tab is visible, the discussion should be enabled.
+        (True, False),  # When the tab is hidden, the discussion should be disabled.
+    )
+    @ddt.unpack
+    def test_sync_discussion_tab_visibility(self, is_hidden: bool, expected_enabled: bool):
+        """Test syncing discussion enabled status based on tab visibility."""
+        for tab in self.course.tabs:
+            if tab.tab_id == "discussion":
+                tab.is_hidden = is_hidden
+                break
+        modulestore().update_item(self.course, self.user.id)
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.enabled is expected_enabled
+
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_auto_migrate_to_new_structure(self):
+        """Test automatic migration to the `OPEN_EDX` provider when new structure is enabled."""
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert any(migration_log in log for log in logs.output)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.provider_type == Provider.OPEN_EDX
+
+        course = modulestore().get_course(self.course.id)
+        assert course.discussions_settings.get("provider_type") == Provider.OPEN_EDX
+
+    @ddt.data(
+        {"provider_type": Provider.OPEN_EDX},  # Using the `provider_type` field.
+        {"provider": Provider.OPEN_EDX},  # Using the `provider` field as fallback.
+    )
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_no_provider_migration_when_already_openedx(self, provider_settings: dict):
+        """Test no migration occurs when provider is already `OPEN_EDX`."""
+        self._update_discussion_settings(provider_settings)
+
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert not any(migration_log in log for log in logs.output)
+
+    def test_handling_exceptions(self):
+        """Test that exceptions are caught and logged properly."""
+        test_error_message = "Test error"
+
+        with mock.patch.object(DiscussionsConfiguration.objects, "get", side_effect=Exception(test_error_message)):
+            with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+                sync_discussion_settings(self.course.id, self.user)
+
+                expected_log = (
+                    f"Course import {self.course.id}: DiscussionsConfiguration sync failed: {test_error_message}"
+                )
+                assert any(expected_log in log for log in logs.output)

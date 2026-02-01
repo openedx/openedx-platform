@@ -523,8 +523,18 @@ def sync_discussion_settings(course_key, user):
 
             discussion_config.provider_type = Provider.OPEN_EDX
 
-        discussion_config.enable_graded_units = discussion_settings['enable_graded_units']
-        discussion_config.unit_level_visibility = discussion_settings['unit_level_visibility']
+        fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
+        # Plugin configuration is stored in the course settings under the provider name.
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}
+
+        for attr_name, settings_key in field_mappings.items():
+            if settings_key in discussion_settings:
+                setattr(discussion_config, attr_name, discussion_settings[settings_key])
+
+        for tab in course.tabs:
+            if tab.tab_id == "discussion":
+                discussion_config.enabled = not tab.is_hidden
+                break
         discussion_config.save()
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration synced as per course')
     except Exception as exc:  # pylint: disable=broad-except
