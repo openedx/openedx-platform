@@ -7,6 +7,7 @@ matplotlib                          # 2D plotting library
 networkx                            # Utilities for creating, manipulating, and studying network graphs
 nltk                                # Natural language processing; used by the chem package
 openedx-calc
+pyarrow                             # Required for numpy and other packages; avoids failed wheel builds
 pyparsing                           # Python Parsing module
 random2                             # Implementation of random module that works identically under Python 2 and 3
 scipy                               # Math, science, and engineering library
