@@ -87,7 +87,6 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.content_libraries.api import get_container
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.credit.api import get_credit_requirements, is_credit_course
-from openedx.core.djangoapps.discussions.config.waffle import ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.django_comment_common.models import assign_default_role
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
@@ -253,16 +252,11 @@ def get_course_authoring_url(course_locator):
     )
 
 
-def get_pages_and_resources_url(course_locator):
+def get_pages_and_resources_url(course_locator: CourseKey) -> str:
     """
     Gets course authoring microfrontend URL for Pages and Resources view.
     """
-    pages_and_resources_url = None
-    if ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        if mfe_base_url:
-            pages_and_resources_url = f'{mfe_base_url}/course/{course_locator}/pages-and-resources'
-    return pages_and_resources_url
+    return f"{get_course_authoring_url(course_locator)}/course/{course_locator}/pages-and-resources"
 
 
 def get_proctored_exam_settings_url(course_locator) -> str:

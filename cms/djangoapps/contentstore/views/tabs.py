@@ -19,7 +19,8 @@ from xmodule.tabs import CourseTab, CourseTabList, InvalidTabsException, StaticT
 
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
-from ..utils import get_pages_and_resources_url, get_custom_pages_url
+
+from ..utils import get_custom_pages_url
 
 __all__ = ["tabs_handler", "update_tabs_handler"]
 
@@ -80,14 +81,11 @@ def get_course_tabs(course_item: CourseBlock, user: User) -> Iterable[CourseTab]
         Iterable[CourseTab]: An iterable containing course tab objects from the
         course
     """
-    pages_and_resources_mfe_enabled = bool(get_pages_and_resources_url(course_item.id))
     for tab in CourseTabList.iterate_displayable(course_item, user=user, inline_collections=False, include_hidden=True):
         if isinstance(tab, StaticTab):
             # static tab needs its locator information to render itself as an xmodule
             static_tab_loc = course_item.id.make_usage_key("static_tab", tab.url_slug)
             tab.locator = static_tab_loc
-        # If the course apps MFE is set up and pages and resources is enabled, then only show static tabs
-        if isinstance(tab, StaticTab) or not pages_and_resources_mfe_enabled:
             yield tab
 
 
