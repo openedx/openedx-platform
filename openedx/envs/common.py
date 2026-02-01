@@ -1021,6 +1021,16 @@ ENABLE_TEXTBOOK = True
 # domains
 ENABLE_CORS_HEADERS = False
 
+# .. toggle_name: CORS_CSRF_DETAIL_MONITORING
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enable this feature to allow this Open edX platform to monitor CSRF details for CORS requests.
+# .. toggle_use_cases: temporary
+# .. toggle_creation_date: 2025-11-03
+# .. toggle_target_removal_date: None
+# .. toggle_warning: This temporary feature toggle does not have a target removal date.
+CORS_CSRF_DETAIL_MONITORING = False
+
 # Can be turned off to disable the help link in the navbar
 # .. toggle_name: ENABLE_HELP_LINK
 # .. toggle_implementation: DjangoSetting

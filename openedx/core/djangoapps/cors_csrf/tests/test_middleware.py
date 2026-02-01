@@ -2,8 +2,8 @@
 Tests for the CORS CSRF middleware
 """
 
-
-from unittest.mock import patch, Mock
+from unittest import mock
+from unittest.mock import patch, Mock, call
 import ddt
 import pytest
 from django.test import TestCase
@@ -30,12 +30,34 @@ class TestCorsMiddlewareProcessRequest(TestCase):
         request = Mock()
         request.META = {'HTTP_REFERER': http_referer}
         request.is_secure = lambda: is_secure
+        request.get_host.return_value = 'foo.com'
         return request
 
-    @override_settings(FEATURES={'ENABLE_CORS_HEADERS': True})
+    @override_settings(
+        FEATURES={'ENABLE_CORS_HEADERS': True},
+        CORS_CSRF_DETAIL_MONITORING=True
+    )
     def setUp(self):
         super().setUp()
         self.middleware = CorsCSRFMiddleware(get_response=lambda request: None)
+
+    def test_check_enable_cors_csrf_detail_monitoring(self):
+        """
+        Check that the CORS CSRF detail monitoring is enabled
+        """
+        assert self.middleware.enable_cors_csrf_detail_monitoring
+
+    @ddt.data(True, False)
+    def test_toggle_enable_cors_csrf_detail_monitoring(self, toggle_value):
+        """
+        Check that the CORS CSRF detail monitoring can be toggled
+        """
+        with override_settings(
+            FEATURES={'ENABLE_CORS_HEADERS': True},
+            CORS_CSRF_DETAIL_MONITORING=toggle_value
+        ):
+            middleware = CorsCSRFMiddleware(get_response=lambda request: None)
+            assert middleware.enable_cors_csrf_detail_monitoring == toggle_value
 
     def check_not_enabled(self, request):
         """
@@ -73,9 +95,11 @@ class TestCorsMiddlewareProcessRequest(TestCase):
         'https://foo.com/bar/', 'https://foo.com/bar/baz/', 'https://www.foo.com/bar/baz/',
         'https://learning.edge.foo.bar', 'https://learning.edge.foo.bar/foo'
     )
-    def test_enabled(self, http_referer):
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_enabled(self, http_referer, mock_set_custom_attribute):
         request = self.get_request(is_secure=True, http_referer=http_referer)
         self.check_enabled(request)
+        assert mock_set_custom_attribute.call_count == 3
 
     @override_settings(
         FEATURES={'ENABLE_CORS_HEADERS': False},
@@ -86,24 +110,81 @@ class TestCorsMiddlewareProcessRequest(TestCase):
             CorsCSRFMiddleware(get_response=lambda request: None)
 
     @override_settings(CORS_ORIGIN_WHITELIST=['https://bar.com'])
-    def test_disabled_wrong_cors_domain(self):
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_disabled_wrong_cors_domain(self, mock_set_custom_attribute):
         request = self.get_request(is_secure=True, http_referer='https://foo.com/bar')
         self.check_not_enabled(request)
+        expected_calls = [
+            call('tmp_cors_csrf.referer', 'https://foo.com/bar'),
+            call('tmp_cors_csrf.host', 'foo.com'),
+            call('tmp_cors_csrf.is_allowed', False)
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+        assert mock_set_custom_attribute.call_count == 3
 
     @override_settings(CORS_ORIGIN_WHITELIST=['https://foo.com'])
-    def test_disabled_wrong_cors_domain_reversed(self):
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_disabled_wrong_cors_domain_reversed(self, mock_set_custom_attribute):
         request = self.get_request(is_secure=True, http_referer='https://bar.com/bar')
         self.check_not_enabled(request)
 
+        # Check monitoring calls
+        expected_calls = [
+            call('tmp_cors_csrf.referer', 'https://bar.com/bar'),
+            call('tmp_cors_csrf.host', 'foo.com'),
+            call('tmp_cors_csrf.is_allowed', False)
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+        assert mock_set_custom_attribute.call_count == 3
+
     @override_settings(CORS_ORIGIN_WHITELIST=['https://foo.com'])
-    def test_disabled_http_request(self):
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_disabled_http_request(self, mock_set_custom_attribute):
         request = self.get_request(is_secure=False, http_referer='https://foo.com/bar')
         self.check_not_enabled(request)
 
+        # Check monitoring calls
+        expected_calls = [
+            call('tmp_cors_csrf.referer', 'https://foo.com/bar'),
+            call('tmp_cors_csrf.host', 'foo.com'),
+            call('tmp_cors_csrf.is_allowed', False)
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+        assert mock_set_custom_attribute.call_count == 3
+
     @override_settings(CORS_ORIGIN_WHITELIST=['https://foo.com'])
-    def test_disabled_http_referer(self):
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_cors_is_allowed(self, mock_set_custom_attribute):
+        request = self.get_request(is_secure=True, http_referer='https://foo.com/bar')
+        with patch.object(CsrfViewMiddleware, 'process_view') as mock_method:
+            res = self.middleware.process_view(request, None, None, None)
+
+        assert res is not None
+        assert mock_method.called
+
+        # Check monitoring calls
+        expected_calls = [
+            call('tmp_cors_csrf.referer', 'https://foo.com/bar'),
+            call('tmp_cors_csrf.host', 'foo.com'),
+            call('tmp_cors_csrf.is_allowed', True)
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+        assert mock_set_custom_attribute.call_count == 3
+
+    @override_settings(CORS_ORIGIN_WHITELIST=['https://foo.com'])
+    @mock.patch('openedx.core.djangoapps.cors_csrf.middleware.set_custom_attribute')
+    def test_disabled_http_referer(self, mock_set_custom_attribute):
         request = self.get_request(is_secure=True, http_referer='http://foo.com/bar')
         self.check_not_enabled(request)
+
+        # Check monitoring calls
+        expected_calls = [
+            call('tmp_cors_csrf.referer', 'http://foo.com/bar'),
+            call('tmp_cors_csrf.host', 'foo.com'),
+            call('tmp_cors_csrf.is_allowed', False)
+        ]
+        mock_set_custom_attribute.assert_has_calls(expected_calls, any_order=True)
+        assert mock_set_custom_attribute.call_count == 3
 
 
 @ddt.ddt
@@ -118,11 +199,18 @@ class TestCsrfCrossDomainCookieMiddleware(TestCase):
     @override_settings(
         FEATURES={'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': True},
         CROSS_DOMAIN_CSRF_COOKIE_NAME=COOKIE_NAME,
-        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=COOKIE_DOMAIN
+        CROSS_DOMAIN_CSRF_COOKIE_DOMAIN=COOKIE_DOMAIN,
+        CORS_CSRF_DETAIL_MONITORING=True
     )
     def setUp(self):
         super().setUp()
         self.middleware = CsrfCrossDomainCookieMiddleware(get_response=lambda request: None)
+
+    def test_check_enable_cors_csrf_detail_monitoring(self):
+        """
+        Check that the CORS CSRF detail monitoring is enabled
+        """
+        assert self.middleware.enable_cors_csrf_detail_monitoring
 
     @override_settings(FEATURES={'ENABLE_CROSS_DOMAIN_CSRF_COOKIE': False})
     def test_disabled_by_feature_flag(self):
