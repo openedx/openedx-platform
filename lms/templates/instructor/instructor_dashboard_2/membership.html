@@ -49,6 +49,21 @@ from openedx.core.djangolib.markup import HTML, Text
             </div>
         </label>
     </div>
+    <div class="enroll-option">
+        <label class="has-hint">
+            <input type="checkbox" name="async-processing" id="async-processing" value="Process-asynchronously" aria-describedby="heading-batch-enrollment">
+            <span class="label-text">${_("Process asynchronously")}</span>
+            <div class="hint async-processing-hint">
+                <span class="hint-caret"></span>
+                <p id="async-processing-tip">
+                    ${Text(_("If this option is {em_start}checked{em_end}, the enrollment process will be handled in the background for better performance with large batches.")).format(em_start=HTML('<em>'), em_end=HTML('</em>'))}
+                    ${Text(_("If this option is left {em_start}unchecked{em_end}, the enrollment will be processed immediately and you'll see results right away.")).format(em_start=HTML('<em>'), em_end=HTML('</em>'))}
+                    <br /><br />
+                    ${_("For large batches of students, asynchronous processing is recommended.")}
+                </p>
+            </div>
+        </label>
+    </div>
     <div>
         <input type="button" name="enrollment-button" class="enrollment-button" value="${pgettext('someone','Enroll')}" data-endpoint="${ section_data['enroll_button_url'] }" data-action="enroll" >
         <input type="button" name="enrollment-button" class="enrollment-button" value="${_("Unenroll")}" data-endpoint="${ section_data['unenroll_button_url'] }" data-action="unenroll" >

@@ -31,9 +31,10 @@ from lms.djangoapps.bulk_email.tasks import perform_delegate_email_batches
 from lms.djangoapps.instructor_task.tasks_base import BaseInstructorTask
 from lms.djangoapps.instructor_task.tasks_helper.certs import generate_students_certificates
 from lms.djangoapps.instructor_task.tasks_helper.enrollments import (
+    process_student_enrollment_batch,
     upload_inactive_enrolled_students_info_csv,
     upload_may_enroll_csv,
-    upload_students_csv
+    upload_students_csv,
 )
 from lms.djangoapps.instructor_task.tasks_helper.grades import CourseGradeReport, ProblemGradeReport, ProblemResponses
 from lms.djangoapps.instructor_task.tasks_helper.misc import (
@@ -359,4 +360,15 @@ def export_ora2_summary(entry_id, xblock_instance_args):
     """
     action_name = gettext_noop('generated')
     task_fn = partial(upload_ora2_summary, xblock_instance_args)
+    return run_main_task(entry_id, task_fn, action_name)
+
+
+@shared_task(base=BaseInstructorTask)
+@set_code_owner_attribute
+def student_enrollment_batch(entry_id, xblock_instance_args):
+    """
+    Process student enrollment/unenrollment operations in batch asynchronously.
+    """
+    action_name = gettext_noop('processed')
+    task_fn = partial(process_student_enrollment_batch, xblock_instance_args)
     return run_main_task(entry_id, task_fn, action_name)

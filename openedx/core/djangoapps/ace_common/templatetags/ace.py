@@ -96,9 +96,11 @@ def google_analytics_tracking_pixel(context):
 def _get_google_analytics_tracking_url(context):
     site, user, message = _get_variables_from_context(context, 'google_analytics_tracking_pixel')
 
+    user_id = user.id if user else None
+
     pixel = GoogleAnalyticsTrackingPixel(
         site=site,
-        user_id=user.id,
+        user_id=user_id,
         campaign_source=message.app_label,
         campaign_name=message.name,
         campaign_content=message.uuid,

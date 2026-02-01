@@ -554,6 +554,7 @@ class StudentsUpdateEnrollmentSerializer(serializers.Serializer):
     identifiers = serializers.CharField()
     auto_enroll = serializers.BooleanField(default=False)
     email_students = serializers.BooleanField(default=False)
+    async_processing = serializers.BooleanField(default=False)
     reason = serializers.CharField(required=False, allow_blank=True)
 
 

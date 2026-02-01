@@ -83,3 +83,15 @@ class RemoveBetaTester(BaseMessageType):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.options['transactional'] = True
+
+
+class BatchEnrollment(BaseMessageType):
+    """
+    A message for instructors when finish the batch enrollment async process.
+    """
+
+    APP_LABEL = "instructor"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.options["transactional"] = True

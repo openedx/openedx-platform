@@ -3,16 +3,19 @@ Test for LMS instructor background task queue management
 """
 
 import datetime
+import hashlib
 import json
+from unittest import mock
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
+import ddt
 import pytest
 import pytz
-import ddt
-from testfixtures import LogCapture
 from celery.states import FAILURE, SUCCESS
-from xmodule.modulestore.exceptions import ItemNotFoundError
+from django.http import HttpRequest
+from opaque_keys.edx.keys import CourseKey
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
@@ -44,6 +47,7 @@ from lms.djangoapps.instructor_task.api import (
     submit_rescore_problem_for_student,
     submit_reset_problem_attempts_for_all_students,
     submit_reset_problem_attempts_in_entrance_exam,
+    submit_student_enrollment_batch,
 )
 from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
@@ -52,6 +56,7 @@ from lms.djangoapps.instructor_task.tasks import (
     export_ora2_data,
     export_ora2_submission_files,
     generate_anonymous_ids_for_course,
+    student_enrollment_batch,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory, InstructorTaskScheduleFactory
 from lms.djangoapps.instructor_task.tests.test_base import (
@@ -59,8 +64,9 @@ from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
     InstructorTaskTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 LOG_PATH = 'lms.djangoapps.instructor_task.api'
 
@@ -530,3 +536,98 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
             process_scheduled_instructor_tasks()
 
         log.check_present((LOG_PATH, "ERROR", expected_messages[0]),)
+
+
+class SubmitStudentEnrollmentBatchTests(InstructorTaskCourseTestCase):
+    """
+    Tests for the submit_student_enrollment_batch API function.
+    """
+
+    def setUp(self):
+        self.request = HttpRequest()
+        self.course_key = CourseKey.from_string("course-v1:edX+DemoX+2025")
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_basic_submission(self, mock_submit_task):
+        """
+        Basic test with <= 5 identifiers.
+        Verifies: task_input, task_type, task_class, task_key.
+        """
+        identifiers = ["u1", "u2", "username3@example.com"]
+        action = "enroll"
+        mock_submit_task.return_value = "task-result"
+        expected_input = {
+            "action": action,
+            "identifiers": identifiers,
+            "auto_enroll": True,
+            "email_students": False,
+            "reason": "test",
+            "secure": True,
+        }
+
+        result = submit_student_enrollment_batch(
+            request=self.request,
+            course_key=self.course_key,
+            action=action,
+            identifiers=identifiers,
+            auto_enroll=True,
+            email_students=False,
+            reason="test",
+            secure=True,
+        )
+
+        self.assertEqual(result, "task-result")
+        key_stub = f"{self.course_key}_{action}_{'_'.join(identifiers)}"
+        expected_key = hashlib.md5(key_stub.encode("utf-8")).hexdigest()
+        mock_submit_task.assert_called_once_with(
+            self.request,
+            InstructorTaskTypes.STUDENT_ENROLLMENT_BATCH,
+            student_enrollment_batch,
+            self.course_key,
+            expected_input,
+            expected_key,
+        )
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_identifiers_are_truncated_to_5_for_key(self, mock_submit_task):
+        """
+        When identifiers > 5, only first 5 go into the task_key.
+        """
+        identifiers = ["u1", "u2", "u3", "u4", "u5", "u6", "u7"]
+
+        submit_student_enrollment_batch(
+            request=self.request,
+            course_key=self.course_key,
+            action="unenroll",
+            identifiers=identifiers,
+            auto_enroll=False,
+            email_students=True,
+            reason=None,
+            secure=False,
+        )
+
+        truncated = identifiers[:5]
+        key_stub = f"{self.course_key}_unenroll_{'_'.join(truncated)}"
+        expected_key = hashlib.md5(key_stub.encode("utf-8")).hexdigest()
+        call_args = mock_submit_task.call_args[0]
+        received_key = call_args[5]
+        self.assertEqual(received_key, expected_key)
+
+    @mock.patch("lms.djangoapps.instructor_task.api.submit_task")
+    def test_already_running_error_is_propagated(self, mock_submit_task):
+        """
+        submit_task may raise AlreadyRunningError; our function should not swallow it.
+        """
+        mock_submit_task.side_effect = AlreadyRunningError("Task already running")
+
+        with self.assertRaises(AlreadyRunningError):
+            submit_student_enrollment_batch(
+                request=self.request,
+                course_key=self.course_key,
+                action="enroll",
+                identifiers=["john"],
+                auto_enroll=False,
+                email_students=False,
+                reason=None,
+                secure=False,
+            )

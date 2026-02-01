@@ -1105,6 +1105,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                 {
                     "identifier": 'percivaloctavius@',
                     "invalidIdentifier": True,
+                    "success": False,
+                    "error_type": "invalid_identifier",
+                    "error_message": "Invalid email address",
                 }
             ]
         }
@@ -1126,6 +1129,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                 {
                     "identifier": 'percivaloctavius',
                     "invalidIdentifier": True,
+                    "success": False,
+                    "error_type": "invalid_identifier",
+                    "error_message": "Invalid email address",
                 }
             ]
         }
@@ -1157,7 +1163,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": UNENROLLED_TO_ENROLLED,
                 }
             ]
         }
@@ -1196,7 +1204,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": UNENROLLED_TO_ENROLLED,
                 }
             ]
         }
@@ -1242,7 +1252,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": UNENROLLED_TO_ENROLLED,
                 }
             ]
         }
@@ -1429,7 +1441,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": ENROLLED_TO_UNENROLLED,
                 }
             ]
         }
@@ -1472,7 +1486,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": ENROLLED_TO_UNENROLLED,
                 }
             ]
         }
@@ -1526,7 +1542,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": False,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": ALLOWEDTOENROLL_TO_ENROLLED,
                 }
             ]
         }
@@ -1726,7 +1744,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": True,
                         "allowed": True,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": ALLOWEDTOENROLL_TO_ENROLLED,
                 }
             ]
         }
@@ -1768,7 +1788,9 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                         "auto_enroll": False,
                         "user": False,
                         "allowed": False,
-                    }
+                    },
+                    "success": True,
+                    "state_transition": UNENROLLED_TO_UNENROLLED,
                 }
             ]
         }
@@ -1882,6 +1904,206 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert response.status_code == 200
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json['enrollment_status'] == 'Enrollment status for nonotever@example.com: never enrolled'
+
+    @patch("lms.djangoapps.instructor_task.api.submit_student_enrollment_batch")
+    def test_enroll_async_processing_success(self, mock_submit_task):
+        """Test async enrollment with async_processing=True"""
+        mock_task = Mock()
+        mock_task.task_id = "test-task-id-123"
+        mock_task.task_state = "QUEUED"
+        mock_submit_task.return_value = mock_task
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": self.notenrolled_student.email,
+                "action": "enroll",
+                "email_students": False,
+                "async_processing": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+
+        # Verify async response structure
+        self.assertEqual(res_json, {
+            "action": "enroll",
+            "auto_enroll": False,
+            "async_processing": True,
+            "task_id": "test-task-id-123",
+            "task_state": "QUEUED",
+            "message": "Async enroll task submitted for 1 students",
+            "total_students": 1
+        })
+
+        # Verify the task was called with correct parameters
+        self.assertTrue(mock_submit_task.called)
+        call_args = mock_submit_task.call_args
+        self.assertEqual(call_args[1]["course_key"], self.course.id)
+        self.assertEqual(call_args[1]["action"], "enroll")
+        self.assertEqual(call_args[1]["identifiers"], [self.notenrolled_student.email])
+
+    @patch("lms.djangoapps.instructor_task.api.submit_student_enrollment_batch")
+    def test_unenroll_async_processing_success(self, mock_submit_task):
+        """Test async unenrollment with async_processing=True"""
+        mock_task = Mock()
+        mock_task.task_id = "test-unenroll-task-456"
+        mock_task.task_state = "QUEUED"
+        mock_submit_task.return_value = mock_task
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": self.enrolled_student.email,
+                "action": "unenroll",
+                "email_students": True,
+                "async_processing": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+
+        self.assertEqual(res_json, {
+            "action": "unenroll",
+            "auto_enroll": False,
+            "async_processing": True,
+            "task_id": "test-unenroll-task-456",
+            "task_state": "QUEUED",
+            "message": "Async unenroll task submitted for 1 students",
+            "total_students": 1
+        })
+
+    @patch("lms.djangoapps.instructor_task.api.submit_student_enrollment_batch")
+    def test_async_enrollment_already_running_error(self, mock_submit_task):
+        """Test handling of AlreadyRunningError in async mode"""
+        mock_submit_task.side_effect = AlreadyRunningError("Task already running")
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url, {"identifiers": self.notenrolled_student.email, "action": "enroll", "async_processing": True}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+        self.assertTrue(res_json["async_processing"])
+        self.assertIn("error", res_json)
+        self.assertIn("already running", res_json["error"].lower())
+        self.assertEqual(res_json["action"], "enroll")
+
+    @patch("lms.djangoapps.instructor_task.api.submit_student_enrollment_batch")
+    def test_async_enrollment_multiple_identifiers(self, mock_submit_task):
+        """Test async enrollment with multiple student identifiers"""
+        student2 = UserFactory(username="Student2", email="student2@example.com")
+        student3 = UserFactory(username="Student3", email="student3@example.com")
+        mock_task = Mock()
+        mock_task.task_id = "test-bulk-task-789"
+        mock_task.task_state = "QUEUED"
+        mock_submit_task.return_value = mock_task
+        identifiers = f"{self.notenrolled_student.email},{student2.email},{student3.email}"
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": identifiers,
+                "action": "enroll",
+                "email_students": False,
+                "async_processing": True,
+                "auto_enroll": True,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(res_json["total_students"], 3)
+        self.assertTrue(res_json["auto_enroll"])
+
+        # Verify task was called with all identifiers
+        call_args = mock_submit_task.call_args
+        identifiers_list = call_args[1]["identifiers"]
+        self.assertEqual(len(identifiers_list), 3)
+        self.assertIn(self.notenrolled_student.email, identifiers_list)
+        self.assertIn(student2.email, identifiers_list)
+        self.assertIn(student3.email, identifiers_list)
+
+    def test_async_processing_default_false(self):
+        """Test that async_processing defaults to False for backward compatibility"""
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": self.notenrolled_student.email,
+                "action": "enroll",
+                "email_students": False,
+                # async_processing not provided
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+
+        # Should have sync response structure (with 'results')
+        self.assertIn("results", res_json)
+        self.assertNotIn("async_processing", res_json)
+        self.assertEqual(res_json["action"], "enroll")
+
+    @patch("lms.djangoapps.instructor_task.api.submit_student_enrollment_batch")
+    def test_async_enrollment_with_reason(self, mock_submit_task):
+        """Test async enrollment with reason field"""
+        mock_task = Mock()
+        mock_task.task_id = "test-task-with-reason"
+        mock_task.task_state = "QUEUED"
+        mock_submit_task.return_value = mock_task
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": self.notenrolled_student.email,
+                "action": "enroll",
+                "email_students": False,
+                "async_processing": True,
+                "reason": "Testing async enrollment",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+        self.assertTrue(res_json["async_processing"])
+
+        # Verify reason was passed to task
+        call_args = mock_submit_task.call_args
+        self.assertEqual(call_args[1]["reason"], "Testing async enrollment")
+
+    def test_sync_enrollment_still_works(self):
+        """Test that synchronous enrollment still works (async_processing=False)"""
+        url = reverse("students_update_enrollment", kwargs={"course_id": str(self.course.id)})
+
+        response = self.client.post(
+            url,
+            {
+                "identifiers": self.notenrolled_student.email,
+                "action": "enroll",
+                "email_students": False,
+                "async_processing": False,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content.decode("utf-8"))
+
+        # Should have sync response structure
+        self.assertIn("results", res_json)
+        self.assertEqual(len(res_json["results"]), 1)
+        self.assertTrue(res_json["results"][0]["success"])
+
+        # Verify actual enrollment happened
+        self.assertTrue(CourseEnrollment.is_enrolled(self.notenrolled_student, self.course.id))
 
 
 @ddt.ddt

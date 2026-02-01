@@ -1,0 +1,2 @@
+{% load i18n %}
+{% blocktrans %}Batch {{ action_name }} completed for {{ course_name }}{% endblocktrans %}

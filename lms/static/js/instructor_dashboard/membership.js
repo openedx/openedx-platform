@@ -608,7 +608,9 @@ such that the value can be defined later than this assignment (file load order).
             this.$reason_field = this.$container.find("textarea[name='reason-field']");
             this.$checkbox_autoenroll = this.$container.find("input[name='auto-enroll']");
             this.$checkbox_emailstudents = this.$container.find("input[name='email-students']");
+            this.$checkbox_asyncprocessing = this.$container.find("input[name='async-processing']");
             this.checkbox_emailstudents_initialstate = this.$checkbox_emailstudents.is(':checked');
+            this.checkbox_asyncprocessing_initialstate = this.$checkbox_asyncprocessing.is(':checked');
             this.$task_response = this.$container.find('.request-response');
             this.$request_response_error = this.$container.find('.request-response-error');
             this.$enrollment_button.click(function(event) {
@@ -624,6 +626,7 @@ such that the value can be defined later than this assignment (file load order).
                     identifiers: batchEnroll.$identifier_input.val(),
                     auto_enroll: batchEnroll.$checkbox_autoenroll.is(':checked'),
                     email_students: emailStudents,
+                    async_processing: batchEnroll.$checkbox_asyncprocessing.is(':checked'),
                     reason: batchEnroll.$reason_field.val()
                 };
                 return $.ajax({
@@ -645,6 +648,7 @@ such that the value can be defined later than this assignment (file load order).
             this.$identifier_input.val('');
             this.$reason_field.val('');
             this.$checkbox_emailstudents.attr('checked', this.checkbox_emailstudents_initialstate);
+            this.$checkbox_asyncprocessing.attr('checked', this.checkbox_asyncprocessing_initialstate);
             return this.$checkbox_autoenroll.attr('checked', true);
         };
 
@@ -653,6 +657,43 @@ such that the value can be defined later than this assignment (file load order).
             this.$task_response.empty();
             this.$request_response_error.empty();
             return this.$request_response_error.text(msg);
+        };
+
+        batchEnrollment.prototype.show_async_processing_message = function (dataFromServer) {
+            const { action: rawAction = 'process' } = dataFromServer;
+
+            const actionsMap = {
+                enroll: {
+                    text: gettext('enrollment'),
+                    title: gettext('Enrollment Request Submitted')
+                },
+                unenroll: {
+                    text: gettext('unenrollment'),
+                    title: gettext('Unenrollment Request Submitted')
+                },
+                process: {
+                    text: gettext('processing'),
+                    title: gettext('Request Submitted')
+                }
+            };
+
+            const { text: actionText, title } = actionsMap[rawAction] || actionsMap.process;
+
+            const message = interpolate(
+                gettext(
+                    'Your %(action)s request is being processed in the background. ' +
+                    'This may take several minutes to complete. You will receive an email ' +
+                    'notification when the process is finished.'
+                ),
+                { action: actionText },
+                true
+            );
+
+            const $taskResSection = $('<div/>', { class: 'request-res-section' })
+                .append($('<h3/>', { text: title }))
+                .append($('<ul/>').append($('<li/>', { text: message })));
+
+            return this.$task_response.append($taskResSection);
         };
 
         batchEnrollment.prototype.display_response = function(dataFromServer) {
@@ -671,6 +712,9 @@ such that the value can be defined later than this assignment (file load order).
             notenrolled = [];
             notunenrolled = [];
             ref = dataFromServer.results;
+            if (!ref) {
+                return this.show_async_processing_message(dataFromServer);
+            }
             for (i = 0, len = ref.length; i < len; i++) {
                 studentResults = ref[i];
                 if (studentResults.invalidIdentifier) {

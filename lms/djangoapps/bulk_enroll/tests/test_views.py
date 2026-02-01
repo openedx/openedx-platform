@@ -15,6 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
 
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
+    ENROLLED_TO_ENROLLED,
     ENROLLED_TO_UNENROLLED,
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
@@ -148,6 +149,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                         {
                             "identifier": 'percivaloctavius@',
                             "invalidIdentifier": True,
+                            "success": False,
+                            "error_type": "invalid_identifier",
+                            "error_message": "Invalid email address",
                         }
                     ]
                 }
@@ -180,6 +184,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                         {
                             "identifier": 'percivaloctavius',
                             "invalidIdentifier": True,
+                            "success": False,
+                            "error_type": "invalid_identifier",
+                            "error_message": "Invalid email address",
                         }
                     ]
                 }
@@ -222,7 +229,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "auto_enroll": False,
                                 "user": True,
                                 "allowed": False,
-                            }
+                            },
+                            "success": True,
+                            "state_transition": UNENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -272,7 +281,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "auto_enroll": False,
                                 "user": True,
                                 "allowed": False,
-                            }
+                            },
+                            "success": True,
+                            "state_transition": UNENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -326,7 +337,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "auto_enroll": False,
                                 "user": True,
                                 "allowed": False,
-                            }
+                            },
+                            "success": True,
+                            "state_transition": ENROLLED_TO_UNENROLLED,
                         }
                     ]
                 }
@@ -430,7 +443,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "user": True,
                                 "allowed": False,
                                 "cohort": 'cohort1',
-                            }
+                            },
+                            "success": True,
+                            "state_transition": UNENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -481,7 +496,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "user": True,
                                 "allowed": False,
                                 "cohort": 'cohort1',
-                            }
+                            },
+                            "success": True,
+                            "state_transition": UNENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -529,7 +546,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "user": True,
                                 "allowed": False,
                                 "cohort": 'cohort2',
-                            }
+                            },
+                            "success": True,
+                            "state_transition": ENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -576,7 +595,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "user": True,
                                 "allowed": False,
                                 "cohort": 'cohort1',
-                            }
+                            },
+                            "success": True,
+                            "state_transition": UNENROLLED_TO_ENROLLED,
                         }
                     ]
                 }
@@ -625,7 +646,9 @@ class BulkEnrollmentTest(ModuleStoreTestCase, LoginEnrollmentTestCase, APITestCa
                                 "user": True,
                                 "allowed": False,
                                 "cohort": 'cohort1',
-                            }
+                            },
+                            "success": True,
+                            "state_transition": ENROLLED_TO_ENROLLED,
                         }
                     ]
                 }

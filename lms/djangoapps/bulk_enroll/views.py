@@ -90,7 +90,7 @@ class BulkEnrollView(APIView):
                 # Internal request to DRF view
                 view = StudentsUpdateEnrollmentView()
                 response_content = view._process_student_enrollment(  # pylint: disable=protected-access
-                    user=request.user,
+                    request=request,
                     course_id=course_id,
                     data=request.data,
                     secure=request.is_secure()
