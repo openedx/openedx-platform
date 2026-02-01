@@ -21,6 +21,7 @@ from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NU
 from xmodule.modulestore.xml_importer import StaticContentImporter, _update_block_location
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
+from xmodule.modulestore.xml_importer import _process_sequential_prerequisites
 
 OPEN_BUILTIN = 'builtins.open'
 
@@ -257,3 +258,98 @@ class StaticContentImporterTest(unittest.TestCase):  # lint-amnesty, pylint: dis
             )
             mock_file.assert_called_with(full_file_path, 'rb')
             self.mocked_content_store.generate_thumbnail.assert_called_once()
+
+
+class TestSequentialPrerequisitesImport(unittest.TestCase):
+    """
+    Verifies sequential blocks with prerequisite attributes in OLX/XML are processed correctly
+    by _process_sequential_prerequisites function during import.
+    """
+
+    def setUp(self):
+        """
+        Set up test course and sequential.
+        """
+        self.course_key = CourseLocator('test_org', 'test_course', 'test_run')
+        self.sequential_location = self.course_key.make_usage_key('sequential', 'gated_sequential')
+
+        # Mock sequential block
+        self.mock_sequential = mock.Mock()
+        self.mock_sequential.location = self.sequential_location
+
+    def test_gating_api_calls(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes valid prerequisite data
+        and calls gating_api functions add_prerequisite and set_required_content with valid parameters
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': '80',
+            'min_completion': '90'
+        }
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            _process_sequential_prerequisites(self.mock_sequential)
+
+            mock_gating_api.add_prerequisite.assert_called_once_with(
+                self.course_key,
+                self.course_key.make_usage_key('sequential', 'required_sequential')
+            )
+
+            mock_gating_api.set_required_content.assert_called_once_with(
+                self.course_key,
+                self.sequential_location,
+                self.course_key.make_usage_key('sequential', 'required_sequential'),
+                80,
+                90
+            )
+
+    def test_gating_api_calls_invalid_min_score(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes invalid min_score prerequisite data
+        and does not call gating_api functions add_prerequisite and set_required_content with invalid min_score
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': None,
+            'min_completion': '90'
+        }
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            _process_sequential_prerequisites(self.mock_sequential)
+
+            mock_gating_api.add_prerequisite.assert_not_called()
+            mock_gating_api.set_required_content.assert_not_called()
+
+    def test_gating_api_calls_invalid_min_completion(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes invalid min_completion prerequisite data
+        and does not call gating_api functions add_prerequisite and set_required_content with invalid min_completion
+        """
+        self.mock_sequential.xml_attributes = {
+            'required_content': 'required_sequential',
+            'min_score': '80',
+            'min_completion': 'NotANumber'
+        }
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            _process_sequential_prerequisites(self.mock_sequential)
+
+            mock_gating_api.add_prerequisite.assert_not_called()
+            mock_gating_api.set_required_content.assert_not_called()
+
+    def test_gating_api_calls_missing_required_content(self):
+        """
+        Verify that _process_sequential_prerequisites correctly processes missing required_content prerequisite data
+        and does not call gating_api functions add_prerequisite and set_required_content with missing required_content
+        """
+        self.mock_sequential.xml_attributes = {
+            'min_score': '80',
+            'min_completion': 'NotANumber'
+        }
+
+        with mock.patch('xmodule.modulestore.xml_importer.gating_api') as mock_gating_api:
+            _process_sequential_prerequisites(self.mock_sequential)
+
+            mock_gating_api.add_prerequisite.assert_not_called()
+            mock_gating_api.set_required_content.assert_not_called()
