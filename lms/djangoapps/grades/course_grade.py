@@ -242,7 +242,7 @@ class CourseGradeBase:
         chapter_subsection_grades = self._get_subsection_grades(course_structure, chapter.location)
         return {
             'display_name': block_metadata_utils.display_name_with_default(chapter),
-            'url_name': block_metadata_utils.url_name_for_block(chapter),
+            'url_name': chapter.usage_key.block_id,
             'sections': chapter_subsection_grades,
         }
 

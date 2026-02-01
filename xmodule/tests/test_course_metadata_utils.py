@@ -12,7 +12,6 @@ import pytest
 from xmodule.block_metadata_utils import (
     display_name_with_default,
     display_name_with_default_escaped,
-    url_name_for_block
 )
 from xmodule.course_metadata_utils import (
     DEFAULT_START_DATE,
@@ -124,9 +123,6 @@ class CourseMetadataUtilsTestCase(TestCase):
                     (self.html_course.id, '~'),
                     "course_MNXXK4TTMUWXMMJ2KVXGS5TFOJZWS5DZLAVUGUZNGIYDGK2ZGIYDSNQ~"
                 ),
-            ]),
-            FunctionTest(url_name_for_block, [
-                TestScenario((self.html_course,), self.html_course.location.block_id),
             ]),
             FunctionTest(display_name_with_default_escaped, [
                 # Test course with a display name that contains characters that need escaping.
