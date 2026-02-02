@@ -80,7 +80,7 @@ class DatesCourseApp(CourseApp):
         """
         Dates app is available when explicitly enabled via settings.
         """
-        return settings.FEATURES.get("ENABLE_DATES_COURSE_APP", False)
+        return settings.ENABLE_DATES_COURSE_APP
 
     @classmethod
     def is_enabled(cls, course_key: CourseKey) -> bool:
