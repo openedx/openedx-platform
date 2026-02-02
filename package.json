@@ -105,7 +105,7 @@
     "jasmine-core": "2.6.4",
     "jasmine-jquery": "git+https://git@github.com/velesin/jasmine-jquery.git#ebad463d592d3fea00c69f26ea18a930e09c7b58",
     "jest": "^29",
-    "karma": "^0.13",
+    "karma": "^6.0.0",
     "karma-chrome-launcher": "^3",
     "karma-coverage": "^2",
     "karma-firefox-launcher": "^2",
