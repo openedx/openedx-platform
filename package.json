@@ -109,7 +109,7 @@
     "karma-chrome-launcher": "^3",
     "karma-coverage": "^2",
     "karma-firefox-launcher": "^2",
-    "karma-jasmine": "^0.3",
+    "karma-jasmine": "^1",
     "karma-jasmine-html-reporter": "^0.2",
     "karma-junit-reporter": "^2",
     "karma-requirejs": "^1",
