@@ -2,6 +2,7 @@
 
 import django.db.models.deletion
 from django.db import migrations, models
+from django.db.migrations.operations.special import SeparateDatabaseAndState
 
 
 class Migration(migrations.Migration):
@@ -12,14 +13,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='componentlink',
-            name='upstream_block',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.component'),
-        ),
-        migrations.AlterField(
-            model_name='containerlink',
-            name='upstream_container',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.container'),
+        SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='componentlink',
+                    name='upstream_block',
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.component'),
+                ),
+                migrations.AlterField(
+                    model_name='containerlink',
+                    name='upstream_container',
+                    field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='openedx_content.container'),
+                ),
+            ]
         ),
     ]

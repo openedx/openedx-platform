@@ -2,6 +2,7 @@
 
 import django.db.models.deletion
 from django.db import migrations, models
+from django.db.migrations.operations.special import SeparateDatabaseAndState
 
 
 class Migration(migrations.Migration):
@@ -12,9 +13,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='contentlibrary',
-            name='learning_package',
-            field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='openedx_content.learningpackage'),
+        SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='contentlibrary',
+                    name='learning_package',
+                    field=models.OneToOneField(default=None, null=True, on_delete=django.db.models.deletion.RESTRICT, to='openedx_content.learningpackage'),
+                ),
+            ]
         ),
     ]

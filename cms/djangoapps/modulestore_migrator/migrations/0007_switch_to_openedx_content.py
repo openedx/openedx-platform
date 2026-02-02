@@ -2,6 +2,7 @@
 
 import django.db.models.deletion
 from django.db import migrations, models
+from django.db.migrations.operations.special import SeparateDatabaseAndState
 
 
 class Migration(migrations.Migration):
@@ -12,29 +13,34 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='modulestoreblockmigration',
-            name='change_log_record',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelogrecord'),
-        ),
-        migrations.AlterField(
-            model_name='modulestoreblockmigration',
-            name='target',
-            field=models.ForeignKey(blank=True, help_text='The target entity of this block migration, set to null if it fails to migrate', null=True, on_delete=django.db.models.deletion.CASCADE, to='openedx_content.publishableentity'),
-        ),
-        migrations.AlterField(
-            model_name='modulestoremigration',
-            name='change_log',
-            field=models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelog'),
-        ),
-        migrations.AlterField(
-            model_name='modulestoremigration',
-            name='target',
-            field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='openedx_content.learningpackage'),
-        ),
-        migrations.AlterField(
-            model_name='modulestoremigration',
-            name='target_collection',
-            field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.collection'),
+        SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name='modulestoreblockmigration',
+                    name='change_log_record',
+                    field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelogrecord'),
+                ),
+                migrations.AlterField(
+                    model_name='modulestoreblockmigration',
+                    name='target',
+                    field=models.ForeignKey(blank=True, help_text='The target entity of this block migration, set to null if it fails to migrate', null=True, on_delete=django.db.models.deletion.CASCADE, to='openedx_content.publishableentity'),
+                ),
+                migrations.AlterField(
+                    model_name='modulestoremigration',
+                    name='change_log',
+                    field=models.ForeignKey(help_text='Changelog entry in the target learning package which records this migration', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.draftchangelog'),
+                ),
+                migrations.AlterField(
+                    model_name='modulestoremigration',
+                    name='target',
+                    field=models.ForeignKey(help_text='Content will be imported into this library', on_delete=django.db.models.deletion.CASCADE, to='openedx_content.learningpackage'),
+                ),
+                migrations.AlterField(
+                    model_name='modulestoremigration',
+                    name='target_collection',
+                    field=models.ForeignKey(blank=True, help_text='Optional - Collection (within the target library) into which imported content will be grouped', null=True, on_delete=django.db.models.deletion.SET_NULL, to='openedx_content.collection'),
+                ),
+            ]
         ),
     ]
