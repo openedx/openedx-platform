@@ -2020,15 +2020,8 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    # The openedx_learning apps require contentstore, modulestore_migrator,
-    # content.search, and content_staging to be in INSTALLED_APPS. If they are
-    # not here and LMS migrations are run before CMS migrations, it will cause
-    # errors (certain openedx_learning apps )
+    # Learning Core apps that power libraries
     *openedx_learning_apps_to_install(),
-#    'cms.djangoapps.contentstore',
-#    'cms.djangoapps.modulestore_migrator',
-#    'openedx.core.djangoapps.content.search',
-#   'openedx.core.djangoapps.content_staging',
 ]
 
 # Add LMS specific optional apps
