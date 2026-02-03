@@ -15,8 +15,7 @@ from zoneinfo import ZoneInfo
 from openedx.core.djangoapps.notifications.audience_filters import NotificationFilter
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preference,
-    get_notification_content
+    get_notification_content, get_default_values_of_preferences
 )
 
 from openedx.core.djangoapps.notifications.email.tasks import send_immediate_cadence_email
@@ -120,7 +119,7 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
     grouping_enabled = group_by_id and grouping_function is not None
     generated_notification = None
     sender_id = context.pop('sender_id', None)
-    default_web_config = get_default_values_of_preference(app_name, notification_type).get('web', False)
+    default_web_config = get_default_values_of_preferences().get(notification_type, {}).get('web', False)
     generated_notification_audience = []
     email_notification_mapping = {}
     push_notification_audience = []
