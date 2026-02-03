@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from common.djangoapps.student.models import CourseAccessRole
 from openedx.core.djangoapps.django_comment_common.models import Role
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
+from openedx.core.djangoapps.notifications.config.waffle import DISABLE_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.models import create_notification_preference, NotificationPreference
 from openedx.core.lib.cache_utils import request_cached
 
@@ -14,7 +14,7 @@ def get_show_notifications_tray():
     """
     Returns whether notifications tray is enabled via waffle flag
     """
-    return ENABLE_NOTIFICATIONS.is_enabled()
+    return not DISABLE_NOTIFICATIONS.is_enabled()
 
 
 def get_list_in_batches(input_list, batch_size):

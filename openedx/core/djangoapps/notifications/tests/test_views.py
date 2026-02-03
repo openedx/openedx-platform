@@ -10,7 +10,6 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_flag
 from zoneinfo import ZoneInfo
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
@@ -25,7 +24,6 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_MODERATOR
 )
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email.utils import encrypt_string
 from openedx.core.djangoapps.notifications.models import (
     Notification,
@@ -283,7 +281,6 @@ class NotificationCountViewSetTestCase(ModuleStoreTestCase):
         Notification.objects.create(user=self.user, app_name='App Name 3', notification_type='Type C')
         Notification.objects.create(user=self.user, app_name='App Name 4', notification_type='Type D', web=False)
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.unpack
     def test_get_unseen_notifications_count_with_show_notifications_tray(self):
         """
@@ -754,7 +751,7 @@ class TestNotificationPreferencesView(ModuleStoreTestCase):
         self.assertIn('data', response.data)
         data = {
             "status": "success",
-            "show_preferences": False,
+            "show_preferences": True,
             "message": "Notification preferences retrieved successfully.",
             "data": {
                 "discussion": {
@@ -1113,7 +1110,7 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         self.assertIn('data', response.data)
         data = {
             "status": "success",
-            "show_preferences": False,
+            "show_preferences": True,
             "message": "Notification preferences retrieved successfully.",
             "data": {
                 "discussion": {

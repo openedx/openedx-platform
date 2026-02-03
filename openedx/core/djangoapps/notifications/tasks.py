@@ -21,8 +21,7 @@ from openedx.core.djangoapps.notifications.base_notification import (
 
 from openedx.core.djangoapps.notifications.email.tasks import send_immediate_cadence_email
 from openedx.core.djangoapps.notifications.config.waffle import (
-    ENABLE_NOTIFICATIONS,
-    ENABLE_PUSH_NOTIFICATIONS
+    ENABLE_PUSH_NOTIFICATIONS, DISABLE_NOTIFICATIONS
 )
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_generated_event
@@ -105,11 +104,10 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
     """
     Send notifications to the users.
     """
-    # pylint: disable=too-many-statements
-    course_key = CourseKey.from_string(course_key)
-    if not ENABLE_NOTIFICATIONS.is_enabled():
+    if DISABLE_NOTIFICATIONS.is_enabled():
         return
 
+    course_key = CourseKey.from_string(course_key)
     if not is_notification_valid(notification_type, context):
         raise ValidationError(f"Notification is not valid {app_name} {notification_type} {context}")
 
