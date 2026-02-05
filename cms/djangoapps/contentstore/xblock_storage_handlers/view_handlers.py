@@ -1202,7 +1202,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "edited_on": get_default_time_display(xblock.subtree_edited_on)
                 if xblock.subtree_edited_on
                 else None,
-                "edited_on_raw": xblock.subtree_edited_on
+                "edited_on_raw": str(xblock.subtree_edited_on)
                 if xblock.subtree_edited_on
                 else None,
                 "published": published,

@@ -14,7 +14,6 @@ INTERNAL ASSUMPIONS that should not be exposed through this module's public
 Python interface.
 """
 from __future__ import annotations
-from sympy.physics.units import pa
 
 import logging
 import typing as t

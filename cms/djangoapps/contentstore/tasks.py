@@ -35,7 +35,7 @@ from olxcleaner.exceptions import ErrorLevel
 from olxcleaner.reporting import report_error_summary, report_errors
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocator, BlockUsageLocator
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseData
 from openedx_events.content_authoring.signals import COURSE_RERUN_COMPLETED
 from organizations.api import add_organization_course, ensure_organization
