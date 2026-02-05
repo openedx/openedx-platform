@@ -70,7 +70,7 @@
             pageY = typeof pageY !== 'undefined' ? pageY : element.offset().top + element.height() / 2;
             var tooltipText = $(element).attr('data-tooltip');
             this.tooltip
-                .text(tooltipText)
+                .html(tooltipText)
                 .css(this.getCoords(pageX, pageY));
         },
 

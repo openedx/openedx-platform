@@ -123,7 +123,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                                 <span class="sr-only">${_("The referenced library or library object is not available")}</span>
                             </div>
                         % elif upstream_info.ready_to_sync:
-                            <button class="library-info-icon two-icons library-sync-button sync-state" data-tooltip="${Text(_("The linked {upstream_name} has updates available")).format(upstream_name=upstream_info.upstream_name)}">
+                            <button class="library-info-icon two-icons library-sync-button sync-state" data-tooltip="${Text(_("The linked {upstream_name} has updates available")).format(upstream_name='<strong>' + upstream_info.upstream_name + '</strong>')}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
@@ -147,7 +147,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                                 <span class="sr-only">${_("This library reference has course overrides applied")}</span>
                             </div>
                         % else:
-                            <div class="library-info-icon" data-tooltip="${Text(_("This is referenced via {upstream_name}")).format(upstream_name=upstream_info.upstream_name)}">
+                            <div class="library-info-icon" data-tooltip="${Text(_("This is referenced via {upstream_name}")).format(upstream_name='<strong>' + upstream_info.upstream_name + '</strong>')}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
