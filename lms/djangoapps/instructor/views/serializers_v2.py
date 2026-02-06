@@ -460,6 +460,7 @@ class ORASerializer(serializers.Serializer):
     waiting = serializers.IntegerField()
     staff = serializers.IntegerField()
     final_grade_received = serializers.IntegerField(source="done")
+    staff_ora_grading_url = serializers.URLField(allow_null=True)
 
 
 class ORASummarySerializer(serializers.Serializer):

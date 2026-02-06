@@ -256,7 +256,7 @@ dill==0.4.1
     # via pylint
 distlib==0.4.0
     # via virtualenv
-django==5.2.10
+django==5.2.11
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -581,7 +581,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-learning
-edx-enterprise==6.6.2
+edx-enterprise==6.6.3
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -677,7 +677,7 @@ enmerkar==0.7.1
     #   enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via -r requirements/edx/base.txt
-enterprise-integrated-channels==0.1.29
+enterprise-integrated-channels==0.1.38
     # via -r requirements/edx/base.txt
 event-tracking==3.3.0
     # via
@@ -1063,7 +1063,7 @@ openedx-filters==2.1.0
     #   ora2
 openedx-forum==0.4.0
     # via -r requirements/edx/base.txt
-openedx-learning==0.30.2
+openedx-learning==0.31.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1492,6 +1492,7 @@ snowflake-connector-python==4.2.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
+    #   enterprise-integrated-channels
 social-auth-app-django==5.4.1
     # via
     #   -c requirements/constraints.txt

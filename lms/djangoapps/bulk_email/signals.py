@@ -7,6 +7,7 @@ from django.dispatch import receiver
 from eventtracking import tracker
 
 from common.djangoapps.student.models import CourseEnrollment
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.user_api.accounts.signals import USER_RETIRE_MAILINGS
 from edx_ace.signals import ACE_MESSAGE_SENT
 
@@ -27,7 +28,14 @@ def force_optout_all(sender, **kwargs):  # lint-amnesty, pylint: disable=unused-
         raise TypeError('Expected a User type, but received None.')
 
     for enrollment in CourseEnrollment.objects.filter(user=user):
-        Optout.objects.get_or_create(user=user, course_id=enrollment.course.id)
+        try:
+            Optout.objects.get_or_create(user=user, course_id=enrollment.course.id)
+        except CourseOverview.DoesNotExist:
+            log.warning(
+                f"CourseOverview not found for enrollment {enrollment.id} (user: {user.id}), "
+                f"skipping optout creation. This may mean the course was deleted."
+            )
+            continue
 
 
 @receiver(ACE_MESSAGE_SENT)

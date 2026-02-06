@@ -1,6 +1,8 @@
 """Utilities for retrieving Open Response Assessments (ORAs) data for instructor dashboards."""
 
 from django.utils.translation import gettext as _
+from django.conf import settings
+
 from openassessment.data import OraAggregateData
 
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -37,6 +39,7 @@ def get_open_response_assessment_list(course):
 
     parents_cache = {}
     ora_items = []
+    ora_grading_base_url = getattr(settings, 'ORA_GRADING_MICROFRONTEND_URL', None)
 
     for block in openassessment_blocks:
         block_id = str(block.location)
@@ -54,10 +57,28 @@ def get_open_response_assessment_list(course):
             else block.display_name
         )
 
+        staff_ora_grading_url = None
+
+        has_staff_assessment = 'staff-assessment' in block.assessment_steps
+        is_team_enabled = block.teams_enabled
+        if ora_grading_base_url and has_staff_assessment and not is_team_enabled:
+            # Always generate a URL that points to the ORA Grading Microfrontend (MFE).
+            #
+            # During the migration to the ORA microfrontend,
+            # only provide the grading URL for non-team assignments with staff assessment.
+            # This logic was based on the original implementation in instructor_dashboard:
+            #   - lms/djangoapps/instructor/views/instructor_dashboard.py
+            #     (_section_open_response_assessment)
+            #   - edx-ora2:
+            #     https://github.com/openedx/edx-ora2/blob/801fbd14ebb059ab8c5ee8d5a39c260c7f87ab81/
+            #     openassessment/xblock/static/js/src/lms/oa_course_items_listing.js#L73
+            staff_ora_grading_url = f"{ora_grading_base_url}/{block_id}"
+
         ora_assessment_data = {
             'id': block_id,
             'name': assessment_name,
             'parent_name': parent_block.display_name,
+            'staff_ora_grading_url': staff_ora_grading_url,
             **DEFAULT_ORA_METRICS,
         }
 
