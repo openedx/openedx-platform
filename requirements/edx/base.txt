@@ -708,8 +708,6 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-loremipsum==1.0.5
-    # via ora2
 lti-consumer-xblock==9.14.3
     # via -r requirements/edx/kernel.in
 lxml[html-clean]==5.3.2
@@ -840,7 +838,7 @@ openedx-learning==0.31.0
     #   -r requirements/edx/kernel.in
 optimizely-sdk==5.4.0
     # via -r requirements/edx/bundled.in
-ora2==6.17.1
+ora2==6.17.2
     # via -r requirements/edx/bundled.in
 packaging==25.0
     # via
