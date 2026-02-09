@@ -1208,11 +1208,6 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-loremipsum==1.0.5
-    # via
-    #   -r requirements/edx/doc.txt
-    #   -r requirements/edx/testing.txt
-    #   ora2
 lti-consumer-xblock==9.14.3
     # via
     #   -r requirements/edx/doc.txt
@@ -1429,7 +1424,7 @@ optimizely-sdk==5.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-ora2==6.17.1
+ora2==6.17.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
