@@ -83,33 +83,6 @@ COURSEWARE_MICROFRONTEND_NAVIGATION_SIDEBAR_BLOCKS_DISABLE_CACHING = CourseWaffl
     f'{WAFFLE_FLAG_NAMESPACE}.disable_navigation_sidebar_blocks_caching', __name__
 )
 
-# .. toggle_name: courseware.enable_navigation_sidebar
-# .. toggle_implementation: WaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Enable navigation sidebar on Learning MFE
-# .. toggle_use_cases: opt_out, open_edx
-# .. toggle_creation_date: 2024-03-07
-# .. toggle_target_removal_date: None
-# .. toggle_tickets: FC-0056
-COURSEWARE_MICROFRONTEND_ENABLE_NAVIGATION_SIDEBAR = CourseWaffleFlag(
-    f'{WAFFLE_FLAG_NAMESPACE}.enable_navigation_sidebar', __name__
-)
-
-# .. toggle_name: courseware.always_open_auxiliary_sidebar
-# .. toggle_implementation: WaffleFlag
-# .. toggle_default: True
-# .. toggle_description: Waffle flag that determines whether the auxiliary sidebar,
-#   such as discussion or notification, should automatically expand
-#   on each course unit page within the Learning MFE, without preserving
-#   the previous state of the sidebar.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2024-04-28
-# .. toggle_target_removal_date: 2024-07-28
-# .. toggle_tickets: FC-0056
-COURSEWARE_MICROFRONTEND_ALWAYS_OPEN_AUXILIARY_SIDEBAR = CourseWaffleFlag(
-    f'{WAFFLE_FLAG_NAMESPACE}.always_open_auxiliary_sidebar', __name__
-)
-
 # .. toggle_name: courseware.mfe_progress_milestones_streak_discount_enabled
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False

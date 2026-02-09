@@ -960,6 +960,72 @@ class ORAViewTest(ORABaseViewsTest):
         assert ora_data['waiting'] == 0
         assert ora_data['staff'] == 0
         assert ora_data['final_grade_received'] == 0
+        assert ora_data['staff_ora_grading_url'] is None
+
+    @patch("lms.djangoapps.instructor.ora.modulestore")
+    def test_get_assessment_list_includes_staff_ora_grading_url_for_non_team_assignment(
+        self, mock_modulestore
+    ):
+        """
+        Retrieve ORA assessments and ensure staff grading URL is included
+        for non-team assignments with staff assessment enabled.
+        """
+        mock_store = Mock()
+
+        mock_assessment_block = Mock(
+            location=self.ora_block.location,
+            parent=Mock(),
+            teams_enabled=False,
+            assessment_steps=["staff-assessment"],
+        )
+
+        mock_store.get_items.return_value = [mock_assessment_block]
+        mock_modulestore.return_value = mock_store
+
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+
+        results = response.data["results"]
+        assert len(results) == 1
+
+        ora_data = results[0]
+
+        assert "staff_ora_grading_url" in ora_data
+        assert ora_data["staff_ora_grading_url"]
+
+    @patch("lms.djangoapps.instructor.ora.modulestore")
+    def test_get_assessment_list_includes_staff_ora_grading_url_for_team_assignment(
+        self, mock_modulestore
+    ):
+        """
+        Retrieve ORA assessments and ensure staff grading URL is included
+        for team assignments with staff assessment enabled.
+        """
+        mock_store = Mock()
+
+        mock_assessment_block = Mock(
+            location=self.ora_block.location,
+            parent=Mock(),
+            teams_enabled=True,
+            display_name="Team Assignment",
+            assessment_steps=["staff-assessment"],
+        )
+
+        mock_store.get_items.return_value = [mock_assessment_block]
+        mock_modulestore.return_value = mock_store
+
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+
+        results = response.data["results"]
+        assert len(results) == 1
+
+        ora_data = results[0]
+
+        assert "staff_ora_grading_url" in ora_data
+        assert ora_data["staff_ora_grading_url"] is None
 
     def test_invalid_course_id(self):
         """Test error handling for invalid course ID."""
