@@ -1202,6 +1202,9 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "edited_on": get_default_time_display(xblock.subtree_edited_on)
                 if xblock.subtree_edited_on
                 else None,
+                "edited_on_raw": str(xblock.subtree_edited_on)
+                if xblock.subtree_edited_on
+                else None,
                 "published": published,
                 "published_on": published_on,
                 "studio_url": xblock_studio_url(xblock, parent_xblock),
@@ -1331,7 +1334,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
             # Disable adding or removing children component if xblock is imported from library
             xblock_actions["childAddable"] = False
             # Enable unlinking only for top level imported components
-            xblock_actions["unlinkable"] = not upstream_info["has_top_level_parent"]
+            xblock_actions["unlinkable"] = not upstream_info["top_level_parent_key"]
 
         if is_xblock_unit:
             # if xblock is a Unit we add the discussion_enabled option

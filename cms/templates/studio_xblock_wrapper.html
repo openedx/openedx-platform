@@ -1,7 +1,7 @@
 <%page expression_filter="h"/>
 <%!
 from django.utils.translation import gettext as _
-from openedx.core.djangolib.markup import Text
+from openedx.core.djangolib.markup import HTML, Text
 from cms.djangoapps.contentstore.helpers import xblock_studio_url
 from cms.djangoapps.contentstore.utils import is_visible_to_specific_partition_groups, get_editor_page_base_url, determine_label
 from lms.lib.utils import is_unit
@@ -25,7 +25,7 @@ has_not_configured_message = messages.get('summary',{}).get('type', None) == 'no
 block_is_unit = is_unit(xblock)
 
 upstream_info = UpstreamLink.try_get_for_block(xblock, log_error=False)
-can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_parent
+can_unlink = upstream_info.upstream_ref and not upstream_info.top_level_parent_key
 %>
 
 <%namespace name='static' file='static_content.html'/>
@@ -111,7 +111,7 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                 % else:
                     % if upstream_info.upstream_ref:
                         % if upstream_info.error_message:
-                            <div class="library-info-icon two-icons" data-tooltip="${_("The referenced library or library object is not available.")}">
+                            <div class="library-info-icon two-icons" data-tooltip="${_("The referenced library or library object is not available")}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
@@ -120,10 +120,10 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="m770-302-60-62q40-11 65-42.5t25-73.5q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 57-29.5 105T770-302ZM634-440l-80-80h86v80h-6ZM792-56 56-792l56-56 736 736-56 56ZM440-280H280q-83 0-141.5-58.5T80-480q0-69 42-123t108-71l74 74h-24q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h65l79 80H320Z"/>
                                 </svg>
-                                <span class="sr-only">${_("The referenced library or library object is not available.")}</span>
+                                <span class="sr-only">${_("The referenced library or library object is not available")}</span>
                             </div>
                         % elif upstream_info.ready_to_sync:
-                            <button class="library-info-icon two-icons library-sync-button sync-state" data-tooltip="${Text(_("The linked {upstream_name} has updates available.")).format(upstream_name=upstream_info.upstream_name)}">
+                            <button class="library-info-icon two-icons library-sync-button sync-state" data-tooltip="${Text(_("The linked {upstream_name} has updates available")).format(upstream_name=HTML('<strong>{name}</strong>').format(name=upstream_info.upstream_name))}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
@@ -132,10 +132,10 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M160-160v-80h110l-16-14q-52-46-73-105t-21-119q0-111 66.5-197.5T400-790v84q-72 26-116 88.5T240-478q0 45 17 87.5t53 78.5l10 10v-98h80v240H160Zm400-10v-84q72-26 116-88.5T720-482q0-45-17-87.5T650-648l-10-10v98h-80v-240h240v80H690l16 14q49 49 71.5 106.5T800-482q0 111-66.5 197.5T560-170Z"/>
                                 </svg>
-                                <span class="sr-only">${_("The linked library object has updates available.")}</span>
+                                <span class="sr-only">${_("The linked library object has updates available")}</span>
                             </button>
                         % elif len(upstream_info.downstream_customized) > 0:
-                            <div class="library-info-icon two-icons" data-tooltip="${_("This library reference has course overrides applied.")}">
+                            <div class="library-info-icon two-icons" data-tooltip="${_("This library reference has course overrides applied")}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
@@ -144,15 +144,15 @@ can_unlink = upstream_info.upstream_ref and not upstream_info.has_top_level_pare
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M440-160v-304L240-664v104h-80v-240h240v80H296l224 224v336h-80Zm154-376-58-58 128-126H560v-80h240v240h-80v-104L594-536Z"/>
                                 </svg>
-                                <span class="sr-only">${_("This library reference has course overrides applied.")}</span>
+                                <span class="sr-only">${_("This library reference has course overrides applied")}</span>
                             </div>
                         % else:
-                            <div class="library-info-icon" data-tooltip="${Text(_("This is referenced via {upstream_name}")).format(upstream_name=upstream_info.upstream_name)}">
+                            <div class="library-info-icon" data-tooltip="${Text(_("This is referenced via {upstream_name}")).format(upstream_name=HTML('<strong>{name}</strong>').format(name=upstream_info.upstream_name))}">
                                 <!-- "library" icon from https://fonts.google.com/icons?selected=Material+Symbols+Outlined:newsstand:FILL@0;wght@400;GRAD@0;opsz@24&icon.size=24 -->
                                 <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align: middle;">
                                     <path d="M80-160v-80h800v80H80Zm80-160v-320h80v320h-80Zm160 0v-480h80v480h-80Zm160 0v-480h80v480h-80Zm280 0L600-600l70-40 160 280-70 40Z"/>
                                 </svg>
-                                <span class="sr-only">${_("This item is linked to a library item.")}</span>
+                                <span class="sr-only">${_("This item is linked to a library item")}</span>
                             </div>
                         % endif
                     % endif
