@@ -974,11 +974,21 @@ def get_block_info(
                 modulestore().get_course(xblock.location.course_key, depth=None)
             )
 
+        metadata = own_metadata(xblock)
+
+        if xblock.scope_ids.block_type == 'problem' and 'weight' not in metadata:
+            try:
+                max_score_value = xblock.max_score()
+                if max_score_value and max_score_value > 0:
+                    metadata['weight'] = float(max_score_value)
+            except Exception:  # pylint: disable=broad-except
+                pass
+
         # Note that children aren't being returned until we have a use case.
         xblock_info = create_xblock_info(
             xblock,
             data=data,
-            metadata=own_metadata(xblock),
+            metadata=metadata,
             include_ancestor_info=include_ancestor_info,
             include_children_predicate=include_children_predicate
         )
