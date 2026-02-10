@@ -5,6 +5,7 @@ API Serializers for course waffle flags
 from rest_framework import serializers
 
 from cms.djangoapps.contentstore import toggles
+from openedx.core import toggles as core_toggles
 
 
 class CourseWaffleFlagsSerializer(serializers.Serializer):
@@ -31,6 +32,7 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
     use_react_markdown_editor = serializers.SerializerMethodField()
     use_video_gallery_flow = serializers.SerializerMethodField()
     enable_course_optimizer_check_prev_run_links = serializers.SerializerMethodField()
+    enable_authz_course_authoring = serializers.SerializerMethodField()
 
     def get_course_key(self):
         """
@@ -201,3 +203,10 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         """
         course_key = self.get_course_key()
         return toggles.enable_course_optimizer_check_prev_run_links(course_key)
+
+    def get_enable_authz_course_authoring(self, obj):
+        """
+        Method to get the authz.enable_course_authoring waffle flag
+        """
+        course_key = self.get_course_key()
+        return core_toggles.enable_authz_course_authoring(course_key)
