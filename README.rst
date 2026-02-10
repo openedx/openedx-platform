@@ -29,8 +29,6 @@ platform.  Functionally, the openedx-platform repository provides two services:
 
 
 
-
-
 Documentation
 *************
 
