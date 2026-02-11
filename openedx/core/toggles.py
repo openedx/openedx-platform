@@ -28,3 +28,10 @@ ENTRANCE_EXAMS = SettingToggle(
 # .. toggle_target_removal_date: 2027-06-09
 # .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/37927
 AUTHZ_COURSE_AUTHORING_FLAG = CourseWaffleFlag('authz.enable_course_authoring', __name__)
+
+
+def enable_authz_course_authoring(course_key):
+    """
+    Returns a boolean if the AuthZ for course authoring feature is enabled for the given course.
+    """
+    return AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
