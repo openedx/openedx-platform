@@ -57,7 +57,7 @@ from opaque_keys.edx.django.models import UsageKeyField
 from openedx.core.djangoapps.content_libraries.constants import (
     LICENSE_OPTIONS, ALL_RIGHTS_RESERVED,
 )
-from openedx_learning.api.authoring_models import LearningPackage
+from openedx_content.models_api import LearningPackage
 from organizations.models import Organization  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .apps import ContentLibrariesConfig

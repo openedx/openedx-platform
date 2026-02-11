@@ -10,7 +10,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView
@@ -392,7 +392,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
       eventually).
     """
     try:
-        component_version = authoring_api.get_component_version_by_uuid(
+        component_version = content_api.get_component_version_by_uuid(
             component_version_uuid
         )
     except ObjectDoesNotExist as exc:
@@ -411,7 +411,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # this response in conjunction with a media reverse proxy (Caddy or Nginx),
     # but in the short term we're just going to remove the redirect and stream
     # the content directly.
-    redirect_response = authoring_api.get_redirect_response_for_component_asset(
+    redirect_response = content_api.get_redirect_response_for_component_asset(
         component_version_uuid,
         asset_path,
         public=False,

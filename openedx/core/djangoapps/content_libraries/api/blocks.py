@@ -36,8 +36,8 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_UPDATED
 )
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import (
+from openedx_content import api as content_api
+from openedx_content.models_api import (
     Component, ComponentVersion, LearningPackage, MediaType,
     Container, Collection
 )
@@ -115,7 +115,7 @@ def get_library_components(
     lib = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
     learning_package = lib.learning_package
     assert learning_package is not None
-    components = authoring_api.get_components(
+    components = content_api.get_components(
         learning_package.id,
         draft=True,
         namespace='xblock.v1',
@@ -133,7 +133,7 @@ def get_library_containers(library_key: LibraryLocatorV2) -> QuerySet[Container]
     lib = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
     learning_package = lib.learning_package
     assert learning_package is not None
-    containers: QuerySet[Container] = authoring_api.get_containers(
+    containers: QuerySet[Container] = content_api.get_containers(
         learning_package.id
     )
 
@@ -147,7 +147,7 @@ def get_library_collections(library_key: LibraryLocatorV2) -> QuerySet[Collectio
     lib = ContentLibrary.objects.get_by_key(library_key)  # type: ignore[attr-defined]
     learning_package = lib.learning_package
     assert learning_package is not None
-    collections = authoring_api.get_collections(
+    collections = content_api.get_collections(
         learning_package.id
     )
     return collections
@@ -177,7 +177,7 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
         raise ContentLibraryBlockNotFound(usage_key)
 
     if include_collections:
-        associated_collections = authoring_api.get_entity_collections(
+        associated_collections = content_api.get_entity_collections(
             component.learning_package_id,
             component.key,
         ).values('key', 'title')
@@ -238,13 +238,13 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     now = datetime.now(tz=timezone.utc)
 
     with transaction.atomic():
-        new_content = authoring_api.get_or_create_text_content(
+        new_content = content_api.get_or_create_text_content(
             component.learning_package_id,
             get_or_create_olx_media_type(usage_key.block_type).id,
             text=new_olx_str,
             created=now,
         )
-        new_component_version = authoring_api.create_next_component_version(
+        new_component_version = content_api.create_next_component_version(
             component.pk,
             title=new_title,
             content_to_replace={
@@ -295,7 +295,7 @@ def validate_can_add_block_to_library(
 
     # If adding a component would take us over our max, return an error.
     assert content_library.learning_package_id is not None
-    component_count = authoring_api.get_all_drafts(content_library.learning_package_id).count()
+    component_count = content_api.get_all_drafts(content_library.learning_package_id).count()
     if component_count + 1 > settings.MAX_BLOCKS_PER_CONTENT_LIBRARY:
         raise BlockLimitReachedError(
             _("Library cannot have more than {} Components.").format(
@@ -419,10 +419,10 @@ def _import_staged_block(
     with transaction.atomic(savepoint=False):
         # First create the Component, but do not initialize it to anything (i.e.
         # no ComponentVersion).
-        component_type = authoring_api.get_or_create_component_type(
+        component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component = authoring_api.create_component(
+        component = content_api.create_component(
             learning_package.id,
             component_type=component_type,
             local_key=usage_key.block_id,
@@ -480,14 +480,14 @@ def _import_staged_block(
             if not media_type_str:
                 media_type_str = "application/octet-stream"
 
-            media_type = authoring_api.get_or_create_media_type(media_type_str)
-            content = authoring_api.get_or_create_file_content(
+            media_type = content_api.get_or_create_media_type(media_type_str)
+            content = content_api.get_or_create_file_content(
                 learning_package.id,
                 media_type.id,
                 data=file_data,
                 created=now,
             )
-            authoring_api.create_component_version_content(
+            content_api.create_component_version_content(
                 component_version.pk,
                 content.id,
                 key=filename,
@@ -690,7 +690,7 @@ def get_or_create_olx_media_type(block_type: str) -> MediaType:
     Learning Core stores all Content with a Media Type (a.k.a. MIME type). For
     OLX, we use the "application/vnd.*" convention, per RFC 6838.
     """
-    return authoring_api.get_or_create_media_type(
+    return content_api.get_or_create_media_type(
         f"application/vnd.openedx.xblock.v1.{block_type}+xml"
     )
 
@@ -704,10 +704,10 @@ def delete_library_block(
     """
     component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
-    affected_collections = authoring_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
     affected_containers = get_containers_contains_item(usage_key)
 
-    authoring_api.soft_delete_draft(component.pk, deleted_by=user_id)
+    content_api.soft_delete_draft(component.pk, deleted_by=user_id)
 
     # .. event_implemented_name: LIBRARY_BLOCK_DELETED
     # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
@@ -756,10 +756,10 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     """
     component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
-    affected_collections = authoring_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
 
     # Set draft version back to the latest available component version id.
-    authoring_api.set_draft_version(
+    content_api.set_draft_version(
         component.pk,
         component.versioning.latest.pk,
         set_by=user_id,
@@ -895,7 +895,7 @@ def add_library_block_static_asset_file(
     component = get_component_from_usage_key(usage_key)
 
     with transaction.atomic():
-        component_version = authoring_api.create_next_component_version(
+        component_version = content_api.create_next_component_version(
             component.pk,
             content_to_replace={file_path: file_content},
             created=datetime.now(tz=timezone.utc),
@@ -943,7 +943,7 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
     now = datetime.now(tz=timezone.utc)
 
     with transaction.atomic():
-        component_version = authoring_api.create_next_component_version(
+        component_version = content_api.create_next_component_version(
             component.pk,
             content_to_replace={file_path: None},
             created=now,
@@ -971,9 +971,9 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
-    drafts_to_publish = authoring_api.get_all_drafts(learning_package.id).filter(entity__key=component.key)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__key=component.key)
     # Publish the component and update anything that needs to be updated (e.g. search index):
-    publish_log = authoring_api.publish_from_drafts(
+    publish_log = content_api.publish_from_drafts(
         learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
     )
     # Since this is a single component, it should be safe to process synchronously and in-process:
@@ -1026,10 +1026,10 @@ def _create_component_for_block(
     assert learning_package is not None  # mostly for type checker
 
     with transaction.atomic():
-        component_type = authoring_api.get_or_create_component_type(
+        component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component, component_version = authoring_api.create_component_and_version(
+        component, component_version = content_api.create_component_and_version(
             learning_package.id,
             component_type=component_type,
             local_key=usage_key.block_id,
@@ -1038,13 +1038,13 @@ def _create_component_for_block(
             created_by=user_id,
             can_stand_alone=can_stand_alone,
         )
-        content = authoring_api.get_or_create_text_content(
+        content = content_api.get_or_create_text_content(
             learning_package.id,
             get_or_create_olx_media_type(usage_key.block_type).id,
             text=xml_text,
             created=now,
         )
-        authoring_api.create_component_version_content(
+        content_api.create_component_version_content(
             component_version.pk,
             content.id,
             key="block.xml",

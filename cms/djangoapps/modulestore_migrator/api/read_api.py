@@ -11,8 +11,8 @@ from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import (
     LibraryLocatorV2, LibraryUsageLocatorV2, LibraryContainerLocator
 )
-from openedx_learning.api.authoring import get_draft_version, get_all_drafts
-from openedx_learning.api.authoring_models import (
+from openedx_content.api import get_draft_version, get_all_drafts
+from openedx_content.models_api import (
     PublishableEntityVersion, PublishableEntity, DraftChangeLogRecord
 )
 from xblock.plugin import PluginMissingError
