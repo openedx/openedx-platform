@@ -256,25 +256,27 @@ definitions:
         example: 150
       enrollment_counts:
         type: object
-        description: Enrollment count breakdown by mode
+        description: |
+          Enrollment count breakdown by mode. Keys are the mode slugs
+          configured for the course (e.g. audit, verified, honor,
+          professional) plus a 'total' key. Only modes configured for
+          the course are included; unconfigured modes are omitted.
+          Modes with zero enrollments are included with a count of 0.
         properties:
           total:
             type: integer
             minimum: 0
-          audit:
-            type: integer
-            minimum: 0
-          verified:
-            type: integer
-            minimum: 0
-          honor:
-            type: integer
-            minimum: 0
+            description: Total enrollments across all modes
+        additionalProperties:
+          type: integer
+          minimum: 0
+          description: Enrollment count for a configured course mode
         example:
           total: 150
           audit: 100
           verified: 40
           honor: 10
+          professional: 0
       num_sections:
         type: integer
         minimum: 0

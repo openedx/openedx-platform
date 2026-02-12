@@ -24,6 +24,7 @@ from common.djangoapps.student.tests.factories import (
     StaffFactory,
     UserFactory,
 )
+from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
@@ -218,17 +219,58 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
     def test_enrollment_counts_by_mode(self):
         """
-        Test that enrollment counts include breakdown by mode.
+        Test that enrollment counts include all configured modes,
+        even those with zero enrollments.
         """
+        # Configure modes for the course: audit, verified, honor, and professional
+        for mode_slug in ('audit', 'verified', 'honor', 'professional'):
+            CourseModeFactory.create(course_id=self.course_key, mode_slug=mode_slug)
+
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         enrollment_counts = response.data['enrollment_counts']
 
-        # Should have total count
+        # All configured modes should be present
+        self.assertIn('audit', enrollment_counts)
+        self.assertIn('verified', enrollment_counts)
+        self.assertIn('honor', enrollment_counts)
+        self.assertIn('professional', enrollment_counts)
         self.assertIn('total', enrollment_counts)
+
+        # professional has no enrollments but should still appear with 0
+        self.assertEqual(enrollment_counts['professional'], 0)
+
+        # Modes with enrollments should have correct counts
+        self.assertGreaterEqual(enrollment_counts['audit'], 1)
+        self.assertGreaterEqual(enrollment_counts['verified'], 1)
+        self.assertGreaterEqual(enrollment_counts['honor'], 1)
         self.assertGreaterEqual(enrollment_counts['total'], 3)
+
+    def test_enrollment_counts_excludes_unconfigured_modes(self):
+        """
+        Test that enrollment counts only include modes configured for the course,
+        not modes that exist on other courses.
+        """
+        # Only configure audit and honor for this course (not verified)
+        CourseModeFactory.create(course_id=self.course_key, mode_slug='audit')
+        CourseModeFactory.create(course_id=self.course_key, mode_slug='honor')
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        enrollment_counts = response.data['enrollment_counts']
+
+        # Only configured modes should appear
+        self.assertIn('audit', enrollment_counts)
+        self.assertIn('honor', enrollment_counts)
+        self.assertIn('total', enrollment_counts)
+
+        # verified is not configured, so it should not appear
+        # (even though there are verified enrollments from setUp)
+        self.assertNotIn('verified', enrollment_counts)
 
     def _get_tabs_from_response(self, user, course_id=None):
         """Helper to get tabs from API response."""

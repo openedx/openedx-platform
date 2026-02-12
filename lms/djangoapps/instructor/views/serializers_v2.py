@@ -6,12 +6,12 @@ Following REST best practices, serializers encapsulate most of the data processi
 """
 
 from django.conf import settings
-from django.db.models import Count
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
 from rest_framework import serializers
 
+from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
@@ -266,25 +266,16 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_total_enrollment(self, data):
         """Get total enrollment count."""
-        total_enrollments = CourseEnrollment.objects.filter(
-            course_id=data['course'].id,
-            is_active=True
-        ).count()
-        return total_enrollments
+        return self.get_enrollment_counts(data)['total']
 
     def get_enrollment_counts(self, data):
-        """Get enrollment counts by mode."""
-        course = data['course']
-        total_enrollments = self.get_total_enrollment(data)
-        enrollments_by_mode = CourseEnrollment.objects.filter(
-            course_id=course.id,
-            is_active=True
-        ).values('mode').annotate(count=Count('mode'))
-
-        by_mode = {item['mode']: item['count'] for item in enrollments_by_mode}
-        by_mode['total'] = total_enrollments
-
-        return by_mode
+        """Get enrollment counts for all configured course modes."""
+        course_id = data['course'].id
+        counts = CourseEnrollment.objects.enrollment_counts(course_id)
+        configured_modes = CourseMode.modes_for_course(course_id)
+        result = {mode.slug: counts[mode.slug] for mode in configured_modes}
+        result['total'] = counts['total']
+        return result
 
     def get_num_sections(self, data):
         """Get number of sections in the course."""
