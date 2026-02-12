@@ -39,7 +39,7 @@ class CommonInitializationConfig(AppConfig):  # lint-amnesty, pylint: disable=mi
             from psycopg2.extensions import QuotedString, register_adapter
 
             def adapt_course_locator(course_locator):
-                return QuotedString(course_locator._to_string())  # lint-amnesty, pylint: disable=protected-access
+                return QuotedString(str(course_locator))  # lint-amnesty, pylint: disable=protected-access
 
             # Register the adapter
             register_adapter(CourseLocator, adapt_course_locator)
