@@ -24,7 +24,7 @@ from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.partitions.partitions_service import PartitionService
-from xmodule.services import SettingsService, TeamsConfigurationService
+from xmodule.services import SettingsService, TeamsConfigurationService, XQueueService
 from xmodule.studio_editable import has_author_view
 from xmodule.util.sandboxing import SandboxService
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
@@ -230,6 +230,7 @@ def _prepare_runtime_for_preview(request, block):
         'replace_urls': ReplaceURLService,
         'video_config': VideoConfigService(),
         'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService(block),
     }
 
     block.runtime.get_block_for_descriptor = partial(_load_preview_block, request)

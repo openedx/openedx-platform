@@ -25,7 +25,7 @@ from xblock.runtime import IdReader, KvsFieldData, MemoryIdManager, Runtime
 from xmodule.errortracker import make_error_tracker
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import XBlockI18nService
-from xmodule.services import EventPublishingService, RebindUserService
+from xmodule.services import EventPublishingService, RebindUserService, XQueueService
 from xmodule.util.sandboxing import SandboxService
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace.services import ReplaceURLService
@@ -350,6 +350,8 @@ class XBlockRuntime(RuntimeShim, Runtime):
         elif service_name == 'discussion_config_service':
             from openedx.core.djangoapps.discussions.services import DiscussionConfigService
             return DiscussionConfigService()
+        elif service_name == 'xqueue':
+            return XQueueService(block)
 
         # Otherwise, fall back to the base implementation which loads services
         # defined in the constructor:

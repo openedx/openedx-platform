@@ -61,8 +61,6 @@ from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_f
 from xmodule.x_module import XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
-from .capa.xqueue_interface import XQueueService
-
 log = logging.getLogger("edx.courseware")
 
 # Make '_' a no-op so we can scrape strings. Using lambda instead of
@@ -144,6 +142,7 @@ class Randomization(String):  # pylint: disable=too-few-public-methods
 @XBlock.needs("i18n")
 @XBlock.needs("cache")
 @XBlock.needs("sandbox")
+@XBlock.needs("xqueue")
 @XBlock.needs("replace_urls")
 @XBlock.wants("call_to_action")
 class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-instance-attributes,too-many-ancestors
@@ -856,6 +855,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
 
         sandbox_service = self.runtime.service(self, "sandbox")
         cache_service = self.runtime.service(self, "cache")
+        xqueue_service = self.runtime.service(self, "xqueue")
 
         is_studio = getattr(self.runtime, "is_author_mode", False)
 
@@ -870,7 +870,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             render_template=render_to_string,
             resources_fs=self.runtime.resources_fs,
             seed=seed,  # Why do we do this if we have self.seed?
-            xqueue=None if is_studio else XQueueService(self),
+            xqueue=None if is_studio else xqueue_service,
             matlab_api_key=self.matlab_api_key,
         )
 
