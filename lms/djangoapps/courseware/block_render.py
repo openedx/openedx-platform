@@ -43,6 +43,7 @@ from xblock.runtime import KvsFieldData
 
 from lms.djangoapps.teams.services import TeamsService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.lib.xblock_services.call_to_action import CallToActionService
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
@@ -637,6 +638,7 @@ def prepare_runtime_for_user(
         'publish': EventPublishingService(user, course_id, track_function),
         'enrollments': EnrollmentsService(),
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService(),
     }
 
     runtime.get_block_for_descriptor = inner_get_block

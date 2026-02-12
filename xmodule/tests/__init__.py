@@ -33,7 +33,7 @@ from xmodule.util.sandboxing import SandboxService
 from xmodule.x_module import DoNothingCache, XModuleMixin, ModuleStoreRuntime
 from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.lib.cache_utils import CacheService
-
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 
 MODULE_DIR = path(__file__).dirname()
 # Location of common test DATA directory
@@ -161,6 +161,7 @@ def get_test_system(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService()
     }
 
     descriptor_system.get_block_for_descriptor = get_block  # lint-amnesty, pylint: disable=attribute-defined-outside-init
@@ -217,6 +218,7 @@ def prepare_block_runtime(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService()
     }
 
     if add_overrides:

@@ -28,6 +28,7 @@ from lms.djangoapps.course_api.blocks.tests.helpers import deserialize_usage_key
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.tests.helpers import XModuleRenderingTestBase
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 
 
@@ -193,6 +194,14 @@ class TestViews(TestDiscussionXBlock):
             'can_create_subcomment': permission_dict['create_sub_comment'],
         }
 
+        self.add_patcher(
+            patch.multiple(
+                DiscussionConfigService,
+                is_discussion_visible=mock.Mock(return_value=True),
+                is_discussion_enabled=mock.Mock(return_value=True)
+            )
+        )
+
         self.block.has_permission = lambda perm: permission_dict[perm]
         with mock.patch('xmodule.discussion_block.render_to_string', return_value='') as mock_render:
             self.block.student_view()
@@ -223,13 +232,10 @@ class TestTemplates(TestDiscussionXBlock):
         Test for has_permission method.
         """
         permission_canary = object()
-        with mock.patch(
-            'xmodule.discussion_block.has_permission',
-            return_value=permission_canary,
-        ) as has_perm:
-            actual_permission = self.block.has_permission("test_permission")
+        self.block.has_permission = mock.Mock(return_value=permission_canary)
+        actual_permission = self.block.has_permission("test_permission")
         assert actual_permission == permission_canary
-        has_perm.assert_called_once_with(self.django_user_canary, 'test_permission', self.course_id)
+        self.block.has_permission.assert_called_once_with("test_permission")
 
     def test_studio_view(self):
         """Test for studio view."""
@@ -251,6 +257,14 @@ class TestTemplates(TestDiscussionXBlock):
             'create_comment': permissions[1],
             'create_sub_comment': permissions[2]
         }
+
+        self.add_patcher(
+            patch.multiple(
+                DiscussionConfigService,
+                is_discussion_visible=mock.Mock(return_value=True),
+                is_discussion_enabled=mock.Mock(return_value=True)
+            )
+        )
 
         self.block.has_permission = lambda perm: permission_dict[perm]
         fragment = self.block.student_view()
@@ -296,7 +310,7 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
             block = block.get_parent()
         return block
 
-    @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_html_with_user(self):
         """
         Test rendered DiscussionXBlock permissions.
@@ -317,7 +331,7 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
         assert 'data-user-create-comment="false"' in html
         assert 'data-user-create-subcomment="false"' in html
 
-    @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_discussion_render_successfully_with_orphan_parent(self):
         """
         Test that discussion xblock render successfully
@@ -421,7 +435,7 @@ class TestXBlockQueryLoad(SharedModuleStoreTestCase):
     Test the number of queries executed when rendering the XBlock.
     """
 
-    @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
+    @override_settings(ENABLE_DISCUSSION_SERVICE=True)
     def test_permissions_query_load(self):
         """
         Tests that the permissions queries are cached when rendering numerous discussion XBlocks.

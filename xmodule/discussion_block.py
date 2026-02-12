@@ -17,8 +17,6 @@ from xblock.utils.resources import ResourceLoader
 from xblock.utils.studio_editable import StudioEditableXBlockMixin
 from xblocks_contrib.discussion import DiscussionXBlock as _ExtractedDiscussionXBlock
 
-from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
-from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.xblock_utils import get_css_dependencies, get_js_dependencies
 from xmodule.xml_block import XmlMixin
@@ -37,6 +35,7 @@ def _(text):
 @XBlock.needs('user')  # pylint: disable=abstract-method
 @XBlock.needs('i18n')
 @XBlock.needs('mako')
+@XBlock.wants('discussion_config_service')
 class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
                                XmlMixin):  # lint-amnesty, pylint: disable=abstract-method
     """
@@ -77,6 +76,13 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
     has_author_view = True  # Tells Studio to use author_view
 
     @property
+    def discussion_config_service(self):
+        """
+        Returns discussion configuration service.
+        """
+        return self.runtime.service(self, 'discussion_config_service')
+
+    @property
     def course_key(self):
         return getattr(self.scope_ids.usage_id, 'course_key', None)
 
@@ -85,8 +91,18 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
         """
         Discussion Xblock does not support new OPEN_EDX provider
         """
-        provider = DiscussionsConfiguration.get(self.course_key)
-        return provider.provider_type == Provider.LEGACY
+        if self.discussion_config_service:
+            return self.discussion_config_service.is_discussion_visible(self.course_key)
+        return False
+
+    @property
+    def is_discussion_enabled(self):
+        """
+        Returns True if discussions are enabled; else False
+        """
+        if self.discussion_config_service:
+            return self.discussion_config_service.is_discussion_enabled()
+        return False
 
     @property
     def django_user(self):
@@ -159,15 +175,14 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
         :param str permission: Permission
         :rtype: bool
         """
-        return has_permission(self.django_user, permission, self.course_key)
+        if self.discussion_config_service:
+            return self.discussion_config_service.has_permission(self.django_user, permission, self.course_key)
+        return False
 
     def student_view(self, context=None):
         """
         Renders student view for LMS.
         """
-        # to prevent a circular import issue
-        import lms.djangoapps.discussion.django_comment_client.utils as utils
-
         fragment = Fragment()
 
         if not self.is_visible:
@@ -193,7 +208,7 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
                     url='{}?{}'.format(reverse('register_user'), qs),
                 ),
             )
-        if utils.is_discussion_enabled(self.course_key):
+        if self.is_discussion_enabled:
             context = {
                 'discussion_id': self.discussion_id,
                 'display_name': self.display_name if self.display_name else _("Discussion"),
@@ -282,8 +297,17 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
                 setattr(block, field_name, value)
 
 
-DiscussionXBlock = (
-    _ExtractedDiscussionXBlock if settings.USE_EXTRACTED_DISCUSSION_BLOCK
-    else _BuiltInDiscussionXBlock
-)
+DiscussionXBlock = None
+
+
+def reset_class():
+    """Reset class as per django settings flag"""
+    global DiscussionXBlock
+    DiscussionXBlock = (
+        _ExtractedDiscussionXBlock if settings.USE_EXTRACTED_DISCUSSION_BLOCK
+        else _BuiltInDiscussionXBlock
+    )
+    return DiscussionXBlock
+
+reset_class()
 DiscussionXBlock.__name__ = "DiscussionXBlock"
