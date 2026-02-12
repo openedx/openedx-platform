@@ -257,7 +257,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 self.course.id.make_usage_key('library_content', 'test_library_content'),
                 None,
                 'The "library_content" XBlock (ID: "test_library_content") has children, '
-                'so it not supported in content libraries. It has 2 children blocks.',
+                'so it is not supported in content libraries. It has 2 children blocks.',
             ),
         )
         self.assertEqual(len(result.children), 0)
@@ -394,7 +394,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertEqual(
             reason,
             'The "library_content" XBlock (ID: "test_library_content") has children,'
-            ' so it not supported in content libraries.',
+            ' so it is not supported in content libraries.',
         )
 
     def test_migrate_component_with_static_content(self):
