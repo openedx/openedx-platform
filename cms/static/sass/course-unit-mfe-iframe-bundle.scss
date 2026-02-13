@@ -35,9 +35,18 @@ body,
       border-color: transparent;
     }
 
+    .studio-xblock-wrapper {
+      // STATE: selected
+      &.is-selected {
+        border-color: $primary;
+        box-shadow: 0 0 3px 3px $primary;
+      }
+    }
+
     .xblock-header-primary {
       padding: ($baseline * 1.2) ($baseline * 1.2) ($baseline / 1.67);
       border-bottom: none;
+      cursor: pointer;
 
       .header-details {
         .xblock-display-title {
