@@ -192,7 +192,7 @@ class XQueueServiceTest(TestCase):
         assert self.service.interface.session.auth.username == "anant"
         assert self.service.interface.session.auth.password == "agarwal"
 
-    @patch("lms.djangoapps.grades.services.XQueueService.use_edx_submissions_for_xqueue", return_value=True)
+    @patch("xmodule.services.XQueueService.use_edx_submissions_for_xqueue", return_value=True)
     def test_construct_callback_with_flag_enabled(self, mock_flag):  # pylint: disable=unused-argument
         """Test construct_callback when the waffle flag is enabled."""
         self.service = XQueueService(self.block)
@@ -209,7 +209,7 @@ class XQueueServiceTest(TestCase):
         with override_settings(XQUEUE_INTERFACE={**settings.XQUEUE_INTERFACE, "callback_url": custom_callback_url}):
             assert self.service.construct_callback() == f"{custom_callback_url}/{callback_url}/score_update"
 
-    @patch("lms.djangoapps.grades.services.XQueueService.use_edx_submissions_for_xqueue", return_value=False)
+    @patch("xmodule.services.XQueueService.use_edx_submissions_for_xqueue", return_value=False)
     def test_construct_callback_with_flag_disabled(self, mock_flag):  # pylint: disable=unused-argument
         """Test construct_callback when the waffle flag is disabled."""
         self.service = XQueueService(self.block)
