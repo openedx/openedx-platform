@@ -95,7 +95,7 @@ attrs==25.4.0
     #   lti-consumer-xblock
     #   openedx-authz
     #   openedx-events
-    #   openedx-learning
+    #   openedx-core
     #   referencing
 babel==2.17.0
     # via
@@ -197,7 +197,7 @@ celery==5.6.2
     #   edx-enterprise
     #   enterprise-integrated-channels
     #   event-tracking
-    #   openedx-learning
+    #   openedx-core
 certifi==2026.1.4
     # via
     #   -r requirements/edx/doc.txt
@@ -412,7 +412,7 @@ django==5.2.11
     #   openedx-events
     #   openedx-filters
     #   openedx-forum
-    #   openedx-learning
+    #   openedx-core
     #   ora2
     #   social-auth-app-django
     #   super-csv
@@ -631,7 +631,7 @@ djangorestframework==3.16.1
     #   edx-submissions
     #   openedx-authz
     #   openedx-forum
-    #   openedx-learning
+    #   openedx-core
     #   ora2
     #   super-csv
 djangorestframework-stubs==3.16.7
@@ -751,7 +751,7 @@ edx-drf-extensions==10.6.0
     #   edxval
     #   enterprise-integrated-channels
     #   openedx-authz
-    #   openedx-learning
+    #   openedx-core
 edx-enterprise==6.6.3
     # via
     #   -c requirements/constraints.txt
@@ -1399,7 +1399,7 @@ openedx-forum==0.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-openedx-learning==0.32.0
+openedx-core==0.34.1
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
@@ -1881,7 +1881,7 @@ rules==3.5
     #   -r requirements/edx/testing.txt
     #   edx-enterprise
     #   edx-proctoring
-    #   openedx-learning
+    #   openedx-core
 s3transfer==0.16.0
     # via
     #   -r requirements/edx/doc.txt
@@ -2107,7 +2107,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   openedx-learning
+    #   openedx-core
     #   pylint
     #   snowflake-connector-python
 tox==4.34.1

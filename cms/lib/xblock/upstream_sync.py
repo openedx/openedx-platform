@@ -3,7 +3,7 @@ Synchronize content and settings from upstream content to their downstream
 usages.
 
 At the time of writing, we assume that for any upstream-downstream linkage:
-* The upstream is a Component or Container from a Learning Core-backed Content
+* The upstream is a Component or Container from a openedx-core-backed Content
   Library.
 * The downstream is a block of compatible type in a SplitModuleStore-backed
   Course.

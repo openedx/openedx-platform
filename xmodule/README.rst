@@ -41,16 +41,15 @@ Direction
 Currently, this directory contains a lot of mission-critical functionality, so continued maintenance and simplification of it is important.
 Still, we aim to eventually dissolve the directory in favor of more focused & decoupled subsystems:
 
-* ModuleStore is superseded by the `Learning Core`_ storage backend.
-* Learning Core-backend content is rendered by a new, simplified `edx-platform XBlock runtime`_.
-* Navigation, partitioning, and composition of learning content is being re-architected in the `openedx-learning`_ library.
+* ModuleStore is superseded by the `Open edX Core`_ (a.k.a. ``openedx-core``) storage backend.
+* openedx-core-backed content is rendered by a new, simplified `edx-platform XBlock runtime`_.
+* Navigation, partitioning, and composition of learning content is being re-architected in the `openedx-core`_ library.
 * All new XBlocks are implemented in separate repositories, such as `xblock-drag-and-drop-v2`_.
 
 To help with this direction, please **do not add new functionality to this directory**. If you feel that you need to add code to this directory, reach out on `the forums`_; it's likely that someone can help you find a different way to implement your change that will be more robust and architecturally sound!
 
-.. _Learning Core: https://github.com/openedx/openedx-learning/
+.. _Open edX Core: https://github.com/openedx/openedx-core/
 .. _edx-platform XBlock runtime: https://github.com/openedx/edx-platform/tree/master/openedx/core/djangoapps/xblock
-.. _openedx-learning: https://github.com/openedx/openedx-learning
+.. _openedx-core: https://github.com/openedx/openedx-core
 .. _xblock-drag-and-drop-v2: https://github.com/openedx/xblock-drag-and-drop-v2
 .. _the forums: https://discuss.openedx.org
-

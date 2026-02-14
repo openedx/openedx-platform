@@ -194,7 +194,7 @@ class LibraryBlockAssetView(APIView):
         file_wrapper = request.data['content']
         if file_wrapper.size > 20 * 1024 * 1024:  # > 20 MiB
             # TODO: This check was written when V2 Libraries were backed by the Blockstore micro-service.
-            #       Now that we're on Learning Core, do we still need it? Here's the original comment:
+            #       Now that we're on openedx-core, do we still need it? Here's the original comment:
             #         In the future, we need a way to use file_wrapper.chunks() to read
             #         the file in chunks and stream that to Blockstore, but Blockstore
             #         currently lacks an API for streaming file uploads.
@@ -406,7 +406,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     )
 
     # We already have logic for getting the correct content and generating the
-    # proper headers in Learning Core, but the response generated here is an
+    # proper headers in openedx-core, but the response generated here is an
     # X-Accel-Redirect and lacks the actual content. We eventually want to use
     # this response in conjunction with a media reverse proxy (Caddy or Nginx),
     # but in the short term we're just going to remove the redirect and stream
