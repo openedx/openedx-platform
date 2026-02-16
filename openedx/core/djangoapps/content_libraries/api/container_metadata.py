@@ -8,8 +8,8 @@ from enum import Enum
 from django.db.models import QuerySet
 
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import (
+from openedx_content import api as content_api
+from openedx_content.models_api import (
     Component,
     Container,
     ContainerVersion,
@@ -149,7 +149,7 @@ class ContainerMetadata(PublishableItem):
             published_by=published_by,
             last_draft_created=last_draft_created,
             last_draft_created_by=last_draft_created_by,
-            has_unpublished_changes=authoring_api.contains_unpublished_changes(container.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(container.pk),
             tags_count=tags.get(str(container_key), 0),
             collections=associated_collections or [],
         )
@@ -295,7 +295,7 @@ def _get_containers_with_entities(
     """
     qs = Container.objects.none()
     for member in members:
-        qs = qs.union(authoring_api.get_containers_with_entity(
+        qs = qs.union(content_api.get_containers_with_entity(
             member.entity.pk,
             ignore_pinned=ignore_pinned,
         ))
@@ -320,7 +320,7 @@ def _get_containers_children(
     for member in members:
         container = member.container
         assert container
-        for entry in authoring_api.get_entities_in_container(
+        for entry in content_api.get_entities_in_container(
             container,
             published=published,
         ):
@@ -372,7 +372,7 @@ class ContainerHierarchyMember:
                 container=entity,
             ),
             display_name=entity.versioning.draft.title,
-            has_unpublished_changes=authoring_api.contains_unpublished_changes(entity.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(entity.pk),
             container=entity,
             component=None,
         )
@@ -425,7 +425,7 @@ def get_container_from_key(container_key: LibraryContainerLocator, include_delet
     content_library = ContentLibrary.objects.get_by_key(container_key.lib_key)
     learning_package = content_library.learning_package
     assert learning_package is not None
-    container = authoring_api.get_container_by_key(
+    container = content_api.get_container_by_key(
         learning_package.id,
         key=container_key.container_id,
     )

@@ -10,8 +10,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey, OpaqueKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Collection
+from openedx_content import api as content_api
+from openedx_content.models_api import Collection
 from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content.search.models import SearchAccess
@@ -446,7 +446,7 @@ def searchable_doc_collections(object_id: OpaqueKey) -> dict:
     try:
         if isinstance(object_id, UsageKey):
             component = lib_api.get_component_from_usage_key(object_id)
-            collections = authoring_api.get_entity_collections(
+            collections = content_api.get_entity_collections(
                 component.learning_package_id,
                 component.key,
             ).values('key', 'title')
@@ -543,11 +543,11 @@ def searchable_doc_for_collection(
     if collection:
         assert collection.key == collection_key.collection_id
 
-        draft_num_children = authoring_api.filter_publishable_entities(
+        draft_num_children = content_api.filter_publishable_entities(
             collection.entities,
             has_draft=True,
         ).count()
-        published_num_children = authoring_api.filter_publishable_entities(
+        published_num_children = content_api.filter_publishable_entities(
             collection.entities,
             has_published=True,
         ).count()

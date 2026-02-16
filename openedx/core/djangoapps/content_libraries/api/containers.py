@@ -22,8 +22,8 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Container, ContainerVersion, Component
+from openedx_content import api as content_api
+from openedx_content.models_api import Container, ContainerVersion, Component
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
 
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
@@ -76,7 +76,7 @@ def get_container(
     """
     container = get_container_from_key(container_key)
     if include_collections:
-        associated_collections = authoring_api.get_entity_collections(
+        associated_collections = content_api.get_entity_collections(
             container.publishable_entity.learning_package_id,
             container_key.container_id,
         ).values('key', 'title')
@@ -126,7 +126,7 @@ def create_container(
     # Then try creating the actual container:
     match container_type:
         case ContainerType.Unit:
-            container, _initial_version = authoring_api.create_unit_and_version(
+            container, _initial_version = content_api.create_unit_and_version(
                 content_library.learning_package_id,
                 key=slug,
                 title=title,
@@ -134,7 +134,7 @@ def create_container(
                 created_by=user_id,
             )
         case ContainerType.Subsection:
-            container, _initial_version = authoring_api.create_subsection_and_version(
+            container, _initial_version = content_api.create_subsection_and_version(
                 content_library.learning_package_id,
                 key=slug,
                 title=title,
@@ -142,7 +142,7 @@ def create_container(
                 created_by=user_id,
             )
         case ContainerType.Section:
-            container, _initial_version = authoring_api.create_section_and_version(
+            container, _initial_version = content_api.create_section_and_version(
                 content_library.learning_package_id,
                 key=slug,
                 title=title,
@@ -188,7 +188,7 @@ def update_container(
 
     match container_type:
         case ContainerType.Unit:
-            version = authoring_api.create_next_unit_version(
+            version = content_api.create_next_unit_version(
                 container.unit,
                 title=display_name,
                 created=created,
@@ -198,7 +198,7 @@ def update_container(
             # Components have usage_key instead of container_key
             child_key_name = 'usage_key'
         case ContainerType.Subsection:
-            version = authoring_api.create_next_subsection_version(
+            version = content_api.create_next_subsection_version(
                 container.subsection,
                 title=display_name,
                 created=created,
@@ -206,7 +206,7 @@ def update_container(
             )
             affected_containers = get_containers_contains_item(container_key)
         case ContainerType.Section:
-            version = authoring_api.create_next_section_version(
+            version = content_api.create_next_section_version(
                 container.section,
                 title=display_name,
                 created=created,
@@ -265,7 +265,7 @@ def delete_container(
     container = get_container_from_key(container_key)
 
     # Fetch related collections and containers before soft-delete
-    affected_collections = authoring_api.get_entity_collections(
+    affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
         container.key,
     )
@@ -275,7 +275,7 @@ def delete_container(
         container_key,
         published=False,
     )
-    authoring_api.soft_delete_draft(container.pk)
+    content_api.soft_delete_draft(container.pk)
 
     # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
     # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
@@ -337,12 +337,12 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
     library_key = container_key.lib_key
     container = get_container_from_key(container_key, include_deleted=True)
 
-    affected_collections = authoring_api.get_entity_collections(
+    affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
         container.key,
     )
 
-    authoring_api.set_draft_version(container.pk, container.versioning.latest.pk)
+    content_api.set_draft_version(container.pk, container.versioning.latest.pk)
     # Fetch related containers after restore
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
@@ -430,25 +430,25 @@ def get_container_children(
 
     match container_type:
         case ContainerType.Unit:
-            child_components = authoring_api.get_components_in_unit(container.unit, published=published)
+            child_components = content_api.get_components_in_unit(container.unit, published=published)
             return [LibraryXBlockMetadata.from_component(
                 container_key.lib_key,
                 entry.component
             ) for entry in child_components]
         case ContainerType.Subsection:
-            child_units = authoring_api.get_units_in_subsection(container.subsection, published=published)
+            child_units = content_api.get_units_in_subsection(container.subsection, published=published)
             return [ContainerMetadata.from_container(
                 container_key.lib_key,
                 entry.unit
             ) for entry in child_units]
         case ContainerType.Section:
-            child_subsections = authoring_api.get_subsections_in_section(container.section, published=published)
+            child_subsections = content_api.get_subsections_in_section(container.section, published=published)
             return [ContainerMetadata.from_container(
                 container_key.lib_key,
                 entry.subsection,
             ) for entry in child_subsections]
         case _:
-            child_entities = authoring_api.get_entities_in_container(container, published=published)
+            child_entities = content_api.get_entities_in_container(container, published=published)
             return [ContainerMetadata.from_container(
                 container_key.lib_key,
                 entry.entity
@@ -463,14 +463,14 @@ def get_container_children_count(
     [ 🛑 UNSTABLE ] Get the count of entities contained in the given container (e.g. the components/xblocks in a unit)
     """
     container = get_container_from_key(container_key)
-    return authoring_api.get_container_children_count(container, published=published)
+    return content_api.get_container_children_count(container, published=published)
 
 
 def update_container_children(
     container_key: LibraryContainerLocator,
     children_ids: list[LibraryUsageLocatorV2] | list[LibraryContainerLocator],
     user_id: int | None,
-    entities_action: authoring_api.ChildrenEntitiesAction = authoring_api.ChildrenEntitiesAction.REPLACE,
+    entities_action: content_api.ChildrenEntitiesAction = content_api.ChildrenEntitiesAction.REPLACE,
 ):
     """
     [ 🛑 UNSTABLE ] Adds children components or containers to given container.
@@ -483,7 +483,7 @@ def update_container_children(
     match container_type:
         case ContainerType.Unit:
             components = [get_component_from_usage_key(key) for key in children_ids]  # type: ignore[arg-type]
-            new_version = authoring_api.create_next_unit_version(
+            new_version = content_api.create_next_unit_version(
                 container.unit,
                 components=components,  # type: ignore[arg-type]
                 created=created,
@@ -502,7 +502,7 @@ def update_container_children(
                 )
         case ContainerType.Subsection:
             units = [get_container_from_key(key).unit for key in children_ids]  # type: ignore[arg-type]
-            new_version = authoring_api.create_next_subsection_version(
+            new_version = content_api.create_next_subsection_version(
                 container.subsection,
                 units=units,  # type: ignore[arg-type]
                 created=created,
@@ -521,7 +521,7 @@ def update_container_children(
                 )
         case ContainerType.Section:
             subsections = [get_container_from_key(key).subsection for key in children_ids]  # type: ignore[arg-type]
-            new_version = authoring_api.create_next_section_version(
+            new_version = content_api.create_next_section_version(
                 container.section,
                 subsections=subsections,  # type: ignore[arg-type]
                 created=created,
@@ -566,7 +566,7 @@ def get_containers_contains_item(
     elif isinstance(key, LibraryContainerLocator):
         item = get_container_from_key(key)
 
-    containers = authoring_api.get_containers_with_entity(
+    containers = content_api.get_containers_with_entity(
         item.publishable_entity.pk,
     )
     return [
@@ -590,9 +590,9 @@ def publish_container_changes(
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this container:
-    drafts_to_publish = authoring_api.get_all_drafts(learning_package.id).filter(entity__pk=container.pk)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.pk)
     # Publish the container, which will also auto-publish any unpublished child components:
-    publish_log = authoring_api.publish_from_drafts(
+    publish_log = content_api.publish_from_drafts(
         learning_package.id,
         draft_qset=drafts_to_publish,
         published_by=user_id,

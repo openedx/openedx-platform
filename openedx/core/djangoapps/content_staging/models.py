@@ -11,7 +11,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey
-from openedx_learning.lib.fields import MultiCollationTextField, case_insensitive_char_field
+from openedx_django_lib.fields import MultiCollationTextField, case_insensitive_char_field
 
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 

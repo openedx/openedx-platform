@@ -8,7 +8,7 @@ import logging
 from django.core.validators import validate_unicode_slug
 from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryUsageLocatorV2
-from openedx_learning.api.authoring_models import Collection, LearningPackage
+from openedx_content.models_api import Collection, LearningPackage
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from user_tasks.models import UserTaskStatus
