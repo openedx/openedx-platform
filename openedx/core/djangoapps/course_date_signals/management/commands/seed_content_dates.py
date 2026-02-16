@@ -41,9 +41,6 @@ class Command(BaseCommand):
     """
 
     help = "Extract assignment dates from modulestore and populate ContentDate table"
-    dry_run = False
-    force_update = False
-    batch_size = 100
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -70,11 +67,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.dry_run = options["dry_run"]
-        self.force_update = options["force_update"]
-        self.batch_size = options["batch_size"]
-
-        logging.basicConfig(level=logging.INFO)
+        self.dry_run = options["dry_run"]  # pylint: disable=attribute-defined-outside-init
+        self.force_update = options["force_update"]  # pylint: disable=attribute-defined-outside-init
+        self.batch_size = options["batch_size"]  # pylint: disable=attribute-defined-outside-init
 
         if self.dry_run:
             self.stdout.write(
@@ -175,16 +170,17 @@ class Command(BaseCommand):
                 )
         except ItemNotFoundError:
             log.warning(f"Course not found in modulestore: {course_key}")
-            return 0, 0, 0, 0
+            return (0, 0, 0, 0)
 
         staff_user = User.objects.filter(is_staff=True).first()
         if not staff_user:
-            return
+            log.warning("No staff user found; cannot load assignments")
+            return (0, 0, 0, 0)
         assignments = get_course_assignments(course_key, staff_user)
 
         if not assignments:
             log.info(f"No assignments with due dates found in course: {course_key}")
-            return 0, 0, 0, 0
+            return (0, 0, 0, 0)
 
         processed = len(assignments)
         created = 0
@@ -199,13 +195,19 @@ class Command(BaseCommand):
                 self.stdout.write(f"    ... and {len(assignments) - 5} more")
             return processed, 0, 0, 0
 
-        # Process assignments in batches
-        for i in range(0, len(assignments), self.batch_size):
-            batch = assignments[i: i + self.batch_size]
+        existing_due_locations: set = set(
+            when_models.ContentDate.objects.filter(
+                course_id=course_key, field="due"
+            ).values_list("location", flat=True)
+        )
 
-            with transaction.atomic():
+        with transaction.atomic():
+            for i in range(0, len(assignments), self.batch_size):
+                batch = assignments[i : i + self.batch_size]
                 batch_created, batch_updated, batch_skipped = (
-                    self._process_assignment_batch(course_key, batch)
+                    self._process_assignment_batch(
+                        course_key, batch, existing_due_locations
+                    )
                 )
                 created += batch_created
                 updated += batch_updated
@@ -213,9 +215,16 @@ class Command(BaseCommand):
 
         return processed, created, updated, skipped
 
-    def _process_assignment_batch(self, course_key: CourseKey, assignments) -> tuple[int, int, int]:
+    def _process_assignment_batch(
+        self,
+        course_key: CourseKey,
+        assignments: list,
+        existing_due_locations: set,
+    ) -> tuple[int, int, int]:
         """
         Process a batch of assignments and return (created, updated, skipped) counts.
+
+        existing_due_locations is updated in place when new ContentDate rows are created.
         """
         created = 0
         updated = 0
@@ -225,11 +234,9 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"Processing assignment: {assignment.block_key}/{assignment.assignment_type} (due: {assignment.date})"
             )
-            existing = when_models.ContentDate.objects.filter(
-                course_id=course_key, location=assignment.block_key, field="due"
-            ).first()
+            already_exists = assignment.block_key in existing_due_locations
 
-            if existing and not self.force_update:
+            if already_exists and not self.force_update:
                 skipped += 1
                 log.info(
                     f"Skipping existing ContentDate for {assignment.title} "
@@ -239,8 +246,9 @@ class Command(BaseCommand):
 
             try:
                 update_or_create_assignments_due_dates(course_key, [assignment])
+                existing_due_locations.add(assignment.block_key)
 
-                if existing:
+                if already_exists:
                     updated += 1
                     log.info(
                         f"Updated ContentDate for {assignment.title} "
