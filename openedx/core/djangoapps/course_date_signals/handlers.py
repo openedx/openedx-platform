@@ -187,7 +187,7 @@ def extract_dates(sender, course_key, **kwargs):  # pylint: disable=unused-argum
 @receiver(SignalHandler.course_published)
 def update_assignment_dates(sender, course_key, **kwargs):  # pylint: disable=unused-argument
     """
-    Receive the course_published signal and update assignment dates for the course.
+    Receive the course_published signal and enqueue a task to update assignment dates.
     """
     # import here, because signal is registered at startup, but items in tasks are not available yet
     from .tasks import update_assignment_dates_for_course
