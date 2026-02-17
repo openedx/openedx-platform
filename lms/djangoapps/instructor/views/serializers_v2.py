@@ -76,16 +76,37 @@ class CourseInformationSerializerV2(serializers.Serializer):
         help_text="Message about analytics dashboard availability"
     )
 
+    @staticmethod
+    def _build_tab_url(setting_name, *path_parts):
+        """
+        Build a tab URL from a Django setting and path parts.
+
+        Retrieves the base URL from `setting_name`, strips any trailing slash,
+        then joins the provided path parts (stripping their leading/trailing
+        slashes) with `/` separators — behaving like ``os.path.join`` for URLs.
+
+        Logs a warning and falls back to a relative URL if the setting is unset.
+
+        Example:
+
+            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', course_key, 'grading')
+            # => 'http://localhost:2003/instructor/course-v1:.../grading'
+
+            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email')
+            # => 'http://localhost:1984/communications/courses/course-v1:.../bulk_email'
+        """
+        base_url = getattr(settings, setting_name, None)
+        if base_url is None:
+            log.warning('%s is not configured.', setting_name)
+            base_url = ''
+        parts = [base_url.rstrip('/')] + [str(part).strip('/') for part in path_parts]
+        return '/'.join(parts)
+
     def get_tabs(self, data):
         """Get serialized course tabs."""
         request = data['request']
         course = data['course']
         course_key = course.id
-        mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
-
-        if not mfe_base_url:
-            log.warning('INSTRUCTOR_MICROFRONTEND_URL is not set.')
-            mfe_base_url = ''
 
         access = {
             'admin': request.user.is_staff,
@@ -110,31 +131,56 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 {
                     'tab_id': 'course_info',
                     'title': _('Course Info'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/course_info',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'course_info'
+                    ),
                     'sort_order': 10,
                 },
                 {
                     'tab_id': 'enrollments',
                     'title': _('Enrollments'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/enrollments',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'enrollments'
+                    ),
                     'sort_order': 20,
                 },
                 {
-                    "tab_id": "course_team",
-                    "title": "Course Team",
-                    "url": f'{mfe_base_url}/instructor/{str(course_key)}/course_team',
+                    'tab_id': 'course_team',
+                    'title': _('Course Team'),
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'course_team'
+                    ),
                     'sort_order': 30,
                 },
                 {
                     'tab_id': 'grading',
                     'title': _('Grading'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/grading',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'grading'
+                    ),
                     'sort_order': 40,
                 },
                 {
                     'tab_id': 'cohorts',
                     'title': _('Cohorts'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/cohorts',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'cohorts'
+                    ),
                     'sort_order': 90,
                 },
             ])
@@ -143,7 +189,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'bulk_email',
                 'title': _('Bulk Email'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/bulk_email',
+                'url': self._build_tab_url(
+                    'COMMUNICATIONS_MICROFRONTEND_URL',
+                    'courses',
+                    course_key,
+                    'bulk_email'
+                ),
                 'sort_order': 100,
             })
 
@@ -151,7 +202,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'date_extensions',
                 'title': _('Date Extensions'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/date_extensions',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'date_extensions'
+                ),
                 'sort_order': 50,
             })
 
@@ -159,7 +215,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'data_downloads',
                 'title': _('Data Downloads'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/data_downloads',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'data_downloads'
+                ),
                 'sort_order': 60,
             })
 
@@ -174,7 +235,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'open_responses',
                 'title': _('Open Responses'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/open_responses',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'open_responses'
+                ),
                 'sort_order': 70,
             })
 
@@ -186,7 +252,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'certificates',
                 'title': _('Certificates'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/certificates',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'certificates'
+                ),
                 'sort_order': 80,
             })
 
@@ -203,7 +274,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'special_exams',
                 'title': _('Special Exams'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/special_exams',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'special_exams'
+                ),
                 'sort_order': 110,
             })
 
