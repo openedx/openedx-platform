@@ -15,8 +15,8 @@ from path import Path as path
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, List, Scope, String
-from xblocks_contrib.html import HtmlBlock as _ExtractedHtmlBlock
-from xblocks_contrib.html import HtmlBlockMixin as _ExtractedHtmlBlockMixin
+from xblocks_contrib.html import HtmlBlock as _OriginalExtractedHtmlBlock
+from xblocks_contrib.html import HtmlBlockMixin as _OriginalExtractedHtmlBlockMixin
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID
 from xmodule.contentstore.content import StaticContent
@@ -377,6 +377,24 @@ class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # lint-amnesty, pylint: disabl
     Nothing extra is required; this is just a wrapper to include edxnotes support.
     """
     is_extracted = False
+
+
+@edxnotes
+class _ExtractedHtmlBlock(_OriginalExtractedHtmlBlock):  # lint-amnesty, pylint: disable=abstract-method
+    """
+    Extracted HTML XBlock with edxnotes support.
+    Wraps the original extracted block from xblocks-contrib to add notes functionality.
+    """
+    pass
+
+
+@edxnotes
+class _ExtractedHtmlBlockMixin(_OriginalExtractedHtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+    """
+    Extracted HTML XBlock Mixin with edxnotes support.
+    Wraps the original extracted mixin from xblocks-contrib to add notes functionality.
+    """
+    pass
 
 
 HtmlBlockMixin = None
