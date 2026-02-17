@@ -385,7 +385,6 @@ class _ExtractedHtmlBlock(_OriginalExtractedHtmlBlock):  # lint-amnesty, pylint:
     Extracted HTML XBlock with edxnotes support.
     Wraps the original extracted block from xblocks-contrib to add notes functionality.
     """
-    pass
 
 
 @edxnotes
@@ -394,7 +393,6 @@ class _ExtractedHtmlBlockMixin(_OriginalExtractedHtmlBlockMixin):  # lint-amnest
     Extracted HTML XBlock Mixin with edxnotes support.
     Wraps the original extracted mixin from xblocks-contrib to add notes functionality.
     """
-    pass
 
 
 HtmlBlockMixin = None
