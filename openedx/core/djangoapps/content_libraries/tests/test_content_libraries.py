@@ -23,7 +23,7 @@ from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2, Lib
 from organizations.models import Organization
 from rest_framework.test import APITestCase
 from rest_framework import status
-from openedx_learning.api.authoring_models import LearningPackage
+from openedx_content.models_api import LearningPackage
 from user_tasks.models import UserTaskStatus, UserTaskArtifact
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -1179,7 +1179,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
 
         with self.as_user(self.admin_user):
             with patch(
-                "openedx.core.djangoapps.content_libraries.tasks.authoring_api.load_learning_package",
+                "openedx.core.djangoapps.content_libraries.tasks.content_api.load_learning_package",
                 return_value=error_result
             ):
                 response = self._start_library_restore_task(self.uploaded_zip_file)
@@ -1202,7 +1202,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         """
         with self.as_user(self.admin_user):
             with patch(
-                "openedx.core.djangoapps.content_libraries.tasks.authoring_api.load_learning_package",
+                "openedx.core.djangoapps.content_libraries.tasks.content_api.load_learning_package",
                 side_effect=Exception("Uncaught exception during processing.")
             ):
                 response = self._start_library_restore_task(self.uploaded_zip_file)

@@ -32,13 +32,13 @@ class APIHeartBeatView(DeveloperErrorViewMixin, APIView):
         **Response Values**
 
         If the request is successful, an HTTP 200 "OK" response is returned.
-        The HTTP 200 response contains a single dict with the  "authoring_api_enabled" value "True".
+        The HTTP 200 response contains a single dict with the  "content_api_enabled" value "True".
 
         **Example Response**
 
         ```json
         {
-            "authoring_api_enabled": "True"
+            "content_api_enabled": "True"
         }
         ```
         """

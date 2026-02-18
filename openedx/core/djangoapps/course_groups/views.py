@@ -424,6 +424,44 @@ def _get_cohort_response(cohort, course):
     return Response(_get_cohort_representation(cohort, course), status=status.HTTP_200_OK)
 
 
+def _update_cohort_partition_group(cohort, group_id, user_partition_id, api_error_func):
+    """
+    Helper method to update the partition group association for a cohort.
+
+    Note: This logic is duplicated from the legacy cohort_handler function (lines 218-234).
+    We chose not to refactor cohort_handler to use this helper because:
+    1. cohort_handler returns JsonResponse for errors, while this helper uses DRF's api_error pattern
+    2. Unifying the error handling would require changing cohort_handler's interface or adding
+       try/except blocks, which could have downstream effects on existing callers
+    3. The legacy endpoint may be deprecated in favor of the v1 API in the future
+
+    Args:
+        cohort: The cohort to update
+        group_id: The group_id from the request (can be None to unlink, or an integer to link)
+        user_partition_id: The user_partition_id from the request
+        api_error_func: Function to call to raise API errors (e.g., self.api_error)
+
+    Raises:
+        API error if group_id is provided without user_partition_id
+    """
+    if group_id is not None:
+        if user_partition_id is None:
+            raise api_error_func(
+                status.HTTP_400_BAD_REQUEST,
+                'If group_id is specified, user_partition_id must also be specified.',
+                'missing-user-partition-id'
+            )
+        existing_group_id, existing_partition_id = cohorts.get_group_info_for_cohort(cohort)
+        if group_id != existing_group_id or user_partition_id != existing_partition_id:
+            unlink_cohort_partition_group(cohort)
+            link_cohort_to_partition_group(cohort, user_partition_id, group_id)
+    else:
+        # If group_id was explicitly set to None, unlink the cohort from any partition group
+        existing_group_id, _ = cohorts.get_group_info_for_cohort(cohort)
+        if existing_group_id is not None:
+            unlink_cohort_partition_group(cohort)
+
+
 def _get_cohort_settings_response(course_key):
     """
     Helper method to return a serialized response for the cohort settings.
@@ -499,6 +537,25 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
         GET /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
         PATCH /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
 
+    **POST Request Values**
+
+        * name (required): The string identifier for a cohort.
+        * assignment_type (required): The string representing the assignment type ("manual" or "random").
+        * user_partition_id (optional): The integer identifier of the UserPartition (content group configuration).
+        * group_id (optional): The integer identifier of the specific group in the partition.
+          If group_id is specified, user_partition_id must also be specified.
+
+    **PATCH Request Values**
+
+        * name (optional): The string identifier for a cohort.
+        * assignment_type (optional): The string representing the assignment type ("manual" or "random").
+        * user_partition_id (optional): The integer identifier of the UserPartition (content group configuration).
+        * group_id (optional): The integer identifier of the specific group in the partition.
+          Set group_id to null to remove the content group association.
+          If group_id is specified (non-null), user_partition_id must also be specified.
+
+        At least one of name, assignment_type, or group_id must be provided.
+
     **Response Values**
 
         * cohorts: List of cohorts.
@@ -507,8 +564,8 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
             * id: The integer identifier for a cohort.
             * user_count: The number of students in the cohort.
             * assignment_type: The string representing the assignment type.
-            * user_partition_id: The integer identified of the UserPartition.
-            * group_id: The integer identified of the specific group in the partition.
+            * user_partition_id: The integer identifier of the UserPartition.
+            * group_id: The integer identifier of the specific group in the partition.
     """
     queryset = []
 
@@ -547,12 +604,20 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
             raise self.api_error(status.HTTP_400_BAD_REQUEST,
                                  '"assignment_type" must be specified to create cohort.',
                                  'missing-assignment-type')
-        return _get_cohort_response(
-            cohorts.add_cohort(course_key, name, assignment_type), course)
+
+        cohort = cohorts.add_cohort(course_key, name, assignment_type)
+
+        # Handle optional group_id and user_partition_id for content group association
+        group_id = request.data.get('group_id')
+        user_partition_id = request.data.get('user_partition_id')
+        if group_id is not None or user_partition_id is not None:
+            _update_cohort_partition_group(cohort, group_id, user_partition_id, self.api_error)
+
+        return _get_cohort_response(cohort, course)
 
     def patch(self, request, course_key_string, cohort_id=None):
         """
-        Endpoint to update a cohort name and/or assignment type.
+        Endpoint to update a cohort name, assignment type, and/or content group association.
         """
         if cohort_id is None:
             raise self.api_error(status.HTTP_405_METHOD_NOT_ALLOWED,
@@ -560,9 +625,16 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
                                  'missing-cohort-id')
         name = request.data.get('name')
         assignment_type = request.data.get('assignment_type')
-        if not any((name, assignment_type)):
+        # has_group_id checks key presence rather than truthiness because
+        # group_id=null is a valid request to unlink the content group association,
+        # which is distinct from group_id not being sent at all (no change).
+        has_group_id = 'group_id' in request.data
+        group_id = request.data.get('group_id')
+        user_partition_id = request.data.get('user_partition_id')
+
+        if not any((name, assignment_type, has_group_id)):
             raise self.api_error(status.HTTP_400_BAD_REQUEST,
-                                 'Request must include name and/or assignment type.',
+                                 'Request must include name, assignment_type, and/or group_id.',
                                  'missing-fields')
         course_key, _ = _get_course_with_access(request, course_key_string)
         cohort = cohorts.get_cohort_by_id(course_key, cohort_id)
@@ -578,6 +650,11 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
                 cohorts.set_assignment_type(cohort, assignment_type)
             except ValueError as e:
                 raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'last-random-cohort')
+
+        # Handle group_id and user_partition_id for content group association
+        if has_group_id:
+            _update_cohort_partition_group(cohort, group_id, user_partition_id, self.api_error)
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

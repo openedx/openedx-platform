@@ -45,7 +45,7 @@ from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
 
 from django.utils.translation import gettext_lazy as _
-from openedx_learning.api.django import openedx_learning_apps_to_install
+from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
 
 from openedx.envs.common import *  # pylint: disable=wildcard-import
 
@@ -849,7 +849,7 @@ INSTALLED_APPS = [
     'drf_yasg',
 
     # Tagging
-    'openedx_tagging.core.tagging.apps.TaggingConfig',
+    'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
 
     # Search
@@ -898,7 +898,9 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    *openedx_learning_apps_to_install(),
+    # Core apps that power libraries
+    "openedx_content",
+    *openedx_content_backcompat_apps_to_install(),
 ]
 
 ### Apps only installed in some instances

@@ -15,9 +15,9 @@ from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.django.models import ContainerKeyField, CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryContainerLocator
-from openedx_learning.api.authoring import get_published_version
-from openedx_learning.api.authoring_models import Component, Container
-from openedx_learning.lib.fields import (
+from openedx_content.api import get_published_version
+from openedx_content.models_api import Component, Container
+from openedx_django_lib.fields import (
     immutable_uuid_field,
     key_field,
     manual_date_time_field,

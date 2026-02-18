@@ -5,7 +5,7 @@ Serializers for the Course to Library Import API.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import LearningContextKey
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_learning.api.authoring_models import Collection
+from openedx_content.models_api import Collection
 from rest_framework import serializers
 from user_tasks.models import UserTaskStatus
 from user_tasks.serializers import StatusSerializer

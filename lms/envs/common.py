@@ -60,7 +60,7 @@ from enterprise.constants import (
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
 )
-from openedx_learning.api.django import openedx_learning_apps_to_install
+from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
 
 from openedx.core.lib.derived import Derived
 from openedx.envs.common import *  # pylint: disable=wildcard-import
@@ -1950,7 +1950,7 @@ INSTALLED_APPS = [
     'lms.djangoapps.course_goals.apps.CourseGoalsConfig',
 
     # Tagging
-    'openedx_tagging.core.tagging.apps.TaggingConfig',
+    'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
 
     # Features
@@ -2020,8 +2020,9 @@ INSTALLED_APPS = [
 
     'openedx_events',
 
-    # Learning Core apps that power libraries
-    *openedx_learning_apps_to_install(),
+    # Core apps that power libraries
+    "openedx_content",
+    *openedx_content_backcompat_apps_to_install(),
 ]
 
 # Add LMS specific optional apps

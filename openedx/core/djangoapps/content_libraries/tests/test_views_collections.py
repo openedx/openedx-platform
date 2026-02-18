@@ -5,7 +5,7 @@ Tests Library Collections REST API views
 from __future__ import annotations
 import ddt
 
-from openedx_learning.api.authoring_models import Collection
+from openedx_content.models_api import Collection
 from opaque_keys.edx.locator import LibraryLocatorV2
 
 from openedx.core.djangolib.testing.utils import skip_unless_cms

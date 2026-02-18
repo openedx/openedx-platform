@@ -18,7 +18,7 @@ class UnsignedBigIntAutoField(AutoField):
             # is an alias for that (https://www.sqlite.org/autoinc.html). An unsigned integer
             # isn't an alias for ROWID, so we have to give up on the unsigned part.
             return "integer"
-        elif connection.settings_dict['ENGINE'] == 'django.db.backends.postgresql_psycopg2':
+        elif "postgresql" in connection.settings_dict['ENGINE']:
             # Pg's bigserial is implicitly unsigned (doesn't allow negative numbers) and
             # goes 1-9.2x10^18
             return "BIGSERIAL"
@@ -30,7 +30,7 @@ class UnsignedBigIntAutoField(AutoField):
             return "bigint UNSIGNED"
         elif connection.settings_dict['ENGINE'] == 'django.db.backends.sqlite3':
             return "integer"
-        elif connection.settings_dict['ENGINE'] == 'django.db.backends.postgresql_psycopg2':
+        elif "postgresql" in connection.settings_dict['ENGINE']:
             return "BIGSERIAL"
         else:
             return None

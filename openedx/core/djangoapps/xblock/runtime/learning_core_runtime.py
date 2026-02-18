@@ -12,7 +12,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.transaction import atomic
 from django.urls import reverse
 
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 
 from lxml import etree
 
@@ -295,16 +295,16 @@ class LearningCoreXBlockRuntime(XBlockRuntime):
         usage_key = block.scope_ids.usage_id
         with atomic():
             component = self._get_component_from_usage_key(usage_key)
-            block_media_type = authoring_api.get_or_create_media_type(
+            block_media_type = content_api.get_or_create_media_type(
                 f"application/vnd.openedx.xblock.v1.{usage_key.block_type}+xml"
             )
-            content = authoring_api.get_or_create_text_content(
+            content = content_api.get_or_create_text_content(
                 component.learning_package_id,
                 block_media_type.id,
                 text=serialized.olx_str,
                 created=now,
             )
-            authoring_api.create_next_version(
+            content_api.create_next_component_version(
                 component.pk,
                 title=block.display_name,
                 content_to_replace={
@@ -329,9 +329,9 @@ class LearningCoreXBlockRuntime(XBlockRuntime):
         TODO: This is the third place where we're implementing this. Figure out
         where the definitive place should be and have everything else call that.
         """
-        learning_package = authoring_api.get_learning_package_by_key(str(usage_key.lib_key))
+        learning_package = content_api.get_learning_package_by_key(str(usage_key.lib_key))
         try:
-            component = authoring_api.get_component_by_key(
+            component = content_api.get_component_by_key(
                 learning_package.id,
                 namespace='xblock.v1',
                 type_name=usage_key.block_type,
