@@ -85,6 +85,9 @@ class XBlockRuntime(RuntimeShim, Runtime):
     The main reason we cannot make the runtime a long-lived singleton is that
     the XBlock runtime API requires 'user_id' to be a property of the runtime,
     not an argument passed in when loading particular blocks.
+
+    TODO: This should probably be merged with OpenedXContentRuntime, its one and
+          only child class. See https://github.com/openedx/openedx-platform/issues/38021
     """
 
     # ** Do not add any XModule compatibility code to this class **
