@@ -63,7 +63,7 @@ numpy<2.0.0
 # Date: 2023-09-18
 # pinning this version to avoid updates while the library is being developed
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-learning==0.31.0
+openedx-learning==0.32.0
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
@@ -146,4 +146,3 @@ pact-python<3.0.0
 # building requirements with Python 3.12
 # https://github.com/openedx/edx-platform/issues/37880
 sphinx-autoapi<3.6.1
-

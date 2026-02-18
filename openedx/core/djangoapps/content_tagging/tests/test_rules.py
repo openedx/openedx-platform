@@ -4,11 +4,11 @@ import ddt
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from openedx_tagging.core.tagging.models import (
+from openedx_tagging.models import (
     Tag,
     UserSystemDefinedTaxonomy,
 )
-from openedx_tagging.core.tagging.rules import ObjectTagPermissionItem
+from openedx_tagging.rules import ObjectTagPermissionItem
 
 from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import CourseStaffRole, OrgStaffRole

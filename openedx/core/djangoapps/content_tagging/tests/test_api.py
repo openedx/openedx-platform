@@ -7,7 +7,7 @@ from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryCollectionLocator, LibraryContainerLocator
-from openedx_tagging.core.tagging.models import ObjectTag
+from openedx_tagging.models import ObjectTag
 from organizations.models import Organization
 from .test_objecttag_export_helpers import TestGetAllObjectTagsMixin, TaggedCourseMixin
 

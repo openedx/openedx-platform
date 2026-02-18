@@ -8,7 +8,7 @@ from xmodule.modulestore.django import contentstore, modulestore
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, upload_file_to_course
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, LibraryFactory
 from xmodule.util.sandboxing import DEFAULT_PYTHON_LIB_FILENAME
-from openedx_tagging.core.tagging.models import Tag
+from openedx_tagging.models import Tag
 from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 

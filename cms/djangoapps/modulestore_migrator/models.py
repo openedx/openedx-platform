@@ -11,7 +11,7 @@ from opaque_keys.edx.django.models import (
     LearningContextKeyField,
     UsageKeyField,
 )
-from openedx_learning.api.authoring_models import (
+from openedx_content.models_api import (
     Collection,
     DraftChangeLog,
     DraftChangeLogRecord,

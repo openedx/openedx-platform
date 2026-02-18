@@ -5,7 +5,7 @@ Test cases for the modulestore migrator API.
 import pytest
 from unittest.mock import patch
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2, CourseLocator
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from organizations.tests.factories import OrganizationFactory
 
 from cms.djangoapps.modulestore_migrator import api
@@ -224,7 +224,7 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         user = UserFactory()
 
         collection_key = "test-collection"
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
             key=collection_key,
             title="Test Collection",
@@ -479,19 +479,19 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
 
         # Lib 1 has Collection A and Collection B
         # Lib 2 has Collection C
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
             key="test-collection-1a",
             title="Test Collection A in Lib 1",
             created_by=user.id,
         )
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package.id,
             key="test-collection-1b",
             title="Test Collection B in Lib 1",
             created_by=user.id,
         )
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=self.learning_package_2.id,
             key="test-collection-2c",
             title="Test Collection C in Lib 2",

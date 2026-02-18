@@ -1399,7 +1399,7 @@ openedx-forum==0.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-openedx-learning==0.31.0
+openedx-learning==0.32.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt

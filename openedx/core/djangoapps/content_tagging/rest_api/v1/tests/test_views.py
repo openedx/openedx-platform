@@ -15,9 +15,9 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
-from openedx_tagging.core.tagging.models import Tag, Taxonomy
-from openedx_tagging.core.tagging.models.system_defined import SystemDefinedTaxonomy
-from openedx_tagging.core.tagging.rest_api.v1.serializers import TaxonomySerializer
+from openedx_tagging.models import Tag, Taxonomy
+from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
+from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
 from rest_framework import status
 from rest_framework.test import APITestCase
