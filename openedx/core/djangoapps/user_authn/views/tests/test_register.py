@@ -16,7 +16,7 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
-from zoneinfo import ZoneInfo
+from pytz import UTC
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 
@@ -949,7 +949,7 @@ class RegistrationViewTestV1(
         )
 
     def test_register_form_year_of_birth(self):
-        this_year = datetime.now(ZoneInfo("UTC")).year
+        this_year = datetime.now(UTC).year
         year_options = (
             [
                 {
@@ -3068,3 +3068,289 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
                 'vulnerability': 'yes',
                 'user_request_page': 'registration',
             })
+
+
+@ddt.ddt
+class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTestCase):
+    """
+    Tests for SAML provider-specific registration field overrides.
+
+    These tests verify that SAML providers can configure whether specific
+    registration form fields (like marketing_emails_opt_in and research)
+    should be required, optional, or hidden.
+    """
+
+    MARKETING_EMAILS_OPT_IN_ATTR = 'MARKETING_EMAILS_OPT_IN'
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+        self.url = reverse('user_api_registration')
+
+        # Enable SAML for testing
+        self.enable_saml()
+
+        # Enable marketing emails opt-in for testing
+        self.addCleanup(lambda: setattr(settings, self.MARKETING_EMAILS_OPT_IN_ATTR, False))
+        settings.MARKETING_EMAILS_OPT_IN = True
+
+    def _get_form_field(self, field_name, extra_fields=None):
+        """
+        Helper method to get a specific field from the registration form.
+
+        Args:
+            field_name (str): Name of the field to retrieve
+            extra_fields (dict): Optional REGISTRATION_EXTRA_FIELDS override
+
+        Returns:
+            dict or None: The field definition, or None if not found
+        """
+        if extra_fields is None:
+            response = self.client.get(self.url)
+        else:
+            with override_settings(REGISTRATION_EXTRA_FIELDS=extra_fields):
+                response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        form_desc = json.loads(response.content.decode('utf-8'))
+
+        for field in form_desc['fields']:
+            if field['name'] == field_name:
+                return field
+        return None
+
+    def test_provider_without_overrides(self):
+        """
+        Test that when a SAML provider has no field overrides configured,
+        fields use their platform default settings.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml'
+        )
+
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should use platform default (optional = not required)
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'checkbox')
+        self.assertFalse(field['required'])
+
+    def test_marketing_field_hidden(self):
+        """
+        Test that a SAML provider can hide the marketing_emails_opt_in field.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'hidden'
+                }
+            })
+        )
+
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should be hidden
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'hidden')
+        self.assertFalse(field['required'])
+        self.assertEqual(field['label'], '')
+
+    def test_marketing_field_required(self):
+        """
+        Test that a SAML provider can make the marketing_emails_opt_in field required.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'required'
+                }
+            })
+        )
+
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should be required
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'checkbox')
+        self.assertTrue(field['required'])
+
+    def test_marketing_field_optional(self):
+        """
+        Test that a SAML provider can explicitly make the marketing_emails_opt_in
+        field optional (even if platform default is required).
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'optional'
+                }
+            })
+        )
+
+        # Platform default is required
+        extra_fields = {'marketing_emails_opt_in': 'required'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should be optional (not required)
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'checkbox')
+        self.assertFalse(field['required'])
+
+    def test_research_field_hidden(self):
+        """
+        Test that a SAML provider can hide the research field.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'research': 'hidden'
+                }
+            })
+        )
+
+        extra_fields = {'research': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('research', extra_fields)
+
+        # Field should be hidden
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'hidden')
+        self.assertFalse(field['required'])
+        self.assertEqual(field['label'], '')
+
+    def test_multiple_fields_overridden(self):
+        """
+        Test that a SAML provider can override multiple fields simultaneously.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'hidden',
+                    'research': 'required'
+                }
+            })
+        )
+
+        extra_fields = {
+            'marketing_emails_opt_in': 'optional',
+            'research': 'optional'
+        }
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            marketing_field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+            research_field = self._get_form_field('research', extra_fields)
+
+        # Marketing field should be hidden
+        self.assertIsNotNone(marketing_field)
+        self.assertEqual(marketing_field['type'], 'hidden')
+
+        # Research field should be required
+        self.assertIsNotNone(research_field)
+        self.assertTrue(research_field['required'])
+
+    def test_invalid_override_value_ignored(self):
+        """
+        Test that invalid override values are gracefully ignored,
+        and the field uses platform default settings.
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'invalid_value'
+                }
+            })
+        )
+
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should use platform default since override value is invalid
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'checkbox')
+        self.assertFalse(field['required'])
+
+    def test_field_not_in_platform_settings(self):
+        """
+        Test that overriding a field that isn't enabled in platform settings
+        is gracefully handled (no error).
+        """
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'required',
+                    'research': 'hidden'  # This field is not enabled
+                }
+            })
+        )
+
+        # Only enable marketing_emails_opt_in, not research
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+            # This should not raise an error
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)
+
+            marketing_field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+            research_field = self._get_form_field('research', extra_fields)
+
+        # Marketing field should be overridden
+        self.assertIsNotNone(marketing_field)
+        self.assertTrue(marketing_field['required'])
+
+        # Research field should not exist (not enabled in platform settings)
+        self.assertIsNone(research_field)
+
+    def test_non_saml_registration_not_affected(self):
+        """
+        Test that regular (non-SAML) registration is not affected by
+        provider field overrides.
+        """
+        # Configure a SAML provider with overrides, but don't use it
+        provider = self.configure_saml_provider(
+            enabled=True,
+            slug='test-saml',
+            other_settings=json.dumps({
+                'registration_field_overrides': {
+                    'marketing_emails_opt_in': 'hidden'
+                }
+            })
+        )
+
+        extra_fields = {'marketing_emails_opt_in': 'optional'}
+
+        # Make request without any active pipeline (regular registration)
+        field = self._get_form_field('marketing_emails_opt_in', extra_fields)
+
+        # Field should use platform default (not hidden)
+        self.assertIsNotNone(field)
+        self.assertEqual(field['type'], 'checkbox')
+        self.assertFalse(field['required'])

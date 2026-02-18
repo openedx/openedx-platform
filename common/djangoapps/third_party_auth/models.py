@@ -753,9 +753,12 @@ class SAMLProviderConfig(ProviderConfig):
             'which can be used to require the presence of a specific eduPersonEntitlement, '
             'and {"extra_field_definitions": [{"name": "...", "urn": "..."},...]}, which can be '
             'used to define registration form fields and the URNs that can be used to retrieve '
-            'the relevant values from the SAML response. Custom provider types, as selected '
-            'in the "Identity Provider Type" field, may make use of the information stored '
-            'in this field for additional configuration.'
+            'the relevant values from the SAML response, '
+            'and {"registration_field_overrides": {"field_name": "required|optional|hidden"}}, '
+            'which can be used to control the visibility and requirement status of specific '
+            'registration form fields (e.g., marketing_emails_opt_in, research). '
+            'Custom provider types, as selected in the "Identity Provider Type" field, may make '
+            'use of the information stored in this field for additional configuration.'
         )
     )
     archived = models.BooleanField(default=False)
@@ -838,7 +841,39 @@ class SAMLProviderConfig(ProviderConfig):
             return other_settings[name]
         raise KeyError
 
-    def get_config(self, backend):
+    def get_registration_field_overrides(self):
+        """
+        Get registration field visibility/requirement overrides for this provider.
+
+        This allows SAML providers to configure whether certain fields
+        (like marketing_emails_opt_in or research) should be required,
+        optional, or hidden on the registration form.
+
+        Returns:
+            dict: Mapping of field names to settings ("required", "optional", "hidden")
+                  Returns empty dict if no overrides are configured.
+
+        Example:
+            {
+                "marketing_emails_opt_in": "optional",
+                "research": "hidden"
+            }
+        """
+        try:
+            overrides = self.get_setting('registration_field_overrides')
+            # Validate override values
+            valid_values = {'required', 'optional', 'hidden'}
+            if isinstance(overrides, dict):
+                return {
+                    field: value
+                    for field, value in overrides.items()
+                    if value in valid_values
+                }
+            return {}
+        except KeyError:
+            return {}
+
+    def get_config(self):
         """
         Return a SAMLIdentityProvider instance for use by SAMLAuthBackend.
 
@@ -898,7 +933,7 @@ class SAMLProviderConfig(ProviderConfig):
             SAMLConfiguration.current(self.site.id, 'default')
         )
         idp_class = get_saml_idp_class(self.identity_provider_type)
-        return idp_class(backend, self.slug, **conf)
+        return idp_class(self.slug, **conf)
 
 
 class SAMLProviderData(models.Model):

@@ -366,6 +366,7 @@ class RegistrationFormFactory:
             "profession",
             "specialty",
             "marketing_emails_opt_in",
+            "research",
         ]
 
         if settings.ENABLE_COPPA_COMPLIANCE and 'year_of_birth' in self.EXTRA_FIELDS:
@@ -401,7 +402,7 @@ class RegistrationFormFactory:
 
         field_order = configuration_helpers.get_value('REGISTRATION_FIELD_ORDER')
         if not field_order:
-            field_order = settings.REGISTRATION_FIELD_ORDER or valid_fields
+            field_order = getattr(settings, 'REGISTRATION_FIELD_ORDER', None) or valid_fields
         # Check that all of the valid_fields are in the field order and vice versa,
         # if not append missing fields at end of field order
         if set(valid_fields) != set(field_order):
@@ -709,6 +710,27 @@ class RegistrationFormFactory:
             field_type="checkbox",
             exposed=True,
             default=True,  # the checkbox will automatically be checked; meaning user has opted in
+            required=required,
+        )
+
+    def _add_research_field(self, form_desc, required=False):
+        """Add a research participation checkbox to form description.
+        Arguments:
+            form_desc: A form description
+        Keyword Arguments:
+            required (bool): Whether this field is required; defaults to False
+        """
+        research_label = _(
+            'I agree to allow {platform_name} to use my de-identified data for research purposes.').format(
+            platform_name=configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
+        )
+
+        form_desc.add_field(
+            'research',
+            label=research_label,
+            field_type="checkbox",
+            exposed=True,
+            default=False,
             required=required,
         )
 
@@ -1111,6 +1133,57 @@ class RegistrationFormFactory:
             },
         )
 
+    def _apply_provider_field_overrides(self, form_desc, provider_overrides, field_name):
+        """
+        Apply SAML provider-specific overrides to a registration form field.
+
+        This allows SAML providers to configure whether certain fields
+        (like marketing_emails_opt_in or research) should be required,
+        optional, or hidden.
+
+        Arguments:
+            form_desc (FormDescription): The registration form description to modify
+            provider_overrides (dict): Field override configuration from provider
+            field_name (str): Name of the field to potentially override
+
+        Returns:
+            bool: True if the field was overridden, False otherwise
+        """
+        if field_name not in provider_overrides:
+            return False
+
+        override_value = provider_overrides[field_name]
+
+        if override_value == "hidden":
+            # Hide the field completely
+            form_desc.override_field_properties(
+                field_name,
+                field_type="hidden",
+                required=False,
+                label="",
+                instructions="",
+                default=""
+            )
+            return True
+
+        elif override_value == "required":
+            # Make the field required
+            form_desc.override_field_properties(
+                field_name,
+                required=True
+            )
+            return True
+
+        elif override_value == "optional":
+            # Make the field optional (ensure it's not required)
+            form_desc.override_field_properties(
+                field_name,
+                required=False
+            )
+            return True
+
+        return False
+
     def _apply_third_party_auth_overrides(self, request, form_desc):
         """Modify the registration form if the user has authenticated with a third-party provider.
         If a user has successfully authenticated with a third-party provider,
@@ -1195,3 +1268,26 @@ class RegistrationFormFactory:
                         default=current_provider.name if current_provider.name else "Third Party",
                         required=False,
                     )
+
+                    # Apply provider-specific field visibility overrides
+                    # This allows SAML providers to configure whether fields like
+                    # marketing_emails_opt_in or research should be shown/required
+                    provider_field_overrides = current_provider.get_registration_field_overrides()
+
+                    if provider_field_overrides:
+                        # List of fields that can be overridden by the provider
+                        overrideable_fields = [
+                            'marketing_emails_opt_in',
+                            'research',
+                            # Add more fields here as needed
+                        ]
+
+                        for field_name in overrideable_fields:
+                            # Only apply overrides for fields that are actually in the form
+                            # This check prevents errors if a field isn't enabled platform-wide
+                            if any(f['name'] == field_name for f in form_desc.fields):
+                                self._apply_provider_field_overrides(
+                                    form_desc,
+                                    provider_field_overrides,
+                                    field_name
+                                )
