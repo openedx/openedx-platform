@@ -3071,7 +3071,7 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
 
 
 @ddt.ddt
-class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTestCase):
+class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, UserAPITestCase):
     """
     Tests for SAML provider-specific registration field overrides.
 
@@ -3081,6 +3081,11 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
     """
 
     MARKETING_EMAILS_OPT_IN_ATTR = 'MARKETING_EMAILS_OPT_IN'
+
+    @classmethod
+    def setUpClass(cls):
+        """Set up class method for the Test class."""
+        super().setUpClass()
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
@@ -3130,7 +3135,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
 
         extra_fields = {'marketing_emails_opt_in': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('marketing_emails_opt_in', extra_fields)
 
         # Field should use platform default (optional = not required)
@@ -3154,7 +3159,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
 
         extra_fields = {'marketing_emails_opt_in': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('marketing_emails_opt_in', extra_fields)
 
         # Field should be hidden
@@ -3179,7 +3184,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
 
         extra_fields = {'marketing_emails_opt_in': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('marketing_emails_opt_in', extra_fields)
 
         # Field should be required
@@ -3205,7 +3210,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
         # Platform default is required
         extra_fields = {'marketing_emails_opt_in': 'required'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('marketing_emails_opt_in', extra_fields)
 
         # Field should be optional (not required)
@@ -3229,7 +3234,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
 
         extra_fields = {'research': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('research', extra_fields)
 
         # Field should be hidden
@@ -3258,7 +3263,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
             'research': 'optional'
         }
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             marketing_field = self._get_form_field('marketing_emails_opt_in', extra_fields)
             research_field = self._get_form_field('research', extra_fields)
 
@@ -3287,7 +3292,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
 
         extra_fields = {'marketing_emails_opt_in': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             field = self._get_form_field('marketing_emails_opt_in', extra_fields)
 
         # Field should use platform default since override value is invalid
@@ -3314,7 +3319,7 @@ class SAMLProviderFieldOverridesTest(ThirdPartyAuthTestMixin, test_utils.ApiTest
         # Only enable marketing_emails_opt_in, not research
         extra_fields = {'marketing_emails_opt_in': 'optional'}
 
-        with simulate_running_pipeline('common.djangoapps.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
+        with simulate_running_pipeline('openedx.core.djangoapps.user_authn.views.registration_form.third_party_auth.pipeline', 'tpa-saml', response={'idp_name': 'test-saml'}):
             # This should not raise an error
             response = self.client.get(self.url)
             self.assertEqual(response.status_code, 200)
