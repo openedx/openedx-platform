@@ -245,7 +245,7 @@ class UpstreamLink:
         Get info on a downstream block's relationship with its linked upstream
         content (without actually loading the content).
 
-        Currently, the only supported upstreams are LC-backed Library Components
+        Currently, the only supported upstreams are openedx_content-backed Components
         (XBlocks) or Containers. This may change in the future (see module
         docstring).
 

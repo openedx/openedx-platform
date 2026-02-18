@@ -116,7 +116,7 @@ class ModulestoreBlockMigrationResult:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which has been successfully migrated into an LC entity
+    Info on a modulestore block which has been successfully migrated to an openedx_content entity
     """
     target_entity_pk: int
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
@@ -128,7 +128,7 @@ class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationFailure(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which failed to be migrated into LC
+    Info on a modulestore block which failed to be migrated into openedx_content
     """
     unsupported_reason: str
     is_failed: t.ClassVar[bool] = True

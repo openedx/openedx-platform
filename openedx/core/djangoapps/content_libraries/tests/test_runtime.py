@@ -116,7 +116,7 @@ class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
             f'<html url_name="roundtrip" display_name="Round Trip Test HTML Block"><![CDATA[{block_content}]]></html>\n'
         )
 
-        # Save the block to LC, and re-load it.
+        # Save the block to openedx_content, and re-load it.
         library_api.set_library_block_olx(usage_key, olx_1)
         library_api.publish_changes(self.library.key)
         block_saved_1 = xblock_api.load_block(usage_key, self.staff_user)
@@ -131,7 +131,7 @@ class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
         ).olx_str
         assert olx_2 == canonical_olx
 
-        # Now, save that OLX back to LC, and re-load it again.
+        # Now, save that OLX back to openedx_content, and re-load it again.
         library_api.set_library_block_olx(usage_key, olx_2)
         library_api.publish_changes(self.library.key)
         block_saved_2 = xblock_api.load_block(usage_key, self.staff_user)
