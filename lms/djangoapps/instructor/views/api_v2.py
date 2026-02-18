@@ -5,33 +5,51 @@ This module contains the v2 API endpoints for instructor functionality.
 These APIs are designed to be consumed by MFEs and other API clients.
 """
 
+import csv
+import io
 import logging
-
+import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional, Tuple
+
+
 import edx_api_doc_tools as apidocs
+from django.conf import settings
+from django.db import transaction
+from django.utils.decorators import method_decorator
+from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
+from django.views.decorators.cache import cache_control
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from pytz import UTC
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.exceptions import NotFound
+from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView
-from rest_framework.exceptions import NotFound
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_control
-from django.utils.html import strip_tags
-from django.utils.translation import gettext as _
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
+
 from common.djangoapps.util.json_request import JsonResponseBadRequest
+from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
 from lms.djangoapps.instructor_task import api as task_api
+from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
+from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
+from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
+from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
+from lms.djangoapps.instructor_task.models import ReportStore
+from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
 from .serializers_v2 import (
@@ -45,6 +63,7 @@ from .serializers_v2 import (
 from .tools import (
     find_unit,
     get_units_with_due_date,
+    keep_field_private,
     set_due_date_extension,
     title_or_url,
 )
@@ -566,6 +585,477 @@ class ORAView(GenericAPIView):
 
         serializer = self.get_serializer(page, many=True)
         return self.get_paginated_response(serializer.data)
+
+
+class ReportDownloadsView(DeveloperErrorViewMixin, APIView):
+    """
+    **Use Cases**
+
+        List all available report downloads for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_key}/reports
+
+    **Response Values**
+
+        {
+            "downloads": [
+                {
+                    "report_name": "course-v1_edX_DemoX_Demo_Course_grade_report_2024-01-26-1030.csv",
+                    "report_url":
+                        "/grades/course-v1:edX+DemoX+Demo_Course/"
+                        "course-v1_edX_DemoX_Demo_Course_grade_report_2024-01-26-1030.csv",
+                    "date_generated": "2024-01-26T10:30:00Z",
+                    "report_type": "grade"  # Uses ReportType.GRADE.value
+                }
+            ]
+        }
+
+    **Parameters**
+
+        course_key: Course key for the course.
+
+    **Returns**
+
+        * 200: OK - Returns list of available reports
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks staff access to the course
+        * 404: Not Found - Course does not exist
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    # Use ENROLLMENT_REPORT permission which allows course staff and data researchers
+    # to view generated reports, aligning with the intended audience of instructors/course staff
+    permission_name = permissions.ENROLLMENT_REPORT
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: "Returns list of available report downloads.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def get(self, request, course_id):
+        """
+        List all available report downloads for a course.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        report_store = ReportStore.from_config(config_name='GRADES_DOWNLOAD')
+
+        downloads = []
+        for name, url in report_store.links_for(course_key):
+            # Determine report type from filename using helper method
+            report_type = self._detect_report_type_from_filename(name)
+
+            # Extract date from filename if possible (format: YYYY-MM-DD-HHMM)
+            date_generated = self._extract_date_from_filename(name)
+
+            downloads.append({
+                'report_name': name,
+                'report_url': url,
+                'date_generated': date_generated,
+                'report_type': report_type,
+            })
+
+        return Response({'downloads': downloads}, status=status.HTTP_200_OK)
+
+    def _detect_report_type_from_filename(self, filename):
+        """
+        Detect report type from filename using pattern matching.
+        Check more specific patterns first to avoid false matches.
+
+        Args:
+            filename: The name of the report file
+
+        Returns:
+            str: The report type identifier
+        """
+        name_lower = filename.lower()
+
+        # Check more specific patterns first to avoid false matches
+        # Match exact report names from the filename format: {course_prefix}_{csv_name}_{timestamp}.csv
+        if 'inactive_enrolled' in name_lower:
+            return ReportType.PENDING_ACTIVATIONS.value
+        elif 'problem_grade_report' in name_lower:
+            return ReportType.PROBLEM_GRADE.value
+        elif 'ora2_submission' in name_lower or 'submission_files' in name_lower or 'ora_submission' in name_lower:
+            return ReportType.ORA2_SUBMISSION_FILES.value
+        elif 'ora2_summary' in name_lower or 'ora_summary' in name_lower:
+            return ReportType.ORA2_SUMMARY.value
+        elif 'ora2_data' in name_lower or 'ora_data' in name_lower:
+            return ReportType.ORA2_DATA.value
+        elif 'may_enroll' in name_lower:
+            return ReportType.PENDING_ENROLLMENTS.value
+        elif 'student_state' in name_lower or 'problem_responses' in name_lower:
+            return ReportType.PROBLEM_RESPONSES.value
+        elif 'anonymized_ids' in name_lower or 'anon' in name_lower:
+            return ReportType.ANONYMIZED_STUDENT_IDS.value
+        elif 'issued_certificates' in name_lower or 'certificate' in name_lower:
+            return ReportType.ISSUED_CERTIFICATES.value
+        elif 'grade_report' in name_lower:
+            return ReportType.GRADE.value
+        elif 'enrolled_students' in name_lower or 'profile' in name_lower:
+            return ReportType.ENROLLED_STUDENTS.value
+
+        return ReportType.UNKNOWN.value
+
+    def _extract_date_from_filename(self, filename):
+        """
+        Extract date from filename (format: YYYY-MM-DD-HHMM).
+
+        Args:
+            filename: The name of the report file
+
+        Returns:
+            str: ISO formatted date string or None
+        """
+        date_match = re.search(r'_(\d{4}-\d{2}-\d{2}-\d{4})', filename)
+        if date_match:
+            date_str = date_match.group(1)
+            try:
+                # Parse the date string (YYYY-MM-DD-HHMM) directly
+                dt = datetime.strptime(date_str, '%Y-%m-%d-%H%M')
+                # Format as ISO 8601 with UTC timezone
+                return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+            except ValueError:
+                pass
+        return None
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class GenerateReportView(DeveloperErrorViewMixin, APIView):
+    """
+    **Use Cases**
+
+        Generate a specific type of report for a course.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_key}/reports/enrolled_students/generate
+        POST /api/instructor/v2/courses/{course_key}/reports/grade/generate
+        POST /api/instructor/v2/courses/{course_key}/reports/problem_responses/generate
+
+    **Response Values**
+
+        {
+            "status": "The report is being created. Please check the data downloads section for the status."
+        }
+
+    **Parameters**
+
+        course_key: Course key for the course.
+        report_type: Type of report to generate. Valid values:
+            - enrolled_students: Enrolled Students Report
+            - pending_enrollments: Pending Enrollments Report
+            - pending_activations: Pending Activations Report (inactive users with enrollments)
+            - anonymized_student_ids: Anonymized Student IDs Report
+            - grade: Grade Report
+            - problem_grade: Problem Grade Report
+            - problem_responses: Problem Responses Report
+            - ora2_summary: ORA Summary Report
+            - ora2_data: ORA Data Report
+            - ora2_submission_files: ORA Submission Files Report
+            - issued_certificates: Issued Certificates Report
+
+    **Returns**
+
+        * 200: OK - Report generation task has been submitted
+        * 400: Bad Request - Task is already running or invalid report type
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+
+    @property
+    def permission_name(self):
+        """
+        Return the appropriate permission name based on the requested report type.
+        For the issued certificates report, mirror the v1 behavior by using
+        VIEW_ISSUED_CERTIFICATES (course-level staff access). For all other reports,
+        require CAN_RESEARCH.
+        """
+        report_type = self.kwargs.get('report_type')
+        if report_type == ReportType.ISSUED_CERTIFICATES.value:
+            return permissions.VIEW_ISSUED_CERTIFICATES
+        return permissions.CAN_RESEARCH
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'report_type',
+                apidocs.ParameterLocation.PATH,
+                description=(
+                    "Type of report to generate. Valid values: "
+                    "enrolled_students, pending_enrollments, pending_activations, "
+                    "anonymized_student_ids, grade, problem_grade, problem_responses, "
+                    "ora2_summary, ora2_data, ora2_submission_files, issued_certificates"
+                ),
+            ),
+        ],
+        responses={
+            200: "Report generation task has been submitted successfully.",
+            400: "The requested task is already running or invalid report type.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def post(self, request, course_id, report_type):
+        """
+        Generate a specific type of report for a course.
+        """
+        course_key = CourseKey.from_string(course_id)
+
+        # Map report types to their submission functions
+        report_handlers = {
+            ReportType.ENROLLED_STUDENTS.value: self._generate_enrolled_students_report,
+            ReportType.PENDING_ENROLLMENTS.value: self._generate_pending_enrollments_report,
+            ReportType.PENDING_ACTIVATIONS.value: self._generate_pending_activations_report,
+            ReportType.ANONYMIZED_STUDENT_IDS.value: self._generate_anonymized_ids_report,
+            ReportType.GRADE.value: self._generate_grade_report,
+            ReportType.PROBLEM_GRADE.value: self._generate_problem_grade_report,
+            ReportType.PROBLEM_RESPONSES.value: self._generate_problem_responses_report,
+            ReportType.ORA2_SUMMARY.value: self._generate_ora2_summary_report,
+            ReportType.ORA2_DATA.value: self._generate_ora2_data_report,
+            ReportType.ORA2_SUBMISSION_FILES.value: self._generate_ora2_submission_files_report,
+            ReportType.ISSUED_CERTIFICATES.value: self._generate_issued_certificates_report,
+        }
+
+        handler = report_handlers.get(report_type)
+        if not handler:
+            return Response(
+                {'error': f'Invalid report type: {report_type}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            success_message = handler(request, course_key)
+        except AlreadyRunningError as error:
+            log.warning("Task already running for %s report: %s", report_type, error)
+            return Response(
+                {'error': _('A report generation task is already running. Please wait for it to complete.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except QueueConnectionError as error:
+            log.error("Queue connection error for %s report task: %s", report_type, error)
+            return Response(
+                {'error': _('Unable to connect to the task queue. Please try again later.')},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        except ValueError as error:
+            log.error("Error submitting %s report task: %s", report_type, error)
+            return Response(
+                {'error': str(error)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({'status': success_message}, status=status.HTTP_200_OK)
+
+    def _generate_enrolled_students_report(self, request, course_key):
+        """Generate enrolled students report."""
+        course = get_course_by_id(course_key)
+        available_features = instructor_analytics_basic.get_available_features(course_key)
+
+        # Allow for sites to be able to define additional columns.
+        # Note that adding additional columns has the potential to break
+        # the student profile report due to a character limit on the
+        # asynchronous job input which in this case is a JSON string
+        # containing the list of columns to include in the report.
+        # TODO: Refactor the student profile report code to remove the list of columns
+        # that should be included in the report from the asynchronous job input.
+        # We need to clone the list because we modify it below
+        query_features = list(configuration_helpers.get_value('student_profile_download_fields', []))
+
+        if not query_features:
+            query_features = [
+                'id', 'username', 'name', 'email', 'language', 'location',
+                'year_of_birth', 'gender', 'level_of_education', 'mailing_address',
+                'goals', 'enrollment_mode', 'last_login', 'date_joined', 'external_user_key',
+                'enrollment_date',
+            ]
+
+        additional_attributes = configuration_helpers.get_value_for_org(
+            course_key.org,
+            "additional_student_profile_attributes"
+        )
+        if additional_attributes:
+            # Fail fast: must be list/tuple of strings.
+            if not isinstance(additional_attributes, (list, tuple)):
+                raise ValueError(
+                    _('Invalid additional student attribute configuration: expected list of strings, got {type}.')
+                    .format(type=type(additional_attributes).__name__)
+                )
+            if not all(isinstance(v, str) for v in additional_attributes):
+                raise ValueError(
+                    _('Invalid additional student attribute configuration: all entries must be strings.')
+                )
+            # Reject empty string entries explicitly.
+            if any(v == '' for v in additional_attributes):
+                raise ValueError(
+                    _('Invalid additional student attribute configuration: empty attribute names are not allowed.')
+                )
+            # Validate each attribute is in available_features; allow duplicates as provided.
+            invalid = [v for v in additional_attributes if v not in available_features]
+            if invalid:
+                raise ValueError(
+                    _('Invalid additional student attributes: {attrs}').format(
+                        attrs=', '.join(invalid)
+                    )
+                )
+            query_features.extend(additional_attributes)
+
+        for field in settings.PROFILE_INFORMATION_REPORT_PRIVATE_FIELDS:
+            keep_field_private(query_features, field)
+
+        if is_course_cohorted(course.id):
+            query_features.append('cohort')
+
+        if course.teams_enabled:
+            query_features.append('team')
+
+        # For compatibility reasons, city and country should always appear last.
+        query_features.append('city')
+        query_features.append('country')
+
+        task_api.submit_calculate_students_features_csv(request, course_key, query_features)
+        return _('The enrolled student report is being created.')
+
+    def _generate_pending_enrollments_report(self, request, course_key):
+        """Generate pending enrollments report."""
+        query_features = ['email']
+        task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
+        return _('The pending enrollments report is being created.')
+
+    def _generate_pending_activations_report(self, request, course_key):
+        """Generate pending activations report."""
+        query_features = ['email']
+        task_api.submit_calculate_inactive_enrolled_students_csv(request, course_key, query_features)
+        return _('The pending activations report is being created.')
+
+    def _generate_anonymized_ids_report(self, request, course_key):
+        """Generate anonymized student IDs report."""
+        task_api.generate_anonymous_ids(request, course_key)
+        return _('The anonymized student IDs report is being created.')
+
+    def _generate_grade_report(self, request, course_key):
+        """Generate grade report."""
+        task_api.submit_calculate_grades_csv(request, course_key)
+        return _('The grade report is being created.')
+
+    def _generate_problem_grade_report(self, request, course_key):
+        """Generate problem grade report."""
+        task_api.submit_problem_grade_report(request, course_key)
+        return _('The problem grade report is being created.')
+
+    def _generate_problem_responses_report(self, request, course_key):
+        """
+        Generate problem responses report.
+
+        Requires a problem_location (section or problem block id).
+        Supports optional filtering by problem types.
+        """
+        problem_location = request.data.get('problem_location', '').strip()
+        problem_types_filter = request.data.get('problem_types_filter')
+
+        if not problem_location:
+            raise ValueError(_('Specify Section or Problem block id is required.'))
+
+        # Validate problem location
+        try:
+            usage_key = UsageKey.from_string(problem_location).map_into_course(course_key)
+        except InvalidKeyError as exc:
+            raise ValueError(_('Invalid problem location format.')) from exc
+
+        # Check if the problem actually exists in the modulestore
+        store = modulestore()
+        try:
+            store.get_item(usage_key)
+        except ItemNotFoundError as exc:
+            raise ValueError(_('The problem location does not exist in this course.')) from exc
+
+        problem_locations_str = problem_location
+
+        task_api.submit_calculate_problem_responses_csv(
+            request, course_key, problem_locations_str, problem_types_filter
+        )
+        return _('The problem responses report is being created.')
+
+    def _generate_ora2_summary_report(self, request, course_key):
+        """Generate ORA2 summary report."""
+        task_api.submit_export_ora2_summary(request, course_key)
+        return _('The ORA2 summary report is being created.')
+
+    def _generate_ora2_data_report(self, request, course_key):
+        """Generate ORA2 data report."""
+        task_api.submit_export_ora2_data(request, course_key)
+        return _('The ORA2 data report is being created.')
+
+    def _generate_ora2_submission_files_report(self, request, course_key):
+        """Generate ORA2 submission files archive."""
+        task_api.submit_export_ora2_submission_files(request, course_key)
+        return _('The ORA2 submission files archive is being created.')
+
+    def _generate_issued_certificates_report(self, request, course_key):
+        """Generate issued certificates report."""
+        # Query features for the report
+        query_features = ['course_id', 'mode', 'total_issued_certificate', 'report_run_date']
+        query_features_names = [
+            ('course_id', _('CourseID')),
+            ('mode', _('Certificate Type')),
+            ('total_issued_certificate', _('Total Certificates Issued')),
+            ('report_run_date', _('Date Report Run'))
+        ]
+
+        # Get certificates data
+        certificates_data = instructor_analytics_basic.issued_certificates(course_key, query_features)
+
+        # Format the data for CSV
+        __, data_rows = instructor_analytics_csvs.format_dictlist(certificates_data, query_features)
+
+        # Generate CSV content as a file-like object
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header
+        writer.writerow([col_header for __, col_header in query_features_names])
+
+        # Write data rows
+        for row in data_rows:
+            writer.writerow(row)
+
+        # Reset the buffer position to the beginning
+        output.seek(0)
+
+        # Store the report using the standard helper function with UTC timestamp
+        timestamp = datetime.now(UTC)
+        upload_csv_file_to_report_store(
+            output,
+            'issued_certificates',
+            course_key,
+            timestamp,
+            config_name='GRADES_DOWNLOAD'
+        )
+
+        return _('The issued certificates report has been created.')
 
 
 class ORASummaryView(GenericAPIView):

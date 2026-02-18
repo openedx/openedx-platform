@@ -3,7 +3,6 @@ Tests for Cohort API
 """
 
 
-import json
 import tempfile
 
 import ddt
@@ -15,8 +14,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
-from .. import cohorts
-from .helpers import CohortFactory
+from openedx.core.djangoapps.course_groups import cohorts
+from openedx.core.djangoapps.course_groups.views import link_cohort_to_partition_group
+from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 
 USERNAME = 'honor'
 USER_MAIL = 'honor@example.com'
@@ -24,7 +24,7 @@ SETTINGS_PAYLOAD = '{"is_cohorted": true}'
 HANDLER_POST_PAYLOAD = '{"name":"Default","user_count":0,"assignment_type":"random","user_partition_id":null\
 ,"group_id":null}'
 HANDLER_PATCH_PAYLOAD = '{"name":"Default Group","group_id":null,"user_partition_id":null,"assignment_type":"random"}'
-ADD_USER_PAYLOAD = json.dumps({'users': [USER_MAIL, ]})
+ADD_USER_PAYLOAD = {'users': [USER_MAIL, ]}
 CSV_DATA = f'''email,cohort\n{USER_MAIL},DEFAULT'''
 
 
@@ -307,7 +307,7 @@ class TestCohortApi(SharedModuleStoreTestCase):
         assert response.status_code == status
 
         if status == 200:
-            results = json.loads(response.content.decode('utf-8'))['results']
+            results = response.json()['results']
             expected_results = [{
                 'username': user.username,
                 'email': user.email,
@@ -406,7 +406,7 @@ class TestCohortApi(SharedModuleStoreTestCase):
             "invalid": ["foo@bar"],
             "present": ["user2"]
         }
-        assert json.loads(response.content.decode('utf-8')) == expected_response
+        assert response.json() == expected_response
 
     def test_remove_user_from_cohort_missing_username(self):
         """
@@ -458,3 +458,151 @@ class TestCohortApi(SharedModuleStoreTestCase):
             response = self.client.post(path=path,
                                         data={'uploaded-file': file_pointer})
             assert response.status_code == status
+
+    def test_post_cohort_with_group_id(self):
+        """
+        Test creating a cohort with group_id and user_partition_id.
+        """
+        path = reverse('api_cohorts:cohort_handler', kwargs={'course_key_string': self.course_str})
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        payload = {
+            'name': 'TestCohort',
+            'assignment_type': 'manual',
+            'group_id': 1,
+            'user_partition_id': 50
+        }
+        response = self.client.post(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data['name'] == 'TestCohort'
+        assert data['assignment_type'] == 'manual'
+        assert data['group_id'] == 1
+        assert data['user_partition_id'] == 50
+        assert data['user_count'] == 0
+        assert 'id' in data
+
+    def test_post_cohort_with_group_id_missing_partition_id(self):
+        """
+        Test that creating a cohort with group_id but without user_partition_id returns an error.
+        """
+        path = reverse('api_cohorts:cohort_handler', kwargs={'course_key_string': self.course_str})
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        payload = {
+            'name': 'TestCohort',
+            'assignment_type': 'manual',
+            'group_id': 1
+        }
+        response = self.client.post(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 400
+
+        data = response.json()
+        assert data['developer_message'] == 'If group_id is specified, user_partition_id must also be specified.'
+        assert data['error_code'] == 'missing-user-partition-id'
+
+    def test_patch_cohort_set_group_id(self):
+        """
+        Test updating a cohort to set group_id and user_partition_id.
+        """
+        cohort = cohorts.add_cohort(self.course_key, "TestCohort", "manual")
+        path = reverse(
+            'api_cohorts:cohort_handler',
+            kwargs={'course_key_string': self.course_str, 'cohort_id': cohort.id}
+        )
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        payload = {
+            'group_id': 2,
+            'user_partition_id': 50
+        }
+        response = self.client.patch(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 204
+
+        # Verify by fetching the cohort
+        response = self.client.get(path=path)
+        data = response.json()
+        assert data['id'] == cohort.id
+        assert data['name'] == 'TestCohort'
+        assert data['assignment_type'] == 'manual'
+        assert data['group_id'] == 2
+        assert data['user_partition_id'] == 50
+
+    def test_patch_cohort_remove_group_id(self):
+        """
+        Test updating a cohort to remove the group_id association by setting it to null.
+        """
+        cohort = cohorts.add_cohort(self.course_key, "TestCohort", "manual")
+        link_cohort_to_partition_group(cohort, 50, 1)
+
+        path = reverse(
+            'api_cohorts:cohort_handler',
+            kwargs={'course_key_string': self.course_str, 'cohort_id': cohort.id}
+        )
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        # Verify the cohort has a group_id
+        response = self.client.get(path=path)
+        data = response.json()
+        assert data['id'] == cohort.id
+        assert data['name'] == 'TestCohort'
+        assert data['group_id'] == 1
+        assert data['user_partition_id'] == 50
+
+        # Remove the group_id by setting it to null
+        payload = {'group_id': None}
+        response = self.client.patch(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 204
+
+        # Verify the group_id was removed but other fields unchanged
+        response = self.client.get(path=path)
+        data = response.json()
+        assert data['id'] == cohort.id
+        assert data['name'] == 'TestCohort'
+        assert data['assignment_type'] == 'manual'
+        assert data['group_id'] is None
+        assert data['user_partition_id'] is None
+
+    def test_patch_cohort_with_group_id_missing_partition_id(self):
+        """
+        Test that updating a cohort with group_id but without user_partition_id returns an error.
+        """
+        cohort = cohorts.add_cohort(self.course_key, "TestCohort", "manual")
+        path = reverse(
+            'api_cohorts:cohort_handler',
+            kwargs={'course_key_string': self.course_str, 'cohort_id': cohort.id}
+        )
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        payload = {'group_id': 2}
+        response = self.client.patch(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 400
+
+        data = response.json()
+        assert data['developer_message'] == 'If group_id is specified, user_partition_id must also be specified.'
+        assert data['error_code'] == 'missing-user-partition-id'
+
+    def test_patch_cohort_with_name_only(self):
+        """
+        Test that PATCH with only name is now valid (previously required assignment_type too).
+        """
+        cohort = cohorts.add_cohort(self.course_key, "OldName", "manual")
+        path = reverse(
+            'api_cohorts:cohort_handler',
+            kwargs={'course_key_string': self.course_str, 'cohort_id': cohort.id}
+        )
+        self.client.login(username=self.staff_user.username, password=self.password)
+
+        payload = {'name': 'NewName'}
+        response = self.client.patch(path=path, data=payload, content_type='application/json')
+        assert response.status_code == 204
+
+        # Verify the name was updated and other fields unchanged
+        response = self.client.get(path=path)
+        data = response.json()
+        assert data['id'] == cohort.id
+        assert data['name'] == 'NewName'
+        assert data['assignment_type'] == 'manual'
+        assert data['group_id'] is None
+        assert data['user_partition_id'] is None
