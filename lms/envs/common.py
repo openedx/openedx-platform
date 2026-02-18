@@ -2779,7 +2779,6 @@ DISCUSSION_SPAM_URLS = []
 # .. setting_description: Content to replace spam posts with
 CONTENT_FOR_SPAM_POSTS = ""
 
-
 # .. toggle_name: ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

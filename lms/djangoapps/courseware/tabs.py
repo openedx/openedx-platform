@@ -320,8 +320,8 @@ class DatesTab(EnrolledTab):
     def is_enabled(cls, course, user=None):
         if not super().is_enabled(course, user=user):
             return False
-        return not getattr(course, 'hide_dates_tab', False)
-
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        return bool(dates_tab and not dates_tab.is_hidden)
 
 def get_course_tab_list(user, course):
     """

@@ -8,8 +8,10 @@ from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
 
 from xmodule.modulestore.django import modulestore
+from xmodule.tabs import CourseTabList
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseTab
+
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
 
@@ -87,7 +89,9 @@ class DatesCourseApp(CourseApp):
         """
         The dates course status is stored in the course block.
         """
-        return not CourseOverview.get_from_id(course_key).hide_dates_tab
+        course = get_course_by_id(course_key)
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        return bool(dates_tab and not dates_tab.is_hidden)
 
     @classmethod
     def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:
@@ -95,7 +99,12 @@ class DatesCourseApp(CourseApp):
         The dates course enabled/disabled status is stored in the course block.
         """
         course = get_course_by_id(course_key)
-        course.hide_dates_tab = not enabled
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        if enabled and dates_tab is None:
+            dates_tab = CourseTab.load("dates")
+            course.tabs.append(dates_tab)
+        if dates_tab is not None:
+            dates_tab.is_hidden = not enabled
         modulestore().update_item(course, user.id)
         return enabled
 
