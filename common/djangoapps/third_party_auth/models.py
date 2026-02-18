@@ -745,6 +745,14 @@ class SAMLProviderConfig(ProviderConfig):
             "immediately after authenticating with the third party instead of the login page."
         ),
     )
+    marketing_emails_opt_in_optional = models.BooleanField(
+        default=False,
+        help_text=_(
+            "If enabled, the marketing emails opt-in checkbox will be optional for users "
+            "registering via this provider instead of required. When disabled, marketing email opt-in "
+            "is determined by the global MARKETING_EMAILS_OPT_IN setting."
+        ),
+    )
     other_settings = models.TextField(
         verbose_name="Advanced settings", blank=True,
         help_text=(

@@ -3,6 +3,7 @@ Objects and utilities used to construct registration forms.
 """
 
 import copy
+import logging
 import re
 from importlib import import_module
 
@@ -18,6 +19,7 @@ from django_countries import countries
 from eventtracking import tracker
 
 from common.djangoapps import third_party_auth
+from common.djangoapps.third_party_auth.models import SAMLProviderConfig
 from common.djangoapps.edxmako.shortcuts import marketing_link
 from common.djangoapps.student.models import CourseEnrollmentAllowed, UserProfile, email_exists_or_retired
 from common.djangoapps.util.password_policy_validators import (
@@ -34,6 +36,9 @@ from openedx.core.djangoapps.user_authn.utils import is_registration_api_v1 as i
 from openedx.core.djangoapps.user_authn.views.utils import remove_disabled_country_from_list
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
+
+
+log = logging.getLogger(__name__)
 
 
 class TrueCheckbox(widgets.CheckboxInput):
@@ -410,6 +415,7 @@ class RegistrationFormFactory:
             field_order.extend(sorted(difference))
 
         self.field_order = field_order
+        self.request = None  # Will be set by get_registration_form
 
     def get_registration_form(self, request):
         """Return a description of the registration form.
@@ -426,6 +432,7 @@ class RegistrationFormFactory:
         Returns:
             HttpResponse
         """
+        self.request = request
         form_desc = FormDescription("post", self._get_registration_submit_url(request))
         self._apply_third_party_auth_overrides(request, form_desc)
 
@@ -703,13 +710,63 @@ class RegistrationFormFactory:
             platform_name=configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
         )
 
+        # Check if marketing opt-in should be optional for this SAML provider
+        # If the SAML provider config says the field is optional, set default to False
+        # and clear any existing field overrides that may have been set by the TPA provider
+        default_value = True  # Default: checkbox is checked
+        field_required = required
+        
+        if self.request and third_party_auth.is_enabled():
+            running_pipeline = third_party_auth.pipeline.get(self.request)
+            if running_pipeline:
+                try:
+                    from common.djangoapps.third_party_auth.models import SAMLProviderConfig
+                    # idp_name can be in kwargs directly or in kwargs['details']
+                    saml_provider_name = running_pipeline.get('kwargs', {}).get('idp_name')
+                    if not saml_provider_name:
+                        saml_provider_name = running_pipeline.get('kwargs', {}).get('details', {}).get('idp_name')
+                    
+                    if saml_provider_name:
+                        try:
+                            # Query the SAML provider config
+                            saml_config = SAMLProviderConfig.objects.get(
+                                slug=saml_provider_name
+                            )
+                            
+                            if saml_config.marketing_emails_opt_in_optional:
+                                log.info(
+                                    "SAML provider %s has marketing_emails_opt_in_optional=True, "
+                                    "setting default to False and required to False",
+                                    saml_provider_name
+                                )
+                                default_value = False  # When optional, user opts out by default
+                                field_required = False  # Make field optional
+                                
+                                # Set field override to ensure our SAML-specific values are used
+                                # This will override any values set by the TPA provider, or create
+                                # a new override if one doesn't exist
+                                log.info(
+                                    "Setting field override for marketing_emails_opt_in to defaultValue=False, required=False"
+                                )
+                                form_desc._field_overrides['marketing_emails_opt_in'] = {
+                                    'defaultValue': False,
+                                    'required': False
+                                }
+                        except SAMLProviderConfig.DoesNotExist:
+                            log.debug(
+                                "SAML provider config not found for idp_name: %s",
+                                saml_provider_name
+                            )
+                except (ImportError, Exception) as e:  # pylint: disable=broad-except
+                    log.debug("Error checking SAML provider config in field handler: %s", str(e))
+
         form_desc.add_field(
             'marketing_emails_opt_in',
             label=opt_in_label,
             field_type="checkbox",
             exposed=True,
-            default=True,  # the checkbox will automatically be checked; meaning user has opted in
-            required=required,
+            default=default_value,
+            required=field_required,
         )
 
     def _add_field_with_configurable_select_options(self, field_name, field_label, form_desc, required=False):
@@ -1150,21 +1207,72 @@ class RegistrationFormFactory:
 
                     for field_name in self.DEFAULT_FIELDS + self.EXTRA_FIELDS:
                         if field_name in field_overrides:
-                            form_desc.override_field_properties(
-                                field_name, default=field_overrides[field_name]
-                            )
+                            # Special handling for marketing_emails_opt_in:
+                            # If SAML provider config has set marketing_emails_opt_in_optional=True,
+                            # don't let the provider's get_register_form_data override the default
+                            skip_override = False
+                            if field_name == 'marketing_emails_opt_in':
+                                try:
+                                    from common.djangoapps.third_party_auth.models import SAMLProviderConfig
+                                    # idp_name can be in kwargs directly or in kwargs['details']
+                                    saml_provider_name = running_pipeline.get('kwargs', {}).get('idp_name')
+                                    if not saml_provider_name:
+                                        saml_provider_name = running_pipeline.get('kwargs', {}).get('details', {}).get('idp_name')
+                                    if saml_provider_name:
+                                        try:
+                                            # Try to find the SAML provider config
+                                            # First try with current_set(), then fall back to direct query
+                                            try:
+                                                saml_config = SAMLProviderConfig.objects.current_set().get(
+                                                    slug=saml_provider_name
+                                                )
+                                            except Exception:  # pylint: disable=broad-except
+                                                # Fallback to direct query without current_set()
+                                                saml_config = SAMLProviderConfig.objects.get(
+                                                    slug=saml_provider_name
+                                                )
+                                            
+                                            if saml_config.marketing_emails_opt_in_optional:
+                                                log.debug(
+                                                    "Skipping provider override for marketing_emails_opt_in "
+                                                    "due to SAML config for provider: %s",
+                                                    saml_provider_name
+                                                )
+                                                skip_override = True
+                                        except SAMLProviderConfig.DoesNotExist:
+                                            log.debug(
+                                                "SAML provider config not found for idp_name: %s",
+                                                saml_provider_name
+                                            )
+                                except (ImportError, Exception) as e:  # pylint: disable=broad-except
+                                    log.debug("Error checking SAML provider config: %s", str(e))
 
-                            if (
-                                field_name not in ['terms_of_service', 'honor_code'] and
-                                field_overrides[field_name] and
-                                hide_registration_fields_except_tos
-                            ):
+                            if not skip_override:
                                 form_desc.override_field_properties(
-                                    field_name,
-                                    field_type="hidden",
-                                    label="",
-                                    instructions="",
+                                    field_name, default=field_overrides[field_name]
                                 )
+
+                                if (
+                                    field_name not in ['terms_of_service', 'honor_code'] and
+                                    field_overrides[field_name] and
+                                    hide_registration_fields_except_tos
+                                ):
+                                    # When hiding a field, set default to False for checkbox fields
+                                    # like marketing_emails_opt_in to avoid auto-opting users in
+                                    field_default = field_overrides[field_name]
+                                    if field_name == 'marketing_emails_opt_in':
+                                        field_default = False
+                                        log.info(
+                                            "Hiding marketing_emails_opt_in field and setting default to False"
+                                        )
+                                    
+                                    form_desc.override_field_properties(
+                                        field_name,
+                                        field_type="hidden",
+                                        default=field_default,
+                                        label="",
+                                        instructions="",
+                                    )
 
                     # Hide the confirm_email field
                     form_desc.override_field_properties(
@@ -1195,3 +1303,5 @@ class RegistrationFormFactory:
                         default=current_provider.name if current_provider.name else "Third Party",
                         required=False,
                     )
+
+
