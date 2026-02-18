@@ -94,8 +94,8 @@ attrs==25.4.0
     #   jsonschema
     #   lti-consumer-xblock
     #   openedx-authz
-    #   openedx-events
     #   openedx-core
+    #   openedx-events
     #   referencing
 babel==2.17.0
     # via
@@ -407,12 +407,12 @@ django==5.2.11
     #   jsonfield
     #   lti-consumer-xblock
     #   openedx-authz
+    #   openedx-core
     #   openedx-django-pyfs
     #   openedx-django-wiki
     #   openedx-events
     #   openedx-filters
     #   openedx-forum
-    #   openedx-core
     #   ora2
     #   social-auth-app-django
     #   super-csv
@@ -630,8 +630,8 @@ djangorestframework==3.16.1
     #   edx-proctoring
     #   edx-submissions
     #   openedx-authz
-    #   openedx-forum
     #   openedx-core
+    #   openedx-forum
     #   ora2
     #   super-csv
 djangorestframework-stubs==3.16.7
@@ -1365,6 +1365,11 @@ openedx-calc==4.0.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+openedx-core==0.34.1
+    # via
+    #   -c requirements/constraints.txt
+    #   -r requirements/edx/doc.txt
+    #   -r requirements/edx/testing.txt
 openedx-django-pyfs==3.8.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1397,11 +1402,6 @@ openedx-filters==2.1.0
     #   ora2
 openedx-forum==0.4.0
     # via
-    #   -r requirements/edx/doc.txt
-    #   -r requirements/edx/testing.txt
-openedx-core==0.34.1
-    # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
 optimizely-sdk==5.4.0
