@@ -484,6 +484,11 @@ class RegistrationFormFactory:
                                 include_default_option=field_options.get('include_default_option'),
                             )
 
+        # Apply provider-specific field visibility overrides after fields are added
+        # This allows SAML providers to configure whether fields like
+        # marketing_emails_opt_in or research should be shown/required
+        self._apply_provider_field_overrides_to_form(request, form_desc)
+
         # remove confirm_email form v1 registration form
         if is_api_v1(request):
             for index, field in enumerate(form_desc.fields):
@@ -1133,6 +1138,51 @@ class RegistrationFormFactory:
             },
         )
 
+    def _apply_provider_field_overrides_to_form(self, request, form_desc):
+        """
+        Apply provider-specific field visibility overrides to the registration form.
+
+        This allows third-party providers (especially SAML) to configure whether certain
+        fields (like marketing_emails_opt_in or research) should be shown/required on
+        the registration form.
+
+        Arguments:
+            request (HttpRequest): The request object
+            form_desc (FormDescription): The registration form description to modify
+        """
+        if not third_party_auth.is_enabled():
+            return
+
+        running_pipeline = third_party_auth.pipeline.get(request)
+        if not running_pipeline:
+            return
+
+        current_provider = third_party_auth.provider.Registry.get_from_pipeline(running_pipeline)
+        if not current_provider:
+            return
+
+        # Get provider field overrides
+        provider_field_overrides = current_provider.get_registration_field_overrides()
+
+        if not provider_field_overrides:
+            return
+
+        # List of fields that can be overridden by the provider
+        overrideable_fields = [
+            'marketing_emails_opt_in',
+            'research',
+            # Add more fields here as needed
+        ]
+
+        for field_name in overrideable_fields:
+            # Only apply overrides for fields that are actually in the form
+            if any(f['name'] == field_name for f in form_desc.fields):
+                self._apply_provider_field_overrides(
+                    form_desc,
+                    provider_field_overrides,
+                    field_name
+                )
+
     def _apply_provider_field_overrides(self, form_desc, provider_overrides, field_name):
         """
         Apply SAML provider-specific overrides to a registration form field.
@@ -1268,26 +1318,3 @@ class RegistrationFormFactory:
                         default=current_provider.name if current_provider.name else "Third Party",
                         required=False,
                     )
-
-                    # Apply provider-specific field visibility overrides
-                    # This allows SAML providers to configure whether fields like
-                    # marketing_emails_opt_in or research should be shown/required
-                    provider_field_overrides = current_provider.get_registration_field_overrides()
-
-                    if provider_field_overrides:
-                        # List of fields that can be overridden by the provider
-                        overrideable_fields = [
-                            'marketing_emails_opt_in',
-                            'research',
-                            # Add more fields here as needed
-                        ]
-
-                        for field_name in overrideable_fields:
-                            # Only apply overrides for fields that are actually in the form
-                            # This check prevents errors if a field isn't enabled platform-wide
-                            if any(f['name'] == field_name for f in form_desc.fields):
-                                self._apply_provider_field_overrides(
-                                    form_desc,
-                                    provider_field_overrides,
-                                    field_name
-                                )
