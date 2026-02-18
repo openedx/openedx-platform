@@ -1,5 +1,5 @@
 """
-openedx-core XBlock Runtime code
+openedx_content XBlock Runtime code
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from xblock.fields import Field, Scope, ScopeIds
 from xblock.field_data import FieldData
 
 from openedx.core.djangoapps.xblock.api import get_xblock_app_config
-from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_core
+from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 from openedx.core.lib.xblock_serializer.data import StaticFile
 from ..data import AuthoredDataMode, LatestVersion
 from ..utils import get_auto_latest_version
@@ -33,30 +33,30 @@ from .runtime import XBlockRuntime
 log = logging.getLogger(__name__)
 
 
-class OpenedXCoreFieldData(FieldData):
+class OpenedXContentFieldData(FieldData):
     """
-    FieldData for the openedx-core XBlock Runtime
+    FieldData for the openedx_content XBlock Runtime
 
-    OpenedXCoreFieldData only supports the ``content`` and ``settings`` scopes.
+    OpenedXContentFieldData only supports the ``content`` and ``settings`` scopes.
     Any attempt to read or write fields with other scopes will raise a
     ``NotImplementedError``. This class does NOT support the parent and children
     scopes.
 
-    OpenedXCoreFieldData should only live for the duration of one request. The
-    interaction between OpenedXCoreRuntime and OpenedXCoreFieldData is
+    OpenedXContentFieldData should only live for the duration of one request. The
+    interaction between OpenedXContentRuntime and OpenedXContentFieldData is
     as follows:
 
-    1. OpenedXCoreRuntime knows how retrieve authored content data from
-       the Content API in openedx-core. This content is stored as
-       OLX, and OpenedXCoreRuntime won't know how to parse it into
+    1. OpenedXContentRuntime knows how retrieve authored content data from
+       the Content API in openedx_content. This content is stored as
+       OLX, and OpenedXContentRuntime won't know how to parse it into
        fields, since serialization logic can happen in the XBlock itself.
-    2. OpenedXCoreRuntime will then invoke the block to parse the OLX and
-       then force_save its field data into OpenedXCoreFieldData.
+    2. OpenedXContentRuntime will then invoke the block to parse the OLX and
+       then force_save its field data into OpenedXContentFieldData.
     3. After this point, various handler and API calls might alter fields for
        a given block using the XBlock.
-    4. The main thing that OpenedXCoreRuntime will want to know later on
+    4. The main thing that OpenedXContentRuntime will want to know later on
        is whether it needs to write any changes when its save_block method is
-       invoked. To support this, OpenedXCoreFieldData needs to track which
+       invoked. To support this, OpenedXContentFieldData needs to track which
        blocks have changes to any of their fields. See the marked_unchanged
        method docstring for more details.
     """
@@ -74,9 +74,9 @@ class OpenedXCoreFieldData(FieldData):
         Calling set or delete on a field always marks the block with that field
         as changed, by adding its usage key to self.changed. But set() is also
         called at the very beginning, when a block is first loaded from the
-        database by the OpenedXCoreRuntime's get_block call.
+        database by the OpenedXContentRuntime's get_block call.
 
-        This method exists so that OpenedXCoreRuntime can call it
+        This method exists so that OpenedXContentRuntime can call it
         whenever it has either just done a get_block operation (because those
         set() calls represent the already-persisted content state), or a
         save_block operation (since those changes will have been persisted).
@@ -153,14 +153,14 @@ class OpenedXCoreFieldData(FieldData):
         if field.scope not in (Scope.content, Scope.settings):
             raise NotImplementedError(
                 f"Scope {field.scope} (field {name} of {block.scope_ids.usage_id}) "
-                "is unsupported. OpenedXCoreFieldData only supports the content"
+                "is unsupported. OpenedXContentFieldData only supports the content"
                 " and settings scopes."
             )
 
 
-class OpenedXCoreRuntime(XBlockRuntime):
+class OpenedXContentRuntime(XBlockRuntime):
     """
-    XBlock runtime that uses openedx-core APIs (not ModuleStore).
+    XBlock runtime that uses openedx_content APIs (not ModuleStore).
 
     The superclass is doing all the hard stuff. This class only only has to
     worry about the block storage, block serialization/de-serialization, and
@@ -169,11 +169,11 @@ class OpenedXCoreRuntime(XBlockRuntime):
 
     def get_block(self, usage_key, for_parent=None, *, version: int | LatestVersion = LatestVersion.AUTO):
         """
-        Fetch an XBlock from openedx-core data models.
+        Fetch an XBlock from openedx_content data models.
 
-        This method will find the OLX for the content in openedx-core, parse it
+        This method will find the OLX for the content in openedx_content, parse it
         into an XBlock (with mixins) instance, and properly initialize our
-        internal OpenedXCoreFieldData instance with the field values from the
+        internal OpenedXContentFieldData instance with the field values from the
         parsed OLX.
         """
         # We can do this more efficiently in a single query later, but for now
@@ -268,7 +268,7 @@ class OpenedXCoreRuntime(XBlockRuntime):
 
     def save_block(self, block):
         """
-        Save any pending field data values to openedx-core data models.
+        Save any pending field data values to openedx_content data models.
 
         This gets called by block.save() - do not call this directly.
         """
@@ -290,7 +290,7 @@ class OpenedXCoreRuntime(XBlockRuntime):
                 log.warning("User %s does not have permission to edit %s", self.user.username, block.scope_ids.usage_id)
                 raise RuntimeError("You do not have permission to edit this XBlock")
 
-        serialized = serialize_modulestore_block_for_openedx_core(block)
+        serialized = serialize_modulestore_block_for_openedx_content(block)
         now = datetime.now(tz=timezone.utc)
         usage_key = block.scope_ids.usage_id
         with atomic():
@@ -344,7 +344,7 @@ class OpenedXCoreRuntime(XBlockRuntime):
 
     def get_component_version_from_block(self, block):
         """
-        Given an XBlock instance, return the openedx-core ComponentVersion.
+        Given an XBlock instance, return the openedx_content ComponentVersion.
 
         This relies on our runtime setting the _runtime_requested_version
         attribute on blocks that it fetches.
@@ -401,20 +401,20 @@ class OpenedXCoreRuntime(XBlockRuntime):
         leading "static/" part because it assumes that all files will exist in a
         shared, flat namespace (i.e. a course's Files and Uploads).
 
-        openedx-core treats assets differently. Each Component has its own,
+        openedx_content treats assets differently. Each Component has its own,
         isolated namespace for asset storage. Furthermore, that namespace
         contains content that are not meant to be downloadable, like the
         block.xml (the OLX of the Component). There may one day be other files
         that are not meant to be externally downloadable there as well, like
         Markdown or LaTeX source files or grader code.
 
-        By convention, the static assets that we store in openedx-core and are
+        By convention, the static assets that we store in openedx_content and are
         meant for download sit inside a static/ directory that is local to each
         Component (and actually separate for each Component Version).
 
         So the transformation looks like this:
 
-        1. The openedx-core ComponentVersion has an asset stored as
+        1. The openedx_content ComponentVersion has an asset stored as
            ``static/test.png`` in the database.
         2. The original OLX content we store references ``/static/test.png``,
            per OLX convention. Note the leading "/".

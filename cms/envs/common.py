@@ -712,7 +712,7 @@ INSTALLED_APPS = [
     'cms.djangoapps.export_course_metadata.apps.ExportCourseMetadataConfig',
     'cms.djangoapps.modulestore_migrator',
 
-    # New (openedx-core-based) XBlock runtime
+    # New (openedx_content-based) XBlock runtime
     'openedx.core.djangoapps.xblock.apps.StudioXBlockAppConfig',
 
     'openedx.core.djangoapps.util.apps.UtilConfig',

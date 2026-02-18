@@ -1,5 +1,5 @@
 """
-Tests for openedx-core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from datetime import datetime, timezone
 import textwrap

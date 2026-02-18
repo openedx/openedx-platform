@@ -92,7 +92,7 @@ SourceContextKey: t.TypeAlias = CourseLocator | LibraryLocator
 @dataclass(frozen=True)
 class ModulestoreMigration:
     """
-    Metadata on a migration of a course or legacy library to a v2 library in openedx-core.
+    Metadata on a migration of a course or legacy library to a v2 library in openedx_content.
     """
     pk: int
     source_key: SourceContextKey
@@ -107,7 +107,7 @@ class ModulestoreMigration:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationResult:
     """
-    Base class for a modulestore block that was part of an attempted migration to openedx-core.
+    Base class for a modulestore block that was part of an attempted migration to openedx_content.
     """
     source_key: UsageKey
     is_failed: t.ClassVar[bool]

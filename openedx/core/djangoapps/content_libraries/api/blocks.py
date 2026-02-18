@@ -439,7 +439,7 @@ def _import_staged_block(
             # The ``data`` attribute is going to be None because the clipboard
             # is optimized to not do redundant file copying when copying/pasting
             # within the same course (where all the Files and Uploads are
-            # shared). openedx-core backed content Components will always store
+            # shared). openedx_content backed content Components will always store
             # a Component-local "copy" of the data, and rely on lower-level
             # deduplication to happen in the ``contents`` app.
             filename = staged_content_file_data.filename
@@ -459,14 +459,14 @@ def _import_staged_block(
             # Courses don't support having assets that are local to a specific
             # component, and instead store all their content together in a
             # shared Files and Uploads namespace. If we're pasting that into a
-            # openedx-core backed data model (v2 Libraries), then we want to
+            # openedx_content backed data model (v2 Libraries), then we want to
             # prepend "static/" to the filename. This will need to get updated
-            # when we start moving courses over to openedx-core, or if we start
+            # when we start moving courses over to openedx_content, or if we start
             # storing course component assets in sub-directories of Files and
             # Uploads.
             #
             # The reason we don't just search for a "static/" prefix is that
-            # openedx-core components can store other kinds of files if they
+            # openedx_content components can store other kinds of files if they
             # wish (though none currently do).
             source_assumes_global_assets = not isinstance(
                 source_context_key, LibraryLocatorV2
@@ -475,7 +475,7 @@ def _import_staged_block(
                 filename = f"static/{filename}"
 
             # Now construct the Core data models for it...
-            # TODO: more of this logic should be pushed down to openedx-core
+            # TODO: more of this logic should be pushed down to openedx_content
             media_type_str, _encoding = mimetypes.guess_type(filename)
             if not media_type_str:
                 media_type_str = "application/octet-stream"
@@ -687,7 +687,7 @@ def get_or_create_olx_media_type(block_type: str) -> MediaType:
     """
     Get or create a MediaType for the block type.
 
-    openedx-core stores all Content with a Media Type (a.k.a. MIME type). For
+    openedx_content stores all Content with a Media Type (a.k.a. MIME type). For
     OLX, we use the "application/vnd.*" convention, per RFC 6838.
     """
     return content_api.get_or_create_media_type(

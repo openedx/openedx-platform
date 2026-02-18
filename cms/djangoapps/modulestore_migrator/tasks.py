@@ -61,7 +61,7 @@ log = get_task_logger(__name__)
 
 class MigrationStep(Enum):
     """
-    Strings representation the state of an in-progress modulestore-to-openedx-core import.
+    Strings representation the state of an in-progress modulestore-to-openedx_content import.
 
     We use these values to set UserTaskStatus.state.
     The other possible UserTaskStatus.state values are the built-in ones:
@@ -313,16 +313,16 @@ def _import_structure(
     status: UserTaskStatus,
 ) -> tuple[t.Any, _MigratedNode]:
     """
-    Import the staged content structure into the target openedx-core library.
+    Import the staged content structure into the target openedx_content library.
 
     Args:
         migration (ModulestoreMigration):
-            The migration record representing the ongoing modulestore-to-openedx-core migration.
+            The migration record representing the ongoing modulestore-to-openedx_content migration.
         source_data (_MigrationSourceData):
             Data extracted from the legacy modulestore, including the source root usage key.
             Use `_validate_input()` to generate this data.
         target_library (libraries_api.ContentLibraryMetadata):
-            The target library where the new openedx-core content will be created.
+            The target library where the new openedx_content content will be created.
         content_by_filename (dict[str, int]):
             A mapping between OLX file names and their associated file IDs in the staging area.
             Use `_import_assets` to generate this content.
@@ -338,7 +338,7 @@ def _import_structure(
                   `content_api.bulk_draft_changes_for`, containing all the imported changes.
                 - The second element (`root_migrated_node`): a `_MigratedNode` object that
                   represents the mapping between the legacy root node and its newly created
-                  openedx-core equivalent.
+                  openedx_content equivalent.
     """
     migration = source_data.migration
     migration_context = _MigrationContext(

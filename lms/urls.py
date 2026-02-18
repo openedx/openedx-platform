@@ -344,7 +344,7 @@ urlpatterns += [
         name='xblock_resource_url',
     ),
 
-    # New XBlock REST API, based on the openedx-core Content API
+    # New XBlock REST API, based on the openedx_content API
     path('', include(('openedx.core.djangoapps.xblock.rest_api.urls', 'openedx.core.djangoapps.xblock'),
                      namespace='xblock_api')),
 

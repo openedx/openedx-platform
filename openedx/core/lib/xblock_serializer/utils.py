@@ -236,7 +236,7 @@ def openedx_core_def_key_from_modulestore_usage_key(usage_key):
     usage key.
     So modulestore usage key
         block-v1:A+B+C+type@html+block@introduction
-    will become openedx-core definition key
+    will become openedx_content definition key
         html/introduction
     """
     block_type = usage_key.block_type
