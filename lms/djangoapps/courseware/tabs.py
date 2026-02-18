@@ -323,6 +323,7 @@ class DatesTab(EnrolledTab):
         dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
         return bool(dates_tab and not dates_tab.is_hidden)
 
+
 def get_course_tab_list(user, course):
     """
     Retrieves the course tab list from xmodule.tabs and manipulates the set as necessary
