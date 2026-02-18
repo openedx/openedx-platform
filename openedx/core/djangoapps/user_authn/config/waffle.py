@@ -2,7 +2,7 @@
 Waffle flags and switches for user authn.
 """
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleFlag, WaffleSwitch
 
 _WAFFLE_NAMESPACE = 'user_authn'
 
@@ -30,4 +30,20 @@ ENABLE_LOGIN_USING_THIRDPARTY_AUTH_ONLY = WaffleSwitch(
 # .. toggle_tickets: VAN-664
 ENABLE_PWNED_PASSWORD_API = WaffleSwitch(
     f'{_WAFFLE_NAMESPACE}.enable_pwned_password_api', __name__
+)
+
+# .. toggle_name: user_authn.enable_enterprise_redirect_to_authn
+# .. toggle_implementation: WaffleFlag
+# .. toggle_default: False
+# .. toggle_description: When enabled, allows Enterprise/B2B customers to be redirected to the AuthN MFE instead of
+#   the legacy Django login templates. This flag provides an incremental rollout mechanism for migrating Enterprise
+#   customers to the modern authentication experience. The flag has no effect on users with external authentication
+#   providers (SAML/TPA), who always remain on the legacy flow. B2C users are redirected to the MFE by default
+#   regardless of this flag.
+# .. toggle_use_cases: opt_in
+# .. toggle_creation_date: 2026-02-18
+# .. toggle_warning: This flag only affects Enterprise customers without external auth providers (SAML/TPA).
+#   Enabling this flag for an Enterprise customer with complex SSO requirements may break authentication flows.
+ENABLE_ENTERPRISE_REDIRECT_TO_AUTHN = WaffleFlag(
+    f'{_WAFFLE_NAMESPACE}.enable_enterprise_redirect_to_authn', __name__
 )
