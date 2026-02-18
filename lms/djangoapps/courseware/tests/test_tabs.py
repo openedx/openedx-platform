@@ -870,6 +870,12 @@ class DatesTabTestCase(TabListTestCase):
         """Test cases for making sure no persisted dates tab is surfaced"""
         user = self.create_mock_user()
         self.course.tabs = self.all_valid_tab_list
+
+        # Ensure hidden state from other tests does not affect this test's intent.
+        dates_tab = xmodule_tabs.CourseTabList.get_tab_by_id(self.course.tabs, 'dates')
+        assert dates_tab is not None
+        dates_tab.is_hidden = False
+
         self.course.save()
 
         # Verify that there is a dates tab in the modulestore
