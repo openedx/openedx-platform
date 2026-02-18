@@ -1204,33 +1204,27 @@ class RegistrationFormFactory:
 
         override_value = provider_overrides[field_name]
 
-        if override_value == "hidden":
-            # Hide the field completely
-            form_desc.override_field_properties(
-                field_name,
-                field_type="hidden",
-                required=False,
-                label="",
-                instructions="",
-                default=""
-            )
-            return True
+        # Find the field in the form_desc and modify it directly
+        for field in form_desc.fields:
+            if field['name'] == field_name:
+                if override_value == "hidden":
+                    # Hide the field completely
+                    field['type'] = 'hidden'
+                    field['required'] = False
+                    field['label'] = ''
+                    field['instructions'] = ''
+                    field['defaultValue'] = ''
+                    return True
 
-        elif override_value == "required":
-            # Make the field required
-            form_desc.override_field_properties(
-                field_name,
-                required=True
-            )
-            return True
+                elif override_value == "required":
+                    # Make the field required
+                    field['required'] = True
+                    return True
 
-        elif override_value == "optional":
-            # Make the field optional (ensure it's not required)
-            form_desc.override_field_properties(
-                field_name,
-                required=False
-            )
-            return True
+                elif override_value == "optional":
+                    # Make the field optional (ensure it's not required)
+                    field['required'] = False
+                    return True
 
         return False
 

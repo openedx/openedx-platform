@@ -33,7 +33,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
     def get_idp(self, idp_name):
         """ Given the name of an IdP, get a SAMLIdentityProvider instance """
         from .models import SAMLProviderConfig
-        return SAMLProviderConfig.current(idp_name).get_config(self)
+        return SAMLProviderConfig.current(idp_name).get_config()
 
     def setting(self, name, default=None):
         """ Get a setting, from SAMLConfiguration """

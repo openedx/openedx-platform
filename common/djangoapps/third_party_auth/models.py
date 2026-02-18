@@ -357,6 +357,25 @@ class ProviderConfig(ConfigurationModel):
 
         return registration_form_data
 
+    def get_registration_field_overrides(self):
+        """
+        Get registration field visibility/requirement overrides for this provider.
+
+        This allows providers to configure whether certain fields
+        (like marketing_emails_opt_in or research) should be required,
+        optional, or hidden on the registration form.
+
+        Returns:
+            dict: Mapping of field names to settings ("required", "optional", "hidden")
+                  Returns empty dict if no overrides are configured.
+                  
+        Note:
+            This is a base implementation that returns an empty dict.
+            Subclasses like SAMLProviderConfig may override this to provide
+            actual field override configuration.
+        """
+        return {}
+
     def get_authentication_backend(self):
         """Gets associated Django settings.AUTHENTICATION_BACKEND string."""
         return f'{self.backend_class.__module__}.{self.backend_class.__name__}'
