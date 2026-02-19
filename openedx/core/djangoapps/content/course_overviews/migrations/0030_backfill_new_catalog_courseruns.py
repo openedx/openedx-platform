@@ -75,7 +75,7 @@ def backfill_openedx_catalog(apps, schema_editor):
                 language = settings.LANGUAGE_CODE
 
         # Ensure that the CatalogCourse exists.
-        cc, created = CatalogCourse.objects.get_or_create(
+        cc, cc_created = CatalogCourse.objects.get_or_create(
             org_id=org_data["id"],
             course_code=course_code,
             defaults={
@@ -83,7 +83,7 @@ def backfill_openedx_catalog(apps, schema_editor):
                 "language": language,
             },
         )
-        if created:
+        if cc_created:
             created_catalog_course_ids.add(cc.pk)
         elif cc.pk in created_catalog_course_ids:
             # This CatalogCourse was previously created during this same migration
@@ -106,12 +106,22 @@ def backfill_openedx_catalog(apps, schema_editor):
             )
 
         # Create the CourseRun
-        CourseRun.objects.get_or_create(
+        new_run, run_created = CourseRun.objects.get_or_create(
             catalog_course=cc,
             run=run_code,
             course_id=course_run.course_id,
             defaults={"display_name": display_name},
         )
+
+        # Correct the "created" timestamp. Since it has auto_now_add=True, we can't set its value except using update()
+        # The CourseOverview should have the "created" date unless it's missing or the course was created before
+        # the CourseOverview model existed. In any case, it should be good enough. Otherwise use the default (now).
+        if course_overview:
+            if course_overview.created < cc.created and cc.pk in created_catalog_course_ids:
+                # Use the 'created' date from the oldest course run that we process.
+                CatalogCourse.objects.filter(pk=cc.pk).update(created=course_overview.created)
+            if run_created:
+                CourseRun.objects.filter(pk=new_run.pk).update(created=course_overview.created)
 
 
 class Migration(migrations.Migration):
