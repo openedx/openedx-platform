@@ -125,6 +125,11 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.assertIn('total_enrollment', data)
         self.assertGreaterEqual(data['total_enrollment'], 3)
 
+        # Verify role-based enrollment counts are present
+        self.assertIn('learner_count', data)
+        self.assertIn('staff_count', data)
+        self.assertEqual(data['total_enrollment'], data['learner_count'] + data['staff_count'])
+
         # Verify permissions structure
         self.assertIn('permissions', data)
         permissions_data = data['permissions']
@@ -216,6 +221,28 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
         # Instructor should have instructor permission
         self.assertTrue(permissions_data['instructor'])
+
+    def test_learner_and_staff_counts(self):
+        """
+        Test that learner_count excludes staff/admins and staff_count is the difference.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+
+        total = data['total_enrollment']
+        learner_count = data['learner_count']
+        staff_count = data['staff_count']
+
+        # Counts must be non-negative and sum to total
+        self.assertGreaterEqual(learner_count, 0)
+        self.assertGreaterEqual(staff_count, 0)
+        self.assertEqual(total, learner_count + staff_count)
+
+        # The student enrolled in setUp is not staff, so learner_count >= 1
+        self.assertGreaterEqual(learner_count, 1)
 
     def test_enrollment_counts_by_mode(self):
         """

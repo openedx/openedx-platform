@@ -254,6 +254,16 @@ definitions:
         minimum: 0
         description: Total number of enrollments across all modes
         example: 150
+      learner_count:
+        type: integer
+        minimum: 0
+        description: Number of enrolled learners (excludes staff and admins)
+        example: 140
+      staff_count:
+        type: integer
+        minimum: 0
+        description: Number of enrolled staff and admins
+        example: 10
       enrollment_counts:
         type: object
         description: |

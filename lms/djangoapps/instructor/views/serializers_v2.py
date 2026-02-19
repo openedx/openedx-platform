@@ -54,6 +54,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
     has_started = serializers.SerializerMethodField(help_text="Whether the course has started based on current time")
     has_ended = serializers.SerializerMethodField(help_text="Whether the course has ended based on current time")
     total_enrollment = serializers.SerializerMethodField(help_text="Total number of enrollments across all modes")
+    learner_count = serializers.SerializerMethodField(
+        help_text="Number of enrolled learners (excludes staff and admins)"
+    )
+    staff_count = serializers.SerializerMethodField(help_text="Number of enrolled staff and admins")
     enrollment_counts = serializers.SerializerMethodField(help_text="Enrollment count breakdown by mode")
     num_sections = serializers.SerializerMethodField(help_text="Number of sections/chapters in the course")
     grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
@@ -267,6 +271,14 @@ class CourseInformationSerializerV2(serializers.Serializer):
     def get_total_enrollment(self, data):
         """Get total enrollment count."""
         return self.get_enrollment_counts(data)['total']
+
+    def get_learner_count(self, data):
+        """Get enrollment count excluding staff and admins."""
+        return CourseEnrollment.objects.num_enrolled_in_exclude_admins(data['course'].id)
+
+    def get_staff_count(self, data):
+        """Get enrollment count for staff and admins only."""
+        return self.get_total_enrollment(data) - self.get_learner_count(data)
 
     def get_enrollment_counts(self, data):
         """Get enrollment counts for all configured course modes."""
