@@ -129,6 +129,10 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 } catch (e) {
                     console.error(e);
                 }
+                const fullscreenButton =  this.$('.fullscreen-button');
+                if (fullscreenButton.length) {
+                    fullscreenButton.unbind('click');
+                }
 
                 // Completely remove the modal from the DOM
                 this.undelegateEvents();
