@@ -191,7 +191,7 @@ class ProgressTabView(RetrieveAPIView):
             visible_chapters.append({**chapter, "sections": filtered_sections})
         return visible_chapters
 
-    def get(self, request, *args, **kwargs): # pylint: disable=too-many-statements
+    def get(self, request, *args, **kwargs):    # pylint: disable=too-many-statements
         course_key_string = kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
         student_id = kwargs.get('student_id')
