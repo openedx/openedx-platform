@@ -6,17 +6,24 @@ committing and pushing the changes.
 
 import logging
 import os
+import shutil
 import subprocess
+import zipfile
+from datetime import datetime
+from pathlib import Path
+from tempfile import mkdtemp
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.utils import timezone
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.xml_exporter import export_course_to_xml
+from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
 
 log = logging.getLogger(__name__)
 
@@ -66,9 +73,88 @@ def cmd_log(cmd, cwd):
     return output
 
 
-def export_to_git(course_id, repo, user='', rdir=None):
-    """Export a course to git."""
+def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
+    """
+    Export a v2 library using the backup API.
+
+    V2 libraries are stored in Learning Core and use a zip-based backup mechanism.
+    This function creates a zip backup and extracts it to the specified directory.
+
+    Args:
+        library_key: LibraryLocatorV2 for the library to export
+        root_dir: Root directory where library_dir will be created
+        library_dir: Directory name for the exported library content
+        user: User object for the backup API (optional)
+
+    Raises:
+        Exception: If backup creation or extraction fails
+    """
+    from openedx_content.api import create_zip_file as create_lib_zip_file
+
+    # Get user object for backup API
+    user_obj = User.objects.filter(username=user).first()
+    # Create temporary zip backup
+    temp_dir = Path(mkdtemp())
+    sanitized_lib_key = str(library_key).replace(":", "-")
+    sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    zip_filename = f'{sanitized_lib_key}-{timestamp}.zip'
+    zip_path = os.path.join(temp_dir, zip_filename)
+
+    try:
+        origin_server = getattr(settings, 'CMS_BASE', None)
+        create_lib_zip_file(
+            lp_key=str(library_key),
+            path=zip_path,
+            user=user_obj,
+            origin_server=origin_server
+        )
+
+        # Target directory for extraction
+        target_dir = os.path.join(root_dir, library_dir)
+
+        # Create target directory if it doesn't exist
+        os.makedirs(target_dir, exist_ok=True)
+
+        # Extract zip contents (will overwrite existing files)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(target_dir)
+
+        log.info('Extracted library v2 backup to %s', target_dir)
+
+    finally:
+        # Cleanup temporary files
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+
+
+def export_to_git(content_key, repo, user='', rdir=None):
+    """
+    Export a course or library to git.
+
+    Args:
+        content_key: CourseKey or LibraryLocator for the content to export
+        repo (str): Git repository URL
+        user (str): Optional username for git commit identity
+        rdir (str): Optional custom directory name for the repository
+
+    Raises:
+        GitExportError: For various git operation failures
+    """
     # pylint: disable=too-many-statements
+
+    # Detect content type and select appropriate export function
+    is_library_v2 = isinstance(content_key, LibraryLocatorV2)
+    if is_library_v2:
+        # V2 libraries use backup API with zip extraction
+        export_xml_func = export_library_v2_to_zip
+        content_type_label = "library"
+    elif isinstance(content_key, LibraryLocator):
+        export_xml_func = export_library_to_xml
+        content_type_label = "library"
+    else:
+        export_xml_func = export_course_to_xml
+        content_type_label = "course"
 
     if not GIT_REPO_EXPORT_DIR:
         raise GitExportError(GitExportError.NO_EXPORT_DIR)
@@ -128,15 +214,20 @@ def export_to_git(course_id, repo, user='', rdir=None):
             log.exception('Failed to pull git repository: %r', ex.output)
             raise GitExportError(GitExportError.CANNOT_PULL) from ex
 
-    # export course as xml before commiting and pushing
+    # export content as xml (or zip for v2 libraries) before commiting and pushing
     root_dir = os.path.dirname(rdirp)
-    course_dir = os.path.basename(rdirp).rsplit('.git', 1)[0]
+    content_dir = os.path.basename(rdirp).rsplit('.git', 1)[0]
+
     try:
-        export_course_to_xml(modulestore(), contentstore(), course_id,
-                             root_dir, course_dir)
-    except (OSError, AttributeError):
-        log.exception('Failed export to xml')
-        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # pylint: disable=raise-missing-from  # noqa: B904
+        if is_library_v2:
+            export_xml_func(content_key, root_dir, content_dir, user)
+        else:
+            # V1 libraries and courses: use XML export (no user parameter)
+            export_xml_func(modulestore(), contentstore(), content_key,
+                            root_dir, content_dir)
+    except (OSError, AttributeError) as ex:
+        log.exception('Failed to export %s', content_type_label)
+        raise GitExportError(GitExportError.XML_EXPORT_FAIL) from  # noqa: B904 ex
 
     # Get current branch if not already set
     if not branch:
@@ -160,9 +251,7 @@ def export_to_git(course_id, repo, user='', rdir=None):
         ident = GIT_EXPORT_DEFAULT_IDENT
     time_stamp = timezone.now()
     cwd = os.path.abspath(rdirp)
-    commit_msg = "Export from Studio at {time_stamp}".format(  # noqa: UP032
-        time_stamp=time_stamp,
-    )
+    commit_msg = f"Export {content_type_label} from Studio at {time_stamp}"
     try:
         cmd_log(['git', 'config', 'user.email', ident['email']], cwd)
         cmd_log(['git', 'config', 'user.name', ident['name']], cwd)
@@ -180,3 +269,10 @@ def export_to_git(course_id, repo, user='', rdir=None):
     except subprocess.CalledProcessError as ex:
         log.exception('Error running git push command: %r', ex.output)
         raise GitExportError(GitExportError.CANNOT_PUSH) from ex
+
+    log.info(
+        '%s %s exported to git repository %s successfully',
+        content_type_label.capitalize(),
+        content_key,
+        repo,
+    )
