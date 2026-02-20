@@ -1017,15 +1017,15 @@ def get_transcript_from_openedx_content(video_block, language, output_format, tr
 
     # TODO: There should be a openedx_content API call for this:
     try:
-        content = (
+        media = (
             component_version
-            .componentversioncontent_set
-            .filter(content__has_file=True)
-            .select_related('content')
+            .componentversionmedia_set
+            .filter(media__has_file=True)
+            .select_related('media')
             .get(key=file_path)
-            .content
+            .media
         )
-        data = content.read_file().read()
+        data = media.read_file().read()
     except ObjectDoesNotExist as exc:
         raise NotFoundError(
             f"No file {file_path} found for {usage_key} "

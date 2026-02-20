@@ -296,7 +296,7 @@ def _import_assets(migration: models.ModulestoreMigration) -> dict[str, int]:
         filename = os.path.basename(old_path)
         media_type_str = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         media_type = content_api.get_or_create_media_type(media_type_str)
-        content_by_filename[filename] = content_api.get_or_create_file_content(
+        content_by_filename[filename] = content_api.get_or_create_file_media(
             migration.target_id,
             media_type.id,
             data=file_data,
@@ -969,13 +969,13 @@ def _migrate_component(
     # If component existed and was deleted or we have to replace the current version
     # Create the new component version for it
     component_version = libraries_api.set_library_block_olx(target_key, new_olx_str=olx)
-    for filename, content_pk in context.content_by_filename.items():
+    for filename, media_pk in context.content_by_filename.items():
         filename_no_ext, _ = os.path.splitext(filename)
         if filename_no_ext not in olx:
             continue
         new_path = f"static/{filename}"
-        content_api.create_component_version_content(
-            component_version.pk, content_pk, key=new_path
+        content_api.create_component_version_media(
+            component_version.pk, media_pk, key=new_path
         )
 
     # Publish the component

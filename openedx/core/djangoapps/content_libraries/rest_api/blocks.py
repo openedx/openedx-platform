@@ -423,8 +423,8 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
         return redirect_response
 
     # If we got here, we know that the asset exists and it's okay to download.
-    cv_content = component_version.componentversioncontent_set.get(key=asset_path)
-    content = cv_content.content
+    cv_media = component_version.componentversionmedia_set.get(key=asset_path)
+    media = cv_media.media
 
     # Delete the re-direct part of the response headers. We'll copy the rest.
     headers = redirect_response.headers
@@ -433,7 +433,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # We need to set the content size header manually because this is a
     # streaming response. It's not included in the redirect headers because it's
     # not needed there (the reverse-proxy would have direct access to the file).
-    headers['Content-Length'] = content.size
+    headers['Content-Length'] = media.size
 
     if request.method == "HEAD":
         return HttpResponse(headers=headers)
@@ -442,7 +442,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # offsets or anything fancy, because we don't expect to run this view at
     # LMS-scale.
     return StreamingHttpResponse(
-        content.read_file().chunks(),
+        media.read_file().chunks(),
         headers=redirect_response.headers,
     )
 
