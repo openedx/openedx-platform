@@ -1034,7 +1034,7 @@ openedx-authz==0.22.0
     # via -r requirements/edx/base.txt
 openedx-calc==4.0.3
     # via -r requirements/edx/base.txt
-openedx-core==0.34.1
+openedx-core==0.34.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt

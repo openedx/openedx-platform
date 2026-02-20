@@ -808,7 +808,7 @@ openedx-authz==0.22.0
     # via -r requirements/edx/kernel.in
 openedx-calc==4.0.3
     # via -r requirements/edx/kernel.in
-openedx-core==0.34.1
+openedx-core==0.34.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
