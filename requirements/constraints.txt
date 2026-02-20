@@ -61,9 +61,11 @@ libsass==0.10.0
 numpy<2.0.0
 
 # Date: 2023-09-18
-# pinning this version to avoid updates while the library is being developed
+# Library is still in active development. Minor verisons (0.x, 0.x+1) may have
+# breaking changes which openedx-core devs want to roll out manually. New patch versions
+# are OK to accept automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-core==0.34.1
+openedx-core<0.35
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
