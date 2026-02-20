@@ -44,10 +44,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
-from openedx.core.djangoapps.discussions.config.waffle import (
-    ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
-    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
-)
+from openedx.core.djangoapps.discussions.config.waffle import OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -141,26 +138,26 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertEqual(settings_fields["deprecated"], True)
 
     @ddt.data(
-        (False, False, True),
-        (True, False, False),
-        (True, True, True),
-        (False, True, True)
+        (False, True),
+        (False, False),
+        (True, True),
+        (True, True)
     )
     @ddt.unpack
     @override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True)
-    def test_discussion_fields_available(self, is_pages_and_resources_enabled,
-                                         is_legacy_discussion_setting_enabled, fields_visible):
+    def test_discussion_fields_available(self, is_legacy_discussion_setting_enabled, fields_visible):
         """
         Test to check the availability of discussion related fields when relevant flags are enabled
         """
-
-        with override_waffle_flag(ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND, is_pages_and_resources_enabled):
-            with override_waffle_flag(OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG, is_legacy_discussion_setting_enabled):
-                response = self.client.get_html(self.course_setting_url).content.decode('utf-8')
-                self.assertEqual('allow_anonymous' in response, fields_visible)
-                self.assertEqual('allow_anonymous_to_peers' in response, fields_visible)
-                self.assertEqual('discussion_blackouts' in response, fields_visible)
-                self.assertEqual('discussion_topics' in response, fields_visible)
+        with override_waffle_flag(
+            OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG,
+            is_legacy_discussion_setting_enabled,
+        ):
+            response = self.client.get_html(self.course_setting_url).content.decode('utf-8')
+            self.assertEqual('allow_anonymous' in response, fields_visible)
+            self.assertEqual('allow_anonymous_to_peers' in response, fields_visible)
+            self.assertEqual('discussion_blackouts' in response, fields_visible)
+            self.assertEqual('discussion_topics' in response, fields_visible)
 
     @ddt.data(False, True)
     @override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True)

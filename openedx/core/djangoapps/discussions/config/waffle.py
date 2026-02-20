@@ -19,20 +19,6 @@ OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG = CourseWaffleFlag(
     f"{WAFFLE_FLAG_NAMESPACE}.override_discussion_legacy_settings", __name__
 )
 
-
-# .. toggle_name: discussions.pages_and_resources_mfe
-# .. toggle_implementation: CourseWaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Waffle flag to enable new Pages and Resources experience for course.
-# .. toggle_use_cases: temporary, open_edx
-# .. toggle_creation_date: 2021-05-24
-# .. toggle_target_removal_date: 2021-12-31
-# .. toggle_warning: When the flag is ON, the new experience for Pages and Resources will be enabled.
-# .. toggle_tickets: TNL-7791
-ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND = CourseWaffleFlag(
-    f"{WAFFLE_FLAG_NAMESPACE}.pages_and_resources_mfe", __name__
-)
-
 # .. toggle_name: discussions.enable_new_structure_discussions
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
