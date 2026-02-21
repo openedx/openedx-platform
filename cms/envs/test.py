@@ -85,10 +85,17 @@ CONTENTSTORE = {
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": TEST_ROOT / "db" / "cms.db",
-        "ATOMIC_REQUESTS": True,
-    },
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("DB_NAME", "edxapp"),
+        "USER": os.getenv("DB_USER", "edxapp001"),
+        "PASSWORD": os.getenv("DB_PASSWORD", "password"),
+        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
 }
 
 LMS_BASE = "localhost:8000"
