@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 import ddt
 import freezegun
+from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils.timezone import now
 from django.test import RequestFactory
@@ -47,8 +48,6 @@ SRT_content = textwrap.dedent("""
         00:00:00,12 --> 00:00:00,100
         Привіт, edX вітає вас.
     """)
-
-
 def _create_srt_file(content=None):
     """
     Create srt file in filesystem.
@@ -206,10 +205,17 @@ class TestVideo(BaseTestVideoXBlock):
             {'demoo�': 'sample'}
         ]
         for sample in data:
-            response = self.clients[self.users[0].username].post(
-                self.get_url('save_user_state'),
-                sample,
-                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            if settings.USE_EXTRACTED_VIDEO_BLOCK:
+                handler_url = self.get_url('save_user_state', handler_name='ajax_handler')
+                response = self.clients[self.users[0].username].post(
+                    handler_url,
+                    sample,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            else:
+                response = self.clients[self.users[0].username].post(
+                    self.get_url('save_user_state'),
+                    sample,
+                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             assert response.status_code == 200
 
         assert self.block.speed is None

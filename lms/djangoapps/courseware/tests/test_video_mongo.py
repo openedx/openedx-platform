@@ -931,7 +931,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     # pylint: disable=invalid-name
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xmodule.video_block.video_block.rewrite_video_url')
+    @patch(f'{VideoBlock.__module__}.rewrite_video_url')
     def test_get_html_cdn_source(self, mocked_get_video, mock_render_django_template):
         """
         Test if sources got from CDN
