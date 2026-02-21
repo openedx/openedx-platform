@@ -813,7 +813,7 @@ INSTALLED_APPS = [
     'statici18n',
 
     # Tagging
-    'cms.lib.xblock.tagging',
+    'cms.lib.xblock.tagging.apps.TaggingConfig',
 
     # Enables default site and redirects
     'django_sites_extensions',
