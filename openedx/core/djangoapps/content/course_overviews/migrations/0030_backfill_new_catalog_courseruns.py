@@ -42,11 +42,11 @@ def backfill_openedx_catalog(apps, schema_editor):
                 "not the Organizations table, and auto-creating organizations is disabled. You can resolve this by "
                 "creating the Organization manually (e.g. from the Django admin) or turning on auto-creation. "
                 "You can set active=False to prevent this Organization from being used other than for historical data. "
-            )
+            ) from exc
         if org_data["short_name"] != org_code:
-            # On most installations, the 'short_code' database column is case insensitive (unfortunately)
+            # On most installations, the 'short_name' database column is case insensitive (unfortunately)
             log.warning(
-                'The course with ID "%s" does not match its Organization.short_code "%s"',
+                'The course with ID "%s" does not match its Organization.short_name "%s"',
                 course_run.course_id,
                 org_data["short_name"],
             )
