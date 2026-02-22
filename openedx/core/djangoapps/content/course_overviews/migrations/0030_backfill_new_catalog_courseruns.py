@@ -11,6 +11,13 @@ from organizations.api import ensure_organization, exceptions as org_exceptions
 
 log = logging.getLogger(__name__)
 
+# https://github.com/openedx/openedx-platform/issues/38036
+NORMALIZE_LANGUAGE_CODES = {
+    "zh-hans": "zh-cn",
+    "zh-hant": "zh-hk",
+    "ca@valencia": "ca-es-valencia",
+}
+
 
 def backfill_openedx_catalog(apps, schema_editor):
     """
@@ -59,12 +66,19 @@ def backfill_openedx_catalog(apps, schema_editor):
         display_name: str = (course_overview.display_name if course_overview else None) or course_code
 
         # Determine the course language.
+        # Note that in Studio, the options for course language generally came from the ALL_LANGUAGES setting, which is
+        # mostly two-letter language codes with no locale, except it uses "zh_HANS" for Mandarin and "zh_HANT" for
+        # Cantonese. We normalize those to "zh-cn" and "zh-hk" for consistency with our platform UI languages /
+        # Transifex, but you can still access the "old" version using the CatalogCourse.language_short
+        # getter/setter for backwards compatbility. See https://github.com/openedx/openedx-platform/issues/38036
         language = settings.LANGUAGE_CODE
         if course_overview and course_overview.language:
             language = course_overview.language.lower()
-            if len(language) > 2 and language[2] == "_":
-                language[2] = "-"  # Ensure we use hyphens for consistency (`en-us` not `en_us`)
-            if len(language) > 2 and language[2] not in ("-", "@"):
+            language = language.replace("_", "-")  # Ensure we use hyphens for consistency (`en-us` not `en_us`)
+            # Normalize this language code. The previous/non-normalized code will still be available via the
+            # "language_short" property for backwards compatibility.
+            language = NORMALIZE_LANGUAGE_CODES.get(language, language)
+            if len(language) > 2 and language[2] != "-":
                 # This seems like an invalid value; revert to the default:
                 log.warning(
                     'The course with ID "%s" has invalid language "%s" - using default language "%s" instead.',
@@ -102,7 +116,7 @@ def backfill_openedx_catalog(apps, schema_editor):
             raise ValueError(
                 f"The course {course_run.course_id} exists in modulestore with a different capitalization of its "
                 f'course code compared to other instances of the same run ("{course_code}" vs "{cc.course_code}"). '
-                'This really should not happen. To fix it, delete the inconsistent course runs (!). '
+                "This really should not happen. To fix it, delete the inconsistent course runs (!). "
             )
 
         # Create the CourseRun
