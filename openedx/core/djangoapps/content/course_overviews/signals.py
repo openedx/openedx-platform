@@ -2,7 +2,6 @@
 Signal handler for invalidating cached course overviews
 """
 
-
 import logging
 
 from django.db import transaction
@@ -10,6 +9,8 @@ from django.db.models.signals import post_save
 from django.dispatch import Signal
 from django.dispatch.dispatcher import receiver
 
+from openedx_catalog import api as catalog_api
+from openedx_catalog.models_api import CourseRun
 from openedx.core.djangoapps.signals.signals import COURSE_CERT_DATE_CHANGE
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.django import SignalHandler
@@ -33,6 +34,8 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
     """
     Catches the signal that a course has been published in Studio and updates the corresponding CourseOverview cache
     entry.
+
+    Also sync course data to the openedx_catalog CourseRun model.
     """
     try:
         previous_course_overview = CourseOverview.objects.get(id=course_key)
@@ -40,6 +43,48 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
         previous_course_overview = None
     updated_course_overview = CourseOverview.load_from_module_store(course_key)
     _check_for_course_changes(previous_course_overview, updated_course_overview)
+
+    # Currently, SplitModulestoreCourseIndex is the ultimate source of truth for
+    # which courses exist. When a course is published, we sync that data to
+    # CourseOverview, and from CourseOverview to CourseRun.
+
+    # In the future, CourseRun will be the "source of truth" and each CourseRun
+    # may optionally point to content and get synced to CourseOverview.
+
+    # Ensure a CourseRun exists for this course
+    try:
+        course_run = catalog_api.get_course_run(course_key)
+    except CourseRun.DoesNotExist:
+        # Presumably this is a newly-created course. Create the CourseRun.
+        course_run = catalog_api.create_course_run_for_modulestore_course_with(
+            course_id=course_key,
+            display_name=updated_course_overview.display_name,
+            language_short=updated_course_overview.language,
+        )
+
+    # Keep the CourseRun up to date as the course is edited:
+    if updated_course_overview.display_name != course_run.display_name:
+        catalog_api.sync_course_run_details(course_key, display_name=updated_course_overview.display_name)
+
+    if (
+        updated_course_overview.language
+        and updated_course_overview.language != course_run.catalog_course.language_short
+    ):
+        if course_run.catalog_course.runs.count() == 1:
+            # This is the only run in this CatalogCourse. Update the language of the CatalogCourse
+            catalog_api.update_catalog_course(
+                course_run.catalog_course,
+                language_short=updated_course_overview.language,
+            )
+        else:
+            LOG.warning(
+                'Course run "%s" language "%s" does not match its catalog course language, "%s"',
+                str(course_key),
+                updated_course_overview.language,
+                course_run.catalog_course.language_short,
+            )
+
+    # In the future, this will also sync schedule and other metadata to the CourseRun's related models
 
 
 @receiver(SignalHandler.course_deleted)
