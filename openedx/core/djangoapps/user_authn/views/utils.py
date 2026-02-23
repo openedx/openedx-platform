@@ -52,7 +52,8 @@ def third_party_auth_context(request, redirect_to, tpa_hint=None):
         "errorMessage": None,
         "registerFormSubmitButtonText": _("Create Account"),
         "syncLearnerProfileData": False,
-        "pipeline_user_details": {}
+        "pipeline_user_details": {},
+        "skipRegistrationOptionalCheckboxes": False
     }
 
     if third_party_auth.is_enabled():
@@ -95,6 +96,12 @@ def third_party_auth_context(request, redirect_to, tpa_hint=None):
                 if current_provider.skip_registration_form:
                     # As a reliable way of "skipping" the registration form, we just submit it automatically
                     context["autoSubmitRegForm"] = True
+
+                # Check if SAML provider wants to skip optional checkboxes
+                if hasattr(current_provider, 'skip_registration_optional_checkboxes'):
+                    context["skipRegistrationOptionalCheckboxes"] = (
+                        current_provider.skip_registration_optional_checkboxes
+                    )
 
         # Check for any error messages we may want to display:
         for msg in messages.get_messages(request):
