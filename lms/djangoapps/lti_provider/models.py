@@ -129,8 +129,8 @@ class GradedAssignment(models.Model):
     .. no_pii:
     """
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
-    course_key = CourseKeyField(max_length=255, db_index=True)
-    usage_key = UsageKeyField(max_length=255, db_index=True)
+    course_key = CourseKeyField(db_index=True)
+    usage_key = UsageKeyField(db_index=True)
     outcome_service = models.ForeignKey(OutcomeService, on_delete=models.CASCADE)
     lis_result_sourcedid = models.CharField(max_length=255, db_index=True)
     version_number = models.IntegerField(default=0)

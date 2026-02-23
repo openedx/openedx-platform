@@ -485,7 +485,7 @@ edx-i18n-tools==1.9.0
     #   xblocks-contrib
 edx-milestones==1.1.0
     # via -r requirements/edx/kernel.in
-edx-opaque-keys[django]==3.0.0
+edx-opaque-keys[django]==3.1.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-bulk-grades

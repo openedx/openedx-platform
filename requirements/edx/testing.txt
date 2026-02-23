@@ -598,7 +598,7 @@ edx-lint==5.6.0
     # via -r requirements/edx/testing.in
 edx-milestones==1.1.0
     # via -r requirements/edx/base.txt
-edx-opaque-keys[django]==3.0.0
+edx-opaque-keys[django]==3.1.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-bulk-grades
