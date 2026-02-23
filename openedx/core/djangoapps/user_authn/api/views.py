@@ -83,16 +83,19 @@ class MFEContextView(APIView):
         if settings.ENABLE_DYNAMIC_REGISTRATION_FIELDS:
             if request_params.get('is_welcome_page'):
                 optional_fields = self._get_optional_fields_context()
-                context = {
-                    'context_data': {
-                        'welcomePageRedirectUrl': redirect_to if redirect_to == request_params.get('next') else None,
-                    },
-                    'optional_fields': optional_fields,
+                # Update context_data with welcomePageRedirectUrl instead of replacing it
+                # to preserve all fields from get_mfe_context (enterpriseBranding, countryCode, etc.)
+                context['context_data'].update({
+                    'welcomePageRedirectUrl': redirect_to if redirect_to == request_params.get('next') else None,
+                })
+                context['optional_fields'] = optional_fields if optional_fields else {
+                    'fields': {},
+                    'extended_profile': [],
                 }
                 return Response(
                     status=status.HTTP_200_OK,
                     data=MFEContextSerializer(
-                        context if optional_fields else {}
+                        context
                     ).data
                 )
 

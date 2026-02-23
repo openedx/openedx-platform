@@ -119,6 +119,7 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
                 'syncLearnerProfileData': False,
                 'countryCode': self.country_code,
                 'welcomePageRedirectUrl': None,
+                'enterpriseBranding': None,
                 'pipelineUserDetails': self.pipeline_user_details,
             },
             'registrationFields': {
@@ -433,6 +434,32 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
         assert list(response.data['optionalFields']['fields'].keys()) == ['specialty', 'goals']
         assert list(response.data['optionalFields']['extended_profile']) == ['specialty']
         assert response.data['contextData']['welcomePageRedirectUrl'] == redirect_url
+        # Verify that context from get_mfe_context is preserved
+        assert 'countryCode' in response.data['contextData']
+        assert 'platformName' in response.data['contextData']
+        assert response.data['contextData']['enterpriseBranding'] is None
+        assert 'providers' in response.data['contextData']
+
+    @override_settings(
+        ENABLE_DYNAMIC_REGISTRATION_FIELDS=True,
+        REGISTRATION_EXTRA_FIELDS={},
+        LOGIN_REDIRECT_WHITELIST=['openedx.service'],
+    )
+    def test_welcome_page_context_without_optional_fields(self):
+        """Test welcome page response shape when no optional fields are configured."""
+        redirect_url = 'https://openedx.service/coolpage'
+        self.query_params.update({'is_welcome_page': True, 'next': redirect_url})
+        response = self.client.get(self.url, self.query_params, HTTP_ACCEPT='*/*')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['registrationFields']['fields'] == {}
+        assert response.data['optionalFields']['fields'] == {}
+        assert response.data['optionalFields']['extended_profile'] == []
+        assert response.data['contextData']['welcomePageRedirectUrl'] == redirect_url
+        # Verify that context from get_mfe_context is preserved even when no optional fields
+        assert 'countryCode' in response.data['contextData']
+        assert 'platformName' in response.data['contextData']
+        assert response.data['contextData']['enterpriseBranding'] is None
+        assert 'providers' in response.data['contextData']
 
 
 @skip_unless_lms
