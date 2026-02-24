@@ -94,8 +94,8 @@ attrs==25.4.0
     #   jsonschema
     #   lti-consumer-xblock
     #   openedx-authz
+    #   openedx-core
     #   openedx-events
-    #   openedx-learning
     #   referencing
 babel==2.17.0
     # via
@@ -197,7 +197,7 @@ celery==5.6.2
     #   edx-enterprise
     #   enterprise-integrated-channels
     #   event-tracking
-    #   openedx-learning
+    #   openedx-core
 certifi==2026.1.4
     # via
     #   -r requirements/edx/doc.txt
@@ -407,12 +407,12 @@ django==5.2.11
     #   jsonfield
     #   lti-consumer-xblock
     #   openedx-authz
+    #   openedx-core
     #   openedx-django-pyfs
     #   openedx-django-wiki
     #   openedx-events
     #   openedx-filters
     #   openedx-forum
-    #   openedx-learning
     #   ora2
     #   social-auth-app-django
     #   super-csv
@@ -630,8 +630,8 @@ djangorestframework==3.16.1
     #   edx-proctoring
     #   edx-submissions
     #   openedx-authz
+    #   openedx-core
     #   openedx-forum
-    #   openedx-learning
     #   ora2
     #   super-csv
 djangorestframework-stubs==3.16.7
@@ -751,7 +751,7 @@ edx-drf-extensions==10.6.0
     #   edxval
     #   enterprise-integrated-channels
     #   openedx-authz
-    #   openedx-learning
+    #   openedx-core
 edx-enterprise==6.6.3
     # via
     #   -c requirements/constraints.txt
@@ -1190,7 +1190,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==9.14.3
+lti-consumer-xblock==9.14.4
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1357,7 +1357,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==0.20.0
+openedx-authz==0.22.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1365,11 +1365,15 @@ openedx-calc==4.0.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+openedx-core==0.35.0
+    # via
+    #   -c requirements/constraints.txt
+    #   -r requirements/edx/doc.txt
+    #   -r requirements/edx/testing.txt
 openedx-django-pyfs==3.8.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   lti-consumer-xblock
     #   xblock
     #   xblocks-contrib
 openedx-django-require==3.0.0
@@ -1397,11 +1401,6 @@ openedx-filters==2.1.0
     #   ora2
 openedx-forum==0.4.0
     # via
-    #   -r requirements/edx/doc.txt
-    #   -r requirements/edx/testing.txt
-openedx-learning==0.32.0
-    # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
 optimizely-sdk==5.4.0
@@ -1881,7 +1880,7 @@ rules==3.5
     #   -r requirements/edx/testing.txt
     #   edx-enterprise
     #   edx-proctoring
-    #   openedx-learning
+    #   openedx-core
 s3transfer==0.16.0
     # via
     #   -r requirements/edx/doc.txt
@@ -2107,7 +2106,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   openedx-learning
+    #   openedx-core
     #   pylint
     #   snowflake-connector-python
 tox==4.34.1

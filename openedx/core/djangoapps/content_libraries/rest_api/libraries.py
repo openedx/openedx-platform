@@ -3,7 +3,7 @@
 Content Libraries Views
 =======================
 
-This module contains the REST APIs for Learning Core-based content libraries,
+This module contains the REST APIs for openedx_content-based content libraries,
 and LTI 1.3 views (though I'm not sure how functional the LTI piece of this is
 right now).
 
@@ -59,7 +59,7 @@ the api module instead.
 
     Historical note: These views used to be wrapped with @atomic because we
     wanted to make all views that operated on Blockstore (the predecessor
-    to Learning Core) atomic:
+    to openedx_content) atomic:
         https://github.com/openedx/edx-platform/pull/30456
 """
 import itertools

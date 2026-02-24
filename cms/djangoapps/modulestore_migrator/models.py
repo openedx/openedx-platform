@@ -68,7 +68,7 @@ class ModulestoreSource(models.Model):
 class ModulestoreMigration(models.Model):
     """
     Tracks the action of a user importing a Modulestore-based course or legacy library into a
-    learning-core based learning package
+    openedx_content based learning package
 
     Notes:
     * As of Ulmo, a learning package is always associated with a v2 content library, but we

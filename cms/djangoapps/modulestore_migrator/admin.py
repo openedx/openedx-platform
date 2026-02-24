@@ -1,5 +1,5 @@
 """
-A nice little admin interface for migrating courses and libraries from modulstore to Learning Core.
+A nice little admin interface for migrating courses and libraries from modulstore to openedx_content.
 """
 import logging
 

@@ -1,5 +1,5 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from contextlib import contextmanager
 import json
@@ -67,7 +67,7 @@ URL_BLOCK_XBLOCK_HANDLER = '/api/xblock/v2/xblocks/{block_key}/handler/{user_id}
 @skip_unless_cms  # Content Libraries REST API is only available in Studio
 class ContentLibrariesRestApiTest(APITransactionTestCase):
     """
-    Base class for Learning-Core-based Content Libraries test that use the REST API
+    Base class for openedx_content-based Content Libraries test that use the REST API
 
     These tests use the REST API, which in turn relies on the Python API.
     Some tests may use the python API directly if necessary to provide

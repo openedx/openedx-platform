@@ -140,17 +140,17 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ),
         ])
 
-    def test_html_with_static_asset_learning_core(self):
+    def test_html_with_static_asset_openedx_content(self):
         """
-        Test the learning-core-specific serialization of an HTML block
+        Test the openedx_content-specific serialization of an HTML block
         """
         block_id = self.course.id.make_usage_key('html', 'just_img')  # see sample_courses.py
         html_block = modulestore().get_item(block_id)
         serialized = api.serialize_xblock_to_olx(html_block)
-        serialized_learning_core = api.serialize_modulestore_block_for_learning_core(html_block)
+        serialized_openedx_content = api.serialize_modulestore_block_for_openedx_content(html_block)
         self.assertXmlEqual(
-            serialized_learning_core.olx_str,
-            # For learning core, OLX should never contain "url_name" as that ID
+            serialized_openedx_content.olx_str,
+            # For openedx_content, OLX should never contain "url_name" as that ID
             # is specified by the Component key:
             """
             <html display_name="Text"><![CDATA[
@@ -160,7 +160,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         )
         self.assertIn("CDATA", serialized.olx_str)
         # Static files should be identical:
-        self.assertEqual(serialized.static_files, serialized_learning_core.static_files)
+        self.assertEqual(serialized.static_files, serialized_openedx_content.static_files)
 
     def test_html_with_fields(self):
         """ Test an HTML Block with non-default fields like editor='raw' """

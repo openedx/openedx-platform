@@ -231,7 +231,7 @@ class VideoConfigService:
         is_library = isinstance(video_block.usage_key.context_key, LibraryLocatorV2)
         content: bytes = transcript_file.read()
         if is_library:
-            # Save transcript as static asset in Learning Core if is a library component
+            # Save transcript as static asset in openedx_content if is a library component
             filename = f'static/transcript-{new_language_code}.srt'
             add_library_block_static_asset_file(video_block.usage_key, filename, content)
         else:
@@ -355,7 +355,7 @@ class VideoConfigService:
 
 def _save_transcript_field(video_block):
     """
-    Hacky workaround to ensure that transcript field is saved for Learning Core video blocks.
+    Hacky workaround to ensure that transcript field is saved for openedx_content video blocks.
 
     It's not clear why this is necessary.
     """

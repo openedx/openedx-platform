@@ -203,6 +203,7 @@ if submission[0] == '':
 
 @ddt.ddt
 @skip_unless_lms
+@pytest.mark.django_db
 class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
     """Tests for various problem types in XBlocks."""
 
@@ -2844,6 +2845,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
 
 @ddt.ddt
+@pytest.mark.django_db
 class ProblemBlockXMLTest(unittest.TestCase):
     """Tests XML strings for various problem types in XBlocks."""
 
@@ -3709,6 +3711,7 @@ class ComplexEncoderTest(unittest.TestCase):
 
 @skip_unless_lms
 @UseUnsafeCodejail()
+@pytest.mark.django_db
 class ProblemCheckTrackingTest(unittest.TestCase):
     """
     Ensure correct tracking information is included in events emitted during problem checks.

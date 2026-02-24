@@ -1,5 +1,5 @@
 """
-Tests for static asset files in Learning-Core-based Content Libraries
+Tests for static asset files in openedx_content-based Content Libraries
 """
 from uuid import UUID
 
@@ -31,7 +31,7 @@ I'm Anant Agarwal, I'm the president of edX,
 @skip_unless_cms
 class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
     """
-    Tests for static asset files in Learning-Core-based Content Libraries
+    Tests for static asset files in openedx_content-based Content Libraries
     """
 
     def test_asset_filenames(self):
@@ -72,7 +72,7 @@ class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
 
     def test_video_transcripts(self):
         """
-        Test that video blocks can read transcript files out of learning core.
+        Test that video blocks can read transcript files out of openedx_content.
         """
         library = self._create_library(slug="transcript-test-lib", title="Transcripts Test Library")
         block = self._add_block_to_library(library["id"], "video", "video1")
@@ -111,7 +111,7 @@ class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
         check_sjson()
         check_download()
         # Publish the OLX and the transcript file, since published data gets
-        # served differently by Learning Core and we should test that too.
+        # served differently by openedx_content and we should test that too.
         self._commit_library_changes(library["id"])
         check_sjson()
         check_download()
@@ -162,7 +162,7 @@ class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
         )
         assert response.status_code == 404
 
-        # File-like ComponenVersionContent entry that isn't an actually
+        # File-like ComponentVersionMedia entry that isn't an actually
         # downloadable file...
         response = self.client.get(
             f"/library_assets/component_versions/{self.draft_component_version.uuid}/block.xml"

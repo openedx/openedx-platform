@@ -8,12 +8,8 @@ import logging
 from typing import TYPE_CHECKING, Dict, Optional
 
 import requests
-from django.conf import settings
-from django.urls import reverse
-from opaque_keys.edx.keys import CourseKey
 from requests.auth import HTTPBasicAuth
 
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.capa.xqueue_submission import XQueueInterfaceSubmission
 
 if TYPE_CHECKING:
@@ -28,34 +24,6 @@ XQUEUE_METRIC_NAME = "edxapp.xqueue"
 XQUEUE_TIMEOUT = 35  # seconds
 CONNECT_TIMEOUT = 3.05  # seconds
 READ_TIMEOUT = 10  # seconds
-
-# .. toggle_name: send_to_submission_course.enable
-# .. toggle_implementation: CourseWaffleFlag
-# .. toggle_description: Enables use of the submissions service instead of legacy xqueue for course problem submissions.
-# .. toggle_default: False
-# .. toggle_use_cases: opt_in
-# .. toggle_creation_date: 2024-04-03
-# .. toggle_expiration_date: 2025-08-12
-# .. toggle_will_remain_in_codebase: True
-# .. toggle_tickets: none
-# .. toggle_status: supported
-SEND_TO_SUBMISSION_COURSE_FLAG = CourseWaffleFlag("send_to_submission_course.enable", __name__)
-
-
-def use_edx_submissions_for_xqueue(course_key: CourseKey | None = None) -> bool:
-    """
-    Determines whether edx-submissions should be used instead of legacy XQueue.
-
-    This helper abstracts the toggle logic so that the rest of the codebase is not tied
-    to specific feature flag mechanics or rollout strategies.
-
-    Args:
-        course_key (CourseKey | None): Optional course key. If None, fallback to site-level toggle.
-
-    Returns:
-        bool: True if edx-submissions should be used, False otherwise.
-    """
-    return SEND_TO_SUBMISSION_COURSE_FLAG.is_enabled(course_key)
 
 
 def make_hashkey(seed):
@@ -108,6 +76,7 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
         django_auth: Dict[str, str],
         requests_auth: Optional[HTTPBasicAuth] = None,
         block: "ProblemBlock" = None,
+        use_submission_service: bool = False,
     ):
         """
         Initializes the XQueue interface.
@@ -119,6 +88,7 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
             block ('ProblemBlock', optional): Added as a parameter only to extract the course_id
                 to check the course waffle flag `send_to_submission_course.enable`.
                 This can be removed after the legacy xqueue is deprecated. Defaults to None.
+            use_submission_service (bool): If True, use the edx-submissions service instead of XQueue.
         """
         self.url = url
         self.auth = django_auth
@@ -126,6 +96,7 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
         self.session.auth = requests_auth
         self.block = block
         self.submission = XQueueInterfaceSubmission(self.block)
+        self.use_submission_service = use_submission_service
 
     def send_to_queue(self, header, body, files_to_upload=None):
         """
@@ -134,7 +105,7 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
         header: JSON-serialized dict in the format described in 'xqueue_interface.make_xheader'
 
         body: Serialized data for the receipient behind the queueing service. The operation of
-                xqueue is agnostic to the contents of 'body'
+              xqueue is agnostic to the contents of 'body'
 
         files_to_upload: List of file objects to be uploaded to xqueue along with queue request
 
@@ -184,11 +155,10 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
             )
             return self._http_post(self.url + "/xqueue/submit/", payload, files=files)
 
-        course_key = self.block.scope_ids.usage_id.context_key
         header_info = json.loads(header)
         queue_key = header_info["lms_key"]  # pylint: disable=unused-variable
 
-        if use_edx_submissions_for_xqueue(course_key):
+        if self.use_submission_service:
             submission = self.submission.send_to_submission(  # pylint: disable=unused-variable
                 header, body, queue_key, files
             )
@@ -213,66 +183,3 @@ class XQueueInterface:  # pylint: disable=too-few-public-methods
             return 1, f"unexpected HTTP status code [{response.status_code}]"
 
         return parse_xreply(response.text)
-
-
-class XQueueService:
-    """
-    XBlock service providing an interface to the XQueue service.
-
-    Args:
-        block: The `ProblemBlock` instance.
-    """
-
-    def __init__(self, block: "ProblemBlock"):
-        basic_auth = settings.XQUEUE_INTERFACE.get("basic_auth")
-        requests_auth = HTTPBasicAuth(*basic_auth) if basic_auth else None
-        self._interface = XQueueInterface(
-            settings.XQUEUE_INTERFACE["url"], settings.XQUEUE_INTERFACE["django_auth"], requests_auth, block=block
-        )
-
-        self._block = block
-
-    @property
-    def interface(self):
-        """
-        Returns the XQueueInterface instance.
-        """
-        return self._interface
-
-    def construct_callback(self, dispatch: str = "score_update") -> str:
-        """
-        Return a fully qualified callback URL for the external queueing system.
-        """
-        course_key = self._block.scope_ids.usage_id.context_key
-        userid = str(self._block.scope_ids.user_id)
-        mod_id = str(self._block.scope_ids.usage_id)
-
-        callback_type = "xqueue_callback"
-
-        relative_xqueue_callback_url = reverse(
-            callback_type,
-            kwargs={
-                "course_id": str(course_key),
-                "userid": userid,
-                "mod_id": mod_id,
-                "dispatch": dispatch,
-            },
-        )
-
-        xqueue_callback_url_prefix = settings.XQUEUE_INTERFACE.get("callback_url", settings.LMS_ROOT_URL)
-        return f"{xqueue_callback_url_prefix}{relative_xqueue_callback_url}"
-
-    @property
-    def default_queuename(self) -> str:
-        """
-        Returns the default queue name for the current course.
-        """
-        course_id = self._block.scope_ids.usage_id.context_key
-        return f"{course_id.org}-{course_id.course}".replace(" ", "_")
-
-    @property
-    def waittime(self) -> int:
-        """
-        Returns the number of seconds to wait in between calls to XQueue.
-        """
-        return settings.XQUEUE_WAITTIME_BETWEEN_REQUESTS

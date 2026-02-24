@@ -13,7 +13,7 @@ Context
 
 We are replacing the existing Legacy ("V1") Content Libraries system, based on
 ModuleStore, with a Relaunched ("V2") Content Libraries  system, based on
-Learning Core. V1 and V2 libraries will coexist for at least one release to
+openedx_content. V1 and V2 libraries will coexist for at least one release to
 allow for migration; eventually, V1 libraries will be removed entirely.
 
 Content from V1 libraries can only be included into courses using the

@@ -1,5 +1,5 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from datetime import datetime, timezone
 import textwrap
@@ -875,7 +875,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
         # TODO -- remove this when containers publish their children:
-        # https://github.com/openedx/openedx-learning/pull/307
+        # https://github.com/openedx/openedx-core/pull/307
         # Removing the unit with components because the components (children of children) are not published.
         # If the unit is kept, the subsection continues to have changes even after it is published.
         self._remove_container_children(
@@ -951,7 +951,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
         # TODO -- remove this when containers publish their children:
-        # https://github.com/openedx/openedx-learning/pull/307
+        # https://github.com/openedx/openedx-core/pull/307
         # Removing the subsection with units because the units (children of children) are not published.
         # If the subsection is kept, the section continues to have changes even after it is published.
         self._remove_container_children(

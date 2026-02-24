@@ -137,7 +137,7 @@ def meili_id_from_opaque_key(key: OpaqueKey) -> str:
     hyphens (-) and underscores (_). Since our opaque keys don't meet this
     requirement, we transform them to a similar slug ID string that does.
 
-    In the future, with Learning Core's data models in place for courseware,
+    In the future, with openedx_content's data models in place for courseware,
     we could use PublishableEntity's primary key / UUID instead.
     """
     # The slugified key _may_ not be unique so we append a hashed string to make it unique:
@@ -232,7 +232,9 @@ def _fields_from_block(block) -> dict:
     if hasattr(block, "edited_on"):
         block_data[Fields.modified] = block.edited_on.timestamp()
     # Get the breadcrumbs (course, section, subsection, etc.):
-    if block.usage_key.context_key.is_course:  # Getting parent is not yet implemented in Learning Core (for libraries).
+    # TODO: Implement this for library items too. Libraries didn't support hierarchy at the time
+    #       this code was originally written.
+    if block.usage_key.context_key.is_course:
         cur_block = block
         while cur_block.parent:
             if not cur_block.has_cached_parent:

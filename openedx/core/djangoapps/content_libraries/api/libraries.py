@@ -303,7 +303,7 @@ def get_libraries_for_user(user, org=None, text_search=None, order=None) -> Quer
 
 def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = None) -> list[ContentLibraryMetadata]:
     """
-    Take a list of ContentLibrary objects and return metadata from Learning Core.
+    Take a list of ContentLibrary objects and return metadata from openedx_content.
     """
     if text_search:
         queryset = queryset.filter(org__short_name__icontains=text_search)
@@ -322,7 +322,7 @@ def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = N
             allow_public_read=lib.allow_public_read,
 
             # These are currently dummy values to maintain the REST API contract
-            # while we shift to Learning Core models.
+            # while we shift to openedx_content models.
             num_blocks=0,
             last_published=None,
             has_unpublished_changes=False,
@@ -374,7 +374,7 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
 
     # TODO: I'm doing this one to match already-existing behavior, but this is
     # something that we should remove. It exists to accomodate some complexities
-    # with how Blockstore staged changes, but Learning Core works differently,
+    # with how Blockstore staged changes, but openedx_content works differently,
     # and has_unpublished_changes should be sufficient.
     # Ref: https://github.com/openedx/edx-platform/issues/34283
     has_unpublished_deletes = (

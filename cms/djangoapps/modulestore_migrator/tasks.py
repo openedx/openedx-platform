@@ -61,7 +61,7 @@ log = get_task_logger(__name__)
 
 class MigrationStep(Enum):
     """
-    Strings representation the state of an in-progress modulestore-to-learning-core import.
+    Strings representation the state of an in-progress modulestore-to-openedx_content import.
 
     We use these values to set UserTaskStatus.state.
     The other possible UserTaskStatus.state values are the built-in ones:
@@ -296,7 +296,7 @@ def _import_assets(migration: models.ModulestoreMigration) -> dict[str, int]:
         filename = os.path.basename(old_path)
         media_type_str = mimetypes.guess_type(filename)[0] or "application/octet-stream"
         media_type = content_api.get_or_create_media_type(media_type_str)
-        content_by_filename[filename] = content_api.get_or_create_file_content(
+        content_by_filename[filename] = content_api.get_or_create_file_media(
             migration.target_id,
             media_type.id,
             data=file_data,
@@ -313,16 +313,16 @@ def _import_structure(
     status: UserTaskStatus,
 ) -> tuple[t.Any, _MigratedNode]:
     """
-    Import the staged content structure into the target Learning Core library.
+    Import the staged content structure into the target openedx_content library.
 
     Args:
         migration (ModulestoreMigration):
-            The migration record representing the ongoing modulestore-to-learning-core migration.
+            The migration record representing the ongoing modulestore-to-openedx_content migration.
         source_data (_MigrationSourceData):
             Data extracted from the legacy modulestore, including the source root usage key.
             Use `_validate_input()` to generate this data.
         target_library (libraries_api.ContentLibraryMetadata):
-            The target library where the new Learning Core content will be created.
+            The target library where the new openedx_content content will be created.
         content_by_filename (dict[str, int]):
             A mapping between OLX file names and their associated file IDs in the staging area.
             Use `_import_assets` to generate this content.
@@ -338,7 +338,7 @@ def _import_structure(
                   `content_api.bulk_draft_changes_for`, containing all the imported changes.
                 - The second element (`root_migrated_node`): a `_MigratedNode` object that
                   represents the mapping between the legacy root node and its newly created
-                  Learning Core equivalent.
+                  openedx_content equivalent.
     """
     migration = source_data.migration
     migration_context = _MigrationContext(
@@ -969,13 +969,13 @@ def _migrate_component(
     # If component existed and was deleted or we have to replace the current version
     # Create the new component version for it
     component_version = libraries_api.set_library_block_olx(target_key, new_olx_str=olx)
-    for filename, content_pk in context.content_by_filename.items():
+    for filename, media_pk in context.content_by_filename.items():
         filename_no_ext, _ = os.path.splitext(filename)
         if filename_no_ext not in olx:
             continue
         new_path = f"static/{filename}"
-        content_api.create_component_version_content(
-            component_version.pk, content_pk, key=new_path
+        content_api.create_component_version_media(
+            component_version.pk, media_pk, key=new_path
         )
 
     # Publish the component

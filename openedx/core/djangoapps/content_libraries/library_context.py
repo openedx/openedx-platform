@@ -24,7 +24,7 @@ class LibraryContextImpl(LearningContext):
     """
     Implements content libraries as a learning context.
 
-    This is the *new* content libraries based on Learning Core, not the old content
+    This is the *new* content libraries based on openedx_content, not the old content
     libraries based on modulestore.
     """
 

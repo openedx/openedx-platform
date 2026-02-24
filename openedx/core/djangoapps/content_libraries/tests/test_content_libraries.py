@@ -1,5 +1,5 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from datetime import datetime, timezone
 import os
@@ -51,7 +51,7 @@ from ..permissions import CAN_VIEW_THIS_CONTENT_LIBRARY, HasPermissionInContentL
 @ddt.ddt
 class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
     """
-    General tests for Learning-Core-based Content Libraries
+    General tests for openedx_content-based Content Libraries
 
     These tests use the REST API, which in turn relies on the Python API.
     Some tests may use the python API directly if necessary to provide
@@ -357,7 +357,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         <problem display_name="New Multi Choice Question" max_attempts="5">
             <multiplechoiceresponse>
                 <p>This is a normal capa problem with unicode 🔥. It has "maximum attempts" set to **5**.</p>
-                <label>Learning Core is designed to store.</label>
+                <label>openedx_content is designed to store.</label>
                 <choicegroup type="MultipleChoice">
                     <choice correct="false">XBlock metadata only</choice>
                     <choice correct="true">XBlock data/metadata and associated static asset files</choice>
@@ -382,7 +382,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         # Now view the XBlock's student_view (including draft changes):
         fragment = self._render_block_view(block_id, "student_view")
         assert 'resources' in fragment
-        assert 'Learning Core is designed to store.' in fragment['content']
+        assert 'openedx_content is designed to store.' in fragment['content']
 
         # Also call a handler to make sure that's working:
         handler_url = self._get_block_handler_url(block_id, "xmodule_handler") + "problem_get"
@@ -576,7 +576,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
 
         TODO: The asset permissions part of this test have been commented out
         for now. These should be re-enabled after we re-implement them over
-        Learning Core data models.
+        openedx_content data models.
         """
         # Create a few users to use for all of these tests:
         admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)
@@ -1678,7 +1678,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
 @ddt.ddt
 class ContentLibraryXBlockValidationTest(APITestCase):
-    """Tests only focused on service validation, no Learning Core interactions here."""
+    """Tests only focused on service validation, no openedx_content interactions here."""
 
     @ddt.data(
         (URL_BLOCK_METADATA_URL, dict(block_key='totally_invalid_key')),

@@ -1,5 +1,5 @@
 """
-Permissions for Content Libraries (v2, Learning-Core-based)
+Permissions for Content Libraries (v2, openedx_content-based)
 """
 from bridgekeeper import perms, rules
 from bridgekeeper.rules import Attribute, ManyRelation, Relation, blanket_rule, in_current_groups, Rule

@@ -405,13 +405,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         olx = '<problem display_name="Test Problem"><p>See image: test_image.png</p></problem>'
 
         media_type = content_api.get_or_create_media_type("image/png")
-        test_content = content_api.get_or_create_file_content(
+        test_media = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"fake_image_data",
             created=timezone.now(),
         )
-        content_by_filename = {"test_image.png": test_content.id}
+        content_by_filename = {"test_image.png": test_media.id}
         context = self._make_migration_context(content_by_filename=content_by_filename)
         result, reason = _migrate_component(
             context=context,
@@ -423,11 +423,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(reason)
 
-        component_content = result.componentversion.componentversioncontent_set.filter(
+        component_media = result.componentversion.componentversionmedia_set.filter(
             key="static/test_image.png"
         ).first()
-        self.assertIsNotNone(component_content)
-        self.assertEqual(component_content.content_id, test_content.id)
+        self.assertIsNotNone(component_media)
+        self.assertEqual(component_media.media.id, test_media.id)
 
     def test_migrate_skip_repeats(self):
         """
@@ -638,13 +638,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         olx = '<problem display_name="Test Problem"><p>See image: referenced.png</p></problem>'
 
         media_type = content_api.get_or_create_media_type("image/png")
-        referenced_content = content_api.get_or_create_file_content(
+        referenced_content = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"referenced_image_data",
             created=timezone.now(),
         )
-        unreferenced_content = content_api.get_or_create_file_content(
+        unreferenced_content = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"unreferenced_image_data",
@@ -670,12 +670,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNone(reason)
 
         referenced_content_exists = (
-            result.componentversion.componentversioncontent_set.filter(
+            result.componentversion.componentversionmedia_set.filter(
                 key="static/referenced.png"
             ).exists()
         )
         unreferenced_content_exists = (
-            result.componentversion.componentversioncontent_set.filter(
+            result.componentversion.componentversionmedia_set.filter(
                 key="static/unreferenced.png"
             ).exists()
         )
@@ -722,7 +722,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         child_version_1 = content_api.create_next_component_version(
             child_component_1.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -738,7 +738,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         child_version_2 = content_api.create_next_component_version(
             child_component_2.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -910,7 +910,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             )
             child_version = content_api.create_next_component_version(
                 child_component.pk,
-                content_to_replace={},
+                media_to_replace={},
                 created=timezone.now(),
                 created_by=self.user.id,
             )
@@ -950,7 +950,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         problem_version = content_api.create_next_component_version(
             problem_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -966,7 +966,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         html_version = content_api.create_next_component_version(
             html_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -982,7 +982,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         video_version = content_api.create_next_component_version(
             video_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )

@@ -48,7 +48,7 @@ def course_context_from_course_id(course_id):
     """
     Creates a course context from a `course_id`.
 
-    For newer parts of the system (i.e. Learning-Core-based libraries/courses/etc.)
+    For newer parts of the system (i.e. openedx_content-based libraries/courses/etc.)
     use context_dict_for_learning_context instead of this method.
 
     Example Returned Context::
