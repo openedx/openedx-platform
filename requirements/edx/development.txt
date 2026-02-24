@@ -1190,7 +1190,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==9.14.3
+lti-consumer-xblock==9.14.4
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1374,7 +1374,6 @@ openedx-django-pyfs==3.8.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   lti-consumer-xblock
     #   xblock
     #   xblocks-contrib
 openedx-django-require==3.0.0

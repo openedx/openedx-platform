@@ -708,7 +708,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==9.14.3
+lti-consumer-xblock==9.14.4
     # via -r requirements/edx/kernel.in
 lxml[html-clean]==5.3.2
     # via
@@ -814,7 +814,6 @@ openedx-core==0.35.0
     #   -r requirements/edx/kernel.in
 openedx-django-pyfs==3.8.0
     # via
-    #   lti-consumer-xblock
     #   xblock
     #   xblocks-contrib
 openedx-django-require==3.0.0
