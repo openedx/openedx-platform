@@ -405,13 +405,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         olx = '<problem display_name="Test Problem"><p>See image: test_image.png</p></problem>'
 
         media_type = content_api.get_or_create_media_type("image/png")
-        test_content = content_api.get_or_create_file_media(
+        test_media = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"fake_image_data",
             created=timezone.now(),
         )
-        content_by_filename = {"test_image.png": test_content.id}
+        content_by_filename = {"test_image.png": test_media.id}
         context = self._make_migration_context(content_by_filename=content_by_filename)
         result, reason = _migrate_component(
             context=context,
@@ -423,11 +423,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(reason)
 
-        component_content = result.componentversion.componentversionmedia_set.filter(
+        component_media = result.componentversion.componentversionmedia_set.filter(
             key="static/test_image.png"
         ).first()
-        self.assertIsNotNone(component_content)
-        self.assertEqual(component_content.content_id, test_content.id)
+        self.assertIsNotNone(component_media)
+        self.assertEqual(component_media.media.id, test_media.id)
 
     def test_migrate_skip_repeats(self):
         """
