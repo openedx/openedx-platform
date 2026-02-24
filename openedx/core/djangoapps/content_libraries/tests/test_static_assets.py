@@ -162,7 +162,7 @@ class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
         )
         assert response.status_code == 404
 
-        # File-like ComponenVersionContent entry that isn't an actually
+        # File-like ComponentVersionMedia entry that isn't an actually
         # downloadable file...
         response = self.client.get(
             f"/library_assets/component_versions/{self.draft_component_version.uuid}/block.xml"
