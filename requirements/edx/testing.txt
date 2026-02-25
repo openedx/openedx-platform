@@ -677,7 +677,7 @@ enmerkar==0.7.1
     #   enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via -r requirements/edx/base.txt
-enterprise-integrated-channels==0.1.38
+enterprise-integrated-channels==0.1.42
     # via -r requirements/edx/base.txt
 event-tracking==3.3.0
     # via
