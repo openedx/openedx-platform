@@ -65,6 +65,9 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
     # Keep the CourseRun up to date as the course is edited:
     if updated_course_overview.display_name != course_run.display_name:
         catalog_api.sync_course_run_details(course_key, display_name=updated_course_overview.display_name)
+        # If this course is the only run in the CatalogCourse, should we update the display_name of
+        # the CatalogCourse to match the run's new name? Currently the only way to edit the name of
+        # a CatalogCourse is via the Django admin. But it's also not used anywhere yet.
 
     if (
         updated_course_overview.language
