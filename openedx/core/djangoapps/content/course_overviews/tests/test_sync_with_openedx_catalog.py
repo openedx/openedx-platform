@@ -2,7 +2,10 @@
 Test that changes to courses get synced into the new openedx_catalog models.
 """
 
+import pytest
+
 from openedx_catalog import api as catalog_api
+from openedx_catalog.models_api import CatalogCourse, CourseRun
 
 from cms.djangoapps.contentstore.views.course import rerun_course
 from xmodule.modulestore import ModuleStoreEnum
@@ -20,7 +23,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
     """
 
     MODULESTORE = TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED
-    ENABLED_SIGNALS = ["course_published"]
+    ENABLED_SIGNALS = ["course_deleted", "course_published"]
 
     def test_courserun_creation(self) -> None:
         """
@@ -144,3 +147,42 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         # Changing the language of the second run doesn't affect the lanugage of the overall catalog course (since the
         # first run is still in English)
         assert new_run.catalog_course.language_short == "en"
+
+    def test_courserun_deletion(self) -> None:
+        """
+        Tests that when a course run is deleted, the corresponding CourseRun is
+        deleted, and when it's the last run, the CatalogCourse is deleted too.
+        """
+        # Create a course with two runs:
+        course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
+        course_id1 = course.location.context_key
+        run1 = catalog_api.get_course_run(course_id1)
+        # re-run the course:
+        course_id2 = rerun_course(
+            self.user,
+            source_course_key=course_id1,
+            org=course_id1.org,
+            number=course_id1.course,
+            run="run2",
+            fields={"display_name": "ItT run2"},
+            background=False,
+        )
+        run2 = catalog_api.get_course_run(course_id2)
+        catalog_course = run1.catalog_course
+        assert catalog_course == run2.catalog_course  # Same for run1 and run2
+
+        self.store.delete_course(course_id1, ModuleStoreEnum.UserID.test)
+        with pytest.raises(CourseRun.DoesNotExist):
+            run1.refresh_from_db()
+
+        # run2 should still exist:
+        run2.refresh_from_db()
+        assert run2.catalog_course.display_name == "Intro to Testing"  # The catalog course still exists and works
+
+        # delete run 2:
+        self.store.delete_course(course_id2, ModuleStoreEnum.UserID.test)
+        with pytest.raises(CourseRun.DoesNotExist):
+            run2.refresh_from_db()
+        # With no runs left, the CatalogCourse also gets auto-deleted:
+        with pytest.raises(CatalogCourse.DoesNotExist):
+            catalog_course.refresh_from_db()

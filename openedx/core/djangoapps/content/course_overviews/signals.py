@@ -104,6 +104,16 @@ def _listen_for_course_delete(sender, course_key, **kwargs):  # pylint: disable=
         sender=None,
         courserun_key=courserun_key,
     )
+    # Delete the openedx_catalog CourseRun to keep it in sync:
+    try:
+        course_run_obj = catalog_api.get_course_run(course_key)
+    except CourseRun.DoesNotExist:
+        pass
+    else:
+        catalog_course = course_run_obj.catalog_course
+        catalog_api.delete_course_run(course_key)
+        if catalog_course.runs.count() == 0:
+            catalog_api.delete_catalog_course(catalog_course)
 
 
 @receiver(post_save, sender=CourseOverview)
