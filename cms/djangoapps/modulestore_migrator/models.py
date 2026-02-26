@@ -47,8 +47,8 @@ class ModulestoreSource(models.Model):
       control whether `forwarded` is set to any given migration.
     """
     key = LearningContextKeyField(
-        max_length=255,
         unique=True,
+        case_sensitive=True,
         help_text=_('Key of the content source (a course or a legacy library)'),
     )
     forwarded = models.OneToOneField(
@@ -189,7 +189,7 @@ class ModulestoreBlockSource(TimeStampedModel):
         related_name="blocks",
     )
     key = UsageKeyField(
-        max_length=255,
+        case_sensitive=True,
         unique=True,
         help_text=_('Original usage key of the XBlock that has been imported.'),
     )

@@ -1275,6 +1275,7 @@ class ContentStoreTest(ContentStoreTestCase):
         resp = self.client.ajax_post('/course/', self.course_data)
         self.assertEqual(resp.status_code, 200)
         data = parse_json(resp)
+        assert 'ErrMsg' in data, "Expected the course creation to fail"
         self.assertRegex(data['ErrMsg'], error_message)
         if test_enrollment:
             # One test case involves trying to create the same course twice. Hence for that course,
