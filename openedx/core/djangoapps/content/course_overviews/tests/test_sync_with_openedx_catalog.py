@@ -7,7 +7,7 @@ import pytest
 from openedx_catalog import api as catalog_api
 from openedx_catalog.models_api import CatalogCourse, CourseRun
 
-from cms.djangoapps.contentstore.views.course import rerun_course
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED,
@@ -17,6 +17,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
+@skip_unless_cms
 class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
     """
     Test that changes to courses get synced into the new openedx_catalog models.
@@ -112,6 +113,8 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         but if there are several runs of the same course, the changes don't
         propagate to the `CatalogCourse` and only affect the `CourseRun.
         """
+        # This import causes problems at top level when tests run on the LMS shard
+        from cms.djangoapps.contentstore.views.course import rerun_course
         # Create a course
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id = course.location.context_key
@@ -153,6 +156,8 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         Tests that when a course run is deleted, the corresponding CourseRun is
         deleted, and when it's the last run, the CatalogCourse is deleted too.
         """
+        # This import causes problems at top level when tests run on the LMS shard
+        from cms.djangoapps.contentstore.views.course import rerun_course
         # Create a course with two runs:
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id1 = course.location.context_key
