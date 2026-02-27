@@ -51,7 +51,6 @@ from cms.djangoapps.contentstore.toggles import (
     use_new_import_page,
     use_new_schedule_details_page,
     use_new_unit_page,
-    use_new_video_uploads_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -425,11 +424,10 @@ def get_video_uploads_url(course_locator) -> str:
     Gets course authoring microfrontend URL for files and uploads page view.
     """
     video_uploads_url = None
-    if use_new_video_uploads_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/videos/'
-        if mfe_base_url:
-            video_uploads_url = course_mfe_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    course_mfe_url = f'{mfe_base_url}/course/{course_locator}/videos/'
+    if mfe_base_url:
+        video_uploads_url = course_mfe_url
     return video_uploads_url
 
 

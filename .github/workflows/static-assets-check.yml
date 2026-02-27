@@ -98,7 +98,6 @@ jobs:
         env:
           LMS_CFG: lms/envs/minimal.yml
           CMS_CFG: lms/envs/minimal.yml
-          DJANGO_SETTINGS_MODULE: lms.envs.production
         run: |
-          ./manage.py lms collectstatic --noinput
-          ./manage.py cms collectstatic --noinput
+          DJANGO_SETTINGS_MODULE=lms.envs.production ./manage.py lms collectstatic --noinput
+          DJANGO_SETTINGS_MODULE=cms.envs.production ./manage.py cms collectstatic --noinput

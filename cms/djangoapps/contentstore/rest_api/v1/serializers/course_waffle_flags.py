@@ -122,7 +122,12 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
 
     def get_use_new_video_uploads_page(self, obj):
         """
-        Method to get the use_new_video_uploads_page switch
+        Method to get the use_new_video_uploads_page switch.
+
+        This is off by default because the video uploads page requires the edX
+        video pipeline which is not available to the open source community.
+
+        See https://github.com/openedx/openedx-platform/issues/37972
         """
         course_key = self.get_course_key()
         return toggles.use_new_video_uploads_page(course_key)
