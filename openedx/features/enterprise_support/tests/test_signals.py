@@ -6,6 +6,7 @@ from datetime import timedelta
 from unittest.mock import patch
 
 import ddt
+from django.conf import settings
 from django.test.utils import override_settings
 from django.utils.timezone import now
 from edx_django_utils.cache import TieredCache
@@ -196,7 +197,9 @@ class EnterpriseSupportSignals(SharedModuleStoreTestCase):
         Test to assert transmit_single_learner_data is called when COURSE_GRADE_NOW_PASSED signal is fired
         """
         with patch(
-            'integrated_channels.integrated_channel.tasks.transmit_single_learner_data.apply_async',
+            'integrated_channels.integrated_channel.tasks.transmit_single_learner_data.apply_async'
+            if getattr(settings, 'ENABLE_LEGACY_INTEGRATED_CHANNELS', True) else
+            'channel_integrations.integrated_channel.tasks.transmit_single_learner_data.apply_async',
             return_value=None
         ) as mock_task_apply:
             course_key = CourseKey.from_string(self.course_id)
@@ -218,7 +221,9 @@ class EnterpriseSupportSignals(SharedModuleStoreTestCase):
         Test to assert transmit_subsection_learner_data is called when COURSE_ASSESSMENT_GRADE_CHANGED signal is fired.
         """
         with patch(
-            'integrated_channels.integrated_channel.tasks.transmit_single_subsection_learner_data.apply_async',
+            'integrated_channels.integrated_channel.tasks.transmit_single_subsection_learner_data.apply_async'
+            if getattr(settings, 'ENABLE_LEGACY_INTEGRATED_CHANNELS', True) else
+            'channel_integrations.integrated_channel.tasks.transmit_single_subsection_learner_data.apply_async',
             return_value=None
         ) as mock_task_apply:
             course_key = CourseKey.from_string(self.course_id)
