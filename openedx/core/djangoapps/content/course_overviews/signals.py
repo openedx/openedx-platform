@@ -57,7 +57,7 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
     except CourseRun.DoesNotExist:
         # Presumably this is a newly-created course. Create the CourseRun.
         course_run = catalog_api.create_course_run_for_modulestore_course_with(
-            course_id=course_key,
+            course_key=course_key,
             display_name=updated_course_overview.display_name,
             language_short=updated_course_overview.language,
         )

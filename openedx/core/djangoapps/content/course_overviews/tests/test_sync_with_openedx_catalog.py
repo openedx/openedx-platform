@@ -33,13 +33,13 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         (Also the corresponding `CatalogCourse`.)
         """
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
-        course_id = course.location.context_key
+        course_key = course.location.context_key
 
-        run = catalog_api.get_course_run(course_id)
+        run = catalog_api.get_course_run(course_key)
         assert run.display_name == "Intro to Testing"
-        assert run.course_id == course_id
-        assert run.catalog_course.course_code == course_id.course
-        assert run.catalog_course.org_code == course_id.org
+        assert run.course_key == course_key
+        assert run.catalog_course.course_code == course_key.course
+        assert run.catalog_course.org_code == course_key.org
 
     def test_courserun_sync(self) -> None:
         """
@@ -82,6 +82,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         """
         # This import causes problems at top level when tests run on the LMS shard
         from cms.djangoapps.contentstore.views.course import rerun_course
+
         # Create a course
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id = course.location.context_key
@@ -125,6 +126,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         """
         # This import causes problems at top level when tests run on the LMS shard
         from cms.djangoapps.contentstore.views.course import rerun_course
+
         # Create a course with two runs:
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id1 = course.location.context_key

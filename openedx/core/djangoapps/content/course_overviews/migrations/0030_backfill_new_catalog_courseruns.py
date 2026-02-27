@@ -32,10 +32,10 @@ def backfill_openedx_catalog(apps, schema_editor):
 
     created_catalog_course_ids: set[int] = set()
     all_course_runs = CourseIndex.objects.filter(base_store="mongodb", library_version="").order_by("course_id")
-    for course_run in all_course_runs:
-        org_code: str = course_run.course_id.org
-        course_code: str = course_run.course_id.course
-        run_code: str = course_run.course_id.run
+    for course_idx in all_course_runs:
+        org_code: str = course_idx.course_id.org
+        course_code: str = course_idx.course_id.course
+        run_code: str = course_idx.course_id.run
 
         # Ensure that the Organization exists.
         try:
@@ -45,7 +45,7 @@ def backfill_openedx_catalog(apps, schema_editor):
             # and if auto-create is disabled (it's enabled by default), this will raise InvalidOrganizationException. It
             # would be up to the operator to decide how they want to resolve that.
             raise ValueError(
-                f'The organization short code "{org_code}" exists in modulestore ({course_run.course_id}) but '
+                f'The organization short code "{org_code}" exists in modulestore ({course_idx.course_id}) but '
                 "not the Organizations table, and auto-creating organizations is disabled. You can resolve this by "
                 "creating the Organization manually (e.g. from the Django admin) or turning on auto-creation. "
                 "You can set active=False to prevent this Organization from being used other than for historical data. "
@@ -54,13 +54,13 @@ def backfill_openedx_catalog(apps, schema_editor):
             # On most installations, the 'short_name' database column is case insensitive (unfortunately)
             log.warning(
                 'The course with ID "%s" does not match its Organization.short_name "%s"',
-                course_run.course_id,
+                course_idx.course_id,
                 org_data["short_name"],
             )
 
         # Fetch the CourseOverview if it exists
         try:
-            course_overview = CourseOverview.objects.get(id=course_run.course_id)
+            course_overview = CourseOverview.objects.get(id=course_idx.course_id)
         except CourseOverview.DoesNotExist:
             course_overview = None  # Course exists in modulestore but details aren't cached into CourseOverview yet
         display_name: str = (course_overview.display_name if course_overview else None) or course_code
@@ -82,7 +82,7 @@ def backfill_openedx_catalog(apps, schema_editor):
                 # This seems like an invalid value; revert to the default:
                 log.warning(
                     'The course with ID "%s" has invalid language "%s" - using default language "%s" instead.',
-                    course_run.course_id,
+                    course_idx.course_id,
                     language,
                     settings.LANGUAGE_CODE,
                 )
@@ -114,7 +114,7 @@ def backfill_openedx_catalog(apps, schema_editor):
 
         if cc.course_code != course_code:
             raise ValueError(
-                f"The course {course_run.course_id} exists in modulestore with a different capitalization of its "
+                f"The course {course_idx.course_id} exists in modulestore with a different capitalization of its "
                 f'course code compared to other instances of the same run ("{course_code}" vs "{cc.course_code}"). '
                 "This really should not happen. To fix it, delete the inconsistent course runs (!). "
             )
@@ -122,8 +122,8 @@ def backfill_openedx_catalog(apps, schema_editor):
         # Create the CourseRun
         new_run, run_created = CourseRun.objects.get_or_create(
             catalog_course=cc,
-            run=run_code,
-            course_id=course_run.course_id,
+            run_code=run_code,
+            course_key=course_idx.course_id,
             defaults={"display_name": display_name},
         )
 
