@@ -74,39 +74,6 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         # We _could_ decide to sync the name from run -> catalog course if there is only one run.
         assert run.catalog_course.display_name == "Intro to Testing"
 
-    def test_courserun_sync(self) -> None:
-        """
-        Tests that when a course is updated, the catalog records get updated.
-
-        Because the "language" of a course cannot be set in Studio before you
-        create the course, when a Catalog Course has only a single run, we need
-        to keep the language of the catalog course in sync with any changes to
-        the language field of the course run. (Because authors necessarily
-        create a new course with the default language then edit it to have the
-        correct language that they actually intended to use for that [catalog]
-        course.) This is in contrast with display_name, which can actually be
-        set before creating a course.
-        """
-        # Create a course
-        course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
-        course_id = course.location.context_key
-        run = catalog_api.get_course_run(course_id)
-        assert run.display_name == "Intro to Testing"
-        assert run.catalog_course.language_short == "en"
-
-        # Update the course's display_name and language:
-        course.language = "es"
-        course.display_name = "Introducción a las pruebas"
-        self.store.update_item(course, ModuleStoreEnum.UserID.test)
-
-        # Check if the catalog data is updated:
-        run.refresh_from_db()
-        assert run.display_name == "Introducción a las pruebas"
-        assert run.catalog_course.language_short == "es"
-        # Note: for now we don't update the display_name of the catalog course after it has been created.
-        # We _could_ decide to sync the name from run -> catalog course if there is only one run.
-        assert run.catalog_course.display_name == "Intro to Testing"
-
     def test_courserun_of_many_sync(self) -> None:
         """
         Tests that when a course is updated, the catalog records get updated,
