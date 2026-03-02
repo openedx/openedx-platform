@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-asgiref==3.11.0
+asgiref==3.11.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django
@@ -14,17 +14,17 @@ attrs==25.4.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.30
+boto3==1.42.59
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.30
+botocore==1.42.59
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
     #   moto
     #   s3transfer
-certifi==2026.1.4
+certifi==2026.2.25
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -44,6 +44,7 @@ click==8.3.1
 cryptography==45.0.7
     # via
     #   -r scripts/user_retirement/requirements/base.txt
+    #   google-auth
     #   moto
     #   pyjwt
 ddt==1.7.2
@@ -68,13 +69,13 @@ edx-django-utils==8.0.1
     #   edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-api-core==2.29.0
+google-api-core==2.30.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-google-api-python-client==2.188.0
+google-api-python-client==2.191.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.47.0
+google-auth==2.48.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -88,7 +89,7 @@ googleapis-common-protos==1.72.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
-httplib2==0.31.1
+httplib2==0.31.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
@@ -103,11 +104,11 @@ isodate==0.7.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
-jenkinsapi==0.3.17
+jenkinsapi==0.3.21
     # via -r scripts/user_retirement/requirements/base.txt
 jinja2==3.1.6
     # via moto
-jmespath==1.0.1
+jmespath==1.1.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -126,27 +127,27 @@ more-itertools==10.8.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   simple-salesforce
-moto==5.1.20
+moto==5.1.21
     # via -r scripts/user_retirement/requirements/testing.in
-packaging==25.0
+packaging==26.0
     # via pytest
-platformdirs==4.5.1
+platformdirs==4.9.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
 pluggy==1.6.0
     # via pytest
-proto-plus==1.27.0
+proto-plus==1.27.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
-protobuf==6.33.4
+protobuf==6.33.5
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
     #   googleapis-common-protos
     #   proto-plus
-psutil==7.2.1
+psutil==7.2.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
@@ -159,13 +160,13 @@ pyasn1-modules==0.4.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-auth
-pycparser==2.23
+pycparser==3.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   cffi
 pygments==2.19.2
     # via pytest
-pyjwt[crypto]==2.10.1
+pyjwt[crypto]==2.11.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-rest-api-client
@@ -174,7 +175,7 @@ pynacl==1.6.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
-pyparsing==3.3.1
+pyparsing==3.3.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   httplib2
@@ -217,7 +218,7 @@ requests-toolbelt==1.0.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
-responses==0.25.8
+responses==0.26.0
     # via
     #   -r scripts/user_retirement/requirements/testing.in
     #   moto
@@ -241,7 +242,7 @@ sqlparse==0.5.5
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django
-stevedore==5.6.0
+stevedore==5.7.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
@@ -262,9 +263,9 @@ urllib3==2.6.3
     #   botocore
     #   requests
     #   responses
-werkzeug==3.1.5
+werkzeug==3.1.6
     # via moto
-xmltodict==1.0.2
+xmltodict==1.0.4
     # via moto
 zeep==4.3.2
     # via

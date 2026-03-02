@@ -4,19 +4,19 @@
 #
 #    make upgrade
 #
-asgiref==3.11.0
+asgiref==3.11.1
     # via django
 attrs==25.4.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.42.30
+boto3==1.42.59
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.42.30
+botocore==1.42.59
     # via
     #   boto3
     #   s3transfer
-certifi==2026.1.4
+certifi==2026.2.25
     # via requests
 cffi==2.0.0
     # via
@@ -31,6 +31,7 @@ click==8.3.1
 cryptography==45.0.7
     # via
     #   -c requirements/constraints.txt
+    #   google-auth
     #   pyjwt
 django==5.2.11
     # via
@@ -47,11 +48,11 @@ edx-django-utils==8.0.1
     # via edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.in
-google-api-core==2.29.0
+google-api-core==2.30.0
     # via google-api-python-client
-google-api-python-client==2.188.0
+google-api-python-client==2.191.0
     # via -r scripts/user_retirement/requirements/base.in
-google-auth==2.47.0
+google-auth==2.48.0
     # via
     #   google-api-core
     #   google-api-python-client
@@ -60,7 +61,7 @@ google-auth-httplib2==0.3.0
     # via google-api-python-client
 googleapis-common-protos==1.72.0
     # via google-api-core
-httplib2==0.31.1
+httplib2==0.31.2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
@@ -68,9 +69,9 @@ idna==3.11
     # via requests
 isodate==0.7.2
     # via zeep
-jenkinsapi==0.3.17
+jenkinsapi==0.3.21
     # via -r scripts/user_retirement/requirements/base.in
-jmespath==1.0.1
+jmespath==1.1.0
     # via
     #   boto3
     #   botocore
@@ -80,16 +81,16 @@ lxml==5.3.2
     #   zeep
 more-itertools==10.8.0
     # via simple-salesforce
-platformdirs==4.5.1
+platformdirs==4.9.2
     # via zeep
-proto-plus==1.27.0
+proto-plus==1.27.1
     # via google-api-core
-protobuf==6.33.4
+protobuf==6.33.5
     # via
     #   google-api-core
     #   googleapis-common-protos
     #   proto-plus
-psutil==7.2.1
+psutil==7.2.2
     # via edx-django-utils
 pyasn1==0.6.2
     # via
@@ -97,15 +98,15 @@ pyasn1==0.6.2
     #   rsa
 pyasn1-modules==0.4.2
     # via google-auth
-pycparser==2.23
+pycparser==3.0
     # via cffi
-pyjwt[crypto]==2.10.1
+pyjwt[crypto]==2.11.0
     # via
     #   edx-rest-api-client
     #   simple-salesforce
 pynacl==1.6.2
     # via edx-django-utils
-pyparsing==3.3.1
+pyparsing==3.3.2
     # via httplib2
 python-dateutil==2.9.0.post0
     # via botocore
@@ -141,7 +142,7 @@ six==1.17.0
     # via python-dateutil
 sqlparse==0.5.5
     # via django
-stevedore==5.6.0
+stevedore==5.7.0
     # via edx-django-utils
 typing-extensions==4.15.0
     # via simple-salesforce
