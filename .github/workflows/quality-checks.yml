@@ -79,7 +79,6 @@ jobs:
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
             make ruff
-            make pycodestyle
             make xsslint
             make pii_check
             make check_keywords

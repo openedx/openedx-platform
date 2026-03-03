@@ -171,9 +171,6 @@ xsslint: ## check xss for quality issuest
 	--config=scripts.xsslint_config \
 	--thresholds=scripts/xsslint_thresholds.json
 
-pycodestyle: ## check python files for quality issues
-	pycodestyle .
-
 ruff: ## check python files with ruff
 	ruff check .
 

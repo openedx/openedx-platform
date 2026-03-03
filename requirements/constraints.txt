@@ -78,11 +78,6 @@ openai<=0.28.1
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
 path<16.12.0
 
-# Date: 2022-08-03
-# pycodestyle==2.9.0 generates false positive error E275.
-# Constraint can be removed once the issue https://github.com/PyCQA/pycodestyle/issues/1090 is fixed.
-pycodestyle<2.9.0
-
 # Date: 2021-08-25
 # At the time of writing this comment, we do not know whether py2neo>=2022
 # will support our currently-deployed Neo4j version (3.5).
