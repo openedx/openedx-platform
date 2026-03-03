@@ -8,19 +8,23 @@ build==1.4.0
     # via pip-tools
 click==8.3.1
     # via pip-tools
-packaging==25.0
-    # via build
-pip-tools==7.5.2
+packaging==26.0
+    # via
+    #   build
+    #   wheel
+pip-tools==7.5.3
     # via -r requirements/pip-tools.in
 pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
-wheel==0.45.1
+wheel==0.46.3
     # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==25.3
+pip==26.0.1
     # via pip-tools
-setuptools==80.9.0
-    # via pip-tools
+setuptools==81.0.0
+    # via
+    #   -c requirements/constraints.txt
+    #   pip-tools
