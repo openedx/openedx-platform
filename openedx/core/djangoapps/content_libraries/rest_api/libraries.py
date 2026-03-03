@@ -3,7 +3,7 @@
 Content Libraries Views
 =======================
 
-This module contains the REST APIs for Learning Core-based content libraries,
+This module contains the REST APIs for openedx_content-based content libraries,
 and LTI 1.3 views (though I'm not sure how functional the LTI piece of this is
 right now).
 
@@ -59,12 +59,13 @@ the api module instead.
 
     Historical note: These views used to be wrapped with @atomic because we
     wanted to make all views that operated on Blockstore (the predecessor
-    to Learning Core) atomic:
+    to openedx_content) atomic:
         https://github.com/openedx/edx-platform/pull/30456
 """
 import itertools
 import json
 import logging
+import warnings
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings
@@ -134,6 +135,15 @@ from .utils import convert_exceptions
 
 User = get_user_model()
 log = logging.getLogger(__name__)
+
+
+warnings.warn(
+    (
+        "Content library team authorization REST APIs are deprecated. "
+        "See https://github.com/openedx/openedx-platform/issues/37409."
+    ),
+    DeprecationWarning
+)
 
 
 class LibraryApiPaginationDocs:
@@ -323,6 +333,8 @@ class LibraryTeamView(APIView):
 
     Note also the 'allow_public_' settings which can be edited by PATCHing the
     library itself (LibraryDetailsView.patch).
+
+    Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
     @convert_exceptions
     def post(self, request, lib_key_str):
@@ -330,6 +342,12 @@ class LibraryTeamView(APIView):
         Add a user to this content library via email, with permissions specified in the
         request body.
         """
+        warnings.warn(
+            "LibraryTeamView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM)
         serializer = ContentLibraryAddPermissionByEmailSerializer(data=request.data)
@@ -357,6 +375,12 @@ class LibraryTeamView(APIView):
         Get the list of users and groups who have permissions to view and edit
         this library.
         """
+        warnings.warn(
+            "LibraryTeamView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY_TEAM)
         team = api.get_library_team(key)
@@ -369,6 +393,8 @@ class LibraryTeamUserView(APIView):
     """
     View to add/remove/edit an individual user's permissions for a content
     library.
+
+    Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
     @convert_exceptions
     def put(self, request, lib_key_str, username):
@@ -376,6 +402,12 @@ class LibraryTeamUserView(APIView):
         Add a user to this content library, with permissions specified in the
         request body.
         """
+        warnings.warn(
+            "LibraryTeamUserView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM)
         serializer = ContentLibraryPermissionLevelSerializer(data=request.data)
@@ -393,6 +425,12 @@ class LibraryTeamUserView(APIView):
         """
         Gets the current permissions settings for a particular user.
         """
+        warnings.warn(
+            "LibraryTeamUserView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY_TEAM)
         user = get_object_or_404(User, username=username)
@@ -407,6 +445,12 @@ class LibraryTeamUserView(APIView):
         Remove the specified user's permission to access or edit this content
         library.
         """
+        warnings.warn(
+            "LibraryTeamUserView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM)
         user = get_object_or_404(User, username=username)
@@ -422,6 +466,8 @@ class LibraryTeamUserView(APIView):
 class LibraryTeamGroupView(APIView):
     """
     View to add/remove/edit a group's permissions for a content library.
+
+    Deprecated https://github.com/openedx/openedx-platform/issues/37409
     """
     @convert_exceptions
     def put(self, request, lib_key_str, group_name):
@@ -429,6 +475,12 @@ class LibraryTeamGroupView(APIView):
         Add a group to this content library, with permissions specified in the
         request body.
         """
+        warnings.warn(
+            "LibraryTeamGroupView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM)
         serializer = ContentLibraryPermissionLevelSerializer(data=request.data)
@@ -443,6 +495,12 @@ class LibraryTeamGroupView(APIView):
         Remove the specified user's permission to access or edit this content
         library.
         """
+        warnings.warn(
+            "LibraryTeamGroupView is deprecated. Use RoleUserAPIView from openedx-authz instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         key = LibraryLocatorV2.from_string(lib_key_str)
         api.require_permission_for_library_key(key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM)
         group = get_object_or_404(Group, username=username)

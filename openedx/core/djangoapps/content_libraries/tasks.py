@@ -4,11 +4,11 @@ Celery tasks for Content Libraries.
 Architecture note:
 
     Several functions in this file manage the copying/updating of blocks in modulestore
-    and learning core. These operations should only be performed within the context of CMS.
+    and openedx_content. These operations should only be performed within the context of CMS.
     However, due to existing edx-platform code structure, we've had to define the functions
     in shared source tree (openedx/) and the tasks are registered in both LMS and CMS.
 
-    To ensure that we're not accidentally importing things from learning core in the LMS context,
+    To ensure that we're not accidentally importing things from openedx_content in the LMS context,
     we use ensure_cms throughout this module.
 
     A longer-term solution to this issue would be to move the content_libraries app to cms:
@@ -183,7 +183,7 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
     try:
         draft_change_log = DraftChangeLog.objects.get(id=draft_change_log_id)
     except DraftChangeLog.DoesNotExist:
-        # When a revert operation is a no-op, Learning Core deletes the empty
+        # When a revert operation is a no-op, openedx_content deletes the empty
         # DraftChangeLog, so we'll assume that's what happened here.
         log.info(f"Library revert in {library_key_str} did not result in any changes.")
         return

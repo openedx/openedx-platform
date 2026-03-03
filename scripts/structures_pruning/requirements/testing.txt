@@ -16,11 +16,11 @@ dnspython==2.8.0
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   pymongo
-edx-opaque-keys==3.0.0
+edx-opaque-keys==3.1.0
     # via -r scripts/structures_pruning/requirements/base.txt
 iniconfig==2.3.0
     # via pytest
-packaging==25.0
+packaging==26.0
     # via pytest
 pluggy==1.6.0
     # via pytest
@@ -32,7 +32,7 @@ pymongo==4.4.0
     #   edx-opaque-keys
 pytest==9.0.2
     # via -r scripts/structures_pruning/requirements/testing.in
-stevedore==5.6.0
+stevedore==5.7.0
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   edx-opaque-keys

@@ -46,10 +46,10 @@ paths:
     get:
       tags:
         - Content Groups
-      summary: List content group configurations
+      summary: List content groups
       description: |
-        Returns all content group configurations (scheme='cohort') for a course.
-        If no content group exists, an empty one is automatically created.
+        Returns the content groups for a course along with the configuration ID
+        and a link to Studio for managing content groups.
       operationId: listGroupConfigurations
       produces:
         - application/json
@@ -153,20 +153,15 @@ definitions:
   ContentGroupsListResponse:
     type: object
     properties:
-      all_group_configurations:
+      id:
+        type: integer
+        nullable: true
+        description: ID of the content group configuration (null if none exists)
+      groups:
         type: array
         items:
-          $ref: '#/definitions/ContentGroupConfiguration'
-        description: List of content group configurations
-      should_show_enrollment_track:
-        type: boolean
-        description: Whether enrollment track groups should be displayed
-      should_show_experiment_groups:
-        type: boolean
-        description: Whether experiment groups should be displayed
-      group_configuration_url:
+          $ref: '#/definitions/Group'
+        description: Flat list of content groups for the course
+      studio_content_groups_link:
         type: string
-        description: Base URL for accessing individual configurations
-      course_outline_url:
-        type: string
-        description: URL to the course outline
+        description: Full URL to Studio's content group configuration page

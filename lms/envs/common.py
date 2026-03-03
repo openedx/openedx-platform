@@ -1780,7 +1780,7 @@ INSTALLED_APPS = [
     # User tours
     'lms.djangoapps.user_tours',
 
-    # New (Learning-Core-based) XBlock runtime
+    # New XBlock runtime, based on openedx_content
     'openedx.core.djangoapps.xblock.apps.LmsXBlockAppConfig',
 
     # Student support tools

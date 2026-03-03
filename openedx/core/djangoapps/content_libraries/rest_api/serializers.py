@@ -198,7 +198,7 @@ class LibraryXBlockCreationSerializer(serializers.Serializer):
 
     block_type = serializers.CharField()
 
-    # TODO: Rename to ``block_id`` or ``slug``. The Learning Core XBlock runtime
+    # TODO: Rename to ``block_id`` or ``slug``. The openedx_content XBlock runtime
     # doesn't use definition_ids, but this field is really just about requesting
     # a specific block_id, e.g. the "best_tropical_vacation_spots" portion of a
     # problem with UsageKey:

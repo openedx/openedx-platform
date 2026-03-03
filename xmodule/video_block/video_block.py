@@ -105,8 +105,8 @@ EXPORT_IMPORT_COURSE_DIR = 'course'
 EXPORT_IMPORT_STATIC_DIR = 'static'
 
 
-@XBlock.wants('settings', 'completion', 'i18n', 'request_cache', 'video_config')
-@XBlock.needs('mako', 'user')
+@XBlock.wants('settings', 'completion', 'request_cache', 'video_config')
+@XBlock.needs('mako', 'user', 'i18n')
 class _BuiltInVideoBlock(
         VideoFields, VideoTranscriptsMixin, VideoStudioViewHandlers, VideoStudentViewHandlers,
         EmptyDataRawMixin, XmlMixin, EditingMixin, XModuleToXBlockMixin,
@@ -265,7 +265,7 @@ class _BuiltInVideoBlock(
 
         fragment = Fragment(self.get_html(view=PUBLIC_VIEW, context=context))
         add_css_to_fragment(fragment, 'VideoBlockDisplay.css')
-        add_webpack_js_to_fragment(fragment, 'VideoBlockMain')
+        add_webpack_js_to_fragment(fragment, 'VideoBlockDisplay')
         fragment.initialize_js('Video')
         return fragment
 

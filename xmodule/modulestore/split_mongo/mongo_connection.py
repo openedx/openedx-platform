@@ -15,6 +15,9 @@ from zoneinfo import ZoneInfo
 
 from ccx_keys.locator import CCXLocator
 from django.core.cache import caches, InvalidCacheBackendError
+from django.db.models import F
+from django.db.models.functions import Lower
+from django.db.models.lookups import Exact
 from django.db.transaction import TransactionManagementError
 import pymongo
 # Import this just to export it
@@ -659,13 +662,15 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # We never include the branch or the version in the course key in the SplitModulestoreCourseIndex table:
         key = key.for_branch(None).version_agnostic()
         if not ignore_case:
-            query = {"course_id": key}
+            query_expr = Exact(F("course_id"), str(key))
         else:
             # Case insensitive search is important when creating courses to reject course IDs that differ only by
             # capitalization.
-            query = {"course_id__iexact": key}
+            # WARNING: 'course_id__iexact=key' does not work on this table as it uses a case-sensitive collation.
+            # We need to use the following explicit lowercase comparison in order to correctly query:
+            query_expr = Exact(Lower("course_id"), str(key).lower())
         try:
-            return SplitModulestoreCourseIndex.objects.get(**query).as_v1_schema()
+            return SplitModulestoreCourseIndex.objects.get(query_expr).as_v1_schema()
         except SplitModulestoreCourseIndex.DoesNotExist:
             # The mongo implementation does not retrieve by string key; it retrieves by (org, course, run) tuple.
             # As a result, it will handle read requests for a CCX key like

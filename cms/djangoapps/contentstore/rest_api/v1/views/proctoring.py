@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from cms.djangoapps.contentstore.views.course import get_course_and_check_access
 from cms.djangoapps.contentstore.utils import get_proctored_exam_settings_url
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
-from common.djangoapps.student.auth import has_studio_advanced_settings_access
+from common.djangoapps.student.auth import check_course_advanced_settings_access
 from xmodule.course_block import (
     get_available_providers,
     get_requires_escalation_email_providers,
@@ -21,7 +21,6 @@ from xmodule.course_block import (
 from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-
 from ..serializers import (
     LimitedProctoredExamSettingsSerializer,
     ProctoredExamConfigurationSerializer,
@@ -260,7 +259,9 @@ class ProctoringErrorsView(DeveloperErrorViewMixin, APIView):
         ```
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_advanced_settings_access(request.user):
+        if not check_course_advanced_settings_access(
+            request.user, course_key, access_type='feature_restricted'
+        ):
             self.permission_denied(request)
 
         course_block = modulestore().get_course(course_key)

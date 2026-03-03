@@ -21,13 +21,13 @@ from xblock.core import XBlock
 from xblock.field_data import DictFieldData
 from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
 
-from xmodule.capa.xqueue_interface import XQueueService
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import ModuleStoreDraftAndPublished
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.xml import CourseLocationManager
+from xmodule.services import XQueueService
 from xmodule.tests.helpers import StubReplaceURLService, mock_render_template, StubMakoService, StubUserService
 from xmodule.util.sandboxing import SandboxService
 from xmodule.x_module import DoNothingCache, XModuleMixin, ModuleStoreRuntime
@@ -161,7 +161,8 @@ def get_test_system(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
-        'discussion_config_service': DiscussionConfigService()
+        'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService,
     }
 
     descriptor_system.get_block_for_descriptor = get_block  # lint-amnesty, pylint: disable=attribute-defined-outside-init
@@ -218,7 +219,8 @@ def prepare_block_runtime(
         'field-data': DictFieldData({}),
         'sandbox': SandboxService(contentstore, course_id),
         'video_config': VideoConfigService(),
-        'discussion_config_service': DiscussionConfigService()
+        'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService,
     }
 
     if add_overrides:

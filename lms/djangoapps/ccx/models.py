@@ -26,7 +26,7 @@ class CustomCourseForEdX(models.Model):
 
     .. no_pii:
     """
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
     display_name = models.CharField(max_length=255)
     coach = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
     # if not empty, this field contains a json serialized list of
@@ -112,7 +112,7 @@ class CcxFieldOverride(models.Model):
     .. no_pii:
     """
     ccx = models.ForeignKey(CustomCourseForEdX, db_index=True, on_delete=models.CASCADE)
-    location = UsageKeyField(max_length=255, db_index=True)
+    location = UsageKeyField(db_index=True)
     field = models.CharField(max_length=255)
 
     class Meta:

@@ -90,8 +90,8 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
     """
     Load the upstream metadata and content for a downstream block.
 
-    Assumes that the upstream content is an XBlock in an LC-backed content libraries. This assumption may need to be
-    relaxed in the future (see module docstring).
+    Assumes that the upstream content is an XBlock in an openedx_content-backed
+    library. This assumption may need to be relaxed in the future (see module docstring).
 
     If `downstream` lacks a valid+supported upstream link, this raises an UpstreamLinkException.
     """

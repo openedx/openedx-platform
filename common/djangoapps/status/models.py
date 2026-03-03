@@ -64,7 +64,7 @@ class CourseMessage(models.Model):
     .. no_pii:
     """
     global_message = models.ForeignKey(GlobalStatusMessage, on_delete=models.CASCADE)
-    course_key = CourseKeyField(max_length=255, blank=True, db_index=True)
+    course_key = CourseKeyField(blank=True, db_index=True)
     message = models.TextField(blank=True, null=True)
 
     def __str__(self):

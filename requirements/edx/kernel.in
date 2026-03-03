@@ -113,11 +113,11 @@ oauthlib                            # OAuth specification support for authentica
 olxcleaner
 openedx-atlas                       # CLI tool to manage translations
 openedx-calc                        # Library supporting mathematical calculations for Open edX
+openedx-core                        # Open edX Core: Content, Tagging, and other foundational APIs
 openedx-django-require
 openedx-events                      # Open edX Events from Hooks Extension Framework (OEP-50)
 openedx-filters                     # Open edX Filters from Hooks Extension Framework (OEP-50)
 openedx-forum                       # Open edX forum v2 application
-openedx-learning                    # Open edX Learning core (experimental)
 openedx-django-wiki
 path
 piexif                              # Exif image metadata manipulation, used in the profile_images app

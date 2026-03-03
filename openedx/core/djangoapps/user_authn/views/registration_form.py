@@ -3,6 +3,7 @@ Objects and utilities used to construct registration forms.
 """
 
 import copy
+import logging
 import re
 from importlib import import_module
 
@@ -18,6 +19,7 @@ from django_countries import countries
 from eventtracking import tracker
 
 from common.djangoapps import third_party_auth
+from common.djangoapps.third_party_auth.models import SAMLProviderConfig
 from common.djangoapps.edxmako.shortcuts import marketing_link
 from common.djangoapps.student.models import CourseEnrollmentAllowed, UserProfile, email_exists_or_retired
 from common.djangoapps.util.password_policy_validators import (
@@ -34,6 +36,9 @@ from openedx.core.djangoapps.user_authn.utils import is_registration_api_v1 as i
 from openedx.core.djangoapps.user_authn.views.utils import remove_disabled_country_from_list
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
+
+
+log = logging.getLogger(__name__)
 
 
 class TrueCheckbox(widgets.CheckboxInput):
@@ -334,7 +339,20 @@ class RegistrationFormFactory:
 
     def _is_field_visible(self, field_name):
         """Check whether a field is visible based on Django settings. """
-        return self._extra_fields_setting.get(field_name) in ["required", "optional", "optional-exposed"]
+        is_visible = self._extra_fields_setting.get(field_name) in ["required", "optional", "optional-exposed"]
+
+        # If SAML provider config wants to skip optional checkboxes, hide marketing_emails_opt_in
+        if is_visible and field_name == 'marketing_emails_opt_in':
+            saml_config = self._get_saml_provider_config()
+            if saml_config and saml_config.skip_registration_optional_checkboxes:
+                log.info(
+                    "SAML provider %s has skip_registration_optional_checkboxes=True, "
+                    "hiding marketing_emails_opt_in field",
+                    saml_config.slug
+                )
+                return False
+
+        return is_visible
 
     def _is_field_required(self, field_name):
         """Check whether a field is required based on Django settings. """
@@ -410,6 +428,62 @@ class RegistrationFormFactory:
             field_order.extend(sorted(difference))
 
         self.field_order = field_order
+        self.request = None  # Will be set by get_registration_form
+
+    def _get_saml_provider_config(self):
+        """
+        Get the SAML provider config for the current request's running pipeline.
+
+        Returns:
+            SAMLProviderConfig or None: The SAML provider config if found, None otherwise
+        """
+        if not self.request or not third_party_auth.is_enabled():
+            return None
+
+        running_pipeline = third_party_auth.pipeline.get(self.request)
+        if not running_pipeline:
+            return None
+
+        try:
+            # idp_name can be in kwargs directly, in kwargs['details'], or in kwargs['response']
+            saml_provider_name = running_pipeline.get('kwargs', {}).get('idp_name')
+            if not saml_provider_name:
+                saml_provider_name = (
+                    running_pipeline.get('kwargs', {})
+                    .get('details', {})
+                    .get('idp_name')
+                )
+            if not saml_provider_name:
+                saml_provider_name = (
+                    running_pipeline.get('kwargs', {})
+                    .get('response', {})
+                    .get('idp_name')
+                )
+
+            if not saml_provider_name:
+                return None
+
+            try:
+                # Try to find the SAML provider config
+                # First try with current_set(), then fall back to direct query
+                try:
+                    return SAMLProviderConfig.objects.current_set().get(
+                        slug=saml_provider_name
+                    )
+                except SAMLProviderConfig.DoesNotExist:
+                    # Fallback to direct query without current_set()
+                    return SAMLProviderConfig.objects.get(
+                        slug=saml_provider_name
+                    )
+            except SAMLProviderConfig.DoesNotExist:
+                log.debug(
+                    "SAML provider config not found for idp_name: %s",
+                    saml_provider_name
+                )
+                return None
+        except Exception as exc:  # pylint: disable=broad-except
+            log.debug("Error getting SAML provider config: %s", str(exc))
+            return None
 
     def get_registration_form(self, request):
         """Return a description of the registration form.
@@ -426,6 +500,7 @@ class RegistrationFormFactory:
         Returns:
             HttpResponse
         """
+        self.request = request
         form_desc = FormDescription("post", self._get_registration_submit_url(request))
         self._apply_third_party_auth_overrides(request, form_desc)
 
@@ -693,6 +768,11 @@ class RegistrationFormFactory:
 
     def _add_marketing_emails_opt_in_field(self, form_desc, required=False):
         """Add a marketing email checkbox to form description.
+
+        If a SAML provider config has skip_registration_optional_checkboxes=True,
+        the field will default to False (opt-out) and not be required, overriding
+        the global settings.
+
         Arguments:
             form_desc: A form description
         Keyword Arguments:
@@ -703,13 +783,31 @@ class RegistrationFormFactory:
             platform_name=configuration_helpers.get_value('PLATFORM_NAME', settings.PLATFORM_NAME),
         )
 
+        # Default: checkbox is checked, field requirement follows the passed parameter
+        default_value = True
+        field_required = required
+        field_exposed = True
+
+        # Check if SAML provider wants to skip optional checkboxes
+        # This overrides both global settings and provider field overrides
+        saml_config = self._get_saml_provider_config()
+        if saml_config and saml_config.skip_registration_optional_checkboxes:
+            log.info(
+                "SAML provider %s has skip_registration_optional_checkboxes=True, "
+                "hiding field and setting default to False",
+                saml_config.slug
+            )
+            default_value = False  # User opts out by default when field is skipped
+            field_required = False  # Make field optional
+            field_exposed = False  # Hide the field from the form
+
         form_desc.add_field(
             'marketing_emails_opt_in',
             label=opt_in_label,
             field_type="checkbox",
-            exposed=True,
-            default=True,  # the checkbox will automatically be checked; meaning user has opted in
-            required=required,
+            exposed=field_exposed,
+            default=default_value,
+            required=field_required,
         )
 
     def _add_field_with_configurable_select_options(self, field_name, field_label, form_desc, required=False):
@@ -1149,7 +1247,24 @@ class RegistrationFormFactory:
                     )
 
                     for field_name in self.DEFAULT_FIELDS + self.EXTRA_FIELDS:
-                        if field_name in field_overrides:
+                        if field_name not in field_overrides:
+                            continue
+
+                        # Special handling for marketing_emails_opt_in:
+                        # If SAML provider config has skip_registration_optional_checkboxes=True,
+                        # don't let the provider's get_register_form_data override the default
+                        skip_override = False
+                        if field_name == 'marketing_emails_opt_in':
+                            saml_config = self._get_saml_provider_config()
+                            if saml_config and saml_config.skip_registration_optional_checkboxes:
+                                log.debug(
+                                    "Skipping provider override for marketing_emails_opt_in "
+                                    "due to SAML config for provider: %s",
+                                    saml_config.slug
+                                )
+                                skip_override = True
+
+                        if not skip_override:
                             form_desc.override_field_properties(
                                 field_name, default=field_overrides[field_name]
                             )
@@ -1159,9 +1274,11 @@ class RegistrationFormFactory:
                                 field_overrides[field_name] and
                                 hide_registration_fields_except_tos
                             ):
+                                field_default = field_overrides[field_name]
                                 form_desc.override_field_properties(
                                     field_name,
                                     field_type="hidden",
+                                    default=field_default,
                                     label="",
                                     instructions="",
                                 )

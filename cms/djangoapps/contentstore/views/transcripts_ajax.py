@@ -91,18 +91,18 @@ def link_video_to_component(video_component, user):
     return edx_video_id
 
 
-def save_video_transcript_in_learning_core(
+def save_video_transcript_in_openedx_content(
     usage_key,
     input_format,
     transcript_content,
     language_code
 ):
     """
-    Saves a video transcript to the learning core.
+    Saves a video transcript with the openedx_content API.
 
-    Learning Core uses the standard `.srt` format for subtitles.
+    openedx_content uses the standard `.srt` format for subtitles.
     Note: SJSON is an edx-specific format that we're trying to move away from,
-    so for all new stuff related to Learning Core should only use `.srt`.
+    so for all new stuff related to openedx_content should only use `.srt`.
 
     Arguments:
         usage_key: UsageKey of the block
@@ -615,7 +615,7 @@ def choose_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -669,7 +669,7 @@ def rename_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -725,7 +725,7 @@ def replace_transcripts(request):
         for transcript in transcript_content:
             [language_code, json_content] = transcript
             if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-                success = save_video_transcript_in_learning_core(
+                success = save_video_transcript_in_openedx_content(
                     video.usage_key,
                     Transcript.SJSON,
                     json_content,

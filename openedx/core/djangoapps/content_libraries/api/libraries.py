@@ -42,6 +42,7 @@ could be promoted to the core XBlock API and made generic.
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import datetime
@@ -303,7 +304,7 @@ def get_libraries_for_user(user, org=None, text_search=None, order=None) -> Quer
 
 def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = None) -> list[ContentLibraryMetadata]:
     """
-    Take a list of ContentLibrary objects and return metadata from Learning Core.
+    Take a list of ContentLibrary objects and return metadata from openedx_content.
     """
     if text_search:
         queryset = queryset.filter(org__short_name__icontains=text_search)
@@ -322,7 +323,7 @@ def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = N
             allow_public_read=lib.allow_public_read,
 
             # These are currently dummy values to maintain the REST API contract
-            # while we shift to Learning Core models.
+            # while we shift to openedx_content models.
             num_blocks=0,
             last_published=None,
             has_unpublished_changes=False,
@@ -374,7 +375,7 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
 
     # TODO: I'm doing this one to match already-existing behavior, but this is
     # something that we should remove. It exists to accomodate some complexities
-    # with how Blockstore staged changes, but Learning Core works differently,
+    # with how Blockstore staged changes, but openedx_content works differently,
     # and has_unpublished_changes should be sufficient.
     # Ref: https://github.com/openedx/edx-platform/issues/34283
     has_unpublished_deletes = (
@@ -494,6 +495,14 @@ def get_library_team(library_key: LibraryLocatorV2) -> list[ContentLibraryPermis
     """
     Get the list of users/groups granted permission to use this library.
     """
+    warnings.warn(
+        "get_library_team is deprecated. "
+        "Use get_all_user_role_assignments_in_scope from the openedx-authz API instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     ref = ContentLibrary.objects.get_by_key(library_key)
     return [
         ContentLibraryPermissionEntry(user=entry.user, group=entry.group, access_level=entry.access_level)
@@ -506,6 +515,14 @@ def get_library_user_permissions(library_key: LibraryLocatorV2, user: UserType) 
     Fetch the specified user's access information. Will return None if no
     permissions have been granted.
     """
+    warnings.warn(
+        "get_library_user_permissions is deprecated. "
+        "Use get_user_role_assignments_in_scope from the openedx-authz API instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(user, AnonymousUser):
         return None  # Mostly here for the type checker
     ref = ContentLibrary.objects.get_by_key(library_key)
@@ -525,6 +542,14 @@ def set_library_user_permissions(library_key: LibraryLocatorV2, user: UserType, 
 
     access_level should be one of the AccessLevel values defined above.
     """
+    warnings.warn(
+        "set_library_user_permissions is deprecated. "
+        "Use assign_library_role_to_user instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(user, AnonymousUser):
         raise TypeError("Invalid user type")  # Mostly here for the type checker
     ref = ContentLibrary.objects.get_by_key(library_key)
@@ -573,6 +598,14 @@ def set_library_group_permissions(library_key: LibraryLocatorV2, group, access_l
 
     access_level should be one of the AccessLevel values defined above.
     """
+    warnings.warn(
+        "set_library_group_permissions is deprecated. "
+        "Use assign_library_role_to_user instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     ref = ContentLibrary.objects.get_by_key(library_key)
 
     if access_level is None:

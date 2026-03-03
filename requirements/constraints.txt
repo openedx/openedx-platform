@@ -44,7 +44,7 @@ django-stubs<6
 # The team that owns this package will manually bump this package rather than having it pulled in automatically.
 # This is to allow them to better control its deployment and to do it in a process that works better
 # for them.
-edx-enterprise==6.6.3
+edx-enterprise==6.6.5
 
 # Date: 2023-07-26
 # Our legacy Sass code is incompatible with anything except this ancient libsass version.
@@ -61,9 +61,11 @@ libsass==0.10.0
 numpy<2.0.0
 
 # Date: 2023-09-18
-# pinning this version to avoid updates while the library is being developed
+# Library is still in active development. Minor verisons (0.x, 0.x+1) may have
+# breaking changes which openedx-core devs want to roll out manually. New patch versions
+# are OK to accept automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-learning==0.32.0
+openedx-core<0.36
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
@@ -146,3 +148,22 @@ pact-python<3.0.0
 # building requirements with Python 3.12
 # https://github.com/openedx/edx-platform/issues/37880
 sphinx-autoapi<3.6.1
+
+# Date 2026-03-02
+# setuptools 82.0.0 removed pkg_resources from its distribution, but fs (pyfilesystem2)
+# still uses pkg_resources for namespace package declarations. This constraint can be
+# removed once pyfilesystem2 drops its pkg_resources usage.
+# https://github.com/PyFilesystem/pyfilesystem2/issues/577
+# Issue for unpinning: https://github.com/openedx/openedx-platform/issues/38068
+setuptools<82
+
+# Date 2026-03-02
+# The latest version of pylint pins back astroid to an older version.
+# This holdback is not caught in the docs requirements file and since both the docs
+# and testing file are required in the development.in file, we fail to compile
+# development.txt because of conflicting dependencies.
+#
+# Holding astroid back until pylint releases a new version that works with the latest
+# version of astroid.
+# https://github.com/openedx/openedx-platform/issues/38066
+astroid==4.0.4

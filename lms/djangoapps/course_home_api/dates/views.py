@@ -19,6 +19,7 @@ from lms.djangoapps.courseware.context_processor import user_timezone_locale_pre
 from lms.djangoapps.courseware.courses import get_course_date_blocks
 from lms.djangoapps.courseware.date_summary import TodaysDate
 from lms.djangoapps.courseware.masquerade import setup_masquerade
+from lms.djangoapps.courseware.tabs import DatesTab
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 
@@ -110,13 +111,19 @@ class DatesTabView(RetrieveAPIView):
             course_key=course_key,
         )
 
+        course_date_blocks = (
+            [block for block in blocks if not isinstance(block, TodaysDate)]
+            if DatesTab.is_enabled(course, request.user)
+            else []
+        )
+
         # User locale settings
         user_timezone_locale = user_timezone_locale_prefs(request)
         user_timezone = user_timezone_locale['user_timezone']
 
         data = {
             'has_ended': course.has_ended(),
-            'course_date_blocks': [block for block in blocks if not isinstance(block, TodaysDate)],
+            'course_date_blocks': course_date_blocks,
             'learner_is_full_access': learner_is_full_access,
             'user_timezone': user_timezone,
         }

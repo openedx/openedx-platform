@@ -850,7 +850,7 @@ def get_transcript_for_video(video_location, subs_id, file_name, language):
     """
     Get video transcript from content store. This is a lower level function and is used by
     `get_transcript_from_contentstore`. Prefer that function instead where possible. If you
-    need to support getting transcripts from VAL or Learning Core as well, use the `get_transcript`
+    need to support getting transcripts from VAL or openedx_content as well, use the `get_transcript`
     function instead.
 
     NOTE: Transcripts can be searched from content store by two ways:
@@ -945,13 +945,13 @@ def build_components_import_path(usage_key, file_path):
     return f"components/{usage_key.block_type}/{usage_key.block_id}/{file_path}"
 
 
-def get_transcript_from_learning_core(video_block, language, output_format, transcripts_info):
+def get_transcript_from_openedx_content(video_block, language, output_format, transcripts_info):
     """
-    Get video transcript from Learning Core (used for Content Libraries)
+    Get video transcript from the openedx_content API.
 
     Limitation: This is only going to grab from the Draft version.
 
-    Learning Core models a VideoBlock's data in a more generic thing it calls a
+    openedx_content models a VideoBlock's data in a more generic thing it calls a
     Component. Each Component has its own virtual space for file-like data. The
     OLX for the VideoBlock itself is stored at the root of that space, as
     ``block.xml``. Static assets that are meant to be user-downloadable are
@@ -1015,17 +1015,17 @@ def get_transcript_from_learning_core(video_block, language, output_format, tran
             f"transcript files, but we tried to look up {file_path} for {usage_key}"
         )
 
-    # TODO: There should be a Learning Core API call for this:
+    # TODO: There should be a openedx_content API call for this:
     try:
-        content = (
+        media = (
             component_version
-            .componentversioncontent_set
-            .filter(content__has_file=True)
-            .select_related('content')
+            .componentversionmedia_set
+            .filter(media__has_file=True)
+            .select_related('media')
             .get(key=file_path)
-            .content
+            .media
         )
-        data = content.read_file().read()
+        data = media.read_file().read()
     except ObjectDoesNotExist as exc:
         raise NotFoundError(
             f"No file {file_path} found for {usage_key} "
@@ -1074,8 +1074,8 @@ def get_transcript(video, lang=None, output_format=Transcript.SRT, youtube_id=No
         lang = video.get_default_transcript_language(transcripts_info)
 
     if isinstance(video.scope_ids.usage_id, UsageKeyV2):
-        # This block is in Learning Core.
-        return get_transcript_from_learning_core(video, lang, output_format, transcripts_info)
+        # This block is in openedx_content.
+        return get_transcript_from_openedx_content(video, lang, output_format, transcripts_info)
 
     try:
         edx_video_id = clean_video_id(video.edx_video_id)

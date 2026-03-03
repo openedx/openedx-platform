@@ -47,7 +47,7 @@ __all__ = (
 
 def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKey, ModulestoreBlockMigrationSuccess]:
     """
-    Authoritatively determine how some Modulestore blocks have been migrated to Learning Core.
+    Authoritatively determine how some Modulestore blocks have been migrated to openedx_content.
 
     Returns a mapping from source usage keys to block migration data objects. Each block migration object
     holds the target usage key and title. If a source key is missing from the mapping, then it has not
@@ -79,7 +79,7 @@ def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKe
 
 def is_forwarded(source_key: SourceContextKey) -> bool:
     """
-    Has this course or legacy library been authoratively migrated to Learning Core,
+    Has this course or legacy library been authoratively migrated to openedx_content,
     such that references to the source course/library should be forwarded to the target library?
     """
     return get_forwarding(source_key) is not None
@@ -87,7 +87,7 @@ def is_forwarded(source_key: SourceContextKey) -> bool:
 
 def get_forwarding(source_key: SourceContextKey) -> ModulestoreMigration | None:
     """
-    Authoritatively determine how some Modulestore course or legacy library has been migrated to Learning Core.
+    Authoritatively determine how some Modulestore course or legacy library has been migrated to openedx_content.
 
     If no such successful migration exists, returns None.
 
@@ -123,7 +123,7 @@ def get_migrations(
     is_failed: bool | None = None,
 ) -> t.Generator[ModulestoreMigration]:
     """
-    Given some criteria, get all modulestore->LearningCore migrations.
+    Given some criteria, get all modulestore->openedx_content migrations.
 
     Returns an iterable, ordered from NEWEST to OLDEST.
 

@@ -357,7 +357,7 @@ class VideoStudentViewHandlers:
     def yt_video_metadata(self, request, suffix=''):  # lint-amnesty, pylint: disable=unused-argument
         """
         Endpoint to get YouTube metadata.
-        This handler is only used in the Learning-Core-based runtime. The old
+        This handler is only used in the openedx_content-based runtime. The old
         runtime uses a similar REST API that's not an XBlock handler.
         """
         from lms.djangoapps.courseware.views.views import load_metadata_from_youtube
