@@ -209,11 +209,7 @@ python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py", "__init__.p
 line-length = 120
 exclude = [
     "migrations",
-    ".git",
-    ".pycharm_helpers",
-    ".tox",
     "test_root/staticfiles",
-    "node_modules",
 ]
 
 [tool.ruff.lint]
