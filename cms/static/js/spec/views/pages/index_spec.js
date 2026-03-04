@@ -1,8 +1,10 @@
 define(['jquery',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/view_helpers', 'js/index',
     'common/js/components/utils/view_utils'],
-function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
+function($, sinon, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
+    var requests, xhrFactory;
     describe('Course listing page', function() {
         var mockIndexPageHTML = readFixtures('mock/mock-index-page.underscore');
 
@@ -20,18 +22,23 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             ViewHelpers.installMockAnalytics();
             appendSetFixtures(mockIndexPageHTML);
             IndexUtils.onReady();
         });
 
         afterEach(function() {
+            requests.restore();
             ViewHelpers.removeMockAnalytics();
             delete window.source_course_key;
         });
 
         it('can dismiss notifications', function() {
-            var requests = AjaxHelpers.requests(this);
             var reloadSpy = spyOn(ViewUtils, 'reload');
             $('.dismiss-button').click();
             AjaxHelpers.expectJsonRequest(requests, 'DELETE', 'dummy_dismiss_url');
@@ -40,7 +47,6 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         });
 
         it('saves new courses', function() {
-            var requests = AjaxHelpers.requests(this);
             var redirectSpy = spyOn(ViewUtils, 'redirect');
             $('.new-course-button').click();
             AjaxHelpers.expectJsonRequest(requests, 'GET', '/organizations');
@@ -70,7 +76,6 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         });
 
         it('displays an error when saving fails', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.new-course-button').click();
             AjaxHelpers.expectJsonRequest(requests, 'GET', '/organizations');
             AjaxHelpers.respondWithJson(requests, ['DemoX', 'DemoX2', 'DemoX3']);
@@ -87,7 +92,6 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         });
 
         it('saves new libraries', function() {
-            var requests = AjaxHelpers.requests(this);
             var redirectSpy = spyOn(ViewUtils, 'redirect');
             $('.new-library-button').click();
             fillInLibraryFields('DemoX', 'DM101', 'Demo library');
@@ -104,7 +108,6 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         });
 
         it('displays an error when a required field is blank', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.new-library-button').click();
             var values = ['DemoX', 'DM101', 'Demo library'];
             // Try making each of these three values empty one at a time and ensure the form won't submit:
@@ -131,7 +134,6 @@ function($, AjaxHelpers, ViewHelpers, IndexUtils, ViewUtils) {
         });
 
         it('displays an error when saving a library fails', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.new-library-button').click();
             fillInLibraryFields('DemoX', 'DM101', 'Demo library');
             $('.new-library-save').click();
