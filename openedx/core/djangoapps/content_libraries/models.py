@@ -36,8 +36,9 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from typing import ClassVar
 import uuid
+import warnings
+from typing import ClassVar
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -64,6 +65,15 @@ from .apps import ContentLibrariesConfig
 
 
 log = logging.getLogger(__name__)
+
+
+warnings.warn(
+    (
+        "ContentLibraryPermission model and related content library authorization "
+        "APIs are deprecated. See https://github.com/openedx/openedx-platform/issues/37409."
+    ),
+    DeprecationWarning
+)
 
 User = get_user_model()
 
@@ -186,6 +196,8 @@ class ContentLibrary(models.Model):
 class ContentLibraryPermission(models.Model):
     """
     Row recording permissions for a content library
+
+    Deprecated https://github.com/openedx/openedx-platform/issues/37409.
 
     .. no_pii:
     """

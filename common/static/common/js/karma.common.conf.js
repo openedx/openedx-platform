@@ -60,7 +60,9 @@ var commonFiles = {
     ],
 
     sourceFiles: [
-        {pattern: 'common/js/!(spec_helpers)/**/!(*spec).js'}
+        // Split common/js/ to exclude spec/main*.js test entry points (handled by runFiles)
+        {pattern: 'common/js/!(spec_helpers|spec)/**/!(*spec).js'},  // all non-spec, non-spec_helpers dirs
+        {pattern: 'common/js/spec/**/!(*spec|main*).js'}  // spec dir, excluding spec and main* files
     ],
 
     specFiles: [

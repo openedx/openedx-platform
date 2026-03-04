@@ -251,7 +251,13 @@ class IDVerificationService:
         Returns a string:
             Returns URL for IDV on Account Microfrontend
         """
-        account_base_url = (settings.ACCOUNT_MICROFRONTEND_URL or "").rstrip('/')
+        account_base_url = (
+            configuration_helpers.get_value(
+                'ACCOUNT_MICROFRONTEND_URL',
+                settings.ACCOUNT_MICROFRONTEND_URL,
+            ) or
+            ""
+        ).rstrip('/')
         location = f'{account_base_url}/id-verification'
         if course_id:
             location += f'?course_id={quote(str(course_id))}'

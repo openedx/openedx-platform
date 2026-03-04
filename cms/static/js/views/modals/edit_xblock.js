@@ -21,7 +21,8 @@ function($, _, Backbone, gettext, BaseModal, ViewUtils, XBlockViewUtils, XBlockE
             viewSpecificClasses: 'modal-editor confirm',
             // Translators: "title" is the name of the current component being edited.
             titleFormat: gettext('Editing: {title}'),
-            addPrimaryActionButton: true
+            addPrimaryActionButton: true,
+            showFullscreenButton: true,
         }),
 
         initialize: function() {
@@ -127,6 +128,7 @@ function($, _, Backbone, gettext, BaseModal, ViewUtils, XBlockViewUtils, XBlockE
             } else {
                 this.$('.modal-window-title').text(title);
             }
+
             this.getXBlockUpstreamLink();
 
             // If the xblock is not using custom buttons then choose which buttons to show
@@ -292,8 +294,7 @@ function($, _, Backbone, gettext, BaseModal, ViewUtils, XBlockViewUtils, XBlockE
             $input.focus().select();
             $(event.target).remove();
             return true;
-        }
-
+        },
     });
 
     return EditXBlockModal;

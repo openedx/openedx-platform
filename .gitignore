@@ -13,6 +13,7 @@ lms/envs/private.py
 cms/envs/private.py
 .venv/
 CLAUDE.md
+.claude/
 AGENTS.md
 # end-noclean
 

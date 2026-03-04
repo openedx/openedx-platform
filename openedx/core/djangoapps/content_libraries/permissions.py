@@ -1,5 +1,8 @@
 """
 Permissions for Content Libraries (v2, openedx_content-based)
+
+Deprecated: The legacy permission rules and constants that rely on ContentLibraryPermission
+are deprecated in favor of openedx-authz. See https://github.com/openedx/openedx-platform/issues/37409.
 """
 from bridgekeeper import perms, rules
 from bridgekeeper.rules import Attribute, ManyRelation, Relation, blanket_rule, in_current_groups, Rule

@@ -818,6 +818,56 @@ class ViewsTestCase(BaseViewsTestCase):
             response = self.client.get(url)
             self.assertRedirects(response, reverse('signin_user') + '?next=' + url)
 
+    def test_financial_assistance_form_uses_site_config_account_mfe_url(self):
+        """
+        When site configuration defines ACCOUNT_MICROFRONTEND_URL, the view should
+        pass that URL in the render context as 'account_settings_url'.
+        """
+        siteconf_url = "https://accounts.siteconf.example"
+        captured = {}
+
+        def fake_render(template_name, context, *args, **kwargs):
+            captured['context'] = context
+            return HttpResponse("ok")
+
+        with patch.object(views, 'render_to_response', new=fake_render):
+            with patch.object(
+                views.configuration_helpers,
+                'get_value',
+                side_effect=lambda key, default=None, *a, **k:
+                    siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+            ):
+                resp = self.client.get(reverse('financial_assistance_form'))
+
+        assert resp.status_code == 200
+        assert 'context' in captured
+        assert captured['context']['account_settings_url'] == siteconf_url
+
+    def test_financial_assistance_form_falls_back_to_settings_for_account_mfe(self):
+        """
+        If site configuration doesn't override, fall back to settings.ACCOUNT_MICROFRONTEND_URL.
+        """
+        fallback = "https://accounts.settings.example"
+        captured = {}
+
+        def fake_render(template_name, context, *args, **kwargs):
+            captured['context'] = context
+            return HttpResponse("ok")
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch.object(views, 'render_to_response', new=fake_render):
+                with patch.object(
+                    views.configuration_helpers,
+                    'get_value',
+                    side_effect=lambda key, default=None, *a, **k: default,
+                ):
+                    resp = self.client.get(reverse('financial_assistance_form'))
+
+                    assert resp.status_code == 200
+                    assert 'context' in captured
+                    assert captured['context']['account_settings_url'] == fallback
+                    assert captured['context']['account_settings_url'] == settings.ACCOUNT_MICROFRONTEND_URL
+
 
 # Patching 'lms.djangoapps.courseware.views.views.get_programs' would be ideal,
 # but for some unknown reason that patch doesn't seem to be applied.

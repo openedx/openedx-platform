@@ -1,5 +1,0 @@
-<span class="fa <%- iconClasses %>" aria-hidden="true"></span>
-<span class='transcript-detail-status'><%- shortMessage %></span>
-<button class='button-link more-details-action <%- hiddenClass %>' data-error-message='<%- errorMessage %>'>
-    <%- gettext('Read more') %>
-</button>

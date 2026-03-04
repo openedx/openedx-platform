@@ -123,7 +123,7 @@ class XBlockPipelineFinder(BaseFinder):  # lint-amnesty, pylint: disable=abstrac
 
         # xblock_resource_info holds (package_name, resources_dir) tuples. While
         # it never happens in practice, the XBlock API does allow different
-        # XBlocks installed with the same setup.py to refer to their shared
+        # XBlocks installed from the same package to refer to their shared
         # static assets using different prefixes.
         xblock_resource_info = {
             (xblock_resource_pkg(xblock_class), xblock_class.get_resources_dir())

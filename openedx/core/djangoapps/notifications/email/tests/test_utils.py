@@ -199,6 +199,38 @@ class TestContextFunctions(ModuleStoreTestCase):
         assert_list_equal(context['email_digest_updates'], expected_digest_updates)
         assert_list_equal(context['email_content'], expected_email_content)
 
+    def test_email_template_context_notification_settings_url_uses_site_config(self):
+        """
+        When site configuration defines ACCOUNT_MICROFRONTEND_URL (with a trailing slash),
+        the context should build notification_settings_url from it and strip the slash.
+        """
+        siteconf_url = "https://accounts.siteconf.example/"
+
+        with patch(
+            "openedx.core.djangoapps.notifications.email.utils.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            ctx = create_email_template_context(self.user.username)
+
+        assert ctx["notification_settings_url"] == "https://accounts.siteconf.example/#notifications"
+
+    def test_email_template_context_notification_settings_url_falls_back_to_settings(self):
+        """
+        If site config doesn't override, the context should fall back to
+        settings.ACCOUNT_MICROFRONTEND_URL (also stripping any trailing slash).
+        """
+        fallback = "https://accounts.settings.example/"
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch(
+                "openedx.core.djangoapps.notifications.email.utils.configuration_helpers.get_value",
+                side_effect=lambda key, default=None, *a, **k: default,
+            ):
+                ctx = create_email_template_context(self.user.username)
+
+        assert ctx["notification_settings_url"] == "https://accounts.settings.example/#notifications"
+
 
 class TestWaffleFlag(ModuleStoreTestCase):
     """

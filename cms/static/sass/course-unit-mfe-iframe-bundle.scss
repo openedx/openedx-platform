@@ -452,11 +452,30 @@ body,
       line-height: 28px;
     }
 
+    .fullscreen-button {
+      color: $primary-base;
+      height: 44px;
+      width: 44px;
+      border-radius: 22px;
+
+      &:hover {
+        border-color: $primary-base;
+      }
+
+      &:focus {
+        border-color: $primary-base;
+      }
+    }
+
     .xblock-actions {
       border-top: 1px solid $border-color;
       background-color: $white;
       display: flex;
       justify-content: flex-end;
+
+      ul {
+        margin-left: auto;
+      }
 
       .action-button {
         background-color: $transparent;

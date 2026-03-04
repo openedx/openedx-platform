@@ -28,8 +28,7 @@
             'js/factories/outline',
             'js/factories/settings',
             'js/factories/settings_advanced',
-            'js/factories/settings_graders',
-            'js/factories/videos_index'
+            'js/factories/settings_graders'
         ]),
         /**
          * By default all the configuration for optimization happens from the command
