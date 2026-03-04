@@ -57,7 +57,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (
     get_html5_ids,
     subs_filename
 )
-from .video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 from .video_utils import create_youtube_string, format_xml_exception_message, get_poster, rewrite_video_url
 from .video_xfields import VideoFields
 
