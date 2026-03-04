@@ -31,7 +31,7 @@ def backfill_openedx_catalog(apps, schema_editor):
     CourseRun = apps.get_model("openedx_catalog", "CourseRun")
 
     created_catalog_course_ids: set[int] = set()
-    all_course_runs = CourseIndex.objects.filter(base_store="mongodb", library_version="").order_by("course_id")
+    all_course_runs = CourseIndex.objects.filter(base_store="mongodb", library_version="").order_by("-pk")
     for course_idx in all_course_runs:
         org_code: str = course_idx.course_id.org
         course_code: str = course_idx.course_id.course
@@ -93,24 +93,14 @@ def backfill_openedx_catalog(apps, schema_editor):
             org_id=org_data["id"],
             course_code=course_code,
             defaults={
+                # The default display_name for the catalog course will be the same name as the newest run, since we
+                # iterate over "all_course_runs" in "-pk" order (should be same as reverse chronological)
                 "display_name": display_name,
                 "language": language,
             },
         )
         if cc_created:
             created_catalog_course_ids.add(cc.pk)
-        elif cc.pk in created_catalog_course_ids:
-            # This CatalogCourse was previously created during this same migration
-            # Check if all the runs have the same display_name:
-            if (
-                course_overview
-                and course_overview.display_name
-                and course_overview.display_name != cc.display_name
-                and cc.display_name != course_code
-            ):
-                # The runs have different names, so just use the course code as the common catalog course name.
-                cc.display_name = course_code
-                cc.save(update_fields=["display_name"])
 
         if cc.course_code != course_code:
             raise ValueError(
