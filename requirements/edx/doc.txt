@@ -91,6 +91,7 @@ beautifulsoup4==4.14.3
     #   openedx-forum
     #   pydata-sphinx-theme
     #   pynliner
+    #   xblocks-contrib
 billiard==4.2.4
     # via
     #   -r requirements/edx/base.txt
@@ -173,7 +174,9 @@ charset-normalizer==3.4.4
     #   requests
     #   snowflake-connector-python
 chem==2.0.0
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 click==8.3.1
     # via
     #   -r requirements/edx/base.txt
@@ -223,6 +226,10 @@ cssutils==2.11.1
     # via
     #   -r requirements/edx/base.txt
     #   pynliner
+ddt==1.7.2
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 deepmerge==2.0
     # via sphinxcontrib-openapi
 defusedxml==0.7.1
@@ -232,6 +239,7 @@ defusedxml==0.7.1
     #   ora2
     #   python3-openid
     #   social-auth-core
+    #   xblocks-contrib
 django==5.2.12
     # via
     #   -c requirements/common_constraints.txt
@@ -520,7 +528,9 @@ edx-celeryutils==1.4.0
     #   -r requirements/edx/base.txt
     #   super-csv
 edx-codejail==4.1.0
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 edx-completion==4.9
     # via -r requirements/edx/base.txt
 edx-django-release-util==1.5.0
@@ -549,6 +559,7 @@ edx-django-utils==8.0.1
     #   openedx-events
     #   ora2
     #   super-csv
+    #   xblocks-contrib
 edx-drf-extensions==10.6.0
     # via
     #   -r requirements/edx/base.txt
@@ -621,6 +632,7 @@ edx-submissions==3.12.2
     # via
     #   -r requirements/edx/base.txt
     #   ora2
+    #   xblocks-contrib
 edx-tincan-py35==2.0.0
     # via
     #   -r requirements/edx/base.txt
@@ -637,12 +649,15 @@ edx-toggles==5.4.1
     #   edxval
     #   event-tracking
     #   ora2
+    #   xblocks-contrib
 edx-when==3.1.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-proctoring
 edxval==3.2.0
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 elasticsearch==7.9.1
     # via
     #   -c requirements/common_constraints.txt
@@ -769,6 +784,7 @@ html5lib==1.1
     # via
     #   -r requirements/edx/base.txt
     #   ora2
+    #   xblocks-contrib
 httpcore==1.0.9
     # via
     #   -r requirements/edx/base.txt
@@ -966,6 +982,7 @@ numpy==1.26.4
     #   openedx-calc
     #   scipy
     #   shapely
+    #   xblocks-contrib
 oauthlib==3.3.1
     # via
     #   -r requirements/edx/base.txt
@@ -986,7 +1003,9 @@ openedx-atlas==0.7.0
 openedx-authz==0.22.0
     # via -r requirements/edx/base.txt
 openedx-calc==4.0.3
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 openedx-core==0.35.0
     # via
     #   -c requirements/constraints.txt
@@ -1059,6 +1078,7 @@ pillow==12.1.1
     #   edx-enterprise
     #   edx-organizations
     #   edxval
+    #   xblocks-contrib
 platformdirs==4.9.2
     # via
     #   -r requirements/edx/base.txt
@@ -1252,7 +1272,9 @@ pyyaml==6.0.3
     #   sphinxcontrib-openapi
     #   xblock
 random2==1.0.2
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 recommender-xblock==3.1.0
     # via -r requirements/edx/base.txt
 redis==7.2.1
@@ -1333,7 +1355,9 @@ semantic-version==2.10.0
     #   -r requirements/edx/base.txt
     #   edx-drf-extensions
 shapely==2.1.2
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 simpleeval==1.0.3
     # via
     #   -r requirements/edx/base.txt
@@ -1583,7 +1607,9 @@ wheel==0.46.3
     #   -r requirements/edx/base.txt
     #   django-pipeline
 wrapt==2.1.1
-    # via -r requirements/edx/base.txt
+    # via
+    #   -r requirements/edx/base.txt
+    #   xblocks-contrib
 xblock[django]==5.3.0
     # via
     #   -r requirements/edx/base.txt
@@ -1611,7 +1637,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/base.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.11.1
+xblocks-contrib==0.13.0
     # via -r requirements/edx/base.txt
 xmlsec==1.3.14
     # via
