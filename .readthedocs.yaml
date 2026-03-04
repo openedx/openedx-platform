@@ -10,6 +10,10 @@ sphinx:
 
 python:
   install:
+    # Need to install this to set the correct version of steuptools for now
+    # because it is needed by fs
+    # See https://github.com/openedx/openedx-platform/issues/38068 for details.
+  - requirements: "requirements/pip-tools.txt"
   - requirements: "requirements/edx/doc.txt"
   - method: pip
     path: .
