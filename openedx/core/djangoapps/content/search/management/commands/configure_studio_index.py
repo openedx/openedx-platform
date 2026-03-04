@@ -2,7 +2,7 @@
 Command to incrementially index content in the search index for courses (in Studio, i.e. Draft
 mode), in Meilisearch.
 
-See also ./configure_studio_index.py
+See also ./reindex_studio.py
 
 See also cms/djangoapps/contentstore/management/commands/reindex_course.py which
 indexes LMS (published) courses in ElasticSearch.
@@ -23,25 +23,25 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--reset-progress",
+            "--reset",
             action="store_true",
             help=(
-                "Reset the incremental indexing state, and start indexing from scratch. "
-                "No existing indexed data is deleted."
+                "Reset the index to a new clean state. "
+                "Warning: this deletes everything from the index."
             ),
             default=False,
         )
 
     def handle(self, *args, **options):
         """
-        Reindex content.
+        Configure the index
         """
         if not api.is_meilisearch_enabled():
             raise CommandError(
                 "Meilisearch is not enabled. Please set MEILISEARCH_ENABLED to True in your settings."
             )
 
-        if options["reset-progress"]:
-            api.reset_incremental_index_state(self.stdout.write)
-
-        api.rebuild_index(self.stdout.write, self.stderr.write)
+        if options["reset"]:
+            api.reset_index(self.stdout.write)
+        else:
+            api.init_index(self.stdout.write, self.stderr.write)
