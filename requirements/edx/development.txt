@@ -122,6 +122,7 @@ beautifulsoup4==4.14.3
     #   openedx-forum
     #   pydata-sphinx-theme
     #   pynliner
+    #   xblocks-contrib
 billiard==4.2.4
     # via
     #   -r requirements/edx/doc.txt
@@ -230,6 +231,7 @@ chem==2.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 click==8.3.1
     # via
     #   -r requirements/edx/assets.txt
@@ -315,7 +317,10 @@ cssutils==2.11.1
     #   -r requirements/edx/testing.txt
     #   pynliner
 ddt==1.7.2
-    # via -r requirements/edx/testing.txt
+    # via
+    #   -r requirements/edx/doc.txt
+    #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 deepmerge==2.0
     # via
     #   -r requirements/edx/doc.txt
@@ -328,6 +333,7 @@ defusedxml==0.7.1
     #   ora2
     #   python3-openid
     #   social-auth-core
+    #   xblocks-contrib
 diff-cover==10.2.0
     # via -r requirements/edx/testing.txt
 dill==0.4.1
@@ -704,6 +710,7 @@ edx-codejail==4.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 edx-completion==4.9
     # via
     #   -r requirements/edx/doc.txt
@@ -738,6 +745,7 @@ edx-django-utils==8.0.1
     #   openedx-events
     #   ora2
     #   super-csv
+    #   xblocks-contrib
 edx-drf-extensions==10.6.0
     # via
     #   -r requirements/edx/doc.txt
@@ -832,6 +840,7 @@ edx-submissions==3.12.2
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   ora2
+    #   xblocks-contrib
 edx-tincan-py35==2.0.0
     # via
     #   -r requirements/edx/doc.txt
@@ -850,6 +859,7 @@ edx-toggles==5.4.1
     #   edxval
     #   event-tracking
     #   ora2
+    #   xblocks-contrib
 edx-when==3.1.0
     # via
     #   -r requirements/edx/doc.txt
@@ -859,6 +869,7 @@ edxval==3.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 elasticsearch==7.9.1
     # via
     #   -c requirements/common_constraints.txt
@@ -1045,6 +1056,7 @@ html5lib==1.1
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   ora2
+    #   xblocks-contrib
 httpcore==1.0.9
     # via
     #   -r requirements/edx/doc.txt
@@ -1336,6 +1348,7 @@ numpy==1.26.4
     #   openedx-calc
     #   scipy
     #   shapely
+    #   xblocks-contrib
 oauthlib==3.3.1
     # via
     #   -r requirements/edx/doc.txt
@@ -1365,6 +1378,7 @@ openedx-calc==4.0.3
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 openedx-django-pyfs==3.8.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1472,6 +1486,7 @@ pillow==12.1.0
     #   edx-enterprise
     #   edx-organizations
     #   edxval
+    #   xblocks-contrib
 pip-tools==7.5.2
     # via -r requirements/pip-tools.txt
 platformdirs==4.5.1
@@ -1798,6 +1813,7 @@ random2==1.0.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 recommender-xblock==3.1.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1902,6 +1918,7 @@ shapely==2.1.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 simpleeval==1.0.3
     # via
     #   -r requirements/edx/doc.txt
@@ -2260,6 +2277,7 @@ wrapt==2.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   xblocks-contrib
 xblock[django]==5.3.0
     # via
     #   -r requirements/edx/doc.txt
@@ -2295,7 +2313,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/testing.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.10.2
+xblocks-contrib==0.13.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
