@@ -911,7 +911,7 @@ class ProblemResponses:
         ])
 
         student_data = []
-        max_count = settings.FEATURES.get('MAX_PROBLEM_RESPONSES_COUNT')
+        max_count = settings.MAX_PROBLEM_RESPONSES_COUNT
 
         store = modulestore()
         user_state_client = DjangoXBlockUserStateClient()

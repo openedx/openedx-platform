@@ -386,7 +386,7 @@ def credit_statuses(user, course_enrollments):
     from openedx.core.djangoapps.credit import api as credit_api
 
     # Feature flag off
-    if not settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY"):
+    if not settings.ENABLE_CREDIT_ELIGIBILITY:
         return {}
 
     request_status_by_course = {
@@ -541,25 +541,25 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
 
     enable_verified_certificates = configuration_helpers.get_value(
         'ENABLE_VERIFIED_CERTIFICATES',
-        settings.FEATURES.get('ENABLE_VERIFIED_CERTIFICATES')
+        settings.ENABLE_VERIFIED_CERTIFICATES
     )
     display_course_modes_on_dashboard = configuration_helpers.get_value(
         'DISPLAY_COURSE_MODES_ON_DASHBOARD',
-        settings.FEATURES.get('DISPLAY_COURSE_MODES_ON_DASHBOARD', True)
+        settings.DISPLAY_COURSE_MODES_ON_DASHBOARD
     )
     activation_email_support_link = configuration_helpers.get_value(
         'ACTIVATION_EMAIL_SUPPORT_LINK', settings.ACTIVATION_EMAIL_SUPPORT_LINK
     ) or settings.SUPPORT_SITE_LINK
     hide_dashboard_courses_until_activated = configuration_helpers.get_value(
         'HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED',
-        settings.FEATURES.get('HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED', False)
+        settings.HIDE_DASHBOARD_COURSES_UNTIL_ACTIVATED
     )
     empty_dashboard_message = configuration_helpers.get_value(
         'EMPTY_DASHBOARD_MESSAGE', None
     )
     disable_unenrollment = configuration_helpers.get_value(
         'DISABLE_UNENROLLMENT',
-        settings.FEATURES.get('DISABLE_UNENROLLMENT')
+        settings.DISABLE_UNENROLLMENT
     )
 
     disable_course_limit = request and 'course_limit' in request.GET

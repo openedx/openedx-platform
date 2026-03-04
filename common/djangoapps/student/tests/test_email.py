@@ -530,7 +530,7 @@ class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheI
         assert len(mail.outbox) == 2
 
         use_https = self.request.is_secure()
-        if settings.FEATURES['ENABLE_MKTG_SITE']:
+        if settings.ENABLE_MKTG_SITE:
             contact_link = marketing_link('CONTACT')
         else:
             contact_link = '{protocol}://{site}{link}'.format(

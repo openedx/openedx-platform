@@ -63,7 +63,7 @@ class CorsCSRFMiddleware(CsrfViewMiddleware, MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         """Disable the middleware if the feature flag is disabled. """
-        if not settings.FEATURES.get('ENABLE_CORS_HEADERS'):
+        if not settings.ENABLE_CORS_HEADERS:
             raise MiddlewareNotUsed()
         super().__init__(*args, **kwargs)
 
@@ -96,7 +96,7 @@ class CsrfCrossDomainCookieMiddleware(MiddlewareMixin):
 
     def __init__(self, *args, **kwargs):
         """Disable the middleware if the feature is not enabled. """
-        if not settings.FEATURES.get('ENABLE_CROSS_DOMAIN_CSRF_COOKIE'):
+        if not settings.ENABLE_CROSS_DOMAIN_CSRF_COOKIE:
             raise MiddlewareNotUsed()
 
         if not getattr(settings, 'CROSS_DOMAIN_CSRF_COOKIE_NAME', ''):

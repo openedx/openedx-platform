@@ -1009,7 +1009,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
 
 
 @skip_unless_lms
-@unittest.skipUnless(settings.FEATURES.get("ENABLE_NOTICES"), 'Notices plugin is not enabled')
+@unittest.skipUnless(settings.ENABLE_NOTICES, 'Notices plugin is not enabled')
 class TestCourseDashboardNoticesRedirects(SharedModuleStoreTestCase):
     """
     Tests for the Dashboard redirect functionality introduced via the Notices plugin.

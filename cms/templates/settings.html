@@ -664,7 +664,7 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url | n, js_escaped_string}'
             </div>
           % endif
 
-          % if settings.FEATURES.get("LICENSING", False):
+          % if settings.LICENSING:
             <hr class="divide" />
 
             <div class="group-settings license">

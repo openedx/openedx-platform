@@ -538,7 +538,7 @@ class UserChangeForm(BaseUserChangeForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if not settings.FEATURES.get('ENABLE_CHANGE_USER_PASSWORD_ADMIN'):
+        if not settings.ENABLE_CHANGE_USER_PASSWORD_ADMIN:
             self.fields["password"] = ReadOnlyPasswordHashField(
                 label=_("Password"),
                 help_text=_(

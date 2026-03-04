@@ -310,14 +310,14 @@ def courses(request):
     courses_list = []
     course_discovery_meanings = getattr(settings, 'COURSE_DISCOVERY_MEANINGS', {})
     set_default_filter = ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER.is_enabled()
-    if not settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
+    if not settings.ENABLE_COURSE_DISCOVERY:
         courses_list = get_courses(
             request.user,
             filter_={"catalog_visibility": CATALOG_VISIBILITY_CATALOG_AND_ABOUT},
         )
 
         if configuration_helpers.get_value("ENABLE_COURSE_SORTING_BY_START_DATE",
-                                           settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"]):
+                                           settings.ENABLE_COURSE_SORTING_BY_START_DATE):
             courses_list = sort_by_start_date(courses_list)
         else:
             courses_list = sort_by_announcement(courses_list)
@@ -557,7 +557,7 @@ class CourseTabView(EdxFragmentView):
         Returns the URL to use to enroll in the specified course.
         """
         url_to_enroll = reverse('about_course', args=[str(course_key)])
-        if settings.FEATURES.get('ENABLE_MKTG_SITE'):
+        if settings.ENABLE_MKTG_SITE:
             url_to_enroll = marketing_link('COURSES')
         return url_to_enroll
 
@@ -840,7 +840,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
         show_courseware_link = bool(
             (
                 request.user.has_perm(VIEW_COURSEWARE, course)
-            ) or settings.FEATURES.get('ENABLE_LMS_MIGRATION')
+            ) or settings.ENABLE_LMS_MIGRATION
         )
 
         # If the ecommerce checkout flow is enabled and the mode of the course is
@@ -899,7 +899,7 @@ def course_about(request, course_id):  # pylint: disable=too-many-statements
             'studio_url': studio_url,
             'registered': registered,
             'course_target': course_target,
-            'is_cosmetic_price_enabled': settings.FEATURES.get('ENABLE_COSMETIC_DISPLAY_PRICE'),
+            'is_cosmetic_price_enabled': settings.ENABLE_COSMETIC_DISPLAY_PRICE,
             'course_price': course_price,
             'ecommerce_checkout': ecommerce_checkout,
             'ecommerce_checkout_link': ecommerce_checkout_link,
@@ -1098,7 +1098,7 @@ def _downloadable_certificate_message(course, cert_downloadable_status):  # lint
 
 
 def _missing_required_verification(student, enrollment_mode):
-    return settings.FEATURES.get('ENABLE_CERTIFICATES_IDV_REQUIREMENT') and (
+    return settings.ENABLE_CERTIFICATES_IDV_REQUIREMENT and (
         enrollment_mode in CourseMode.VERIFIED_MODES and not IDVerificationService.user_is_verified(student)
     )
 
@@ -1171,7 +1171,7 @@ def credit_course_requirements(course_key, student):
     # If credit eligibility is not enabled or this is not a credit course,
     # short-circuit and return `None`.  This indicates that credit requirements
     # should NOT be displayed on the progress page.
-    if not (settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY", False) and is_credit_course(course_key)):
+    if not (settings.ENABLE_CREDIT_ELIGIBILITY and is_credit_course(course_key)):
         return None
 
     # This indicates that credit requirements should NOT be displayed on the progress page.
@@ -1226,9 +1226,9 @@ def _course_home_redirect_enabled():
     Returns: boolean True or False
     """
     if configuration_helpers.get_value(
-            'ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False)
+            'ENABLE_MKTG_SITE', settings.ENABLE_MKTG_SITE
     ) and configuration_helpers.get_value(
-        'ENABLE_COURSE_HOME_REDIRECT', settings.FEATURES.get('ENABLE_COURSE_HOME_REDIRECT', True)
+        'ENABLE_COURSE_HOME_REDIRECT', settings.ENABLE_COURSE_HOME_REDIRECT
     ):
         return True
 
@@ -1713,7 +1713,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
                 'enable_completion_on_view_service': enable_completion_on_view_service,
                 'edx_notes_enabled': is_feature_enabled(course, request.user),
                 'staff_access': staff_access,
-                'xqa_server': settings.FEATURES.get('XQA_SERVER', 'http://your_xqa_server.com'),
+                'xqa_server': settings.XQA_SERVER,
                 'missed_deadlines': missed_deadlines,
                 'missed_gated_content': missed_gated_content,
                 'has_ended': course.has_ended(),
@@ -2360,7 +2360,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     user = request.user
 
     has_required_enrollment = False
-    if settings.FEATURES.get('ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED'):
+    if settings.ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED:
         enrollment_mode, _ = CourseEnrollment.enrollment_mode_for_user(user, course_key)
         if (
             auth.user_has_role(user, CourseStaffRole(CourseKey.from_string(course_id)))
@@ -2370,7 +2370,7 @@ def courseware_mfe_search_enabled(request, course_id=None):
     else:
         has_required_enrollment = True
 
-    inclusion_date = settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE')
+    inclusion_date = settings.COURSEWARE_SEARCH_INCLUSION_DATE
     start_date = CourseOverview.get_from_id(course_key).start
     has_valid_inclusion_date = False
 

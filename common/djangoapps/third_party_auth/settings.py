@@ -43,7 +43,7 @@ def apply_settings(django_settings):
     django_settings.SOCIAL_AUTH_AZUREAD_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'msafed': 0}
 
     # Avoid default username check to allow non-ascii characters
-    django_settings.SOCIAL_AUTH_CLEAN_USERNAMES = not settings.FEATURES.get("ENABLE_UNICODE_USERNAME")
+    django_settings.SOCIAL_AUTH_CLEAN_USERNAMES = not settings.ENABLE_UNICODE_USERNAME
 
     # Inject our customized auth pipeline. All auth backends must work with
     # this pipeline.

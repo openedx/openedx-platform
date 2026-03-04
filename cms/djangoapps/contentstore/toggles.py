@@ -1,7 +1,9 @@
 """
 CMS feature toggles.
 """
+from django.conf import settings
 from edx_toggles.toggles import SettingToggle, WaffleFlag
+
 from openedx.core.djangoapps.content.search import api as search_api
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
@@ -409,25 +411,11 @@ def default_enable_flexible_peer_openassessments(course_key):
     return DEFAULT_ENABLE_FLEXIBLE_PEER_OPENASSESSMENTS.is_enabled(course_key)
 
 
-# .. toggle_name: ENABLE_CONTENT_LIBRARIES
-# .. toggle_implementation: SettingToggle
-# .. toggle_default: True
-# .. toggle_description: Enables use of the legacy and v2 libraries waffle flags.
-#    Note that legacy content libraries are only supported in courses using split mongo.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2015-03-06
-# .. toggle_target_removal_date: 2025-04-09
-# .. toggle_warning: This flag is deprecated in Sumac, and will be removed in favor of the disable_legacy_libraries and
-#    disable_new_libraries waffle flags.
-ENABLE_CONTENT_LIBRARIES = SettingToggle(
-    "ENABLE_CONTENT_LIBRARIES", default=True, module_name=__name__
-)
-
 # .. toggle_name: contentstore.new_studio_mfe.disable_legacy_libraries
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
 # .. toggle_description: Hides legacy (v1) Libraries tab in Authoring MFE.
-#    This toggle interacts with ENABLE_CONTENT_LIBRARIES toggle: if this is disabled, then legacy libraries are also
+#    This toggle interacts with ENABLE_CONTENT_LIBRARIES setting: if this is disabled, then legacy libraries are also
 #    disabled.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2024-10-02
@@ -446,7 +434,7 @@ def libraries_v1_enabled():
     Returns a boolean if Libraries V2 is enabled in the new Studio Home.
     """
     return (
-        ENABLE_CONTENT_LIBRARIES.is_enabled() and
+        settings.ENABLE_CONTENT_LIBRARIES and
         not DISABLE_LEGACY_LIBRARIES.is_enabled()
     )
 
@@ -476,7 +464,7 @@ def libraries_v2_enabled():
     Requires the ENABLE_CONTENT_LIBRARIES feature flag to be enabled, plus Meilisearch.
     """
     return (
-        ENABLE_CONTENT_LIBRARIES.is_enabled() and
+        settings.ENABLE_CONTENT_LIBRARIES and
         search_api.is_meilisearch_enabled() and
         not DISABLE_NEW_LIBRARIES.is_enabled()
     )

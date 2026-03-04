@@ -15,7 +15,7 @@ urlpatterns = [
     re_path(r'^revoke_token/?$', csrf_exempt(views.RevokeTokenView.as_view()), name='revoke_token'),
 ]
 
-if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
+if settings.ENABLE_THIRD_PARTY_AUTH:
     urlpatterns += [
         path('exchange_access_token/<str:backend>/', csrf_exempt(views.AccessTokenExchangeView.as_view()),
              name='exchange_access_token',

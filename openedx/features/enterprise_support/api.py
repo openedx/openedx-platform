@@ -373,7 +373,7 @@ def enterprise_enabled():
     """
     Determines whether the Enterprise app is installed
     """
-    return 'enterprise' in settings.INSTALLED_APPS and settings.FEATURES.get('ENABLE_ENTERPRISE_INTEGRATION', False)
+    return 'enterprise' in settings.INSTALLED_APPS and settings.ENABLE_ENTERPRISE_INTEGRATION
 
 
 def enterprise_is_enabled(otherwise=None):

@@ -1230,7 +1230,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "user_partitions": user_partitions,
                 "show_correctness": xblock.show_correctness,
                 "hide_from_toc": xblock.hide_from_toc,
-                "enable_hide_from_toc_ui": settings.FEATURES.get("ENABLE_HIDE_FROM_TOC_UI", False),
+                "enable_hide_from_toc_ui": settings.ENABLE_HIDE_FROM_TOC_UI,
                 "xblock_type": get_icon(xblock),
             }
         )
@@ -1268,7 +1268,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
             )
 
         # update xblock_info with special exam information if the feature flag is enabled
-        if settings.FEATURES.get("ENABLE_SPECIAL_EXAMS"):
+        if settings.ENABLE_SPECIAL_EXAMS:
             if xblock.category == "course":
                 xblock_info.update(
                     {

@@ -33,8 +33,8 @@ def score_changed_handler(sender, **kwargs):  # pylint: disable=unused-argument
     Match the score event to an LTI resource and update.
     """
 
-    lti_enabled = (settings.FEATURES.get('ENABLE_CONTENT_LIBRARIES')
-                   and settings.FEATURES.get('ENABLE_CONTENT_LIBRARIES_LTI_TOOL'))
+    lti_enabled = (settings.ENABLE_CONTENT_LIBRARIES
+                   and settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL)
     if not lti_enabled:
         return
 

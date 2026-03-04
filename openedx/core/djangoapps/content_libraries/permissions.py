@@ -229,7 +229,7 @@ perms[CAN_LEARN_FROM_THIS_CONTENT_LIBRARY] = (
 
 # Is the user allowed to create content libraries?
 CAN_CREATE_CONTENT_LIBRARY = 'content_libraries.create_library'
-if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+if settings.ENABLE_CREATOR_GROUP:
     perms[CAN_CREATE_CONTENT_LIBRARY] = is_global_staff | (is_user_active & is_course_creator)
 else:
     perms[CAN_CREATE_CONTENT_LIBRARY] = is_global_staff

@@ -953,8 +953,8 @@ def requires_lti_enabled(view_func):
     enabled.
     """
     def wrapped_view(*args, **kwargs):
-        lti_enabled = (settings.FEATURES.get('ENABLE_CONTENT_LIBRARIES')
-                       and settings.FEATURES.get('ENABLE_CONTENT_LIBRARIES_LTI_TOOL'))
+        lti_enabled = (settings.ENABLE_CONTENT_LIBRARIES
+                       and settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL)
         if not lti_enabled:
             raise Http404()
         return view_func(*args, **kwargs)

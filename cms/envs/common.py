@@ -82,10 +82,6 @@ STUDIO_REQUEST_EMAIL = ''
 # Segment - must explicitly turn it on for production
 CMS_SEGMENT_KEY = None
 
-# If set to True, new Studio users won't be able to author courses unless
-# an Open edX admin has added them to the course creator group.
-ENABLE_CREATOR_GROUP = True
-
 # If set to True, organization staff members can create libraries for their specific
 # organization and no other organizations. They do not need to be course creators,
 # even when ENABLE_CREATOR_GROUP is True.
@@ -120,19 +116,6 @@ ENABLE_VIDEO_UPLOAD_PIPELINE = False
 # course and that can be read from themes
 ENABLE_OTHER_COURSE_SETTINGS = False
 
-# Enable support for content libraries. Note that content libraries are
-# only supported in courses using split mongo.
-ENABLE_CONTENT_LIBRARIES = True
-
-# .. toggle_name: settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: When set to True, Content Libraries in
-#    Studio can be used as an LTI 1.3 tool by external LTI platforms.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2021-08-17
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/27411
-ENABLE_CONTENT_LIBRARIES_LTI_TOOL = False
 
 # Toggle course entrance exams feature
 ENTRANCE_EXAMS = False
@@ -237,14 +220,6 @@ ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS = False
 # .. toggle_creation_date: 2024-02-29
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/33952
 ENABLE_HIDE_FROM_TOC_UI = False
-
-# .. toggle_name: settings.IN_CONTEXT_DISCUSSION_ENABLED_DEFAULT
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: Set to False to disable in-context discussion for units by default.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2024-09-02
-IN_CONTEXT_DISCUSSION_ENABLED_DEFAULT = True
 
 # .. toggle_name: ENABLE_COPPA_COMPLIANCE
 # .. toggle_implementation: DjangoSetting

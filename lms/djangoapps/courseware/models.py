@@ -216,7 +216,7 @@ class BaseStudentModuleHistory(models.Model):
 
         history_entries = []
 
-        if settings.FEATURES.get('ENABLE_CSMH_EXTENDED'):
+        if settings.ENABLE_CSMH_EXTENDED:
             from lms.djangoapps.coursewarehistoryextended.models import StudentModuleHistoryExtended
             history_entries += StudentModuleHistoryExtended.objects.filter(
                 # Django will sometimes try to join to courseware_studentmodule
@@ -226,7 +226,7 @@ class BaseStudentModuleHistory(models.Model):
 
         # If we turn off reading from multiple history tables, then we don't want to read from
         # StudentModuleHistory anymore, we believe that all history is in the Extended table.
-        if settings.FEATURES.get('ENABLE_READING_FROM_MULTIPLE_HISTORY_TABLES'):
+        if settings.ENABLE_READING_FROM_MULTIPLE_HISTORY_TABLES:
             # we want to save later SQL queries on the model which allows us to prefetch
             history_entries += StudentModuleHistory.objects.prefetch_related('student_module').filter(
                 student_module__in=student_modules
@@ -315,7 +315,7 @@ class StudentModuleHistory(BaseStudentModuleHistory):
     # When the extended studentmodulehistory table exists, don't save
     # duplicate history into courseware_studentmodulehistory, just retain
     # data for reading.
-    if not settings.FEATURES.get('ENABLE_CSMH_EXTENDED'):
+    if not settings.ENABLE_CSMH_EXTENDED:
         post_save.connect(save_history, sender=StudentModule)
 
 

@@ -971,7 +971,7 @@ class LoginFailures(models.Model):
         """
         Returns whether the feature flag around this functionality has been set
         """
-        return settings.FEATURES['ENABLE_MAX_FAILED_LOGIN_ATTEMPTS']
+        return settings.ENABLE_MAX_FAILED_LOGIN_ATTEMPTS
 
     @classmethod
     def is_user_locked_out(cls, user):
@@ -1249,7 +1249,7 @@ def add_user_to_default_group(user, group):  # lint-amnesty, pylint: disable=mis
 
 
 def create_comments_service_user(user):  # lint-amnesty, pylint: disable=missing-function-docstring
-    if not settings.FEATURES['ENABLE_DISCUSSION_SERVICE']:
+    if not settings.ENABLE_DISCUSSION_SERVICE:
         # Don't try--it won't work, and it will fill the logs with lots of errors
         return
     try:
@@ -1278,7 +1278,7 @@ def log_successful_login(sender, request, user, **kwargs):  # lint-amnesty, pyli
             'event_type': "login",
         }
     )
-    if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+    if settings.SQUELCH_PII_IN_LOGS:
         AUDIT_LOG.info(f"Login success - user.id: {user.id}")
     else:
         AUDIT_LOG.info(f"Login success - {user.username} ({user.email})")
@@ -1295,7 +1295,7 @@ def log_successful_logout(sender, request, user, **kwargs):  # lint-amnesty, pyl
                 'event_type': "logout",
             }
         )
-        if settings.FEATURES['SQUELCH_PII_IN_LOGS']:
+        if settings.SQUELCH_PII_IN_LOGS:
             AUDIT_LOG.info(f'Logout - user.id: {request.user.id}')  # pylint: disable=logging-format-interpolation
         else:
             AUDIT_LOG.info(f'Logout - {request.user}')  # pylint: disable=logging-format-interpolation
@@ -1310,7 +1310,7 @@ def enforce_single_login(sender, request, user, signal, **kwargs):  # pylint: di
     Sets the current session id in the user profile,
     to prevent concurrent logins.
     """
-    if settings.FEATURES.get('PREVENT_CONCURRENT_LOGINS', False):
+    if settings.PREVENT_CONCURRENT_LOGINS:
         if signal == user_logged_in:
             key = request.session.session_key
         else:

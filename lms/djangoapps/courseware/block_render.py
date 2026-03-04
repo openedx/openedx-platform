@@ -259,7 +259,7 @@ def _add_timed_exam_info(user, course, section, section_context):
     """
     section_is_time_limited = (
         getattr(section, 'is_time_limited', False) and
-        settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False)
+        settings.ENABLE_SPECIAL_EXAMS
     )
     if section_is_time_limited:
         # call into edx_proctoring subsystem
@@ -555,7 +555,7 @@ def prepare_runtime_for_user(
         block_wrappers.append(filter_displayed_blocks)
 
     mako_service = MakoService()
-    if settings.FEATURES.get("LICENSING", False):
+    if settings.LICENSING:
         block_wrappers.append(partial(wrap_with_license, mako_service=mako_service))
 
     # Wrap the output display in a single div to allow for the XBlock
@@ -584,7 +584,7 @@ def prepare_runtime_for_user(
 
     user_is_staff = bool(has_access(user, 'staff', course_id))
 
-    if settings.FEATURES.get('DISPLAY_DEBUG_INFO_TO_STAFF'):
+    if settings.DISPLAY_DEBUG_INFO_TO_STAFF:
         if user_is_staff or is_masquerading_as_specific_student(user, course_id):
             # When masquerading as a specific student, we want to show the debug button
             # unconditionally to enable resetting the state of the student we are masquerading as.
@@ -1004,7 +1004,7 @@ def xblock_view(request, course_id, usage_id, view_name):
         resources: A list of tuples where the first element is the resource hash, and
             the second is the resource description
     """
-    if not settings.FEATURES.get('ENABLE_XBLOCK_VIEW_ENDPOINT', False):
+    if not settings.ENABLE_XBLOCK_VIEW_ENDPOINT:
         log.warning("Attempt to use deactivated XBlock view endpoint -"
                     " see FEATURES['ENABLE_XBLOCK_VIEW_ENDPOINT']")
         raise Http404

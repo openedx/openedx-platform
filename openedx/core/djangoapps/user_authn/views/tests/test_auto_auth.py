@@ -45,7 +45,7 @@ class AutoAuthEnabledTestCase(AutoAuthTestCase, ModuleStoreTestCase):
 
     @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": True})
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the settings.AUTOMATIC_AUTH_FOR_TESTING
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)
@@ -303,7 +303,7 @@ class AutoAuthDisabledTestCase(AutoAuthTestCase):
 
     @patch.dict("django.conf.settings.FEATURES", {"AUTOMATIC_AUTH_FOR_TESTING": False})
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the settings.AUTOMATIC_AUTH_FOR_TESTING
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)
@@ -327,7 +327,7 @@ class AutoAuthRestrictedTestCase(AutoAuthTestCase):
 
     @patch.dict('django.conf.settings.FEATURES', {'AUTOMATIC_AUTH_FOR_TESTING': True})
     def setUp(self):
-        # Patching the settings.FEATURES['AUTOMATIC_AUTH_FOR_TESTING']
+        # Patching the settings.AUTOMATIC_AUTH_FOR_TESTING
         # value affects the contents of urls.py,
         # so we need to call super.setUp() which reloads urls.py (because
         # of the UrlResetMixin)

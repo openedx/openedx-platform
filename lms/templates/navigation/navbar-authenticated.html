@@ -11,7 +11,7 @@ from django.utils.translation import gettext as _
 
 <ol class="left nav-global list-inline authenticated">
   <%block name="navigation_global_links_authenticated">
-    % if settings.FEATURES.get('COURSES_ARE_BROWSABLE') and not show_program_listing:
+    % if settings.COURSES_ARE_BROWSABLE and not show_program_listing:
       <li class="item nav-global-01">
         <a class="btn" href="${marketing_link('COURSES')}">${_('Explore courses')}</a>
       </li>
@@ -35,7 +35,7 @@ from django.utils.translation import gettext as _
 
 <%include file="../user_dropdown.html"/>
 
-% if settings.FEATURES.get('ENABLE_HELP_LINK'):
+% if settings.ENABLE_HELP_LINK:
   <a href="${get_online_help_info(online_help_token)['doc_url']}"
           rel="noopener"
            target="_blank"

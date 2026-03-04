@@ -122,7 +122,7 @@ class CourseOutlineView(APIView):
             }
 
             # Only include this data if special exams are on
-            if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False):
+            if settings.ENABLE_SPECIAL_EXAMS:
                 sequence_representation["exam"] = sequence_exam
 
             return sequence_representation

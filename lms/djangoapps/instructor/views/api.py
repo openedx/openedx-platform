@@ -285,7 +285,7 @@ class RegisterAndEnrollStudents(APIView):
         """
         if not configuration_helpers.get_value(
             'ALLOW_AUTOMATED_SIGNUPS',
-            settings.FEATURES.get('ALLOW_AUTOMATED_SIGNUPS', False),
+            settings.ALLOW_AUTOMATED_SIGNUPS,
         ):
             return HttpResponseForbidden()
 
@@ -341,7 +341,7 @@ class RegisterAndEnrollStudents(APIView):
             already_warned_not_cohorted = False
             extra_fields_is_enabled = configuration_helpers.get_value(
                 'ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS',
-                settings.FEATURES.get('ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS', False),
+                settings.ENABLE_AUTOMATED_SIGNUPS_EXTRA_FIELDS,
             )
 
             # Iterate each student in the uploaded csv file.

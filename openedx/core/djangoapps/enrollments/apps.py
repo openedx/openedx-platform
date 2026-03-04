@@ -20,6 +20,6 @@ class EnrollmentsConfig(AppConfig):
         """
         Connect handlers to fetch enrollments.
         """
-        if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
+        if settings.ENABLE_SPECIAL_EXAMS:
             from .services import EnrollmentsService
             set_runtime_service('enrollments', EnrollmentsService())

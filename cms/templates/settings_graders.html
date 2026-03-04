@@ -91,7 +91,7 @@
         </section>
         <hr class="divide" />
 
-        % if settings.FEATURES.get("ENABLE_CREDIT_ELIGIBILITY", False) and is_credit_course:
+        % if settings.ENABLE_CREDIT_ELIGIBILITY and is_credit_course:
           <section class="group-settings grade-rules">
             <header>
               <h2 class="title-2">${_("Credit Eligibility")}</h2>

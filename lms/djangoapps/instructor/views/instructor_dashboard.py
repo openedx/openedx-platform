@@ -92,7 +92,7 @@ def show_analytics_dashboard_message(course_key):
         course_key (CourseLocator): The course locator to display the analytics dashboard message on.
     """
     if hasattr(course_key, 'ccx'):
-        ccx_analytics_enabled = settings.FEATURES.get('ENABLE_CCX_ANALYTICS_DASHBOARD_URL', False)
+        ccx_analytics_enabled = settings.ENABLE_CCX_ANALYTICS_DASHBOARD_URL
         return settings.ANALYTICS_DASHBOARD_URL and ccx_analytics_enabled
 
     return settings.ANALYTICS_DASHBOARD_URL
@@ -208,7 +208,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
     # and enable self-generated certificates for a course.
     # Note: This is hidden for all CCXs
     certs_enabled = certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
-    certs_instructor_enabled = settings.FEATURES.get('ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE', False)
+    certs_instructor_enabled = settings.ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE
 
     if certs_enabled and (access['admin'] or (access['instructor'] and certs_instructor_enabled)):
         sections.append(_section_certificates(course))
@@ -258,7 +258,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
         'generate_bulk_certificate_exceptions_url': generate_bulk_certificate_exceptions_url,
         'certificate_exception_view_url': certificate_exception_view_url,
         'certificate_invalidation_view_url': certificate_invalidation_view_url,
-        'xqa_server': settings.FEATURES.get('XQA_SERVER', "http://your_xqa_server.com"),
+        'xqa_server': settings.XQA_SERVER,
     }
 
     context_from_plugins = get_plugins_view_context(
@@ -366,7 +366,7 @@ def _section_certificates(course):
                 for cert_status in example_cert_status
             )
         )
-    instructor_generation_enabled = settings.FEATURES.get('CERTIFICATES_INSTRUCTOR_GENERATION', False)
+    instructor_generation_enabled = settings.CERTIFICATES_INSTRUCTOR_GENERATION
     certificate_statuses_with_count = {
         certificate['status']: certificate['count']
         for certificate in certs_api.get_unique_certificate_statuses(course.id)
@@ -463,7 +463,7 @@ def _section_course_info(course, access):
         'list_instructor_tasks_url': reverse('list_instructor_tasks', kwargs={'course_id': str(course_key)}),
     }
 
-    if settings.FEATURES.get('DISPLAY_ANALYTICS_ENROLLMENTS'):
+    if settings.DISPLAY_ANALYTICS_ENROLLMENTS:
         section_data['enrollment_count'] = CourseEnrollment.objects.enrollment_counts(course_key)
 
     if show_analytics_dashboard_message(course_key):
@@ -494,7 +494,7 @@ def _section_course_info(course, access):
 def _section_membership(course, access):
     """ Provide data for the corresponding dashboard section """
     course_key = course.id
-    ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
+    ccx_enabled = settings.CUSTOM_COURSES_EDX and course.enable_ccx
 
     section_data = {
         'section_key': 'membership',
@@ -635,7 +635,7 @@ def _section_data_download(course, access):
     course_key = course.id
 
     show_proctored_report_button = (
-        settings.FEATURES.get('ENABLE_SPECIAL_EXAMS', False) and
+        settings.ENABLE_SPECIAL_EXAMS and
         course.enable_proctored_exams
     )
     section_key = 'data_download_2' if data_download_v2_is_enabled() else 'data_download'
@@ -734,7 +734,7 @@ def _section_send_email(course, access):
             'list_email_content', kwargs={'course_id': str(course_key)}
         ),
     }
-    if settings.FEATURES.get("ENABLE_NEW_BULK_EMAIL_EXPERIENCE", False) is not False:
+    if settings.ENABLE_NEW_BULK_EMAIL_EXPERIENCE is not False:
         section_data[
             "communications_mfe_url"
         ] = f"{settings.COMMUNICATIONS_MICROFRONTEND_URL}/courses/{str(course_key)}/bulk_email"
@@ -799,7 +799,7 @@ def _section_open_response_assessment(request, course, openassessment_blocks, ac
     section_data = {
         'fragment': block.render('ora_blocks_listing_view', context={
             'ora_items': ora_items,
-            'ora_item_view_enabled': settings.FEATURES.get('ENABLE_XBLOCK_VIEW_ENDPOINT', False)
+            'ora_item_view_enabled': settings.ENABLE_XBLOCK_VIEW_ENDPOINT
         }),
         'section_key': 'open_response_assessment',
         'section_display_name': _('Open Responses'),

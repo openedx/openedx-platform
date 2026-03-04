@@ -20,7 +20,7 @@ from lms.djangoapps.courseware.tests.factories import LOCATION
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 
 
-@skipUnless(settings.FEATURES["ENABLE_CSMH_EXTENDED"], "CSMH Extended needs to be enabled")
+@skipUnless(settings.ENABLE_CSMH_EXTENDED, "CSMH Extended needs to be enabled")
 class TestStudentModuleHistoryBackends(TestCase):
     """ Tests of data in CSMH and CSMHE """
     # Tell Django to clean out all databases, not just default

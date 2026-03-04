@@ -17,7 +17,7 @@ from django.utils.translation import gettext as _
         <span class="course-number">${course.display_number_with_default}</span>
         <%
         display_name = course.display_name_with_default
-        if settings.FEATURES.get('CUSTOM_COURSES_EDX', False):
+        if settings.CUSTOM_COURSES_EDX:
           ccx = get_current_ccx(course.id)
           if ccx:
             display_name = ccx.display_name
@@ -27,7 +27,7 @@ from django.utils.translation import gettext as _
     % endif
 
 
-    % if settings.FEATURES.get('COURSES_ARE_BROWSABLE') and not show_program_listing:
+    % if settings.COURSES_ARE_BROWSABLE and not show_program_listing:
       <li class="nav-item mt-2 nav-item-open-collapsed">
         <a class="nav-link" href="${marketing_link('COURSES')}">${_('Explore courses')}</a>
       </li>
@@ -50,7 +50,7 @@ from django.utils.translation import gettext as _
   </ul>
 
   <ul class="navbar-nav navbar-right">
-    % if settings.FEATURES.get('ENABLE_HELP_LINK'):
+    % if settings.ENABLE_HELP_LINK:
       <li class="nav-item mt-2 nav-item-open-collapsed">
         <a href="${get_online_help_info(online_help_token)['doc_url']}"
         rel="noopener"

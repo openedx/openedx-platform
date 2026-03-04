@@ -217,7 +217,7 @@ class VideoPipelineStudioAccessTestsMixin:
     Access tests for video views that rely on the video pipeline
     """
     def test_video_pipeline_not_enabled(self):
-        settings.FEATURES["ENABLE_VIDEO_UPLOAD_PIPELINE"] = False
+        settings.ENABLE_VIDEO_UPLOAD_PIPELINE = False
         self.assertEqual(self.client.get(self.url).status_code, 404)
 
     def test_video_pipeline_not_configured(self):

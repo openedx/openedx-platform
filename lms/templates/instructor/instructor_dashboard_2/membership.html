@@ -39,7 +39,7 @@ from openedx.core.djangolib.markup import HTML, Text
     <div class="enroll-option">
         <label class="has-hint">
           <input type="checkbox" name="email-students" id="email-students" value="Notify-students-by-email" aria-describedby="heading-batch-enrollment"
-                 ${'checked="yes"' if settings.FEATURES.get('BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT') else ''}>
+                 ${'checked="yes"' if settings.BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT else ''}>
             <span class="label-text">${_("Notify users by email")}</span>
             <div class="hint email-students-hint">
                 <span class="hint-caret"></span>
@@ -57,7 +57,7 @@ from openedx.core.djangolib.markup import HTML, Text
     <div class="request-response-error"></div>
 </fieldset>
 
-%if static.get_value('ALLOW_AUTOMATED_SIGNUPS', settings.FEATURES.get('ALLOW_AUTOMATED_SIGNUPS', False)):
+%if static.get_value('ALLOW_AUTOMATED_SIGNUPS', settings.ALLOW_AUTOMATED_SIGNUPS):
 <hr class="divider" />
 
   <div class="auto_enroll auto_enroll_csv membership-section">
@@ -76,7 +76,7 @@ from openedx.core.djangolib.markup import HTML, Text
       <div class="enroll-option">
           <label class="has-hint">
             <input type="checkbox" name="email-students" id="csv-email-students" value="Notify-students-by-email" aria-describedby="heading-batch-enrollment"
-                   ${'checked="yes"' if settings.FEATURES.get('BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT') else ''}>
+                   ${'checked="yes"' if settings.BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT else ''}>
               <span class="label-text">${_("Notify users by email")}</span>
               <div class="hint email-students-hint">
                   <span class="hint-caret"></span>
@@ -119,7 +119,7 @@ from openedx.core.djangolib.markup import HTML, Text
     <div class="enroll-option">
         <label class="has-hint">
             <input type="checkbox" name="email-students-beta" id="email-students-beta" value="Notify-students-by-email" aria-describedby="heading-batch-beta-testers"
-                   ${'checked="yes"' if settings.FEATURES.get('BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT') else ''}>
+                   ${'checked="yes"' if settings.BATCH_ENROLLMENT_NOTIFY_USERS_DEFAULT else ''}>
             <span class="label-text">${_("Notify users by email")}</span>
             <div class="hint email-students-beta-hint">
                 <span class="hint-caret"></span>

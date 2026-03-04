@@ -138,7 +138,7 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
         # security feature, we can turn it off when auto-auth is
         # enabled since auto-auth is highly insecure and only for
         # tests.
-        auto_auth_enabled = settings.FEATURES.get('AUTOMATIC_AUTH_FOR_TESTING', False)
+        auto_auth_enabled = settings.AUTOMATIC_AUTH_FOR_TESTING
         if not auto_auth_enabled and hasattr(request.user, 'get_session_auth_hash'):
             session_hash = request.session.get(HASH_SESSION_KEY)
             session_hash_verified = session_hash and constant_time_compare(

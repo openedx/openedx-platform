@@ -16,6 +16,6 @@ class CreditConfig(AppConfig):
 
     def ready(self):
         from .signals import handlers  # lint-amnesty, pylint: disable=unused-import
-        if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
+        if settings.ENABLE_SPECIAL_EXAMS:
             from .services import CreditService
             set_runtime_service('credit', CreditService())

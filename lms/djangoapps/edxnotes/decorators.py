@@ -26,7 +26,7 @@ def edxnotes(cls):
             generate_uid, get_edxnotes_id_token, get_public_endpoint, get_token_url, is_feature_enabled
         )
 
-        if not settings.FEATURES.get("ENABLE_EDXNOTES"):
+        if not settings.ENABLE_EDXNOTES:
             return original_get_html(self, *args, **kwargs)
 
         runtime = getattr(self, 'block', self).runtime

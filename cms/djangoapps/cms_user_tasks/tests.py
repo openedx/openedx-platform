@@ -277,7 +277,7 @@ class TestUserTaskStopped(APITestCase):
         msg = mail.outbox[0]
 
         # Verify olx validation is not enabled out of the box.
-        self.assertFalse(settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION'))
+        self.assertFalse(settings.ENABLE_COURSE_OLX_VALIDATION)
         self.assertEqual(len(mail.outbox), 1)
         self.assert_msg_subject(msg)
         self.assert_msg_body_fragments(msg, body_fragments)

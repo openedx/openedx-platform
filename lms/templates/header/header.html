@@ -23,7 +23,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 <%block name="navigation_top" />
 
 <%
-  unsupported_browser_alert_versions = configuration_helpers.get_value('UNSUPPORTED_BROWSER_ALERT_VERSIONS', settings.FEATURES.get('UNSUPPORTED_BROWSER_ALERT_VERSIONS'))
+  unsupported_browser_alert_versions = configuration_helpers.get_value('UNSUPPORTED_BROWSER_ALERT_VERSIONS', settings.UNSUPPORTED_BROWSER_ALERT_VERSIONS)
 %>
 % if waffle.switch_is_active('enable_unsupported_browser_alert'):
   <script>
@@ -43,7 +43,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 % endif
 
 <header class="global-header ${'slim' if course else ''}">
-    % if settings.FEATURES.get('ENABLE_COOKIE_POLICY_BANNER', use_cookie_banner):
+    % if settings.ENABLE_COOKIE_POLICY_BANNER:
         ${static.renderReact(
             component="CookiePolicyBanner",
             id="frontend-component-cookie-policy-banner",
@@ -78,7 +78,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 <![endif]-->
 % endif
 
-% if settings.FEATURES.get('ENABLE_COOKIE_CONSENT', False):
+% if settings.ENABLE_COOKIE_CONSENT:
   <%include file="../widgets/cookie-consent.html" />
 % endif
 

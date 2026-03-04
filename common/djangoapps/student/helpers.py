@@ -122,7 +122,7 @@ def check_verify_status_by_course(user, course_enrollments):
     status_by_course = {}
 
     # If integrity signature is enabled, this is a no-op because IDV is not required
-    if settings.FEATURES.get('ENABLE_INTEGRITY_SIGNATURE'):
+    if settings.ENABLE_INTEGRITY_SIGNATURE:
         return status_by_course
 
     # Retrieve all verifications for the user, sorted in descending
@@ -316,7 +316,7 @@ def get_next_url_for_login_page(request, include_host=False):
     # Append a tpa_hint query parameter, if one is configured
     tpa_hint = configuration_helpers.get_value(
         "THIRD_PARTY_AUTH_HINT",
-        settings.FEATURES.get("THIRD_PARTY_AUTH_HINT", '')
+        settings.THIRD_PARTY_AUTH_HINT
     )
     if tpa_hint:
         # Don't add tpa_hint if we're already in the TPA pipeline (prevent infinite loop),
@@ -676,7 +676,7 @@ def do_create_account(form, custom_form=None):
     # Check if ALLOW_PUBLIC_ACCOUNT_CREATION flag turned off to restrict user account creation
     if not configuration_helpers.get_value(
             'ALLOW_PUBLIC_ACCOUNT_CREATION',
-            settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION', True)
+            settings.ALLOW_PUBLIC_ACCOUNT_CREATION
     ):
         raise PermissionDenied()
 

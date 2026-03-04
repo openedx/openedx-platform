@@ -425,7 +425,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
     )
     def test_settings_tpa_hinted_login(self, url_name):
         """
-        Ensure that settings.FEATURES['THIRD_PARTY_AUTH_HINT'] can set third_party_auth_hint.
+        Ensure that settings.THIRD_PARTY_AUTH_HINT can set third_party_auth_hint.
         """
         params = [("next", "/courses/something/")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")

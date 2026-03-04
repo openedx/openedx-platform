@@ -57,7 +57,7 @@ RENDER_VIDEO_XBLOCK_NAME = 'render_public_video_xblock'
 RENDER_VIDEO_XBLOCK_EMBED_NAME = 'render_public_video_xblock_embed'
 COURSE_PROGRESS_NAME = 'progress'
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     django_autodiscover()
     admin.site.site_header = _('LMS Administration')
     admin.site.site_title = admin.site.site_header
@@ -216,7 +216,7 @@ urlpatterns = [
     path('500', handler500, name='render_500'),
 ]
 
-if settings.FEATURES.get('ENABLE_MOBILE_REST_API'):
+if settings.ENABLE_MOBILE_REST_API:
     urlpatterns += [
         re_path(r'^api/mobile/(?P<api_version>v(4|3|2|1|0.5))/', include('lms.djangoapps.mobile_api.urls')),
     ]
@@ -681,7 +681,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_TEAMS'):
+if settings.ENABLE_TEAMS:
     # Teams endpoints
     urlpatterns += [
         path(
@@ -698,7 +698,7 @@ if settings.FEATURES.get('ENABLE_TEAMS'):
     ]
 
 # allow course staff to change to student view of courseware
-if settings.FEATURES.get('ENABLE_MASQUERADE'):
+if settings.ENABLE_MASQUERADE:
     urlpatterns += [
         re_path(
             r'^courses/{}/masquerade$'.format(
@@ -720,7 +720,7 @@ urlpatterns += [
 ]
 
 # discussion forums live within courseware, so courseware must be enabled first
-if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):
+if settings.ENABLE_DISCUSSION_SERVICE:
     urlpatterns += [
         path(
             'api/discussion/',
@@ -788,7 +788,7 @@ urlpatterns += [
     ),
 ]
 
-if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
+if settings.ENABLE_STUDENT_HISTORY_VIEW:
     urlpatterns += [
         re_path(
             r'^courses/{}/submission_history/(?P<learner_identifier>[^/]*)/(?P<location>.*?)$'.format(
@@ -799,14 +799,14 @@ if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
         ),
     ]
 
-if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
+if settings.DEBUG or settings.ENABLE_DJANGO_ADMIN_SITE:
     # Jasmine and admin
 
     # The password pages in the admin tool are disabled so that all password
     # changes go through our user portal and follow complexity requirements.
     # The form to change another user's password is conditionally enabled
     # for backwards compatibility.
-    if not settings.FEATURES.get('ENABLE_CHANGE_USER_PASSWORD_ADMIN'):
+    if not settings.ENABLE_CHANGE_USER_PASSWORD_ADMIN:
         urlpatterns += [
             re_path(r'^admin/auth/user/\d+/password/$', handler404),
         ]
@@ -818,13 +818,13 @@ if settings.DEBUG or settings.FEATURES.get('ENABLE_DJANGO_ADMIN_SITE'):
         path('admin/', admin.site.urls),
     ]
 
-if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.FEATURES.get('ENABLE_BULK_ENROLLMENT_VIEW')):
+if configuration_helpers.get_value('ENABLE_BULK_ENROLLMENT_VIEW', settings.ENABLE_BULK_ENROLLMENT_VIEW):
     urlpatterns += [
         path('api/bulk_enroll/v1/', include('lms.djangoapps.bulk_enroll.urls')),
     ]
 
 # Embargo
-if settings.FEATURES.get('EMBARGO'):
+if settings.EMBARGO:
     urlpatterns += [
         path('embargo/', include(('openedx.core.djangoapps.embargo.urls', 'openedx.core.djangoapps.embargo'),
                                  namespace='embargo')),
@@ -847,12 +847,12 @@ urlpatterns += [
     path('_o/', include('oauth2_provider.urls', namespace='oauth2_provider')),
 ]
 
-if settings.FEATURES.get('ENABLE_SERVICE_STATUS'):
+if settings.ENABLE_SERVICE_STATUS:
     urlpatterns += [
         path('status/', include('openedx.core.djangoapps.service_status.urls')),
     ]
 
-if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
     urlpatterns += [
         path(
             'instructor_task_status/',
@@ -861,7 +861,7 @@ if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
         ),
     ]
 
-if settings.FEATURES.get('ENABLE_DEBUG_RUN_PYTHON'):
+if settings.ENABLE_DEBUG_RUN_PYTHON:
     urlpatterns += [
         path('debug/run_python', debug_views.run_python),
     ]
@@ -871,7 +871,7 @@ urlpatterns += [
 ]
 
 # Third-party auth.
-if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):
+if settings.ENABLE_THIRD_PARTY_AUTH:
     urlpatterns += [
         path('', include('common.djangoapps.third_party_auth.urls')),
         path('api/third_party_auth/', include('common.djangoapps.third_party_auth.api.urls')),
@@ -908,14 +908,14 @@ urlpatterns += [
 ]
 
 # Custom courses on edX (CCX) URLs
-if settings.FEATURES.get('CUSTOM_COURSES_EDX'):
+if settings.CUSTOM_COURSES_EDX:
     urlpatterns += [
         re_path(fr'^courses/{settings.COURSE_ID_PATTERN}/', include('lms.djangoapps.ccx.urls')),
         path('api/ccx/', include(('lms.djangoapps.ccx.api.urls', 'lms.djangoapps.ccx'), namespace='ccx_api')),
     ]
 
 # Access to courseware as an LTI provider
-if settings.FEATURES.get('ENABLE_LTI_PROVIDER'):
+if settings.ENABLE_LTI_PROVIDER:
     urlpatterns += [
         path('lti_provider/', include('lms.djangoapps.lti_provider.urls')),
     ]
@@ -946,7 +946,7 @@ if 'debug_toolbar' in settings.INSTALLED_APPS:
         path('__debug__/', include(debug_toolbar.urls)),
     ]
 
-if settings.FEATURES.get('ENABLE_FINANCIAL_ASSISTANCE_FORM'):
+if settings.ENABLE_FINANCIAL_ASSISTANCE_FORM:
     urlpatterns += [
         path(
             'financial-assistance/',
@@ -1027,7 +1027,7 @@ urlpatterns += [
 ]
 
 # Bulk User Retirement API urls
-if settings.FEATURES.get('ENABLE_BULK_USER_RETIREMENT'):
+if settings.ENABLE_BULK_USER_RETIREMENT:
     urlpatterns += [
         path('', include('lms.djangoapps.bulk_user_retirement.urls')),
     ]

@@ -12,5 +12,5 @@ def is_enabled():
 
     return configuration_helpers.get_value(
         "ENABLE_THIRD_PARTY_AUTH",
-        settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH")
+        settings.ENABLE_THIRD_PARTY_AUTH
     )

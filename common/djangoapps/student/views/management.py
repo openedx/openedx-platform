@@ -139,7 +139,7 @@ def index(request, extra_context=None, user=AnonymousUser()):
 
     if configuration_helpers.get_value(
         "ENABLE_COURSE_SORTING_BY_START_DATE",
-        settings.FEATURES["ENABLE_COURSE_SORTING_BY_START_DATE"],
+        settings.ENABLE_COURSE_SORTING_BY_START_DATE,
     ):
         courses = sort_by_start_date(courses)
     else:
@@ -220,7 +220,7 @@ def compose_activation_email(
     })
 
     if route_enabled:
-        dest_addr = settings.FEATURES['REROUTE_ACTIVATION_EMAIL']
+        dest_addr = settings.REROUTE_ACTIVATION_EMAIL
     else:
         dest_addr = user.email
 
@@ -266,7 +266,7 @@ def compose_and_send_activation_email(
         redirect_url: The URL to redirect to after successful activation
         registration_flow: Is the request coming from registration workflow
     """
-    route_enabled = settings.FEATURES.get('REROUTE_ACTIVATION_EMAIL')
+    route_enabled = bool(settings.REROUTE_ACTIVATION_EMAIL)
 
     msg = compose_activation_email(
         user, user_registration, route_enabled, profile.name, redirect_url, registration_flow
@@ -395,7 +395,7 @@ def change_enrollment(request, check_access=True):
             return HttpResponseBadRequest(_("Course id is invalid"))
 
         # Record the user's email opt-in preference
-        if settings.FEATURES.get('ENABLE_MKTG_EMAIL_OPT_IN'):
+        if settings.ENABLE_MKTG_EMAIL_OPT_IN:
             _update_email_opt_in(request, course_id.org)
 
         available_modes = CourseMode.modes_for_course_dict(course_id)
@@ -445,7 +445,7 @@ def change_enrollment(request, check_access=True):
     elif action == "unenroll":
         if configuration_helpers.get_value(
             "DISABLE_UNENROLLMENT",
-            settings.FEATURES.get("DISABLE_UNENROLLMENT")
+            settings.DISABLE_UNENROLLMENT
         ):
             return HttpResponseBadRequest(_("Unenrollment is currently disabled"))
 
@@ -893,7 +893,7 @@ def confirm_email_change(request, key):
             return response
 
         use_https = request.is_secure()
-        if settings.FEATURES['ENABLE_MKTG_SITE']:
+        if settings.ENABLE_MKTG_SITE:
             contact_link = marketing_link('CONTACT')
         else:
             contact_link = '{protocol}://{site}{link}'.format(

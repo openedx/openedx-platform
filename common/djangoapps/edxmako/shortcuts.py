@@ -45,7 +45,7 @@ def marketing_link(name):
     link_map = settings.MKTG_URL_LINK_MAP
     enable_mktg_site = configuration_helpers.get_value(
         'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
+        settings.ENABLE_MKTG_SITE
     )
     marketing_urls = configuration_helpers.get_value(
         'MKTG_URLS',
@@ -115,7 +115,7 @@ def is_marketing_link_set(name):
 
     enable_mktg_site = configuration_helpers.get_value(
         'ENABLE_MKTG_SITE',
-        settings.FEATURES.get('ENABLE_MKTG_SITE', False)
+        settings.ENABLE_MKTG_SITE
     )
     marketing_urls = configuration_helpers.get_value(
         'MKTG_URLS',

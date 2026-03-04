@@ -11,11 +11,11 @@ from django.utils.translation import gettext as _
 
 <ol class="left list-inline nav-global">
   <%block name="navigation_global_links">
-    % if static.get_value('ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False)):
+    % if static.get_value('ENABLE_MKTG_SITE', settings.ENABLE_MKTG_SITE):
       <li class="item nav-global-01">
         <a class="btn" href="${marketing_link('HOW_IT_WORKS')}">${_("How it Works")}</a>
       </li>
-      % if settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
+      % if settings.COURSES_ARE_BROWSABLE:
         <li class="item nav-global-02">
           <a class="btn" href="${marketing_link('COURSES')}">${_("Courses")}</a>
         </li>
@@ -28,12 +28,12 @@ from django.utils.translation import gettext as _
 
   <%block name="navigation_other_global_links">
     % if not settings.FEATURES['DISABLE_LOGIN_BUTTON'] and not combined_login_and_register:
-      % if settings.FEATURES.get('ENABLE_COURSE_DISCOVERY'):
+      % if settings.ENABLE_COURSE_DISCOVERY:
         <li class="item nav-global-05">
           <a class="btn" href="/courses">${_("Explore Courses")}</a>
         </li>
       %endif
-      % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True):
+      % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS:
         <li class="item nav-global-04">
           <a class="btn btn-neutral btn-register" href="/register${login_query()}">${_("Register")}</a>
         </li>

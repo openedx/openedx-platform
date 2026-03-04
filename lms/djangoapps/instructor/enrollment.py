@@ -492,7 +492,7 @@ def get_email_params(course, auto_enroll, secure=True, course_key=None, display_
 
     # We can't get the url to the course's About page if the marketing site is enabled.
     course_about_url = None
-    if not settings.FEATURES.get('ENABLE_MKTG_SITE', False):
+    if not settings.ENABLE_MKTG_SITE:
         course_about_url = '{proto}://{site}{path}'.format(
             proto=protocol,
             site=stripped_site_name,

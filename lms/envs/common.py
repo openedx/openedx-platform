@@ -84,18 +84,8 @@ CC_MERCHANT_NAME = Derived(lambda settings: settings.PLATFORM_NAME)
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2425
 DISPLAY_DEBUG_INFO_TO_STAFF = True
 
-# .. toggle_name: settings.DISPLAY_HISTOGRAMS_TO_STAFF
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: This displays histograms in the Staff Debug Info panel to course staff.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-02-13
-# .. toggle_warning: Generating histograms requires scanning the courseware_studentmodule table on each view. This
-#   can make staff access to courseware very slow on large courses.
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2425
-DISPLAY_HISTOGRAMS_TO_STAFF = False  # For large courses this slows down courseware access for staff.
 
-REROUTE_ACTIVATION_EMAIL = False  # nonempty string = address for all activation emails
+REROUTE_ACTIVATION_EMAIL = None  # nonempty string = address for all activation emails
 
 ENABLE_DISCUSSION_HOME_PANEL = False
 
@@ -135,7 +125,6 @@ ENABLE_UNICODE_USERNAME = False
 #  Django's admin site and will be inaccessible to the superuser.
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/829
 ENABLE_DJANGO_ADMIN_SITE = True
-ENABLE_LMS_MIGRATION = False
 
 # .. toggle_name: settings.ENABLE_MASQUERADE
 # .. toggle_implementation: DjangoSetting
@@ -290,16 +279,6 @@ SQUELCH_PII_IN_LOGS = True
 # defaults, so that we maintain current behavior
 ALLOW_WIKI_ROOT_ACCESS = True
 
-# .. toggle_name: settings.ENABLE_THIRD_PARTY_AUTH
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Turn on third-party auth. Disabled for now because full implementations are not yet
-#   available. Remember to run migrations if you enable this; we don't create tables by default. This feature can
-#   be enabled on a per-site basis. When enabling this feature, remember to define the allowed authentication
-#   backends with the AUTHENTICATION_BACKENDS setting.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-09-15
-ENABLE_THIRD_PARTY_AUTH = False
 
 # Prevent concurrent logins per user
 PREVENT_CONCURRENT_LOGINS = True
@@ -362,12 +341,6 @@ ENABLE_MKTG_EMAIL_OPT_IN = False
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/6588
 ENABLE_FOOTER_MOBILE_APP_LINKS = False
 
-# For easily adding modes to courses during acceptance testing
-MODE_CREATION_FOR_TESTING = False
-
-# For caching programs in contexts where the LMS can only
-# be reached over HTTP.
-EXPOSE_CACHE_PROGRAMS_ENDPOINT = False
 
 # Courseware search feature
 # .. toggle_name: settings.ENABLE_COURSEWARE_SEARCH
@@ -544,17 +517,6 @@ UNSUPPORTED_BROWSER_ALERT_VERSIONS = "{i:10,f:-3,o:-3,s:-3,c:-3}"
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/18298
 ENABLE_ACCOUNT_DELETION = True
 
-# .. toggle_name: settings.ENABLE_AUTHN_MICROFRONTEND
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: Supports staged rollout of a new micro-frontend-based implementation of the logistration.
-# .. toggle_use_cases: temporary, open_edx
-# .. toggle_creation_date: 2020-09-08
-# .. toggle_target_removal_date: None
-# .. toggle_tickets: 'https://github.com/openedx/edx-platform/pull/24908'
-# .. toggle_warning: Also set settings.AUTHN_MICROFRONTEND_URL for rollout. This temporary feature
-#   toggle does not have a target removal date.
-ENABLE_AUTHN_MICROFRONTEND = os.environ.get("EDXAPP_ENABLE_AUTHN_MFE", False)
 
 # .. toggle_name: settings.ENABLE_CATALOG_MICROFRONTEND
 # .. toggle_implementation: DjangoSetting
@@ -3172,3 +3134,17 @@ SSL_AUTH_EMAIL_DOMAIN = "MIT.EDU"
 SSL_AUTH_DN_FORMAT_STRING = (
     "/C=US/ST=Massachusetts/O=Massachusetts Institute of Technology/OU=Client CA v1/CN={0}/emailAddress={1}"
 )
+
+
+# .. toggle_name: ENABLE_FORUM_DAILY_DIGEST
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: Set to True to enable forum notification features.
+# .. toggle_category: discussion
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2020-03-09
+# .. toggle_expiration_date: None
+# .. toggle_tickets: None
+# .. toggle_status: supported
+# .. toggle_warnings: None
+ENABLE_FORUM_DAILY_DIGEST = True

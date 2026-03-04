@@ -282,7 +282,7 @@ def _can_enroll_courselike(user, courselike):
             # DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED flag is used to disable enrollment for user invited
             # to a course if user is registering when the course enrollment is closed
             if (
-                settings.FEATURES.get('DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED') and
+                settings.DISABLE_ALLOWED_ENROLLMENT_IF_ENROLLMENT_CLOSED and
                 not course_enrollment_open and
                 not user_has_staff_access
             ):

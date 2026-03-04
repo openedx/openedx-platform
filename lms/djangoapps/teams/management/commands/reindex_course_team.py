@@ -57,7 +57,7 @@ class Command(BaseCommand):
             if not options['course_team_ids']:
                 raise CommandError('At least one course_team_id or --all needs to be specified')
 
-        if not settings.FEATURES.get('ENABLE_TEAMS', False):
+        if not settings.ENABLE_TEAMS:
             raise CommandError('ENABLE_TEAMS must be enabled to use course team indexing')
 
         if options['all']:

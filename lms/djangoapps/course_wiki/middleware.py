@@ -108,7 +108,7 @@ class WikiAccessMiddleware(MiddlewareMixin):
 
             # Check to see if we don't allow top-level access to the wiki via the /wiki/xxxx/yyy/zzz URLs
             # this will help prevent people from writing pell-mell to the Wiki in an unstructured way
-            if not settings.FEATURES.get('ALLOW_WIKI_ROOT_ACCESS', False):
+            if not settings.ALLOW_WIKI_ROOT_ACCESS:
                 raise PermissionDenied()
 
             return self._redirect_from_referrer(request, wiki_path)

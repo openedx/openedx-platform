@@ -1401,6 +1401,49 @@ ENABLE_DISCUSSION_HOME_PANEL: bool
 # .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2331
 ENABLE_MAX_FAILED_LOGIN_ATTEMPTS: bool
 
+# .. toggle_name: settings.DISPLAY_HISTOGRAMS_TO_STAFF
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: This displays histograms in the Staff Debug Info panel to course staff.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-02-13
+# .. toggle_warning: Generating histograms requires scanning the courseware_studentmodule table on each view. This
+#   can make staff access to courseware very slow on large courses.
+# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2425
+DISPLAY_HISTOGRAMS_TO_STAFF = False  # For large courses this slows down courseware access for staff.
+
+# .. toggle_name: settings.ENABLE_AUTHN_MICROFRONTEND
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Supports staged rollout of a new micro-frontend-based implementation of the logistration.
+# .. toggle_use_cases: temporary, open_edx
+# .. toggle_creation_date: 2020-09-08
+# .. toggle_target_removal_date: None
+# .. toggle_tickets: 'https://github.com/openedx/edx-platform/pull/24908'
+# .. toggle_warning: Also set settings.AUTHN_MICROFRONTEND_URL for rollout. This temporary feature
+#   toggle does not have a target removal date.
+ENABLE_AUTHN_MICROFRONTEND = os.environ.get("EDXAPP_ENABLE_AUTHN_MFE", False)
+
+ENABLE_LMS_MIGRATION = False
+
+# .. toggle_name: settings.ENABLE_THIRD_PARTY_AUTH
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Turn on third-party auth. Disabled for now because full implementations are not yet
+#   available. Remember to run migrations if you enable this; we don't create tables by default. This feature can
+#   be enabled on a per-site basis. When enabling this feature, remember to define the allowed authentication
+#   backends with the AUTHENTICATION_BACKENDS setting.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-09-15
+ENABLE_THIRD_PARTY_AUTH = False
+
+# For easily adding modes to courses during acceptance testing
+MODE_CREATION_FOR_TESTING = False
+
+# For caching programs in contexts where the LMS can only
+# be reached over HTTP.
+EXPOSE_CACHE_PROGRAMS_ENDPOINT = False
+
 ###################### CAPA External Code Evaluation #######################
 
 # Used with XQueue
@@ -2983,3 +3026,87 @@ MAINTENANCE_BANNER_TEXT: str | None
 # .. setting_description: The name that will appear on the landing page of Studio, as well as in various emails and
 #   templates. (Note: set to 'Studio' by default in the LMS).
 STUDIO_NAME: str
+
+# .. toggle_name: ENABLE_CONTENT_LIBRARIES
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: Enables use of the legacy and v2 libraries waffle flags.
+#    Note that legacy content libraries are only supported in courses using split mongo.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2015-03-06
+# .. toggle_target_removal_date: 2025-04-09
+# .. toggle_warning: This flag is deprecated in Sumac, and will be removed in favor of the disable_legacy_libraries and
+#    disable_new_libraries waffle flags.
+ENABLE_CONTENT_LIBRARIES =  True
+
+# .. toggle_name: settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: When set to True, Content Libraries in
+#    Studio can be used as an LTI 1.3 tool by external LTI platforms.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2021-08-17
+# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/27411
+ENABLE_CONTENT_LIBRARIES_LTI_TOOL = False
+
+# .. setting_name: COURSEWARE_SEARCH_INCLUSION_DATE
+# .. setting_default: None
+# .. setting_description: Excludes courses with a start date before this value from courseware search.
+COURSEWARE_SEARCH_INCLUSION_DATE: str | None = None
+
+# .. toggle_name: DISPLAY_ANALYTICS_ENROLLMENTS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Shows enrollment counts on the instructor dashboard.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-01-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38093
+DISPLAY_ANALYTICS_ENROLLMENTS = False
+
+# .. toggle_name: ENABLE_AUTO_GENERATED_USERNAME
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enables automatic username generation.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-01-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38093
+ENABLE_AUTO_GENERATED_USERNAME = False
+
+# .. toggle_name: ENABLE_FINANCIAL_ASSISTANCE_FORM
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enables the financial assistance application form.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-01-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38093
+ENABLE_FINANCIAL_ASSISTANCE_FORM = False
+
+# .. toggle_name: ENABLE_NOTICES
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enables the Notices plugin, which can redirect users from the dashboard.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-01-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38093
+ENABLE_NOTICES = False
+
+# .. toggle_name: ENABLE_PROCTORED_EXAMS
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Enables proctored exam support.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2014-01-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38093
+ENABLE_PROCTORED_EXAMS = False
+
+# If set to True, new Studio users won't be able to author courses unless
+# an Open edX admin has added them to the course creator group.
+ENABLE_CREATOR_GROUP = True
+
+# .. toggle_name: settings.IN_CONTEXT_DISCUSSION_ENABLED_DEFAULT
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: Set to False to disable in-context discussion for units by default.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2024-09-02
+IN_CONTEXT_DISCUSSION_ENABLED_DEFAULT = True

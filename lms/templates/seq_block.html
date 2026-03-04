@@ -132,7 +132,7 @@
     ${gated_sequence_paywall | n, decode.utf8}
   % else:
   <div class="sr-is-focusable" tabindex="-1"></div>
-  % if settings.FEATURES.get("SHOW_PROGRESS_BAR", False) and getattr(settings, 'COMPLETION_AGGREGATOR_URL', ''):
+  % if settings.SHOW_PROGRESS_BAR and getattr(settings, 'COMPLETION_AGGREGATOR_URL', ''):
     <div class="progress-container">
       <iframe id="progress-frame" style="border: none; width: 100%; height: 70px;" src="${chapter_completion_aggregator_url}"></iframe>
     </div>

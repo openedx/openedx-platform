@@ -93,7 +93,7 @@ class TestProblem:
         return "original_get_html"
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 class EdxNotesDecoratorTest(ModuleStoreTestCase):
     """
     Tests for edxnotes decorator.
@@ -190,7 +190,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         assert problem.get_html() == "original_get_html"
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesHelpersTest(ModuleStoreTestCase):
     """
@@ -939,7 +939,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         verify_url(previous_url, previous_api_url)
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesViewsTest(ModuleStoreTestCase):
     """
@@ -1251,7 +1251,7 @@ class EdxNotesRetireAPITest(ModuleStoreTestCase):
         assert response.status_code == 500
 
 
-@skipUnless(settings.FEATURES["ENABLE_EDXNOTES"], "EdxNotes feature needs to be enabled.")
+@skipUnless(settings.ENABLE_EDXNOTES, "EdxNotes feature needs to be enabled.")
 @ddt.ddt
 class EdxNotesPluginTest(ModuleStoreTestCase):
     """

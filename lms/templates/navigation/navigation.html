@@ -90,6 +90,6 @@ from openedx.core.djangoapps.lang_pref.api import header_language_selector_is_en
 <![endif]-->
 % endif
 
-% if settings.FEATURES.get('ENABLE_COOKIE_CONSENT', False):
+% if settings.ENABLE_COOKIE_CONSENT:
   <%include file="../widgets/cookie-consent.html" />
 % endif

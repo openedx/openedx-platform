@@ -11,14 +11,14 @@ from openedx.core.djangolib.markup import HTML, Text
         <li class="nav-item ">
             <button type="button" class="btn-link reports  active-section" data-section="reports">Reports</button>
         </li>
-        %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+        %if settings.ENABLE_GRADE_DOWNLOADS:
         <li class="nav-item">
             <button type="button" class="btn-link problem-report" data-section="problem">Problem Report</button>
         </li>
         <li class="nav-item">
             <button type="button" class="btn-link certificates" data-section="certificate">Certificates</button>
         </li>
-        %if settings.FEATURES.get('ALLOW_COURSE_STAFF_GRADE_DOWNLOADS') or section_data['access']['admin']:
+        %if settings.ALLOW_COURSE_STAFF_GRADE_DOWNLOADS or section_data['access']['admin']:
         <li class="nav-item">
             <button type="button" class="btn-link grading" data-section="grading">Grading</button>
         </li>
@@ -30,7 +30,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
     <%include file="./data_download_2/grading.html" args="section_data=section_data, **context.kwargs" />
 
-    %if settings.FEATURES.get('ENABLE_GRADE_DOWNLOADS'):
+    %if settings.ENABLE_GRADE_DOWNLOADS:
       <%include file="./data_download_2/certificates.html" args="section_data=section_data, **context.kwargs" />
       <%include file="./data_download_2/problem_report.html" args="section_data=section_data, **context.kwargs" />
     %endif
@@ -50,7 +50,7 @@ from openedx.core.djangolib.markup import HTML, Text
         ${_("The reports listed below are available for download, identified by UTC date and time of generation.")}
     </p>
 
-    %if settings.FEATURES.get('ENABLE_ASYNC_ANSWER_DISTRIBUTION'):
+    %if settings.ENABLE_ASYNC_ANSWER_DISTRIBUTION:
     <p>
         ${_("The answer distribution report listed below is generated periodically by an automated background process. \
         The report is cumulative, so answers submitted after the process starts are included in a subsequent report. \
@@ -78,7 +78,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
 </div>
 
-%if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+%if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
 <div class="running-tasks-container action-type-container">
     <hr>
     <h3 class="hd hd-3">${_("Pending Tasks")}</h3>
@@ -90,4 +90,3 @@ from openedx.core.djangolib.markup import HTML, Text
     <div class="no-pending-tasks-message"></div>
 </div>
 %endif
-

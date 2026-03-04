@@ -11,6 +11,7 @@ from datetime import datetime
 
 import ddt
 import httpretty
+from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -30,7 +31,7 @@ from common.djangoapps.third_party_auth.tests.utils import (
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .mixins import DOTAdapterMixin
-from .utils import TPA_FEATURE_ENABLED, TPA_FEATURES_KEY, AccessTokenExchangeTestMixin
+from .utils import AccessTokenExchangeTestMixin
 
 
 @ddt.ddt
@@ -115,7 +116,7 @@ class AccessTokenExchangeViewTest(AccessTokenExchangeTestMixin):
         self._assert_error(self.data, "account_disabled", "user account is disabled", 403)
 
 
-@unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
+@unittest.skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "Third party auth is disabled.")
 @httpretty.activate
 class DOTAccessTokenExchangeViewTestFacebook(
         DOTAdapterMixin,
@@ -130,7 +131,7 @@ class DOTAccessTokenExchangeViewTestFacebook(
 
 
 # This is necessary because cms does not implement third party auth
-@unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
+@unittest.skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "Third party auth is disabled.")
 @httpretty.activate
 class DOTAccessTokenExchangeViewTestGoogle(
         DOTAdapterMixin,

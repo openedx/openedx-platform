@@ -143,7 +143,7 @@ class Command(BaseCommand):
             all_courses = modulestore().get_courses()
 
             inclusion_date = datetime.strptime(
-                settings.FEATURES.get('COURSEWARE_SEARCH_INCLUSION_DATE', '2020-01-01'),
+                settings.COURSEWARE_SEARCH_INCLUSION_DATE or '2020-01-01',
                 '%Y-%m-%d'
             )
 

@@ -17,7 +17,7 @@ from openedx.core.lib.courses import get_course_by_id
 
 User = get_user_model()
 
-TEXTBOOK_ENABLED = settings.FEATURES.get("ENABLE_TEXTBOOK", False)
+TEXTBOOK_ENABLED = settings.ENABLE_TEXTBOOK
 
 
 class ProgressCourseApp(CourseApp):
@@ -237,7 +237,7 @@ class ProctoringCourseApp(CourseApp):
         """
         Returns true if the proctoring app is available for all courses.
         """
-        return settings.FEATURES.get('ENABLE_PROCTORED_EXAMS')
+        return settings.ENABLE_PROCTORED_EXAMS
 
     @classmethod
     def is_enabled(cls, course_key: CourseKey) -> bool:

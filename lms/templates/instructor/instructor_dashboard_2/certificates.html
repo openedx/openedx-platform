@@ -98,7 +98,7 @@ from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_str
         <div class="certificate-generation-status"></div>
     </div>
 
-        %if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+        %if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
         <div class="running-tasks-container action-type-container">
             <hr>
             <h3 class="hd hd-3"> ${_("Pending Tasks")} </h3>

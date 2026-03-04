@@ -47,7 +47,7 @@ def redirect_if_blocked(
     Returns:
         If blocked, a URL path to a page explaining why the user was blocked. Else None.
     """
-    if settings.FEATURES.get('EMBARGO'):
+    if settings.EMBARGO:
         client_ips = ip.get_all_client_ips(request)
         user = user or request.user
         is_blocked = not check_course_access(course_key, user=user, ip_addresses=client_ips, url=request.path)
@@ -79,7 +79,7 @@ def check_course_access(
 
     """
     # No-op if the country access feature is not enabled
-    if not settings.FEATURES.get('EMBARGO'):
+    if not settings.EMBARGO:
         return True
 
     # First, check whether there are any restrictions on the course.

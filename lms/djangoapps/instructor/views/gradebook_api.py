@@ -106,7 +106,7 @@ def get_grade_book_page(request, course, course_key):
 def spoc_gradebook(request, course_id):
     """
     Show the gradebook for this course:
-    - Only shown for courses with enrollment < settings.FEATURES.get("MAX_ENROLLMENT_INSTR_BUTTONS")
+    - Only shown for courses with enrollment < settings.MAX_ENROLLMENT_INSTR_BUTTONS
     - Only displayed to course staff
     """
     course_key = CourseKey.from_string(course_id)

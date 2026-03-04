@@ -154,7 +154,7 @@
   </section>
 </div>
 
-% if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True):
+% if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS:
 <div class="wrapper-content-cta wrapper">
   <section class="content content-cta">
     <header>

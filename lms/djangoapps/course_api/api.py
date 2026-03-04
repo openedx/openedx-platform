@@ -86,7 +86,7 @@ def _filter_by_search(course_queryset, search_term, mobile_search=False):
     """
     Filters a course queryset by the specified search term.
     """
-    if not settings.FEATURES['ENABLE_COURSEWARE_SEARCH'] or not search_term:
+    if not settings.ENABLE_COURSEWARE_SEARCH or not search_term:
         return course_queryset
 
     # Return all the results, 10K is the maximum allowed value for ElasticSearch.

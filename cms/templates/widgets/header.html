@@ -42,7 +42,7 @@
             advanced_settings_url = reverse('advanced_settings_handler', kwargs={'course_key_string': str(course_key)})
             tabs_url = reverse('tabs_handler', kwargs={'course_key_string': str(course_key)})
             certificates_url = ''
-            if settings.FEATURES.get("CERTIFICATES_HTML_VIEW") and context_course.cert_html_view_enabled:
+            if settings.CERTIFICATES_HTML_VIEW and context_course.cert_html_view_enabled:
                 certificates_url = reverse('certificates_list_handler', kwargs={'course_key_string': str(course_key)})
             checklists_url = reverse('checklists_handler', kwargs={'course_key_string': str(course_key)})
             pages_and_resources_mfe_enabled = ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(context_course.id)
@@ -309,7 +309,7 @@
       <nav class="nav-account nav-is-signedin nav-dd ui-right" aria-label="${_('Account')}">
         <h2 class="sr-only">${_("Account Navigation")}</h2>
         <ol>
-          % if settings.FEATURES.get('ENABLE_HELP_LINK'):
+          % if settings.ENABLE_HELP_LINK:
             <li class="nav-item nav-account-help">
               <h3 class="title"><span class="label"><a href="${get_online_help_info(online_help_token)['doc_url']}" title="${_('Contextual Online Help')}" rel="noopener" target="_blank">${_("Help")}</a></span></h3>
             </li>
@@ -324,12 +324,12 @@
       <nav class="nav-not-signedin nav-pitch" aria-label="${_('Account')}">
         <h2 class="sr-only">${_("Account Navigation")}</h2>
         <ol>
-          % if settings.FEATURES.get('ENABLE_HELP_LINK'):
+          % if settings.ENABLE_HELP_LINK:
           <li class="nav-item nav-not-signedin-help">
             <a href="${get_online_help_info(online_help_token)['doc_url']}" title="${_('Contextual Online Help')}" rel="noopener" target="_blank">${_("Help")}</a>
           </li>
           % endif
-          % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True):
+          % if static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS:
               <li class="nav-item nav-not-signedin-signup">
                 <a class="action action-signup" href="${settings.FRONTEND_REGISTER_URL}?next=${quote_plus(request.build_absolute_uri(settings.LOGIN_URL))}">${_("Sign Up")}</a>
               </li>

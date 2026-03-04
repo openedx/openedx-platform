@@ -136,7 +136,7 @@ def auto_verify_for_testing_enabled(override=None):
     """
     if override is not None:
         return override
-    return settings.FEATURES.get('AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING')
+    return settings.AUTOMATIC_VERIFY_STUDENT_IDENTITY_FOR_TESTING
 
 
 def can_verify_now(verification_status, expiration_datetime):

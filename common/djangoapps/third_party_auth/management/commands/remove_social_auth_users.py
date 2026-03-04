@@ -38,7 +38,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         slug = options['IDP']
 
-        if not settings.FEATURES.get('ENABLE_ENROLLMENT_RESET'):
+        if not settings.ENABLE_ENROLLMENT_RESET:
             raise CommandError('ENABLE_ENROLLMENT_RESET feature not enabled on this enviroment')
 
         try:

@@ -4,10 +4,10 @@ from django.utils.translation import gettext as _
 from openedx.core.djangolib.markup import HTML, Text
 %>
 
-%if settings.FEATURES.get('DISPLAY_ANALYTICS_ENROLLMENTS') or section_data.get('enrollment_message'):
+%if settings.DISPLAY_ANALYTICS_ENROLLMENTS or section_data.get('enrollment_message'):
   <h4 class="hd hd-4">${_("Enrollment Information")}</h4>
   <div class="enrollment-wrapper">
-    %if settings.FEATURES.get('DISPLAY_ANALYTICS_ENROLLMENTS'):
+    %if settings.DISPLAY_ANALYTICS_ENROLLMENTS:
       ## Translators: 'track' refers to the enrollment type ('honor', 'verified', or 'audit')
       <% modes = section_data['enrollment_count'] %>
         <table>
@@ -136,7 +136,7 @@ from openedx.core.djangolib.markup import HTML, Text
 
 </div>
 
-%if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
+%if settings.ENABLE_INSTRUCTOR_BACKGROUND_TASKS:
   <div class="running-tasks-container action-type-container">
     <hr>
     <h4 class="hd hd-4"> ${_("Pending Tasks")} </h4>

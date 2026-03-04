@@ -883,7 +883,7 @@ def _create_or_rerun_course(request):
             raise PermissionDenied()
 
         # allow/disable unicode characters in course_id according to settings
-        if not settings.FEATURES.get('ALLOW_UNICODE_COURSE_ID'):
+        if not settings.ALLOW_UNICODE_COURSE_ID:
             if _has_non_ascii_characters(org) or _has_non_ascii_characters(course) or _has_non_ascii_characters(run):
                 return JsonResponse(
                     {'error': _('Special characters not allowed in organization, course number, and course run.')},
@@ -1285,7 +1285,7 @@ def advanced_settings_handler(request, course_key_string):
         course_block = get_course_and_check_access(course_key, request.user)
 
         advanced_dict = CourseMetadata.fetch(course_block)
-        if settings.FEATURES.get('DISABLE_MOBILE_COURSE_AVAILABLE', False):
+        if settings.DISABLE_MOBILE_COURSE_AVAILABLE:
             advanced_dict.get('mobile_available')['deprecated'] = True
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
@@ -1294,7 +1294,7 @@ def advanced_settings_handler(request, course_key_string):
             publisher_enabled = configuration_helpers.get_value_for_org(
                 course_block.location.org,
                 'ENABLE_PUBLISHER',
-                settings.FEATURES.get('ENABLE_PUBLISHER', False)
+                settings.ENABLE_PUBLISHER
             )
             # gather any errors in the currently stored proctoring settings.
             proctoring_errors = CourseMetadata.validate_proctoring_settings(course_block, advanced_dict, request.user)
@@ -1803,9 +1803,9 @@ def _get_course_creator_status(user):
 
     if user.is_staff:
         course_creator_status = 'granted'
-    elif settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+    elif settings.DISABLE_COURSE_CREATION:
         course_creator_status = 'disallowed_for_this_site'
-    elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    elif settings.ENABLE_CREATOR_GROUP:
         course_creator_status = get_course_creator_status(user)
         if course_creator_status is None:
             # User not grandfathered in as an existing user, has not previously visited the dashboard page.
@@ -1822,7 +1822,7 @@ def get_allowed_organizations(user):
     """
     Helper method for returning the list of organizations for which the user is allowed to create courses.
     """
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if settings.ENABLE_CREATOR_GROUP:
         return get_organizations(user)
     else:
         return []
@@ -1837,12 +1837,12 @@ def get_allowed_organizations_for_libraries(user):
     # This allows org-level staff to create libraries. We should re-evaluate
     # whether this is necessary and try to normalize course and library creation
     # authorization behavior.
-    if settings.FEATURES.get('ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES', False):
+    if settings.ENABLE_ORGANIZATION_STAFF_ACCESS_FOR_CONTENT_LIBRARIES:
         organizations_set.update(get_organizations_for_non_course_creators(user))
 
     # This allows people in the course creator group for an org to create
     # libraries, which mimics course behavior.
-    if settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+    if settings.ENABLE_CREATOR_GROUP:
         organizations_set.update(get_organizations(user))
 
     return sorted(organizations_set)
@@ -1852,7 +1852,7 @@ def user_can_create_organizations(user):
     """
     Returns True if the user can create organizations.
     """
-    return user.is_staff or not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False)
+    return user.is_staff or not settings.ENABLE_CREATOR_GROUP
 
 
 def get_organizations_for_non_course_creators(user):

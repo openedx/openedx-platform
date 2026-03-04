@@ -20,7 +20,7 @@ class CsmBigInt(AlterField):
         to_model = to_state.apps.get_model(app_label, self.model_name)
 
         if schema_editor.connection.alias == 'student_module_history':
-            if settings.FEATURES["ENABLE_CSMH_EXTENDED"]:
+            if settings.ENABLE_CSMH_EXTENDED:
                 if schema_editor.connection.vendor == 'mysql':
                     schema_editor.execute("ALTER TABLE `coursewarehistoryextended_studentmodulehistoryextended` MODIFY `student_module_id` bigint UNSIGNED NOT NULL;")
                 elif schema_editor.connection.vendor == 'postgresql':
@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
         ('courseware', '0010_auto_20190709_1559'),
     ]
 
-    if settings.FEATURES["ENABLE_CSMH_EXTENDED"]:
+    if settings.ENABLE_CSMH_EXTENDED:
         dependencies.append(('coursewarehistoryextended', '0002_force_studentmodule_index'))
 
     operations = [

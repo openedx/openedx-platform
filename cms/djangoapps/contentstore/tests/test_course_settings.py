@@ -437,7 +437,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
             self.assertNotContains(response, "Course Banner Image")
             self.assertNotContains(response, "Course Video Thumbnail Image")
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     def test_entrance_exam_created_updated_and_deleted_successfully(self):
         """
         This tests both of the entrance exam settings and the `any_unfulfilled_milestones` helper.
@@ -503,7 +503,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertFalse(milestones_helpers.any_unfulfilled_milestones(self.course.id, self.user.id),
                          msg='The entrance exam should not be required anymore')
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     def test_entrance_exam_store_default_min_score(self):
         """
         test that creating an entrance exam should store the default value, if key missing in json request
@@ -557,7 +557,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
         self.assertTrue(course.entrance_exam_enabled)
         self.assertEqual(course.entrance_exam_minimum_score_pct, .5)
 
-    @unittest.skipUnless(settings.FEATURES.get('ENTRANCE_EXAMS', False), True)
+    @unittest.skipUnless(settings.ENTRANCE_EXAMS, True)
     @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     def test_entrance_after_changing_other_setting(self):
         """

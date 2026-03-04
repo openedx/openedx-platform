@@ -199,7 +199,7 @@ class CourseEnrollmentManager(models.Manager):
 
         'course_id' is the course_id to return enrollments
         """
-        max_enrollments = settings.FEATURES.get("MAX_ENROLLMENT_INSTR_BUTTONS")
+        max_enrollments = settings.MAX_ENROLLMENT_INSTR_BUTTONS
 
         enrollment_number = super().get_queryset().filter(
             course_id=course_id,

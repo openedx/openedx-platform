@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from openedx.core.djangolib.translation_utils import translate_date
 
 DEFAULT_LANGUAGE = getattr(settings, 'LANGUAGE_CODE', 'en')
-IS_ENABLED = settings.FEATURES.get('DEPRECATE_OLD_COURSE_KEYS_IN_STUDIO', True)
+IS_ENABLED = settings.DEPRECATE_OLD_COURSE_KEYS_IN_STUDIO
 %>
 <%
 is_visible = IS_ENABLED and course and course.id.deprecated

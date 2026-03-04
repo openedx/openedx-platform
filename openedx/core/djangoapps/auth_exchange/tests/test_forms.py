@@ -8,6 +8,7 @@ import unittest
 
 import httpretty
 import social_django.utils as social_utils
+from django.conf import settings
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -17,7 +18,7 @@ from common.djangoapps.third_party_auth.tests.utils import ThirdPartyOAuthTestMi
 
 from ..forms import AccessTokenExchangeForm
 from .mixins import DOTAdapterMixin
-from .utils import TPA_FEATURE_ENABLED, TPA_FEATURES_KEY, AccessTokenExchangeTestMixin
+from .utils import AccessTokenExchangeTestMixin
 
 
 class AccessTokenExchangeFormTest(AccessTokenExchangeTestMixin):
@@ -50,7 +51,7 @@ class AccessTokenExchangeFormTest(AccessTokenExchangeTestMixin):
 
 
 # This is necessary because cms does not implement third party auth
-@unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
+@unittest.skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "Third party auth is disabled.")
 @httpretty.activate
 class DOTAccessTokenExchangeFormTestFacebook(
         DOTAdapterMixin,
@@ -66,7 +67,7 @@ class DOTAccessTokenExchangeFormTestFacebook(
 
 
 # This is necessary because cms does not implement third party auth
-@unittest.skipUnless(TPA_FEATURE_ENABLED, TPA_FEATURES_KEY + " not enabled")
+@unittest.skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "Third party auth is disabled.")
 @httpretty.activate
 class DOTAccessTokenExchangeFormTestGoogle(
         DOTAdapterMixin,

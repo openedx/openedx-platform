@@ -33,7 +33,7 @@ def validate_marketing_site_setting(app_configs, **kwargs):  # lint-amnesty, pyl
     Validates marketing site related settings.
     """
     errors = []
-    if settings.FEATURES.get('ENABLE_MKTG_SITE'):
+    if settings.ENABLE_MKTG_SITE:
         if not hasattr(settings, 'MKTG_URLS'):
             errors.append(
                 Error(

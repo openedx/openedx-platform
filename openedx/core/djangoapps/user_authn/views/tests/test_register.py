@@ -2729,7 +2729,7 @@ class ThirdPartyRegistrationTestMixin(
         self._verify_user_existence(user_exists=False, social_link_exists=False)
 
 
-@skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
+@skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "third party auth not enabled")
 class TestFacebookRegistrationView(
     ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase, OpenEdxEventsTestMixin
 ):
@@ -2761,7 +2761,7 @@ class TestFacebookRegistrationView(
         self._verify_user_existence(user_exists=False, social_link_exists=False)
 
 
-@skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
+@skipUnless(settings.ENABLE_THIRD_PARTY_AUTH, "third party auth not enabled")
 class TestGoogleRegistrationView(
     ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase, OpenEdxEventsTestMixin
 ):
@@ -2945,7 +2945,7 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
             {'username': str(USERNAME_BAD_LENGTH_MSG)}
         )
 
-    @skipUnless(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames disabled.")
+    @skipUnless(settings.ENABLE_UNICODE_USERNAME, "Unicode usernames disabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_UNICODE)
     def test_username_invalid_unicode_validation_decision(self, username):
         self.assertValidationDecision(
@@ -2953,7 +2953,7 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
             {'username': str(USERNAME_INVALID_CHARS_UNICODE)}
         )
 
-    @skipIf(settings.FEATURES.get("ENABLE_UNICODE_USERNAME"), "Unicode usernames enabled.")
+    @skipIf(settings.ENABLE_UNICODE_USERNAME, "Unicode usernames enabled.")
     @ddt.data(*testutils.INVALID_USERNAMES_ASCII)
     def test_username_invalid_ascii_validation_decision(self, username):
         self.assertValidationDecision(

@@ -14,11 +14,11 @@ from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_
 %>
 
 <%
-  mktg_site_enabled = static.get_value('ENABLE_MKTG_SITE', settings.FEATURES.get('ENABLE_MKTG_SITE', False))
-  courses_are_browsable = settings.FEATURES.get('COURSES_ARE_BROWSABLE')
+  mktg_site_enabled = static.get_value('ENABLE_MKTG_SITE', settings.ENABLE_MKTG_SITE)
+  courses_are_browsable = settings.COURSES_ARE_BROWSABLE
   allows_login = not settings.FEATURES['DISABLE_LOGIN_BUTTON'] and not combined_login_and_register
-  can_discover_courses = settings.FEATURES.get('ENABLE_COURSE_DISCOVERY')
-  allow_public_account_creation = static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.FEATURES.get('ALLOW_PUBLIC_ACCOUNT_CREATION')) and settings.FEATURES.get('SHOW_REGISTRATION_LINKS', True)
+  can_discover_courses = settings.ENABLE_COURSE_DISCOVERY
+  allow_public_account_creation = static.get_value('ALLOW_PUBLIC_ACCOUNT_CREATION', settings.ALLOW_PUBLIC_ACCOUNT_CREATION) and settings.SHOW_REGISTRATION_LINKS
   should_redirect_to_authn_mfe = should_redirect_to_authn_microfrontend()
 %>
 <nav class="nav-links" aria-label=${_("Supplemental Links")}>

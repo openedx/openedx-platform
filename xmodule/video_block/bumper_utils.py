@@ -49,7 +49,7 @@ def is_bumper_enabled(video):
     """
     bumper_last_view_date = getattr(video, 'bumper_last_view_date', None)
     utc_now = datetime.now(ZoneInfo("UTC"))
-    periodicity = settings.FEATURES.get('SHOW_BUMPER_PERIODICITY', 0)
+    periodicity = settings.SHOW_BUMPER_PERIODICITY
     has_viewed = any([
         video.bumper_do_not_show_again,
         (bumper_last_view_date and bumper_last_view_date + timedelta(seconds=periodicity) > utc_now)
@@ -57,7 +57,7 @@ def is_bumper_enabled(video):
     is_studio = getattr(video.runtime, "is_author_mode", False)
     return bool(
         not is_studio and
-        settings.FEATURES.get('ENABLE_VIDEO_BUMPER') and
+        settings.ENABLE_VIDEO_BUMPER and
         get_bumper_settings(video) and
         edxval_api and
         not has_viewed

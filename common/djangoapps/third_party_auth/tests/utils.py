@@ -6,6 +6,7 @@ from base64 import b64encode
 from unittest import skip
 
 import httpretty
+from django.conf import settings
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from oauth2_provider.models import Application
 from social_core.backends.facebook import API_VERSION as FACEBOOK_API_VERSION
@@ -14,7 +15,7 @@ from social_django.models import Partial, UserSocialAuth
 
 from common.djangoapps.student.tests.factories import UserFactory
 
-from .testutil import ThirdPartyAuthTestMixin, AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY
+from .testutil import ThirdPartyAuthTestMixin
 
 
 @httpretty.activate
@@ -150,6 +151,6 @@ def skip_unless_thirdpartyauth():
     """
     Wraps unittest.skip in consistent logic to skip certain third_party_auth tests in CMS.
     """
-    if AUTH_FEATURE_ENABLED:
+    if settings.ENABLE_THIRD_PARTY_AUTH:
         return lambda func: func
-    return skip("%s not enabled" % AUTH_FEATURES_KEY)
+    return skip("%s not enabled" % "ENABLE_THIRD_PARTY_AUTH")

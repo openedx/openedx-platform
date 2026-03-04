@@ -61,10 +61,10 @@ def user_has_role(user, role):
     # CourseCreator is odd b/c it can be disabled via config
     if isinstance(role, CourseCreatorRole):
         # completely shut down course creation setting
-        if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+        if settings.DISABLE_COURSE_CREATION:
             return False
         # wide open course creation setting
-        if not settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
+        if not settings.ENABLE_CREATOR_GROUP:
             return True
 
     if role.has_user(user):
@@ -163,7 +163,7 @@ def has_studio_advanced_settings_access(user):
     By default, this feature is disabled.
     """
     return (
-        not settings.FEATURES.get('DISABLE_ADVANCED_SETTINGS', False)
+        not settings.DISABLE_ADVANCED_SETTINGS
         or user.is_staff
         or user.is_superuser
     )
@@ -205,7 +205,7 @@ def check_course_advanced_settings_access(user, course_key, access_type='read'):
         # For feature_restricted access type, check DISABLE_ADVANCED_SETTINGS feature
         if (
             access_type == 'feature_restricted'
-            and settings.FEATURES.get('DISABLE_ADVANCED_SETTINGS', False)
+            and settings.DISABLE_ADVANCED_SETTINGS
         ):
             # When feature is disabled, only staff/superuser can access (bypass authz)
             return user.is_staff or user.is_superuser
