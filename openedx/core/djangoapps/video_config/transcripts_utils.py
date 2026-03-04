@@ -28,6 +28,7 @@ from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 
+from xblocks_contrib.video.bumper_utils import get_bumper_settings
 from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 
 
@@ -786,11 +787,6 @@ class VideoTranscriptsMixin:
             is_bumper(bool): If True, the request is for the bumper transcripts
             include_val_transcripts(bool): If True, include edx-val transcripts as well
         """
-        # TODO: This causes a circular import when imported at the top-level.
-        #       This import will be removed as part of the VideoBlock extraction.
-        #       https://github.com/openedx/edx-platform/issues/36282
-        from xmodule.video_block.bumper_utils import get_bumper_settings
-
         if is_bumper:
             transcripts = copy.deepcopy(get_bumper_settings(self).get('transcripts', {}))
             sub = transcripts.pop("en", "")
