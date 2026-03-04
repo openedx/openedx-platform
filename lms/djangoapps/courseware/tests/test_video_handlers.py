@@ -320,7 +320,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
         assert sorted(json.loads(response.body.decode('utf-8'))) == sorted(['en', 'uk'])
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_video_transcript_content')
-    @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_available_transcript_languages')
+    @patch('edxval.api.get_available_transcript_languages')
     @ddt.data(
         (
             ['en', 'uk', 'ro'],
