@@ -327,4 +327,3 @@ class TabStateSyncTestCase(TestCase):
 
         config = DiscussionsConfiguration.objects.get(context_key=new_key)
         assert config.enabled is True
-
