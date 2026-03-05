@@ -10,7 +10,6 @@ import logging
 from functools import wraps
 
 from zoneinfo import ZoneInfo
-from consent.models import DataSharingConsent
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, logout
