@@ -1,13 +1,16 @@
 /* global define, Membership */
 define(['jquery',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'js/instructor_dashboard/membership'],
-function($, AjaxHelpers) {
+function($, sinon, AjaxHelpers) {
     'use strict';
 
     describe('Membership.AuthListWidget', function() {
         var membership, // eslint-disable-line no-unused-vars
-            changeSelectedList;
+            changeSelectedList,
+            requests,
+            xhrFactory;
 
         changeSelectedList = function(listName) {
             var i, options;
@@ -22,6 +25,11 @@ function($, AjaxHelpers) {
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             var membershipMain, membershipTpl;
             membershipMain = readFixtures('js/fixtures/instructor_dashboard/membership.html');
             membershipTpl = readFixtures(
@@ -34,9 +42,12 @@ function($, AjaxHelpers) {
             membership = new window.InstructorDashboard.sections.Membership($('#membership'));
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('binds the ajax call and the result will be success for Group Moderator', function() {
-            var requests = AjaxHelpers.requests(this),
-                data,
+            var data,
                 url = '/courses/course-v1:edx+ed202+2017_T3/instructor/api/list_forum_members';
 
             data = {
@@ -66,7 +77,6 @@ function($, AjaxHelpers) {
 
         it('Error message is shown if user with given identifier does not exist', function() {
             var url, params;
-            var requests = AjaxHelpers.requests(this);
             $('.active .add-field').val('smth');
             $('.active .add').click();
             expect(requests.length).toEqual(1);
@@ -90,8 +100,7 @@ function($, AjaxHelpers) {
         });
 
         it('When no discussions division scheme is selected error is shown and inputs are disabled', function() {
-            var requests = AjaxHelpers.requests(this),
-                data,
+            var data,
                 url = '/courses/course-v1:edx+ed202+2017_T3/instructor/api/list_forum_members';
 
             data = {

@@ -5,6 +5,7 @@
         'jquery',
         'underscore',
         'backbone',
+        'sinon',
         'common/js/spec_helpers/template_helpers',
         'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
         'js/student_account/views/AccessView',
@@ -13,10 +14,11 @@
         'js/student_account/shoppingcart',
         'js/student_account/emailoptin'
     ],
-    function($, _, Backbone, TemplateHelpers, AjaxHelpers, AccessView, FormView, EnrollmentInterface,
+    function($, _, Backbone, sinon, TemplateHelpers, AjaxHelpers, AccessView, FormView, EnrollmentInterface,
         ShoppingCartInterface) {
         describe('edx.student.account.AccessView', function() {
             var requests = null,
+                xhrFactory = null,
                 view = null,
                 FORM_DESCRIPTION = {
                     method: 'post',
@@ -72,9 +74,6 @@
                     },
                     $logistrationElement = $('#login-and-registration-container');
 
-                // Spy on AJAX requests
-                requests = AjaxHelpers.requests(that);
-
                 // Initialize the access view
                 view = new AccessView(_.extend(options, {el: $logistrationElement}));
 
@@ -114,10 +113,16 @@
 
                 // Stub analytics tracking
                 window.analytics = jasmine.createSpyObj('analytics', ['track', 'page', 'pageview', 'trackLink']);
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
             });
 
             afterEach(function() {
                 Backbone.history.stop();
+                requests.restore();
             });
 
             it('can initially display the login form', function() {

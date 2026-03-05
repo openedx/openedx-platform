@@ -1,7 +1,7 @@
 define([
-    'jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
+    'jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/template_helpers',
     'js/discovery/discovery_factory'
-], function($, AjaxHelpers, TemplateHelpers, DiscoveryFactory) {
+], function($, sinon, AjaxHelpers, TemplateHelpers, DiscoveryFactory) {
     'use strict';
 
     var MEANINGS = {
@@ -94,7 +94,14 @@ define([
     };
 
     describe('discovery.DiscoveryFactory', function() {
+        var requests, xhrFactory;
+
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/discovery.html');
             TemplateHelpers.installTemplates([
                 'templates/discovery/course_card',
@@ -110,10 +117,10 @@ define([
 
         afterEach(function() {
             jasmine.clock().uninstall();
+            requests.restore();
         });
 
         it('does search', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('test');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
@@ -123,7 +130,6 @@ define([
         });
 
         it('loads more', function() {
-            var requests = AjaxHelpers.requests(this);
 
             $('.discovery-input').val('test');
             $('.discovery-submit').trigger('click');
@@ -141,7 +147,6 @@ define([
         });
 
         it('displays not found message', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('asdfasdf');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithJson(requests, {});
@@ -151,7 +156,6 @@ define([
         });
 
         it('displays error message', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('asdfasdf');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithError(requests, 404, {error: 'some-search-error'});
@@ -161,7 +165,6 @@ define([
         });
 
         it('check filters and bar removed on clear all', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('test');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
@@ -173,7 +176,6 @@ define([
         });
 
         it('check filters and bar removed on last filter cleared', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('test');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
@@ -184,7 +186,6 @@ define([
         });
 
         it('filter results by named facet', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-input').val('test');
             $('.discovery-submit').trigger('click');
             AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
@@ -198,7 +199,14 @@ define([
     });
 
     describe('discovery.DiscoveryFactory default filters', function() {
+        var requests, xhrFactory;
+
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/discovery.html');
             TemplateHelpers.installTemplates([
                 'templates/discovery/course_card',
@@ -215,10 +223,10 @@ define([
 
         afterEach(function() {
             jasmine.clock().uninstall();
+            requests.restore();
         });
 
         it('filters by default language', function() {
-            var requests = AjaxHelpers.requests(this);
             $('.discovery-submit').trigger('click');
             var request = AjaxHelpers.currentRequest(requests);
             // make sure language filter is set

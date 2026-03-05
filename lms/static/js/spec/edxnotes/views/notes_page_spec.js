@@ -1,14 +1,20 @@
 define([
-    'jquery', 'underscore', 'common/js/spec_helpers/template_helpers',
+    'jquery', 'underscore', 'sinon', 'common/js/spec_helpers/template_helpers',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/spec/edxnotes/helpers',
     'js/edxnotes/views/page_factory'
-], function($, _, TemplateHelpers, AjaxHelpers, Helpers, NotesFactory) {
+], function($, _, sinon, TemplateHelpers, AjaxHelpers, Helpers, NotesFactory) {
     'use strict';
 
     describe('EdxNotes NotesPage', function() {
         var notes = Helpers.getDefaultNotes();
+        var requests, xhrFactory;
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/edxnotes/edxnotes.html');
             TemplateHelpers.installTemplates([
                 'templates/edxnotes/note-item', 'templates/edxnotes/tab-item'
@@ -16,9 +22,12 @@ define([
             this.view = new NotesFactory({notes: notes, pageSize: 10});
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('should be displayed properly', function() {
-            var requests = AjaxHelpers.requests(this),
-                tab;
+            var tab;
 
             expect(this.view.$('#view-search-results')).not.toExist();
             tab = this.view.$('#view-recent-activity');

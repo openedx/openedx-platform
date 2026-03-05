@@ -1,16 +1,18 @@
 define([
     'jquery',
     'underscore',
+    'sinon',
     'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'edx-ui-toolkit/js/utils/html-utils',
     'js/edxnotes/views/search_box',
     'js/edxnotes/collections/notes',
     'js/spec/edxnotes/helpers'
-], function($, _, AjaxHelpers, HtmlUtils, SearchBoxView, NotesCollection, Helpers) {
+], function($, _, sinon, AjaxHelpers, HtmlUtils, SearchBoxView, NotesCollection, Helpers) {
     'use strict';
 
     describe('EdxNotes SearchBoxView', function() {
         var getSearchBox, submitForm, assertBoxIsEnabled, assertBoxIsDisabled, searchResponse;
+        var requests, xhrFactory;
 
         searchResponse = {
             count: 2,
@@ -53,14 +55,22 @@ define([
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             loadFixtures('js/fixtures/edxnotes/edxnotes.html');
             spyOn(Logger, 'log');
             this.searchBox = getSearchBox();
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         it('sends a request with proper information on submit the form', function() {
-            var requests = AjaxHelpers.requests(this),
-                form = this.searchBox.el,
+            var form = this.searchBox.el,
                 request;
 
             submitForm(this.searchBox, 'test_text');
@@ -74,7 +84,6 @@ define([
         });
 
         it('returns success result', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             expect(this.searchBox.options.beforeSearchStart).toHaveBeenCalledWith(
                 'test_text'
@@ -91,7 +100,6 @@ define([
         });
 
         it('should log the edx.course.student_notes.searched event properly', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             AjaxHelpers.respondWithJson(requests, searchResponse);
 
@@ -102,7 +110,6 @@ define([
         });
 
         it('returns default error message if received data structure is wrong', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             AjaxHelpers.respondWithJson(requests, {});
             expect(this.searchBox.options.error).toHaveBeenCalledWith(
@@ -115,7 +122,6 @@ define([
         });
 
         it('returns default error message if network error occurs', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             AjaxHelpers.respondWithError(requests);
             expect(this.searchBox.options.error).toHaveBeenCalledWith(
@@ -128,7 +134,6 @@ define([
         });
 
         it('returns error message if server error occurs', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             assertBoxIsDisabled(this.searchBox);
 
@@ -150,7 +155,6 @@ define([
         });
 
         it('does not send second request during current search', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, 'test_text');
             assertBoxIsDisabled(this.searchBox);
             submitForm(this.searchBox, 'another_text');
@@ -160,7 +164,6 @@ define([
         });
 
         it('returns error message if the field is empty', function() {
-            var requests = AjaxHelpers.requests(this);
             submitForm(this.searchBox, '   ');
             expect(requests).toHaveLength(0);
             assertBoxIsEnabled(this.searchBox);
