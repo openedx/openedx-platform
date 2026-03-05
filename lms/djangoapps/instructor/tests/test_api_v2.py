@@ -494,6 +494,25 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.assertIn('course_errors', response.data)
         self.assertIsInstance(response.data['course_errors'], list)
 
+    @patch('lms.djangoapps.instructor.views.serializers_v2.settings.INSTRUCTOR_MICROFRONTEND_URL', None)
+    def test_tabs_log_warning_when_mfe_url_not_set(self):
+        """
+        Test that a warning is logged when INSTRUCTOR_MICROFRONTEND_URL is not set.
+        """
+        with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
+            tabs = self._get_tabs_from_response(self.staff)
+
+        self.assertTrue(
+            any('INSTRUCTOR_MICROFRONTEND_URL is not set' in msg for msg in cm.output)
+        )
+        # Tab URLs should use empty string as base, not "None"
+        for tab in tabs:
+            self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")
+            self.assertTrue(
+                tab['url'].startswith('/instructor/'),
+                f"Tab URL should start with '/instructor/': {tab['url']}"
+            )
+
     def test_pacing_self_for_self_paced_course(self):
         """
         Test that pacing is 'self' for self-paced courses.
