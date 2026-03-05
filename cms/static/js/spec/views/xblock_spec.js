@@ -1,12 +1,18 @@
-define(['jquery', 'URI', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/components/utils/view_utils',
+define(['jquery', 'URI', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/components/utils/view_utils',
     'js/views/xblock', 'js/models/xblock_info', 'xmodule', 'cms/js/main', 'xblock/cms.runtime.v1'],
-function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
+function($, URI, sinon, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
     'use strict';
 
+    var requests, xhrFactory;
     describe('XBlockView', function() {
         var model, xblockView, mockXBlockHtml;
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             model = new XBlockInfo({
                 id: 'testCourse/branch/draft/block/verticalFFF',
                 display_name: 'Test Unit',
@@ -17,10 +23,13 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             });
         });
 
+        afterEach(function() {
+            requests.restore();
+        });
+
         mockXBlockHtml = readFixtures('mock/mock-xblock.underscore');
 
         it('can render a nested xblock', function() {
-            var requests = AjaxHelpers.requests(this);
             xblockView.render();
             AjaxHelpers.respondWithJson(requests, {
                 html: mockXBlockHtml,
@@ -53,13 +62,11 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             };
 
             it('can render an xblock with no CSS or JavaScript', function() {
-                var requests = AjaxHelpers.requests(this);
                 postXBlockRequest(requests, []);
             });
 
             it('can render an xblock with required CSS', function() {
-                var requests = AjaxHelpers.requests(this),
-                    mockCssText = '// Just a comment',
+            var mockCssText = '// Just a comment',
                     mockCssUrl = 'mock.css',
                     headHtml;
                 postXBlockRequest(requests, [
@@ -72,7 +79,6 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             });
 
             it('can render an xblock with required JavaScript', function() {
-                var requests = AjaxHelpers.requests(this);
                 postXBlockRequest(requests, [
                     ['xblock_spec_hash3', {
                         mimetype: 'application/javascript', kind: 'text', data: 'window.test = 100;'
@@ -82,8 +88,7 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             });
 
             it('can render an xblock with required HTML', function() {
-                var requests = AjaxHelpers.requests(this),
-                    mockHeadTag = '<title>Test Title</title>';
+            var mockHeadTag = '<title>Test Title</title>';
                 postXBlockRequest(requests, [
                     ['xblock_spec_hash4', {mimetype: 'text/html', placement: 'head', data: mockHeadTag}]
                 ]);
@@ -91,8 +96,7 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             });
 
             it('aborts rendering when a dependent script fails to load', function() {
-                var requests = AjaxHelpers.requests(this),
-                    missingJavaScriptUrl = 'no_such_file.js',
+            var missingJavaScriptUrl = 'no_such_file.js',
                     promise;
                 spyOn(ViewUtils, 'loadJavaScript').and.returnValue($.Deferred().reject().promise());
                 promise = postXBlockRequest(requests, [
@@ -106,7 +110,7 @@ function($, URI, AjaxHelpers, ViewUtils, XBlockView, XBlockInfo) {
             it('Triggers an event to the runtime when a notification-action-button is clicked', function() {
                 var notifySpy = spyOn(xblockView, 'notifyRuntime').and.callThrough();
 
-                postXBlockRequest(AjaxHelpers.requests(this), []);
+                postXBlockRequest(requests, []);
                 xblockView.$el.find('.notification-action-button').click();
                 expect(notifySpy).toHaveBeenCalledWith('add-missing-groups', model.get('id'));
             });

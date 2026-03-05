@@ -1074,4 +1074,6 @@ define([
             );
         });
     });
+
+    }); // end describe('Group Configurations')
 });

@@ -1,9 +1,11 @@
 define([
-    'jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/view_helpers',
+    'jquery', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'common/js/spec_helpers/view_helpers',
     'js/factories/manage_users_lib', 'common/js/components/utils/view_utils'
 ],
-function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
+function($, sinon, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
     'use strict';
+
+    var requests, xhrFactory;
 
     describe('Library Instructor Access Page', function() {
         var changeRoleUrl = 'dummy_change_role_url/@@EMAIL@@';
@@ -24,6 +26,11 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             var mockHTML = readFixtures('mock/mock-manage-users-lib.underscore');
 
             beforeEach(function(done) {
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
                 ViewHelpers.installMockAnalytics();
                 setFixtures(mockHTML);
                 appendSetFixtures($('<script>', {id: 'team-member-tpl', type: 'text/template'}).text(team_member_fixture));
@@ -51,12 +58,12 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             });
 
             afterEach(function() {
+                requests.restore();
                 ViewHelpers.removeMockAnalytics();
             });
 
             it('can give a user permission to use the library', function() {
                 var email = 'other@example.com';
-                var requests = AjaxHelpers.requests(this);
                 var reloadSpy = spyOn(ViewUtils, 'reload');
                 $('.create-user-button').click();
                 expect($('.wrapper-create-user')).toHaveClass('is-shown');
@@ -69,7 +76,6 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
 
             it('can promote user', function() {
                 var email = 'staff@example.com';
-                var requests = AjaxHelpers.requests(this);
                 var reloadSpy = spyOn(ViewUtils, 'reload');
                 setRole('staff@example.com', 'staff');
                 AjaxHelpers.expectJsonRequest(requests, 'POST', getUrl(email), {role: 'staff'});
@@ -84,7 +90,6 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             });
 
             it('displays an error when the required field is blank', function() {
-                var requests = AjaxHelpers.requests(this);
                 $('.create-user-button').click();
                 $('.user-email-input').val('');
                 var errorPromptSelector = '.wrapper-prompt.is-shown .prompt.error';
@@ -96,7 +101,6 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             });
 
             it('displays an error when the user has already been added', function() {
-                var requests = AjaxHelpers.requests(this);
                 var promptSpy = ViewHelpers.createPromptSpy();
                 $('.create-user-button').click();
                 $('.user-email-input').val('honor@example.com');
@@ -106,7 +110,6 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             });
 
             it("can remove a user's permission to access the library", function() {
-                var requests = AjaxHelpers.requests(this);
                 var promptSpy = ViewHelpers.createPromptSpy();
                 var reloadSpy = spyOn(ViewUtils, 'reload');
                 var email = 'honor@example.com';
@@ -124,6 +127,11 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             var mockHTML = readFixtures('mock/mock-manage-users-lib-ro.underscore');
 
             beforeEach(function() {
+                xhrFactory = sinon.useFakeXMLHttpRequest();
+                requests = [];
+                requests.currentIndex = 0;
+                requests.restore = function() { xhrFactory.restore(); };
+                xhrFactory.onCreate = function(req) { requests.push(req); };
                 ViewHelpers.installMockAnalytics();
                 setFixtures(mockHTML);
                 appendSetFixtures($('<script>', {id: 'team-member-tpl', type: 'text/template'}).text(team_member_fixture));
@@ -147,6 +155,7 @@ function($, AjaxHelpers, ViewHelpers, ManageUsersFactory, ViewUtils) {
             });
 
             afterEach(function() {
+                requests.restore();
                 ViewHelpers.removeMockAnalytics();
             });
 

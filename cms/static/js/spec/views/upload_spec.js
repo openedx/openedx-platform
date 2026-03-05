@@ -117,17 +117,23 @@ define(["underscore", "sinon", "js/models/uploads", "js/views/uploads",
             });
 
             describe("Uploads", function() {
+                var requests, xhrFactory;
                 beforeEach(function() {
+                    xhrFactory = sinon.useFakeXMLHttpRequest();
+                    requests = [];
+                    requests.currentIndex = 0;
+                    requests.restore = function() { xhrFactory.restore(); };
+                    xhrFactory.onCreate = function(req) { requests.push(req); };
                     this.clock = sinon.useFakeTimers();
                 });
 
                 afterEach(function() {
+                    requests.restore();
                     modal_helpers.cancelModalIfShowing();
                     this.clock.restore();
                 });
 
                 it("can upload correctly", function() {
-                    const requests = AjaxHelpers.requests(this);
                     const view = createTestView(this);
                     view.render();
                     view.upload();
@@ -143,7 +149,6 @@ define(["underscore", "sinon", "js/models/uploads", "js/views/uploads",
                 });
 
                 it("can handle upload errors", function() {
-                    const requests = AjaxHelpers.requests(this);
                     const view = createTestView(this);
                     view.render();
                     view.upload();
@@ -153,7 +158,6 @@ define(["underscore", "sinon", "js/models/uploads", "js/views/uploads",
                 });
 
                 it("removes itself after two seconds on successful upload", function() {
-                    const requests = AjaxHelpers.requests(this);
                     const view = createTestView(this);
                     view.render();
                     view.upload();

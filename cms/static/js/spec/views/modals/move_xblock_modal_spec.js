@@ -1,10 +1,11 @@
-define(['jquery', 'underscore', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
+define(['jquery', 'underscore', 'sinon', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers',
     'common/js/spec_helpers/template_helpers', 'common/js/spec_helpers/view_helpers',
     'js/views/modals/move_xblock_modal', 'js/models/xblock_info'],
-function($, _, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBlockInfo) {
+function($, _, sinon, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBlockInfo) {
     'use strict';
 
     describe('MoveXBlockModal', function() {
+        var requests, xhrFactory;
         var modal,
             showModal,
             DISPLAY_NAME = 'HTML 101',
@@ -32,6 +33,11 @@ function($, _, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBloc
         };
 
         beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
             setFixtures('<div id="page-notification"></div><div id="reader-feedback"></div>');
             TemplateHelpers.installTemplates([
                 'basic-modal',
@@ -41,6 +47,7 @@ function($, _, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBloc
         });
 
         afterEach(function() {
+            requests.restore();
             modal.hide();
         });
 
@@ -56,8 +63,7 @@ function($, _, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBloc
         });
 
         it('sends request to fetch course outline', function() {
-            var requests = AjaxHelpers.requests(this),
-                renderViewsSpy;
+            var renderViewsSpy;
             showModal();
             expect(modal.$el.find('.ui-loading.is-hidden')).not.toExist();
             renderViewsSpy = spyOn(modal, 'renderViews');
@@ -71,8 +77,7 @@ function($, _, AjaxHelpers, TemplateHelpers, ViewHelpers, MoveXBlockModal, XBloc
         });
 
         it('shows error notification when fetch course outline request fails', function() {
-            var requests = AjaxHelpers.requests(this),
-                notificationSpy = ViewHelpers.createNotificationSpy('Error');
+            var notificationSpy = ViewHelpers.createNotificationSpy('Error');
             showModal();
             AjaxHelpers.respondWithError(requests);
             ViewHelpers.verifyNotificationShowing(notificationSpy, "Studio's having trouble saving your work");
