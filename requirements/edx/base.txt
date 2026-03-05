@@ -474,7 +474,7 @@ edx-drf-extensions==10.6.0
     #   edxval
     #   enterprise-integrated-channels
     #   openedx-learning
-edx-enterprise==6.5.0
+edx-enterprise==6.6.7
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
