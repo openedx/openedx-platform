@@ -192,7 +192,7 @@ def library_block_deleted(**kwargs) -> None:
 @only_if_meilisearch_enabled
 def content_library_created_handler(**kwargs) -> None:
     """
-    Create the index for the content library
+    Create the index and SearchAccess for the content library
     """
     content_library_data = kwargs.get("content_library", None)
     if not content_library_data or not isinstance(content_library_data, ContentLibraryData):  # pragma: no cover
@@ -200,6 +200,10 @@ def content_library_created_handler(**kwargs) -> None:
         return
     library_key = content_library_data.library_key
 
+    # Create SearchAccess record immediately so course creators can search this library
+    # right after creation. Without this, the JWT token won't include the new library's
+    # access_id until it's added by the document indexing process or the page is refreshed.
+    SearchAccess.objects.get_or_create(context_key=library_key)
     update_content_library_index_docs.apply(args=[str(library_key), True])
 
 

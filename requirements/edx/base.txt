@@ -554,7 +554,7 @@ edx-toggles==5.4.1
     #   event-tracking
     #   ora2
     #   xblocks-contrib
-edx-when==3.1.0
+edx-when==3.2.1
     # via
     #   -r requirements/edx/kernel.in
     #   edx-proctoring

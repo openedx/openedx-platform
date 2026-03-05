@@ -861,7 +861,7 @@ edx-toggles==5.4.1
     #   event-tracking
     #   ora2
     #   xblocks-contrib
-edx-when==3.1.0
+edx-when==3.2.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
