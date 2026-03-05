@@ -7,18 +7,6 @@ function($, sinon, AjaxHelpers, Squire) {
     describe("Asset view", function() {
         var requests, xhrFactory;
 
-        beforeEach(function() {
-            xhrFactory = sinon.useFakeXMLHttpRequest();
-            requests = [];
-            requests.currentIndex = 0;
-            requests.restore = function() { xhrFactory.restore(); };
-            xhrFactory.onCreate = function(req) { requests.push(req); };
-        });
-
-        afterEach(function() {
-            requests.restore();
-        });
-
         beforeEach(function(done) {
             setFixtures($("<script>", {id: "asset-tpl", type: "text/template"}).text(assetTpl));
             appendSetFixtures(sandbox({id: "page-prompt"}));
@@ -68,7 +56,16 @@ function($, sinon, AjaxHelpers, Squire) {
             });
         });
 
+        beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
+        });
+
         afterEach(function() {
+            requests.restore();
             this.injector.clean();
             this.injector.remove();
         });
@@ -163,14 +160,6 @@ function($, sinon, AjaxHelpers, Squire) {
     describe("Assets view", function() {
         var requests, xhrFactory;
 
-        beforeEach(function() {
-            xhrFactory = sinon.useFakeXMLHttpRequest();
-            requests = [];
-            requests.currentIndex = 0;
-            requests.restore = function() { xhrFactory.restore(); };
-            xhrFactory.onCreate = function(req) { requests.push(req); };
-        });
-
         beforeEach(function(done) {
             setFixtures($("<script>", {id: "asset-library-tpl", type: "text/template"}).text(assetLibraryTpl));
             appendSetFixtures($("<script>", {id: "asset-tpl", type: "text/template"}).text(assetTpl));
@@ -231,6 +220,14 @@ function($, sinon, AjaxHelpers, Squire) {
             });
 
             return $.ajax();
+        });
+
+        beforeEach(function() {
+            xhrFactory = sinon.useFakeXMLHttpRequest();
+            requests = [];
+            requests.currentIndex = 0;
+            requests.restore = function() { xhrFactory.restore(); };
+            xhrFactory.onCreate = function(req) { requests.push(req); };
         });
 
         afterEach(function() {
