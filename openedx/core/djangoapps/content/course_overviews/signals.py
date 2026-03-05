@@ -58,15 +58,15 @@ def _listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable
         # Presumably this is a newly-created course. Create the CourseRun.
         course_run = catalog_api.create_course_run_for_modulestore_course_with(
             course_key=course_key,
-            display_name=updated_course_overview.display_name,
+            title=updated_course_overview.display_name,
             language_short=updated_course_overview.language,
         )
 
     # Keep the CourseRun up to date as the course is edited:
-    if updated_course_overview.display_name != course_run.display_name:
-        catalog_api.sync_course_run_details(course_key, display_name=updated_course_overview.display_name)
-        # If this course is the only run in the CatalogCourse, should we update the display_name of
-        # the CatalogCourse to match the run's new name? Currently the only way to edit the name of
+    if updated_course_overview.display_name != course_run.title:
+        catalog_api.sync_course_run_details(course_key, title=updated_course_overview.display_name)
+        # If this course is the only run in the CatalogCourse, should we update the title of
+        # the CatalogCourse to match the run's new title? Currently the only way to edit the name of
         # a CatalogCourse is via the Django admin. But it's also not used anywhere yet.
 
     if (

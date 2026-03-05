@@ -36,7 +36,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         course_key = course.location.context_key
 
         run = catalog_api.get_course_run(course_key)
-        assert run.display_name == "Intro to Testing"
+        assert run.title == "Intro to Testing"
         assert run.course_key == course_key
         assert run.catalog_course.course_code == course_key.course
         assert run.catalog_course.org_code == course_key.org
@@ -51,28 +51,28 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         the language field of the course run. (Because authors necessarily
         create a new course with the default language then edit it to have the
         correct language that they actually intended to use for that [catalog]
-        course.) This is in contrast with display_name, which can actually be
-        set before creating a course.
+        course.) This is in contrast with display_name (title), which can
+        actually be set before creating a course.
         """
         # Create a course
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id = course.location.context_key
         run = catalog_api.get_course_run(course_id)
-        assert run.display_name == "Intro to Testing"
+        assert run.title == "Intro to Testing"
         assert run.catalog_course.language_short == "en"
 
-        # Update the course's display_name and language:
+        # Update the course's title and language:
         course.language = "es"
         course.display_name = "Introducción a las pruebas"
         self.store.update_item(course, ModuleStoreEnum.UserID.test)
 
         # Check if the catalog data is updated:
         run.refresh_from_db()
-        assert run.display_name == "Introducción a las pruebas"
+        assert run.title == "Introducción a las pruebas"
         assert run.catalog_course.language_short == "es"
-        # Note: for now we don't update the display_name of the catalog course after it has been created.
+        # Note: for now we don't update the title of the catalog course after it has been created.
         # We _could_ decide to sync the name from run -> catalog course if there is only one run.
-        assert run.catalog_course.display_name == "Intro to Testing"
+        assert run.catalog_course.title == "Intro to Testing"
 
     def test_courserun_of_many_sync(self) -> None:
         """
@@ -87,7 +87,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         course = CourseFactory.create(display_name="Intro to Testing", emit_signals=True)
         course_id = course.location.context_key
         run = catalog_api.get_course_run(course_id)
-        assert run.display_name == "Intro to Testing"
+        assert run.title == "Intro to Testing"
         assert run.catalog_course.language_short == "en"
 
         # re-run the course:
@@ -101,7 +101,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
             background=False,
         )
 
-        # Update the re-run's display_name and language:
+        # Update the re-run's title (display_name) and language:
         new_course = self.store.get_course(new_run_course_id)
         new_course.language = "es"
         new_course.display_name = "Introducción a las pruebas"
@@ -110,11 +110,11 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
         # Check if the catalog data is updated correctly.
         # The original CourseRun object should be unchanged:
         run.refresh_from_db()
-        assert run.display_name == "Intro to Testing"
+        assert run.title == "Intro to Testing"
         assert run.catalog_course.language_short == "en"
         # The new CourseRun object should be created:
         new_run = catalog_api.get_course_run(new_run_course_id)
-        assert new_run.display_name == "Introducción a las pruebas"
+        assert new_run.title == "Introducción a las pruebas"
         # Changing the language of the second run doesn't affect the lanugage of the overall catalog course (since the
         # first run is still in English)
         assert new_run.catalog_course.language_short == "en"
@@ -151,7 +151,7 @@ class CourseOverviewSyncTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase):
 
         # run2 should still exist:
         run2.refresh_from_db()
-        assert run2.catalog_course.display_name == "Intro to Testing"  # The catalog course still exists and works
+        assert run2.catalog_course.title == "Intro to Testing"  # The catalog course still exists and works
 
         # delete run 2:
         self.store.delete_course(course_id2, ModuleStoreEnum.UserID.test)

@@ -19,7 +19,7 @@ NORMALIZE_LANGUAGE_CODES = {
 }
 
 
-def backfill_openedx_catalog(apps, schema_editor):
+def backfill_openedx_catalog(apps, schema_editor) -> None:
     """
     Populate the new CourseRun and CatalogCourse models.
     """
@@ -63,7 +63,7 @@ def backfill_openedx_catalog(apps, schema_editor):
             course_overview = CourseOverview.objects.get(id=course_idx.course_id)
         except CourseOverview.DoesNotExist:
             course_overview = None  # Course exists in modulestore but details aren't cached into CourseOverview yet
-        display_name: str = (course_overview.display_name if course_overview else None) or course_code
+        title: str = (course_overview.display_name if course_overview else None) or course_code
 
         # Determine the course language.
         # Note that in Studio, the options for course language generally came from the ALL_LANGUAGES setting, which is
@@ -93,9 +93,9 @@ def backfill_openedx_catalog(apps, schema_editor):
             org_id=org_data["id"],
             course_code=course_code,
             defaults={
-                # The default display_name for the catalog course will be the same name as the newest run, since we
-                # iterate over "all_course_runs" in "-pk" order (should be same as reverse chronological)
-                "display_name": display_name,
+                # The default title for the catalog course will be the same name as the newest run, since we iterate
+                # over "all_course_runs" in "-pk" order (should be same as reverse chronological)
+                "title": title,
                 "language": language,
             },
         )
@@ -114,7 +114,7 @@ def backfill_openedx_catalog(apps, schema_editor):
             catalog_course=cc,
             run_code=run_code,
             course_key=course_idx.course_id,
-            defaults={"display_name": display_name},
+            defaults={"title": title},
         )
 
         # Correct the "created" timestamp. Since it has auto_now_add=True, we can't set its value except using update()
