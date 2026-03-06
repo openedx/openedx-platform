@@ -1408,6 +1408,21 @@ class TestAccountRetirementPost(RetirementTestCase):
         fake_completed_retirement(self.test_user)
         self.post_and_assert_status(data)
 
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.USER_RETIRE_LMS_CRITICAL')
+    def test_retirement_sends_critical_signal_with_retirement_data(self, mock_signal):
+        """
+        USER_RETIRE_LMS_CRITICAL is sent with retired_username and retired_email kwargs.
+        """
+        data = {'username': self.original_username}
+        self.post_and_assert_status(data)
+
+        mock_signal.send.assert_called_once_with(
+            sender=mock_signal.send.call_args[1]['sender'],
+            user=mock_signal.send.call_args[1]['user'],
+            retired_username=self.retired_username,
+            retired_email=self.retired_email,
+        )
+
     def test_deletes_pii_from_user_profile(self):
         for model_field, value_to_assign in USER_PROFILE_PII.items():
             if value_to_assign == '':
