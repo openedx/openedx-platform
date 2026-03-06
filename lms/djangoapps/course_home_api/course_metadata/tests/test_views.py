@@ -7,6 +7,7 @@ from unittest.mock import patch
 import ddt
 from django.db import transaction
 from django.urls import reverse
+from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -117,6 +118,42 @@ class CourseHomeMetadataTests(BaseCourseHomeTests):
                 celebrations = response.json()['celebrations']
                 assert celebrations['streak_length_to_celebrate'] == 3
                 assert celebrations['streak_discount_enabled'] is True
+
+    @override_settings(COURSE_ABOUT_VISIBILITY_PERMISSION='see_about_page')
+    def test_catalog_visibility_none_returns_403(self):
+        """
+        Test that a non-staff user gets a 403 response with a meaningful error
+        message when accessing a course with catalog_visibility='none'.
+        """
+        from lms.djangoapps.courseware.access_response import CatalogVisibilityError
+        from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
+        error = CatalogVisibilityError()
+        exc = CourseAccessRedirect(reverse('dashboard'), error)
+        url = reverse('course-home:course-metadata', args=[self.course.id])
+        # We mock course_detail to raise CourseAccessRedirect with a
+        # CatalogVisibilityError.  We also mock set_rollback to prevent
+        # DRF from marking the test's transaction for rollback, which
+        # would cause TransactionManagementError in session middleware.
+        with patch(
+            'lms.djangoapps.course_home_api.course_metadata.views.course_detail',
+            side_effect=exc,
+        ), patch('rest_framework.views.set_rollback'):
+            response = self.client.get(url)
+        assert response.status_code == 403
+        response_data = response.json()
+        assert 'not currently accessible' in response_data['detail']
+
+    @override_settings(COURSE_ABOUT_VISIBILITY_PERMISSION='see_about_page')
+    def test_catalog_visibility_none_staff_gets_200(self):
+        """
+        Test that a staff user can still access a course with catalog_visibility='none',
+        even when COURSE_ABOUT_VISIBILITY_PERMISSION='see_about_page'.
+        Staff bypasses catalog visibility checks.
+        """
+        self.switch_to_staff()
+        url = reverse('course-home:course-metadata', args=[self.course.id])
+        response = self.client.get(url)
+        assert response.status_code == 200
 
     @ddt.data(
         # Who has access to MFE courseware?

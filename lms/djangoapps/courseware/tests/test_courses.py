@@ -42,6 +42,7 @@ from lms.djangoapps.courseware.courses import (
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.courses import course_image_url
 from common.djangoapps.student.tests.factories import UserFactory
@@ -86,6 +87,23 @@ class CoursesTest(ModuleStoreTestCase):
         assert str(error.value) == 'Course not found.'
         assert error.value.access_response.error_code == 'not_visible_to_user'
         assert not error.value.access_response.has_access
+
+    @ddt.data(GET_COURSE_WITH_ACCESS, GET_COURSE_OVERVIEW_WITH_ACCESS)
+    def test_get_course_func_with_catalog_visibility_error(self, course_access_func_name):
+        """
+        Test that accessing a course with catalog_visibility='none' via
+        'see_about_page' action raises CourseAccessRedirect with a
+        CatalogVisibilityError, not a generic CoursewareAccessException.
+        """
+        course_access_func = self.COURSE_ACCESS_FUNCS[course_access_func_name]
+        user = UserFactory.create()
+        course = CourseFactory.create(catalog_visibility='none', emit_signals=True)
+
+        with pytest.raises(CourseAccessRedirect) as error:
+            course_access_func(user, 'see_about_page', course.id)
+        assert error.value.access_error is not None
+        assert error.value.access_error.error_code == 'not_visible_in_catalog'
+        assert not error.value.access_error.has_access
 
     @ddt.data(
         (GET_COURSE_WITH_ACCESS, 1),

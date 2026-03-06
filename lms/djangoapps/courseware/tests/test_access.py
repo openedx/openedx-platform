@@ -682,6 +682,47 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         assert access._has_access_course(staff, 'see_in_catalog', course)
         assert access._has_access_course(staff, 'see_about_page', course)
 
+    def test__catalog_visibility_returns_typed_error(self):
+        """
+        Tests that when catalog_visibility is 'none', the access response
+        for non-staff users is a CatalogVisibilityError (not a bare ACCESS_DENIED),
+        so downstream handlers can provide a meaningful error message.
+        """
+        user = UserFactory.create()
+        course_id = CourseLocator('edX', 'test', '2012_Fall')
+        staff = StaffFactory.create(course_key=course_id)
+
+        course = Mock(
+            id=course_id,
+            catalog_visibility=CATALOG_VISIBILITY_NONE
+        )
+
+        # Non-staff user should get CatalogVisibilityError
+        see_in_catalog_response = access._has_access_course(user, 'see_in_catalog', course)
+        assert not see_in_catalog_response
+        assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
+        assert see_in_catalog_response.error_code == 'not_visible_in_catalog'
+
+        see_about_page_response = access._has_access_course(user, 'see_about_page', course)
+        assert not see_about_page_response
+        assert isinstance(see_about_page_response, access_response.CatalogVisibilityError)
+        assert see_about_page_response.error_code == 'not_visible_in_catalog'
+
+        # Staff user should still get access
+        assert access._has_access_course(staff, 'see_in_catalog', course)
+        assert access._has_access_course(staff, 'see_about_page', course)
+
+        # When visibility is 'about', see_in_catalog should return CatalogVisibilityError
+        # but see_about_page should grant access
+        course_about = Mock(
+            id=course_id,
+            catalog_visibility=CATALOG_VISIBILITY_ABOUT
+        )
+        see_in_catalog_response = access._has_access_course(user, 'see_in_catalog', course_about)
+        assert not see_in_catalog_response
+        assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
+        assert access._has_access_course(user, 'see_about_page', course_about)
+
     @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     @override_settings(MILESTONES_APP=True)
     def test_access_on_course_with_pre_requisites(self):
