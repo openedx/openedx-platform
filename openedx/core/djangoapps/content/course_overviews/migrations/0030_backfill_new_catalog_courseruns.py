@@ -23,19 +23,17 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
     """
     Populate the new CourseRun and CatalogCourse models.
     """
-    # CourseOverview is a cache model derived from modulestore; modulestore is the source of truth for courses, so we'll
-    # use it to get the list of "all courses on the system" to populate the new CourseRun and CatalogCourse models.
-    CourseIndex = apps.get_model("split_modulestore_django", "SplitModulestoreCourseIndex")
     CourseOverview = apps.get_model("course_overviews", "CourseOverview")
     CatalogCourse = apps.get_model("openedx_catalog", "CatalogCourse")
     CourseRun = apps.get_model("openedx_catalog", "CourseRun")
 
     created_catalog_course_ids: set[int] = set()
-    all_course_runs = CourseIndex.objects.filter(base_store="mongodb", library_version="").order_by("-pk")
-    for course_idx in all_course_runs:
-        org_code: str = course_idx.course_id.org
-        course_code: str = course_idx.course_id.course
-        run_code: str = course_idx.course_id.run
+    all_course_runs = CourseOverview.objects.order_by("-created")
+    for course_overview in all_course_runs:
+        course_key = course_overview.id
+        org_code: str = course_key.org
+        course_code: str = course_key.course
+        run_code: str = course_key.run
 
         # Ensure that the Organization exists.
         try:
@@ -45,7 +43,7 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
             # and if auto-create is disabled (it's enabled by default), this will raise InvalidOrganizationException. It
             # would be up to the operator to decide how they want to resolve that.
             raise ValueError(
-                f'The organization short code "{org_code}" exists in modulestore ({course_idx.course_id}) but '
+                f'The organization short code "{org_code}" exists in modulestore ({course_key}) but '
                 "not the Organizations table, and auto-creating organizations is disabled. You can resolve this by "
                 "creating the Organization manually (e.g. from the Django admin) or turning on auto-creation. "
                 "You can set active=False to prevent this Organization from being used other than for historical data. "
@@ -54,13 +52,13 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
             # On most installations, the 'short_name' database column is case insensitive (unfortunately)
             log.warning(
                 'The course with ID "%s" does not match its Organization.short_name "%s"',
-                course_idx.course_id,
+                course_key,
                 org_data["short_name"],
             )
 
         # Fetch the CourseOverview if it exists
         try:
-            course_overview = CourseOverview.objects.get(id=course_idx.course_id)
+            course_overview = CourseOverview.objects.get(id=course_key)
         except CourseOverview.DoesNotExist:
             course_overview = None  # Course exists in modulestore but details aren't cached into CourseOverview yet
         title: str = (course_overview.display_name if course_overview else None) or course_code
@@ -82,7 +80,7 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
                 # This seems like an invalid value; revert to the default:
                 log.warning(
                     'The course with ID "%s" has invalid language "%s" - using default language "%s" instead.',
-                    course_idx.course_id,
+                    course_key,
                     language,
                     settings.LANGUAGE_CODE,
                 )
@@ -94,7 +92,7 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
             course_code=course_code,
             defaults={
                 # The default title for the catalog course will be the same name as the newest run, since we iterate
-                # over "all_course_runs" in "-pk" order (should be same as reverse chronological)
+                # over "all_course_runs" in "-created" order.
                 "title": title,
                 "language": language,
             },
@@ -104,7 +102,7 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
 
         if cc.course_code != course_code:
             raise ValueError(
-                f"The course {course_idx.course_id} exists in modulestore with a different capitalization of its "
+                f"The course {course_key} exists in modulestore with a different capitalization of its "
                 f'course code compared to other instances of the same run ("{course_code}" vs "{cc.course_code}"). '
                 "This really should not happen. To fix it, delete the inconsistent course runs (!). "
             )
@@ -113,7 +111,7 @@ def backfill_openedx_catalog(apps, schema_editor) -> None:
         new_run, run_created = CourseRun.objects.get_or_create(
             catalog_course=cc,
             run_code=run_code,
-            course_key=course_idx.course_id,
+            course_key=course_key,
             defaults={"title": title},
         )
 
