@@ -111,7 +111,7 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
 
         url = reverse('about_course', args=[str(self.course_without_about.id)])
         resp = self.client.get(url)
-        assert resp.status_code == 404
+        self.assertRedirects(resp, reverse('dashboard'), fetch_redirect_response=False)
 
     @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_logged_in_marketing(self):

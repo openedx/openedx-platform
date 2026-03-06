@@ -88,9 +88,10 @@ class CourseHomeMetadataView(RetrieveAPIView):
         try:
             course = course_detail(request, request.user.username, course_key)
         except CourseAccessRedirect as e:
+            error = e.access_error
             raise PermissionDenied(
-                detail=e.access_error.user_message if e.access_error is not None else 'You do not have access to this course.',
-                code=e.access_error.error_code if e.access_error is not None else None,
+                detail=error.user_message if error is not None else 'You do not have access to this course.',
+                code=error.error_code if error is not None else None,
             ) from e
 
         # We must compute course load access *before* setting up masquerading,
