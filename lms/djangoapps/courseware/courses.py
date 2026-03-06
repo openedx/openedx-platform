@@ -30,10 +30,11 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.access_response import (
     AuthenticationRequiredAccessError,
+    CatalogVisibilityError,
     EnrollmentRequiredAccessError,
     MilestoneAccessError,
     OldMongoAccessError,
-    StartDateError
+    StartDateError,
 )
 from lms.djangoapps.courseware.access_utils import check_authentication, check_data_sharing_consent, check_enrollment, \
     check_correct_active_enterprise_customer, is_priority_access_error
@@ -287,6 +288,12 @@ def check_course_access_with_redirect(
         # Redirect if user must be authenticated to view the content
         if isinstance(access_response, AuthenticationRequiredAccessError):
             raise CourseAccessRedirect(reverse('about_course', args=[str(course.id)]))
+
+        # Redirect if the course catalog visibility prevents access
+        if isinstance(access_response, CatalogVisibilityError):
+            raise CourseAccessRedirect('{dashboard_url}'.format(
+                dashboard_url=reverse('dashboard'),
+            ), access_response)
 
         # Redirect if the user must answer a survey before entering the course.
         if isinstance(access_response, SurveyRequiredAccessError):

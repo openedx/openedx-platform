@@ -412,10 +412,12 @@ def _has_access_course(user, action, courselike):
         In this case we use the catalog_visibility property on the course block
         but also allow course staff to see this.
         """
-        return (
-            _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
-            or _has_staff_access_to_block(user, courselike, courselike.id)
-        )
+        catalog_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
+        if catalog_response:
+            return ACCESS_GRANTED
+        if _has_staff_access_to_block(user, courselike, courselike.id):
+            return ACCESS_GRANTED
+        return catalog_response
 
     @function_trace('can_see_about_page')
     def can_see_about_page():
@@ -424,11 +426,17 @@ def _has_access_course(user, action, courselike):
         In this case we use the catalog_visibility property on the course block
         but also allow course staff to see this.
         """
-        return (
-            _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
-            or _has_catalog_visibility(courselike, CATALOG_VISIBILITY_ABOUT)
-            or _has_staff_access_to_block(user, courselike, courselike.id)
-        )
+        both_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
+        if both_response:
+            return ACCESS_GRANTED
+        about_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_ABOUT)
+        if about_response:
+            return ACCESS_GRANTED
+        if _has_staff_access_to_block(user, courselike, courselike.id):
+            return ACCESS_GRANTED
+        # Return the typed CatalogVisibilityError so downstream handlers
+        # can provide a meaningful error message instead of a generic 404.
+        return both_response
 
     checkers = {
         'load': can_load,
@@ -876,7 +884,8 @@ def _has_catalog_visibility(course, visibility_type):
     """
     Returns whether the given course has the given visibility type
     """
-    return ACCESS_GRANTED if course.catalog_visibility == visibility_type else ACCESS_DENIED
+    from lms.djangoapps.courseware.access_response import CatalogVisibilityError
+    return ACCESS_GRANTED if course.catalog_visibility == visibility_type else CatalogVisibilityError()
 
 
 def _is_block_mobile_available(block):

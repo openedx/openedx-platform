@@ -5,6 +5,7 @@ General view for the Course Home that contains metadata every page needs.
 from django.db import transaction
 from django.utils.decorators import method_decorator
 from opaque_keys.edx.keys import CourseKey
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.response import Response
 
@@ -24,6 +25,7 @@ from lms.djangoapps.course_home_api.course_metadata.serializers import CourseHom
 from lms.djangoapps.courseware.access import has_access, has_cms_access
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import check_course_access
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 
@@ -83,7 +85,13 @@ class CourseHomeMetadataView(RetrieveAPIView):
         original_user_is_global_staff = self.request.user.is_staff
         original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
 
-        course = course_detail(request, request.user.username, course_key)
+        try:
+            course = course_detail(request, request.user.username, course_key)
+        except CourseAccessRedirect as e:
+            raise PermissionDenied(
+                detail=e.access_error.user_message if e.access_error is not None else 'You do not have access to this course.',
+                code=e.access_error.error_code if e.access_error is not None else None,
+            ) from e
 
         # We must compute course load access *before* setting up masquerading,
         # else course staff (who are not enrolled) will not be able view
