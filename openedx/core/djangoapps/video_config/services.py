@@ -29,6 +29,7 @@ from openedx.core.djangoapps.content_libraries.api import (
     add_library_block_static_asset_file,
     delete_library_block_static_asset_file,
 )
+from openedx.core.djangoapps.video_config.sharing_sites import sharing_sites_info_for_video
 from openedx.core.djangoapps.video_config.transcripts_utils import (
     Transcript,
     clean_video_id,
@@ -93,7 +94,6 @@ class VideoConfigService:
 
         organization = get_course_organization(course_key)
 
-        from openedx.core.djangoapps.video_config.sharing_sites import sharing_sites_info_for_video
         sharing_sites_info = sharing_sites_info_for_video(
             public_video_url,
             organization=organization
