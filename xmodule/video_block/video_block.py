@@ -1196,3 +1196,6 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+def get_built_in_video_block_class():
+    return _BuiltInVideoBlock

@@ -35,12 +35,17 @@ from xblock.fields import ScopeIds
 
 from xmodule.tests import get_test_descriptor_system
 from xmodule.validation import StudioValidationMessage
-from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, VideoBlock, create_youtube_string
+from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, create_youtube_string, get_built_in_video_block_class
 from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
 from xblock.core import XBlockAside
 from xmodule.modulestore.tests.test_asides import AsideTestType
 
 from .test_import import DummyModuleStoreRuntime
+
+# Hardcoded to use the built-in video block for testing as these tests have been
+# moved to the xblocks_contrib package. This class/tests will be removed in the future
+# when we will be removing the built-in video block from the codebase.
+VideoBlock = get_built_in_video_block_class()
 
 SRT_FILEDATA = '''
 0
@@ -319,7 +324,7 @@ class VideoBlockImportTestCase(TestCase):
         })
 
     @XBlockAside.register_temp_plugin(AsideTestType, "test_aside")
-    @patch('xmodule.video_block.video_block.VideoBlock.load_file')
+    @patch(f'{VideoBlock.__module__}.{VideoBlock.__name__}.load_file')
     @patch('xmodule.video_block.video_block.is_pointer_tag')
     @ddt.data(True, False)
     def test_parse_xml_with_asides(self, video_xml_has_aside, mock_is_pointer_tag, mock_load_file):
