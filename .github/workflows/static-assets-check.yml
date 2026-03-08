@@ -15,7 +15,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         python-version:
-          - "3.11"
+          - "3.12"
         node-version: [20]
         npm-version: [10.7.x]
         mongo-version:
