@@ -54,14 +54,14 @@ edx-enterprise==6.6.8
 libsass==0.10.0
 
 # Date: 2024-07-16
-# We need to upgrade the version of elasticsearch to atleast 7.15 before we can upgrade to Numpy 2.0.0
+# We need to upgrade the version of elasticsearch to at least 7.15 before we can upgrade to Numpy 2.0.0
 # Otherwise we see a failure while running the following command:
 # export DJANGO_SETTINGS_MODULE=cms.envs.test; python manage.py cms check_reserved_keywords --override_file db_keyword_overrides.yml --report_path reports/reserved_keywords --report_file cms_reserved_keyword_report.csv
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35126
 numpy<2.0.0
 
 # Date: 2023-09-18
-# Library is still in active development. Minor verisons (0.x, 0.x+1) may have
+# Library is still in active development. Minor versions (0.x, 0.x+1) may have
 # breaking changes which openedx-core devs want to roll out manually. New patch versions
 # are OK to accept automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
