@@ -400,7 +400,68 @@ class AccountViewSet(ViewSet):
 
     def retrieve(self, request, username):
         """
-        GET /api/user/v1/accounts/{username}/
+        Retrieve a single detailed user object
+
+        **Example Requests**
+
+            GET /api/user/v1/accounts/{username}/
+
+        **Response**
+
+        If no user exists with the specified username, or email, an HTTP 404 "Not Found" response is returned.
+
+        If the user makes the request for her own account, or makes a request for another account and has "is_staff" access, an HTTP 200 "OK" response is returned. The response contains the following values.
+
+        * `id`: numerical lms user id in db
+        * `bio`: null or textual representation of user biographical information ("about me").
+        * `country`: An ISO 3166 country code or null.
+        * `date_joined`: The date the account was created, in the string format provided by datetime. For example, "2014-08-26T17:52:11Z".
+        * `last_login`: The latest date the user logged in, in the string datetime format.
+        * `email`: Email address for the user. New email addresses must be confirmed via a confirmation email, so GET does not reflect the change until the address has been confirmed.
+        * `secondary_email`: A secondary email address for the user. Unlike the email field, GET will reflect the latest update to this field even if changes have yet to be confirmed.
+        * `verified_name`: Approved verified name of the learner present in name affirmation plugin
+        * `extended_profile`: A list of objects with the keys `field_name` and `field_value`, returning any populated `extended_profile_fields` configured in the **Site Configuration**
+        * `gender`: One of the following values:
+            * null
+            * "f"
+            * "m"
+            * "o"
+        * `goals`: The textual representation of the user's goals, or null.
+        * `is_active`: Boolean representation of whether a user is active.
+        * `language`: The user's preferred language, or null.
+        * `language_proficiencies`: Array of language preferences. Each preference is a JSON object with the following keys:
+            * "code": string ISO 639-1 language code e.g. "en".
+        * `level_of_education`: One of the following values:
+            * "p": PhD or Doctorate
+            * "m": Master's or professional degree
+            * "b": Bachelor's degree
+            * "a": Associate's degree
+            * "hs": Secondary/high school
+            * "jhs": Junior secondary/junior high/middle school
+            * "el": Elementary/primary school
+            * "none": None
+            * "o": Other
+            * null: The user did not enter a value
+        * `mailing_address`: The textual representation of the user's mailing address, or null.
+        * `name`: The full name of the user.
+        * `profile_image`: A JSON representation of a user's profile image information. This representation has the following keys.
+            * "has_image": Boolean indicating whether the user has a profile image.
+            * "image_url_*": Absolute URL to various sizes of a user's profile image, where '*' matches a representation of the corresponding image size, such as 'small', 'medium', 'large', and 'full'. These are configurable via PROFILE_IMAGE_SIZES_MAP.
+        * `requires_parental_consent`: True if the user is a minor requiring parental consent.
+        * `social_links`: Array of social links, sorted alphabetically by "platform". Each preference is a JSON object with the following keys:
+            * "platform": A particular social platform, ex: 'facebook'
+            * "social_link": The link to the user's profile on the particular platform
+        * `username`: The username associated with the account.
+        * `year_of_birth`: The year the user was born, as an integer, or null.
+        * `account_privacy`: The user's setting for sharing her personal profile. Possible values are "all_users", "private", or "custom".  If "custom", the user has selectively chosen a subset of shareable fields to make visible to others via the User Preferences API.
+        * `phone_number`: The phone number for the user. String of numbers with an optional `+` sign at the start.
+        * `pending_name_change`: If the user has an active name change request, returns the requested name.
+
+        For all text fields, plain text instead of HTML is supported. The data is stored exactly as specified. Clients must HTML escape rendered values to avoid script injections.
+
+        If a user who does not have "is_staff" access requests account information for a different user, only a subset of these fields is returned. The returned fields depend on the `ACCOUNT_VISIBILITY_CONFIGURATION` configuration setting and the visibility preference of the user for whom data is requested.
+
+        A user can view which account fields they have shared with other users by requesting their own username and providing the "view=shared" URL parameter.
         """
         try:
             account_settings = get_account_settings(request, [username], view=request.query_params.get("view"))
