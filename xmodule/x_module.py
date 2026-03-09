@@ -311,17 +311,31 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
 
     @property
     def course_id(self):
-        """Return the course key for this block."""
+        """
+        Return the key of the block to which this Course belongs.
+
+        New code should always used `context_key`, which is the key of the Learning Context to which
+        this block belongs. "Learning Context" is a generalized notion of Courses which is inclusive
+        of Content Libraries, et al.
+        """
         return self.context_key
 
     @property
     def category(self):
-        """Return the block type/category."""
-        return self.usage_key.block_type
+        """
+        Return the block type, formerly known as "category".
+
+        Preferred forms for new code: `self.usage_key.block_type` or `self.scope_ids.blocks_type`
+        """
+        return self.scope_ids.block_type
 
     @property
     def location(self):
-        """Return the usage key identifying this block instance."""
+        """
+        Return the usage key identifying this block instance, formerly called the "location".
+
+        `self.usage_key` is always preferred in new code.
+        """
         return self.usage_key
 
     @location.setter
@@ -334,7 +348,11 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
 
     @property
     def url_name(self):
-        """Return the URL-friendly name for this block."""
+        """
+        Return the URL-friendly name for this block.
+
+        Preferred forms for new code: `self.usage_key.block_id`
+        """
         return self.usage_key.block_id
 
     @property
