@@ -671,7 +671,7 @@ enmerkar==0.7.1
     #   enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via -r requirements/edx/base.txt
-enterprise-integrated-channels==0.1.46
+enterprise-integrated-channels==0.1.49
     # via -r requirements/edx/base.txt
 event-tracking==3.3.0
     # via
@@ -884,7 +884,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==9.14.4
+lti-consumer-xblock==9.14.5
     # via -r requirements/edx/base.txt
 lxml[html-clean]==5.3.2
     # via
@@ -1000,7 +1000,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==0.22.0
+openedx-authz==0.23.0
     # via -r requirements/edx/base.txt
 openedx-calc==4.0.3
     # via

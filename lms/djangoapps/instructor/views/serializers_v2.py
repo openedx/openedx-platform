@@ -5,6 +5,8 @@ These serializers handle data validation and business logic for instructor dashb
 Following REST best practices, serializers encapsulate most of the data processing logic.
 """
 
+import logging
+
 from django.conf import settings
 from django.utils.html import escape
 from django.utils.translation import gettext as _
@@ -32,6 +34,8 @@ from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMI
 from xmodule.modulestore.django import modulestore
 
 from .tools import get_student_from_identifier, parse_datetime, DashboardError
+
+log = logging.getLogger(__name__)
 
 
 class CourseInformationSerializerV2(serializers.Serializer):
@@ -78,6 +82,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
         course = data['course']
         course_key = course.id
         mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
+
+        if not mfe_base_url:
+            log.warning('INSTRUCTOR_MICROFRONTEND_URL is not set.')
+            mfe_base_url = ''
 
         access = {
             'admin': request.user.is_staff,
