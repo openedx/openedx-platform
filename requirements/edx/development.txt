@@ -810,6 +810,7 @@ edx-organizations==7.3.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   openedx-core
 edx-proctoring==5.2.0
     # via
     #   -r requirements/edx/doc.txt

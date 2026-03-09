@@ -515,7 +515,9 @@ edx-opaque-keys[django]==3.1.0
     #   ora2
     #   xblocks-contrib
 edx-organizations==7.3.0
-    # via -r requirements/edx/kernel.in
+    # via
+    #   -r requirements/edx/kernel.in
+    #   openedx-core
 edx-proctoring==5.2.0
     # via -r requirements/edx/kernel.in
 edx-rbac==2.1.0
