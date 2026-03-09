@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import ddt
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 import pytest
 import unicodecsv
 from django.conf import settings
@@ -84,6 +85,8 @@ _TEAMS_CONFIG = TeamsConfig({
     'topics': [{'id': 'topic', 'name': 'Topic', 'description': 'A Topic'}],
 })
 USE_ON_DISK_GRADE_REPORT = 'lms.djangoapps.instructor_task.tasks_helper.grades.use_on_disk_grade_reporting'
+
+QUERY_COUNT_TABLE_IGNORELIST = AUTHZ_TABLES
 
 
 class InstructorGradeReportTestCase(TestReportMixin, InstructorTaskCourseTestCase):
@@ -411,7 +414,7 @@ class TestInstructorGradeReport(InstructorGradeReportTestCase):
 
         with patch('lms.djangoapps.instructor_task.tasks_helper.runner._get_current_task'):
             with check_mongo_calls(2):
-                with self.assertNumQueries(46):
+                with self.assertNumQueries(48, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                     CourseGradeReport.generate(None, None, course.id, {}, 'graded')
 
     def test_inactive_enrollments(self):
@@ -2215,7 +2218,7 @@ class TestCertificateGeneration(InstructorTaskModuleTestCase):
             'failed': 0,
             'skipped': 2
         }
-        with self.assertNumQueries(61):
+        with self.assertNumQueries(69, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             self.assertCertificatesGenerated(task_input, expected_results)
 
     @ddt.data(

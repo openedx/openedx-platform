@@ -6,12 +6,17 @@ Tests of student.roles
 import ddt
 from django.contrib.auth.models import Permission
 from django.test import TestCase
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
+
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx_authz.engine.enforcer import AuthzEnforcer
 
 from common.djangoapps.student.admin import CourseAccessRoleHistoryAdmin
 from common.djangoapps.student.models import CourseAccessRoleHistory, User
 from common.djangoapps.student.roles import (
+    AuthzCompatCourseAccessRole,
     CourseAccessRole,
     CourseBetaTesterRole,
     CourseInstructorRole,
@@ -32,8 +37,10 @@ from common.djangoapps.student.roles import (
 )
 from common.djangoapps.student.role_helpers import get_course_roles, has_staff_roles
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
+from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 
+@ddt.ddt
 class RolesTestCase(TestCase):
     """
     Tests of student.roles
@@ -41,8 +48,10 @@ class RolesTestCase(TestCase):
 
     def setUp(self):
         super().setUp()
+        self._seed_database_with_policies()
         self.course_key = CourseKey.from_string('course-v1:course-v1:edX+toy+2012_Fall')
         self.course_loc = self.course_key.make_usage_key('course', '2012_Fall')
+        self.course = CourseOverviewFactory.create(id=self.course_key)
         self.anonymous_user = AnonymousUserFactory()
         self.student = UserFactory()
         self.global_staff = UserFactory(is_staff=True)
@@ -50,37 +59,67 @@ class RolesTestCase(TestCase):
         self.course_instructor = InstructorFactory(course_key=self.course_key)
         self.orgs = ["Marvel", "DC"]
 
-    def test_global_staff(self):
-        assert not GlobalStaff().has_user(self.student)
-        assert not GlobalStaff().has_user(self.course_staff)
-        assert not GlobalStaff().has_user(self.course_instructor)
-        assert GlobalStaff().has_user(self.global_staff)
+    @classmethod
+    def _seed_database_with_policies(cls):
+        """Seed the database with policies from the policy file for openedx_authz tests.
 
-    def test_has_staff_roles(self):
-        assert has_staff_roles(self.global_staff, self.course_key)
-        assert has_staff_roles(self.course_staff, self.course_key)
-        assert has_staff_roles(self.course_instructor, self.course_key)
-        assert not has_staff_roles(self.student, self.course_key)
+        This simulates the one-time database seeding that would happen
+        during application deployment, separate from the runtime policy loading.
+        """
+        import pkg_resources
+        from openedx_authz.engine.utils import migrate_policy_between_enforcers
+        import casbin
 
-    def test_get_course_roles(self):
-        assert not list(get_course_roles(self.student))
-        assert not list(get_course_roles(self.global_staff))
-        assert list(get_course_roles(self.course_staff)) == [
-            CourseAccessRole(
-                user=self.course_staff,
-                course_id=self.course_key,
-                org=self.course_key.org,
-                role=CourseStaffRole.ROLE,
-            )
-        ]
-        assert list(get_course_roles(self.course_instructor)) == [
-            CourseAccessRole(
-                user=self.course_instructor,
-                course_id=self.course_key,
-                org=self.course_key.org,
-                role=CourseInstructorRole.ROLE,
-            )
-        ]
+        global_enforcer = AuthzEnforcer.get_enforcer()
+        global_enforcer.load_policy()
+        model_path = pkg_resources.resource_filename("openedx_authz.engine", "config/model.conf")
+        policy_path = pkg_resources.resource_filename("openedx_authz.engine", "config/authz.policy")
+
+        migrate_policy_between_enforcers(
+            source_enforcer=casbin.Enforcer(model_path, policy_path),
+            target_enforcer=global_enforcer,
+        )
+        global_enforcer.clear_policy()  # Clear to simulate fresh start for each test
+
+    @ddt.data(True, False)
+    def test_global_staff(self, authz_enabled):
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            assert not GlobalStaff().has_user(self.student)
+            assert not GlobalStaff().has_user(self.course_staff)
+            assert not GlobalStaff().has_user(self.course_instructor)
+            assert GlobalStaff().has_user(self.global_staff)
+
+    @ddt.data(True, False)
+    def test_has_staff_roles(self, authz_enabled):
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            assert has_staff_roles(self.global_staff, self.course_key)
+            assert has_staff_roles(self.course_staff, self.course_key)
+            assert has_staff_roles(self.course_instructor, self.course_key)
+            assert not has_staff_roles(self.student, self.course_key)
+
+    @ddt.data(True, False)
+    def test_get_course_roles(self, authz_enabled):
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            assert not list(get_course_roles(self.student))
+            assert not list(get_course_roles(self.global_staff))
+            assert list(get_course_roles(self.course_staff)) == [
+                AuthzCompatCourseAccessRole(
+                    user_id=self.course_staff.id,
+                    username=self.course_staff.username,
+                    course_id=self.course_key,
+                    org=self.course_key.org,
+                    role=CourseStaffRole.ROLE,
+                )
+            ]
+            assert list(get_course_roles(self.course_instructor)) == [
+                AuthzCompatCourseAccessRole(
+                    user_id=self.course_instructor.id,
+                    username=self.course_instructor.username,
+                    course_id=self.course_key,
+                    org=self.course_key.org,
+                    role=CourseInstructorRole.ROLE,
+                )
+            ]
 
     def test_group_name_case_sensitive(self):
         uppercase_course_id = "ORG/COURSE/NAME"
@@ -100,20 +139,22 @@ class RolesTestCase(TestCase):
         assert not CourseRole(role, lowercase_course_key).has_user(uppercase_user)
         assert CourseRole(role, uppercase_course_key).has_user(uppercase_user)
 
-    def test_course_role(self):
+    @ddt.data(True, False)
+    def test_course_role(self, authz_enabled):
         """
         Test that giving a user a course role enables access appropriately
         """
-        assert not CourseStaffRole(self.course_key).has_user(self.student), \
-            f'Student has premature access to {self.course_key}'
-        CourseStaffRole(self.course_key).add_users(self.student)
-        assert CourseStaffRole(self.course_key).has_user(self.student), \
-            f"Student doesn't have access to {str(self.course_key)}"
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            assert not CourseStaffRole(self.course_key).has_user(self.student), \
+                f'Student has premature access to {self.course_key}'
+            CourseStaffRole(self.course_key).add_users(self.student)
+            assert CourseStaffRole(self.course_key).has_user(self.student), \
+                f"Student doesn't have access to {str(self.course_key)}"
 
-        # remove access and confirm
-        CourseStaffRole(self.course_key).remove_users(self.student)
-        assert not CourseStaffRole(self.course_key).has_user(self.student), \
-            f'Student still has access to {self.course_key}'
+            # remove access and confirm
+            CourseStaffRole(self.course_key).remove_users(self.student)
+            assert not CourseStaffRole(self.course_key).has_user(self.student), \
+                f'Student still has access to {self.course_key}'
 
     def test_org_role(self):
         """
@@ -158,26 +199,30 @@ class RolesTestCase(TestCase):
         assert not CourseInstructorRole(self.course_key).has_user(self.student), \
             f"Student doesn't have access to {str(self.course_key)}"
 
-    def test_get_user_for_role(self):
+    @ddt.data(True, False)
+    def test_get_user_for_role(self, authz_enabled):
         """
         test users_for_role
         """
-        role = CourseStaffRole(self.course_key)
-        role.add_users(self.student)
-        assert len(role.users_with_role()) > 0
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            role = CourseStaffRole(self.course_key)
+            role.add_users(self.student)
+            assert len(role.users_with_role()) > 0
 
-    def test_add_users_doesnt_add_duplicate_entry(self):
+    @ddt.data(True, False)
+    def test_add_users_doesnt_add_duplicate_entry(self, authz_enabled):
         """
         Tests that calling add_users multiple times before a single call
         to remove_users does not result in the user remaining in the group.
         """
-        role = CourseStaffRole(self.course_key)
-        role.add_users(self.student)
-        assert role.has_user(self.student)
-        # Call add_users a second time, then remove just once.
-        role.add_users(self.student)
-        role.remove_users(self.student)
-        assert not role.has_user(self.student)
+        with override_waffle_flag(AUTHZ_COURSE_AUTHORING_FLAG, active=authz_enabled):
+            role = CourseStaffRole(self.course_key)
+            role.add_users(self.student)
+            assert role.has_user(self.student)
+            # Call add_users a second time, then remove just once.
+            role.add_users(self.student)
+            role.remove_users(self.student)
+            assert not role.has_user(self.student)
 
     def test_get_orgs_for_user(self):
         """

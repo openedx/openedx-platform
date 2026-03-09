@@ -1170,7 +1170,12 @@ class AccountRetirementView(ViewSet):
             UnregisteredLearnerCohortAssignments.delete_by_user_value(original_email, field="email")
 
             # This signal allows code in higher points of LMS to retire the user as necessary
-            USER_RETIRE_LMS_CRITICAL.send(sender=self.__class__, user=user)
+            USER_RETIRE_LMS_CRITICAL.send(
+                sender=self.__class__,
+                user=user,
+                retired_username=retired_username,
+                retired_email=retired_email,
+            )
 
             user.first_name = ""
             user.last_name = ""

@@ -21,7 +21,7 @@ class UnsignedBigIntAutoField(AutoField):
         elif "postgresql" in connection.settings_dict['ENGINE']:
             # Pg's bigserial is implicitly unsigned (doesn't allow negative numbers) and
             # goes 1-9.2x10^18
-            return "BIGSERIAL"
+            return "BIGINT"
         else:
             return None
 
@@ -31,6 +31,6 @@ class UnsignedBigIntAutoField(AutoField):
         elif connection.settings_dict['ENGINE'] == 'django.db.backends.sqlite3':
             return "integer"
         elif "postgresql" in connection.settings_dict['ENGINE']:
-            return "BIGSERIAL"
+            return "BIGINT"
         else:
             return None

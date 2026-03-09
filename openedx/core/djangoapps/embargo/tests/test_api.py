@@ -19,7 +19,8 @@ from django.test.utils import override_settings
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, mixed_store_config
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, skip_unless_lms
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.roles import (
     GlobalStaff, CourseRole, OrgRole,
@@ -35,6 +36,7 @@ from ..models import (
 from .. import api as embargo_api
 from ..exceptions import InvalidAccessPoint
 
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 MODULESTORE_CONFIG = mixed_store_config(settings.COMMON_TEST_DATA_ROOT, {})
 
@@ -175,10 +177,10 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
             # (restricted course, but pass all the checks)
             # This is the worst case, so it will hit all of the
             # caching code.
-            with self.assertNumQueries(3):
+            with self.assertNumQueries(5, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
-            with self.assertNumQueries(0):
+            with self.assertNumQueries(0, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 embargo_api.check_course_access(self.course.id, user=self.user, ip_addresses=['0.0.0.0'])
 
     def test_caching_no_restricted_courses(self):

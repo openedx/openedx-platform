@@ -14,7 +14,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
 )
 from openedx.core.lib.cache_utils import request_cached
 from common.djangoapps.student.roles import (
-    CourseAccessRole,
+    AuthzCompatCourseAccessRole,
     CourseBetaTesterRole,
     CourseInstructorRole,
     CourseStaffRole,
@@ -66,7 +66,7 @@ def get_role_cache(user: User) -> RoleCache:
 
 
 @request_cached()
-def get_course_roles(user: User) -> list[CourseAccessRole]:
+def get_course_roles(user: User) -> list[AuthzCompatCourseAccessRole]:
     """
     Returns a list of all course-level roles that this user has.
 

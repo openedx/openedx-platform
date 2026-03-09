@@ -4,16 +4,23 @@ adding users, removing users, and listing members
 """
 
 
-from collections import defaultdict
 import logging
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from opaque_keys.edx.django.models import CourseKeyField
+from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.locator import CourseLocator
+from openedx_authz.api import users as authz_api
+from openedx_authz.constants import roles as authz_roles
 
-from openedx.core.lib.cache_utils import get_cache
 from common.djangoapps.student.models import CourseAccessRole
+from openedx.core.lib.cache_utils import get_cache
+from openedx.core.toggles import enable_authz_course_authoring
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +32,46 @@ ACCESS_ROLES_INHERITANCE = {}
 
 # The key used to store roles for a user in the cache that do not belong to a course or do not have a course id.
 ROLE_CACHE_UNGROUPED_ROLES__KEY = 'ungrouped'
+
+
+def get_authz_role_from_legacy_role(legacy_role: str) -> str:
+    return authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.get(legacy_role, None)
+
+
+def get_legacy_role_from_authz_role(authz_role: str) -> str:
+    return next((k for k, v in authz_roles.LEGACY_COURSE_ROLE_EQUIVALENCES.items() if v == authz_role), None)
+
+
+def authz_add_role(user: User, authz_role: str, course_key: str):
+    """
+    Add a user's role in a course if not already added.
+    Args:
+        user (User): The user whose role is being changed.
+        authz_role (str): The new authorization role to assign (authz role, not legacy).
+        course_key (str): The course key where the role change is taking effect.
+    """
+    course_locator = CourseLocator.from_string(course_key)
+
+    # Check if the user is not already assigned this role for this course
+    existing_assignments = authz_api.get_user_role_assignments_in_scope(
+        user_external_key=user.username,
+        scope_external_key=course_key
+    )
+    existing_roles = [existing_role.external_key
+                      for existing_assignment in existing_assignments
+                      for existing_role in existing_assignment.roles]
+
+    if authz_role in existing_roles:
+        return
+
+    # Assign new role
+    authz_api.assign_role_to_user_in_scope(
+        user_external_key=user.username,
+        role_external_key=authz_role,
+        scope_external_key=course_key
+    )
+    legacy_role = get_legacy_role_from_authz_role(authz_role)
+    emit_course_access_role_added(user, course_locator, course_locator.org, legacy_role)
 
 
 def register_access_role(cls):
@@ -70,6 +117,43 @@ def get_role_cache_key_for_course(course_key=None):
     return str(course_key) if course_key else ROLE_CACHE_UNGROUPED_ROLES__KEY
 
 
+@dataclass(frozen=True)
+class AuthzCompatCourseAccessRole:
+    """
+    Generic data class for storing CourseAccessRole-compatible data
+    to be used inside BulkRoleCache and RoleCache.
+    This allows the cache to store both legacy and openedx-authz compatible roles
+    """
+    user_id: int
+    username: str
+    org: str
+    course_id: str  # Course key
+    role: str
+
+
+def get_authz_compat_course_access_roles_for_user(user: User) -> set[AuthzCompatCourseAccessRole]:
+    """
+    Retrieve all CourseAccessRole objects for a given user and convert them to AuthzCompatCourseAccessRole objects.
+    """
+    compat_role_assignments = set()
+    assignments = authz_api.get_user_role_assignments(user_external_key=user.username)
+    for assignment in assignments:
+        for role in assignment.roles:
+            legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
+            course_key = assignment.scope.external_key
+            parsed_key = CourseKey.from_string(course_key)
+            org = parsed_key.org
+            compat_role = AuthzCompatCourseAccessRole(
+                user_id=user.id,
+                username=user.username,
+                org=org,
+                course_id=course_key,
+                role=legacy_role
+            )
+            compat_role_assignments.add(compat_role)
+    return compat_role_assignments
+
+
 class BulkRoleCache:  # lint-amnesty, pylint: disable=missing-class-docstring
     """
     This class provides a caching mechanism for roles grouped by users and courses,
@@ -98,13 +182,29 @@ class BulkRoleCache:  # lint-amnesty, pylint: disable=missing-class-docstring
         roles_by_user = defaultdict(lambda: defaultdict(set))
         get_cache(cls.CACHE_NAMESPACE)[cls.CACHE_KEY] = roles_by_user
 
+        # Legacy roles
         for role in CourseAccessRole.objects.filter(user__in=users).select_related('user'):
             user_id = role.user.id
             course_id = get_role_cache_key_for_course(role.course_id)
 
             # Add role to the set in roles_by_user[user_id][course_id]
             user_roles_set_for_course = roles_by_user[user_id][course_id]
-            user_roles_set_for_course.add(role)
+            compat_role = AuthzCompatCourseAccessRole(
+                user_id=role.user.id,
+                username=role.user.username,
+                org=role.org,
+                course_id=role.course_id,
+                role=role.role
+            )
+            user_roles_set_for_course.add(compat_role)
+
+        # openedx-authz roles
+        for user in users:
+            compat_roles = get_authz_compat_course_access_roles_for_user(user)
+            for role in compat_roles:
+                course_id = get_role_cache_key_for_course(role.course_id)
+                user_roles_set_for_course = roles_by_user[user.id][course_id]
+                user_roles_set_for_course.add(compat_role)
 
         users_without_roles = [u for u in users if u.id not in roles_by_user]
         for user in users_without_roles:
@@ -117,7 +217,7 @@ class BulkRoleCache:  # lint-amnesty, pylint: disable=missing-class-docstring
 
 class RoleCache:
     """
-    A cache of the CourseAccessRoles held by a particular user.
+    A cache of the AuthzCompatCourseAccessRoles held by a particular user.
     Internal data structures should be accessed by getter and setter methods;
     don't use `_roles_by_course_id` or `_roles` directly.
     _roles_by_course_id: This is the data structure as saved in the RequestCache.
@@ -134,18 +234,35 @@ class RoleCache:
             self._roles_by_course_id = BulkRoleCache.get_user_roles(user)
         except KeyError:
             self._roles_by_course_id = {}
+
+            # openedx-authz compatibility implementation
+            compat_roles = get_authz_compat_course_access_roles_for_user(user)
+            for compat_role in compat_roles:
+                course_id = get_role_cache_key_for_course(compat_role.course_id)
+                if not self._roles_by_course_id.get(course_id):
+                    self._roles_by_course_id[course_id] = set()
+                self._roles_by_course_id[course_id].add(compat_role)
+
+            # legacy implementation
             roles = CourseAccessRole.objects.filter(user=user).all()
             for role in roles:
                 course_id = get_role_cache_key_for_course(role.course_id)
                 if not self._roles_by_course_id.get(course_id):
                     self._roles_by_course_id[course_id] = set()
-                self._roles_by_course_id[course_id].add(role)
+                compat_role = AuthzCompatCourseAccessRole(
+                    user_id=user.id,
+                    username=user.username,
+                    org=role.org,
+                    course_id=role.course_id,
+                    role=role.role
+                )
+                self._roles_by_course_id[course_id].add(compat_role)
         self._roles = set()
         for roles_for_course in self._roles_by_course_id.values():
             self._roles.update(roles_for_course)
 
     @staticmethod
-    def get_roles(role):
+    def get_roles(role: str) -> set[str]:
         """
         Return the roles that should have the same permissions as the specified role.
         """
@@ -269,13 +386,33 @@ class RoleBase(AccessRole):
 
         return user._roles.has_role(self._role_name, self.course_key, self.org)
 
-    def add_users(self, *users):
+    def _authz_add_users(self, users):
         """
         Add the supplied django users to this role.
+        AuthZ compatibility layer
+        """
+        role = get_authz_role_from_legacy_role(self.ROLE)
+        # silently ignores anonymous and inactive users so that any that are
+        # legit get updated.
+        for user in users:
+            if user.is_authenticated and user.is_active:
+                authz_add_role(
+                    user=user,
+                    authz_role=role,
+                    course_key=str(self.course_key),
+                )
+                if hasattr(user, '_roles'):
+                    del user._roles
+
+    def _legacy_add_users(self, users):
+        """
+        Add the supplied django users to this role.
+        legacy implementation
         """
         # silently ignores anonymous and inactive users so that any that are
         # legit get updated.
-        from common.djangoapps.student.models import CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+        from common.djangoapps.student.models import \
+            CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
         for user in users:
             if user.is_authenticated and user.is_active:
                 CourseAccessRole.objects.get_or_create(
@@ -284,9 +421,38 @@ class RoleBase(AccessRole):
                 if hasattr(user, '_roles'):
                     del user._roles
 
-    def remove_users(self, *users):
+    def add_users(self, *users):
+        """
+        Add the supplied django users to this role.
+        """
+        if enable_authz_course_authoring(self.course_key):
+            self._authz_add_users(users)
+        else:
+            self._legacy_add_users(users)
+
+    def _authz_remove_users(self, users):
         """
         Remove the supplied django users from this role.
+        AuthZ compatibility layer
+        """
+        usernames = [user.username for user in users]
+        role = get_authz_role_from_legacy_role(self.ROLE)
+        course_key_str = str(self.course_key)
+        course_locator = CourseLocator.from_string(course_key_str)
+        authz_api.batch_unassign_role_from_users(
+            users=usernames,
+            role_external_key=role,
+            scope_external_key=course_key_str
+        )
+        for user in users:
+            emit_course_access_role_removed(user, course_locator, course_locator.org, self.ROLE)
+            if hasattr(user, '_roles'):
+                del user._roles
+
+    def _legacy_remove_users(self, users):
+        """
+        Remove the supplied django users from this role.
+        legacy implementation
         """
         entries = CourseAccessRole.objects.filter(
             user__in=users, role=self._role_name, org=self.org, course_id=self.course_key
@@ -296,9 +462,33 @@ class RoleBase(AccessRole):
             if hasattr(user, '_roles'):
                 del user._roles
 
-    def users_with_role(self):
+    def remove_users(self, *users):
+        """
+        Remove the supplied django users from this role.
+        """
+        if enable_authz_course_authoring(self.course_key):
+            self._authz_remove_users(users)
+        else:
+            self._legacy_remove_users(users)
+
+    def _authz_users_with_role(self):
         """
         Return a django QuerySet for all of the users with this role
+        AuthZ compatibility layer
+        """
+        role = get_authz_role_from_legacy_role(self.ROLE)
+        users_data = authz_api.get_users_for_role_in_scope(
+            role_external_key=role,
+            scope_external_key=str(self.course_key)
+        )
+        usernames = [user_data.username for user_data in users_data]
+        entries = User.objects.filter(username__in=usernames)
+        return entries
+
+    def _legacy_users_with_role(self):
+        """
+        Return a django QuerySet for all of the users with this role
+        legacy implementation
         """
         # Org roles don't query by CourseKey, so use CourseKeyField.Empty for that query
         if self.course_key is None:
@@ -310,12 +500,63 @@ class RoleBase(AccessRole):
         )
         return entries
 
+    def users_with_role(self):
+        """
+        Return a django QuerySet for all of the users with this role
+        """
+        if enable_authz_course_authoring(self.course_key):
+            return self._authz_users_with_role()
+        else:
+            return self._legacy_users_with_role()
+
+    def _authz_get_orgs_for_user(self, user) -> list[str]:
+        """
+        Returns a list of org short names for the user with given role.
+        AuthZ compatibility layer
+        """
+        # TODO: This will be implemented on Milestone 1
+        # of the Authz for Course Authoring project
+        return []
+
+    def _legacy_get_orgs_for_user(self, user) -> list[str]:
+        """
+        Returns a list of org short names for the user with given role.
+        legacy implementation
+        """
+        return list(CourseAccessRole.objects.filter(user=user, role=self._role_name).values_list('org', flat=True))
+
     def get_orgs_for_user(self, user):
         """
         Returns a list of org short names for the user with given role.
         """
-        return CourseAccessRole.objects.filter(user=user, role=self._role_name).values_list('org', flat=True)
+        if enable_authz_course_authoring(self.course_key):
+            return self._authz_get_orgs_for_user(user)
+        else:
+            return self._legacy_get_orgs_for_user(user)
 
+    def has_org_for_user(self, user: User, org: str | None = None) -> bool:
+        """
+        Checks whether a user has a specific role within an org.
+
+        Arguments:
+            user: user to check against access to role
+            org: optional org to check against access to role,
+                if not specified, will return True if the user has access to at least one org
+        """
+        if enable_authz_course_authoring(self.course_key):
+            orgs_with_role = self.get_orgs_for_user(user)
+            if org:
+                return org in orgs_with_role
+            return len(orgs_with_role) > 0
+        else:
+            # Use ORM query directly for performance
+            filter_params = {
+                'user': user,
+                'role': self._role_name
+            }
+            if org:
+                filter_params['org'] = org
+            return CourseAccessRole.objects.filter(**filter_params).exists()
 
 class CourseRole(RoleBase):
     """
@@ -329,8 +570,24 @@ class CourseRole(RoleBase):
         super().__init__(role, course_key.org, course_key)
 
     @classmethod
-    def course_group_already_exists(self, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def _authz_course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+        # AuthZ compatibility layer
+        return len(authz_api.get_all_user_role_assignments_in_scope(scope_external_key=str(course_key))) > 0
+
+    @classmethod
+    def _legacy_course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+        # Legacy implementation
         return CourseAccessRole.objects.filter(org=course_key.org, course_id=course_key).exists()
+
+    @classmethod
+    def course_group_already_exists(cls, course_key):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+        """
+        Returns whether role assignations for a course already exist
+        """
+        if enable_authz_course_authoring(course_key):
+            return cls._authz_course_group_already_exists(course_key)
+        else:
+            return cls._legacy_course_group_already_exists(course_key)
 
     def __repr__(self):
         return f'<{self.__class__.__name__}: course_key={self.course_key}>'
@@ -519,9 +776,18 @@ class UserBasedRole:
         Grant this object's user the object's role for the supplied courses
         """
         if self.user.is_authenticated and self.user.is_active:
+            authz_role = get_authz_role_from_legacy_role(self.role)
             for course_key in course_keys:
-                entry = CourseAccessRole(user=self.user, role=self.role, course_id=course_key, org=course_key.org)
-                entry.save()
+                if enable_authz_course_authoring(course_key):
+                    # AuthZ compatibility layer
+                    authz_add_role(
+                        user=self.user,
+                        authz_role=authz_role,
+                        course_key=str(course_key),
+                    )
+                else:
+                    entry = CourseAccessRole(user=self.user, role=self.role, course_id=course_key, org=course_key.org)
+                    entry.save()
             if hasattr(self.user, '_roles'):
                 del self.user._roles
         else:
@@ -531,18 +797,102 @@ class UserBasedRole:
         """
         Remove the supplied courses from this user's configured role.
         """
+        # CourseAccessRoles for courses managed by AuthZ should already be removed, so always doing this is ok
         entries = CourseAccessRole.objects.filter(user=self.user, role=self.role, course_id__in=course_keys)
         entries.delete()
+        # Execute bulk delete on AuthZ
+        role = get_authz_role_from_legacy_role(self.role)
+        for course_key in course_keys:
+            course_key_str = str(course_key)
+            success = authz_api.unassign_role_from_user(
+                user_external_key=self.user.username,
+                role_external_key=role,
+                scope_external_key=course_key_str
+            )
+            if success:
+                course_locator = CourseLocator.from_string(course_key_str)
+                emit_course_access_role_removed(self.user, course_locator, course_locator.org, self.role)
+
         if hasattr(self.user, '_roles'):
             del self.user._roles
 
-    def courses_with_role(self):
+    def courses_with_role(self) -> set[AuthzCompatCourseAccessRole]:
         """
-        Return a django QuerySet for all of the courses with this user x (or derived from x) role. You can access
-        any of these properties on each result record:
-        * user (will be self.user--thus uninteresting)
-        * org
-        * course_id
-        * role (will be self.role--thus uninteresting)
+        Return a set of AuthzCompatCourseAccessRole for all of the courses with this user x (or derived from x) role.
         """
-        return CourseAccessRole.objects.filter(role__in=RoleCache.get_roles(self.role), user=self.user)
+        roles = RoleCache.get_roles(self.role)
+        legacy_assignments = CourseAccessRole.objects.filter(role__in=roles, user=self.user)
+
+        # Get all assignments for a user to a role
+        new_authz_roles = [get_authz_role_from_legacy_role(role) for role in roles]
+        all_authz_user_assignments = authz_api.get_user_role_assignments(
+            user_external_key=self.user.username
+        )
+
+        all_assignments = set()
+
+        for legacy_assignment in legacy_assignments:
+            for role in roles:
+                all_assignments.add(AuthzCompatCourseAccessRole(
+                    user_id=self.user.id,
+                    username=self.user.username,
+                    org=legacy_assignment.org,
+                    course_id=legacy_assignment.course_id,
+                    role=role
+                ))
+
+        for assignment in all_authz_user_assignments:
+            for role in assignment.roles:
+                if role.external_key not in new_authz_roles:
+                    continue
+                legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
+                course_key = assignment.scope.external_key
+                parsed_key = CourseKey.from_string(course_key)
+                org = parsed_key.org
+                all_assignments.add(AuthzCompatCourseAccessRole(
+                    user_id=self.user.id,
+                    username=self.user.username,
+                    org=org,
+                    course_id=course_key,
+                    role=legacy_role
+                ))
+
+        return all_assignments
+
+    def has_courses_with_role(self, org: str | None = None) -> bool:
+        """
+        Return whether this user has any courses with this role and optional org (or derived roles)
+
+        Arguments:
+            org (str): Optional org to filter by
+        """
+        roles = RoleCache.get_roles(self.role)
+        # First check if we have any legacy assignment with an optimized ORM query
+        filter_params = {
+            'user': self.user,
+            'role__in': roles
+        }
+        if org:
+            filter_params['org'] = org
+        has_legacy_assignments = CourseAccessRole.objects.filter(**filter_params).exists()
+        if has_legacy_assignments:
+            return True
+
+        # Then check for authz assignments
+        new_authz_roles = [get_authz_role_from_legacy_role(role) for role in roles]
+        all_authz_user_assignments = authz_api.get_user_role_assignments(
+            user_external_key=self.user.username
+        )
+
+        for assignment in all_authz_user_assignments:
+            for role in assignment.roles:
+                if role.external_key not in new_authz_roles:
+                    continue
+                if org is None:
+                    # There is at least one assignment, short circuit
+                    return True
+                course_key = assignment.scope.external_key
+                parsed_key = CourseKey.from_string(course_key)
+                if org == parsed_key.org:
+                    return True
+        return False

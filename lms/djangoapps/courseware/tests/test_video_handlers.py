@@ -320,7 +320,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
         assert sorted(json.loads(response.body.decode('utf-8'))) == sorted(['en', 'uk'])
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_video_transcript_content')
-    @patch('openedx.core.djangoapps.video_config.transcripts_utils.get_available_transcript_languages')
+    @patch('edxval.api.get_available_transcript_languages')
     @ddt.data(
         (
             ['en', 'uk', 'ro'],
@@ -504,7 +504,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         assert response.status == '404 Not Found'
 
     @patch(
-        'xmodule.video_block.video_handlers.get_transcript',
+        'xblocks_contrib.video.video_handlers.get_transcript',
         return_value=('Subs!', 'test_filename.srt', 'application/x-subrip; charset=utf-8')
     )
     def test_download_srt_exist(self, __):
@@ -515,7 +515,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         assert response.headers['Content-Language'] == 'en'
 
     @patch(
-        'xmodule.video_block.video_handlers.get_transcript',
+        'xblocks_contrib.video.video_handlers.get_transcript',
         return_value=('Subs!', 'txt', 'text/plain; charset=utf-8')
     )
     def test_download_txt_exist(self, __):
@@ -545,7 +545,6 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         assert response.headers['Content-Disposition'] == 'attachment; filename="en_塞.srt"'
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.edxval_api.get_video_transcript_data')
-    @patch('xmodule.video_block.get_transcript', Mock(side_effect=NotFoundError))
     def test_download_fallback_transcript(self, mock_get_video_transcript_data):
         """
         Verify val transcript is returned as a fallback if it is not found in the content store.
