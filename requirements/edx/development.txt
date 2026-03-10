@@ -318,10 +318,7 @@ cssutils==2.11.1
     #   -r requirements/edx/testing.txt
     #   pynliner
 ddt==1.7.2
-    # via
-    #   -r requirements/edx/doc.txt
-    #   -r requirements/edx/testing.txt
-    #   xblocks-contrib
+    # via -r requirements/edx/testing.txt
 deepmerge==2.0
     # via
     #   -r requirements/edx/doc.txt
@@ -424,6 +421,7 @@ django==5.2.12
     #   social-auth-app-django
     #   super-csv
     #   xblock-google-drive
+    #   xblocks-contrib
     #   xss-utils
 django-appconf==1.2.0
     # via
@@ -589,7 +587,6 @@ django-statici18n==2.6.0
     #   lti-consumer-xblock
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-    #   xblocks-contrib
 django-storages==1.14.6
     # via
     #   -r requirements/edx/doc.txt
@@ -779,7 +776,6 @@ edx-i18n-tools==1.9.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   ora2
-    #   xblocks-contrib
 edx-lint==5.6.0
     # via -r requirements/edx/testing.txt
 edx-milestones==1.1.0
@@ -948,6 +944,7 @@ fs==2.4.16
     #   fs-s3fs
     #   openedx-django-pyfs
     #   xblock
+    #   xblocks-contrib
 fs-s3fs==1.1.1
     # via
     #   -r requirements/edx/doc.txt
@@ -1225,6 +1222,7 @@ lxml[html-clean]==5.3.2
     #   pyquery
     #   python3-saml
     #   xblock
+    #   xblocks-contrib
     #   xmlsec
 lxml-html-clean==0.4.4
     # via
@@ -1263,6 +1261,7 @@ markupsafe==3.0.3
     #   mako
     #   openedx-calc
     #   xblock
+    #   xblocks-contrib
 maxminddb==3.1.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1393,7 +1392,6 @@ openedx-django-pyfs==3.8.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   xblock
-    #   xblocks-contrib
 openedx-django-require==3.0.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1461,6 +1459,7 @@ path==16.11.0
     #   -r requirements/edx/testing.txt
     #   edx-i18n-tools
     #   path-py
+    #   xblocks-contrib
 path-py==12.5.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1490,7 +1489,6 @@ pillow==12.1.1
     #   edx-enterprise
     #   edx-organizations
     #   edxval
-    #   xblocks-contrib
 pip-tools==7.5.3
     # via -r requirements/pip-tools.txt
 platformdirs==4.9.2
@@ -1691,6 +1689,7 @@ pyparsing==3.3.2
     #   -r requirements/edx/testing.txt
     #   chem
     #   openedx-calc
+    #   xblocks-contrib
 pyproject-api==1.10.0
     # via
     #   -r requirements/edx/testing.txt
@@ -1799,6 +1798,7 @@ pytz==2025.2
     #   snowflake-connector-python
     #   tincan
     #   xblock
+    #   xblocks-contrib
 pyuca==1.2
     # via
     #   -r requirements/edx/doc.txt
@@ -1872,6 +1872,7 @@ requests==2.32.5
     #   social-auth-core
     #   sphinx
     #   xblock-google-drive
+    #   xblocks-contrib
 requests-oauthlib==2.0.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1943,6 +1944,7 @@ simplejson==3.20.2
     #   super-csv
     #   xblock
     #   xblock-utils
+    #   xblocks-contrib
 singledispatch==4.1.2
     # via -r requirements/edx/testing.txt
 six==1.17.0
@@ -2267,6 +2269,7 @@ web-fragments==3.1.0
     #   staff-graded-xblock
     #   xblock
     #   xblock-utils
+    #   xblocks-contrib
 webencodings==0.5.1
     # via
     #   -r requirements/edx/doc.txt
@@ -2279,6 +2282,7 @@ webob==1.8.9
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   xblock
+    #   xblocks-contrib
 wheel==0.46.3
     # via
     #   -r requirements/edx/doc.txt
@@ -2326,7 +2330,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/testing.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.13.0
+xblocks-contrib==0.13.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt

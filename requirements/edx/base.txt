@@ -163,8 +163,6 @@ cryptography==45.0.7
     #   snowflake-connector-python
 cssutils==2.11.1
     # via pynliner
-ddt==1.7.2
-    # via xblocks-contrib
 defusedxml==0.7.1
     # via
     #   -r requirements/edx/kernel.in
@@ -248,6 +246,7 @@ django==5.2.12
     #   social-auth-app-django
     #   super-csv
     #   xblock-google-drive
+    #   xblocks-contrib
     #   xss-utils
 django-appconf==1.2.0
     # via django-statici18n
@@ -360,7 +359,6 @@ django-statici18n==2.6.0
     #   lti-consumer-xblock
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-    #   xblocks-contrib
 django-storages==1.14.6
     # via
     #   -r requirements/edx/kernel.in
@@ -492,7 +490,6 @@ edx-i18n-tools==1.9.0
     # via
     #   -r requirements/edx/bundled.in
     #   ora2
-    #   xblocks-contrib
 edx-milestones==1.1.0
     # via -r requirements/edx/kernel.in
 edx-opaque-keys[django]==3.1.0
@@ -598,6 +595,7 @@ fs==2.4.16
     #   fs-s3fs
     #   openedx-django-pyfs
     #   xblock
+    #   xblocks-contrib
 fs-s3fs==1.1.1
     # via
     #   -r requirements/edx/kernel.in
@@ -740,6 +738,7 @@ lxml[html-clean]==5.3.2
     #   ora2
     #   python3-saml
     #   xblock
+    #   xblocks-contrib
     #   xmlsec
 lxml-html-clean==0.4.4
     # via lxml
@@ -765,6 +764,7 @@ markupsafe==3.0.3
     #   mako
     #   openedx-calc
     #   xblock
+    #   xblocks-contrib
 maxminddb==3.1.0
     # via geoip2
 meilisearch==0.40.0
@@ -833,9 +833,7 @@ openedx-core==0.36.0
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
 openedx-django-pyfs==3.8.0
-    # via
-    #   xblock
-    #   xblocks-contrib
+    # via xblock
 openedx-django-require==3.0.0
     # via -r requirements/edx/kernel.in
 openedx-django-wiki==3.1.1
@@ -874,6 +872,7 @@ path==16.11.0
     #   -r requirements/edx/kernel.in
     #   edx-i18n-tools
     #   path-py
+    #   xblocks-contrib
 path-py==12.5.0
     # via
     #   edx-enterprise
@@ -889,7 +888,6 @@ pillow==12.1.1
     #   edx-enterprise
     #   edx-organizations
     #   edxval
-    #   xblocks-contrib
 platformdirs==4.9.2
     # via snowflake-connector-python
 polib==1.2.0
@@ -980,6 +978,7 @@ pyparsing==3.3.2
     # via
     #   chem
     #   openedx-calc
+    #   xblocks-contrib
 pyrsistent==0.20.0
     # via optimizely-sdk
 pysrt==1.1.2
@@ -1027,6 +1026,7 @@ pytz==2025.2
     #   snowflake-connector-python
     #   tincan
     #   xblock
+    #   xblocks-contrib
 pyuca==1.2
     # via -r requirements/edx/kernel.in
 pyyaml==6.0.3
@@ -1080,6 +1080,7 @@ requests==2.32.5
     #   snowflake-connector-python
     #   social-auth-core
     #   xblock-google-drive
+    #   xblocks-contrib
 requests-oauthlib==2.0.0
     # via
     #   -r requirements/edx/kernel.in
@@ -1117,6 +1118,7 @@ simplejson==3.20.2
     #   super-csv
     #   xblock
     #   xblock-utils
+    #   xblocks-contrib
 six==1.17.0
     # via
     #   -r requirements/edx/kernel.in
@@ -1256,6 +1258,7 @@ web-fragments==3.1.0
     #   staff-graded-xblock
     #   xblock
     #   xblock-utils
+    #   xblocks-contrib
 webencodings==0.5.1
     # via
     #   bleach
@@ -1265,6 +1268,7 @@ webob==1.8.9
     # via
     #   -r requirements/edx/kernel.in
     #   xblock
+    #   xblocks-contrib
 wheel==0.46.3
     # via django-pipeline
 wrapt==2.1.1
@@ -1297,7 +1301,7 @@ xblock-utils==4.0.0
     # via
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.13.0
+xblocks-contrib==0.13.1
     # via -r requirements/edx/bundled.in
 xmlsec==1.3.14
     # via
