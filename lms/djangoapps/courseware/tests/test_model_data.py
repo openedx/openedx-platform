@@ -4,7 +4,6 @@ Test for lms courseware app, module data (runtime data storage for XBlocks)
 import json
 from functools import partial
 from unittest.mock import Mock, patch
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, FilteredQueryCountMixin
 import pytest
 
 from django.db import connections, DatabaseError
@@ -14,7 +13,6 @@ from xblock.exceptions import KeyValueMultiSaveError
 from xblock.fields import BlockScope, Scope, ScopeIds
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache, InvalidScopeError
 from lms.djangoapps.courseware.models import (
     StudentModule,
@@ -28,8 +26,6 @@ from lms.djangoapps.courseware.tests.factories import StudentInfoFactory
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory as cmfStudentModuleFactory
 from lms.djangoapps.courseware.tests.factories import StudentPrefsFactory
 from lms.djangoapps.courseware.tests.factories import UserStateSummaryFactory
-
-QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
 def mock_field(scope, name):
@@ -243,7 +239,7 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
         assert exception_context.value.saved_field_names == []
 
 
-class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestMissingStudentModule(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
     # Tell Django to clean out all databases, not just default
     databases = set(connections)
 
@@ -280,9 +276,7 @@ class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # lint-amnes
         # on the StudentModule).
         # Django 1.8 also has a number of other BEGIN and SAVESTATE queries.
         with self.assertNumQueries(4, using='default'):
-            with self.assertNumQueries(2,
-                                       using='student_module_history',
-                                       table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+            with self.assertNumQueries(2, using='student_module_history'):
                 self.kvs.set(user_state_key('a_field'), 'a_value')
 
         assert 1 == sum(len(cache) for cache in self.field_data_cache.cache.values())
