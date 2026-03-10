@@ -11,10 +11,10 @@ from openedx.core.djangoapps.catalog.utils import get_course_run_details
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 
 MIN_DURATION = timedelta(
-    weeks=getattr(settings, 'COURSE_DURATION_MIN_WEEKS', 4)
+    weeks=getattr(settings, 'COURSE_ACCESS_DURATION_MIN_WEEKS', 4)
 )
 MAX_DURATION = timedelta(
-    weeks=getattr(settings, 'COURSE_DURATION_MAX_WEEKS', 18)
+    weeks=getattr(settings, 'COURSE_ACCESS_DURATION_MAX_WEEKS', 18)
 )
 
 
