@@ -10,12 +10,8 @@ from django.conf import settings
 from openedx.core.djangoapps.catalog.utils import get_course_run_details
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 
-MIN_DURATION = timedelta(
-    weeks=getattr(settings, 'COURSE_ACCESS_DURATION_MIN_WEEKS', 4)
-)
-MAX_DURATION = timedelta(
-    weeks=getattr(settings, 'COURSE_ACCESS_DURATION_MAX_WEEKS', 18)
-)
+MIN_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MIN_WEEKS)
+MAX_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MAX_WEEKS)
 
 
 def catalog_integration_enabled():
