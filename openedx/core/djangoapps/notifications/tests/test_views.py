@@ -31,10 +31,8 @@ from openedx.core.djangoapps.notifications.models import (
     Notification,
     NotificationPreference
 )
-from openedx.core.djangoapps.notifications.serializers import (
-    add_info_to_notification_config,
-    add_non_editable_in_preference
-)
+from openedx.core.djangoapps.notifications.serializers import add_non_editable_in_preference
+
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
