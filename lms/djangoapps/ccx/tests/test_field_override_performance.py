@@ -8,7 +8,6 @@ from datetime import datetime
 from unittest import mock
 
 import ddt
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 import pytest
 from ccx_keys.locator import CCXLocator
 from django.conf import settings
@@ -35,7 +34,7 @@ from openedx.core.djangoapps.content.block_structure.api import get_course_in_ca
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 
-QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
 @mock.patch.dict(
@@ -235,7 +234,7 @@ class TestFieldOverrideSplitPerformance(FieldOverridePerformanceTestCase):
     __test__ = True
 
     # TODO: decrease query count as part of REVO-28
-    QUERY_COUNT = 36
+    QUERY_COUNT = 34
 
     TEST_DATA = {
         ('no_overrides', 1, True, False): (QUERY_COUNT, 2),

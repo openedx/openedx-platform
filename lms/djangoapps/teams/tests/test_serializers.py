@@ -10,13 +10,9 @@ from django.test.client import RequestFactory
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.teams.serializers import BulkTeamCountTopicSerializer, MembershipSerializer, TopicSerializer
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
-from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-
-QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
 class SerializerTestCase(SharedModuleStoreTestCase):
@@ -79,9 +75,7 @@ class TopicSerializerTestCase(SerializerTestCase):
         Verifies that the `TopicSerializer` correctly displays a topic with a
         team count of 0, and that it takes a known number of SQL queries.
         """
-        with self.assertNumQueries(
-            3, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
-        ):  # 2 split modulestore MySQL queries, 1 for Teams
+        with self.assertNumQueries(3):  # 2 split modulestore MySQL queries, 1 for Teams
             serializer = TopicSerializer(
                 self.course.teamsets[0].cleaned_data,
                 context={'course_id': self.course.id},
@@ -97,9 +91,7 @@ class TopicSerializerTestCase(SerializerTestCase):
         CourseTeamFactory.create(
             course_id=self.course.id, topic_id=self.course.teamsets[0].teamset_id
         )
-        with self.assertNumQueries(
-            3, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
-        ):  # 2 split modulestore MySQL queries, 1 for Teams
+        with self.assertNumQueries(3):  # 2 split modulestore MySQL queries, 1 for Teams
             serializer = TopicSerializer(
                 self.course.teamsets[0].cleaned_data,
                 context={'course_id': self.course.id},
@@ -118,9 +110,7 @@ class TopicSerializerTestCase(SerializerTestCase):
         )
         CourseTeamFactory.create(course_id=self.course.id, topic_id=duplicate_topic['id'])
         CourseTeamFactory.create(course_id=second_course.id, topic_id=duplicate_topic['id'])
-        with self.assertNumQueries(
-            3, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
-        ):  # 2 split modulestore MySQL queries, 1 for Teams
+        with self.assertNumQueries(3):  # 2 split modulestore MySQL queries, 1 for Teams
             serializer = TopicSerializer(
                 self.course.teamsets[0].cleaned_data,
                 context={'course_id': self.course.id},
@@ -173,7 +163,7 @@ class BaseTopicSerializerTestCase(SerializerTestCase):
         """
         Verify that the serializer produced the expected topics.
         """
-        with self.assertNumQueries(num_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
+        with self.assertNumQueries(num_queries):
             page = Paginator(
                 self.course.teams_configuration.cleaned_data['teamsets'],
                 self.PAGE_SIZE,
@@ -213,7 +203,7 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
         query.
         """
         topics = self.setup_topics(teams_per_topic=0)
-        self.assert_serializer_output(topics, num_teams_per_topic=0, num_queries=4)
+        self.assert_serializer_output(topics, num_teams_per_topic=0, num_queries=2)
 
     def test_topics_with_team_counts(self):
         """
@@ -222,7 +212,7 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
         """
         teams_per_topic = 10
         topics = self.setup_topics(teams_per_topic=teams_per_topic)
-        self.assert_serializer_output(topics, num_teams_per_topic=teams_per_topic, num_queries=4)
+        self.assert_serializer_output(topics, num_teams_per_topic=teams_per_topic, num_queries=2)
 
     def test_subset_of_topics(self):
         """
@@ -231,7 +221,7 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
         """
         teams_per_topic = 10
         topics = self.setup_topics(num_topics=self.NUM_TOPICS, teams_per_topic=teams_per_topic)
-        self.assert_serializer_output(topics, num_teams_per_topic=teams_per_topic, num_queries=4)
+        self.assert_serializer_output(topics, num_teams_per_topic=teams_per_topic, num_queries=2)
 
     def test_scoped_within_course(self):
         """Verify that team counts are scoped within a course."""
@@ -245,7 +235,7 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
             }),
         )
         CourseTeamFactory.create(course_id=second_course.id, topic_id=duplicate_topic['id'])
-        self.assert_serializer_output(first_course_topics, num_teams_per_topic=teams_per_topic, num_queries=4)
+        self.assert_serializer_output(first_course_topics, num_teams_per_topic=teams_per_topic, num_queries=2)
 
     def _merge_dicts(self, first, second):
         """Convenience method to merge two dicts in a single expression"""
@@ -261,9 +251,7 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
         request = RequestFactory().get('/api/team/v0/topics')
         request.user = self.user
 
-        with self.assertNumQueries(
-            num_queries + 2, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
-        ):  # num_queries on teams tables, plus 2 split modulestore queries
+        with self.assertNumQueries(num_queries + 2):  # num_queries on teams tables, plus 2 split modulestore queries
             serializer = self.serializer(
                 topics,
                 context={
@@ -281,4 +269,4 @@ class BulkTeamCountTopicSerializerTestCase(BaseTopicSerializerTestCase):
         with no topics.
         """
         self.course.teams_configuration = TeamsConfig({'topics': []})
-        self.assert_serializer_output([], num_teams_per_topic=0, num_queries=3)
+        self.assert_serializer_output([], num_teams_per_topic=0, num_queries=1)
