@@ -14,11 +14,11 @@ attrs==25.4.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.59
+boto3==1.42.64
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.59
+botocore==1.42.64
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -33,7 +33,7 @@ cffi==2.0.0
     #   -r scripts/user_retirement/requirements/base.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -73,9 +73,9 @@ google-api-core==2.30.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-google-api-python-client==2.191.0
+google-api-python-client==2.192.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.48.0
+google-auth==2.49.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -85,7 +85,7 @@ google-auth-httplib2==0.3.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-googleapis-common-protos==1.72.0
+googleapis-common-protos==1.73.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -127,11 +127,11 @@ more-itertools==10.8.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   simple-salesforce
-moto==5.1.21
+moto==5.1.22
     # via -r scripts/user_retirement/requirements/testing.in
 packaging==26.0
     # via pytest
-platformdirs==4.9.2
+platformdirs==4.9.4
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
@@ -186,7 +186,7 @@ python-dateutil==2.9.0.post0
     #   -r scripts/user_retirement/requirements/base.txt
     #   botocore
     #   moto
-pytz==2025.2
+pytz==2026.1.post1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   jenkinsapi
