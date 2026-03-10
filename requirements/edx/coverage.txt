@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-chardet==6.0.0.post1
+chardet==7.0.1
     # via diff-cover
 coverage==7.13.4
     # via -r requirements/edx/coverage.in

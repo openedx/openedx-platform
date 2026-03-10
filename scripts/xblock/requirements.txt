@@ -6,7 +6,7 @@
 #
 certifi==2026.2.25
     # via requests
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
     # via requests
 idna==3.11
     # via requests
