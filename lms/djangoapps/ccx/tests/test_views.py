@@ -24,7 +24,7 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, SampleCourseFactory
 from xmodule.x_module import XModuleMixin
-from xmodule.capa.tests.response_xml_factory import StringResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import StringResponseXMLFactory
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole

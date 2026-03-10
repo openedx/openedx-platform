@@ -270,7 +270,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ("simple-question.js", "./common/test/data/uploads/simple-question.js"),
             ("simple-question.css", "./common/test/data/uploads/simple-question.css"),
             ("image.jpg", "./common/test/data/uploads/image.jpg"),
-            ("jschannel.js", "./common/static/js/capa/src/jschannel.js"),
+            ("jschannel.js", "./common/test/data/uploads/jschannel.js"),
         ]
         for filename, full_path in jsinput_files:
             upload_file_to_course(

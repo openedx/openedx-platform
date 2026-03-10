@@ -16,7 +16,7 @@ from lms.djangoapps.courseware.entrance_exams import (
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.block_render import get_block, handle_xblock_callback, toc_for_course
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
