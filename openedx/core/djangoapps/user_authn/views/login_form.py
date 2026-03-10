@@ -161,6 +161,14 @@ def login_and_registration_form(request, initial_mode="login"):
     # Retrieve the form descriptions from the user API
     form_descriptions = _get_form_descriptions(request)
 
+    # Detect a running TPA pipeline early so it can guard against redirect loops below.
+    saml_provider = False
+    running_pipeline = pipeline.get(request)
+    if running_pipeline:
+        saml_provider, __ = third_party_auth.utils.is_saml_provider(
+            running_pipeline.get('backend'), running_pipeline.get('kwargs')
+        )
+
     # Our ?next= URL may itself contain a parameter 'tpa_hint=x' that we need to check.
     # If present, we display a login page focused on third-party auth with that provider.
     third_party_auth_hint = None
@@ -172,9 +180,10 @@ def login_and_registration_form(request, initial_mode="login"):
                 provider_id = next_args['tpa_hint'][0]
                 tpa_hint_provider = third_party_auth.provider.Registry.get(provider_id=provider_id)
                 if tpa_hint_provider:
-                    if tpa_hint_provider.skip_hinted_login_dialog:
+                    if tpa_hint_provider.skip_hinted_login_dialog and not running_pipeline:
                         # Forward the user directly to the provider's login URL when the provider is configured
-                        # to skip the dialog.
+                        # to skip the dialog. Do not redirect if a TPA pipeline is already running, as that
+                        # would cause an infinite loop (e.g. new SAML users dispatched back to /login).
                         if initial_mode == "register":
                             auth_entry = pipeline.AUTH_ENTRY_REGISTER
                         else:
@@ -194,18 +203,6 @@ def login_and_registration_form(request, initial_mode="login"):
     #   tpa_hint_provider is not available
     # AND
     #   user is not coming from a SAML IDP.
-    saml_provider = False
-    running_pipeline = pipeline.get(request)
-    if running_pipeline:
-        backend_name = running_pipeline.get('backend')
-        if backend_name == 'tpa-saml':
-            # Directly detect SAML backend to avoid registry lookup failures
-            # (e.g. when pipeline kwargs lack response['idp_name'] at this point).
-            saml_provider = True
-        else:
-            saml_provider, __ = third_party_auth.utils.is_saml_provider(
-                backend_name, running_pipeline.get('kwargs')
-            )
 
     enterprise_customer = enterprise_customer_for_request(request)
 

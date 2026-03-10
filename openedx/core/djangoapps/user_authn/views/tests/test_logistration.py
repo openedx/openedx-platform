@@ -418,6 +418,28 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             target_status_code=302
         )
 
+    @ddt.data(
+        ('signin_user', 'login'),
+        ('register_user', 'register'),
+    )
+    @ddt.unpack
+    def test_hinted_login_dialog_disabled_with_running_pipeline(self, url_name, auth_entry):  # pylint: disable=unused-argument
+        """
+        Test that skip_hinted_login_dialog does NOT redirect to the provider when a TPA
+        pipeline is already running. Without this guard, new SAML users dispatched back
+        to /login or /register by ensure_user_information would be sent straight back to
+        the IdP, creating an infinite redirect loop that eventually results in a 429 from
+        the IdP (e.g. Auth0).
+        """
+        self.google_provider.skip_hinted_login_dialog = True
+        self.google_provider.save()
+        params = [("next", "/courses/something/?tpa_hint=oa2-google-oauth2")]
+        pipeline_target = "openedx.core.djangoapps.user_authn.views.login_form.third_party_auth.pipeline"
+        with simulate_running_pipeline(pipeline_target, "tpa-saml"):
+            response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
+        # The form should be rendered (200), not a redirect to the provider's auth URL.
+        self.assertEqual(response.status_code, 200)
+
     @override_settings(FEATURES=dict(settings.FEATURES, THIRD_PARTY_AUTH_HINT='oa2-google-oauth2'))
     @ddt.data(
         'signin_user',
