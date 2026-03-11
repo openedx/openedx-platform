@@ -533,9 +533,16 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
     **Example Requests**:
 
         GET /api/cohorts/v1/courses/{course_id}/cohorts
+        GET /api/cohorts/v1/courses/{course_id}/cohorts?ordering=asc
+        GET /api/cohorts/v1/courses/{course_id}/cohorts?ordering=desc
         POST /api/cohorts/v1/courses/{course_id}/cohorts
         GET /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
         PATCH /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
+
+    **GET Query Parameters**
+
+        * ordering (optional): Sort direction for the cohort list by name. Accepted values are
+          "asc" (ascending, default) and "desc" (descending). Returns HTTP 400 for invalid values.
 
     **POST Request Values**
 

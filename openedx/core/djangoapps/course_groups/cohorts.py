@@ -327,7 +327,8 @@ def get_course_cohorts(course=None, course_id=None, assignment_type=None, orderi
     Arguments:
         course: the course for which cohorts should be returned
         assignment_type: cohort assignment type
-        ordering: sort direction for results by name ('asc' or 'desc'), defaults to 'asc'
+        ordering: sort direction for results by name. Use 'desc' for descending order.
+            Any other value (including the default 'asc') results in ascending order.
 
     Returns:
         A list of CourseUserGroup objects. Empty if there are no cohorts. Does

@@ -624,6 +624,7 @@ class TestCohortApi(SharedModuleStoreTestCase):
         response = self.client.get(path=path, data={'ordering': 'invalid'})
 
         assert response.status_code == 400
+        assert response.json().get('error_code') == 'invalid-ordering-value'
 
     def test_patch_cohort_with_name_only(self):
         """
