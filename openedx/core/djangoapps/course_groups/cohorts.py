@@ -345,9 +345,10 @@ def get_course_cohorts(course=None, course_id=None, assignment_type=None, orderi
         group_type=CourseUserGroup.COHORT
     )
     query_set = query_set.filter(cohort__assignment_type=assignment_type) if assignment_type else query_set
-    sort_field = 'name'
-    if ordering == 'desc':
-        sort_field = '-name'
+    ordering = ordering.lower()
+    if ordering not in ('asc', 'desc'):
+        raise ValueError(f"Invalid ordering value '{ordering}'. Must be 'asc' or 'desc'.")
+    sort_field = '-name' if ordering == 'desc' else 'name'
     query_set = query_set.order_by(sort_field)
     return list(query_set)
 
