@@ -68,37 +68,3 @@ class SettingsUnitTest(TestCase):
         # Note: SOCIAL_AUTH_CLEAN_USERNAMES is a Derived setting, computed at settings load time.
         # This test verifies the default behavior (unicode usernames disabled).
         assert settings.SOCIAL_AUTH_CLEAN_USERNAMES is True
-
-    def test_social_auth_clean_usernames_computation(self):
-        """
-        Verify the SOCIAL_AUTH_CLEAN_USERNAMES computation logic.
-
-        SOCIAL_AUTH_CLEAN_USERNAMES is a Derived setting that is computed at settings load time,
-        so we can't use @override_settings to test both cases. Instead, we test the computation
-        logic directly to ensure it correctly inverts the ENABLE_UNICODE_USERNAME feature flag.
-        """
-        # The logic in lms/envs/common.py is:
-        # SOCIAL_AUTH_CLEAN_USERNAMES = Derived(
-        #     lambda settings: not settings.FEATURES.get('ENABLE_UNICODE_USERNAME', False)
-        # )
-        # We replicate and test that logic here.
-
-        class FakeSettings:
-            """Fake settings object for testing the Derived computation."""
-            def __init__(self, features):
-                self.FEATURES = features
-
-        # When ENABLE_UNICODE_USERNAME is False (default), SOCIAL_AUTH_CLEAN_USERNAMES should be True
-        fake_settings = FakeSettings({'ENABLE_UNICODE_USERNAME': False})
-        result = not fake_settings.FEATURES.get('ENABLE_UNICODE_USERNAME', False)
-        assert result is True
-
-        # When ENABLE_UNICODE_USERNAME is True, SOCIAL_AUTH_CLEAN_USERNAMES should be False
-        fake_settings = FakeSettings({'ENABLE_UNICODE_USERNAME': True})
-        result = not fake_settings.FEATURES.get('ENABLE_UNICODE_USERNAME', False)
-        assert result is False
-
-        # When ENABLE_UNICODE_USERNAME is not set, should default to False, so result is True
-        fake_settings = FakeSettings({})
-        result = not fake_settings.FEATURES.get('ENABLE_UNICODE_USERNAME', False)
-        assert result is True

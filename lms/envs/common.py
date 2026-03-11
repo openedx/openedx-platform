@@ -332,7 +332,7 @@ FIELDS_STORED_IN_SESSION = ['auth_entry', 'next']
 
 # Computed setting: disable clean usernames check when unicode usernames are enabled
 SOCIAL_AUTH_CLEAN_USERNAMES = Derived(
-    lambda settings: not settings.FEATURES.get('ENABLE_UNICODE_USERNAME', False)
+    lambda settings: not settings.ENABLE_UNICODE_USERNAME
 )
 
 # Social auth pipeline for third-party authentication.
