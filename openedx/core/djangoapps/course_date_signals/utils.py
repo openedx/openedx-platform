@@ -14,7 +14,7 @@ MIN_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MIN_WEEKS)
 MAX_DURATION = timedelta(weeks=settings.COURSE_ACCESS_DURATION_MAX_WEEKS)
 
 
-def catalog_integration_enabled():
+def _catalog_integration_enabled():
     """
     Check if catalog integration is enabled
     """
@@ -29,7 +29,7 @@ def get_expected_duration(course_id):
 
     access_duration = MIN_DURATION
 
-    if catalog_integration_enabled():
+    if _catalog_integration_enabled():
         discovery_course_details = get_course_run_details(
             course_id, ['weeks_to_complete']
         )
