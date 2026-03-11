@@ -24,7 +24,7 @@ Implementation requirements:
 * Replace manual JSON construction with serializer-based responses.
 * Use serializers for both input validation and output formatting.
 * Ensure serializers are properly documented with field descriptions and validation rules.
-* Maintain backward compatibility where possible during migration.
+* Maintain backward compatibility for all APIs during migration.
 
 Relevance in edx-platform
 -------------------------
