@@ -280,7 +280,7 @@ def delete_container(
         # In that case, we keep the index updated by removing the entry.
         send_container_deleted_signal()
         return
-    
+
     library_key = container_key.lib_key
 
     # Fetch related collections and containers before soft-delete

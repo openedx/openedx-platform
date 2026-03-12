@@ -269,7 +269,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
         # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
         # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
         container_key = container.container_key
-        transaction.on_commit(lambda ck=container_key: LIBRARY_CONTAINER_UPDATED.send_event(
+        transaction.on_commit(lambda ck=container_key: LIBRARY_CONTAINER_UPDATED.send_event(  # type: ignore[misc]
             library_container=LibraryContainerData(
                 container_key=ck,
                 background=True,
@@ -704,7 +704,7 @@ def delete_library_block(
     Delete the specified block from this library (soft delete).
     """
     library_key = usage_key.context_key
-    
+
     def send_block_deleted_signal():
         # .. event_implemented_name: LIBRARY_BLOCK_DELETED
         # .. event_type: org.openedx.content_authoring.library_block.deleted.v1

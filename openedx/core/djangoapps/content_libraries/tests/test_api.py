@@ -1545,12 +1545,13 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         new_container = api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
 
         assert container_created_receiver.call_count == 1
+        assert hasattr(new_container, "container_key")
         self.assertDictContainsEntries(
             container_created_receiver.call_args_list[0].kwargs,
             {
                 "signal": LIBRARY_CONTAINER_CREATED,
                 "library_container": LibraryContainerData(
-                    container_key=new_container.container_key,
+                    container_key=new_container.container_key,  # type: ignore[union-attr]
                 ),
             },
         )
