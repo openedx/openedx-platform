@@ -7,6 +7,7 @@ import hashlib
 import uuid
 from unittest import mock
 
+from django.db import transaction
 from django.test import TestCase
 from user_tasks.models import UserTaskStatus
 
@@ -24,10 +25,13 @@ from openedx_events.content_authoring.data import (
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+    LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
+    LIBRARY_BLOCK_UPDATED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
     LIBRARY_COLLECTION_UPDATED,
+    LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
@@ -1456,6 +1460,100 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
         # This is the same unit, so it should not be duplicated
         assert units_subsection1[0].container_key == units_subsection2[0].container_key
+
+    def test_set_library_block_olx_no_signal_on_rollback(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED is NOT emitted when set_library_block_olx is called
+        within a transaction that is later rolled back.
+        """
+        event_receiver = mock.Mock()
+        LIBRARY_BLOCK_UPDATED.connect(event_receiver)
+        self.addCleanup(LIBRARY_BLOCK_UPDATED.disconnect, event_receiver)
+
+        try:
+            with transaction.atomic():
+                api.set_library_block_olx(
+                    self.problem_block_usage_key,
+                    "<problem>Updated inside rolled-back transaction</problem>",
+                )
+                raise RuntimeError("Force rollback")
+        except RuntimeError:
+            pass
+
+        assert event_receiver.call_count == 0
+
+    def test_set_library_block_olx_signal_emitted_on_success(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED IS emitted when set_library_block_olx completes
+        successfully.
+        """
+        event_receiver = mock.Mock()
+        LIBRARY_BLOCK_UPDATED.connect(event_receiver)
+        self.addCleanup(LIBRARY_BLOCK_UPDATED.disconnect, event_receiver)
+
+        api.set_library_block_olx(
+            self.problem_block_usage_key,
+            "<problem>Updated successfully</problem>",
+        )
+
+        assert event_receiver.call_count == 1
+        self.assertDictContainsEntries(
+            event_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_BLOCK_UPDATED,
+                "library_block": LibraryBlockData(
+                    library_key=self.lib1.library_key,
+                    usage_key=self.problem_block_usage_key,
+                ),
+            },
+        )
+
+    def test_import_container_no_signals_on_failure(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard fails mid-way, none of
+        LIBRARY_CONTAINER_CREATED, LIBRARY_BLOCK_CREATED, or LIBRARY_BLOCK_UPDATED
+        are emitted, so the search index is not polluted with orphan entries.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+
+        event_receiver = mock.Mock()
+        for signal in [LIBRARY_CONTAINER_CREATED, LIBRARY_BLOCK_CREATED, LIBRARY_BLOCK_UPDATED]:
+            signal.connect(event_receiver)
+            self.addCleanup(signal.disconnect, event_receiver)
+
+        # Simulate a failure at the last step of the import (after the container
+        # and its child components have been created in the DB).
+        with mock.patch(
+            "openedx.core.djangoapps.content_libraries.api.blocks.update_container_children",
+            side_effect=RuntimeError("Simulated failure"),
+        ), self.assertRaises(RuntimeError):
+            api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
+
+        assert event_receiver.call_count == 0
+
+    def test_import_container_signals_emitted_on_success(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard succeeds, LIBRARY_CONTAINER_CREATED
+        is emitted for the new container.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+
+        container_created_receiver = mock.Mock()
+        LIBRARY_CONTAINER_CREATED.connect(container_created_receiver)
+        self.addCleanup(LIBRARY_CONTAINER_CREATED.disconnect, container_created_receiver)
+
+        new_container = api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
+
+        assert container_created_receiver.call_count == 1
+        self.assertDictContainsEntries(
+            container_created_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_CONTAINER_CREATED,
+                "library_container": LibraryContainerData(
+                    container_key=new_container.container_key,
+                ),
+            },
+        )
 
 
 class ContentLibraryExportTest(ContentLibrariesRestApiTest):

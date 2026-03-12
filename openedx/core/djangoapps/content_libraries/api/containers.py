@@ -8,6 +8,7 @@ import logging
 from uuid import uuid4
 import typing
 
+from django.db import transaction
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_events.content_authoring.data import (
@@ -154,11 +155,11 @@ def create_container(
 
     # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-    LIBRARY_CONTAINER_CREATED.send_event(
+    transaction.on_commit(lambda: LIBRARY_CONTAINER_CREATED.send_event(
         library_container=LibraryContainerData(
             container_key=container_key,
         )
-    )
+    ))
 
     return ContainerMetadata.from_container(library_key, container)
 

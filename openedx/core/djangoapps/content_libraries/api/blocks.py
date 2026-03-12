@@ -255,12 +255,12 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
 
     # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
     # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-    LIBRARY_BLOCK_UPDATED.send_event(
+    transaction.on_commit(lambda: LIBRARY_BLOCK_UPDATED.send_event(
         library_block=LibraryBlockData(
             library_key=usage_key.context_key,
             usage_key=usage_key
         )
-    )
+    ))
 
     # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
     # container indexing asynchronously.
@@ -268,12 +268,13 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     for container in affected_containers:
         # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
         # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
+        container_key = container.container_key
+        transaction.on_commit(lambda ck=container_key: LIBRARY_CONTAINER_UPDATED.send_event(
             library_container=LibraryContainerData(
-                container_key=container.container_key,
+                container_key=ck,
                 background=True,
             )
-        )
+        ))
 
     return new_component_version
 
@@ -496,12 +497,12 @@ def _import_staged_block(
     # Emit library block created event
     # .. event_implemented_name: LIBRARY_BLOCK_CREATED
     # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    LIBRARY_BLOCK_CREATED.send_event(
+    transaction.on_commit(lambda: LIBRARY_BLOCK_CREATED.send_event(
         library_block=LibraryBlockData(
             library_key=content_library.library_key,
             usage_key=usage_key
         )
-    )
+    ))
 
     # Now return the metadata about the new block
     return get_library_block(usage_key)
