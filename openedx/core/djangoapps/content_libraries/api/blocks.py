@@ -702,21 +702,34 @@ def delete_library_block(
     """
     Delete the specified block from this library (soft delete).
     """
-    component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
+    
+    def send_block_deleted_signal():
+        # .. event_implemented_name: LIBRARY_BLOCK_DELETED
+        # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
+        LIBRARY_BLOCK_DELETED.send_event(
+            library_block=LibraryBlockData(
+                library_key=library_key,
+                usage_key=usage_key
+            )
+        )
+
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except Component.DoesNotExist:
+        # There may be cases where entries are created in the
+        # search index, but the component is not created
+        # (an intermediate error occurred).
+        # In that case, we keep the index updated by removing the entry.
+        send_block_deleted_signal()
+        return
+
     affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
     affected_containers = get_containers_contains_item(usage_key)
 
     content_api.soft_delete_draft(component.pk, deleted_by=user_id)
 
-    # .. event_implemented_name: LIBRARY_BLOCK_DELETED
-    # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
-    LIBRARY_BLOCK_DELETED.send_event(
-        library_block=LibraryBlockData(
-            library_key=library_key,
-            usage_key=usage_key
-        )
-    )
+    send_block_deleted_signal()
 
     # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
     # collection indexing asynchronously.
