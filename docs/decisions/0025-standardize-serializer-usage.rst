@@ -11,8 +11,6 @@ Context
 
 Many Open edX platform API endpoints manually construct JSON responses using Python dictionaries instead of Django REST Framework (DRF) serializers. This leads to inconsistent schema responses, makes validation errors harder to manage, and creates unpredictable formats that AI and third-party systems struggle with.
 
-The recommendation in the standards document is to enforce serializer-based input/output handling for all endpoints to ensure consistent response contracts and improve validation.
-
 Decision
 --------
 
