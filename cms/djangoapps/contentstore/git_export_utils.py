@@ -85,7 +85,7 @@ def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
     Raises:
         Exception: If backup creation or extraction fails
     """
-    from openedx.core.djangoapps.content_libraries.tasks import create_library_v2_zip
+    from openedx.core.djangoapps.content_libraries.api import create_library_v2_zip
 
     # Get user object for backup API
     user_obj = User.objects.filter(username=user).first()

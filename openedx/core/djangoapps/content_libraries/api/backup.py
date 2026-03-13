@@ -1,0 +1,41 @@
+"""
+Public API for content library backup (zip export) utilities.
+"""
+from __future__ import annotations
+
+import os
+from datetime import datetime
+from tempfile import mkdtemp
+
+from django.conf import settings
+from django.utils.text import slugify
+from opaque_keys.edx.locator import LibraryLocatorV2
+from path import Path
+
+from openedx_content.api import create_zip_file as create_lib_zip_file
+
+__all__ = ["create_library_v2_zip"]
+
+
+def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
+    """
+    Create a zip backup of a v2 library and return ``(temp_dir, zip_file_path)``.
+
+    The caller is responsible for cleaning up ``temp_dir`` when done.
+
+    Args:
+        library_key: LibraryLocatorV2 identifying the library to export.
+        user: User object passed to the backup API.
+
+    Returns:
+        A tuple of ``(temp_dir as Path, zip_file_path as str)``.
+    """
+    root_dir = Path(mkdtemp())
+    sanitized_lib_key = str(library_key).replace(":", "-")
+    sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    filename = f'{sanitized_lib_key}-{timestamp}.zip'
+    file_path = os.path.join(root_dir, filename)
+    origin_server = getattr(settings, 'CMS_BASE', None)
+    create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
+    return root_dir, file_path

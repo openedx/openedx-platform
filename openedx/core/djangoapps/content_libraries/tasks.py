@@ -22,21 +22,18 @@ import logging
 import os
 import shutil
 from collections.abc import Iterable
-from datetime import datetime
 from io import StringIO
-from tempfile import NamedTemporaryFile, mkdtemp
+from tempfile import NamedTemporaryFile
 
 from celery import Task, shared_task
 from celery.exceptions import TimeoutError as CeleryTimeout
 from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.serializers.json import DjangoJSONEncoder
-from django.utils.text import slugify
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
@@ -50,7 +47,6 @@ from opaque_keys.edx.locator import (
     LibraryUsageLocatorV2,
 )
 from openedx_content import api as content_api
-from openedx_content.api import create_zip_file as create_lib_zip_file
 from openedx_content.models_api import LearningPackage, PublishableEntity, PublishLog
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
@@ -68,7 +64,6 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_PUBLISHED,
     LIBRARY_CONTAINER_UPDATED,
 )
-from path import Path
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.fields import Scope
@@ -83,6 +78,7 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
 from . import api
+from .api import create_library_v2_zip
 from .models import ContentLibrary
 
 log = logging.getLogger(__name__)
@@ -513,30 +509,6 @@ def _copy_overrides(
                 dest_block=store.get_item(dest_child_key),
             )
     store.update_item(dest_block, user_id)
-
-
-def create_library_v2_zip(library_key: LibraryLocatorV2, user: User) -> tuple:
-    """
-    Create a zip backup of a v2 library and return ``(temp_dir, zip_file_path)``.
-
-    The caller is responsible for cleaning up ``temp_dir`` when done.
-
-    Args:
-        library_key: LibraryLocatorV2 identifying the library to export.
-        user: User object passed to the backup API.
-
-    Returns:
-        A tuple of ``(temp_dir as Path, zip_file_path as str)``.
-    """
-    root_dir = Path(mkdtemp())
-    sanitized_lib_key = str(library_key).replace(":", "-")
-    sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    filename = f'{sanitized_lib_key}-{timestamp}.zip'
-    file_path = os.path.join(root_dir, filename)
-    origin_server = getattr(settings, 'CMS_BASE', None)
-    create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
-    return root_dir, file_path
 
 
 class LibraryBackupTask(UserTask):  # pylint: disable=abstract-method
