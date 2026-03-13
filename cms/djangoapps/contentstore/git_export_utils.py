@@ -9,15 +9,11 @@ import os
 import shutil
 import subprocess
 import zipfile
-from datetime import datetime
-from pathlib import Path
-from tempfile import mkdtemp
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.utils import timezone
-from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
@@ -84,32 +80,18 @@ def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
         library_key: LibraryLocatorV2 for the library to export
         root_dir: Root directory where library_dir will be created
         library_dir: Directory name for the exported library content
-        user: User object for the backup API (optional)
+        user: Username string for the backup API (optional)
 
     Raises:
         Exception: If backup creation or extraction fails
     """
-    from openedx_content.api import create_zip_file as create_lib_zip_file
+    from openedx.core.djangoapps.content_libraries.tasks import create_library_v2_zip
 
     # Get user object for backup API
     user_obj = User.objects.filter(username=user).first()
-    # Create temporary zip backup
-    temp_dir = Path(mkdtemp())
-    sanitized_lib_key = str(library_key).replace(":", "-")
-    sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-    zip_filename = f'{sanitized_lib_key}-{timestamp}.zip'
-    zip_path = os.path.join(temp_dir, zip_filename)
+    temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
 
     try:
-        origin_server = getattr(settings, 'CMS_BASE', None)
-        create_lib_zip_file(
-            lp_key=str(library_key),
-            path=zip_path,
-            user=user_obj,
-            origin_server=origin_server
-        )
-
         # Target directory for extraction
         target_dir = os.path.join(root_dir, library_dir)
 

@@ -515,6 +515,30 @@ def _copy_overrides(
     store.update_item(dest_block, user_id)
 
 
+def create_library_v2_zip(library_key: LibraryLocatorV2, user: User) -> tuple:
+    """
+    Create a zip backup of a v2 library and return ``(temp_dir, zip_file_path)``.
+
+    The caller is responsible for cleaning up ``temp_dir`` when done.
+
+    Args:
+        library_key: LibraryLocatorV2 identifying the library to export.
+        user: User object passed to the backup API.
+
+    Returns:
+        A tuple of ``(temp_dir as Path, zip_file_path as str)``.
+    """
+    root_dir = Path(mkdtemp())
+    sanitized_lib_key = str(library_key).replace(":", "-")
+    sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    filename = f'{sanitized_lib_key}-{timestamp}.zip'
+    file_path = os.path.join(root_dir, filename)
+    origin_server = getattr(settings, 'CMS_BASE', None)
+    create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
+    return root_dir, file_path
+
+
 class LibraryBackupTask(UserTask):  # pylint: disable=abstract-method
     """
     Base class for tasks related with Library backup functionality.
@@ -560,15 +584,8 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         self.status.set_state('Exporting')
         set_custom_attribute("exporting_started", str(library_key))
 
-        root_dir = Path(mkdtemp())
-        sanitized_lib_key = str(library_key).replace(":", "-")
-        sanitized_lib_key = slugify(sanitized_lib_key, allow_unicode=True)
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
-        filename = f'{sanitized_lib_key}-{timestamp}.zip'
-        file_path = os.path.join(root_dir, filename)
         user = User.objects.get(id=user_id)
-        origin_server = getattr(settings, 'CMS_BASE', None)
-        create_lib_zip_file(package_ref=str(library_key), path=file_path, user=user, origin_server=origin_server)
+        _root_dir, file_path = create_library_v2_zip(library_key, user)
         set_custom_attribute("exporting_completed", str(library_key))
 
         with open(file_path, 'rb') as zipfile:
