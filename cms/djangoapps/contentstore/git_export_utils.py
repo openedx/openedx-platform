@@ -6,9 +6,7 @@ committing and pushing the changes.
 
 import logging
 import os
-import shutil
 import subprocess
-import zipfile
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -17,6 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
+from openedx.core.djangoapps.content_libraries.api.backup import export_library_v2_to_zip
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
@@ -67,47 +66,6 @@ def cmd_log(cmd, cwd):
               'Working directory was: {!r}'.format(' '.join(cmd), cwd))
     log.debug(f'Command output was: {output!r}')
     return output
-
-
-def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
-    """
-    Export a v2 library using the backup API.
-
-    V2 libraries are stored in Learning Core and use a zip-based backup mechanism.
-    This function creates a zip backup and extracts it to the specified directory.
-
-    Args:
-        library_key: LibraryLocatorV2 for the library to export
-        root_dir: Root directory where library_dir will be created
-        library_dir: Directory name for the exported library content
-        user: Username string for the backup API (optional)
-
-    Raises:
-        Exception: If backup creation or extraction fails
-    """
-    from openedx.core.djangoapps.content_libraries.api import create_library_v2_zip
-
-    # Get user object for backup API
-    user_obj = User.objects.filter(username=user).first()
-    temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
-
-    try:
-        # Target directory for extraction
-        target_dir = os.path.join(root_dir, library_dir)
-
-        # Create target directory if it doesn't exist
-        os.makedirs(target_dir, exist_ok=True)
-
-        # Extract zip contents (will overwrite existing files)
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(target_dir)
-
-        log.info('Extracted library v2 backup to %s', target_dir)
-
-    finally:
-        # Cleanup temporary files
-        if temp_dir.exists():
-            shutil.rmtree(temp_dir)
 
 
 def export_to_git(content_key, repo, user='', rdir=None):

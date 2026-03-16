@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import os
 from datetime import datetime
+import shutil
 from tempfile import mkdtemp
+import zipfile
 
 from django.conf import settings
 from django.utils.text import slugify
-from opaque_keys.edx.locator import LibraryLocatorV2
+from opaque_keys.edx.locator import LibraryLocatorV2, log
 from path import Path
 
 from openedx_content.api import create_zip_file as create_lib_zip_file
@@ -39,3 +41,44 @@ def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
     origin_server = getattr(settings, 'CMS_BASE', None)
     create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
     return root_dir, file_path
+
+
+def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
+    """
+    Export a v2 library using the backup API.
+
+    V2 libraries are stored in Learning Core and use a zip-based backup mechanism.
+    This function creates a zip backup and extracts it to the specified directory.
+
+    Args:
+        library_key: LibraryLocatorV2 for the library to export
+        root_dir: Root directory where library_dir will be created
+        library_dir: Directory name for the exported library content
+        user: Username string for the backup API (optional)
+
+    Raises:
+        Exception: If backup creation or extraction fails
+    """
+    from cms.djangoapps.contentstore.exams import User
+
+    # Get user object for backup API
+    user_obj = User.objects.filter(username=user).first()
+    temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
+
+    try:
+        # Target directory for extraction
+        target_dir = os.path.join(root_dir, library_dir)
+
+        # Create target directory if it doesn't exist
+        os.makedirs(target_dir, exist_ok=True)
+
+        # Extract zip contents (will overwrite existing files)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(target_dir)
+
+        log.info('Extracted library v2 backup to %s', target_dir)
+
+    finally:
+        # Cleanup temporary files
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)

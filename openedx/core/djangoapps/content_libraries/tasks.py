@@ -78,7 +78,6 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
 from . import api
-from .api import create_library_v2_zip
 from .models import ContentLibrary
 
 log = logging.getLogger(__name__)
@@ -557,7 +556,7 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         set_custom_attribute("exporting_started", str(library_key))
 
         user = User.objects.get(id=user_id)
-        _root_dir, file_path = create_library_v2_zip(library_key, user)
+        _root_dir, file_path = api.create_library_v2_zip(library_key, user)
         set_custom_attribute("exporting_completed", str(library_key))
 
         with open(file_path, 'rb') as zipfile:
