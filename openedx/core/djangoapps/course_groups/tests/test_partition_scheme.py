@@ -254,7 +254,7 @@ class TestCohortPartitionScheme(ModuleStoreTestCase):
 class TestExtension(django.test.TestCase):
     """
     Ensure that the scheme extension is correctly plugged in (via entry point
-    in setup.py)
+    in pyproject.toml)
     """
 
     def test_get_scheme(self):

@@ -26,7 +26,7 @@ from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataC
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from lms.djangoapps.lms_xblock.models import XBlockAsidesConfig
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-from xmodule.capa.xqueue_interface import XQueueInterface
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 
 from lms.djangoapps.grades.api import signals as grades_signals
 

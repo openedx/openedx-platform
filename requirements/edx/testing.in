@@ -29,7 +29,7 @@ httpretty                 # Library for mocking HTTP requests, used in many test
 import-linter             # Tool for making assertions about which modules can import which others
 isort                     # For checking and fixing the order of imports
 mock                      # Deprecated alias to standard library `unittest.mock`
-pycodestyle               # Checker for compliance with the Python style guide (PEP 8)
+ruff                      # Fast Python linter and formatter
 polib                     # Library for manipulating gettext translation files, used to test paver i18n commands
 pyquery                   # jQuery-like API for retrieving fragments of HTML and XML files in tests
 pytest                    # Testing framework

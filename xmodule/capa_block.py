@@ -51,11 +51,11 @@ from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_USER_IS_STAFF,
 )
 from openedx.core.djangolib.markup import HTML, Text
-from xmodule.capa import responsetypes
-from xmodule.capa.capa_problem import LoncapaProblem, LoncapaSystem
-from xmodule.capa.inputtypes import Status
-from xmodule.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xmodule.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
+from xblocks_contrib.problem.capa import responsetypes
+from xblocks_contrib.problem.capa.capa_problem import LoncapaProblem, LoncapaSystem
+from xblocks_contrib.problem.capa.inputtypes import Status
+from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
+from xblocks_contrib.problem.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
 from xmodule.raw_block import RawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.x_module import XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
@@ -156,7 +156,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
     An XBlock representing a "problem".
 
     A problem contains zero or more respondable items, such as multiple choice,
-    numeric response, true/false, etc. See xmodule/capa/responsetypes.py
+    numeric response, true/false, etc. See xblocks_contrib/problem/capa/responsetypes.py
     for the full ensemble.
 
     The rendering logic of a problem is largely encapsulated within

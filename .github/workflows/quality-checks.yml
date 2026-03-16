@@ -78,7 +78,7 @@ jobs:
           PIP_SRC: ${{ runner.temp }}
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
-            make pycodestyle
+            ruff check --output-format=github .
             make xsslint
             make pii_check
             make check_keywords

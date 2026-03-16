@@ -54,7 +54,6 @@ class MakoService(Service):
 
         Templates which are in these dirs will only work with this function:
             edx-platform/lms/templates/
-            edx-platform/xmodule/capa/templates/
             openedx/features/course_experience/templates
         """
         return render_to_string(template_file, dictionary, namespace=lms_mako_namespace)

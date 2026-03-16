@@ -105,14 +105,14 @@ check.
 Course App Plugin Class
 =======================
 
-To be loaded as a Course App, you need to provide an entrypoint in ``setup.py``
+To be loaded as a Course App, you need to provide an entrypoint in ``pyproject.toml``
 with the namespace ``openedx.course_app``. The entry should point to a Python
 class with the following basic structure:
 
 .. code-block:: python
 
     class CourseApp:
-        # The app id should match what is specified in the setup.py entrypoint
+        # The app id should match what is specified in the pyproject.toml entrypoint
         app_id: str = 'wiki'
         name: str = 'Wiki'
         description: str = 'A short description of what the Wiki does.'

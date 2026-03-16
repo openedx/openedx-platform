@@ -24,6 +24,7 @@ from common.djangoapps.student.tests.factories import (
     StaffFactory,
     UserFactory,
 )
+from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
@@ -124,6 +125,11 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.assertIn('total_enrollment', data)
         self.assertGreaterEqual(data['total_enrollment'], 3)
 
+        # Verify role-based enrollment counts are present
+        self.assertIn('learner_count', data)
+        self.assertIn('staff_count', data)
+        self.assertEqual(data['total_enrollment'], data['learner_count'] + data['staff_count'])
+
         # Verify permissions structure
         self.assertIn('permissions', data)
         permissions_data = data['permissions']
@@ -216,19 +222,82 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         # Instructor should have instructor permission
         self.assertTrue(permissions_data['instructor'])
 
+    def test_learner_and_staff_counts(self):
+        """
+        Test that learner_count excludes staff/admins and staff_count is the difference.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+
+        total = data['total_enrollment']
+        learner_count = data['learner_count']
+        staff_count = data['staff_count']
+
+        # Counts must be non-negative and sum to total
+        self.assertGreaterEqual(learner_count, 0)
+        self.assertGreaterEqual(staff_count, 0)
+        self.assertEqual(total, learner_count + staff_count)
+
+        # The student enrolled in setUp is not staff, so learner_count >= 1
+        self.assertGreaterEqual(learner_count, 1)
+
     def test_enrollment_counts_by_mode(self):
         """
-        Test that enrollment counts include breakdown by mode.
+        Test that enrollment counts include all configured modes,
+        even those with zero enrollments.
         """
+        # Configure modes for the course: audit, verified, honor, and professional
+        for mode_slug in ('audit', 'verified', 'honor', 'professional'):
+            CourseModeFactory.create(course_id=self.course_key, mode_slug=mode_slug)
+
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         enrollment_counts = response.data['enrollment_counts']
 
-        # Should have total count
+        # All configured modes should be present
+        self.assertIn('audit', enrollment_counts)
+        self.assertIn('verified', enrollment_counts)
+        self.assertIn('honor', enrollment_counts)
+        self.assertIn('professional', enrollment_counts)
         self.assertIn('total', enrollment_counts)
+
+        # professional has no enrollments but should still appear with 0
+        self.assertEqual(enrollment_counts['professional'], 0)
+
+        # Modes with enrollments should have correct counts
+        self.assertGreaterEqual(enrollment_counts['audit'], 1)
+        self.assertGreaterEqual(enrollment_counts['verified'], 1)
+        self.assertGreaterEqual(enrollment_counts['honor'], 1)
         self.assertGreaterEqual(enrollment_counts['total'], 3)
+
+    def test_enrollment_counts_excludes_unconfigured_modes(self):
+        """
+        Test that enrollment counts only include modes configured for the course,
+        not modes that exist on other courses.
+        """
+        # Only configure audit and honor for this course (not verified)
+        CourseModeFactory.create(course_id=self.course_key, mode_slug='audit')
+        CourseModeFactory.create(course_id=self.course_key, mode_slug='honor')
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        enrollment_counts = response.data['enrollment_counts']
+
+        # Only configured modes should appear
+        self.assertIn('audit', enrollment_counts)
+        self.assertIn('honor', enrollment_counts)
+        self.assertIn('total', enrollment_counts)
+
+        # verified is not configured, so it should not appear
+        # (even though there are verified enrollments from setUp)
+        self.assertNotIn('verified', enrollment_counts)
 
     def _get_tabs_from_response(self, user, course_id=None):
         """Helper to get tabs from API response."""
@@ -424,6 +493,25 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('course_errors', response.data)
         self.assertIsInstance(response.data['course_errors'], list)
+
+    @patch('lms.djangoapps.instructor.views.serializers_v2.settings.INSTRUCTOR_MICROFRONTEND_URL', None)
+    def test_tabs_log_warning_when_mfe_url_not_set(self):
+        """
+        Test that a warning is logged when INSTRUCTOR_MICROFRONTEND_URL is not set.
+        """
+        with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
+            tabs = self._get_tabs_from_response(self.staff)
+
+        self.assertTrue(
+            any('INSTRUCTOR_MICROFRONTEND_URL is not set' in msg for msg in cm.output)
+        )
+        # Tab URLs should use empty string as base, not "None"
+        for tab in tabs:
+            self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")
+            self.assertTrue(
+                tab['url'].startswith('/instructor/'),
+                f"Tab URL should start with '/instructor/': {tab['url']}"
+            )
 
     def test_pacing_self_for_self_paced_course(self):
         """

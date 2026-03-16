@@ -16,13 +16,16 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.config_model_utils.models import Provenance
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, CacheIsolationTestCase, FilteredQueryCountMixin
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
+
 
 @ddt.ddt
-class TestContentTypeGatingConfig(CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
+class TestContentTypeGatingConfig(FilteredQueryCountMixin, CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
 
     ENABLED_CACHES = ['default']
 
@@ -71,9 +74,9 @@ class TestContentTypeGatingConfig(CacheIsolationTestCase):  # pylint: disable=mi
         user = self.user
         course_key = self.course_overview.id
 
-        query_count = 7
+        query_count = 9
 
-        with self.assertNumQueries(query_count):
+        with self.assertNumQueries(query_count, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             enabled = ContentTypeGatingConfig.enabled_for_enrollment(
                 user=user,
                 course_key=course_key,
