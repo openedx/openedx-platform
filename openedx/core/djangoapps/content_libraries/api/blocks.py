@@ -8,8 +8,9 @@ from __future__ import annotations
 import logging
 import mimetypes
 from datetime import datetime, timezone
+from functools import cache
 from typing import TYPE_CHECKING
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -38,7 +39,17 @@ from openedx.core.djangoapps.xblock.api import (
 from openedx.core.types import User as UserType
 
 from ..models import ContentLibrary
-from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
+from .block_metadata import (
+    DirectPublishedEntity,
+    LibraryHistoryContributor,
+    LibraryHistoryEntry,
+    LibraryPublishHistoryGroup,
+    LibraryXBlockMetadata,
+    LibraryXBlockStaticFile,
+    direct_published_entity_from_record,
+    make_contributor,
+    resolve_change_action,
+)
 from .container_metadata import container_subclass_for_olx_tag
 from .containers import (
     ContainerMetadata,
@@ -63,6 +74,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+
 # The public API is only the following symbols:
 __all__ = [
     # API methods
@@ -82,6 +94,10 @@ __all__ = [
     "add_library_block_static_asset_file",
     "delete_library_block_static_asset_file",
     "publish_component_changes",
+    "get_library_component_draft_history",
+    "get_library_component_publish_history",
+    "get_library_component_publish_history_entries",
+    "get_library_component_creation_entry",
 ]
 
 
@@ -176,6 +192,211 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
         associated_collections=associated_collections,
     )
     return xblock_metadata
+
+
+def get_library_component_draft_history(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    Return the draft change history for a library component since its last publication,
+    ordered from most recent to oldest.
+
+    Raises ContentLibraryBlockNotFound if the component does not exist.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    draft_change_records = (
+        content_api.get_entity_draft_history(component.publishable_entity)
+        .select_related("entity__component__component_type", "draft_change_log__changed_by__profile")
+    )
+    entries = []
+    for record in draft_change_records:
+        version = record.new_version if record.new_version is not None else record.old_version
+        entries.append(LibraryHistoryEntry(
+            contributor=_contributor(record.draft_change_log.changed_by),
+            changed_at=record.draft_change_log.changed_at,
+            title=version.title if version is not None else "",
+            item_type=record.entity.component.component_type.name,
+            action=resolve_change_action(record.old_version, record.new_version),
+        ))
+    return entries
+
+
+def get_library_component_publish_history(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> list[LibraryPublishHistoryGroup]:
+    """
+    Return the publish history of a library component as a list of groups.
+
+    Each group corresponds to one publish event (PublishLogRecord) and includes:
+    - who published and when
+    - the distinct set of contributors: users who authored draft changes between
+      the previous publish and this one (via DraftChangeLogRecord version bounds)
+
+    direct_published_entities per era:
+    - Pre-Verawood (direct=None): single entry for the component itself.
+    - Post-Verawood, direct=True: single entry for the component (directly published).
+    - Post-Verawood, direct=False: all direct=True records from the same PublishLog
+      (e.g. a parent container that was directly published).
+
+    Groups are ordered most-recent-first. Returns [] if the component has never
+    been published.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    entity = component.publishable_entity
+    publish_records = (
+        content_api.get_entity_publish_history(entity)
+        .select_related("entity__component__component_type")
+    )
+
+    groups = []
+    for pub_record in publish_records:
+        # old_version is None only for the very first publish (entity had no prior published version)
+        old_version_num = pub_record.old_version.version_num if pub_record.old_version else 0
+        # new_version is None for soft-delete publishes (component deleted without a new draft version)
+        new_version_num = pub_record.new_version.version_num if pub_record.new_version else None
+
+        contributing_users = content_api.get_entity_version_contributors(
+            entity,
+            old_version_num=old_version_num,
+            new_version_num=new_version_num,
+        ).select_related('profile')
+        contributors = [
+            LibraryHistoryContributor.from_user(user, request)
+            for user in contributing_users
+        ]
+
+        if pub_record.direct is None or pub_record.direct is True:
+            # Pre-Verawood or component was directly published: single entry for itself.
+            # Use new_version title normally; fall back to old_version for soft-delete publishes
+            # (new_version=None means the component was deleted).
+            version = pub_record.new_version or pub_record.old_version
+            direct_published_entities = [DirectPublishedEntity(
+                entity_key=usage_key,
+                title=version.title if version else "",
+                entity_type=pub_record.entity.component.component_type.name,
+            )]
+        else:
+            # Post-Verawood, direct=False: component published as a dependency.
+            # Find all direct=True records in the same PublishLog.
+            direct_records = (
+                pub_record.publish_log.records
+                .filter(direct=True)
+                .select_related(
+                    'entity__component__component_type',
+                    'entity__container__container_type',
+                    'new_version',
+                    'old_version',
+                )
+            )
+            direct_published_entities = [
+                direct_published_entity_from_record(r, usage_key.lib_key)
+                for r in direct_records
+            ]
+
+        groups.append(LibraryPublishHistoryGroup(
+            publish_log_uuid=pub_record.publish_log.uuid,
+            published_by=pub_record.publish_log.published_by,
+            published_at=pub_record.publish_log.published_at,
+            contributors=contributors,
+            direct_published_entities=direct_published_entities,
+            scope_entity_key=usage_key,
+        ))
+
+    return groups
+
+
+def get_library_component_publish_history_entries(
+    usage_key: LibraryUsageLocatorV2,
+    publish_log_uuid: UUID,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    Return the individual draft change entries for a specific publish event.
+
+    Called lazily when the user expands a publish event in the UI. Entries are
+    the DraftChangeLogRecords that fall between the previous publish event and
+    this one, ordered most-recent-first.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    records = (
+        content_api.get_entity_publish_history_entries(
+            component.publishable_entity, str(publish_log_uuid)
+        )
+        .select_related("entity__component__component_type", "draft_change_log__changed_by__profile")
+    )
+    entries = []
+    for record in records:
+        # Deleted components can't reach this endpoint, so new_version is always set.
+        # (Unlike containers — see get_library_container_publish_history_entries.)
+        assert record.new_version is not None  # for satisfy the type check
+        entries.append(LibraryHistoryEntry(
+            contributor=_contributor(record.draft_change_log.changed_by),
+            changed_at=record.draft_change_log.changed_at,
+            title=record.new_version.title,
+            item_type=record.entity.component.component_type.name,
+            action=resolve_change_action(record.old_version, record.new_version),
+        ))
+    return entries
+
+
+def get_library_component_creation_entry(
+    usage_key: LibraryUsageLocatorV2,
+    request=None,
+) -> LibraryHistoryEntry | None:
+    """
+    Return the creation entry for a library component.
+
+    This is a single LibraryHistoryEntry representing the moment the
+    component was first created. Returns None if the component
+    has no versions yet.
+
+    Raises ContentLibraryBlockNotFound if the component does not exist.
+    """
+    try:
+        component = get_component_from_usage_key(usage_key)
+    except ObjectDoesNotExist as exc:
+        raise ContentLibraryBlockNotFound(usage_key) from exc
+
+    # TODO: replace with component.versioning.earliest once VersioningHelper exposes that helper.
+    first_version = (
+        component.publishable_entity.versions
+        .order_by('version_num')
+        .select_related("created_by__profile")
+        .first()
+    )
+    if first_version is None:
+        return None
+
+    user = first_version.created_by
+    return LibraryHistoryEntry(
+        contributor=make_contributor(user, request),
+        changed_at=first_version.created,
+        title=first_version.title,
+        item_type=component.component_type.name,
+        action="created",
+    )
 
 
 def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) -> ComponentVersion:
@@ -626,7 +847,6 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
             staged_content_files,
             now,
         )
-
 
 def get_or_create_olx_media_type(block_type: str) -> MediaType:
     """

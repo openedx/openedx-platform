@@ -5,20 +5,32 @@ API for containers (Sections, Subsections, Units) in Content Libraries
 from __future__ import annotations
 
 import logging
+import operator
 import typing
 from datetime import datetime, timezone
-from uuid import uuid4
+from functools import cache
+from uuid import UUID, uuid4
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
-from openedx_content.models_api import Container
+from openedx_content.models_api import Container, PublishLogRecord
 from openedx_events.content_authoring.data import LibraryContainerData
 from openedx_events.content_authoring.signals import LIBRARY_CONTAINER_DELETED
 
 from ..models import ContentLibrary
-from .block_metadata import LibraryXBlockMetadata
+from .block_metadata import (
+    LibraryHistoryContributor,
+    LibraryHistoryEntry,
+    LibraryPublishHistoryGroup,
+    LibraryXBlockMetadata,
+    direct_published_entity_from_record,
+    get_entity_item_type,
+    make_contributor,
+    resolve_change_action,
+)
 from .container_metadata import (
     LIBRARY_ALLOWED_CONTAINER_TYPES,
     ContainerHierarchy,
@@ -49,6 +61,10 @@ __all__ = [
     "get_library_object_hierarchy",
     "copy_container",
     "library_container_locator",
+    "get_library_container_draft_history",
+    "get_library_container_publish_history",
+    "get_library_container_publish_history_entries",
+    "get_library_container_creation_entry",
 ]
 
 log = logging.getLogger(__name__)
@@ -298,3 +314,309 @@ def get_library_object_hierarchy(
     https://github.com/openedx/edx-platform/pull/36813#issuecomment-3136631767
     """
     return ContainerHierarchy.create_from_library_object_key(object_key)
+
+
+def get_library_container_draft_history(
+    container_key: LibraryContainerLocator,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    [ 🛑 UNSTABLE ] Return the combined draft history for a container and all of its descendant
+    components, sorted from most-recent to oldest.
+
+    Each entry describes a single change log record: who made the change, when,
+    what the title was at that point.
+    """
+    container = get_container_from_key(container_key)
+    # Collect entity IDs for all components nested inside this container.
+    component_entity_ids = content_api.get_descendant_component_entity_ids(container)
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    results: list[LibraryHistoryEntry] = []
+    # Process the container itself first, then each descendant component.
+    for item_id in [container.pk] + component_entity_ids:
+        for record in content_api.get_entity_draft_history(item_id).select_related(
+            "entity__component__component_type",
+            "entity__container__container_type",
+            "draft_change_log__changed_by__profile",
+        ):
+            # Use the new version when available; fall back to the old version
+            # (e.g. for delete records where new_version is None).
+            version = record.new_version if record.new_version is not None else record.old_version
+            item_type = get_entity_item_type(record.entity)
+            results.append(LibraryHistoryEntry(
+                contributor=_contributor(record.draft_change_log.changed_by),
+                changed_at=record.draft_change_log.changed_at,
+                title=version.title if version is not None else "",
+                item_type=item_type,
+                action=resolve_change_action(record.old_version, record.new_version),
+            ))
+
+    # Return all entries sorted newest-first across the container and its children.
+    results.sort(
+        key=operator.attrgetter('changed_at', 'title'),
+        reverse=True,
+    )
+    return results
+
+
+def get_library_container_publish_history(
+    container_key: LibraryContainerLocator,
+    request=None,
+) -> list[LibraryPublishHistoryGroup]:
+    """
+    [ 🛑 UNSTABLE ] Return the publish history of a container as a list of groups.
+
+    Pre-Verawood records (direct=None): one group per entity × publish event
+    (same PublishLog may produce multiple groups — one per entity in scope).
+
+    Post-Verawood records (direct!=None): one group per unique PublishLog that
+    touched the container or any descendant. Contributors are accumulated across
+    all entities in that PublishLog within scope. direct_published_entities lists
+    the entities the user directly clicked "Publish" on.
+
+    Groups are ordered most-recent-first. Returns [] if nothing has been published.
+    """
+    container = get_container_from_key(container_key)
+    component_entity_ids = content_api.get_descendant_component_entity_ids(container)
+    all_entity_ids = [container.pk] + component_entity_ids
+
+    # Collect all records grouped by publish_log_uuid.
+    publish_log_groups: dict[UUID, list[tuple[int, PublishLogRecord]]] = {}
+    for entity_id in all_entity_ids:
+        for pub_record in content_api.get_entity_publish_history(entity_id).select_related(
+            "entity__component__component_type",
+            "entity__container__container_type",
+            "new_version",
+            "old_version",
+        ):
+            uuid: UUID = pub_record.publish_log.uuid
+            publish_log_groups.setdefault(uuid, []).append((entity_id, pub_record))
+
+    groups = []
+    for uuid, entity_records in publish_log_groups.items():
+        # Era is uniform across all records in one PublishLog.
+        _, first_record = entity_records[0]
+        user_publish_intent_was_recorded = first_record.direct is not None
+
+        if user_publish_intent_was_recorded:
+            # ONE merged group for this entire PublishLog.
+            groups.append(
+                _build_post_verawood_container_group(
+                    uuid, entity_records, container_key, request
+                )
+            )
+        else:
+            # Pre-Verawood: one group per entity-record pair (separated).
+            for entity_id, pub_record in entity_records:
+                groups.append(
+                    _build_pre_verawood_container_group(
+                        pub_record, entity_id, container_key, request
+                    )
+                )
+    groups.sort(key=operator.attrgetter('published_at', 'publish_log_uuid'), reverse=True)
+    return groups
+
+
+def _build_post_verawood_container_group(
+    uuid: UUID,
+    entity_records: list[tuple[int, PublishLogRecord]],
+    container_key: LibraryContainerLocator,
+    request,
+) -> LibraryPublishHistoryGroup:
+    """
+    Build one merged LibraryPublishHistoryGroup for a Post-Verawood PublishLog.
+
+    Queries the full PublishLog for direct=True records (covers both in-scope
+    and out-of-scope cases, e.g. a shared component published from a sibling).
+    Contributors are accumulated across all in-scope entity records.
+    """
+    publish_log = entity_records[0][1].publish_log
+    direct_records = (
+        publish_log.records
+        .filter(direct=True)
+        .select_related(
+            'entity__component__component_type',
+            'entity__container__container_type',
+            'new_version',
+            'old_version',
+        )
+    )
+    direct_published_entities = [
+        direct_published_entity_from_record(r, container_key.lib_key)
+        for r in direct_records
+    ]
+
+    seen_usernames: set[str] = set()
+    all_contributors = []
+    for entity_id, pub_record in entity_records:
+        old_version_num = pub_record.old_version.version_num if pub_record.old_version else 0
+        new_version_num = pub_record.new_version.version_num if pub_record.new_version else None
+        contributing_users = content_api.get_entity_version_contributors(
+            entity_id,
+            old_version_num=old_version_num,
+            new_version_num=new_version_num,
+        ).select_related('profile')
+        for user in contributing_users:
+            contributor = LibraryHistoryContributor.from_user(user, request)
+            if contributor.username not in seen_usernames:
+                seen_usernames.add(contributor.username)
+                all_contributors.append(contributor)
+
+    return LibraryPublishHistoryGroup(
+        publish_log_uuid=uuid,
+        published_by=publish_log.published_by,
+        published_at=publish_log.published_at,
+        contributors=all_contributors,
+        direct_published_entities=direct_published_entities,
+        scope_entity_key=None,
+    )
+
+
+def _build_pre_verawood_container_group(
+    pub_record: PublishLogRecord,
+    entity_id: int,
+    container_key: LibraryContainerLocator,
+    request,
+) -> LibraryPublishHistoryGroup:
+    """
+    Build one LibraryPublishHistoryGroup for a Pre-Verawood record.
+
+    One group per entity × publish event (separated). entity_key is approximated:
+    str(container_key) for the container itself, str(usage_key) for a component.
+    """
+    old_version_num = pub_record.old_version.version_num if pub_record.old_version else 0
+    new_version_num = pub_record.new_version.version_num if pub_record.new_version else None
+    contributing_users = content_api.get_entity_version_contributors(
+        entity_id,
+        old_version_num=old_version_num,
+        new_version_num=new_version_num,
+    ).select_related('profile')
+    contributors = [
+        LibraryHistoryContributor.from_user(user, request)
+        for user in contributing_users
+    ]
+
+    entity = direct_published_entity_from_record(pub_record, container_key.lib_key)
+    return LibraryPublishHistoryGroup(
+        publish_log_uuid=pub_record.publish_log.uuid,
+        published_by=pub_record.publish_log.published_by,
+        published_at=pub_record.publish_log.published_at,
+        contributors=contributors,
+        # Pre-Verawood: single approximated entry built from the record itself.
+        direct_published_entities=[entity],
+        scope_entity_key=entity.entity_key,
+    )
+
+
+def get_library_container_publish_history_entries(
+    scope_entity_key: LibraryContainerLocator,
+    publish_log_uuid: UUID,
+    request=None,
+) -> list[LibraryHistoryEntry]:
+    """
+    [ 🛑 UNSTABLE ] Return the individual draft change entries for all entities
+    in scope that participated in a specific publish event.
+
+    scope_entity_key identifies the container being viewed — it defines which
+    entities' entries to return (the container + its descendants). This may differ
+    from the direct_published_entities in the publish group (e.g. a parent Section
+    was directly published, but the scope here is a child Unit).
+
+    Post-Verawood (direct!=None): returns entries for all entities in scope that
+    participated in the PublishLog.
+
+    Pre-Verawood (direct=None): returns entries only for the container itself
+    (old behavior — one group per entity, scope == directly published entity).
+
+    Returns [] if no entities in scope participated in this publish event.
+    """
+    container = get_container_from_key(scope_entity_key)
+    component_entity_ids = content_api.get_descendant_component_entity_ids(container)
+    scope_entity_ids = {container.pk} | set(component_entity_ids)
+
+    publish_log_records = PublishLogRecord.objects.filter(publish_log__uuid=publish_log_uuid)
+    is_post_verawood = publish_log_records.filter(direct__isnull=False).exists()
+
+    if is_post_verawood:
+        # Return entries for all entities in scope that participated in this PublishLog.
+        relevant_entity_ids = (
+            set(publish_log_records.values_list('entity_id', flat=True)) & scope_entity_ids
+        )
+    else:
+        # Pre-Verawood: scope_entity_key is the directly published entity.
+        # Return entries only for the container itself (old behavior).
+        relevant_entity_ids = {container.pk} & set(
+            publish_log_records.values_list('entity_id', flat=True)
+        )
+
+    if not relevant_entity_ids:
+        return []
+
+    @cache
+    def _contributor(user):
+        return make_contributor(user, request)
+
+    entries = []
+    for entity_id in relevant_entity_ids:
+        try:
+            records = (
+                content_api.get_entity_publish_history_entries(entity_id, str(publish_log_uuid))
+                .select_related(
+                    'entity__component__component_type',
+                    'entity__container__container_type',
+                    'draft_change_log__changed_by__profile',
+                )
+            )
+        except ObjectDoesNotExist:
+            continue
+
+        for record in records:
+            version = record.new_version if record.new_version is not None else record.old_version
+            item_type = get_entity_item_type(record.entity)
+            entries.append(LibraryHistoryEntry(
+                contributor=_contributor(record.draft_change_log.changed_by),
+                changed_at=record.draft_change_log.changed_at,
+                title=version.title if version is not None else "",
+                item_type=item_type,
+                action=resolve_change_action(record.old_version, record.new_version),
+            ))
+
+    # Return entries sorted newest-first; use title as tiebreaker for determinism.
+    entries.sort(key=operator.attrgetter('changed_at', 'title'), reverse=True)
+    return entries
+
+
+def get_library_container_creation_entry(
+    container_key: LibraryContainerLocator,
+    request=None,
+) -> LibraryHistoryEntry | None:
+    """
+    [ 🛑 UNSTABLE ] Return the creation entry for a library container.
+
+    This is a single LibraryHistoryEntry representing the moment the container
+    was first created. Returns None if the container has no
+    versions yet.
+    """
+    container = get_container_from_key(container_key)
+    # TODO: replace with container.versioning.earliest once VersioningHelper exposes that helper.
+    first_version = (
+        container.publishable_entity.versions
+        .order_by('version_num')
+        .select_related("created_by__profile")
+        .first()
+    )
+    if first_version is None:
+        return None
+
+    user = first_version.created_by
+    return LibraryHistoryEntry(
+        contributor=make_contributor(user, request),
+        changed_at=first_version.created,
+        title=first_version.title,
+        item_type=container.container_type.type_code,
+        action="created",
+    )

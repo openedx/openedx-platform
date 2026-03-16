@@ -39,6 +39,10 @@ URL_LIB_RESTORE = URL_PREFIX + 'restore/'  # Restore a library from a learning p
 URL_LIB_RESTORE_GET = URL_LIB_RESTORE + '?{query_params}'  # Get status/result of a library restore task
 URL_LIB_BLOCK = URL_PREFIX + 'blocks/{block_key}/'  # Get data about a block, or delete it
 URL_LIB_BLOCK_PUBLISH = URL_LIB_BLOCK + 'publish/'  # Publish changes from a specified XBlock
+URL_LIB_BLOCK_DRAFT_HISTORY = URL_LIB_BLOCK + 'draft_history/'  # Draft change history for a block
+URL_LIB_BLOCK_PUBLISH_HISTORY = URL_LIB_BLOCK + 'publish_history/'  # Publish event history for a block
+URL_LIB_PUBLISH_HISTORY_ENTRIES = URL_LIB_DETAIL + 'publish_history_entries/'
+URL_LIB_BLOCK_CREATION_ENTRY = URL_LIB_BLOCK + 'creation_entry/'
 URL_LIB_BLOCK_OLX = URL_LIB_BLOCK + 'olx/'  # Get or set the OLX of the specified XBlock
 URL_LIB_BLOCK_ASSETS = URL_LIB_BLOCK + 'assets/'  # List the static asset files of the specified XBlock
 URL_LIB_BLOCK_ASSET_FILE = URL_LIB_BLOCK + 'assets/{file_name}'  # Get, delete, or upload a specific static asset file
@@ -50,6 +54,9 @@ URL_LIB_CONTAINER_RESTORE = URL_LIB_CONTAINER + 'restore/'  # Restore a deleted 
 URL_LIB_CONTAINER_COLLECTIONS = URL_LIB_CONTAINER + 'collections/'  # Handle associated collections
 URL_LIB_CONTAINER_PUBLISH = URL_LIB_CONTAINER + 'publish/'  # Publish changes to the specified container + children
 URL_LIB_CONTAINER_COPY = URL_LIB_CONTAINER + 'copy/'  # Copy the specified container to the clipboard
+URL_LIB_CONTAINER_DRAFT_HISTORY = URL_LIB_CONTAINER + 'draft_history/'  # Draft change history for a container
+URL_LIB_CONTAINER_PUBLISH_HISTORY = URL_LIB_CONTAINER + 'publish_history/'  # Publish event history for a container
+URL_LIB_CONTAINER_CREATION_ENTRY = URL_LIB_CONTAINER + 'creation_entry/'  # Creation entry for a container
 URL_LIB_COLLECTION = URL_LIB_COLLECTIONS + '{collection_key}/'  # Get a collection in this library
 URL_LIB_COLLECTION_ITEMS = URL_LIB_COLLECTION + 'items/'  # Get a collection in this library
 
@@ -323,6 +330,48 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         """ Publish changes from a specified XBlock """
         return self._api('post', URL_LIB_BLOCK_PUBLISH.format(block_key=block_key), None, expect_response)
 
+    def _get_block_draft_history(self, block_key, expect_response=200):
+        """ Get the draft change history for a block since its last publication """
+        return self._api('get', URL_LIB_BLOCK_DRAFT_HISTORY.format(block_key=block_key), None, expect_response)
+
+    def _get_block_publish_history(self, block_key, expect_response=200):
+        """ Get the publish event history for a block """
+        return self._api('get', URL_LIB_BLOCK_PUBLISH_HISTORY.format(block_key=block_key), None, expect_response)
+
+    def _get_container_publish_history(self, container_key, expect_response=200):
+        """ Get the publish event history for a container """
+        return self._api(
+            'get', URL_LIB_CONTAINER_PUBLISH_HISTORY.format(container_key=container_key), None, expect_response
+        )
+
+    def _get_publish_history_entries(self, lib_key, scope_entity_key, publish_log_uuid, expect_response=200):
+        """ Get the draft change entries for a specific publish event (component or container) """
+        url = URL_LIB_PUBLISH_HISTORY_ENTRIES.format(lib_key=lib_key)
+        url += f'?scope_entity_key={scope_entity_key}&publish_log_uuid={publish_log_uuid}'
+        return self._api('get', url, None, expect_response)
+
+    def _get_block_publish_history_entries(self, block_key, publish_log_uuid, expect_response=200):
+        """ Get the draft change entries for a specific publish event for a component block """
+        parsed_key = UsageKey.from_string(block_key) if isinstance(block_key, str) else block_key
+        lib_key = parsed_key.lib_key
+        return self._get_publish_history_entries(lib_key, block_key, publish_log_uuid, expect_response)
+
+    def _get_container_publish_history_entries(self, container_key, publish_log_uuid, expect_response=200):
+        """ Get the draft change entries for a specific publish event for a container """
+        parsed_key = ContainerKey.from_string(container_key) if isinstance(container_key, str) else container_key
+        lib_key = parsed_key.lib_key
+        return self._get_publish_history_entries(lib_key, container_key, publish_log_uuid, expect_response)
+
+    def _get_block_creation_entry(self, block_key, expect_response=200):
+        """ Get the creation entry for a block (the moment it was first saved) """
+        return self._api('get', URL_LIB_BLOCK_CREATION_ENTRY.format(block_key=block_key), None, expect_response)
+
+    def _get_container_creation_entry(self, container_key, expect_response=200):
+        """ Get the creation entry for a container (the moment it was first saved) """
+        return self._api(
+            'get', URL_LIB_CONTAINER_CREATION_ENTRY.format(container_key=container_key), None, expect_response
+        )
+
     def _paste_clipboard_content_in_library(self, lib_key, expect_response=200):
         """ Paste's the users clipboard content into Library """
         url = URL_LIB_PASTE_CLIPBOARD.format(lib_key=lib_key)
@@ -508,6 +557,15 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
     def _publish_container(self, container_key: ContainerKey | str, expect_response=200):
         """ Publish all changes in the specified container + children """
         return self._api('post', URL_LIB_CONTAINER_PUBLISH.format(container_key=container_key), None, expect_response)
+
+    def _get_container_draft_history(self, container_key: ContainerKey | str, expect_response=200):
+        """ Get the draft change history for a container and its descendants since the last publication """
+        return self._api(
+            'get',
+            URL_LIB_CONTAINER_DRAFT_HISTORY.format(container_key=container_key),
+            None,
+            expect_response,
+        )
 
     def _copy_container(self, container_key: ContainerKey | str, expect_response=200):
         """ Copy the specified container to the clipboard """
