@@ -78,7 +78,6 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
 from . import api
-from .api import create_library_v2_zip
 from .models import ContentLibrary
 
 log = logging.getLogger(__name__)
