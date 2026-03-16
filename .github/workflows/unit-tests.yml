@@ -56,6 +56,18 @@ jobs:
         #
         # We're testing the older version of Ubuntu and running the xmodule tests since those rely on many
         # dependent complex libraries and will hopefully catch most issues quickly.
+        #
+        # include:
+        #  - shard_name: "xmodule-with-cms"
+        #    python-version: "3.12"
+        #    django-version: "pinned"
+        #    mongo-version: "7.0"
+        #    os-version: "ubuntu-24.04"
+        #  - shard_name: "xmodule-with-lms"
+        #    python-version: "3.12"
+        #    django-version: "pinned"
+        #    mongo-version: "7.0"
+        #    os-version: "ubuntu-24.04"
     steps:
       - name: checkout repo
         uses: actions/checkout@v6
