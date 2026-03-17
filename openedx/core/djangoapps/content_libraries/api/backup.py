@@ -10,13 +10,14 @@ from tempfile import mkdtemp
 import zipfile
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryLocatorV2, log
 from path import Path
 
 from openedx_content.api import create_zip_file as create_lib_zip_file
 
-__all__ = ["create_library_v2_zip"]
+__all__ = ["create_library_v2_zip", "export_library_v2_to_zip"]
 
 
 def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
@@ -59,10 +60,8 @@ def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
     Raises:
         Exception: If backup creation or extraction fails
     """
-    from cms.djangoapps.contentstore.exams import User
-
     # Get user object for backup API
-    user_obj = User.objects.filter(username=user).first()
+    user_obj = get_user_model().objects.filter(username=user).first()
     temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
 
     try:

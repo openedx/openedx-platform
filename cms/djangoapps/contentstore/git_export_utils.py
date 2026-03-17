@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
-from openedx.core.djangoapps.content_libraries.api.backup import export_library_v2_to_zip
+from openedx.core.djangoapps.content_libraries.api import export_library_v2_to_zip
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
