@@ -16,6 +16,7 @@ from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.api import users as authz_api
+from openedx_authz.api.data import RoleAssignmentData, CourseOverviewData
 from openedx_authz.constants import roles as authz_roles
 
 from common.djangoapps.student.models import CourseAccessRole
@@ -73,6 +74,24 @@ def authz_add_role(user: User, authz_role: str, course_key: str):
     legacy_role = get_legacy_role_from_authz_role(authz_role)
     emit_course_access_role_added(user, course_locator, course_locator.org, legacy_role)
 
+def authz_get_all_course_assignments_for_user(user: User) -> list[RoleAssignmentData]:
+    """
+    Get all course assignments for a user.
+    """
+    assignments = authz_api.get_user_role_assignments(user_external_key=user.username)
+    # filter courses only
+    filtered_assignments = [
+        assignment for assignment in assignments
+        if isinstance(assignment.scope, CourseOverviewData)
+    ]
+    return filtered_assignments
+
+def get_org_from_key(key: str) -> str:
+    """
+    Get the org from a course key.
+    """
+    parsed_key = CourseKey.from_string(key)
+    return parsed_key.org
 
 def register_access_role(cls):
     """
@@ -136,13 +155,12 @@ def get_authz_compat_course_access_roles_for_user(user: User) -> set[AuthzCompat
     Retrieve all CourseAccessRole objects for a given user and convert them to AuthzCompatCourseAccessRole objects.
     """
     compat_role_assignments = set()
-    assignments = authz_api.get_user_role_assignments(user_external_key=user.username)
+    assignments = authz_get_all_course_assignments_for_user(user)
     for assignment in assignments:
         for role in assignment.roles:
             legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
             course_key = assignment.scope.external_key
-            parsed_key = CourseKey.from_string(course_key)
-            org = parsed_key.org
+            org = get_org_from_key(course_key)
             compat_role = AuthzCompatCourseAccessRole(
                 user_id=user.id,
                 username=user.username,
@@ -825,9 +843,7 @@ class UserBasedRole:
 
         # Get all assignments for a user to a role
         new_authz_roles = [get_authz_role_from_legacy_role(role) for role in roles]
-        all_authz_user_assignments = authz_api.get_user_role_assignments(
-            user_external_key=self.user.username
-        )
+        all_authz_user_assignments = authz_get_all_course_assignments_for_user(self.user)
 
         all_assignments = set()
 
@@ -847,8 +863,7 @@ class UserBasedRole:
                     continue
                 legacy_role = get_legacy_role_from_authz_role(authz_role=role.external_key)
                 course_key = assignment.scope.external_key
-                parsed_key = CourseKey.from_string(course_key)
-                org = parsed_key.org
+                org = get_org_from_key(course_key)
                 all_assignments.add(AuthzCompatCourseAccessRole(
                     user_id=self.user.id,
                     username=self.user.username,
@@ -880,9 +895,7 @@ class UserBasedRole:
 
         # Then check for authz assignments
         new_authz_roles = [get_authz_role_from_legacy_role(role) for role in roles]
-        all_authz_user_assignments = authz_api.get_user_role_assignments(
-            user_external_key=self.user.username
-        )
+        all_authz_user_assignments = authz_get_all_course_assignments_for_user(self.user)
 
         for assignment in all_authz_user_assignments:
             for role in assignment.roles:
@@ -892,7 +905,7 @@ class UserBasedRole:
                     # There is at least one assignment, short circuit
                     return True
                 course_key = assignment.scope.external_key
-                parsed_key = CourseKey.from_string(course_key)
-                if org == parsed_key.org:
+                parsed_org = get_org_from_key(course_key)
+                if org == parsed_org:
                     return True
         return False

@@ -743,6 +743,19 @@ ALL_LANGUAGES = [
 
 LANGUAGE_DICT = dict(LANGUAGES)
 
+# .. setting_name: COURSE_ACCESS_DURATION_MIN_WEEKS
+# .. setting_default: 4
+# .. setting_description: Minimum course duration in weeks when Discovery service data is unavailable or course has no
+# .. weeks_to_complete value. Used as fallback for course access duration calculations (e.g., audit access expiration
+# .. and discussion notification filtering).
+COURSE_ACCESS_DURATION_MIN_WEEKS = 4
+
+# .. setting_name: COURSE_ACCESS_DURATION_MAX_WEEKS
+# .. setting_default: 18
+# .. setting_description: Maximum course duration in weeks. Course access duration is bounded by this upper limit
+# .. regardless of Discovery service data.
+COURSE_ACCESS_DURATION_MAX_WEEKS = 18
+
 ############################## Optional Apps ###############################
 
 OPTIONAL_APPS = [
@@ -2103,7 +2116,7 @@ USE_EXTRACTED_PROBLEM_BLOCK = False
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_VIDEO_BLOCK = False
+USE_EXTRACTED_VIDEO_BLOCK = True
 
 ############################## Marketing Site ##############################
 

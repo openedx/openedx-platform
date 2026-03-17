@@ -4,6 +4,7 @@ Tests of student.roles
 
 
 import ddt
+from unittest.mock import patch
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -11,6 +12,7 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx_authz.api.data import ContentLibraryData, RoleAssignmentData, RoleData, UserData
 from openedx_authz.engine.enforcer import AuthzEnforcer
 
 from common.djangoapps.student.admin import CourseAccessRoleHistoryAdmin
@@ -32,6 +34,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgStaffRole,
     RoleCache,
+    get_authz_compat_course_access_roles_for_user,
     get_role_cache_key_for_course,
     ROLE_CACHE_UNGROUPED_ROLES__KEY
 )
@@ -235,6 +238,23 @@ class RolesTestCase(TestCase):
         role_second_org = OrgContentCreatorRole(org=self.orgs[1])
         role_second_org.add_users(self.student)
         assert len(role.get_orgs_for_user(self.student)) == 2
+
+    def test_get_authz_compat_course_access_roles_for_user(self):
+        """
+        Thest that get_authz_compat_course_access_roles_for_user doesn't crash when the user
+        has Libraries V2 or other non-course roles in their assignments.
+        """
+        lib_assignment = RoleAssignmentData(
+            subject=UserData(external_key=self.student.username),
+            roles=[RoleData(external_key='test-role')],
+            scope=ContentLibraryData(external_key='lib:edX:test-lib'),
+        )
+        with patch(
+            'openedx_authz.api.users.get_subject_role_assignments',
+            return_value=[lib_assignment],
+        ):
+            result = get_authz_compat_course_access_roles_for_user(self.student)
+        assert result == set()
 
 
 @ddt.ddt
