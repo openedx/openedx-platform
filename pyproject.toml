@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openedx-platform"
 version = "0.13"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["setuptools"]
 
 [tool.setuptools]

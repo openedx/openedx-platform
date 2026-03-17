@@ -38,7 +38,7 @@ from xblocks_contrib.problem.capa.responsetypes import (
 )
 from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
 from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
-from xmodule.capa_block import ComplexEncoder, ProblemBlock
+from xmodule.capa_block import ComplexEncoder, _BuiltInProblemBlock as ProblemBlock
 from xmodule.tests import DATA_DIR
 
 from ..capa_block import RANDOMIZATION, SHOWANSWER
@@ -813,7 +813,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         # what the input is, by patching CorrectMap.is_correct()
         # Also simulate rendering the HTML
         with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
-            with patch("xmodule.capa_block.ProblemBlock.get_problem_html") as mock_html:
+            with patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html") as mock_html:
                 mock_is_correct.return_value = True
                 mock_html.return_value = "Test HTML"
 
@@ -833,7 +833,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.lcp.context["attempt"] == 2
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_with_grading_method_disable(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test that without a specific grading method, the score behaves as
@@ -873,7 +873,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_with_grading_method_enable(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test that the grading method is enabled when submit a problem.
@@ -895,7 +895,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             mock_get_score.assert_called()
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_grading_method_always_enabled(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test problem submission when grading method is always enabled by default.
@@ -948,7 +948,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_grading_method_always_enabled_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test problem submission when grading method is always enabled by default
@@ -1001,7 +1001,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_last_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `last_score` grading method.
@@ -1034,7 +1034,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `highest_score` grading method.
@@ -1066,7 +1066,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_first_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `first_score` grading method.
@@ -1098,7 +1098,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
     @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_average_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `average_score` grading method.
@@ -1176,7 +1176,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
         # Problem closed -- cannot submit
         # Simulate that ProblemBlock.closed() always returns True
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
             with pytest.raises(NotFoundError):
                 get_request_dict = {CapaFactory.input_key(): "3.14"}
@@ -1530,7 +1530,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block.choose_new_seed = Mock(wraps=block.choose_new_seed)
 
         # Stub out HTML rendering
-        with patch("xmodule.capa_block.ProblemBlock.get_problem_html") as mock_html:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html") as mock_html:
             mock_html.return_value = "<div>Test HTML</div>"
 
             # Reset the problem
@@ -1553,7 +1553,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block = CapaFactory.create(rerandomize=RANDOMIZATION.ALWAYS)
 
         # Simulate that the problem is closed
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
 
             # Try to reset the problem
@@ -1696,7 +1696,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             assert block.lcp.context["attempt"] == 1
             mock_get_rescore.assert_called()
 
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
     def test_rescore_problem_grading_method_always_enabled(self, mock_publish_grade: Mock):
         """
         Test the rescore method when grading method is always enabled by default.
@@ -1738,7 +1738,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
 
         mock_publish_grade.assert_called_with(score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False)
 
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
     def test_rescore_problem_grading_method_always_enabled_with_various_methods(self, mock_publish_grade: Mock):
         """
         Test the rescore method when grading method is always enabled by default
@@ -1780,7 +1780,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block.rescore(only_if_higher=False)
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
     def test_rescore_problem_update_grading_method(self, mock_publish_grade: Mock):
         """
         Test the rescore method when the grading method is updated.
@@ -1944,7 +1944,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         self.assertEqual(score, expected_score)
         self.assertEqual(block.score, expected_score)
 
-    @patch("xmodule.capa_block.ProblemBlock.score_from_lcp")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.score_from_lcp")
     def test_get_score_with_grading_method_updates_score(self, mock_score_from_lcp: Mock):
         """
         Test that the `get_score_with_grading_method` method returns the correct score.
@@ -2065,7 +2065,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
         block = CapaFactory.create(done=False)
 
         # Simulate that the problem is closed
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
 
             # Try to save the problem

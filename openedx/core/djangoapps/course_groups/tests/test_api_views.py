@@ -583,6 +583,49 @@ class TestCohortApi(SharedModuleStoreTestCase):
         assert data['developer_message'] == 'If group_id is specified, user_partition_id must also be specified.'
         assert data['error_code'] == 'missing-user-partition-id'
 
+    def test_get_cohorts_default_ordering(self):
+        """
+        Test that cohorts are returned in ascending alphabetical order by default.
+        """
+        cohorts.add_cohort(self.course_key, "Zebra", "manual")
+        cohorts.add_cohort(self.course_key, "Alpha", "manual")
+        cohorts.add_cohort(self.course_key, "Mango", "manual")
+
+        path = reverse('api_cohorts:cohort_handler', kwargs={'course_key_string': self.course_str})
+        self.client.login(username=self.staff_user.username, password=self.password)
+        response = self.client.get(path=path)
+
+        assert response.status_code == 200
+        names = [c['name'] for c in response.json()]
+        assert names == ['Alpha', 'Mango', 'Zebra']
+
+    def test_get_cohorts_desc_ordering(self):
+        """
+        Test that cohorts are returned in descending alphabetical order when ordering=desc.
+        """
+        cohorts.add_cohort(self.course_key, "Zebra", "manual")
+        cohorts.add_cohort(self.course_key, "Alpha", "manual")
+        cohorts.add_cohort(self.course_key, "Mango", "manual")
+
+        path = reverse('api_cohorts:cohort_handler', kwargs={'course_key_string': self.course_str})
+        self.client.login(username=self.staff_user.username, password=self.password)
+        response = self.client.get(path=path, data={'ordering': 'desc'})
+
+        assert response.status_code == 200
+        names = [c['name'] for c in response.json()]
+        assert names == ['Zebra', 'Mango', 'Alpha']
+
+    def test_get_cohorts_invalid_ordering(self):
+        """
+        Test that an invalid ordering value returns a 400 error.
+        """
+        path = reverse('api_cohorts:cohort_handler', kwargs={'course_key_string': self.course_str})
+        self.client.login(username=self.staff_user.username, password=self.password)
+        response = self.client.get(path=path, data={'ordering': 'invalid'})
+
+        assert response.status_code == 400
+        assert response.json().get('error_code') == 'invalid-ordering-value'
+
     def test_patch_cohort_with_name_only(self):
         """
         Test that PATCH with only name is now valid (previously required assignment_type too).
