@@ -131,15 +131,6 @@ class _BuiltInVideoBlock(
     has_custom_completion = True
     completion_mode = XBlockCompletionMode.COMPLETABLE
 
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "_BuiltInVideoBlock is deprecated. Please use the extracted VideoBlock "
-            "from xblocks_contrib.video instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(*args, **kwargs)
-
     video_time = 0
     icon_class = 'video'
 
@@ -1210,3 +1201,14 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+if not settings.USE_EXTRACTED_VIDEO_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.video.VideoBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
