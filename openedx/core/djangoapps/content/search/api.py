@@ -827,19 +827,19 @@ def update_library_containers_collections(
     """
     library_key = collection_key.lib_key
     library = lib_api.get_library(library_key)
-    containers = content_api.get_collection_containers(
+    container_entities = content_api.get_collection_entities(
         library.learning_package_id,
         collection_key.collection_id,
-    )
+    ).exclude(container=None).select_related("container")
 
-    paginator = Paginator(containers, batch_size)
+    paginator = Paginator(container_entities, batch_size)
     for page in paginator.page_range:
         docs = []
 
-        for container in paginator.page(page).object_list:
+        for container_entity in paginator.page(page).object_list:
             container_key = lib_api.library_container_locator(
                 library_key,
-                container,
+                container_entity.container,
             )
             doc = searchable_doc_for_key(container_key)
             doc.update(searchable_doc_collections(container_key))

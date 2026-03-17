@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from organizations.models import Organization
 
 from openedx.core.djangoapps.content_libraries import api as library_api
@@ -92,7 +93,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.container = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Unit,
+                container_type=content_models.Unit,
                 slug="unit1",
                 title="A Unit in the Search Index",
                 user_id=None,
@@ -102,7 +103,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.subsection = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Subsection,
+                container_type=content_models.Subsection,
                 slug="subsection1",
                 title="A Subsection in the Search Index",
                 user_id=None,
@@ -112,7 +113,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.section = library_api.create_container(
                 cls.library.key,
-                container_type=library_api.ContainerType.Section,
+                container_type=content_models.Section,
                 slug="section1",
                 title="A Section in the Search Index",
                 user_id=None,

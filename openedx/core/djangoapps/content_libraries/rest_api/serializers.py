@@ -15,7 +15,6 @@ from user_tasks.models import UserTaskStatus
 
 from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
 from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.api.containers import ContainerType
 from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 from openedx.core.djangoapps.content_libraries.models import (
     ContentLibrary,
@@ -252,7 +251,8 @@ class LibraryContainerMetadataSerializer(PublishableItemSerializer):
 
     Converts from ContainerMetadata to JSON-compatible data
     """
-    # Use 'source' to get this as a string, not an enum value instance which the container_type field has.
+    container_type_code = serializers.CharField(source="container_key.container_type")
+    # Deprecated - ambiguous type
     container_type = serializers.CharField(source="container_key.container_type")
 
     # When creating a new container in a library, the slug becomes the ID part of
@@ -265,7 +265,7 @@ class LibraryContainerMetadataSerializer(PublishableItemSerializer):
         Returns a dictionary, not a ContainerMetadata instance.
         """
         result = super().to_internal_value(data)
-        result["container_type"] = ContainerType(data["container_type"])
+        del result["container_type"]  # Use container_type_code instead
         return result
 
 
