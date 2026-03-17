@@ -14,11 +14,11 @@ attrs==25.4.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.66
+boto3==1.42.69
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.66
+botocore==1.42.69
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -33,7 +33,7 @@ cffi==2.0.0
     #   -r scripts/user_retirement/requirements/base.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.5
+charset-normalizer==3.4.6
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
@@ -75,7 +75,7 @@ google-api-core==2.30.0
     #   google-api-python-client
 google-api-python-client==2.192.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.49.0
+google-auth==2.49.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -151,11 +151,10 @@ psutil==7.2.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   pyasn1-modules
-    #   rsa
 pyasn1-modules==0.4.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
@@ -166,7 +165,7 @@ pycparser==3.0
     #   cffi
 pygments==2.19.2
     # via pytest
-pyjwt[crypto]==2.11.0
+pyjwt[crypto]==2.12.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-rest-api-client
@@ -222,10 +221,6 @@ responses==0.26.0
     # via
     #   -r scripts/user_retirement/requirements/testing.in
     #   moto
-rsa==4.9.1
-    # via
-    #   -r scripts/user_retirement/requirements/base.txt
-    #   google-auth
 s3transfer==0.16.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt

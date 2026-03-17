@@ -103,14 +103,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.66
+boto3==1.42.69
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.66
+botocore==1.42.69
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -169,7 +169,7 @@ chardet==7.1.0
     #   -r requirements/edx/coverage.txt
     #   diff-cover
     #   pysrt
-charset-normalizer==3.4.5
+charset-normalizer==3.4.6
     # via
     #   -r requirements/edx/base.txt
     #   requests
@@ -207,7 +207,7 @@ click-repl==0.3.0
     # via
     #   -r requirements/edx/base.txt
     #   celery
-code-annotations==2.3.2
+code-annotations==3.0.0
     # via
     #   -r requirements/edx/base.txt
     #   -r requirements/edx/testing.in
@@ -218,11 +218,11 @@ codejail-includes==2.0.0
     # via -r requirements/edx/base.txt
 colorama==0.4.6
     # via tox
-coverage[toml]==7.13.4
+coverage[toml]==7.13.5
     # via
     #   -r requirements/edx/coverage.txt
     #   pytest-cov
-crowdsourcehinter-xblock==0.8
+crowdsourcehinter-xblock==1.0.0
     # via -r requirements/edx/base.txt
 cryptography==45.0.7
     # via
@@ -457,7 +457,7 @@ django-simple-history==3.11.0
     #   edx-proctoring
     #   enterprise-integrated-channels
     #   ora2
-django-statici18n==2.6.0
+django-statici18n==2.7.1
     # via
     #   -r requirements/edx/base.txt
     #   lti-consumer-xblock
@@ -467,7 +467,7 @@ django-storages==1.14.6
     # via
     #   -r requirements/edx/base.txt
     #   edxval
-django-user-tasks==3.4.4
+django-user-tasks==4.0.0
     # via -r requirements/edx/base.txt
 django-waffle==5.0.0
     # via
@@ -509,7 +509,7 @@ dnspython==2.8.0
     # via
     #   -r requirements/edx/base.txt
     #   pymongo
-done-xblock==2.5.0
+done-xblock==3.0.0
     # via -r requirements/edx/base.txt
 drf-jwt==1.19.2
     # via
@@ -524,7 +524,7 @@ drf-yasg==1.21.15
     #   edx-api-doc-tools
 edx-ace==1.15.0
     # via -r requirements/edx/base.txt
-edx-api-doc-tools==2.1.2
+edx-api-doc-tools==3.0.0
     # via
     #   -r requirements/edx/base.txt
     #   openedx-authz
@@ -601,7 +601,7 @@ edx-i18n-tools==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   ora2
-edx-lint==5.6.0
+edx-lint==6.0.0
     # via -r requirements/edx/testing.in
 edx-milestones==1.1.0
     # via -r requirements/edx/base.txt
@@ -630,7 +630,7 @@ edx-organizations==7.3.0
     #   openedx-core
 edx-proctoring==5.2.0
     # via -r requirements/edx/base.txt
-edx-rbac==2.1.0
+edx-rbac==3.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -702,7 +702,7 @@ execnet==2.1.2
     # via pytest-xdist
 factory-boy==3.3.3
     # via -r requirements/edx/testing.in
-faker==40.8.0
+faker==40.11.0
     # via factory-boy
 fastapi==0.135.1
     # via pact-python
@@ -750,7 +750,7 @@ google-api-core[grpc]==2.30.0
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.49.0
+google-auth==2.49.1
     # via
     #   -r requirements/edx/base.txt
     #   google-api-core
@@ -762,7 +762,7 @@ google-cloud-core==2.5.0
     #   -r requirements/edx/base.txt
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.24.0
+google-cloud-firestore==2.25.0
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
@@ -924,7 +924,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==10.0.0
+lti-consumer-xblock==10.0.1
     # via -r requirements/edx/base.txt
 lxml[html-clean]==5.3.2
     # via
@@ -1050,9 +1050,9 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==0.23.0
+openedx-authz==1.0.0
     # via -r requirements/edx/base.txt
-openedx-calc==4.0.3
+openedx-calc==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
@@ -1060,7 +1060,7 @@ openedx-core==0.36.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
-openedx-django-pyfs==3.8.0
+openedx-django-pyfs==4.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblock
@@ -1183,12 +1183,11 @@ psycopg2-binary==2.9.11
     # via -r requirements/edx/base.txt
 py==1.11.0
     # via -r requirements/edx/testing.in
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   -r requirements/edx/base.txt
     #   pgpy
     #   pyasn1-modules
-    #   rsa
 pyasn1-modules==0.4.2
     # via
     #   -r requirements/edx/base.txt
@@ -1223,7 +1222,7 @@ pygments==2.19.2
     #   -r requirements/edx/coverage.txt
     #   diff-cover
     #   rich
-pyjwt[crypto]==2.11.0
+pyjwt[crypto]==2.12.1
     # via
     #   -r requirements/edx/base.txt
     #   drf-jwt
@@ -1446,11 +1445,7 @@ rpds-py==0.30.0
     #   -r requirements/edx/base.txt
     #   jsonschema
     #   referencing
-rsa==4.9.1
-    # via
-    #   -r requirements/edx/base.txt
-    #   google-auth
-ruff==0.15.5
+ruff==0.15.6
     # via -r requirements/edx/testing.in
 rules==3.5
     # via
@@ -1478,7 +1473,7 @@ shapely==2.1.2
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-simpleeval==1.0.4
+simpleeval==1.0.7
     # via
     #   -r requirements/edx/base.txt
     #   pycasbin
@@ -1548,7 +1543,7 @@ sqlparse==0.5.5
     # via
     #   -r requirements/edx/base.txt
     #   django
-staff-graded-xblock==3.1.0
+staff-graded-xblock==4.0.0
     # via -r requirements/edx/base.txt
 starlette==0.52.1
     # via fastapi
@@ -1656,7 +1651,7 @@ urllib3==2.6.3
     #   elasticsearch
     #   pact-python
     #   requests
-uvicorn==0.41.0
+uvicorn==0.42.0
     # via pact-python
 vine==5.1.0
     # via
@@ -1737,14 +1732,14 @@ xblock-utils==4.0.0
     #   -r requirements/edx/base.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.13.1
+xblocks-contrib==0.14.0
     # via -r requirements/edx/base.txt
 xmlsec==1.3.14
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
     #   python3-saml
-xss-utils==0.8.0
+xss-utils==1.0.0
     # via -r requirements/edx/base.txt
 yarl==1.23.0
     # via
