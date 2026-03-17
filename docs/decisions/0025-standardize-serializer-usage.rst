@@ -96,7 +96,7 @@ Alternatives Considered
 
 * **Keep manual JSON construction**: rejected due to inconsistency and maintenance burden.
 * **Use DRF defaults only**: rejected because explicit serializers provide better validation and documentation.
-* **Use newer ways of managing API responses such as dataclasses or pydantic**: rejected due to complexity and unknowns in transitioning from two existing patterns (manual JSON and DRF serializers) to a third approach. While these python libraries offer better ergonomics, migration would require checking nested serializers, complex validation, and ModelSerializer-heavy endpoints. Additionally, preventing new DRF serializers via linting is more complex than anticipated.
+* **Use newer ways of managing API responses such as dataclasses or pydantic**: rejected due to complexity and unknowns in transitioning from two existing patterns (manual JSON and DRF serializers) to a third approach. While these python libraries offer better ergonomics, migration would require checking nested serializers, complex validation, and ModelSerializer-heavy endpoints. To move to some new format, we would want to prevent using the basic DRF Serializers any more than we do right now, but preventing new DRF serializers via linting is more complex than anticipated.  This work can be revisited in the future once the platform is a bit more consistent.
 
 Rollout Plan
 ------------
