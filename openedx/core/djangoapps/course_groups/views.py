@@ -532,10 +532,17 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
 
     **Example Requests**:
 
-        GET /api/cohorts/v1/courses/{course_id}/cohorts
-        POST /api/cohorts/v1/courses/{course_id}/cohorts
+        GET /api/cohorts/v1/courses/{course_id}/cohorts/
+        GET /api/cohorts/v1/courses/{course_id}/cohorts/?ordering=asc
+        GET /api/cohorts/v1/courses/{course_id}/cohorts/?ordering=desc
+        POST /api/cohorts/v1/courses/{course_id}/cohorts/
         GET /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
         PATCH /api/cohorts/v1/courses/{course_id}/cohorts/{cohort_id}
+
+    **GET Query Parameters**
+
+        * ordering (optional): Sort direction for the cohort list by name. Accepted values are
+          "asc" (ascending, default) and "desc" (descending). Returns HTTP 400 for invalid values.
 
     **POST Request Values**
 
@@ -575,7 +582,14 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
         """
         course_key, course = _get_course_with_access(request, course_key_string, 'load')
         if not cohort_id:
-            all_cohorts = cohorts.get_course_cohorts(course)
+            ordering = request.query_params.get('ordering', 'asc').lower()
+            if ordering not in ('asc', 'desc'):
+                raise self.api_error(
+                    status.HTTP_400_BAD_REQUEST,
+                    'Invalid ordering value. Must be "asc" or "desc".',
+                    'invalid-ordering-value'
+                )
+            all_cohorts = cohorts.get_course_cohorts(course, ordering=ordering)
             paginator = NamespacedPageNumberPagination()
             paginator.max_page_size = MAX_PAGE_SIZE
             page = paginator.paginate_queryset(all_cohorts, request)

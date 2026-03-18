@@ -16,7 +16,7 @@ from xblock.runtime import Mixologist
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.capa.xqueue_interface import XQueueInterface
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService, XQueueService
 
 

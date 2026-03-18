@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "openedx-platform"
 version = "0.13"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["setuptools"]
 
 [tool.setuptools]
@@ -205,6 +205,27 @@ norecursedirs = ". .* *.egg build conf dist node_modules test_root cms/envs lms/
 python_classes = []
 python_files = ["tests.py", "test_*.py", "tests_*.py", "*_tests.py", "__init__.py"]
 
+[tool.ruff]
+line-length = 120
+exclude = [
+    "migrations",
+    "test_root/staticfiles",
+]
+
+[tool.ruff.lint]
+select = ["E", "W"]
+ignore = [
+    "E402",  # module level import not at top of file
+    "E501",  # line too long (pylint enforces this at 120 chars while ignoring trailing comments)
+    "E722",  # do not use bare 'except'
+    "E731",  # do not assign a lambda expression
+    "E741",  # ambiguous variable name. TODO: fix the ~9 issues and re-enable this.
+    # The rules below were added in pycodestyle 2.9.x but we were pinned to 2.8.x,
+    # so they represent new findings. Keeping them ignored here to make this an
+    # equivalent swap; they can be cleaned up in a follow-up.
+    "E721",  # use `isinstance()` for type comparisons
+]
+
 [tool.isort]
 indent = "    "
 line_length = 120
@@ -212,7 +233,7 @@ multi_line_output = 3
 skip = ["envs", "migrations"]
 
 [tool.importlinter]
-root_packages = ["lms", "cms", "openedx", "openedx_content"]
+root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog"]
 include_external_packages = true
 # Our custom contract which checks that we're only importing from 'api.py'
 # for participating packages.
@@ -335,11 +356,13 @@ isolated_apps = [
     "openedx.core.djangoapps.olx_rest_api",
     "openedx.core.djangoapps.xblock",
     "openedx.core.lib.xblock_serializer",
+    "openedx_catalog",
 ]
 allowed_modules = [
     # Only imports from api.py and data.py are allowed elsewhere in the code
     # See https://open-edx-proposals.readthedocs.io/en/latest/best-practices/oep-0049-django-app-patterns.html#api-py
     "api",
+    "models_api",
     "data",
     "tests",
 ]

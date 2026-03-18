@@ -34,7 +34,7 @@ from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Scope, String
 from xblock.scorable import ShowCorrectness
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -89,7 +89,7 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.credit.api import set_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditProvider
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
-from openedx.core.djangolib.testing.utils import get_mock_request
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, get_mock_request
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.lib.url_utils import quote_slashes
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
@@ -108,7 +108,7 @@ from openedx.features.enterprise_support.tests.mixins.enterprise import Enterpri
 from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
 from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
 
-QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 FEATURES_WITH_DISABLE_HONOR_CERTIFICATE = settings.FEATURES.copy()
 FEATURES_WITH_DISABLE_HONOR_CERTIFICATE['DISABLE_HONOR_CERTIFICATES'] = True
@@ -1283,8 +1283,8 @@ class ProgressPageTests(ProgressPageBaseTests):
             self.assertContains(resp, "earned a certificate for this course.")
 
     @ddt.data(
-        (True, 54),
-        (False, 54),
+        (True, 56),
+        (False, 56),
     )
     @ddt.unpack
     def test_progress_queries_paced_courses(self, self_paced, query_count):
@@ -1299,7 +1299,7 @@ class ProgressPageTests(ProgressPageBaseTests):
         ContentTypeGatingConfig.objects.create(enabled=True, enabled_as_of=datetime(2018, 1, 1))
         self.setup_course()
         with self.assertNumQueries(
-            54, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
+            56, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST
         ), check_mongo_calls(2):
             self._get_progress_page()
 
@@ -2027,7 +2027,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
     def test_user_with_passing_grade(self, mock_is_course_passed):  # lint-amnesty, pylint: disable=unused-argument
         # If user has above passing grading then json will return cert generating message and
         # status valid code
-        with patch('xmodule.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_send_to_queue:
+        with patch('xblocks_contrib.problem.capa.xqueue_interface.XQueueInterface.send_to_queue') as mock_send_to_queue:
             mock_send_to_queue.return_value = (0, "Successfully queued")
 
             resp = self.client.post(self.url)

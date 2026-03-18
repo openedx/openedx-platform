@@ -191,7 +191,7 @@ class ProgressTabView(RetrieveAPIView):
             visible_chapters.append({**chapter, "sections": filtered_sections})
         return visible_chapters
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):    # pylint: disable=too-many-statements
         course_key_string = kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
         student_id = kwargs.get('student_id')
@@ -203,9 +203,10 @@ class ProgressTabView(RetrieveAPIView):
         monitoring_utils.set_custom_attribute('course_id', course_key_string)
         monitoring_utils.set_custom_attribute('user_id', request.user.id)
         monitoring_utils.set_custom_attribute('is_staff', request.user.is_staff)
-        is_staff = bool(has_access(request.user, 'staff', course_key))
+        requester_has_staff_access = bool(has_access(request.user, 'staff', course_key))
 
-        student = self._get_student_user(request, course_key, student_id, is_staff)
+        student = self._get_student_user(request, course_key, student_id, requester_has_staff_access)
+        learner_has_staff_access = bool(has_access(student, 'staff', course_key))
         username = get_enterprise_learner_generic_name(request) or student.username
 
         course = get_course_or_403(student, 'load', course_key, check_if_enrolled=False)
@@ -214,7 +215,7 @@ class ProgressTabView(RetrieveAPIView):
         enrollment = CourseEnrollment.get_enrollment(student, course_key)
         enrollment_mode = getattr(enrollment, 'mode', None)
 
-        if not (enrollment and enrollment.is_active) and not is_staff:
+        if not (enrollment and enrollment.is_active) and not requester_has_staff_access:
             return Response('User not enrolled.', status=401)
 
         # The block structure is used for both the course_grade and has_scheduled content fields
@@ -223,7 +224,7 @@ class ProgressTabView(RetrieveAPIView):
         course_grade = CourseGradeFactory().read(student, collected_block_structure=collected_block_structure)
 
         # recalculate course grade from visible grades (stored grade was calculated over all grades, visible or not)
-        course_grade.update(visible_grades_only=True, has_staff_access=is_staff)
+        course_grade.update(visible_grades_only=True, has_staff_access=learner_has_staff_access)
 
         # Get has_scheduled_content data
         transformers = BlockStructureTransformers()
@@ -265,7 +266,7 @@ class ProgressTabView(RetrieveAPIView):
         assignment_type_grade_summary = aggregate_assignment_type_grade_summary(
             course_grade,
             grading_policy,
-            has_staff_access=is_staff,
+            has_staff_access=learner_has_staff_access,
         )
 
         # Filter out section scores to only have those that are visible to the user
@@ -291,7 +292,7 @@ class ProgressTabView(RetrieveAPIView):
             'final_grades': assignment_type_grade_summary["final_grades"],
         }
         context = self.get_serializer_context()
-        context['staff_access'] = is_staff
+        context['staff_access'] = learner_has_staff_access
         context['course_blocks'] = course_blocks
         context['course_key'] = course_key
         # course_overview and enrollment will be used by VerifiedModeSerializer

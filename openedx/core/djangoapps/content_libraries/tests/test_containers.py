@@ -840,6 +840,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         # Test the actual OLX in the clipboard:
         olx_data = staging_api.get_staged_content_olx(clipboard_data.content.id)
         assert olx_data is not None
+        # pylint: disable=line-too-long
         assert olx_data == textwrap.dedent(f"""\
           <chapter copied_from_block="{self.section_with_subsections["id"]}" copied_from_version="2" display_name="Section with subsections">
             <sequential copied_from_block="{self.subsection["id"]}" copied_from_version="1" display_name="Subsection Alpha"/>
@@ -858,6 +859,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
             <sequential copied_from_block="{self.subsection_3["id"]}" copied_from_version="1" display_name="Test Subsection 3"/>
           </chapter>
         """)
+        # pylint: enable=line-too-long
 
     def test_publish_subsection(self) -> None:
         """

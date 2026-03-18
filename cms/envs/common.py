@@ -289,7 +289,6 @@ HOTJAR_ID = 00000
 
 MAKO_TEMPLATE_DIRS_BASE.insert(3, COMMON_ROOT / 'static')
 MAKO_TEMPLATE_DIRS_BASE.append(CMS_ROOT / 'djangoapps' / 'pipeline_js' / 'templates')
-MAKO_TEMPLATE_DIRS_BASE.append(XMODULE_ROOT / 'capa' / 'templates')
 
 
 def make_lms_template_path(settings):
@@ -787,6 +786,9 @@ INSTALLED_APPS = [
 
     'common.djangoapps.xblock_django',
 
+    # Agreements
+    'openedx.core.djangoapps.agreements',
+
     # Catalog integration
     'openedx.core.djangoapps.catalog',
 
@@ -905,7 +907,13 @@ INSTALLED_APPS = [
     # alternative swagger generator for CMS API
     'drf_spectacular',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
+
+    # Core models to represent courses
+    "openedx_catalog",
 
     # Core apps that power libraries
     "openedx_content",
