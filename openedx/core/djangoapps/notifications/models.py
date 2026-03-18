@@ -177,6 +177,34 @@ class NotificationPreference(TimeStampedModel):
         return self.email_cadence
 
 
+class DigestSchedule(TimeStampedModel):
+    """
+    Tracks scheduled Celery digest tasks for daily/weekly email digests.
+
+    One record exists per (user, cadence_type, delivery_time) combination,
+    representing a single pending Celery task. This is the source of truth for
+    deduplication of digest scheduling.
+
+    NOTE: This is intentionally separate from Notification.email_scheduled.
+    Notification.email_scheduled serves the immediate/buffer cadence flow
+    (decide_email_action → schedule_digest_buffer → send_buffered_digest) and
+    operates at the notification row level. DigestSchedule operates at the
+    task level — one record per scheduled Celery job — for daily/weekly digests only.
+
+    .. no_pii:
+    """
+    user = models.ForeignKey(User, related_name="digest_schedules", on_delete=models.CASCADE)
+    cadence_type = models.CharField(max_length=20)
+    delivery_time = models.DateTimeField()
+    task_id = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = ('user', 'cadence_type', 'delivery_time')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.cadence_type} - {self.delivery_time} (task={self.task_id})'
+
+
 def create_notification_preference(user_id: int, notification_type: str) -> NotificationPreference:
     """
     Create a single notification preference with appropriate defaults.
