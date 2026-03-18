@@ -11,10 +11,10 @@ from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.data import CourseDiscussionConfigurationData, DiscussionTopicContext
 from openedx.core.djangoapps.discussions.handlers import update_course_discussion_config
 from openedx.core.djangoapps.discussions.models import DiscussionTopicLink, DiscussionsConfiguration
+from openedx.core.djangoapps.discussions.tasks import _sync_enabled_from_discussion_tab
 
 
 @ddt.ddt
-@patch("openedx.core.djangoapps.discussions.handlers.modulestore")
 class UpdateCourseDiscussionsConfigTestCase(TestCase):
     """
     Tests for the discussion config update handler.
@@ -48,7 +48,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
                 },
             )
 
-    def test_configuration_for_new_course(self, mock_modulestore):
+    def test_configuration_for_new_course(self):
         """
         Test that a new course gets a new discussion configuration object
         """
@@ -63,7 +63,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         db_config = DiscussionsConfiguration.objects.get(context_key=new_key)
         assert db_config.provider_type == "openedx"
 
-    def test_creating_new_links(self, mock_modulestore):
+    def test_creating_new_links(self):
         """
         Test that new links are created in the db when they are added in the config.
         """
@@ -77,7 +77,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         topic_links = DiscussionTopicLink.objects.filter(context_key=self.course_key)
         assert topic_links.count() == len(contexts)  # 2 general + 3 units
 
-    def test_updating_existing_links(self, mock_modulestore):
+    def test_updating_existing_links(self):
         """
         Test that updating existing links works as expected.
         """
@@ -113,7 +113,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         "openedx.core.djangoapps.discussions.models.AVAILABLE_PROVIDER_MAP",
         {"test": {"supports_in_context_discussions": True}},
     )
-    def test_provider_change(self, mock_modulestore):
+    def test_provider_change(self):
         """
         Test that changing providers creates new links, and doesn't update existing ones.
         """
@@ -149,7 +149,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         # The new link will get a new id
         assert new_link.external_id != str(existing_external_id)
 
-    def test_enabled_units_change(self, mock_modulestore):
+    def test_enabled_units_change(self):
         """
         Test that when enabled units change, old unit links are disabled in context.
         """
@@ -202,128 +202,90 @@ def _make_mock_tab(tab_id, is_hidden=False):
     return tab
 
 
-def _mock_modulestore_with_tabs(course_key, tabs):
+class SyncEnabledFromDiscussionTabTestCase(TestCase):
     """
-    Return a mock modulestore whose get_course returns a course with the given tabs.
-    The mock supports the branch_setting context-manager protocol.
-    """
-    mock_course = MagicMock()
-    mock_course.tabs = tabs
-
-    store = MagicMock()
-    store.get_course.return_value = mock_course
-    store.branch_setting.return_value.__enter__ = MagicMock(return_value=store)
-    store.branch_setting.return_value.__exit__ = MagicMock(return_value=False)
-    return store
-
-
-@patch("openedx.core.djangoapps.discussions.handlers.modulestore")
-class TabStateSyncTestCase(TestCase):
-    """
-    Tests that DiscussionsConfiguration.enabled is synced from the discussion
-    tab's is_hidden state in the modulestore.
+    Tests that _sync_enabled_from_discussion_tab correctly updates
+    DiscussionsConfiguration.enabled based on the discussion tab's is_hidden state.
     """
 
     def setUp(self):
         super().setUp()
         self.course_key = CourseKey.from_string("course-v1:test+test+test")
 
-    def _build_config_data(self, course_key=None):
-        return CourseDiscussionConfigurationData(
-            course_key=course_key or self.course_key,
-            provider_type="openedx",
-        )
+    def _make_course(self, tabs):
+        """Create a mock course with the given tabs."""
+        course = MagicMock()
+        course.tabs = tabs
+        return course
 
-    # -- New configuration creation (no existing DiscussionsConfiguration) --
-
-    def test_new_config_enabled_when_tab_visible(self, mock_modulestore):
+    def test_enabled_when_tab_visible(self):
         """
-        When creating a DiscussionsConfiguration for a brand-new course whose
-        discussion tab is visible (is_hidden=False), enabled should be True.
-        """
-        new_key = CourseKey.from_string("course-v1:test+test+new_visible")
-        tabs = [
-            _make_mock_tab("courseware"),
-            _make_mock_tab("discussion", is_hidden=False),
-        ]
-        mock_modulestore.return_value = _mock_modulestore_with_tabs(new_key, tabs)
-
-        update_course_discussion_config(self._build_config_data(new_key))
-
-        config = DiscussionsConfiguration.objects.get(context_key=new_key)
-        assert config.enabled is True
-
-    def test_new_config_disabled_when_tab_hidden(self, mock_modulestore):
-        """
-        When creating a DiscussionsConfiguration for a brand-new course whose
-        discussion tab is hidden (is_hidden=True), enabled should be False.
-        """
-        new_key = CourseKey.from_string("course-v1:test+test+new_hidden")
-        tabs = [
-            _make_mock_tab("courseware"),
-            _make_mock_tab("discussion", is_hidden=True),
-        ]
-        mock_modulestore.return_value = _mock_modulestore_with_tabs(new_key, tabs)
-
-        update_course_discussion_config(self._build_config_data(new_key))
-
-        config = DiscussionsConfiguration.objects.get(context_key=new_key)
-        assert config.enabled is False
-
-    # -- Existing configuration update (import / rerun scenario) --
-
-    def test_existing_config_updated_to_disabled_on_import(self, mock_modulestore):
-        """
-        Simulates importing a course with a hidden discussion tab into a course
-        that already has DiscussionsConfiguration(enabled=True). After publish,
-        enabled should become False to match the imported tab state.
-        """
-        DiscussionsConfiguration.objects.create(
-            context_key=self.course_key,
-            provider_type="openedx",
-            enabled=True,
-        )
-        tabs = [
-            _make_mock_tab("courseware"),
-            _make_mock_tab("discussion", is_hidden=True),
-        ]
-        mock_modulestore.return_value = _mock_modulestore_with_tabs(self.course_key, tabs)
-
-        update_course_discussion_config(self._build_config_data())
-
-        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
-        assert config.enabled is False
-
-    def test_existing_config_updated_to_enabled_on_import(self, mock_modulestore):
-        """
-        If an existing config has enabled=False and the imported course has a
-        visible discussion tab (is_hidden=False), enabled should be set to True.
+        When discussion tab is visible (is_hidden=False), enabled should be True.
         """
         DiscussionsConfiguration.objects.create(
             context_key=self.course_key,
             provider_type="openedx",
             enabled=False,
         )
-        tabs = [
+        course = self._make_course([
             _make_mock_tab("courseware"),
             _make_mock_tab("discussion", is_hidden=False),
-        ]
-        mock_modulestore.return_value = _mock_modulestore_with_tabs(self.course_key, tabs)
+        ])
 
-        update_course_discussion_config(self._build_config_data())
+        _sync_enabled_from_discussion_tab(self.course_key, course)
 
         config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
         assert config.enabled is True
 
-    def test_modulestore_failure_defaults_to_enabled(self, mock_modulestore):
+    def test_disabled_when_tab_hidden(self):
         """
-        If the modulestore read throws an exception, enabled should default to True
-        so discussion isn't accidentally disabled.
+        When discussion tab is hidden (is_hidden=True), enabled should be False.
         """
-        new_key = CourseKey.from_string("course-v1:test+test+ms_fail")
-        mock_modulestore.return_value.branch_setting.side_effect = Exception("boom")
+        DiscussionsConfiguration.objects.create(
+            context_key=self.course_key,
+            provider_type="openedx",
+            enabled=True,
+        )
+        course = self._make_course([
+            _make_mock_tab("courseware"),
+            _make_mock_tab("discussion", is_hidden=True),
+        ])
 
-        update_course_discussion_config(self._build_config_data(new_key))
+        _sync_enabled_from_discussion_tab(self.course_key, course)
 
-        config = DiscussionsConfiguration.objects.get(context_key=new_key)
+        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
+        assert config.enabled is False
+
+    def test_defaults_to_enabled_when_no_discussion_tab(self):
+        """
+        If the course has no discussion tab, enabled should default to True.
+        """
+        DiscussionsConfiguration.objects.create(
+            context_key=self.course_key,
+            provider_type="openedx",
+            enabled=False,
+        )
+        course = self._make_course([
+            _make_mock_tab("courseware"),
+            _make_mock_tab("progress"),
+        ])
+
+        _sync_enabled_from_discussion_tab(self.course_key, course)
+
+        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
+        assert config.enabled is True
+
+    def test_defaults_to_enabled_when_course_is_none(self):
+        """
+        If the course object is None, enabled should default to True.
+        """
+        DiscussionsConfiguration.objects.create(
+            context_key=self.course_key,
+            provider_type="openedx",
+            enabled=False,
+        )
+
+        _sync_enabled_from_discussion_tab(self.course_key, None)
+
+        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
         assert config.enabled is True

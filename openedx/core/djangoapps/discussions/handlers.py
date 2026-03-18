@@ -13,8 +13,7 @@ from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
     get_default_provider_type,
 )
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
+
 
 log = logging.getLogger(__name__)
 
@@ -94,45 +93,16 @@ def update_course_discussion_config(configuration: CourseDiscussionConfiguration
             for topic_context in new_topic_map.values()
         ])
 
-        # Determine the 'enabled' value from the course's discussion tab state.
-        # When a course is imported/rerun, course.tabs are copied verbatim from the source,
-        # but DiscussionsConfiguration is not updated automatically. We read tab.is_hidden
-        # from modulestore on every publish so that DiscussionsConfiguration.enabled stays
-        # in sync with the tab state. This is safe because the serializer already keeps
-        # tab.is_hidden and enabled in agreement for API-driven changes.
-        enabled = True  # default
-        try:
-            store = modulestore()
-            with store.branch_setting(ModuleStoreEnum.Branch.published_only, course_key):
-                course = store.get_course(course_key)
-                if course:
-                    for tab in course.tabs:
-                        if getattr(tab, 'tab_id', None) == 'discussion':
-                            enabled = not tab.is_hidden
-                            break
-        except Exception:  # pylint: disable=broad-except
-            log.exception(
-                "Failed to read discussion tab state from modulestore for %s, defaulting enabled=True",
-                course_key,
-            )
-
         if not DiscussionsConfiguration.objects.filter(context_key=course_key).exists():
             log.info(f"Course {course_key} doesn't have discussion configuration model yet. Creating a new one.")
             DiscussionsConfiguration(
                 context_key=course_key,
-                enabled=enabled,
                 provider_type=provider_id,
                 plugin_configuration=configuration.plugin_configuration,
                 enable_in_context=configuration.enable_in_context,
                 enable_graded_units=configuration.enable_graded_units,
                 unit_level_visibility=configuration.unit_level_visibility,
             ).save()
-        else:
-            # Sync enabled from the tab state. This covers imports/reruns into a course
-            # that already has a DiscussionsConfiguration — the tab state should win.
-            DiscussionsConfiguration.objects.filter(
-                context_key=course_key,
-            ).update(enabled=enabled)
 
 
 COURSE_DISCUSSIONS_CHANGED.connect(handle_course_discussion_config_update)
