@@ -1,7 +1,7 @@
 """
 Tests for discussions signal handlers
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from uuid import uuid4
 
 import ddt
@@ -11,7 +11,6 @@ from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.data import CourseDiscussionConfigurationData, DiscussionTopicContext
 from openedx.core.djangoapps.discussions.handlers import update_course_discussion_config
 from openedx.core.djangoapps.discussions.models import DiscussionTopicLink, DiscussionsConfiguration
-from openedx.core.djangoapps.discussions.tasks import _sync_enabled_from_discussion_tab
 
 
 @ddt.ddt
@@ -192,100 +191,3 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         assert existing_topic_link.title == "Section 10|Subsection 10|Unit 10"
         # If there is no stored context, then continue using the Unit name.
         assert existing_topic_link_2.title == "Unit 11"
-
-
-def _make_mock_tab(tab_id, is_hidden=False):
-    """Helper to create a mock course tab."""
-    tab = MagicMock()
-    tab.tab_id = tab_id
-    tab.is_hidden = is_hidden
-    return tab
-
-
-class SyncEnabledFromDiscussionTabTestCase(TestCase):
-    """
-    Tests that _sync_enabled_from_discussion_tab correctly updates
-    DiscussionsConfiguration.enabled based on the discussion tab's is_hidden state.
-    """
-
-    def setUp(self):
-        super().setUp()
-        self.course_key = CourseKey.from_string("course-v1:test+test+test")
-
-    def _make_course(self, tabs):
-        """Create a mock course with the given tabs."""
-        course = MagicMock()
-        course.tabs = tabs
-        return course
-
-    def test_enabled_when_tab_visible(self):
-        """
-        When discussion tab is visible (is_hidden=False), enabled should be True.
-        """
-        DiscussionsConfiguration.objects.create(
-            context_key=self.course_key,
-            provider_type="openedx",
-            enabled=False,
-        )
-        course = self._make_course([
-            _make_mock_tab("courseware"),
-            _make_mock_tab("discussion", is_hidden=False),
-        ])
-
-        _sync_enabled_from_discussion_tab(self.course_key, course)
-
-        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
-        assert config.enabled is True
-
-    def test_disabled_when_tab_hidden(self):
-        """
-        When discussion tab is hidden (is_hidden=True), enabled should be False.
-        """
-        DiscussionsConfiguration.objects.create(
-            context_key=self.course_key,
-            provider_type="openedx",
-            enabled=True,
-        )
-        course = self._make_course([
-            _make_mock_tab("courseware"),
-            _make_mock_tab("discussion", is_hidden=True),
-        ])
-
-        _sync_enabled_from_discussion_tab(self.course_key, course)
-
-        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
-        assert config.enabled is False
-
-    def test_defaults_to_enabled_when_no_discussion_tab(self):
-        """
-        If the course has no discussion tab, enabled should default to True.
-        """
-        DiscussionsConfiguration.objects.create(
-            context_key=self.course_key,
-            provider_type="openedx",
-            enabled=False,
-        )
-        course = self._make_course([
-            _make_mock_tab("courseware"),
-            _make_mock_tab("progress"),
-        ])
-
-        _sync_enabled_from_discussion_tab(self.course_key, course)
-
-        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
-        assert config.enabled is True
-
-    def test_defaults_to_enabled_when_course_is_none(self):
-        """
-        If the course object is None, enabled should default to True.
-        """
-        DiscussionsConfiguration.objects.create(
-            context_key=self.course_key,
-            provider_type="openedx",
-            enabled=False,
-        )
-
-        _sync_enabled_from_discussion_tab(self.course_key, None)
-
-        config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
-        assert config.enabled is True

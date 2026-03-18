@@ -14,7 +14,6 @@ from openedx.core.djangoapps.discussions.models import (
     get_default_provider_type,
 )
 
-
 log = logging.getLogger(__name__)
 
 
