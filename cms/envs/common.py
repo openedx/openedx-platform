@@ -786,6 +786,9 @@ INSTALLED_APPS = [
 
     'common.djangoapps.xblock_django',
 
+    # Agreements
+    'openedx.core.djangoapps.agreements',
+
     # Catalog integration
     'openedx.core.djangoapps.catalog',
 
@@ -903,6 +906,9 @@ INSTALLED_APPS = [
 
     # alternative swagger generator for CMS API
     'drf_spectacular',
+
+    # Authz
+    'openedx.core.djangoapps.authz',
 
     'openedx_events',
 

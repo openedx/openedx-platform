@@ -9,6 +9,7 @@ If student have answered - Question with statistics for each answers.
 import html
 import json
 import logging
+import warnings
 from copy import deepcopy
 
 from collections import OrderedDict
@@ -43,7 +44,13 @@ class _BuiltInPollBlock(
     ResourceTemplates,
     XModuleMixin,
 ):  # pylint: disable=abstract-method
-    """Poll Block"""
+    """
+    Poll Block.
+
+    .. deprecated:: 2026-03
+       This built-in poll block is deprecated. Please use the extracted ``PollBlock``
+       from ``xblocks_contrib.poll`` instead.
+    """
 
     is_extracted = False
 
@@ -263,3 +270,14 @@ def reset_class():
 
 reset_class()
 PollBlock.__name__ = "PollBlock"
+
+if not settings.USE_EXTRACTED_POLL_QUESTION_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.poll_block` PollBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_POLL_QUESTION_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.poll.PollBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_POLL_QUESTION_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

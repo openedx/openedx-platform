@@ -2088,6 +2088,9 @@ INSTALLED_APPS = [
     # Notifications
     'openedx.core.djangoapps.notifications',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
 
     # Core models to represent courses

@@ -15,7 +15,7 @@ jobs:
       matrix:
         os: [ubuntu-24.04]
         python-version:
-          - "3.11"
+          - "3.12"
         node-version: [20]
         npm-version: [10.7.x]
         mongo-version:
@@ -71,6 +71,13 @@ jobs:
 
       - name: Install Limited Python Deps for Build
         run: |
+          # Install pip-tools.txt first to pin setuptools<82 before installing
+          # assets.txt. setuptools 82+ removed pkg_resources, which pyfilesystem2
+          # (fs) still uses for namespace package declarations. The constraints.txt
+          # pin covers full installs, but this step only installs assets.txt so we
+          # pre-install pip-tools.txt to ensure setuptools 81.x is in place.
+          # See: https://github.com/PyFilesystem/pyfilesystem2/issues/577
+          pip install -r requirements/pip-tools.txt
           pip install -r requirements/edx/assets.txt
 
       - name: Add node_modules bin to $Path

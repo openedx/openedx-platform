@@ -120,7 +120,7 @@ def course_author_access_required(view):
     Usage::
         @course_author_access_required
         def my_view(request, course_key):
-            # Some functionality ...
+            # Some functionality...
     """
     def _wrapper_view(self, request, course_id, *args, **kwargs):
         """

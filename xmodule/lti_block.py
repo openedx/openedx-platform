@@ -59,6 +59,7 @@ import datetime
 import hashlib
 import logging
 import textwrap
+import warnings
 from unittest import mock
 from urllib import parse
 from xml.sax.saxutils import escape
@@ -289,6 +290,10 @@ class _BuiltInLTIBlock(
     THIS MODULE IS DEPRECATED IN FAVOR OF https://github.com/openedx/xblock-lti-consumer
 
     Module provides LTI integration to course.
+
+    .. deprecated:: 2026-03
+       This built-in LTI block is deprecated. Please use the extracted ``LTIBlock``
+       from ``xblocks_contrib.lti`` instead.
 
     Except usual Xmodule structure it proceeds with OAuth signing.
     How it works::
@@ -1006,3 +1011,14 @@ def reset_class():
 
 reset_class()
 LTIBlock.__name__ = "LTIBlock"
+
+if not settings.USE_EXTRACTED_LTI_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.lti_block` LTIBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_LTI_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.lti.LTIBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_LTI_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
