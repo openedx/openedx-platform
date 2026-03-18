@@ -9,8 +9,10 @@ from pytz import UTC
 from rest_framework import serializers, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from user_tasks.models import UserTaskStatus
 from user_tasks.views import StatusViewSet
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 
 from cms.djangoapps.contentstore.course_info_model import get_course_updates
 from cms.djangoapps.contentstore.tasks import migrate_course_legacy_library_blocks_to_item_bank
@@ -19,6 +21,7 @@ from common.djangoapps.util.proctoring import requires_escalation_email
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.serializers import StatusSerializerWithUuid
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
+from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from xmodule.course_metadata_utils import DEFAULT_GRADING_POLICY  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -80,7 +83,7 @@ class CourseValidationView(DeveloperErrorViewMixin, GenericAPIView):
     # does not specify a serializer class.
     swagger_schema = None
 
-    @course_author_access_required
+    @authz_permission_required(COURSES_VIEW_COURSE.identifier, LegacyAuthoringPermission.READ)
     def get(self, request, course_key):
         """
         Returns validation information for the given course.

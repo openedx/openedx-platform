@@ -907,6 +907,9 @@ INSTALLED_APPS = [
     # alternative swagger generator for CMS API
     'drf_spectacular',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
 
     # Core models to represent courses
