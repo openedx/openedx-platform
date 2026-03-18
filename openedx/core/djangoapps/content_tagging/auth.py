@@ -3,7 +3,7 @@ Functions to validate the access in content tagging actions
 """
 
 
-from openedx_tagging.core.tagging import rules as oel_tagging_rules
+from openedx_tagging import rules as oel_tagging_rules
 
 
 def has_view_object_tags_access(user, object_id):

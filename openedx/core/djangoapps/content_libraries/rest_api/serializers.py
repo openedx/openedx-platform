@@ -8,7 +8,7 @@ import logging
 from django.core.validators import validate_unicode_slug
 from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryUsageLocatorV2
-from openedx_learning.api.authoring_models import Collection, LearningPackage
+from openedx_content.models_api import Collection, LearningPackage
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from user_tasks.models import UserTaskStatus
@@ -198,7 +198,7 @@ class LibraryXBlockCreationSerializer(serializers.Serializer):
 
     block_type = serializers.CharField()
 
-    # TODO: Rename to ``block_id`` or ``slug``. The Learning Core XBlock runtime
+    # TODO: Rename to ``block_id`` or ``slug``. The openedx_content XBlock runtime
     # doesn't use definition_ids, but this field is really just about requesting
     # a specific block_id, e.g. the "best_tropical_vacation_spots" portion of a
     # problem with UsageKey:

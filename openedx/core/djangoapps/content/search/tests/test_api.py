@@ -15,7 +15,7 @@ import pytest
 from django.test import override_settings
 from freezegun import freeze_time
 from meilisearch.errors import MeilisearchApiError
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -189,9 +189,9 @@ class TestSearchApi(ModuleStoreTestCase):
         tagging_api.add_tag_to_taxonomy(self.taxonomyB, "four")
 
         # Create a collection:
-        self.learning_package = authoring_api.get_learning_package_by_key(self.library.key)
+        self.learning_package = content_api.get_learning_package_by_key(self.library.key)
         with freeze_time(self.created_date):
-            self.collection = authoring_api.create_collection(
+            self.collection = content_api.create_collection(
                 learning_package_id=self.learning_package.id,
                 key="MYCOL",
                 title="my_collection",
@@ -926,7 +926,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Soft-delete the collection
-        authoring_api.delete_collection(
+        content_api.delete_collection(
             self.collection.learning_package_id,
             self.collection.key,
         )
@@ -961,7 +961,7 @@ class TestSearchApi(ModuleStoreTestCase):
         # Restore the collection
         restored_date = datetime(2023, 8, 9, 10, 11, 12, tzinfo=timezone.utc)
         with freeze_time(restored_date):
-            authoring_api.restore_collection(
+            content_api.restore_collection(
                 self.collection.learning_package_id,
                 self.collection.key,
             )
@@ -983,7 +983,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Hard-delete the collection
-        authoring_api.delete_collection(
+        content_api.delete_collection(
             self.collection.learning_package_id,
             self.collection.key,
             hard_delete=True,

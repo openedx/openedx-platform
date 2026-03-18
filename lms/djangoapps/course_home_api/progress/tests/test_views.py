@@ -117,6 +117,49 @@ class ProgressTabTestViews(BaseCourseHomeTests):
         self.update_masquerade(username=verified_user.username)
         assert self.client.get(self.url).data.get('enrollment_mode') == 'verified'
 
+    def test_masquerade_uses_masqueraded_permissions_for_show_grades(self):
+        """
+        Test that when a staff user is masquerading as a verified learner,
+        the grade visibility for subsections with show_correctness='past_due' is
+        determined based on the verified learner's permissions, not the staff user's
+        permissions.
+        """
+        subsection_name = 'Masquerade grade visibility subsection'
+        chapter = BlockFactory(parent=self.course, category='chapter')
+        subsection = BlockFactory(
+            parent=chapter,
+            category='sequential',
+            display_name=subsection_name,
+            graded=True,
+            due=now() + timedelta(days=30),
+            show_correctness='past_due',
+        )
+        vertical = BlockFactory(parent=subsection, category='vertical', graded=True)
+        BlockFactory(parent=vertical, category='problem', graded=True)
+
+        verified_user = UserFactory(is_staff=False)
+        CourseEnrollment.enroll(verified_user, self.course.id, CourseMode.VERIFIED)
+
+        self.switch_to_staff()  # needed for masquerade
+
+        def get_subsection_show_grades(response):
+            for chapter in response.data['section_scores']:
+                for subsection in chapter['subsections']:
+                    if subsection['display_name'] == subsection_name:
+                        return subsection['show_grades']
+            assert False, f'Subsection {subsection_name} not found in section_scores'
+
+        # Staff can see grades even when show_correctness is `past_due` and the due date has not passed.
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert get_subsection_show_grades(response) is True
+
+        # When masquerading, grade visibility should follow the masqueraded learner permissions.
+        self.update_masquerade(username=verified_user.username)
+        response = self.client.get(self.url)
+        assert response.status_code == 200
+        assert get_subsection_show_grades(response) is False
+
     @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})
     def test_has_scheduled_content_data(self):
         CourseEnrollment.enroll(self.user, self.course.id)

@@ -210,7 +210,7 @@ for theme_dir in COMPREHENSIVE_THEME_DIRS:  # pylint: disable=not-an-iterable
 
 RATELIMIT_RATE = '2/m'
 
-############## openedx-learning (Learning Core) config ##############
+############## openedx_content config ##############
 OPENEDX_LEARNING = {
     "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}
 }

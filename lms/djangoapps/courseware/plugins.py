@@ -8,8 +8,10 @@ from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
 
 from xmodule.modulestore.django import modulestore
+from xmodule.tabs import CourseTabList
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseTab
+
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
 
@@ -56,6 +58,58 @@ class ProgressCourseApp(CourseApp):
 
     @classmethod
     def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+        """
+        Returns the allowed operations for the app.
+        """
+        return {
+            "enable": True,
+            "configure": True,
+        }
+
+
+class DatesCourseApp(CourseApp):
+    """Course app stub for course dates."""
+
+    app_id = "dates"
+    name = _("Dates")
+    description = _("Provide learners a summary of important course dates.")
+    documentation_links = {
+        "learn_more_configuration": getattr(settings, "DATES_HELP_URL", ""),
+    }
+
+    @classmethod
+    def is_available(cls, course_key: CourseKey) -> bool:  # pylint: disable=unused-argument
+        """
+        Dates app is available when explicitly enabled via settings.
+        """
+        return settings.ENABLE_DATES_COURSE_APP
+
+    @classmethod
+    def is_enabled(cls, course_key: CourseKey) -> bool:
+        """
+        The dates course status is stored in the course block.
+        """
+        course = get_course_by_id(course_key)
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        return bool(dates_tab and not dates_tab.is_hidden)
+
+    @classmethod
+    def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:
+        """
+        The dates course enabled/disabled status is stored in the course block.
+        """
+        course = get_course_by_id(course_key)
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        if enabled and dates_tab is None:
+            dates_tab = CourseTab.load("dates")
+            course.tabs.append(dates_tab)
+        if dates_tab is not None:
+            dates_tab.is_hidden = not enabled
+        modulestore().update_item(course, user.id)
+        return enabled
+
+    @classmethod
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument
         """
         Returns the allowed operations for the app.
         """

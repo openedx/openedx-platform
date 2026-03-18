@@ -286,7 +286,7 @@
                 // Does the XBlock HTML contain arguments to pass to the InitFunction?
                 let data = {};
                 [].forEach.call(element.children, (childNode) => {
-                    // The newer/pure/LearningCore runtime uses 'xblock_json_init_args'
+                    // The newer/pure/openedx_content runtime uses 'xblock_json_init_args'
                     // while the LMS runtime uses 'xblock-json-init-args'.
                     if (
                         childNode.matches('script.xblock_json_init_args')
@@ -405,13 +405,13 @@
               //
               // Here that is an issue because we show a confirmation modal when clicking cancel,
               // if the user stays to edit all TinyMCE editors are no longer there.
-              // 
+              //
               // We uncouple the listener to avoid remove the TinyMCE editors
               const extraCancelSelector = '.cancel-button';
               const elements = $(extraCancelSelector).first();
               if (elements.length) {
                 elements.first().unbind("click");
-                elements.on('click', function() {                    
+                elements.on('click', function() {
                     event.preventDefault();
                     runtime.notify('cancel', {});
                 });
@@ -421,7 +421,7 @@
 
         // Recursively initialize the JavaScript code of each XBlock:
         function initializeXBlockAndChildren(element, callback) {
-            // The newer/pure/LearningCore runtime uses the 'data-usage' attribute, while the LMS uses 'data-usage-id'
+            // The newer/pure/openedx_content runtime uses the 'data-usage' attribute, while the LMS uses 'data-usage-id'
             const usageId = element.getAttribute('data-usage') || element.getAttribute('data-usage-id');
             if (usageId !== null) {
                 element[USAGE_ID_KEY] = usageId;
@@ -461,7 +461,7 @@
         }
 
         // Find the root XBlock node.
-        // The newer/pure/LearningCore runtime uses '.xblock-v1' while the LMS runtime uses '.xblock'.
+        // The newer/pure/openedx_content runtime uses '.xblock-v1' while the LMS runtime uses '.xblock'.
         const rootNode = document.querySelector('.xblock, .xblock-v1'); // will always return the first matching element
         initializeXBlockAndChildren(rootNode, () => {
         });

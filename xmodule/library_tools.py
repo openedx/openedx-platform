@@ -24,7 +24,7 @@ class LegacyLibraryToolsService:
     """
     Service for LegacyLibraryContentBlock.
 
-    Allows to interact with libraries in the modulestore and learning core.
+    Allows to interact with libraries in the modulestore and openedx_content.
 
     Should only be used in the CMS.
     """

@@ -8,20 +8,12 @@ from unittest import mock
 
 import ddt
 from zoneinfo import ZoneInfo
-from consent.models import DataSharingConsent
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
-from enterprise.models import (
-    EnterpriseCourseEnrollment,
-    EnterpriseCustomer,
-    EnterpriseCustomerUser,
-    PendingEnterpriseCustomerUser
-)
-from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from social_django.models import UserSocialAuth
@@ -65,7 +57,6 @@ from openedx.core.djangoapps.credit.models import (
 )
 from openedx.core.djangoapps.external_user_ids.models import ExternalIdType
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangoapps.user_api.accounts.views import AccountRetirementPartnerReportView
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
@@ -1289,33 +1280,6 @@ class TestAccountRetirementPost(RetirementTestCase):
         self.cache_key = UserProfile.country_cache_key_name(self.test_user.id)
         cache.set(self.cache_key, 'Timor-leste')
 
-        # Enterprise model setup
-        self.course_id = 'course-v1:edX+DemoX.1+2T2017'
-        self.enterprise_customer = EnterpriseCustomer.objects.create(
-            name='test_enterprise_customer',
-            site=SiteFactory.create()
-        )
-        self.enterprise_user = EnterpriseCustomerUser.objects.create(
-            enterprise_customer=self.enterprise_customer,
-            user_id=self.test_user.id,
-        )
-        self.enterprise_enrollment = EnterpriseCourseEnrollment.objects.create(
-            enterprise_customer_user=self.enterprise_user,
-            course_id=self.course_id
-        )
-        self.pending_enterprise_user = PendingEnterpriseCustomerUser.objects.create(
-            enterprise_customer_id=self.enterprise_user.enterprise_customer_id,
-            user_email=self.test_user.email
-        )
-        self.sapsf_audit = SapSuccessFactorsLearnerDataTransmissionAudit.objects.create(
-            sapsf_user_id=self.test_user.id,
-            enterprise_course_enrollment_id=self.enterprise_enrollment.id,
-        )
-        self.consent = DataSharingConsent.objects.create(
-            username=self.test_user.username,
-            enterprise_customer=self.enterprise_customer,
-        )
-
         # Entitlement model setup
         self.entitlement = CourseEntitlementFactory.create(user=self.test_user)
         self.entitlement_support_detail = CourseEntitlementSupportDetail.objects.create(
@@ -1348,45 +1312,12 @@ class TestAccountRetirementPost(RetirementTestCase):
         self.headers['content_type'] = "application/json"
         self.url = reverse('accounts_retire')
 
-    def _data_sharing_consent_assertions(self):
-        """
-        Helper method for asserting that ``DataSharingConsent`` objects are retired.
-        """
-        self.consent.refresh_from_db()
-        assert self.retired_username == self.consent.username
-        test_users_data_sharing_consent = DataSharingConsent.objects.filter(
-            username=self.original_username
-        )
-        assert not test_users_data_sharing_consent.exists()
-
     def _entitlement_support_detail_assertions(self):
         """
         Helper method for asserting that ``CourseEntitleSupportDetail`` objects are retired.
         """
         self.entitlement_support_detail.refresh_from_db()
         assert '' == self.entitlement_support_detail.comments
-
-    def _pending_enterprise_customer_user_assertions(self):
-        """
-        Helper method for asserting that ``PendingEnterpriseCustomerUser`` objects are retired.
-        """
-        self.pending_enterprise_user.refresh_from_db()
-        assert self.retired_email == self.pending_enterprise_user.user_email
-        pending_enterprise_users = PendingEnterpriseCustomerUser.objects.filter(
-            user_email=self.original_email
-        )
-        assert not pending_enterprise_users.exists()
-
-    def _sapsf_audit_assertions(self):
-        """
-        Helper method for asserting that ``SapSuccessFactorsLearnerDataTransmissionAudit`` objects are retired.
-        """
-        self.sapsf_audit.refresh_from_db()
-        assert '' == self.sapsf_audit.sapsf_user_id
-        audits_for_original_user_id = SapSuccessFactorsLearnerDataTransmissionAudit.objects.filter(
-            sapsf_user_id=self.test_user.id,
-        )
-        assert not audits_for_original_user_id.exists()
 
     def post_and_assert_status(self, data, expected_status=status.HTTP_204_NO_CONTENT):
         """
@@ -1463,9 +1394,6 @@ class TestAccountRetirementPost(RetirementTestCase):
 
         assert cache.get(self.cache_key) is None
 
-        self._data_sharing_consent_assertions()
-        self._sapsf_audit_assertions()
-        self._pending_enterprise_customer_user_assertions()
         self._entitlement_support_detail_assertions()
 
         assert not PendingEmailChange.objects.filter(user=self.test_user).exists()
@@ -1479,6 +1407,21 @@ class TestAccountRetirementPost(RetirementTestCase):
         self.post_and_assert_status(data)
         fake_completed_retirement(self.test_user)
         self.post_and_assert_status(data)
+
+    @mock.patch('openedx.core.djangoapps.user_api.accounts.views.USER_RETIRE_LMS_CRITICAL')
+    def test_retirement_sends_critical_signal_with_retirement_data(self, mock_signal):
+        """
+        USER_RETIRE_LMS_CRITICAL is sent with retired_username and retired_email kwargs.
+        """
+        data = {'username': self.original_username}
+        self.post_and_assert_status(data)
+
+        mock_signal.send.assert_called_once_with(
+            sender=mock_signal.send.call_args[1]['sender'],
+            user=mock_signal.send.call_args[1]['user'],
+            retired_username=self.retired_username,
+            retired_email=self.retired_email,
+        )
 
     def test_deletes_pii_from_user_profile(self):
         for model_field, value_to_assign in USER_PROFILE_PII.items():
@@ -1519,18 +1462,6 @@ class TestAccountRetirementPost(RetirementTestCase):
     def test_can_delete_user_profiles_country_cache(self):
         AccountRetirementView.delete_users_country_cache(self.test_user)
         assert cache.get(self.cache_key) is None
-
-    def test_can_retire_users_datasharingconsent(self):
-        AccountRetirementView.retire_users_data_sharing_consent(self.test_user.username, self.retired_username)
-        self._data_sharing_consent_assertions()
-
-    def test_can_retire_users_sap_success_factors_audits(self):
-        AccountRetirementView.retire_sapsf_data_transmission(self.test_user)
-        self._sapsf_audit_assertions()
-
-    def test_can_retire_user_from_pendingenterprisecustomeruser(self):
-        AccountRetirementView.retire_user_from_pending_enterprise_customer_user(self.test_user, self.retired_email)
-        self._pending_enterprise_customer_user_assertions()
 
     def test_course_entitlement_support_detail_comments_are_retired(self):
         AccountRetirementView.retire_entitlement_support_detail(self.test_user)

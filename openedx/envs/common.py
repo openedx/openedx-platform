@@ -455,7 +455,6 @@ TEMPLATES = [
         'DIRS': [
             Derived(lambda settings: settings.PROJECT_ROOT / "templates"),
             COMMON_ROOT / 'templates',
-            XMODULE_ROOT / 'capa' / 'templates',
             COMMON_ROOT / 'djangoapps' / 'pipeline_mako' / 'templates',
             COMMON_ROOT / 'static',  # required to statically include common Underscore templates
         ],
@@ -519,7 +518,6 @@ MAKO_TEMPLATE_DIRS_BASE = [
 # Since the CMS uses the LMS's list of mako template directories for the "preview"
 # template engine, we define the list here
 lms_mako_template_dirs_base = list(MAKO_TEMPLATE_DIRS_BASE)
-lms_mako_template_dirs_base.insert(2, XMODULE_ROOT / 'capa' / 'templates')
 lms_mako_template_dirs_base.append(OPENEDX_ROOT / 'features' / 'course_experience' / 'templates')
 
 CONTEXT_PROCESSORS = [
@@ -744,6 +742,19 @@ ALL_LANGUAGES = [
 ]
 
 LANGUAGE_DICT = dict(LANGUAGES)
+
+# .. setting_name: COURSE_ACCESS_DURATION_MIN_WEEKS
+# .. setting_default: 4
+# .. setting_description: Minimum course duration in weeks when Discovery service data is unavailable or course has no
+# .. weeks_to_complete value. Used as fallback for course access duration calculations (e.g., audit access expiration
+# .. and discussion notification filtering).
+COURSE_ACCESS_DURATION_MIN_WEEKS = 4
+
+# .. setting_name: COURSE_ACCESS_DURATION_MAX_WEEKS
+# .. setting_default: 18
+# .. setting_description: Maximum course duration in weeks. Course access duration is bounded by this upper limit
+# .. regardless of Discovery service data.
+COURSE_ACCESS_DURATION_MAX_WEEKS = 18
 
 ############################## Optional Apps ###############################
 
@@ -2105,7 +2116,7 @@ USE_EXTRACTED_PROBLEM_BLOCK = False
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2025-06-01
-USE_EXTRACTED_VIDEO_BLOCK = False
+USE_EXTRACTED_VIDEO_BLOCK = True
 
 ############################## Marketing Site ##############################
 

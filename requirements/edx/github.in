@@ -57,19 +57,21 @@
 #
 #   * DIST-NAME is the distribution name, the same name you'd use in a
 #     "pip install" command.  It might be different than REPO-NAME. It must
-#     be the same as the `name="DIST-NAME"` value in the repo's setup.py.
+#     be the same as the package name defined in the repo's pyproject.toml
+#     (or setup.py for older packages).
 #
 #   * VERSION might not be the same as TAG-OR-SHA, but if the tag names the
 #     version, please make it match the VERSION, but with a "v" prefix.
-#     VERSION must be the same as the `version="VERSION"` value in the repo's
-#     setup.py.  An alternative is to use 0.0 as VERSION: this forces pip to
-#     re-install the package each time, and can be useful when working with two
-#     repos before picking a version number. Don't use 0.0 on master, only for
-#     tight-loop work in progress.
+#     VERSION must be the same as the version defined in the repo's pyproject.toml
+#     (or setup.py for older packages).  An alternative is to use 0.0 as VERSION:
+#     this forces pip to re-install the package each time, and can be useful when
+#     working with two repos before picking a version number. Don't use 0.0 on
+#     master, only for tight-loop work in progress.
 #
 #   * Don't prefix the URL with "-e". That would install the package in "editable"
-#     mode A.K.A "development" mode, which takes longer and does not
-#     fully respect setup.py, making the transition back to PyPI more complex.
+#     mode A.K.A "development" mode, which takes longer and does not fully respect
+#     the package's build configuration, making the transition back to PyPI more
+#     complex.
 #
 #   * Organize the URL into one of the two categories below:
 

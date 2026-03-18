@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from django.db.models import Count
 from django.http import StreamingHttpResponse
-from openedx_tagging.core.tagging import rules as oel_tagging_rules
-from openedx_tagging.core.tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
+from openedx_tagging import rules as oel_tagging_rules
+from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError

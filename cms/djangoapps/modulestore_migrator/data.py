@@ -92,7 +92,7 @@ SourceContextKey: t.TypeAlias = CourseLocator | LibraryLocator
 @dataclass(frozen=True)
 class ModulestoreMigration:
     """
-    Metadata on a migration of a course or legacy library to a v2 library in learning core.
+    Metadata on a migration of a course or legacy library to a v2 library in openedx_content.
     """
     pk: int
     source_key: SourceContextKey
@@ -107,7 +107,7 @@ class ModulestoreMigration:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationResult:
     """
-    Base class for a modulestore block that was part of an attempted migration to learning core.
+    Base class for a modulestore block that was part of an attempted migration to openedx_content.
     """
     source_key: UsageKey
     is_failed: t.ClassVar[bool]
@@ -116,7 +116,7 @@ class ModulestoreBlockMigrationResult:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which has been successfully migrated into an LC entity
+    Info on a modulestore block which has been successfully migrated to an openedx_content entity
     """
     target_entity_pk: int
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
@@ -128,7 +128,7 @@ class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationFailure(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which failed to be migrated into LC
+    Info on a modulestore block which failed to be migrated into openedx_content
     """
     unsupported_reason: str
     is_failed: t.ClassVar[bool] = True

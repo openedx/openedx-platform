@@ -87,7 +87,7 @@ If you wish to customize aspects of the learner or educator experiences, you'll 
 
 Most python plugins are enabled using one of two methods:
 
-1. A Python Entry point: the core Open edX platform provides a standard plugin loading mechanism in |edx_django_utils.plugins|_ which uses `stevedore`_ to find all installed python packages that declare a specific "entry point" in their setup.py file. See the ``entry_points`` defined in edx-platform's own ``setup.py`` for examples.
+1. A Python Entry point: the core Open edX platform provides a standard plugin loading mechanism in |edx_django_utils.plugins|_ which uses `stevedore`_ to find all installed python packages that declare a specific "entry point" in their package configuration (typically ``pyproject.toml`` or ``setup.py``). See the ``entry_points`` defined in edx-platform's own ``pyproject.toml`` for examples.
 2. A Django setting: Some plugins require modification of Django settings, which is typically done by editing ``/edx/etc/lms.yml`` (in Production) or ``edx-platform/lms/envs/private.py`` (on Devstack).
 
 .. |edx_django_utils.plugins| replace:: ``edx_django_utils.plugins``
@@ -124,7 +124,7 @@ Here are the different integration points that python plugins can use:
      - By default, the registration page for each instance of Open edX has fields that ask for information such as a user’s name, country, and highest level of education completed. You can add custom fields to the registration page for your own Open edX instance. These fields can be different types, including text entry fields and drop-down lists. See `Adding Custom Fields to the Registration Page`_.
    * - Learning Context (``openedx.learning_context``)
      - Trial, Limited
-     - A "Learning Context" is a course, a library, a program, a blog, an external site, or some other collection of content where learning happens. If you are trying to build a totally new learning experience that's not a type of course, you may need to implement a new learning context. Learning contexts are a new abstraction and are only supported in the nascent Learning-Core-based XBlock runtime. Since existing courses use modulestore instead of Learning Core, they are not yet implemented as learning contexts. However, Learning-Core-based content libraries are. See |learning_context.py|_ to learn more.
+     - A "Learning Context" is a course, a library, a program, a blog, an external site, or some other collection of content where learning happens. If you are trying to build a totally new learning experience that's not a type of course, you may need to implement a new learning context. Learning contexts are a new abstraction and are only supported in the nascent openedx_content-based XBlock runtime. Since existing courses use modulestore instead of openedx_content, they are not yet implemented as learning contexts. However, openedx_content-based content libraries are. See |learning_context.py|_ to learn more.
    * - User partition scheme (``openedx.user_partition_scheme`` and ``openedx.dynamic_partition_generator``)
      - Unknown, Stable
      - A user partition scheme is a named way for dividing users in a course into groups, usually to show different content to different users or to run experiments. Partitions may be added to a course manually, or automatically added by a "dynamic partition generator." The core platform includes partition scheme plugins like ``random``, ``cohort``, and ``enrollment_track``. See the |UserPartition docstring|_ to learn more.

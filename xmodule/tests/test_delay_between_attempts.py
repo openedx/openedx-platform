@@ -119,6 +119,7 @@ class CapaFactoryWithDelay:
         return block
 
 
+@pytest.mark.django_db
 class XModuleQuizAttemptsDelayTest(unittest.TestCase):
     """
     Class to test delay between quiz attempts.

@@ -818,4 +818,3 @@ ZENDESK_GROUP_ID_MAPPING:
 ZENDESK_OAUTH_ACCESS_TOKEN: test_zendesk_access
 ZENDESK_URL: https://zendesk.com
 ZENDESK_USER: daemon@example.com
-

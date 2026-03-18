@@ -5,13 +5,15 @@ These serializers handle data validation and business logic for instructor dashb
 Following REST best practices, serializers encapsulate most of the data processing logic.
 """
 
+import logging
+
 from django.conf import settings
-from django.db.models import Count
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
 from rest_framework import serializers
 
+from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
@@ -32,6 +34,8 @@ from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMI
 from xmodule.modulestore.django import modulestore
 
 from .tools import get_student_from_identifier, parse_datetime, DashboardError
+
+log = logging.getLogger(__name__)
 
 
 class CourseInformationSerializerV2(serializers.Serializer):
@@ -54,6 +58,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
     has_started = serializers.SerializerMethodField(help_text="Whether the course has started based on current time")
     has_ended = serializers.SerializerMethodField(help_text="Whether the course has ended based on current time")
     total_enrollment = serializers.SerializerMethodField(help_text="Total number of enrollments across all modes")
+    learner_count = serializers.SerializerMethodField(
+        help_text="Number of enrolled learners (excludes staff and admins)"
+    )
+    staff_count = serializers.SerializerMethodField(help_text="Number of enrolled staff and admins")
     enrollment_counts = serializers.SerializerMethodField(help_text="Enrollment count breakdown by mode")
     num_sections = serializers.SerializerMethodField(help_text="Number of sections/chapters in the course")
     grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
@@ -74,6 +82,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
         course = data['course']
         course_key = course.id
         mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
+
+        if not mfe_base_url:
+            log.warning('INSTRUCTOR_MICROFRONTEND_URL is not set.')
+            mfe_base_url = ''
 
         access = {
             'admin': request.user.is_staff,
@@ -266,25 +278,24 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_total_enrollment(self, data):
         """Get total enrollment count."""
-        total_enrollments = CourseEnrollment.objects.filter(
-            course_id=data['course'].id,
-            is_active=True
-        ).count()
-        return total_enrollments
+        return self.get_enrollment_counts(data)['total']
+
+    def get_learner_count(self, data):
+        """Get enrollment count excluding staff and admins."""
+        return CourseEnrollment.objects.num_enrolled_in_exclude_admins(data['course'].id)
+
+    def get_staff_count(self, data):
+        """Get enrollment count for staff and admins only."""
+        return self.get_total_enrollment(data) - self.get_learner_count(data)
 
     def get_enrollment_counts(self, data):
-        """Get enrollment counts by mode."""
-        course = data['course']
-        total_enrollments = self.get_total_enrollment(data)
-        enrollments_by_mode = CourseEnrollment.objects.filter(
-            course_id=course.id,
-            is_active=True
-        ).values('mode').annotate(count=Count('mode'))
-
-        by_mode = {item['mode']: item['count'] for item in enrollments_by_mode}
-        by_mode['total'] = total_enrollments
-
-        return by_mode
+        """Get enrollment counts for all configured course modes."""
+        course_id = data['course'].id
+        counts = CourseEnrollment.objects.enrollment_counts(course_id)
+        configured_modes = CourseMode.modes_for_course(course_id)
+        result = {mode.slug: counts[mode.slug] for mode in configured_modes}
+        result['total'] = counts['total']
+        return result
 
     def get_num_sections(self, data):
         """Get number of sections in the course."""

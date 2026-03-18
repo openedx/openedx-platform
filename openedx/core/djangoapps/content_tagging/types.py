@@ -7,7 +7,7 @@ from typing import Dict, List, Union
 
 from opaque_keys.edx.keys import CourseKey, UsageKey, CollectionKey, ContainerKey
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_tagging.core.tagging.models import Taxonomy
+from openedx_tagging.models import Taxonomy
 
 ContentKey = Union[LibraryLocatorV2, CourseKey, UsageKey, CollectionKey, ContainerKey]
 ContextKey = Union[LibraryLocatorV2, CourseKey]

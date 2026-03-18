@@ -101,7 +101,13 @@ def create_email_template_context(username):
         'channel': 'email',
         'value': False
     }
-    account_base_url = (settings.ACCOUNT_MICROFRONTEND_URL or "").rstrip('/')
+    account_base_url = (
+        configuration_helpers.get_value(
+            'ACCOUNT_MICROFRONTEND_URL',
+            settings.ACCOUNT_MICROFRONTEND_URL,
+        ) or
+        ""
+    ).rstrip('/')
     return {
         "platform_name": settings.PLATFORM_NAME,
         "mailing_address": settings.CONTACT_MAILING_ADDRESS,
