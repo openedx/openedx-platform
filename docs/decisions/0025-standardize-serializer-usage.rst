@@ -22,7 +22,7 @@ Implementation requirements:
 * Replace manual JSON construction with serializer-based responses.
 * Use serializers for both input validation and output formatting.
 * Ensure serializers are properly documented with field descriptions and validation rules.
-* Maintain backward compatibility for all APIs during migration.
+* Maintain backward compatibility for all APIs during migration. While the goal is fully compatible DRF serializers, if that is not possible and we must make a backwards incompatible change, that change MUST be handled by creating a new version of the API and transitioning to that API using the deprecation process.
 
 Relevance in edx-platform
 -------------------------
