@@ -1031,7 +1031,6 @@ openedx-events==11.1.1
     #   edx-event-bus-redis
     #   event-tracking
     #   lti-consumer-xblock
-    #   openedx-core
     #   ora2
 openedx-filters==3.1.0
     # via
