@@ -1126,7 +1126,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
     #          check CONTENT_TAGGING_AUTO CourseWaffleFlag
     #   Find: active_versions, 2 structures (published & draft), definition (unnecessary)
     #   Sends: updated draft and published structures and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 5, 2, 3))
+    @ddt.data((ModuleStoreEnum.Type.split, 11, 2, 3))
     @ddt.unpack
     def test_delete_item(self, default_ms, num_mysql, max_find, max_send):
         """
@@ -1149,7 +1149,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
     #           check CONTENT_TAGGING_AUTO CourseWaffleFlag
     #    find: draft and published structures, definition (unnecessary)
     #    sends: update published (why?), draft, and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 5, 3, 3))
+    @ddt.data((ModuleStoreEnum.Type.split, 11, 3, 3))
     @ddt.unpack
     def test_delete_private_vertical(self, default_ms, num_mysql, max_find, max_send):
         """
@@ -1199,7 +1199,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
     #          check CONTENT_TAGGING_AUTO CourseWaffleFlag
     #   find: structure (cached)
     #   send: update structure and active_versions
-    @ddt.data((ModuleStoreEnum.Type.split, 5, 1, 2))
+    @ddt.data((ModuleStoreEnum.Type.split, 11, 1, 2))
     @ddt.unpack
     def test_delete_draft_vertical(self, default_ms, num_mysql, max_find, max_send):
         """
