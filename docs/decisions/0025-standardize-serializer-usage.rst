@@ -89,7 +89,7 @@ Negative / Trade-offs
 
 * Requires refactoring existing endpoints that manually construct JSON.
 * Initial development overhead for creating comprehensive serializers.
-* May require updates to existing client code that expects legacy formats.
+* Rare backward incompatibilities may require updates to existing client code that expect legacy formats.
 
 Alternatives Considered
 -----------------------
