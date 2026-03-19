@@ -17,7 +17,7 @@ from path import Path
 
 from openedx_content.api import create_zip_file as create_lib_zip_file
 
-__all__ = ["create_library_v2_zip", "export_library_v2_to_zip"]
+__all__ = ["create_library_v2_zip", "export_library_v2_to_dir"]
 
 
 def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
@@ -44,17 +44,18 @@ def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
     return root_dir, file_path
 
 
-def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
+def export_library_v2_to_dir(library_key, root_dir, library_dir, user=None):
     """
-    Export a v2 library using the backup API.
+    Export a v2 library to a directory by creating a zip backup and extracting it.
 
     V2 libraries are stored in Learning Core and use a zip-based backup mechanism.
-    This function creates a zip backup and extracts it to the specified directory.
+    This function creates a temporary zip backup, extracts its contents into
+    ``library_dir`` under ``root_dir``, then cleans up the temporary zip.
 
     Args:
         library_key: LibraryLocatorV2 for the library to export
         root_dir: Root directory where library_dir will be created
-        library_dir: Directory name for the exported library content
+        library_dir: Directory name under root_dir to extract the library into
         user: Username string for the backup API (optional)
 
     Raises:
@@ -65,19 +66,12 @@ def export_library_v2_to_zip(library_key, root_dir, library_dir, user=None):
     temp_dir, zip_path = create_library_v2_zip(library_key, user_obj)
 
     try:
-        # Target directory for extraction
         target_dir = os.path.join(root_dir, library_dir)
-
-        # Create target directory if it doesn't exist
         os.makedirs(target_dir, exist_ok=True)
-
         # Extract zip contents (will overwrite existing files)
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(target_dir)
-
         log.info('Extracted library v2 backup to %s', target_dir)
-
     finally:
-        # Cleanup temporary files
         if temp_dir.exists():
             shutil.rmtree(temp_dir)

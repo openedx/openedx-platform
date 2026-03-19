@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
-from openedx.core.djangoapps.content_libraries.api import export_library_v2_to_zip
+from openedx.core.djangoapps.content_libraries.api import export_library_v2_to_dir
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
@@ -84,16 +84,15 @@ def export_to_git(content_key, repo, user='', rdir=None):
     # pylint: disable=too-many-statements
 
     # Detect content type and select appropriate export function
+    content_type_label = "library"
     is_library_v2 = isinstance(content_key, LibraryLocatorV2)
     if is_library_v2:
         # V2 libraries use backup API with zip extraction
-        export_xml_func = export_library_v2_to_zip
-        content_type_label = "library"
+        content_export_func = export_library_v2_to_dir
     elif isinstance(content_key, LibraryLocator):
-        export_xml_func = export_library_to_xml
-        content_type_label = "library"
+        content_export_func = export_library_to_xml
     else:
-        export_xml_func = export_course_to_xml
+        content_export_func = export_course_to_xml
         content_type_label = "course"
 
     if not GIT_REPO_EXPORT_DIR:
@@ -160,10 +159,10 @@ def export_to_git(content_key, repo, user='', rdir=None):
 
     try:
         if is_library_v2:
-            export_xml_func(content_key, root_dir, content_dir, user)
+            content_export_func(content_key, root_dir, content_dir, user)
         else:
             # V1 libraries and courses: use XML export (no user parameter)
-            export_xml_func(modulestore(), contentstore(), content_key,
+            content_export_func(modulestore(), contentstore(), content_key,
                             root_dir, content_dir)
     except (OSError, AttributeError) as ex:
         log.exception('Failed to export %s', content_type_label)
