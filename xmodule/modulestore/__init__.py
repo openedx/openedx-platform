@@ -1425,3 +1425,10 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
         """
         if self.signal_handler:
             self.signal_handler.send("item_deleted", usage_key=usage_key, user_id=user_id)
+
+    def _emit_pre_item_delete_signal(self, usage_key, user_id):
+        """
+        Helper method used to emit the pre_item_delete signal.
+        """
+        if self.signal_handler:
+            self.signal_handler.send("pre_item_delete", usage_key=usage_key, user_id=user_id)
