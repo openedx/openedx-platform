@@ -203,12 +203,12 @@ class TestViews(TestDiscussionXBlock):
         )
 
         self.block.has_permission = lambda perm: permission_dict[perm]
-        if settings.USE_EXTRACTED_DISCUSSION_BLOCK:
-            render_to_string = 'xblocks_contrib.discussion.discussion.render_to_string'
-        else:
-            render_to_string = 'xmodule.discussion_block.render_to_string'
-
-        with mock.patch(render_to_string, return_value='') as mock_render:
+        # if settings.USE_EXTRACTED_DISCUSSION_BLOCK:
+        #     render_to_string = 'xblocks_contrib.discussion.discussion.render_to_string'
+        # else:
+        #     render_to_string = 'xmodule.discussion_block.render_to_string'
+        with mock.patch(f'{DiscussionXBlock.__module__}.render_to_string', return_value='') as mock_render:
+        # with mock.patch(render_to_string, return_value='') as mock_render:
             self.block.student_view()
             # Get context from the mock call
             assert mock_render.call_count == 1
