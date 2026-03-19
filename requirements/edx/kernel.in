@@ -101,7 +101,7 @@ jsonfield                           # Django model field for validated JSON; use
 laboratory                          # Library for testing that code refactors/infrastructure changes produce identical results
 importlib_metadata                  # Used to access entry_points in i18n_api plugin
 lxml[html_clean]                    # XML parser
-lti-consumer-xblock>=9.14.2
+lti-consumer-xblock @ git+https://github.com/open-craft/xblock-lti-consumer@navin/fal-4318/split-config
 mako                                # Primary template language used for server-side page rendering
 Markdown                            # Convert text markup to HTML; used in capa problems, forums, and course wikis
 meilisearch                         # Library to access Meilisearch search engine (will replace ElasticSearch)
