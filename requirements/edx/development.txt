@@ -1206,7 +1206,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==10.0.1
+lti-consumer-xblock @ git+https://github.com/open-craft/xblock-lti-consumer@navin/fal-4318/split-config
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
