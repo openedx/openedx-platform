@@ -1,4 +1,4 @@
-Open edX ADR 003: Standardize API Documentation & Schema Coverage
+Standardize API Documentation & Schema Coverage
 =================================================================
 
 :Status: Proposed
