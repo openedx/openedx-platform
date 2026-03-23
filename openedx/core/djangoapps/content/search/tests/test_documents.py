@@ -93,7 +93,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.container = library_api.create_container(
                 cls.library.key,
-                container_type=content_models.Unit,
+                container_cls=content_models.Unit,
                 slug="unit1",
                 title="A Unit in the Search Index",
                 user_id=None,
@@ -103,7 +103,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.subsection = library_api.create_container(
                 cls.library.key,
-                container_type=content_models.Subsection,
+                container_cls=content_models.Subsection,
                 slug="subsection1",
                 title="A Subsection in the Search Index",
                 user_id=None,
@@ -113,7 +113,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             )
             cls.section = library_api.create_container(
                 cls.library.key,
-                container_type=content_models.Section,
+                container_cls=content_models.Section,
                 slug="section1",
                 title="A Section in the Search Index",
                 user_id=None,

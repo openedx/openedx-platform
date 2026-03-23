@@ -225,7 +225,7 @@ class TestSearchApi(ModuleStoreTestCase):
         with freeze_time(self.created_date):
             self.unit = library_api.create_container(
                 library_key=self.library.key,
-                container_type=content_models.Unit,
+                container_cls=content_models.Unit,
                 slug="unit-1",
                 title="Unit 1",
                 user_id=None,
@@ -233,7 +233,7 @@ class TestSearchApi(ModuleStoreTestCase):
             self.unit_key = "lct:org1:lib:unit:unit-1"
             self.subsection = library_api.create_container(
                 self.library.key,
-                container_type=content_models.Subsection,
+                container_cls=content_models.Subsection,
                 slug="subsection-1",
                 title="Subsection 1",
                 user_id=None,
@@ -246,7 +246,7 @@ class TestSearchApi(ModuleStoreTestCase):
             self.subsection_key = "lct:org1:lib:subsection:subsection-1"
             self.section = library_api.create_container(
                 self.library.key,
-                container_type=content_models.Section,
+                container_cls=content_models.Section,
                 slug="section-1",
                 title="Section 1",
                 user_id=None,
@@ -327,6 +327,10 @@ class TestSearchApi(ModuleStoreTestCase):
             "breadcrumbs": [{"display_name": "Library"}],
             # "published" is not set since we haven't published it yet
         }
+
+    def tearDown(self):
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     @override_settings(MEILISEARCH_ENABLED=False)
     def test_reindex_meilisearch_disabled(self, mock_meilisearch) -> None:

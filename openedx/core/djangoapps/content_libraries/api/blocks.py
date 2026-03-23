@@ -66,7 +66,7 @@ from .containers import (
     update_container_children,
     ContainerMetadata,
 )
-from .container_metadata import container_type_for_olx_tag
+from .container_metadata import container_subclass_for_olx_tag
 from .collections import library_collection_locator
 from .libraries import PublishableItem
 from .. import tasks
@@ -547,7 +547,7 @@ def _import_staged_block_as_container(
 
     container = create_container(
         library_key=library_key,
-        container_type=container_type_for_olx_tag(olx_node.tag),
+        container_cls=container_subclass_for_olx_tag(olx_node.tag),
         slug=None,  # auto-generate slug from title
         title=title,
         user_id=user.id,

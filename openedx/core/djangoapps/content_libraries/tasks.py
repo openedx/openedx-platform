@@ -224,8 +224,12 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
             # If any containers contain this component, their child list / component count may need to be updated
             # e.g. if this was a newly created component in the container and is now deleted, or this was deleted and
             # is now restored.
-            for parent_container in api.get_containers_contains_item(usage_key):
-                updated_container_keys.add(parent_container.container_key)
+            # TODO: we should be able to rewrite this to use the "side effects" functionality of the publishing API.
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    updated_container_keys.add(parent_container.container_key)
+            except api.ContentLibraryBlockNotFound:
+                pass  # The item 'usage_key' has been deleted. But shouldn't we still handle that?
 
             # TODO: do we also need to send CONTENT_OBJECT_ASSOCIATIONS_CHANGED for this component, or is
             # LIBRARY_BLOCK_UPDATED sufficient?

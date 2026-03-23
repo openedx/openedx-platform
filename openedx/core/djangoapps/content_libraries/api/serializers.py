@@ -3,6 +3,8 @@ Serializer classes for containers
 """
 from lxml import etree
 
+from openedx_content import api as content_api
+
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.xblock_serializer.api import StaticFile, XBlockSerializer
 from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict, get_all_object_tags
@@ -30,10 +32,10 @@ class ContainerSerializer:
         Serialize the given container to OLX.
         """
         # Create an XML node to hold the exported data
-        container_type = container_api.ContainerType(container_metadata.container_key.container_type)
+        container_cls = content_api.get_container_subclass(container_metadata.container_type_code)
         container_key = container_metadata.container_key
 
-        olx = etree.Element(container_type.olx_tag)
+        olx = etree.Element(container_cls.olx_tag_name)
 
         olx.attrib["copied_from_block"] = str(container_key)
         olx.attrib["copied_from_version"] = str(container_metadata.draft_version_num)

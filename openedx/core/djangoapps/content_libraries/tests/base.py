@@ -10,6 +10,7 @@ from organizations.models import Organization
 from rest_framework.test import APITransactionTestCase, APIClient
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryCollectionLocator
+from openedx_content import models_api as content_models
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.json_request import JsonResponse as SpecialJsonResponse
@@ -94,6 +95,11 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         )
         self.clients_by_user = {}
         self.client.login(username=self.user.username, password="edx")
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     # Assertions
 
@@ -408,9 +414,15 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         """ Set the fields of a specific block in the library. This API is only used by the MFE editors. """
         return self._api('post', URL_BLOCK_FIELDS_URL.format(block_key=block_key), new_fields, expect_response)
 
-    def _create_container(self, lib_key, container_type, slug: str | None, display_name: str, expect_response=200):
+    def _create_container(self,
+        lib_key,
+        container_type_code: str,
+        slug: str | None,
+        display_name: str,
+        expect_response=200,
+    ):
         """ Create a container (unit etc.) """
-        data = {"container_type": container_type, "display_name": display_name}
+        data = {"container_type_code": container_type_code, "display_name": display_name}
         if slug:
             data["slug"] = slug
         return self._api('post', URL_LIB_CONTAINERS.format(lib_key=lib_key), data, expect_response)

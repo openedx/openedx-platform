@@ -4,8 +4,6 @@ Content libraries data classes related to Containers.
 
 from __future__ import annotations
 
-from typing import Self
-
 from dataclasses import dataclass, field as dataclass_field
 from enum import Enum
 from django.db.models import QuerySet
@@ -15,13 +13,9 @@ from openedx_content import api as content_api
 from openedx_content.models_api import (
     Component,
     Container,
-    ContainerVersion,
     Unit,
-    UnitVersion,
     Subsection,
-    SubsectionVersion,
     Section,
-    SectionVersion,
     PublishableEntity,
 )
 
@@ -29,7 +23,7 @@ from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 
 from ..models import ContentLibrary
-from .exceptions import ContentLibraryContainerNotFound
+from .exceptions import ContentLibraryBlockNotFound, ContentLibraryContainerNotFound
 from .libraries import PublishableItem, library_component_usage_key
 
 # The public API is only the following symbols:
@@ -37,30 +31,34 @@ __all__ = [
     # Models
     "ContainerMetadata",
     # Methods
-    "container_type_for_olx_tag",
+    "container_subclass_for_olx_tag",
     "library_container_locator",
 ]
 
 # For now, we only allow the following types of containers in content libraries, and their hierarchy is hard-coded.
-LIBRARY_ALLOWED_CONTAINER_TYPES = ["unit", "subsection", "section"]
+LIBRARY_ALLOWED_CONTAINER_TYPES = [
+    Unit.type_code,
+    Subsection.type_code,
+    Section.type_code,
+]
 
 
-def container_type_for_olx_tag(olx_tag: str) -> content_api.ContainerType:
+def container_subclass_for_olx_tag(olx_tag: str) -> content_api.ContainerSubclass:
     """
     Given an OLX tag code (e.g. `"vertical"` for `<vertical>`), get the
-    corresponding `ContainerType`, e.g. `Unit`.
+    corresponding `Container` subclass, e.g. `Unit`.
 
     This method is specific to content libraries.
     """
     try:
-        ct = next(ct for ct in content_api.get_all_container_types() if olx_tag == ct.olx_tag_name)
+        subclass = next(ct for ct in content_api.get_all_container_subclasses() if olx_tag == ct.olx_tag_name)
     except StopIteration:
         raise ValueError(f"Content libraries does not support containers with XML tag: <{olx_tag}>") from None
-    if ct.type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
+    if subclass.type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
         raise ValueError(
-            f'Content libraries does not support "{ct.type_code}" containers (with XML tag <{olx_tag}>)'
+            f'Content libraries does not support "{subclass.type_code}" containers (with XML tag <{olx_tag}>)'
         ) from None
-    return ct
+    return subclass
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -363,10 +361,11 @@ def library_container_locator(
     """
     Returns a LibraryContainerLocator for the given library + container.
     """
-    if container.type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
+    container_type_code = content_api.get_container_type_code_of(container)
+    if container_type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
         raise ValueError(f"Unsupported container type for content libraries: {container!r}")
 
-    return LibraryContainerLocator(library_key, container_type=container.type_code, container_id=container.key)
+    return LibraryContainerLocator(library_key, container_type=container_type_code, container_id=container.key)
 
 
 def get_container_from_key(container_key: LibraryContainerLocator, include_deleted=False) -> Container:
@@ -380,7 +379,7 @@ def get_container_from_key(container_key: LibraryContainerLocator, include_delet
     learning_package = content_library.learning_package
     assert learning_package is not None
     container = content_api.get_container_by_key(learning_package.id, key=container_key.container_id)
-    assert container.type_code in LIBRARY_ALLOWED_CONTAINER_TYPES
+    assert content_api.get_container_type_code_of(container) in LIBRARY_ALLOWED_CONTAINER_TYPES
     # We only return the container if it exists and either:
     # 1. the container has a draft version (which means it is not soft-deleted) OR
     # 2. the container was soft-deleted but the `include_deleted` flag is set to True
@@ -401,5 +400,5 @@ def get_entity_from_key(
         assert isinstance(key, LibraryUsageLocatorV2)
         component = get_component_from_usage_key(key)
         if not include_deleted and not component.versioning.draft:
-            raise ContentLibraryContainerNotFound("Component has been deleted.")
+            raise ContentLibraryBlockNotFound("Component has been deleted.")
         return component
