@@ -104,7 +104,9 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
     """
     publish_log = PublishLog.objects.get(pk=publish_log_pk)
     library_key = LibraryLocatorV2.from_string(library_key_str)
-    affected_entities = publish_log.records.select_related("entity", "entity__container", "entity__component").all()
+    affected_entities = publish_log.records.select_related(
+        "entity", "entity__container", "entity__container__container_type", "entity__component",
+    ).all()
     affected_containers: set[LibraryContainerLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):

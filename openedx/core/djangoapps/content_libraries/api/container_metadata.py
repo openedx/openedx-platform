@@ -81,7 +81,6 @@ class ContainerMetadata(PublishableItem):
             library_key,
             container=container,
         )
-        type_code = content_api.get_container_type_code_of(container)
         published_by = None
         if last_publish_log and last_publish_log.published_by:
             published_by = last_publish_log.published_by.username
@@ -97,7 +96,7 @@ class ContainerMetadata(PublishableItem):
 
         return cls(
             container_key=container_key,
-            container_type_code=type_code,
+            container_type_code=container_key.container_type,
             container_pk=container.pk,
             display_name=draft.title,
             created=container.created,

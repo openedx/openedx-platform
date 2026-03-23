@@ -10,7 +10,7 @@ from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 from openedx_content import api as content_api
-from openedx_content.models_api import Collection, PublishableEntityVersion, Section, Subsection, Unit
+from openedx_content.models_api import Collection, Container, PublishableEntityVersion, Section, Subsection, Unit
 from organizations.tests.factories import OrganizationFactory
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTaskStatus
@@ -100,6 +100,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             key="test_collection2",
             title="Test Collection 2",
         )
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        Container.reset_cache()
+        return super().tearDown()
 
     def _make_migration_context(self, **kwargs) -> _MigrationContext:
         """

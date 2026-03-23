@@ -24,7 +24,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED,
 )
 from openedx_content import api as content_api
-from openedx_content.models_api import Container, Component, Unit
+from openedx_content.models_api import Container, Unit
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
 
 from .. import tasks
@@ -392,7 +392,6 @@ def update_container_children(
     [ 🛑 UNSTABLE ] Adds children components or containers to given container.
     """
     container = get_container_from_key(container_key)
-    container_type_code = content_api.get_container_type_code_of(container)
     created = datetime.now(tz=timezone.utc)
 
     new_version = content_api.create_next_container_version(
@@ -408,7 +407,7 @@ def update_container_children(
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
                 object_id=str(key),
-                changes=[f"{container_type_code}s"],  # "units", "subsections", "sections"
+                changes=[f"{container_key.type_code}s"],  # "units", "subsections", "sections"
             ),
         )
 
