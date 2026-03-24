@@ -407,7 +407,7 @@ def update_container_children(
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
                 object_id=str(key),
-                changes=[f"{container_key.type_code}s"],  # "units", "subsections", "sections"
+                changes=[f"{container_key.container_type}s"],  # "units", "subsections", "sections"
             ),
         )
 
@@ -427,7 +427,7 @@ def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLo
     [ 🛑 UNSTABLE ] Get containers that contains the item, that can be a component or another container.
     """
     entity = get_entity_from_key(key)
-    containers = content_api.get_containers_with_entity(entity.pk)
+    containers = content_api.get_containers_with_entity(entity.pk).select_related("container_type")
     return [ContainerMetadata.from_container(key.lib_key, container) for container in containers]
 
 
