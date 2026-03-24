@@ -10,11 +10,9 @@ from django.conf import settings
 from django.test.utils import override_settings
 from unittest.mock import patch
 from pytz import utc
-from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffle-import
 
 from common.djangoapps.student.tests.factories import UserFactory
 
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_EMAIL_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.models import Notification
 from openedx.core.djangoapps.notifications.email.utils import (
@@ -28,7 +26,6 @@ from openedx.core.djangoapps.notifications.email.utils import (
     get_course_info,
     get_time_ago,
     get_unsubscribe_link,
-    is_email_notification_flag_enabled,
     update_user_preferences_from_patch,
 )
 from openedx.core.djangoapps.user_api.models import UserPreference
@@ -102,8 +99,8 @@ class TestUtilFunctions(ModuleStoreTestCase):
         """Test unsubscribe link uses site-configured MFE URL and encrypted username."""
         with patch('openedx.core.djangoapps.notifications.email.utils.configuration_helpers.get_value',
                    return_value='https://learning.siteconf') as mock_get_value, \
-             patch('openedx.core.djangoapps.notifications.email.utils.encrypt_string',
-                   return_value='ENC') as mock_encrypt:
+            patch('openedx.core.djangoapps.notifications.email.utils.encrypt_string',
+                  return_value='ENC') as mock_encrypt:
             url = get_unsubscribe_link(self.user.username)
 
         assert url == 'https://learning.siteconf/preferences-unsubscribe/ENC/'
@@ -117,8 +114,8 @@ class TestUtilFunctions(ModuleStoreTestCase):
         with override_settings(LEARNING_MICROFRONTEND_URL=default_url):
             with patch('openedx.core.djangoapps.notifications.email.utils.configuration_helpers.get_value',
                        side_effect=lambda k, d: d) as mock_get_value, \
-                 patch('openedx.core.djangoapps.notifications.email.utils.encrypt_string',
-                       return_value='ENC') as mock_encrypt:
+                patch('openedx.core.djangoapps.notifications.email.utils.encrypt_string',
+                      return_value='ENC') as mock_encrypt:
                 url = get_unsubscribe_link(self.user.username)
 
         assert url == f'{default_url}/preferences-unsubscribe/ENC/'
@@ -230,59 +227,6 @@ class TestContextFunctions(ModuleStoreTestCase):
                 ctx = create_email_template_context(self.user.username)
 
         assert ctx["notification_settings_url"] == "https://accounts.settings.example/#notifications"
-
-
-class TestWaffleFlag(ModuleStoreTestCase):
-    """
-    Test user level email notifications waffle flag
-    """
-
-    def setUp(self):
-        """
-        Setup
-        """
-        super().setUp()
-        self.user_1 = UserFactory()
-        self.user_2 = UserFactory()
-        self.course_1 = CourseFactory.create(display_name='test course 1', run="Testing_course_1")
-        self.course_1 = CourseFactory.create(display_name='test course 2', run="Testing_course_2")
-
-    def test_waffle_flag_for_everyone(self):
-        """
-        Tests if waffle flag is enabled for everyone
-        """
-        assert is_email_notification_flag_enabled() is False
-        waffle_model = get_waffle_flag_model()
-        flag, _ = waffle_model.objects.get_or_create(name=ENABLE_EMAIL_NOTIFICATIONS.name)
-        flag.everyone = True
-        flag.save()
-        assert is_email_notification_flag_enabled() is True
-
-    def test_waffle_flag_for_user(self):
-        """
-        Tests user level waffle flag
-        """
-        assert is_email_notification_flag_enabled() is False
-        waffle_model = get_waffle_flag_model()
-        flag, _ = waffle_model.objects.get_or_create(name=ENABLE_EMAIL_NOTIFICATIONS.name)
-        flag.users.add(self.user_1)
-        flag.save()
-        assert is_email_notification_flag_enabled(self.user_1) is True
-        assert is_email_notification_flag_enabled(self.user_2) is False
-
-    def test_waffle_flag_everyone_priority(self):
-        """
-        Tests if everyone field has more priority over user field
-        """
-        assert is_email_notification_flag_enabled() is False
-        waffle_model = get_waffle_flag_model()
-        flag, _ = waffle_model.objects.get_or_create(name=ENABLE_EMAIL_NOTIFICATIONS.name)
-        flag.everyone = False
-        flag.users.add(self.user_1)
-        flag.save()
-        assert is_email_notification_flag_enabled() is False
-        assert is_email_notification_flag_enabled(self.user_1) is False
-        assert is_email_notification_flag_enabled(self.user_2) is False
 
 
 class TestEncryption(ModuleStoreTestCase):
