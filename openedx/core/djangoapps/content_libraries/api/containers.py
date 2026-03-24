@@ -184,7 +184,7 @@ def update_container(
         # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
-                object_id=str(child.usage_key if is_unit else child.container_key),
+                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
                 changes=[container_key.container_type + "s"],  # e.g. "units"
             ),
         )
@@ -343,7 +343,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
         # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
-                object_id=str(child.usage_key if is_unit else child.container_key),
+                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
                 changes=[container_key.container_type + "s"],
             ),
         )

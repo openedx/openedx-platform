@@ -17,6 +17,7 @@ from openedx_content.models_api import (
     Subsection,
     Section,
     PublishableEntity,
+    PublishableEntityMixin,
 )
 
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
@@ -389,7 +390,7 @@ def get_container_from_key(container_key: LibraryContainerLocator, include_delet
 
 def get_entity_from_key(
     key: LibraryContainerLocator | LibraryUsageLocatorV2, /, *, include_deleted=False
-) -> PublishableEntity:
+) -> PublishableEntityMixin:
     """
     Given a key for an item in a library, load it as a `Component` or a `Container` subclass.
     """
