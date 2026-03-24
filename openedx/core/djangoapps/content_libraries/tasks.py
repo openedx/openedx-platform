@@ -124,9 +124,13 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
             # Publishing a container will auto-publish its children, but publishing a single component or all changes
             # in the library will NOT usually include any parent containers. But we do need to notify listeners that the
             # parent container(s) have changed, e.g. so the search index can update the "has_unpublished_changes"
-            for parent_container in api.get_containers_contains_item(usage_key):
-                affected_containers.add(parent_container.container_key)
-                # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    affected_containers.add(parent_container.container_key)
+                    # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            except api.ContentLibraryBlockNotFound:
+                # The component has been deleted.
+                pass
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
             affected_containers.add(container_key)
