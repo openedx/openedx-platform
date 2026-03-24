@@ -520,6 +520,7 @@ MAKO_TEMPLATE_DIRS_BASE = [
 # template engine, we define the list here
 lms_mako_template_dirs_base = list(MAKO_TEMPLATE_DIRS_BASE)
 lms_mako_template_dirs_base.insert(2, XMODULE_ROOT / 'capa' / 'templates')
+lms_mako_template_dirs_base.append(REPO_ROOT / 'lms' / 'djangoapps' / 'teams' / 'templates')
 lms_mako_template_dirs_base.append(OPENEDX_ROOT / 'features' / 'course_experience' / 'templates')
 
 CONTEXT_PROCESSORS = [
