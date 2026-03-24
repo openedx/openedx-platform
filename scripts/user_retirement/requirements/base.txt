@@ -6,13 +6,13 @@
 #
 asgiref==3.11.1
     # via django
-attrs==25.4.0
+attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.42.69
+boto3==1.42.74
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.42.69
+botocore==1.42.74
     # via
     #   boto3
     #   s3transfer
@@ -50,7 +50,7 @@ edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.in
 google-api-core==2.30.0
     # via google-api-python-client
-google-api-python-client==2.192.0
+google-api-python-client==2.193.0
     # via -r scripts/user_retirement/requirements/base.in
 google-auth==2.49.1
     # via
@@ -85,7 +85,7 @@ platformdirs==4.9.4
     # via zeep
 proto-plus==1.27.1
     # via google-api-core
-protobuf==6.33.5
+protobuf==6.33.6
     # via
     #   google-api-core
     #   googleapis-common-protos

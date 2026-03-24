@@ -59,7 +59,7 @@ astroid==4.0.4
     # via
     #   -c requirements/constraints.txt
     #   sphinx-autoapi
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   -r requirements/edx/base.txt
     #   aiohttp
@@ -105,14 +105,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.69
+boto3==1.42.74
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.69
+botocore==1.42.74
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -164,7 +164,7 @@ cffi==2.0.0
     #   -r requirements/edx/base.txt
     #   cryptography
     #   pynacl
-chardet==7.1.0
+chardet==7.2.0
     # via
     #   -r requirements/edx/base.txt
     #   pysrt
@@ -456,7 +456,7 @@ django-webpack-loader==3.2.3
     # via
     #   -r requirements/edx/base.txt
     #   edx-proctoring
-djangorestframework==3.16.1
+djangorestframework==3.17.0
     # via
     #   -r requirements/edx/base.txt
     #   django-config-models
@@ -684,7 +684,7 @@ filelock==3.25.2
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
-firebase-admin==7.2.0
+firebase-admin==7.3.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-ace
@@ -731,11 +731,11 @@ google-cloud-core==2.5.0
     #   -r requirements/edx/base.txt
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.25.0
+google-cloud-firestore==2.26.0
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
-google-cloud-storage==3.9.0
+google-cloud-storage==3.10.1
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
@@ -809,7 +809,7 @@ idna==3.11
     #   yarl
 imagesize==2.0.0
     # via sphinx
-importlib-metadata==8.7.1
+importlib-metadata==9.0.0
     # via -r requirements/edx/base.txt
 inflection==0.5.1
     # via
@@ -1100,7 +1100,7 @@ proto-plus==1.27.1
     #   -r requirements/edx/base.txt
     #   google-api-core
     #   google-cloud-firestore
-protobuf==6.33.5
+protobuf==6.33.6
     # via
     #   -r requirements/edx/base.txt
     #   google-api-core
@@ -1637,7 +1637,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/base.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.15.0
+xblocks-contrib==0.15.1
     # via -r requirements/edx/base.txt
 xmlsec==1.3.14
     # via

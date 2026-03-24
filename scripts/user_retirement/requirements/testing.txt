@@ -8,17 +8,17 @@ asgiref==3.11.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.69
+boto3==1.42.74
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.69
+botocore==1.42.74
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -73,7 +73,7 @@ google-api-core==2.30.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-google-api-python-client==2.192.0
+google-api-python-client==2.193.0
     # via -r scripts/user_retirement/requirements/base.txt
 google-auth==2.49.1
     # via
@@ -141,7 +141,7 @@ proto-plus==1.27.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
-protobuf==6.33.5
+protobuf==6.33.6
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -258,7 +258,7 @@ urllib3==2.6.3
     #   botocore
     #   requests
     #   responses
-werkzeug==3.1.6
+werkzeug==3.1.7
     # via moto
 xmltodict==1.0.4
     # via moto
