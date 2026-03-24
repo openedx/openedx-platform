@@ -5,6 +5,8 @@ import itertools
 import ddt
 import pytz
 from crum import set_current_request
+from django.test.utils import override_settings
+from xmodule.capa_block import reset_class
 from xmodule.graders import ProblemScore
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
@@ -25,10 +27,11 @@ from ..utils import answer_problem, mock_get_submissions_score
 
 
 @ddt.ddt
-class TestMultipleProblemTypesSubsectionScores(SharedModuleStoreTestCase):
+class _TestMultipleProblemTypesSubsectionScoresBase(SharedModuleStoreTestCase):
     """
     Test grading of different problem types.
     """
+    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     SCORED_BLOCK_COUNT = 7
@@ -36,12 +39,14 @@ class TestMultipleProblemTypesSubsectionScores(SharedModuleStoreTestCase):
 
     @classmethod
     def setUpClass(cls):
+        reset_class()
         super().setUpClass()
         cls.load_scoreable_course()
         chapter1 = cls.course.get_children()[0]
         cls.seq1 = chapter1.get_children()[0]
 
     def setUp(self):
+        reset_class()
         super().setUp()
         self.student = UserFactory.create(is_staff=False, username='test_student', password=self.TEST_PASSWORD)
         self.client.login(username=self.student.username, password=self.TEST_PASSWORD)
@@ -98,12 +103,23 @@ class TestMultipleProblemTypesSubsectionScores(SharedModuleStoreTestCase):
         assert score.all_total.possible == (possible_per_block * block_count)
 
 
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
+class ExtractedTestMultipleProblemTypesSubsectionScores(_TestMultipleProblemTypesSubsectionScoresBase):
+    __test__ = True
+
+
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
+class BuiltInTestMultipleProblemTypesSubsectionScores(_TestMultipleProblemTypesSubsectionScoresBase):
+    __test__ = True
+
+
 @ddt.ddt
-class TestVariedMetadata(ProblemSubmissionTestMixin, ModuleStoreTestCase):
+class _TestVariedMetadataBase(ProblemSubmissionTestMixin, ModuleStoreTestCase):
     """
     Test that changing the metadata on a block has the desired effect on the
     persisted score.
     """
+    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     default_problem_metadata = {
@@ -113,6 +129,7 @@ class TestVariedMetadata(ProblemSubmissionTestMixin, ModuleStoreTestCase):
     }
 
     def setUp(self):
+        reset_class()
         super().setUp()
         self.course = CourseFactory.create()
         with self.store.bulk_operations(self.course.id):
@@ -209,15 +226,27 @@ class TestVariedMetadata(ProblemSubmissionTestMixin, ModuleStoreTestCase):
         assert score.graded_total.possible == expected_possible
 
 
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
+class ExtractedTestVariedMetadata(_TestVariedMetadataBase):
+    __test__ = True
+
+
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
+class BuiltInTestVariedMetadata(_TestVariedMetadataBase):
+    __test__ = True
+
+
 @ddt.ddt
-class TestWeightedProblems(SharedModuleStoreTestCase):
+class _TestWeightedProblemsBase(SharedModuleStoreTestCase):
     """
     Test scores and grades with various problem weight values.
     """
+    __test__ = False
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     @classmethod
     def setUpClass(cls):
+        reset_class()
         super().setUpClass()
         cls.course = CourseFactory.create()
         with cls.store.bulk_operations(cls.course.id):
@@ -237,6 +266,7 @@ class TestWeightedProblems(SharedModuleStoreTestCase):
                 )
 
     def setUp(self):
+        reset_class()
         super().setUp()
         self.user = UserFactory()
         self.addCleanup(set_current_request, None)
@@ -315,3 +345,13 @@ class TestWeightedProblems(SharedModuleStoreTestCase):
             first_attempted=datetime.datetime(2010, 1, 1),
         )
         self._verify_grades(raw_earned, raw_possible, weight, expected_score)
+
+
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=True)
+class ExtractedTestWeightedProblems(_TestWeightedProblemsBase):
+    __test__ = True
+
+
+@override_settings(USE_EXTRACTED_PROBLEM_BLOCK=False)
+class BuiltInTestWeightedProblems(_TestWeightedProblemsBase):
+    __test__ = True

@@ -2465,5 +2465,17 @@ def randomization_bin(seed, problem_id):
     return int(r_hash.hexdigest()[:7], 16) % NUM_RANDOMIZATION_BINS
 
 
-ProblemBlock = _ExtractedProblemBlock if settings.USE_EXTRACTED_PROBLEM_BLOCK else _BuiltInProblemBlock
+ProblemBlock = None
+
+
+def reset_class():
+    """Reset class as per django settings flag"""
+    global ProblemBlock
+    ProblemBlock = (
+        _ExtractedProblemBlock if settings.USE_EXTRACTED_PROBLEM_BLOCK else _BuiltInProblemBlock
+    )
+    return ProblemBlock
+
+
+reset_class()
 ProblemBlock.__name__ = "ProblemBlock"
