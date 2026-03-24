@@ -151,7 +151,6 @@ def update_container(
     library_key = container_key.lib_key
     created = datetime.now(tz=timezone.utc)
 
-    affected_containers: list[ContainerMetadata] = []
     # Get children containers or components to update their index data
     children = get_container_children(container_key, published=False)
 
@@ -169,6 +168,7 @@ def update_container(
 
     # Send events related to the containers that contains the updated container.
     # This is to update the children display names used in the section/subsection previews.
+    affected_containers = get_containers_contains_item(container_key)
     for affected_container in affected_containers:
         # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
         # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1

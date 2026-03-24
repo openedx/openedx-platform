@@ -154,6 +154,11 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         tagging_api.tag_object(str(cls.subsection_key), cls.difficulty_tags, tags=["Normal"])
         tagging_api.tag_object(str(cls.section_key), cls.difficulty_tags, tags=["Normal"])
 
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
+
     @property
     def toy_course_access_id(self):
         """
