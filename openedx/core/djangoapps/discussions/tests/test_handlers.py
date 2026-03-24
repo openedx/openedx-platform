@@ -55,6 +55,7 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         config_data = CourseDiscussionConfigurationData(
             course_key=new_key,
             provider_type="openedx",
+            plugin_configuration={},
         )
         assert not DiscussionsConfiguration.objects.filter(context_key=new_key).exists()
         update_course_discussion_config(config_data)
@@ -191,3 +192,33 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         assert existing_topic_link.title == "Section 10|Subsection 10|Unit 10"
         # If there is no stored context, then continue using the Unit name.
         assert existing_topic_link_2.title == "Unit 11"
+
+    def test_new_config_uses_enabled_from_configuration(self):
+        """
+        When creating a new DiscussionsConfiguration, the handler should use
+        the enabled value from the configuration data.
+        """
+        new_key = CourseKey.from_string("course-v1:test+test+disabled")
+        config_data = CourseDiscussionConfigurationData(
+            course_key=new_key,
+            provider_type="openedx",
+            enabled=False,
+            plugin_configuration={},
+        )
+        update_course_discussion_config(config_data)
+        db_config = DiscussionsConfiguration.objects.get(context_key=new_key)
+        assert db_config.enabled is False
+
+    def test_existing_config_updated_enabled_from_configuration(self):
+        """
+        When the configuration already exists, the handler should update
+        enabled from the configuration data.
+        """
+        config_data = CourseDiscussionConfigurationData(
+            course_key=self.course_key,
+            provider_type="openedx",
+            enabled=False,
+        )
+        update_course_discussion_config(config_data)
+        db_config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
+        assert db_config.enabled is False

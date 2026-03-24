@@ -88,8 +88,20 @@ def update_discussions_settings_from_course(
                 )
                 contexts.extend(list(discussable_units))
 
+        # Derive enabled from the discussion tab's is_hidden state.
+        # When a course is imported or rerun, course.tabs are copied verbatim
+        # from the source but DiscussionsConfiguration is not, so we pass the
+        # tab state through config_data for the handler to reconcile.
+        enabled = True
+        if course:
+            for tab in course.tabs:
+                if getattr(tab, 'tab_id', None) == 'discussion':
+                    enabled = not tab.is_hidden
+                    break
+
         config_data = CourseDiscussionConfigurationData(
             course_key=course_key,
+            enabled=enabled,
             enable_in_context=enable_in_context,
             enable_graded_units=enable_graded_units,
             unit_level_visibility=unit_level_visibility,
@@ -97,35 +109,7 @@ def update_discussions_settings_from_course(
             plugin_configuration=provider_config,
             contexts=contexts,
         )
-
-        # Sync DiscussionsConfiguration.enabled from the discussion tab's
-        # is_hidden state. When a course is imported or rerun, course.tabs are
-        # copied verbatim from the source but DiscussionsConfiguration is not,
-        # so we reconcile here where we already have the course loaded.
-        _sync_enabled_from_discussion_tab(course_key, course)
-
     return config_data
-
-
-def _sync_enabled_from_discussion_tab(course_key, course):
-    """
-    Set DiscussionsConfiguration.enabled based on the discussion tab's is_hidden
-    value from the given course object.
-
-    This keeps the DB model in sync with the modulestore tab state, which is
-    especially important after course import or rerun where the tab state is
-    copied but the DiscussionsConfiguration record is not.
-    """
-    enabled = True  # default when no discussion tab is found
-    if course:
-        for tab in course.tabs:
-            if getattr(tab, 'tab_id', None) == 'discussion':
-                enabled = not tab.is_hidden
-                break
-
-    DiscussionsConfiguration.objects.filter(
-        context_key=course_key,
-    ).update(enabled=enabled)
 
 
 def get_discussable_units(course, enable_graded_units, discussable_units=None):

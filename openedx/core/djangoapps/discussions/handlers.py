@@ -96,12 +96,17 @@ def update_course_discussion_config(configuration: CourseDiscussionConfiguration
             log.info(f"Course {course_key} doesn't have discussion configuration model yet. Creating a new one.")
             DiscussionsConfiguration(
                 context_key=course_key,
+                enabled=configuration.enabled,
                 provider_type=provider_id,
                 plugin_configuration=configuration.plugin_configuration,
                 enable_in_context=configuration.enable_in_context,
                 enable_graded_units=configuration.enable_graded_units,
                 unit_level_visibility=configuration.unit_level_visibility,
             ).save()
+        else:
+            DiscussionsConfiguration.objects.filter(
+                context_key=course_key,
+            ).update(enabled=configuration.enabled)
 
 
 COURSE_DISCUSSIONS_CHANGED.connect(handle_course_discussion_config_update)

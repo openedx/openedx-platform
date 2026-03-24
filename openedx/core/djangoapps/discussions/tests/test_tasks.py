@@ -185,20 +185,16 @@ class UpdateDiscussionsSettingsFromCourseTestCase(ModuleStoreTestCase, Discussio
         assert not missing_units & units_in_config
 
     @ddt.data(
-        # (initial_enabled, tab_is_hidden, expected_enabled)
-        (True, True, False),   # import with hidden tab → disabled
-        (False, False, True),  # import with visible tab → enabled
+        # (tab_is_hidden, expected_enabled)
+        (True, False),   # import with hidden tab → disabled
+        (False, True),   # import with visible tab → enabled
     )
     @ddt.unpack
-    def test_syncs_enabled_from_discussion_tab(self, initial_enabled, tab_is_hidden, expected_enabled):
+    def test_config_data_enabled_from_discussion_tab(self, tab_is_hidden, expected_enabled):
         """
-        After update_discussions_settings_from_course, DiscussionsConfiguration.enabled
-        should match `not tab.is_hidden` from the course's discussion tab.
+        update_discussions_settings_from_course should set config_data.enabled
+        based on the discussion tab's is_hidden state.
         """
-        discussion_config = DiscussionsConfiguration.get(self.course.id)
-        discussion_config.enabled = initial_enabled
-        discussion_config.save()
-
         course = self.store.get_course(self.course.id)
         for tab in course.tabs:
             if getattr(tab, 'tab_id', None) == 'discussion':
@@ -206,10 +202,9 @@ class UpdateDiscussionsSettingsFromCourseTestCase(ModuleStoreTestCase, Discussio
                 break
         self.store.update_item(course, self.user.id)
 
-        update_discussions_settings_from_course(self.course.id)
+        config_data = update_discussions_settings_from_course(self.course.id)
 
-        discussion_config = DiscussionsConfiguration.get(self.course.id)
-        assert discussion_config.enabled is expected_enabled
+        assert config_data.enabled is expected_enabled
 
 
 @ddt.ddt
