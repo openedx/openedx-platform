@@ -9,8 +9,8 @@ from django.utils import timezone
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Collection, PublishableEntityVersion
+from openedx_content import api as content_api
+from openedx_content.models_api import Collection, PublishableEntityVersion
 from organizations.tests.factories import OrganizationFactory
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTaskStatus
@@ -257,7 +257,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 self.course.id.make_usage_key('library_content', 'test_library_content'),
                 None,
                 'The "library_content" XBlock (ID: "test_library_content") has children, '
-                'so it not supported in content libraries. It has 2 children blocks.',
+                'so it is not supported in content libraries. It has 2 children blocks.',
             ),
         )
         self.assertEqual(len(result.children), 0)
@@ -394,7 +394,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertEqual(
             reason,
             'The "library_content" XBlock (ID: "test_library_content") has children,'
-            ' so it not supported in content libraries.',
+            ' so it is not supported in content libraries.',
         )
 
     def test_migrate_component_with_static_content(self):
@@ -404,14 +404,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         source_key = self.course.id.make_usage_key("problem", "test_problem_with_image")
         olx = '<problem display_name="Test Problem"><p>See image: test_image.png</p></problem>'
 
-        media_type = authoring_api.get_or_create_media_type("image/png")
-        test_content = authoring_api.get_or_create_file_content(
+        media_type = content_api.get_or_create_media_type("image/png")
+        test_media = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"fake_image_data",
             created=timezone.now(),
         )
-        content_by_filename = {"test_image.png": test_content.id}
+        content_by_filename = {"test_image.png": test_media.id}
         context = self._make_migration_context(content_by_filename=content_by_filename)
         result, reason = _migrate_component(
             context=context,
@@ -423,11 +423,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNotNone(result)
         self.assertIsNone(reason)
 
-        component_content = result.componentversion.componentversioncontent_set.filter(
+        component_media = result.componentversion.componentversionmedia_set.filter(
             key="static/test_image.png"
         ).first()
-        self.assertIsNotNone(component_content)
-        self.assertEqual(component_content.content_id, test_content.id)
+        self.assertIsNotNone(component_media)
+        self.assertEqual(component_media.media.id, test_media.id)
 
     def test_migrate_skip_repeats(self):
         """
@@ -637,14 +637,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         olx = '<problem display_name="Test Problem"><p>See image: referenced.png</p></problem>'
 
-        media_type = authoring_api.get_or_create_media_type("image/png")
-        referenced_content = authoring_api.get_or_create_file_content(
+        media_type = content_api.get_or_create_media_type("image/png")
+        referenced_content = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"referenced_image_data",
             created=timezone.now(),
         )
-        unreferenced_content = authoring_api.get_or_create_file_content(
+        unreferenced_content = content_api.get_or_create_file_media(
             self.learning_package.id,
             media_type.id,
             data=b"unreferenced_image_data",
@@ -670,12 +670,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNone(reason)
 
         referenced_content_exists = (
-            result.componentversion.componentversioncontent_set.filter(
+            result.componentversion.componentversionmedia_set.filter(
                 key="static/referenced.png"
             ).exists()
         )
         unreferenced_content_exists = (
-            result.componentversion.componentversioncontent_set.filter(
+            result.componentversion.componentversionmedia_set.filter(
                 key="static/unreferenced.png"
             ).exists()
         )
@@ -711,34 +711,34 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         """
         source_key = self.course.id.make_usage_key("vertical", "test_vertical")
 
-        child_component_1 = authoring_api.create_component(
+        child_component_1 = content_api.create_component(
             self.learning_package.id,
-            component_type=authoring_api.get_or_create_component_type(
+            component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
             local_key="child_problem_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
-        child_version_1 = authoring_api.create_next_component_version(
+        child_version_1 = content_api.create_next_component_version(
             child_component_1.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
 
-        child_component_2 = authoring_api.create_component(
+        child_component_2 = content_api.create_component(
             self.learning_package.id,
-            component_type=authoring_api.get_or_create_component_type(
+            component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
             local_key="child_html_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
-        child_version_2 = authoring_api.create_next_component_version(
+        child_version_2 = content_api.create_next_component_version(
             child_component_2.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -801,7 +801,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 container_version = result.containerversion
                 self.assertEqual(container_version.title, f"Test {block_type.title()}")
                 # The container is published
-                self.assertFalse(authoring_api.contains_unpublished_changes(container_version.container.pk))
+                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))
 
     def test_migrate_container_same_title(self):
         """
@@ -899,18 +899,18 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         context = self._make_migration_context(repeat_handling_strategy=RepeatHandlingStrategy.Skip)
         children = []
         for i in range(3):
-            child_component = authoring_api.create_component(
+            child_component = content_api.create_component(
                 self.learning_package.id,
-                component_type=authoring_api.get_or_create_component_type(
+                component_type=content_api.get_or_create_component_type(
                     "xblock.v1", "problem"
                 ),
                 local_key=f"child_problem_{i}",
                 created=timezone.now(),
                 created_by=self.user.id,
             )
-            child_version = authoring_api.create_next_component_version(
+            child_version = content_api.create_next_component_version(
                 child_component.pk,
-                content_to_replace={},
+                media_to_replace={},
                 created=timezone.now(),
                 created_by=self.user.id,
             )
@@ -939,50 +939,50 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         """
         source_key = self.course.id.make_usage_key("vertical", "mixed_vertical")
 
-        problem_component = authoring_api.create_component(
+        problem_component = content_api.create_component(
             self.learning_package.id,
-            component_type=authoring_api.get_or_create_component_type(
+            component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
             local_key="mixed_problem",
             created=timezone.now(),
             created_by=self.user.id,
         )
-        problem_version = authoring_api.create_next_component_version(
+        problem_version = content_api.create_next_component_version(
             problem_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
 
-        html_component = authoring_api.create_component(
+        html_component = content_api.create_component(
             self.learning_package.id,
-            component_type=authoring_api.get_or_create_component_type(
+            component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
             local_key="mixed_html",
             created=timezone.now(),
             created_by=self.user.id,
         )
-        html_version = authoring_api.create_next_component_version(
+        html_version = content_api.create_next_component_version(
             html_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )
 
-        video_component = authoring_api.create_component(
+        video_component = content_api.create_component(
             self.learning_package.id,
-            component_type=authoring_api.get_or_create_component_type(
+            component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "video"
             ),
             local_key="mixed_video",
             created=timezone.now(),
             created_by=self.user.id,
         )
-        video_version = authoring_api.create_next_component_version(
+        video_version = content_api.create_next_component_version(
             video_component.pk,
-            content_to_replace={},
+            media_to_replace={},
             created=timezone.now(),
             created_by=self.user.id,
         )

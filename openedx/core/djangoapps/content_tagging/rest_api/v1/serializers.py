@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from rest_framework import serializers, fields
 
-from openedx_tagging.core.tagging.rest_api.v1.serializers import (
+from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     TaxonomyListQueryParamsSerializer,
     TaxonomySerializer,

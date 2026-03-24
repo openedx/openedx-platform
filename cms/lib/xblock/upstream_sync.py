@@ -3,7 +3,7 @@ Synchronize content and settings from upstream content to their downstream
 usages.
 
 At the time of writing, we assume that for any upstream-downstream linkage:
-* The upstream is a Component or Container from a Learning Core-backed Content
+* The upstream is a Component or Container from a openedx_content-backed Content
   Library.
 * The downstream is a block of compatible type in a SplitModuleStore-backed
   Course.
@@ -245,7 +245,7 @@ class UpstreamLink:
         Get info on a downstream block's relationship with its linked upstream
         content (without actually loading the content).
 
-        Currently, the only supported upstreams are LC-backed Library Components
+        Currently, the only supported upstreams are openedx_content-backed Components
         (XBlocks) or Containers. This may change in the future (see module
         docstring).
 

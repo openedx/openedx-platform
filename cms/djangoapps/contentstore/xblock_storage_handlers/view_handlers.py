@@ -22,6 +22,16 @@ from django.utils.translation import gettext as _
 from edx_django_utils.plugins import pluggable_override
 from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, ContainerType, LibraryXBlockMetadata
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
+from openedx.core import toggles as core_toggles
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import (
+    COURSES_EDIT_COURSE_CONTENT,
+    COURSES_MANAGE_COURSE_UPDATES,
+    COURSES_MANAGE_PAGES_AND_RESOURCES,
+    COURSES_PUBLISH_COURSE_CONTENT,
+    COURSES_VIEW_COURSE,
+    COURSES_VIEW_COURSE_UPDATES,
+)
 from edx_proctoring.api import (
     does_backend_support_onboarding,
     get_exam_by_content_id,
@@ -99,6 +109,12 @@ log = logging.getLogger(__name__)
 
 CREATE_IF_NOT_FOUND = ["course_info"]
 
+# Request body fields that indicate substantive content changes (as opposed to pure publish actions)
+_CONTENT_FIELDS = frozenset({
+    'metadata', 'data', 'children', 'fields', 'nullout', 'graderType',
+    'isPrereq', 'prereqUsageKey', 'prereqMinScore', 'prereqMinCompletion',
+})
+
 # Useful constants for defining predicates
 NEVER = lambda x: False
 ALWAYS = lambda x: True
@@ -156,6 +172,95 @@ def _get_block_parent_children(xblock):
     return response
 
 
+def _get_xblock_authz_permission(request, usage_key, category=None):
+    """
+    Determine the required authz permission for an xblock operation.
+
+    Args:
+        request: The HTTP request
+        usage_key: The UsageKey for the xblock
+        category: Optional category for block creation (when usage_key is the parent)
+
+    Returns:
+        str: The openedx-authz permission identifier (e.g., 'courses.view_course'),
+             or None if the operation is not covered by openedx-authz.
+    """
+    # Libraries v1 use LibraryUsageLocator keys, which we filter out here. They will
+    # authorize with the legacy role-based checks (has_studio_{read/write}_access).
+    # Libraries v2 use newer REST API endpoints which do not use this function.
+    if isinstance(usage_key, LibraryUsageLocator):
+        return None
+
+    # Ensure the authz feature flag is enabled for this course.
+    if not core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(usage_key.course_key):
+        return None
+
+    # Determine block type from usage_key or category parameter
+    block_type = category if category else usage_key.block_type
+
+    # Determine permission based on HTTP method and block type
+    if request.method == "GET":
+        if block_type == "course_info":
+            return COURSES_VIEW_COURSE_UPDATES.identifier
+        return COURSES_VIEW_COURSE.identifier
+
+    elif request.method == "DELETE":
+        if block_type == "static_tab":
+            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+        return COURSES_EDIT_COURSE_CONTENT.identifier
+
+    elif request.method in ("POST", "PUT", "PATCH"):
+        if block_type == "course_info":
+            return COURSES_MANAGE_COURSE_UPDATES.identifier
+
+        if block_type == "static_tab":
+            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+
+        # Check for publish action in request body
+        request_data = getattr(request, 'json', {}) or {}
+        publish_action = request_data.get("publish")
+
+        # A pure publish action (no content changes) requires publish permission;
+        # everything else (edits, edits+republish, unknown actions) requires edit permission.
+        if publish_action:
+            has_content_changes = any(field in request_data for field in _CONTENT_FIELDS)
+            is_pure_publish = (
+                publish_action == "discard_changes"
+                or (publish_action in ("make_public", "republish") and not has_content_changes)
+            )
+            if is_pure_publish:
+                return COURSES_PUBLISH_COURSE_CONTENT.identifier
+
+        return COURSES_EDIT_COURSE_CONTENT.identifier
+
+    # Fallback
+    return COURSES_VIEW_COURSE.identifier
+
+
+def _check_xblock_permission(request, usage_key, category=None):
+    """
+    Check authz or legacy permission for an xblock operation. Raises PermissionDenied if denied.
+
+    Returns:
+        str or None: The resolved permission identifier, or None if legacy checks were used.
+    """
+    permission = _get_xblock_authz_permission(request, usage_key, category=category)
+
+    if permission is not None:
+        if not authz_api.is_user_allowed(request.user.username, permission, str(usage_key.course_key)):
+            raise PermissionDenied()
+    else:
+        access_check = (
+            has_studio_read_access
+            if request.method == "GET"
+            else has_studio_write_access
+        )
+        if not access_check(request.user, usage_key.course_key):
+            raise PermissionDenied()
+
+    return permission
+
+
 def handle_xblock(request, usage_key_string=None):
     """
     Service method with all business logic for handling xblock requests.
@@ -166,13 +271,8 @@ def handle_xblock(request, usage_key_string=None):
 
         usage_key = usage_key_with_run(usage_key_string)
 
-        access_check = (
-            has_studio_read_access
-            if request.method == "GET"
-            else has_studio_write_access
-        )
-        if not access_check(request.user, usage_key.course_key):
-            raise PermissionDenied()
+        # Check authz permission
+        _check_xblock_permission(request, usage_key)
 
         if request.method == "GET":
             accept_header = request.META.get("HTTP_ACCEPT", "application/json")
@@ -215,10 +315,13 @@ def handle_xblock(request, usage_key_string=None):
             )
             source_course = duplicate_source_usage_key.course_key
             dest_course = parent_usage_key.course_key
-            if not has_studio_write_access(
-                request.user, dest_course
-            ) or not has_studio_read_access(request.user, source_course):
-                raise PermissionDenied()
+
+            # Check authz permission for destination
+            permission = _check_xblock_permission(request, parent_usage_key)
+            # Legacy path also requires read access on the source course
+            if permission is None:
+                if not has_studio_read_access(request.user, source_course):
+                    raise PermissionDenied()
 
             # Libraries have a maximum component limit enforced on them
             if isinstance(
@@ -257,12 +360,10 @@ def handle_xblock(request, usage_key_string=None):
                 request.json.get("parent_locator")
             )
             target_index = request.json.get("target_index")
-            if not has_studio_write_access(
-                request.user, target_parent_usage_key.course_key
-            ) or not has_studio_read_access(
-                request.user, target_parent_usage_key.course_key
-            ):
-                raise PermissionDenied()
+
+            # Check authz permission
+            _check_xblock_permission(request, target_parent_usage_key)
+
             return _move_item(
                 move_source_usage_key,
                 target_parent_usage_key,
@@ -638,8 +739,10 @@ def _create_block(request):
     """View for create blocks."""
     parent_locator = request.json["parent_locator"]
     usage_key = usage_key_with_run(parent_locator)
-    if not has_studio_write_access(request.user, usage_key.course_key):
-        raise PermissionDenied()
+    category = request.json.get("category")
+
+    # Check authz permission, passing category for block creation
+    _check_xblock_permission(request, usage_key, category=category)
 
     if request.json.get("staged_content") == "clipboard":
         # Paste from the user's clipboard (content_staging app clipboard, not browser clipboard) into 'usage_key':

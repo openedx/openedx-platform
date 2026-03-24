@@ -128,7 +128,7 @@ class ProgramCourseEnrollment(TimeStampedModel):
         blank=True,
         on_delete=models.CASCADE
     )
-    course_key = CourseKeyField(max_length=255)
+    course_key = CourseKeyField()
     status = models.CharField(max_length=9, choices=STATUS_CHOICES)
     historical_records = HistoricalRecords()
 

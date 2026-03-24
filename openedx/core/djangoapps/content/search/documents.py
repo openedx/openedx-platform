@@ -10,8 +10,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey, OpaqueKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Collection
+from openedx_content import api as content_api
+from openedx_content.models_api import Collection
 from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content.search.models import SearchAccess
@@ -137,7 +137,7 @@ def meili_id_from_opaque_key(key: OpaqueKey) -> str:
     hyphens (-) and underscores (_). Since our opaque keys don't meet this
     requirement, we transform them to a similar slug ID string that does.
 
-    In the future, with Learning Core's data models in place for courseware,
+    In the future, with openedx_content's data models in place for courseware,
     we could use PublishableEntity's primary key / UUID instead.
     """
     # The slugified key _may_ not be unique so we append a hashed string to make it unique:
@@ -232,7 +232,9 @@ def _fields_from_block(block) -> dict:
     if hasattr(block, "edited_on"):
         block_data[Fields.modified] = block.edited_on.timestamp()
     # Get the breadcrumbs (course, section, subsection, etc.):
-    if block.usage_key.context_key.is_course:  # Getting parent is not yet implemented in Learning Core (for libraries).
+    # TODO: Implement this for library items too. Libraries didn't support hierarchy at the time
+    #       this code was originally written.
+    if block.usage_key.context_key.is_course:
         cur_block = block
         while cur_block.parent:
             if not cur_block.has_cached_parent:
@@ -446,7 +448,7 @@ def searchable_doc_collections(object_id: OpaqueKey) -> dict:
     try:
         if isinstance(object_id, UsageKey):
             component = lib_api.get_component_from_usage_key(object_id)
-            collections = authoring_api.get_entity_collections(
+            collections = content_api.get_entity_collections(
                 component.learning_package_id,
                 component.key,
             ).values('key', 'title')
@@ -543,11 +545,11 @@ def searchable_doc_for_collection(
     if collection:
         assert collection.key == collection_key.collection_id
 
-        draft_num_children = authoring_api.filter_publishable_entities(
+        draft_num_children = content_api.filter_publishable_entities(
             collection.entities,
             has_draft=True,
         ).count()
-        published_num_children = authoring_api.filter_publishable_entities(
+        published_num_children = content_api.filter_publishable_entities(
             collection.entities,
             has_published=True,
         ).count()

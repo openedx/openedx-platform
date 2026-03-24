@@ -569,7 +569,8 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             "errorMessage": None,
             "registerFormSubmitButtonText": "Create Account",
             "syncLearnerProfileData": False,
-            "pipeline_user_details": {"email": "test@test.com"} if add_user_details else {}
+            "pipeline_user_details": {"email": "test@test.com"} if add_user_details else {},
+            "skipRegistrationOptionalCheckboxes": False
         }
         if expected_ec is not None:
             # If we set an EnterpriseCustomer, third-party auth providers ought to be hidden.
@@ -600,7 +601,8 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             'errorMessage': expected_error_message,
             'registerFormSubmitButtonText': 'Create Account',
             'syncLearnerProfileData': False,
-            'pipeline_user_details': {'response': {'idp_name': 'testshib'}}
+            'pipeline_user_details': {'response': {'idp_name': 'testshib'}},
+            'skipRegistrationOptionalCheckboxes': False
         }
         auth_info = dump_js_escaped_json(auth_info)
 

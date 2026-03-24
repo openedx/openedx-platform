@@ -21,6 +21,7 @@
  *   primaryActionButtonType: A string to be used as type for primary action button.
  *   primaryActionButtonTitle: A string to be used as title for primary action button.
  *   showEditorModeButtons: Whether to show editor mode button in the modal header.
+ *   showFullscreenButton: Whether to show fullscreen button in the modal header.
  */
 define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
     function($, _, gettext, BaseView) {
@@ -43,7 +44,8 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 addPrimaryActionButton: false,
                 primaryActionButtonType: 'save',
                 primaryActionButtonTitle: gettext('Save'),
-                showEditorModeButtons: true
+                showEditorModeButtons: true,
+                showFullscreenButton: false,
             }),
 
             initialize: function() {
@@ -71,7 +73,8 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                     title: this.getTitle(),
                     modalSRTitle: this.options.modalSRTitle,
                     showEditorModeButtons: this.options.showEditorModeButtons,
-                    viewSpecificClasses: this.options.viewSpecificClasses
+                    viewSpecificClasses: this.options.viewSpecificClasses,
+                    showFullscreenButton: this.options.showFullscreenButton,
                 }));
                 this.addActionButtons();
                 this.renderContents();
@@ -83,9 +86,14 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
             },
 
             renderContents: function() {
-                var contentHtml = this.getContentHtml();
+                const contentHtml = this.getContentHtml();
                 // xss-lint: disable=javascript-jquery-html
                 this.$('.modal-content').html(contentHtml);
+
+                const fullscreenButton =  this.$('.fullscreen-button');
+                if (fullscreenButton.length) {
+                    fullscreenButton.bind('click', this.toggleFullscreen.bind(this));
+                }
             },
 
             /**
@@ -106,6 +114,7 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                     // after showing and resizing, send focus
                     this.$el.find(this.options.modalWindowClass).focus();
                 }
+
             },
 
             hide: function() {
@@ -119,6 +128,10 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                     );
                 } catch (e) {
                     console.error(e);
+                }
+                const fullscreenButton =  this.$('.fullscreen-button');
+                if (fullscreenButton.length) {
+                    fullscreenButton.unbind('click');
                 }
 
                 // Completely remove the modal from the DOM
@@ -195,11 +208,25 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 this.getActionBar().find('.action-' + type).prop('disabled', true).addClass('is-disabled');
             },
 
+            toggleFullscreen: function() {
+                this.$('.fullscreen-button .icon').toggleClass('fa-expand fa-compress');
+                this.$('.modal-editor').toggleClass(`modal-${this.options.modalSize} modal-fullscreen`);
+                this.resize();
+            },
+
             resize: function() {
                 var top, left, modalWindow, modalWidth, modalHeight,
                     availableWidth, availableHeight, maxWidth, maxHeight;
 
                 modalWindow = this.$el.find(this.options.modalWindowClass);
+                if (modalWindow.hasClass('modal-fullscreen')) {
+                    // Remove previously set width and height from the modal window
+                    modalWindow.css({
+                        top: '',
+                        left: '',
+                    });
+                    return;
+                }
                 availableWidth = $(window).width();
                 availableHeight = $(window).height();
                 maxWidth = availableWidth * 0.98;

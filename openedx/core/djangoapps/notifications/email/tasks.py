@@ -32,10 +32,9 @@ from .utils import (
     get_language_preference_for_users,
     get_start_end_date,
     get_text_for_notification_type,
-    is_email_notification_flag_enabled,
 )
 from ..base_notification import COURSE_NOTIFICATION_APPS
-from ..config.waffle import ENABLE_EMAIL_NOTIFICATIONS
+from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
 
 User = get_user_model()
 logger = get_task_logger(__name__)
@@ -76,6 +75,8 @@ def send_digest_email_to_user(
     start_date: Datetime object
     end_date: Datetime object
     """
+    if DISABLE_EMAIL_NOTIFICATIONS.is_enabled():
+        return
 
     if cadence_type not in [EmailCadence.IMMEDIATELY, EmailCadence.DAILY, EmailCadence.WEEKLY]:
         raise ValueError('Invalid cadence_type')
@@ -83,9 +84,7 @@ def send_digest_email_to_user(
     if not user.has_usable_password():
         logger.info(f'<Email Cadence> User is disabled {user.username} ==Temp Log==')
         return
-    if not is_email_notification_flag_enabled(user):
-        logger.info(f'<Email Cadence> Flag disabled for {user.username} ==Temp Log==')
-        return
+
     notifications = Notification.objects.filter(user=user, email=True,
                                                 created__gte=start_date, created__lte=end_date)
     if not notifications:
@@ -147,19 +146,21 @@ def send_immediate_cadence_email(email_notification_mapping, course_key):
     2. Second notification → Schedule buffer job (15 min)
     3. Third+ notifications → Just mark as scheduled (no new job)
     """
+    if DISABLE_EMAIL_NOTIFICATIONS.is_enabled():
+        return
+
     if not email_notification_mapping:
         return
     user_list = email_notification_mapping.keys()
     users = list(User.objects.filter(id__in=user_list))
     language_prefs = get_language_preference_for_users(user_list)
     course_name = get_course_info(course_key).get("name", course_key)
+
     for user in users:
         if not user.has_usable_password():
             logger.info(f'<Immediate Email> User is disabled {user.username}')
             continue
-        if not is_email_notification_flag_enabled(user):
-            logger.info(f'<Immediate Email> Flag disabled for {user.username}')
-            continue
+
         notification = email_notification_mapping.get(user.id, None)
         if not notification:
             logger.info(f'<Immediate Email> No notification for {user.username}')
@@ -394,7 +395,7 @@ def send_buffered_digest(
     """
     try:
         # Re-check feature flags
-        if not ENABLE_EMAIL_NOTIFICATIONS.is_enabled():
+        if DISABLE_EMAIL_NOTIFICATIONS.is_enabled():
             logger.info('Email notifications disabled, cancelling digest')
             return
 

@@ -17,7 +17,7 @@ As this app is designed only for ephemeral use cases, API consumers should not
 expect that staged content will be stored for longer than 24 hours.
 
 This app is part of the CMS and is not intended to work with the LMS. It may be
-moved from the CMS into the future Learning Core project.
+moved from the CMS into the future openedx_content project.
 
 ---------------
 Clipboard Usage

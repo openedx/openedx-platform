@@ -66,7 +66,7 @@ class RawMixin:
         Interpret the parsed XML in `node`, creating a new instance of this
         module.
         """
-        # In the new/learning-core-based runtime, XModule parsing (from
+        # In the new/openedx_content-based runtime, XModule parsing (from
         # XmlMixin) is disabled, so definition_from_xml will not be
         # called, and instead the "normal" XBlock parse_xml will be used.
         # However, it's not compatible with RawMixin, so we implement

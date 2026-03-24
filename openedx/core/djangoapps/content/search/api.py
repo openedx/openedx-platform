@@ -25,7 +25,7 @@ from opaque_keys.edx.locator import (
     LibraryContainerLocator,
     LibraryLocatorV2,
 )
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from rest_framework.request import Request
 
 from common.djangoapps.student.role_helpers import get_course_roles
@@ -556,7 +556,7 @@ def rebuild_index(status_cb: Callable[[str], None] | None = None, incremental=Fa
 
             # To reduce memory usage on large instances, split up the Collections into pages of 100 collections:
             library = lib_api.get_library(lib_key)
-            collections = authoring_api.get_collections(library.learning_package_id, enabled=True)
+            collections = content_api.get_collections(library.learning_package_id, enabled=True)
             num_collections = collections.count()
             num_collections_done = 0
             status_cb(f"{num_collections_done}/{num_collections}. Now indexing collections in library {lib_key}")
@@ -572,7 +572,7 @@ def rebuild_index(status_cb: Callable[[str], None] | None = None, incremental=Fa
             status_cb(f"{num_collections_done}/{num_collections} collections indexed for library {lib_key}")
 
             # Similarly, batch process Containers (units, sections, etc) in pages of 100
-            containers = authoring_api.get_containers(library.learning_package_id)
+            containers = content_api.get_containers(library.learning_package_id)
             num_containers = containers.count()
             num_containers_done = 0
             status_cb(f"{num_containers_done}/{num_containers}. Now indexing containers in library {lib_key}")
@@ -791,7 +791,7 @@ def update_library_components_collections(
     """
     library_key = collection_key.lib_key
     library = lib_api.get_library(library_key)
-    components = authoring_api.get_collection_components(
+    components = content_api.get_collection_components(
         library.learning_package_id,
         collection_key.collection_id,
     )
@@ -827,7 +827,7 @@ def update_library_containers_collections(
     """
     library_key = collection_key.lib_key
     library = lib_api.get_library(library_key)
-    containers = authoring_api.get_collection_containers(
+    containers = content_api.get_collection_containers(
         library.learning_package_id,
         collection_key.collection_id,
     )

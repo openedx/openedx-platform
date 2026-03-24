@@ -10,7 +10,7 @@ from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from rest_framework import status
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.generics import GenericAPIView
@@ -194,7 +194,7 @@ class LibraryBlockAssetView(APIView):
         file_wrapper = request.data['content']
         if file_wrapper.size > 20 * 1024 * 1024:  # > 20 MiB
             # TODO: This check was written when V2 Libraries were backed by the Blockstore micro-service.
-            #       Now that we're on Learning Core, do we still need it? Here's the original comment:
+            #       Now that we're on openedx_content, do we still need it? Here's the original comment:
             #         In the future, we need a way to use file_wrapper.chunks() to read
             #         the file in chunks and stream that to Blockstore, but Blockstore
             #         currently lacks an API for streaming file uploads.
@@ -392,7 +392,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
       eventually).
     """
     try:
-        component_version = authoring_api.get_component_version_by_uuid(
+        component_version = content_api.get_component_version_by_uuid(
             component_version_uuid
         )
     except ObjectDoesNotExist as exc:
@@ -406,12 +406,12 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     )
 
     # We already have logic for getting the correct content and generating the
-    # proper headers in Learning Core, but the response generated here is an
+    # proper headers in openedx_content, but the response generated here is an
     # X-Accel-Redirect and lacks the actual content. We eventually want to use
     # this response in conjunction with a media reverse proxy (Caddy or Nginx),
     # but in the short term we're just going to remove the redirect and stream
     # the content directly.
-    redirect_response = authoring_api.get_redirect_response_for_component_asset(
+    redirect_response = content_api.get_redirect_response_for_component_asset(
         component_version_uuid,
         asset_path,
         public=False,
@@ -423,8 +423,8 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
         return redirect_response
 
     # If we got here, we know that the asset exists and it's okay to download.
-    cv_content = component_version.componentversioncontent_set.get(key=asset_path)
-    content = cv_content.content
+    cv_media = component_version.componentversionmedia_set.get(key=asset_path)
+    media = cv_media.media
 
     # Delete the re-direct part of the response headers. We'll copy the rest.
     headers = redirect_response.headers
@@ -433,7 +433,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # We need to set the content size header manually because this is a
     # streaming response. It's not included in the redirect headers because it's
     # not needed there (the reverse-proxy would have direct access to the file).
-    headers['Content-Length'] = content.size
+    headers['Content-Length'] = media.size
 
     if request.method == "HEAD":
         return HttpResponse(headers=headers)
@@ -442,7 +442,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # offsets or anything fancy, because we don't expect to run this view at
     # LMS-scale.
     return StreamingHttpResponse(
-        content.read_file().chunks(),
+        media.read_file().chunks(),
         headers=redirect_response.headers,
     )
 

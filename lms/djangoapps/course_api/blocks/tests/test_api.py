@@ -10,12 +10,15 @@ from django.test.client import RequestFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import SampleCourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.sample_courses import BlockInfo  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..api import get_blocks
+
+QUERY_COUNT_TABLE_IGNORELIST = AUTHZ_TABLES
 
 
 class TestGetBlocks(SharedModuleStoreTestCase):
@@ -196,7 +199,7 @@ class TestGetBlocksQueryCountsBase(SharedModuleStoreTestCase):
         get_blocks on the given course.
         """
         with check_mongo_calls(expected_mongo_queries):
-            with self.assertNumQueries(expected_sql_queries):
+            with self.assertNumQueries(expected_sql_queries, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
                 get_blocks(self.request, course.location, self.user)
 
 
@@ -212,11 +215,11 @@ class TestGetBlocksQueryCounts(TestGetBlocksQueryCountsBase):
         self._get_blocks(
             course,
             expected_mongo_queries=0,
-            expected_sql_queries=14,
+            expected_sql_queries=16,
         )
 
     @ddt.data(
-        (ModuleStoreEnum.Type.split, 2, 24),
+        (ModuleStoreEnum.Type.split, 2, 26),
     )
     @ddt.unpack
     def test_query_counts_uncached(self, store_type, expected_mongo_queries, num_sql_queries):

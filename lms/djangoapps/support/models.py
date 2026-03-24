@@ -24,7 +24,7 @@ class CourseResetCourseOptIn(TimeStampedModel):
 
     .. no_pii:
     """
-    course_id = CourseKeyField(max_length=255, unique=True)
+    course_id = CourseKeyField(unique=True)
     active = BooleanField()
 
     def __str__(self):

@@ -10,7 +10,6 @@ import logging
 from functools import wraps
 
 from zoneinfo import ZoneInfo
-from consent.models import DataSharingConsent
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, logout
@@ -25,9 +24,6 @@ from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomerUser, PendingEnterpriseCustomerUser
-from integrated_channels.degreed.models import DegreedLearnerDataTransmissionAudit
-from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from rest_framework import permissions, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import UnsupportedMediaType
@@ -1154,11 +1150,6 @@ class AccountRetirementView(ViewSet):
             # Retire user information from any certificate records associated with the learner
             self.clear_pii_from_certificate_records(user)
 
-            # Retire data from Enterprise models
-            self.retire_users_data_sharing_consent(username, retired_username)
-            self.retire_sapsf_data_transmission(user)
-            self.retire_degreed_data_transmission(user)
-            self.retire_user_from_pending_enterprise_customer_user(user, retired_email)
             self.retire_entitlement_support_detail(user)
 
             # Retire misc. models that may contain PII of this user
@@ -1170,7 +1161,12 @@ class AccountRetirementView(ViewSet):
             UnregisteredLearnerCohortAssignments.delete_by_user_value(original_email, field="email")
 
             # This signal allows code in higher points of LMS to retire the user as necessary
-            USER_RETIRE_LMS_CRITICAL.send(sender=self.__class__, user=user)
+            USER_RETIRE_LMS_CRITICAL.send(
+                sender=self.__class__,
+                user=user,
+                retired_username=retired_username,
+                retired_email=retired_email,
+            )
 
             user.first_name = ""
             user.last_name = ""
@@ -1208,32 +1204,6 @@ class AccountRetirementView(ViewSet):
     def delete_users_country_cache(user):
         cache_key = UserProfile.country_cache_key_name(user.id)
         cache.delete(cache_key)
-
-    @staticmethod
-    def retire_users_data_sharing_consent(username, retired_username):
-        DataSharingConsent.objects.filter(username=username).update(username=retired_username)
-
-    @staticmethod
-    def retire_sapsf_data_transmission(user):  # lint-amnesty, pylint: disable=missing-function-docstring
-        for ent_user in EnterpriseCustomerUser.objects.filter(user_id=user.id):
-            for enrollment in EnterpriseCourseEnrollment.objects.filter(enterprise_customer_user=ent_user):
-                audits = SapSuccessFactorsLearnerDataTransmissionAudit.objects.filter(
-                    enterprise_course_enrollment_id=enrollment.id
-                )
-                audits.update(sapsf_user_id="")
-
-    @staticmethod
-    def retire_degreed_data_transmission(user):  # lint-amnesty, pylint: disable=missing-function-docstring
-        for ent_user in EnterpriseCustomerUser.objects.filter(user_id=user.id):
-            for enrollment in EnterpriseCourseEnrollment.objects.filter(enterprise_customer_user=ent_user):
-                audits = DegreedLearnerDataTransmissionAudit.objects.filter(
-                    enterprise_course_enrollment_id=enrollment.id
-                )
-                audits.update(degreed_user_email="")
-
-    @staticmethod
-    def retire_user_from_pending_enterprise_customer_user(user, retired_email):
-        PendingEnterpriseCustomerUser.objects.filter(user_email=user.email).update(user_email=retired_email)
 
     @staticmethod
     def retire_entitlement_support_detail(user):

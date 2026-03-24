@@ -463,6 +463,38 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
         assert 'email_settings_url' in result
         assert 'platform_name' in result
 
+    def test_account_settings_url_uses_site_config_value(self):
+        """
+        If site configuration defines ACCOUNT_MICROFRONTEND_URL, the email context
+        should use that value.
+        """
+        siteconf_url = "https://accounts.siteconf.example"
+
+        with patch(
+            "lms.djangoapps.bulk_email.tasks.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            ctx = _get_course_email_context(self.course)
+
+        assert ctx["account_settings_url"] == siteconf_url
+
+    def test_account_settings_url_falls_back_to_settings(self):
+        """
+        If site configuration does not override, fall back to settings.ACCOUNT_MICROFRONTEND_URL.
+        """
+        fallback = "https://accounts.settings.example"
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch(
+                "lms.djangoapps.bulk_email.tasks.configuration_helpers.get_value",
+                side_effect=lambda key, default=None, *a, **k: default,
+            ):
+                ctx = _get_course_email_context(self.course)
+
+                assert ctx["account_settings_url"] == fallback
+                assert ctx["account_settings_url"] == settings.ACCOUNT_MICROFRONTEND_URL
+
     @override_settings(BULK_COURSE_EMAIL_LAST_LOGIN_ELIGIBILITY_PERIOD=1)
     def test_ineligible_recipients_filtered_by_last_login(self):
         """

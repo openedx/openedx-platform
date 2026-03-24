@@ -100,6 +100,22 @@ class ProgramEnrollmentRetireSignalTests(ModuleStoreTestCase):
 
         self.assert_enrollment_and_history_retired(enrollment)
 
+    def test_retire_signal_handler_tolerates_extra_kwargs(self):
+        """
+        Ensure program_enrollments retirement receiver does not break with additional kwargs.
+        """
+        enrollment = self.create_enrollment_and_history()
+
+        # Simulate the signal being sent with extra kwargs.
+        _listen_for_lms_retire(
+            sender=self.__class__,
+            user=enrollment.user,
+            retired_username='retired-test-username',
+            retired_email='retired-test@example.com',
+        )
+
+        self.assert_enrollment_and_history_retired(enrollment)
+
 
 @ddt.ddt
 class SocialAuthEnrollmentCompletionSignalTest(CacheIsolationTestCase):

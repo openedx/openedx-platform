@@ -16,7 +16,7 @@ jobs:
         os: [ubuntu-latest]
         node-version: [20]
         python-version:
-          - "3.11"
+          - "3.12"
 
     steps:
       - uses: actions/checkout@v6
@@ -73,7 +73,7 @@ jobs:
           npm run test
 
       - name: Save Job Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Build-Artifacts
           path: |

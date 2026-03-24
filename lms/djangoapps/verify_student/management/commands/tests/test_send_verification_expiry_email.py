@@ -3,6 +3,7 @@ Tests for django admin command `send_verification_expiry_email` in the verify_st
 """
 
 
+from contextlib import nullcontext
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -302,3 +303,68 @@ class TestSendVerificationExpiryEmail(MockS3Boto3Mixin, TestCase):
         assert verifications[0].expiry_email_date is None
         assert verifications[1].expiry_email_date is not None
         assert mock_ace.send.call_count == 2
+
+    def _run_cmd_and_get_verification_link(self, get_value_side_effect, *, fallback=None):
+        """
+        Create one expired, approved verification; run the command with patches;
+        return the lms_verification_link computed in the message context.
+        """
+        self.create_expired_software_secure_photo_verification()
+
+        captured_contexts = []
+
+        class FakeVerificationExpiry:
+            """Mock message class capturing context for verification expiry tests."""
+            def __init__(self, context):
+                captured_contexts.append(context)
+
+            def personalize(self, recipient, language=None, user_context=None):
+                return object()
+
+        settings_ctx = (
+            override_settings(ACCOUNT_MICROFRONTEND_URL=fallback)
+            if fallback is not None else
+            nullcontext()
+        )
+
+        module = (
+            "lms.djangoapps.verify_student.management.commands."
+            "send_verification_expiry_email"
+        )
+
+        with (
+            settings_ctx,
+            patch(f"{module}.VerificationExpiry", new=FakeVerificationExpiry),
+            patch(f"{module}.ace.send") as mock_send,
+            patch(
+                f"{module}.configuration_helpers.get_value",
+                side_effect=get_value_side_effect,
+            ),
+        ):
+            call_command("send_verification_expiry_email")
+            assert mock_send.called, "Expected at least one email to be sent"
+            assert captured_contexts, ("VerificationExpiry(context=...) should have been called")
+
+        return captured_contexts[0]["lms_verification_link"]
+
+    def test_account_mfe_link_uses_site_config_value(self):
+        """Test verification link uses site-configured ACCOUNT_MICROFRONTEND_URL."""
+        siteconf_url = "https://accounts.siteconf.example/"
+
+        link = self._run_cmd_and_get_verification_link(
+            get_value_side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default
+        )
+
+        assert link == "https://accounts.siteconf.example/id-verification"
+
+    def test_account_mfe_link_falls_back_to_settings(self):
+        """Test verification link falls back to settings when site config is absent."""
+        fallback = "https://accounts.settings.example/"
+
+        link = self._run_cmd_and_get_verification_link(
+            get_value_side_effect=lambda key, default=None, *a, **k: default,
+            fallback=fallback,
+        )
+
+        assert link == "https://accounts.settings.example/id-verification"

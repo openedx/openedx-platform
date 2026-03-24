@@ -244,32 +244,9 @@ from openedx.core.lib.courses import course_image_url
           </li>
           % endif
 
-          % if get_course_about_section(request, course, "prerequisites"):
-            <li class="important-dates-item">
-              <span class="icon fa fa-book" aria-hidden="true"></span>
-              <p class="important-dates-item-title">${_("Requirements")}</p>
-              <span class="important-dates-item-text prerequisites">${get_course_about_section(request, course, "prerequisites")}</span>
-            </li>
-          % endif
         </ol>
         </%block>
     </div>
-
-      ## For now, ocw links are the only thing that goes in additional resources
-      % if get_course_about_section(request, course, "ocw_links"):
-      <div class="additional-resources">
-        <header>
-          <h1>${_("Additional Resources")}</h1>
-      </div>
-
-        <div>
-          ## "MITOpenCourseware" should *not* be translated
-          <h2 class="opencourseware">MITOpenCourseware</h2>
-             ${get_course_about_section(request, course, "ocw_links")}
-        </div>
-    </div>
-      %endif
-
     % if sidebar_html_enabled:
       % if get_course_about_section(request, course, "about_sidebar_html"):
         <section class="about-sidebar-html">
