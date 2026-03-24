@@ -8,7 +8,7 @@ from xmodule.modulestore.django import contentstore, modulestore
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, upload_file_to_course
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, LibraryFactory
 from xmodule.util.sandboxing import DEFAULT_PYTHON_LIB_FILENAME
-from openedx_tagging.core.tagging.models import Tag
+from openedx_tagging.models import Tag
 from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 
@@ -140,17 +140,17 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ),
         ])
 
-    def test_html_with_static_asset_learning_core(self):
+    def test_html_with_static_asset_openedx_content(self):
         """
-        Test the learning-core-specific serialization of an HTML block
+        Test the openedx_content-specific serialization of an HTML block
         """
         block_id = self.course.id.make_usage_key('html', 'just_img')  # see sample_courses.py
         html_block = modulestore().get_item(block_id)
         serialized = api.serialize_xblock_to_olx(html_block)
-        serialized_learning_core = api.serialize_modulestore_block_for_learning_core(html_block)
+        serialized_openedx_content = api.serialize_modulestore_block_for_openedx_content(html_block)
         self.assertXmlEqual(
-            serialized_learning_core.olx_str,
-            # For learning core, OLX should never contain "url_name" as that ID
+            serialized_openedx_content.olx_str,
+            # For openedx_content, OLX should never contain "url_name" as that ID
             # is specified by the Component key:
             """
             <html display_name="Text"><![CDATA[
@@ -160,7 +160,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         )
         self.assertIn("CDATA", serialized.olx_str)
         # Static files should be identical:
-        self.assertEqual(serialized.static_files, serialized_learning_core.static_files)
+        self.assertEqual(serialized.static_files, serialized_openedx_content.static_files)
 
     def test_html_with_fields(self):
         """ Test an HTML Block with non-default fields like editor='raw' """
@@ -270,7 +270,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ("simple-question.js", "./common/test/data/uploads/simple-question.js"),
             ("simple-question.css", "./common/test/data/uploads/simple-question.css"),
             ("image.jpg", "./common/test/data/uploads/image.jpg"),
-            ("jschannel.js", "./common/static/js/capa/src/jschannel.js"),
+            ("jschannel.js", "./common/test/data/uploads/jschannel.js"),
         ]
         for filename, full_path in jsinput_files:
             upload_file_to_course(

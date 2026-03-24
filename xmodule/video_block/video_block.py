@@ -16,6 +16,7 @@ Examples of html5 videos for manual testing:
 import copy
 import json
 import logging
+import warnings
 from collections import OrderedDict, defaultdict
 from operator import itemgetter
 
@@ -48,7 +49,7 @@ from xmodule.x_module import (
     XModuleMixin, XModuleToXBlockMixin,
 )
 from xmodule.xml_block import XmlMixin, deserialize_field, is_pointer_tag, name_to_pathname
-from .bumper_utils import bumperize
+from xblocks_contrib.video.bumper_utils import bumperize
 from openedx.core.djangoapps.video_config.transcripts_utils import (
     Transcript,
     VideoTranscriptsMixin,
@@ -57,7 +58,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (
     get_html5_ids,
     subs_filename
 )
-from .video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 from .video_utils import create_youtube_string, format_xml_exception_message, get_poster, rewrite_video_url
 from .video_xfields import VideoFields
 
@@ -105,8 +106,8 @@ EXPORT_IMPORT_COURSE_DIR = 'course'
 EXPORT_IMPORT_STATIC_DIR = 'static'
 
 
-@XBlock.wants('settings', 'completion', 'i18n', 'request_cache', 'video_config')
-@XBlock.needs('mako', 'user')
+@XBlock.wants('settings', 'completion', 'request_cache', 'video_config')
+@XBlock.needs('mako', 'user', 'i18n')
 class _BuiltInVideoBlock(
         VideoFields, VideoTranscriptsMixin, VideoStudioViewHandlers, VideoStudentViewHandlers,
         EmptyDataRawMixin, XmlMixin, EditingMixin, XModuleToXBlockMixin,
@@ -121,6 +122,10 @@ class _BuiltInVideoBlock(
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.webm"/>
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.ogv"/>
         </video>
+
+    .. deprecated:: 2026-03
+       This built-in video block is deprecated. Please use the extracted ``VideoBlock``
+       from ``xblocks_contrib.video`` instead.
     """
     is_extracted = False
     has_custom_completion = True
@@ -265,7 +270,7 @@ class _BuiltInVideoBlock(
 
         fragment = Fragment(self.get_html(view=PUBLIC_VIEW, context=context))
         add_css_to_fragment(fragment, 'VideoBlockDisplay.css')
-        add_webpack_js_to_fragment(fragment, 'VideoBlockMain')
+        add_webpack_js_to_fragment(fragment, 'VideoBlockDisplay')
         fragment.initialize_js('Video')
         return fragment
 
@@ -1196,3 +1201,14 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+if not settings.USE_EXTRACTED_VIDEO_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.video.VideoBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

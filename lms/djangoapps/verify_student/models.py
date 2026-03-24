@@ -1091,7 +1091,6 @@ class VerificationDeadline(TimeStampedModel):
         app_label = "verify_student"
 
     course_key = CourseKeyField(
-        max_length=255,
         db_index=True,
         unique=True,
         help_text=gettext_lazy("The course for which this deadline applies"),

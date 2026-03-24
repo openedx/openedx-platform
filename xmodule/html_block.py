@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import textwrap
+import warnings
 from datetime import datetime
 
 from django.conf import settings
@@ -51,6 +52,10 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     """
     The HTML XBlock mixin.
     This provides the base class for all Html-ish blocks (including the HTML XBlock).
+
+    .. deprecated:: 2026-03
+       This built-in HTML block mixin is deprecated. Please use the extracted ``HtmlBlockMixin``
+       from ``xblocks_contrib.html`` instead.
     """
 
     display_name = String(
@@ -297,7 +302,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
         """
-        Parse XML in the new learning-core-based runtime. Since it doesn't yet
+        Parse XML in the new openedx_content-based runtime. Since it doesn't yet
         support loading separate .html files, the HTML data is assumed to be in
         a CDATA child or otherwise just inline in the OLX.
         """
@@ -375,6 +380,10 @@ class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # lint-amnesty, pylint: disabl
     """
     This is the actual HTML XBlock.
     Nothing extra is required; this is just a wrapper to include edxnotes support.
+
+    .. deprecated:: 2026-03
+       This built-in HTML block is deprecated. Please use the extracted ``HtmlBlock``
+       from ``xblocks_contrib.html`` instead.
     """
     is_extracted = False
 
@@ -542,3 +551,14 @@ def reset_class():
 
 reset_class()
 HtmlBlock.__name__ = "HtmlBlock"
+
+if not settings.USE_EXTRACTED_HTML_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.html_block` HtmlBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_HTML_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.html.HtmlBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_HTML_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

@@ -75,7 +75,7 @@ _error_responses = {
 )
 class MigrationViewSet(StatusViewSet):
     """
-    JSON HTTP API to create and check on ModuleStore-to-Learning-Core migration tasks.
+    JSON HTTP API to create and check on ModuleStore-to-openedx_content migration tasks.
     """
 
     authentication_classes = (
@@ -257,7 +257,7 @@ class MigrationViewSet(StatusViewSet):
 
 class BulkMigrationViewSet(StatusViewSet):
     """
-    JSON HTTP API to bulk-create ModuleStore-to-Learning-Core migration tasks.
+    JSON HTTP API to bulk-create ModuleStore-to-openedx_content migration tasks.
     """
 
     authentication_classes = (

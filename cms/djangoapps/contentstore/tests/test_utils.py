@@ -9,7 +9,6 @@ import ddt
 from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
-from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
@@ -24,7 +23,6 @@ from cms.djangoapps.contentstore.tests.utils import TEST_DATA_DIR, CourseTestCas
 from cms.djangoapps.contentstore.utils import send_course_update_notification
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.models import Notification
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
@@ -938,7 +936,6 @@ class UpdateCourseDetailsTests(ModuleStoreTestCase):
         mock_update.assert_called_once_with(self.course.id, payload, mock_request.user)
 
 
-@override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
 class CourseUpdateNotificationTests(OpenEdxEventsTestMixin, ModuleStoreTestCase):
     """
     Unit tests for the course_update notification.

@@ -171,8 +171,8 @@ xsslint: ## check xss for quality issuest
 	--config=scripts.xsslint_config \
 	--thresholds=scripts/xsslint_thresholds.json
 
-pycodestyle: ## check python files for quality issues
-	pycodestyle .
+ruff: ## check python files with ruff
+	ruff check .
 
 ## Re-enable --lint flag when this issue https://github.com/openedx/edx-platform/issues/35775 is resolved
 pii_check: ## check django models for pii annotations

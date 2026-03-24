@@ -3,7 +3,7 @@ define(
         'jquery', 'underscore', 'backbone',
         'js/views/video/transcripts/utils', 'js/views/video/transcripts/message_manager',
         'js/views/video/transcripts/file_uploader', 'sinon',
-        'xmodule'
+        'xmodule', 'accessibility'
     ],
     function($, _, Backbone, Utils, MessageManager, FileUploader, sinon) {
         'use strict';

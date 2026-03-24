@@ -85,5 +85,5 @@ class LibraryBlockLtiUrlViewTest(
     ContentLibrariesRestApiTest,
 ):
     """
-    Test generating LTI URL for a block in a library, using the installed Learning Core app.
+    Test generating LTI URL for a block in a library, using the installed openedx_content app.
     """

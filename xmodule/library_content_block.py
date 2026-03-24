@@ -3,7 +3,7 @@ LegacyLibraryContent: The XBlock used to randomly select a subset of blocks from
 
 In Studio, it's called the "Randomized Content Module".
 
-In the long-term, this block is deprecated in favor of "v2" (learning core-backed) library references:
+In the long-term, this block is deprecated in favor of "v2" (openedx_content-backed) library references:
 https://github.com/openedx/edx-platform/issues/32457
 
 We need to retain backwards-compatibility, but please do not build any new features into this.
@@ -23,7 +23,7 @@ from webob import Response
 from xblock.core import XBlock
 from xblock.fields import Boolean, Scope, String
 
-from xmodule.capa.responsetypes import registry
+from xblocks_contrib.problem.capa.responsetypes import registry
 from xmodule.item_bank_block import ItemBankMixin
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError

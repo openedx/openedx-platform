@@ -22,6 +22,7 @@ from openedx.core.lib.api.authentication import (
     BearerAuthenticationAllowInactiveUser
 )
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.api import serializers
 from common.djangoapps.third_party_auth.api.permissions import TPA_PERMISSIONS
@@ -468,7 +469,10 @@ class ThirdPartyAuthUserStatusView(APIView):
                         state.provider.provider_id,
                         pipeline.AUTH_ENTRY_ACCOUNT_SETTINGS,
                         # The url the user should be directed to after the auth process has completed.
-                        redirect_url=settings.ACCOUNT_MICROFRONTEND_URL,
+                        redirect_url=configuration_helpers.get_value(
+                            'ACCOUNT_MICROFRONTEND_URL',
+                            settings.ACCOUNT_MICROFRONTEND_URL,
+                        ),
                     ),
                     'accepts_logins': state.provider.accepts_logins,
                     # If the user is connected, sending a POST request to this url removes the connection

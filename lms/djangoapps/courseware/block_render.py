@@ -46,13 +46,20 @@ from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.lib.xblock_services.call_to_action import CallToActionService
 from xmodule.contentstore.django import contentstore
+from xblocks_contrib.video.exceptions import TranscriptNotFoundError
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.partitions.partitions_service import PartitionService
 from xmodule.util.sandboxing import SandboxService
-from xmodule.services import EventPublishingService, RebindUserService, SettingsService, TeamsConfigurationService
+from xmodule.services import (
+    EventPublishingService,
+    RebindUserService,
+    SettingsService,
+    TeamsConfigurationService,
+    XQueueService
+)
 from common.djangoapps.static_replace.services import ReplaceURLService
 from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
 from lms.djangoapps.courseware.access import get_user_role, has_access
@@ -639,6 +646,7 @@ def prepare_runtime_for_user(
         'enrollments': EnrollmentsService(),
         'video_config': VideoConfigService(),
         'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService,
     }
 
     runtime.get_block_for_descriptor = inner_get_block
@@ -968,7 +976,7 @@ def _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course
             raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
 
         # If we can't find the block, respond with a 404
-        except (XModuleNotFoundError, NotFoundError):
+        except (XModuleNotFoundError, NotFoundError, TranscriptNotFoundError):
             log.exception("Module indicating to user that request doesn't exist")
             raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
 

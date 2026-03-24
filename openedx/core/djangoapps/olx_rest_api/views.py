@@ -13,7 +13,7 @@ from common.djangoapps.student.auth import has_studio_read_access
 from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import modulestore
 
-from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_learning_core
+from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 
 
 @api_view(['GET'])
@@ -22,7 +22,7 @@ def get_block_olx(request, usage_key_str):
     """
     Given a modulestore XBlock usage ID (block-v1:...), get its OLX and a list
     of any static asset files it uses.
-    (There are other APIs for getting the OLX of Learning Core XBlocks.)
+    (There are other APIs for getting the OLX of openedx_content XBlocks.)
     """
     # Parse the usage key:
     try:
@@ -48,7 +48,7 @@ def get_block_olx(request, usage_key_str):
             return
 
         block = modulestore().get_item(block_key)
-        serialized_blocks[block_key] = serialize_modulestore_block_for_learning_core(block)
+        serialized_blocks[block_key] = serialize_modulestore_block_for_openedx_content(block)
 
         if block.has_children:
             for child_id in block.children:
@@ -103,7 +103,7 @@ def get_block_exportfs_file(request, usage_key_str, path):
         raise PermissionDenied("You must be a member of the course team in Studio to export OLX using this API.")
 
     block = modulestore().get_item(usage_key)
-    serialized = serialize_modulestore_block_for_learning_core(block)
+    serialized = serialize_modulestore_block_for_openedx_content(block)
     static_file = None
     for f in serialized.static_files:
         if f.name == path:

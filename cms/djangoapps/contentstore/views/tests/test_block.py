@@ -3506,7 +3506,7 @@ class TestXBlockInfo(ItemTest):
                     self.validate_xblock_info_consistency(
                         child_response,
                         has_child_info=(
-                            not child_response.get("child_info", None) is None
+                            child_response.get("child_info", None) is not None
                         ),
                         course_outline=course_outline,
                     )

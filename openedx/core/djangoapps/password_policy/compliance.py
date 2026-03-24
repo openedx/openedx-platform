@@ -9,6 +9,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from openedx.core.djangolib.markup import HTML
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from common.djangoapps.util.date_utils import DEFAULT_SHORT_DATE_FORMAT, strftime_localized
 from common.djangoapps.util.password_policy_validators import validate_password
 
@@ -97,7 +98,10 @@ def enforce_compliance_on_login(user, password):
                 platform_name=settings.PLATFORM_NAME,
                 deadline=strftime_localized(deadline, DEFAULT_SHORT_DATE_FORMAT),
                 anchor_tag_open=HTML('<a href="{account_settings_url}">').format(
-                    account_settings_url=settings.ACCOUNT_MICROFRONTEND_URL
+                    account_settings_url=configuration_helpers.get_value(
+                        'ACCOUNT_MICROFRONTEND_URL',
+                        settings.ACCOUNT_MICROFRONTEND_URL,
+                    ),
                 ),
                 anchor_tag_close=HTML('</a>')
             )

@@ -13,7 +13,6 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_EMAIL_NOTIFICATIONS, ENABLE_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email.tasks import (
     add_to_existing_buffer,
     decide_email_action,
@@ -36,6 +35,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
 from .utils import create_notification
+from ...config.waffle import DISABLE_EMAIL_NOTIFICATIONS
 
 User = get_user_model()
 
@@ -57,25 +57,24 @@ class TestEmailDigestForUser(ModuleStoreTestCase):
     @patch('edx_ace.ace.send')
     def test_email_is_not_sent_if_no_notifications(self, mock_func):
         """
-        Tests email is sent iff waffle flag is enabled
+        Tests that no email is sent when there are no notifications for the user
         """
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(True, False)
     @patch('edx_ace.ace.send')
-    def test_email_is_sent_iff_flag_enabled(self, flag_value, mock_func):
+    def test_email_is_sent_if_flag_disabled(self, flag_value, mock_func):
         """
-        Tests email is sent iff waffle flag is enabled
+        Tests email is sent if waffle flag is disabled
         """
         created_date = datetime.now() - timedelta(days=1)
         create_notification(self.user, self.course.id, created=created_date)
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, flag_value):
+        with override_waffle_flag(DISABLE_EMAIL_NOTIFICATIONS, flag_value):
             send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
-        assert mock_func.called is flag_value
+        assert mock_func.called is not flag_value
 
     @patch('edx_ace.ace.send')
     def test_notification_not_send_if_created_on_next_day(self, mock_func):
@@ -84,8 +83,7 @@ class TestEmailDigestForUser(ModuleStoreTestCase):
         """
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
         create_notification(self.user, self.course.id, created=end_date + timedelta(minutes=2))
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(True, False)
@@ -101,8 +99,7 @@ class TestEmailDigestForUser(ModuleStoreTestCase):
             self.user.set_password("12345678")
         else:
             self.user.set_unusable_password()
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called is value
 
     @patch('edx_ace.ace.send')
@@ -113,8 +110,7 @@ class TestEmailDigestForUser(ModuleStoreTestCase):
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
         created_date = datetime.now() - timedelta(days=1, minutes=18)
         create_notification(self.user, self.course.id, created=created_date)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(
@@ -135,8 +131,7 @@ class TestEmailDigestForUser(ModuleStoreTestCase):
         """
         start_date, end_date = get_start_end_date(cadence_type)
         create_notification(self.user, self.course.id, created=created_time)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called is notification_created
 
 
@@ -160,22 +155,21 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
         Tests email is sent iff waffle flag is enabled
         """
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(True, False)
     @patch('edx_ace.ace.send')
-    def test_email_is_sent_iff_flag_enabled(self, flag_value, mock_func):
+    def test_email_is_sent_if_flag_disabled(self, flag_value, mock_func):
         """
-        Tests email is sent iff waffle flag is enabled
+        Tests email is sent iff waffle flag is disabled
         """
         created_date = datetime.now() - timedelta(days=1)
         create_notification(self.user, self.course.id, created=created_date)
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, flag_value):
+        with override_waffle_flag(DISABLE_EMAIL_NOTIFICATIONS, flag_value):
             send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
-        assert mock_func.called is flag_value
+        assert mock_func.called is not flag_value
 
     @patch('edx_ace.ace.send')
     def test_notification_not_send_if_created_on_next_day(self, mock_func):
@@ -184,8 +178,7 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
         """
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
         create_notification(self.user, self.course.id, created=end_date + timedelta(minutes=2))
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(True, False)
@@ -201,8 +194,7 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
             self.user.set_password("12345678")
         else:
             self.user.set_unusable_password()
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called is value
 
     @patch('edx_ace.ace.send')
@@ -213,8 +205,7 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
         created_date = datetime.now() - timedelta(days=1, minutes=18)
         create_notification(self.user, self.course.id, created=created_date)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
     @ddt.data(
@@ -235,8 +226,7 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
         """
         start_date, end_date = get_start_end_date(cadence_type)
         create_notification(self.user, self.course.id, created=created_time)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called is notification_created
 
 
@@ -259,8 +249,7 @@ class TestEmailDigestAudience(ModuleStoreTestCase):
         """
         Tests email sending function is not called if user has no notifications
         """
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_all_users(EmailCadence.DAILY)
+        send_digest_email_to_all_users(EmailCadence.DAILY)
         assert not mock_func.called
 
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_digest_email_to_user')
@@ -270,8 +259,7 @@ class TestEmailDigestAudience(ModuleStoreTestCase):
         """
         created_date = datetime.now() - timedelta(days=1)
         create_notification(self.user, self.course.id, created=created_date)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_all_users(EmailCadence.DAILY)
+        send_digest_email_to_all_users(EmailCadence.DAILY)
         assert mock_func.called
 
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_digest_email_to_user')
@@ -282,16 +270,14 @@ class TestEmailDigestAudience(ModuleStoreTestCase):
         """
         created_date = datetime.now() - timedelta(days=10)
         create_notification(self.user, self.course.id, created=created_date)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_all_users(EmailCadence.DAILY)
+        send_digest_email_to_all_users(EmailCadence.DAILY)
         assert not mock_func.called
 
     @patch('edx_ace.ace.send')
     def test_email_is_sent_to_user_when_task_is_called(self, mock_func):
         created_date = datetime.now() - timedelta(days=1)
         create_notification(self.user, self.course.id, created=created_date)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_all_users(EmailCadence.DAILY)
+        send_digest_email_to_all_users(EmailCadence.DAILY)
         assert mock_func.called
         assert mock_func.call_count == 1
 
@@ -309,9 +295,8 @@ class TestEmailDigestAudience(ModuleStoreTestCase):
         start_date, end_date = get_start_end_date(EmailCadence.DAILY)
         created_date = datetime.now() - timedelta(hours=23, minutes=59)
         create_notification(self.user, self.course.id, created=created_date, email=email_value)
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
-            assert mock_func.called is email_value
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        assert mock_func.called is email_value
 
 
 @ddt.ddt
@@ -341,8 +326,7 @@ class TestAccountPreferences(ModuleStoreTestCase):
         self.preference.email = True
         self.preference.email_cadence = EmailCadence.DAILY
         self.preference.save()
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called
 
     @ddt.data(True, False)
@@ -355,8 +339,7 @@ class TestAccountPreferences(ModuleStoreTestCase):
         self.preference.email = pref_value
         self.preference.email_cadence = EmailCadence.DAILY
         self.preference.save()
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert mock_func.called is pref_value
 
     @patch('edx_ace.ace.send')
@@ -368,8 +351,7 @@ class TestAccountPreferences(ModuleStoreTestCase):
         self.preference.email = True
         self.preference.email_cadence = EmailCadence.WEEKLY
         self.preference.save()
-        with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-            send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
+        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
         assert not mock_func.called
 
 
@@ -418,18 +400,14 @@ class TestImmediateEmailNotifications(ModuleStoreTestCase):
             'post_title': 'title'
         }
 
-        with (
-            override_waffle_flag(ENABLE_NOTIFICATIONS, True),
-            override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True)
-        ):
-            send_notifications(
-                [self.user.id],
-                str(self.course.id),
-                'discussion',
-                'new_discussion_post',
-                context,
-                'http://test.url'
-            )
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_discussion_post',
+            context,
+            'http://test.url'
+        )
 
         assert mock_ace_send.call_count == 1
 
@@ -447,19 +425,14 @@ class TestImmediateEmailNotifications(ModuleStoreTestCase):
             'replier_name': 'User',
             'post_title': 'title'
         }
-
-        with (
-            override_waffle_flag(ENABLE_NOTIFICATIONS, True),
-            override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True)
-        ):
-            send_notifications(
-                [self.user.id],
-                str(self.course.id),
-                'discussion',
-                'new_response',
-                context,
-                'http://test.url'
-            )
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_response',
+            context,
+            'http://test.url'
+        )
 
         assert mock_ace_send.call_count == 0
 
@@ -824,14 +797,12 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
                 created=start_time + timedelta(minutes=i * 5)
             )
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                send_buffered_digest(  # pylint: disable=no-value-for-parameter
-                    user_id=self.user.id,
-                    course_key=self.course_key,
-                    start_date=start_time,
-                    user_language='en'
-                )
+            send_buffered_digest(  # pylint: disable=no-value-for-parameter
+                user_id=self.user.id,
+                course_key=self.course_key,
+                start_date=start_time,
+                user_language='en'
+            )
 
         # Verify email was sent
         assert mock_ace_send.called
@@ -877,14 +848,12 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
             created=start_time + timedelta(minutes=10)
         )
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                send_buffered_digest(  # pylint: disable=no-value-for-parameter
-                    user_id=self.user.id,
-                    course_key=self.course_key,
-                    start_date=start_time,
-                    user_language='en'
-                )
+        send_buffered_digest(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            course_key=self.course_key,
+            start_date=start_time,
+            user_language='en'
+        )
 
         # Only 1 notification should be marked as sent
         sent_count = Notification.objects.filter(
@@ -921,14 +890,12 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
             created=start_time + timedelta(minutes=5)
         )
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                send_buffered_digest(  # pylint: disable=no-value-for-parameter
-                    user_id=self.user.id,
-                    course_key=self.course_key,
-                    start_date=start_time,
-                    user_language='en'
-                )
+        send_buffered_digest(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            course_key=self.course_key,
+            start_date=start_time,
+            user_language='en'
+        )
 
         # Email should not be sent
         assert not mock_ace_send.called
@@ -944,15 +911,13 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
         """Test that digest handles non-existent user gracefully."""
         start_time = timezone.now() - timedelta(minutes=15)
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                # Should not raise exception
-                send_buffered_digest(  # pylint: disable=no-value-for-parameter
-                    user_id=99999,  # Non-existent
-                    course_key=self.course_key,
-                    start_date=start_time,
-                    user_language='en'
-                )
+        # Should not raise exception
+        send_buffered_digest(  # pylint: disable=no-value-for-parameter
+            user_id=99999,  # Non-existent
+            course_key=self.course_key,
+            start_date=start_time,
+            user_language='en'
+        )
 
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send', side_effect=Exception('Email failed'))
     def test_digest_retries_on_failure(self, mock_ace_send):
@@ -971,19 +936,17 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
             created=start_time + timedelta(minutes=5)
         )
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                # Create a mock task instance
-                mock_task = Mock()
-                mock_task.request.retries = 0
+        # Create a mock task instance
+        mock_task = Mock()
+        mock_task.request.retries = 0
 
-                with self.assertRaises(Exception):
-                    send_buffered_digest.bind(mock_task)(
-                        user_id=self.user.id,
-                        course_key=self.course_key,
-                        start_date=start_time,
-                        user_language='en'
-                    )
+        with self.assertRaises(Exception):
+            send_buffered_digest.bind(mock_task)(
+                user_id=self.user.id,
+                course_key=self.course_key,
+                start_date=start_time,
+                user_language='en'
+            )
 
 
 @ddt.ddt
@@ -1024,9 +987,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
         )
         email_mapping[self.user.id] = notif1
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                send_immediate_cadence_email(email_mapping, self.course.id)
+        send_immediate_cadence_email(email_mapping, self.course.id)
 
         # Verify immediate email sent
         assert mock_ace_send.call_count == 1
@@ -1049,9 +1010,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
             )
             email_mapping = {self.user.id: notif2}
 
-            with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-                with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                    send_immediate_cadence_email(email_mapping, self.course.id)
+            send_immediate_cadence_email(email_mapping, self.course.id)
 
             # Verify buffer scheduled
             assert mock_ace_send.call_count == 1  # Still just 1 immediate email
@@ -1074,9 +1033,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
             )
             email_mapping = {self.user.id: notif3}
 
-            with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-                with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                    send_immediate_cadence_email(email_mapping, self.course.id)
+            send_immediate_cadence_email(email_mapping, self.course.id)
 
             # Verify no new tasks scheduled
             assert mock_ace_send.call_count == 1
@@ -1088,26 +1045,24 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
 
         # BUFFER FIRES - should send digest with notif2 and notif3
         with freeze_time("2025-12-15 10:15:00"):
-            with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-                with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                    send_buffered_digest(  # pylint: disable=no-value-for-parameter
-                        user_id=self.user.id,
-                        course_key=str(self.course.id),
-                        start_date=notif1.email_sent_on,
-                        user_language='en'
-                    )
+            send_buffered_digest(  # pylint: disable=no-value-for-parameter
+                user_id=self.user.id,
+                course_key=str(self.course.id),
+                start_date=notif1.email_sent_on,
+                user_language='en'
+            )
 
-                    # Verify digest email sent
-                    assert mock_ace_send.call_count == 2  # 1 immediate + 1 digest
+            # Verify digest email sent
+            assert mock_ace_send.call_count == 2  # 1 immediate + 1 digest
 
-                    # Verify both buffered notifications marked as sent
-                    notif2.refresh_from_db()
-                    notif3.refresh_from_db()
+            # Verify both buffered notifications marked as sent
+            notif2.refresh_from_db()
+            notif3.refresh_from_db()
 
-                    assert notif2.email_sent_on is not None
-                    assert notif2.email_scheduled is False
-                    assert notif3.email_sent_on is not None
-                    assert notif3.email_scheduled is False
+            assert notif2.email_sent_on is not None
+            assert notif2.email_scheduled is False
+            assert notif3.email_sent_on is not None
+            assert notif3.email_scheduled is False
 
     @freeze_time("2025-12-15 10:00:00")
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
@@ -1126,9 +1081,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
         )
         email_mapping = {self.user.id: notif1}
 
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-            with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                send_immediate_cadence_email(email_mapping, self.course.id)
+        send_immediate_cadence_email(email_mapping, self.course.id)
 
         assert mock_ace_send.call_count == 1
 
@@ -1145,9 +1098,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
             )
             email_mapping = {self.user.id: notif2}
 
-            with override_waffle_flag(ENABLE_NOTIFICATIONS, True):
-                with override_waffle_flag(ENABLE_EMAIL_NOTIFICATIONS, True):
-                    send_immediate_cadence_email(email_mapping, self.course.id)
+            send_immediate_cadence_email(email_mapping, self.course.id)
 
             # Should send immediate again (buffer expired)
             assert mock_ace_send.call_count == 2

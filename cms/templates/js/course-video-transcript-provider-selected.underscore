@@ -1,8 +1,0 @@
-<label class='transcript-preferance-label' for='transcript-provider'><%- gettext('Transcript Provider') %></label>
-<div class='selected-transcript-provider'>
-    <span class='title'><%- selectedProvider %></span>
-    <button class='button-link action-change-provider' aria-describedby='change-provider-button-text'>
-        <%- gettext('Change') %>
-        <span id='change-provider-button-text' class='sr'><%-gettext('Press change to change selected transcript provider.') %></span>
-    </button>
-</div>

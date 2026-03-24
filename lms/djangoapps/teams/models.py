@@ -130,7 +130,7 @@ class CourseTeam(models.Model):
     team_id = models.SlugField(max_length=255, unique=True)
     discussion_topic_id = models.SlugField(max_length=255, unique=True)
     name = models.CharField(max_length=255, db_index=True)
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
     topic_id = models.CharField(default='', max_length=255, db_index=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     description = models.CharField(max_length=300)

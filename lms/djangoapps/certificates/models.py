@@ -60,7 +60,7 @@ class CertificateAllowlist(TimeStampedModel):
     objects = NoneToEmptyManager()
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course_id = CourseKeyField(max_length=255, blank=True, default=None)
+    course_id = CourseKeyField(blank=True, default=None)
     allowlist = models.BooleanField(default=0)
     notes = models.TextField(default=None, null=True)
 
@@ -219,7 +219,7 @@ class GeneratedCertificate(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course_id = CourseKeyField(max_length=255, blank=True, default=None)
+    course_id = CourseKeyField(blank=True, default=None)
     verify_uuid = models.CharField(max_length=32, blank=True, default='', db_index=True)
     grade = models.CharField(max_length=5, blank=True, default='')
     key = models.CharField(max_length=32, blank=True, default='')
@@ -554,7 +554,7 @@ class CertificateGenerationHistory(TimeStampedModel):
     .. no_pii:
     """
 
-    course_id = CourseKeyField(max_length=255)
+    course_id = CourseKeyField()
     generated_by = models.ForeignKey(User, on_delete=models.CASCADE)
     instructor_task = models.ForeignKey(InstructorTask, on_delete=models.CASCADE)
     is_regeneration = models.BooleanField(default=False)
@@ -714,7 +714,7 @@ class ExampleCertificateSet(TimeStampedModel):
 
     .. no_pii:
     """
-    course_key = CourseKeyField(max_length=255, db_index=True)
+    course_key = CourseKeyField(db_index=True)
 
     class Meta:
         get_latest_by = 'created'
@@ -975,7 +975,7 @@ class CertificateGenerationCourseSetting(TimeStampedModel):
 
     .. no_pii:
     """
-    course_key = CourseKeyField(max_length=255, db_index=True)
+    course_key = CourseKeyField(db_index=True)
 
     self_generation_enabled = models.BooleanField(
         default=False,

@@ -6,11 +6,14 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openedx_authz.constants.permissions import COURSES_MANAGE_CERTIFICATES
+
 from cms.djangoapps.contentstore.utils import get_certificates_context
 from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     CourseCertificatesSerializer,
 )
-from common.djangoapps.student.auth import has_studio_write_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.lib.api.view_utils import (
     DeveloperErrorViewMixin,
     verify_course_exists,
@@ -96,7 +99,12 @@ class CourseCertificatesView(DeveloperErrorViewMixin, APIView):
         course_key = CourseKey.from_string(course_id)
         store = modulestore()
 
-        if not has_studio_write_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_MANAGE_CERTIFICATES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE
+        ):
             self.permission_denied(request)
 
         with store.bulk_operations(course_key):

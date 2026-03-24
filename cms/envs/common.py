@@ -45,7 +45,7 @@ from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
 
 from django.utils.translation import gettext_lazy as _
-from openedx_learning.api.django import openedx_learning_apps_to_install
+from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
 
 from openedx.envs.common import *  # pylint: disable=wildcard-import
 
@@ -256,6 +256,15 @@ IN_CONTEXT_DISCUSSION_ENABLED_DEFAULT = True
 # .. toggle_tickets: 'https://openedx.atlassian.net/browse/VAN-622'
 ENABLE_COPPA_COMPLIANCE = False
 
+# .. toggle_name: ENABLE_DATES_COURSE_APP
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: False
+# .. toggle_description: Controls whether the Dates course app is surfaced via the course apps API/UI.
+# .. toggle_use_cases: open_edx
+# .. toggle_creation_date: 2026-02-02
+# .. toggle_tickets: https://github.com/openedx/platform-roadmap/issues/392
+ENABLE_DATES_COURSE_APP = False
+
 ENABLE_JASMINE = False
 
 MARKETING_EMAILS_OPT_IN = False
@@ -280,7 +289,6 @@ HOTJAR_ID = 00000
 
 MAKO_TEMPLATE_DIRS_BASE.insert(3, COMMON_ROOT / 'static')
 MAKO_TEMPLATE_DIRS_BASE.append(CMS_ROOT / 'djangoapps' / 'pipeline_js' / 'templates')
-MAKO_TEMPLATE_DIRS_BASE.append(XMODULE_ROOT / 'capa' / 'templates')
 
 
 def make_lms_template_path(settings):
@@ -712,7 +720,7 @@ INSTALLED_APPS = [
     'cms.djangoapps.export_course_metadata.apps.ExportCourseMetadataConfig',
     'cms.djangoapps.modulestore_migrator',
 
-    # New (Learning-Core-based) XBlock runtime
+    # New (openedx_content-based) XBlock runtime
     'openedx.core.djangoapps.xblock.apps.StudioXBlockAppConfig',
 
     'openedx.core.djangoapps.util.apps.UtilConfig',
@@ -777,6 +785,9 @@ INSTALLED_APPS = [
     'openedx.core.djangoapps.credit.apps.CreditConfig',
 
     'common.djangoapps.xblock_django',
+
+    # Agreements
+    'openedx.core.djangoapps.agreements',
 
     # Catalog integration
     'openedx.core.djangoapps.catalog',
@@ -849,7 +860,7 @@ INSTALLED_APPS = [
     'drf_yasg',
 
     # Tagging
-    'openedx_tagging.core.tagging.apps.TaggingConfig',
+    'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
 
     # Search
@@ -896,9 +907,17 @@ INSTALLED_APPS = [
     # alternative swagger generator for CMS API
     'drf_spectacular',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
 
-    *openedx_learning_apps_to_install(),
+    # Core models to represent courses
+    "openedx_catalog",
+
+    # Core apps that power libraries
+    "openedx_content",
+    *openedx_content_backcompat_apps_to_install(),
 ]
 
 ### Apps only installed in some instances

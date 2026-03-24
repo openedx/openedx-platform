@@ -13,7 +13,7 @@ from drf_yasg import openapi
 
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_200_OK
@@ -200,7 +200,7 @@ class LibraryContainerChildrenView(GenericAPIView):
         self,
         request,
         container_key: LibraryContainerLocator,
-        action: authoring_api.ChildrenEntitiesAction,
+        action: content_api.ChildrenEntitiesAction,
     ):
         """
         Helper function to update children in container.
@@ -237,7 +237,7 @@ class LibraryContainerChildrenView(GenericAPIView):
         return self._update_component_children(
             request,
             container_key,
-            action=authoring_api.ChildrenEntitiesAction.APPEND,
+            action=content_api.ChildrenEntitiesAction.APPEND,
         )
 
     @convert_exceptions
@@ -256,7 +256,7 @@ class LibraryContainerChildrenView(GenericAPIView):
         return self._update_component_children(
             request,
             container_key,
-            action=authoring_api.ChildrenEntitiesAction.REMOVE,
+            action=content_api.ChildrenEntitiesAction.REMOVE,
         )
 
     @convert_exceptions
@@ -275,7 +275,7 @@ class LibraryContainerChildrenView(GenericAPIView):
         return self._update_component_children(
             request,
             container_key,
-            action=authoring_api.ChildrenEntitiesAction.REPLACE,
+            action=content_api.ChildrenEntitiesAction.REPLACE,
         )
 
 

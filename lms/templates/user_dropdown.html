@@ -8,6 +8,7 @@ from django.utils.translation import gettext as _
 
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
 from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 %>
 
 <%
@@ -28,7 +29,7 @@ profile_image_url = get_profile_image_urls_for_user(self.real_user)['medium']
                 <a data-hj-suppress class="dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">${username}</a>
                 <ul role="menu" class="dropdown-menu dropdown-menu-right" id="${_("Usermenu")}" aria-labelledby="dropdownMenuLink" tabindex="-1">
                     <li role="presentation"><a role="menuitem" class="dropdown-item" href="${reverse('dashboard')}">${_("Dashboard")}</a></li>
-                    <li role="presentation"><a role="menuitem" class="dropdown-item" href="${settings.ACCOUNT_MICROFRONTEND_URL}">${_("Account")}</a></li>
+                    <li role="presentation"><a role="menuitem" class="dropdown-item" href="${configuration_helpers.get_value('ACCOUNT_MICROFRONTEND_URL', settings.ACCOUNT_MICROFRONTEND_URL)}">${_("Account")}</a></li>
                     <li role="presentation"><a role="menuitem" class="dropdown-item" href="${reverse('logout')}">${_("Sign Out")}</a></li>
                 </ul>
             </div>
@@ -36,7 +37,7 @@ profile_image_url = get_profile_image_urls_for_user(self.real_user)['medium']
     </div>
     <ul role="menu" class="nav flex-column align-items-center">
         <li role="presentation" class="nav-item nav-item-open-collapsed-only collapse"><a role="menuitem" href="${reverse('dashboard')}">${_("Dashboard")}</a></li>
-        <li role="presentation" class="nav-item nav-item-open-collapsed-only"><a role="menuitem" href="${settings.ACCOUNT_MICROFRONTEND_URL}">${_("Account")}</a></li>
+        <li role="presentation" class="nav-item nav-item-open-collapsed-only"><a role="menuitem" href="${configuration_helpers.get_value('ACCOUNT_MICROFRONTEND_URL', settings.ACCOUNT_MICROFRONTEND_URL)}">${_("Account")}</a></li>
         <li role="presentation" class="nav-item nav-item-open-collapsed-only"><a role="menuitem" href="${reverse('logout')}">${_("Sign Out")}</a></li>
     </ul>
 % else:

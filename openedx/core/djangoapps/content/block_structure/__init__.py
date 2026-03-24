@@ -49,7 +49,7 @@ Transformers.
 
 Registry. Transformers are registered using the platform's
 PluginManager (e.g., Stevedore). This is currently done by updating
-setup.py.  Only registered transformers are called during the Collect
+pyproject.toml.  Only registered transformers are called during the Collect
 Phase.  And only registered transformers can be used during the
 Transform phase.  Exceptions to this rule are any nested transformers
 that are contained within higher-order transformers - as long as the

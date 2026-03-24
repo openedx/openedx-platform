@@ -51,17 +51,15 @@ from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_USER_IS_STAFF,
 )
 from openedx.core.djangolib.markup import HTML, Text
-from xmodule.capa import responsetypes
-from xmodule.capa.capa_problem import LoncapaProblem, LoncapaSystem
-from xmodule.capa.inputtypes import Status
-from xmodule.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xmodule.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
+from xblocks_contrib.problem.capa import responsetypes
+from xblocks_contrib.problem.capa.capa_problem import LoncapaProblem, LoncapaSystem
+from xblocks_contrib.problem.capa.inputtypes import Status
+from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
+from xblocks_contrib.problem.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
 from xmodule.raw_block import RawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.x_module import XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
-
-from .capa.xqueue_interface import XQueueService
 
 log = logging.getLogger("edx.courseware")
 
@@ -144,6 +142,7 @@ class Randomization(String):  # pylint: disable=too-few-public-methods
 @XBlock.needs("i18n")
 @XBlock.needs("cache")
 @XBlock.needs("sandbox")
+@XBlock.needs("xqueue")
 @XBlock.needs("replace_urls")
 @XBlock.wants("call_to_action")
 class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-instance-attributes,too-many-ancestors
@@ -157,7 +156,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
     An XBlock representing a "problem".
 
     A problem contains zero or more respondable items, such as multiple choice,
-    numeric response, true/false, etc. See xmodule/capa/responsetypes.py
+    numeric response, true/false, etc. See xblocks_contrib/problem/capa/responsetypes.py
     for the full ensemble.
 
     The rendering logic of a problem is largely encapsulated within
@@ -856,6 +855,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
 
         sandbox_service = self.runtime.service(self, "sandbox")
         cache_service = self.runtime.service(self, "cache")
+        xqueue_service = self.runtime.service(self, "xqueue")
 
         is_studio = getattr(self.runtime, "is_author_mode", False)
 
@@ -870,7 +870,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             render_template=render_to_string,
             resources_fs=self.runtime.resources_fs,
             seed=seed,  # Why do we do this if we have self.seed?
-            xqueue=None if is_studio else XQueueService(self),
+            xqueue=None if is_studio else xqueue_service,
             matlab_api_key=self.matlab_api_key,
         )
 
@@ -2465,5 +2465,17 @@ def randomization_bin(seed, problem_id):
     return int(r_hash.hexdigest()[:7], 16) % NUM_RANDOMIZATION_BINS
 
 
-ProblemBlock = _ExtractedProblemBlock if settings.USE_EXTRACTED_PROBLEM_BLOCK else _BuiltInProblemBlock
+ProblemBlock = None
+
+
+def reset_class():
+    """Reset class as per django settings flag"""
+    global ProblemBlock
+    ProblemBlock = (
+        _ExtractedProblemBlock if settings.USE_EXTRACTED_PROBLEM_BLOCK else _BuiltInProblemBlock
+    )
+    return ProblemBlock
+
+
+reset_class()
 ProblemBlock.__name__ = "ProblemBlock"

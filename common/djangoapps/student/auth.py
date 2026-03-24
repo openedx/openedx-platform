@@ -10,7 +10,10 @@ from ccx_keys.locator import CCXBlockUsageLocator, CCXLocator
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from opaque_keys.edx.locator import LibraryLocator
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import COURSES_MANAGE_ADVANCED_SETTINGS
 
+from openedx.core import toggles as core_toggles
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseCreatorRole,
@@ -175,6 +178,49 @@ def has_studio_read_access(user, course_key):
     there is read-only access to content libraries.
     """
     return bool(STUDIO_VIEW_CONTENT & get_user_permissions(user, course_key))
+
+
+def check_course_advanced_settings_access(user, course_key, access_type='read'):
+    """
+    Check if user has access to advanced settings for a course.
+
+    Uses openedx-authz when AUTHZ_COURSE_AUTHORING_FLAG is enabled,
+    otherwise falls back to legacy permission checks.
+
+    If the DISABLE_ADVANCED_SETTINGS feature flag is on, then authz will not be used for the
+    permission check.
+
+    Args:
+        user: Django user object
+        course_key: CourseKey for the course
+        access_type: Type of access to check. Options:
+            - 'read': Check studio read access (default)
+            - 'write': Check studio write access
+            - 'feature_restricted': Check access based on the DISABLE_ADVANCED_SETTINGS feature
+
+    Returns:
+        bool: True if user has permission, False otherwise
+    """
+    if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key):
+        # For feature_restricted access type, check DISABLE_ADVANCED_SETTINGS feature
+        if (
+            access_type == 'feature_restricted'
+            and settings.FEATURES.get('DISABLE_ADVANCED_SETTINGS', False)
+        ):
+            # When feature is disabled, only staff/superuser can access (bypass authz)
+            return user.is_staff or user.is_superuser
+        # Otherwise check authz permission
+        return authz_api.is_user_allowed(user.username, COURSES_MANAGE_ADVANCED_SETTINGS.identifier, str(course_key))
+
+    # Legacy permission checks
+    if access_type == 'read':
+        return has_studio_read_access(user, course_key)
+    if access_type == 'feature_restricted':
+        return has_studio_advanced_settings_access(user)
+    if access_type == 'write':
+        return has_studio_write_access(user, course_key)
+
+    raise ValueError(f"Invalid access_type: {access_type}")
 
 
 def is_content_creator(user, org):

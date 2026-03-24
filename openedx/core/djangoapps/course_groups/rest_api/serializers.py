@@ -36,10 +36,15 @@ class ContentGroupConfigurationSerializer(serializers.Serializer):
 class ContentGroupsListResponseSerializer(serializers.Serializer):
     """
     Response serializer for listing all content groups.
+
+    Returns the content group configuration ID, a flat list of content groups,
+    and a link to Studio where instructors can manage content groups.
     """
-    all_group_configurations = ContentGroupConfigurationSerializer(many=True)
-    should_show_enrollment_track = serializers.BooleanField()
-    should_show_experiment_groups = serializers.BooleanField()
-    context_course = serializers.JSONField(required=False, allow_null=True)
-    group_configuration_url = serializers.CharField()
-    course_outline_url = serializers.CharField()
+    id = serializers.IntegerField(
+        allow_null=True,
+        help_text="ID of the content group configuration (null if none exists)"
+    )
+    groups = GroupSerializer(many=True)
+    studio_content_groups_link = serializers.CharField(
+        help_text="Full URL to Studio's content group configuration page"
+    )

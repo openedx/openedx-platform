@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from organizations.models import Organization
 
 from openedx.core.djangoapps.content_libraries import api as library_api
@@ -660,7 +660,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
                 self.container.container_key,
                 [block_2.usage_key],
                 user_id=None,
-                entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+                entities_action=content_api.ChildrenEntitiesAction.APPEND,
             )
 
         doc = searchable_doc_for_container(self.container.container_key)

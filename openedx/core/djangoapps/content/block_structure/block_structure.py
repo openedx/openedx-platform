@@ -393,6 +393,10 @@ class BlockData(FieldData):
         # Map of transformer name to its block-specific data.
         self.transformer_data = TransformerDataMap()
 
+    @property
+    def usage_key(self):
+        return self.location
+
 
 class BlockStructureBlockData(BlockStructure):
     """

@@ -29,7 +29,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED,
 )
 from openedx_authz.api.users import get_user_role_assignments_in_scope
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 
 from common.djangoapps.student.tests.factories import UserFactory
 from .. import api
@@ -411,7 +411,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         LIBRARY_COLLECTION_DELETED.connect(event_receiver)
 
         assert self.lib1.learning_package_id is not None
-        authoring_api.delete_collection(
+        content_api.delete_collection(
             self.lib1.learning_package_id,
             self.col1.key,
             hard_delete=True,
@@ -549,8 +549,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         )
 
         assert self.lib2.learning_package_id is not None
-        assert len(authoring_api.get_collection(self.lib2.learning_package_id, self.col2.key).entities.all()) == 1
-        assert len(authoring_api.get_collection(self.lib2.learning_package_id, self.col3.key).entities.all()) == 1
+        assert len(content_api.get_collection(self.lib2.learning_package_id, self.col2.key).entities.all()) == 1
+        assert len(content_api.get_collection(self.lib2.learning_package_id, self.col3.key).entities.all()) == 1
 
         self.assertDictContainsEntries(
             event_receiver.call_args_list[0].kwargs,
@@ -1059,7 +1059,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.unit2.container_key,
             [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
 
         event_reciver = mock.Mock()
@@ -1068,7 +1068,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.unit2.container_key,
             [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.REMOVE,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
         )
 
         assert event_reciver.call_count == 1
@@ -1091,7 +1091,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.subsection2.container_key,
             [unit4.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
 
         event_reciver = mock.Mock()
@@ -1100,7 +1100,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.subsection2.container_key,
             [unit4.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.REMOVE,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
         )
 
         assert event_reciver.call_count == 1
@@ -1129,7 +1129,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.section2.container_key,
             [subsection3.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
 
         event_reciver = mock.Mock()
@@ -1138,7 +1138,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.section2.container_key,
             [subsection3.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.REMOVE,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
         )
 
         assert event_reciver.call_count == 1
@@ -1171,7 +1171,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
                 LibraryUsageLocatorV2.from_string(html_block_2["id"])
             ],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
 
         assert event_reciver.call_count == 2
@@ -1209,7 +1209,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.subsection2.container_key,
             [unit4.container_key, unit5.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
         assert event_reciver.call_count == 2
         self.assertDictContainsEntries(
@@ -1257,7 +1257,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
             self.section2.container_key,
             [subsection3.container_key, subsection4.container_key],
             None,
-            entities_action=authoring_api.ChildrenEntitiesAction.APPEND,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
         assert event_reciver.call_count == 2
         self.assertDictContainsEntries(

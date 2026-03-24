@@ -629,10 +629,9 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: Successful response with cohort details.
           schema:
-            type: object
-            properties: {}
+            $ref: '#/definitions/Cohort'
       tags:
       - cohorts
     post:
@@ -643,32 +642,26 @@ paths:
         in: body
         required: true
         schema:
-          type: object
-          properties: {}
+          $ref: '#/definitions/CohortCreate'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: Successful response with created cohort details.
           schema:
-            type: object
-            properties: {}
+            $ref: '#/definitions/Cohort'
       tags:
       - cohorts
     patch:
       operationId: cohorts_v1_courses_cohorts_partial_update
-      description: Endpoint to update a cohort name and/or assignment type.
+      description: Endpoint to update a cohort name, assignment type, and/or content group association.
       parameters:
       - name: data
         in: body
         required: true
         schema:
-          type: object
-          properties: {}
+          $ref: '#/definitions/CohortUpdate'
       responses:
-        '200':
-          description: ''
-          schema:
-            type: object
-            properties: {}
+        '204':
+          description: Successful update, no content returned.
       tags:
       - cohorts
     parameters:
@@ -11040,6 +11033,91 @@ paths:
       required: true
       type: string
 definitions:
+  Cohort:
+    description: A cohort representation
+    type: object
+    properties:
+      id:
+        title: ID
+        description: The integer identifier for a cohort.
+        type: integer
+      name:
+        title: Name
+        description: The string identifier for a cohort.
+        type: string
+      user_count:
+        title: User Count
+        description: The number of students in the cohort.
+        type: integer
+      assignment_type:
+        title: Assignment Type
+        description: The assignment type ("manual" or "random").
+        type: string
+        enum:
+        - manual
+        - random
+      user_partition_id:
+        title: User Partition ID
+        description: The integer identifier of the UserPartition (content group configuration).
+        type: integer
+        x-nullable: true
+      group_id:
+        title: Group ID
+        description: The integer identifier of the specific group in the partition.
+        type: integer
+        x-nullable: true
+  CohortCreate:
+    description: Request body for creating a new cohort
+    required:
+    - name
+    - assignment_type
+    type: object
+    properties:
+      name:
+        title: Name
+        description: The string identifier for a cohort.
+        type: string
+        minLength: 1
+      assignment_type:
+        title: Assignment Type
+        description: The assignment type ("manual" or "random").
+        type: string
+        enum:
+        - manual
+        - random
+      user_partition_id:
+        title: User Partition ID
+        description: The integer identifier of the UserPartition (content group configuration). Required if group_id is specified.
+        type: integer
+      group_id:
+        title: Group ID
+        description: The integer identifier of the specific group in the partition.
+        type: integer
+  CohortUpdate:
+    description: Request body for updating a cohort. At least one of name, assignment_type, or group_id must be provided.
+    type: object
+    properties:
+      name:
+        title: Name
+        description: The string identifier for a cohort.
+        type: string
+        minLength: 1
+      assignment_type:
+        title: Assignment Type
+        description: The assignment type ("manual" or "random").
+        type: string
+        enum:
+        - manual
+        - random
+      user_partition_id:
+        title: User Partition ID
+        description: The integer identifier of the UserPartition (content group configuration). Required if group_id is specified (non-null).
+        type: integer
+      group_id:
+        title: Group ID
+        description: The integer identifier of the specific group in the partition. Set to null to remove the content group association.
+        type: integer
+        x-nullable: true
   PermissionValidation:
     description: The permissions to validate
     required:
