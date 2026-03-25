@@ -839,7 +839,7 @@ openedx-django-require==3.0.0
     # via -r requirements/edx/kernel.in
 openedx-django-wiki==3.1.1
     # via -r requirements/edx/kernel.in
-openedx-events==10.5.0
+openedx-events==11.1.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
