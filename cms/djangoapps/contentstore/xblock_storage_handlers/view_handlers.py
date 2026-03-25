@@ -9,7 +9,7 @@ contentstore/views/block.py to this file, because the logic is reused in another
 Along with it, we moved the business logic of the other views in that file, since that is related.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from attrs import asdict
@@ -32,7 +32,6 @@ from edx_proctoring.api import (
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
 from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
-from pytz import UTC
 from xblock.core import XBlock
 from xblock.fields import Scope
 from .xblock_helpers import get_block_key_string
@@ -1209,7 +1208,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "studio_url": xblock_studio_url(xblock, parent_xblock),
                 "lms_url": xblock_lms_url(xblock),
                 "embed_lms_url": xblock_embed_lms_url(xblock),
-                "released_to_students": datetime.now(UTC) > xblock.start,
+                "released_to_students": datetime.now(timezone.utc) > xblock.start,
                 "release_date": release_date,
                 "visibility_state": visibility_state,
                 "has_explicit_staff_lock": xblock.fields[
@@ -1548,7 +1547,7 @@ def _compute_visibility_state(
         return VisibilityState.needs_attention
 
     is_unscheduled = xblock.start == DEFAULT_START_DATE
-    is_live = is_course_self_paced or datetime.now(UTC) > xblock.start
+    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start
     if child_info and child_info.get("children", []):  # pylint: disable=too-many-nested-blocks
         all_staff_only = True
         all_unscheduled = True
