@@ -21,6 +21,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.translation import gettext as _
 from edx_django_utils.plugins import pluggable_override
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from edx_proctoring.api import (
@@ -573,15 +574,15 @@ def sync_library_content(
                     block_type = upstream_child.usage_key.block_type
                 elif isinstance(upstream_child, ContainerMetadata):
                     upstream_key = str(upstream_child.container_key)
+                    if upstream_child.container_type_code not in (
+                        content_models.Unit.type_code,
+                        content_models.Subsection.type_code,
+                    ):
+                        # We don't support other container types for now.
+                        log.error("Unexpected upstream child container type: %s", upstream_child.container_type)
+                        continue
                     # convert "unit" -> "vertical", "subsection" -> "sequential"
                     block_type = content_api.get_container_type(upstream_child.container_type_code).olx_tag_name
-                    if not block_type or block_type not in ("vertical", "sequential"):
-                        # We don't support other container types for now.
-                        log.error(
-                            "Unexpected upstream child container type: %s",
-                            upstream_child.container_type,
-                        )
-                        continue
                 else:
                     log.error(
                         "Unexpected type of upstream child: %s",
