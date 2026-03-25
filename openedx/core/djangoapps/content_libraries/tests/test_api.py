@@ -669,10 +669,9 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
 
     def test_delete_container_when_container_does_not_exist(self) -> None:
         """
-        Test that delete_container sends LIBRARY_CONTAINER_DELETED and returns
-        early (without calling soft_delete_draft) when the Container does not
-        exist in the DB. This covers the case where a search-index entry was
-        created but the container creation failed mid-way.
+        Test that delete_container raises Container.DoesNotExist and still sends
+        LIBRARY_CONTAINER_DELETED (to clean up stale search-index entries) when
+        the Container does not exist in the DB.
         """
         container_key = LibraryContainerLocator.from_string(self.unit1["id"])
 
@@ -684,7 +683,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             "openedx.core.djangoapps.content_libraries.api.containers.get_container_from_key",
             side_effect=Container.DoesNotExist,
         ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
-            api.delete_container(container_key)
+            with self.assertRaises(Container.DoesNotExist):
+                api.delete_container(container_key)
             mock_soft_delete.assert_not_called()
 
         assert event_receiver.call_count == 1
@@ -700,10 +700,9 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
 
     def test_delete_library_block_when_component_does_not_exist(self) -> None:
         """
-        Test that delete_library_block sends LIBRARY_BLOCK_DELETED and returns
-        early (without calling soft_delete_draft) when the Component does not
-        exist in the DB. This covers the case where a search-index entry was
-        created but the component creation failed mid-way.
+        Test that delete_library_block raises Component.DoesNotExist and still sends
+        LIBRARY_BLOCK_DELETED (to clean up stale search-index entries) when the
+        Component does not exist in the DB.
         """
         usage_key = LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"])
 
@@ -715,7 +714,8 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             "openedx.core.djangoapps.content_libraries.api.blocks.get_component_from_usage_key",
             side_effect=Component.DoesNotExist,
         ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
-            api.delete_library_block(usage_key)
+            with self.assertRaises(Component.DoesNotExist):
+                api.delete_library_block(usage_key)
             mock_soft_delete.assert_not_called()
 
         assert event_receiver.call_count == 1

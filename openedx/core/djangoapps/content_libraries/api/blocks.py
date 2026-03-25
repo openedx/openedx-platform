@@ -721,9 +721,10 @@ def delete_library_block(
         # There may be cases where entries are created in the
         # search index, but the component is not created
         # (an intermediate error occurred).
-        # In that case, we keep the index updated by removing the entry.
+        # In that case, we keep the index updated by removing the entry,
+        # but still raise the error so the caller knows the component did not exist.
         send_block_deleted_signal()
-        return
+        raise
 
     affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
     affected_containers = get_containers_contains_item(usage_key)

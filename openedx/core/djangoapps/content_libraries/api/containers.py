@@ -277,9 +277,10 @@ def delete_container(
         # There may be cases where entries are created in the
         # search index, but the container is not created
         # (an intermediate error occurred).
-        # In that case, we keep the index updated by removing the entry.
+        # In that case, we keep the index updated by removing the entry,
+        # but still raise the error so the caller knows the container did not exist.
         send_container_deleted_signal()
-        return
+        raise
 
     library_key = container_key.lib_key
 
