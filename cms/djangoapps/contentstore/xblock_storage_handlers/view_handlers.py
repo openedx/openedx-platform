@@ -660,7 +660,7 @@ def sync_library_content(
         with store.bulk_operations(downstream.usage_key.context_key):
             upstream_children = sync_from_upstream_container(downstream=downstream, user=request.user)
             downstream_children = downstream.get_children()
-            downstream_children_keys = [child.upstream for child in downstream_children]
+            downstream_children_key_strings: list[str] = [child.upstream for child in downstream_children]
             # Sync the children:
             notices = []
             # Store final children keys to update order of items in containers
@@ -670,10 +670,10 @@ def sync_library_content(
 
             for i, upstream_child in enumerate(upstream_children):
                 if isinstance(upstream_child, LibraryXBlockMetadata):
-                    upstream_key = str(upstream_child.usage_key)
+                    upstream_child_key_string = str(upstream_child.usage_key)
                     block_type = upstream_child.usage_key.block_type
                 elif isinstance(upstream_child, ContainerMetadata):
-                    upstream_key = str(upstream_child.container_key)
+                    upstream_child_key_string = str(upstream_child.container_key)
                     if upstream_child.container_type_code not in (
                         content_models.Unit.type_code,
                         content_models.Subsection.type_code,
@@ -690,7 +690,7 @@ def sync_library_content(
                     )
                     continue
 
-                if upstream_key not in downstream_children_keys:
+                if upstream_child_key_string not in downstream_children_key_strings:
                     # This upstream_child is new, create it.
                     downstream_child = store.create_child(
                         parent_usage_key=downstream.usage_key,
@@ -700,14 +700,14 @@ def sync_library_content(
                         # TODO: Can we generate a unique but friendly block_id, perhaps using upstream block_id
                         block_id=f"{block_type}{uuid4().hex[:8]}",
                         fields={
-                            "upstream": upstream_key,
+                            "upstream": upstream_child_key_string,
                             "top_level_downstream_parent_key": get_block_key_string(
                                 top_level_downstream_parent.usage_key,
                             ),
                         },
                     )
                 else:
-                    downstream_child_old_index = downstream_children_keys.index(upstream_key)
+                    downstream_child_old_index = downstream_children_key_strings.index(upstream_child_key_string)
                     downstream_child = downstream_children[downstream_child_old_index]
 
                 children.append(downstream_child.usage_key)
