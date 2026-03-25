@@ -48,7 +48,6 @@ Implementation requirements:
   required, that change MUST be handled by creating a new version of the API and
   transitioning to that API using the deprecation process.
 
-
 Relevance in edx-platform
 -------------------------
 
@@ -160,8 +159,7 @@ Positive
   HTML rendering.
 * Improved compatibility with AI systems, automated testing frameworks, and third-party
   integrations that expect predictable, JSON-only responses.
-* Enables automatic API schema generation and documentation (e.g., via
-  ``drf-spectacular`` or ``drf-yasg``).
+* Enables automatic API schema generation and documentation via ``drf-spectacular``.
 
 Negative / Trade-offs
 ~~~~~~~~~~~~~~~~~~~~~
