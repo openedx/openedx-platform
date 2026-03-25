@@ -582,7 +582,7 @@ def sync_library_content(
                         log.error("Unexpected upstream child container type: %s", upstream_child.container_type)
                         continue
                     # convert "unit" -> "vertical", "subsection" -> "sequential"
-                    block_type = content_api.get_container_type(upstream_child.container_type_code).olx_tag_name
+                    block_type = content_api.get_container_subclass(upstream_child.container_type_code).olx_tag_name
                 else:
                     log.error(
                         "Unexpected type of upstream child: %s",
