@@ -2,7 +2,7 @@
 Unit tests for courseware context_processor
 """
 
-from pytz import timezone
+from pytz import timezone  # noqa: I001
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser

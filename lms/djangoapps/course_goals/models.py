@@ -2,7 +2,7 @@
 Course Goals Models
 """
 
-import uuid
+import uuid  # noqa: I001
 import logging
 from datetime import datetime, timedelta
 

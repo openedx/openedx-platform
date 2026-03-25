@@ -1,6 +1,6 @@
 """Tests for user_authn signals"""
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from django.test import TestCase
 
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory

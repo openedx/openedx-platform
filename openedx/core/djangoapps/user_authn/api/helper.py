@@ -1,7 +1,7 @@
 """
 Registration Fields View used by optional and required fields view.
 """
-import copy
+import copy  # noqa: I001
 
 from django.conf import settings
 from rest_framework.views import APIView

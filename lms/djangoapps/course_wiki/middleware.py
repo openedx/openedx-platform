@@ -1,7 +1,7 @@
 """Middleware for course_wiki"""
 
 
-from urllib.parse import urlparse
+from urllib.parse import urlparse  # noqa: I001
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404

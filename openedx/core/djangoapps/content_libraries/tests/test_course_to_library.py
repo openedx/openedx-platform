@@ -1,7 +1,7 @@
 """
 Tests for Imports from Courses to openedx_content-based Content Libraries
 """
-import ddt
+import ddt  # noqa: I001
 from opaque_keys.edx.locator import LibraryContainerLocator
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

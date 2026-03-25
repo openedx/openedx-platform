@@ -3,7 +3,7 @@ ConditionalBlock is an XBlock which you can use for disabling some XBlocks by co
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from lazy import lazy

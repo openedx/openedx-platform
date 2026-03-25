@@ -1,7 +1,7 @@
 """
 Tests that the generate_course_overview management command actually generates course overviews.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import pytest
 from django.core.management.base import CommandError

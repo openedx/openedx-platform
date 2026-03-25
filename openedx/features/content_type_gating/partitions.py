@@ -6,7 +6,7 @@ of audit learners.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 
 import crum

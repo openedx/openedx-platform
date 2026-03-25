@@ -1,4 +1,4 @@
-import fnmatch
+import fnmatch  # noqa: I001
 import os
 import shutil
 

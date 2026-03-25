@@ -2,7 +2,7 @@
 URL definitions for the course_modes v1 API.
 """
 
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from .views import CourseTeamManageAPIView
 

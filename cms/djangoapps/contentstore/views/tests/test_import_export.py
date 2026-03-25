@@ -1,7 +1,7 @@
 """
 Unit tests for course import and export
 """
-import copy
+import copy  # noqa: I001
 import itertools
 import json
 import logging

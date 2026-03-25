@@ -1,7 +1,7 @@
 """
 Tests for cache_utils.py
 """
-from time import sleep
+from time import sleep  # noqa: I001
 from unittest import TestCase
 from unittest.mock import Mock
 

@@ -5,7 +5,7 @@ that has already commenced - only pending retirements.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 

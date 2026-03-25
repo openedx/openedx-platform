@@ -39,7 +39,7 @@ contexts so they are implemented here in the library API only.  In the future,
 if we find a need for these in most other learning contexts then those methods
 could be promoted to the core XBlock API and made generic.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 import warnings

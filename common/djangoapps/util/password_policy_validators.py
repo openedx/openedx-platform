@@ -4,7 +4,7 @@ account creation
 """
 
 
-import logging
+import logging  # noqa: I001
 import unicodedata
 
 from django.contrib.auth.password_validation import MinimumLengthValidator as DjangoMinimumLengthValidator

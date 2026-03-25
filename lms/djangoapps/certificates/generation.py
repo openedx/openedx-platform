@@ -7,7 +7,7 @@ existing cert if it does already exist).
 These methods should be called from tasks.
 """
 
-import logging
+import logging  # noqa: I001
 from uuid import uuid4
 
 from lms.djangoapps.certificates.data import CertificateStatuses

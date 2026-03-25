@@ -1,7 +1,7 @@
 """
 URLs for content sesarch
 """
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from .views import StudioSearchView
 

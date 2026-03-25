@@ -1,5 +1,5 @@
 """Models for course enrollment"""
-import hashlib  # lint-amnesty, pylint: disable=wrong-import-order
+import hashlib  # lint-amnesty, pylint: disable=wrong-import-order  # noqa: I001
 import logging  # lint-amnesty, pylint: disable=wrong-import-order
 import uuid  # lint-amnesty, pylint: disable=wrong-import-order
 from collections import defaultdict, namedtuple  # lint-amnesty, pylint: disable=wrong-import-order
@@ -602,7 +602,7 @@ class CourseEnrollment(models.Model):
         """
         Emits an event to explicitly track course enrollment and unenrollment.
         """
-        from openedx.core.djangoapps.schedules.config import set_up_external_updates_for_enrollment
+        from openedx.core.djangoapps.schedules.config import set_up_external_updates_for_enrollment  # noqa: I001
         from common.djangoapps.student.toggles import should_send_enrollment_email
         from common.djangoapps.student.tasks import send_course_enrollment_email
 

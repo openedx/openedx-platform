@@ -1,7 +1,7 @@
 """
 This file contains Celery tasks and utility functions supporting the Credentials IDA.
 """
-import math
+import math  # noqa: I001
 import time
 from urllib.parse import urljoin
 

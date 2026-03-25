@@ -1,7 +1,7 @@
 """
 User facing error messages during course import and export
 """
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _  # noqa: I001
 
 COURSE_ALREADY_EXIST = _('Aborting import because a course with this id: {} already exists.')
 COURSE_PERMISSION_DENIED = _('Permission denied. You do not have write access to this course.')

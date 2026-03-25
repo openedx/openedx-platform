@@ -3,7 +3,7 @@ Grades related signals.
 """
 
 
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 # Signal that indicates that a user's grade for a course has been updated.
 # This is a downstream signal of SUBSECTION_SCORE_CHANGED.

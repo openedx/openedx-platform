@@ -1,7 +1,7 @@
 """
 Tests for the lms_result_processor
 """
-import pytest
+import pytest  # noqa: I001
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.lib.courseware_search.lms_result_processor import LmsSearchResultProcessor

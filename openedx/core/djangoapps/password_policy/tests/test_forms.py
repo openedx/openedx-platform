@@ -1,7 +1,7 @@
 """
 Test password policy forms
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import pytest
 from django.forms import ValidationError

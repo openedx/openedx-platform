@@ -1,7 +1,7 @@
 """
 Tests for validate Internationalization and XBlock i18n service.
 """
-import gettext
+import gettext  # noqa: I001
 from unittest import mock
 
 from django.utils import translation

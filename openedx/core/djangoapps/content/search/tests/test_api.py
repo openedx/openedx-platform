@@ -1,7 +1,7 @@
 """
 Tests for the Studio content search API.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import copy
 
@@ -28,7 +28,7 @@ from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, 
 
 try:
     # This import errors in the lms because content.search is not an installed app there.
-    from .. import api
+    from .. import api  # noqa: I001
     from ..models import SearchAccess, IncrementalIndexCompleted
 except RuntimeError:
     SearchAccess = {}

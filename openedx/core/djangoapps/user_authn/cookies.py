@@ -3,7 +3,7 @@ Utility functions for setting "logged in" cookies used by subdomains.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import time
 from urllib.parse import urljoin

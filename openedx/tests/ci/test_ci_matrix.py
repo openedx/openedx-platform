@@ -2,7 +2,7 @@
 Since we have defined the test matrix manually in quality checks to achieve an optimized test build time,
 this file is added to keep track if the ci matrices are up-to-date
 """
-import os
+import os  # noqa: I001
 
 import yaml
 

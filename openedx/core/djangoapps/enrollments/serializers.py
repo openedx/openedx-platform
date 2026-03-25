@@ -2,7 +2,7 @@
 Serializers for all Course Enrollment related return objects.
 """
 
-import logging
+import logging  # noqa: I001
 
 from rest_framework import serializers
 

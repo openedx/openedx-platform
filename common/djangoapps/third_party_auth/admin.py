@@ -1,7 +1,7 @@
 """
 Admin site configuration for third party authentication
 """
-import csv
+import csv  # noqa: I001
 
 from config_models.admin import KeyedConfigurationModelAdmin
 from django import forms

@@ -3,7 +3,7 @@ Test helpers for the course experience.
 """
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import now

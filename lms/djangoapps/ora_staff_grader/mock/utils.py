@@ -1,7 +1,7 @@
 """
 Mocking/testing utils for ESG
 """
-import json
+import json  # noqa: I001
 
 from os import path
 

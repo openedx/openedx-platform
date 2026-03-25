@@ -1,7 +1,7 @@
 """
 Utilities related to indexing content for search
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 from hashlib import blake2b

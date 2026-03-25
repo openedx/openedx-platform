@@ -2,7 +2,7 @@
 Tests for the Python APIs exposed by the Progress API of the Course Home API app.
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.test import TestCase
 from xblock.scorable import ShowCorrectness

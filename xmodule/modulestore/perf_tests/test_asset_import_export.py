@@ -3,7 +3,7 @@ Performance test for asset metadata in the modulestore.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 import unittest
 from shutil import rmtree

@@ -3,7 +3,7 @@ Test grading with access changes.
 """
 
 
-from crum import set_current_request
+from crum import set_current_request  # noqa: I001
 
 from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 from common.djangoapps.student.models import CourseEnrollment

@@ -2,7 +2,7 @@
     url mappings for auth/saml/v0/providerdata/
 """
 
-from rest_framework import routers
+from rest_framework import routers  # noqa: I001
 
 from .views import SAMLProviderDataViewSet
 

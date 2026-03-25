@@ -2,7 +2,7 @@
 Defines asynchronous celery task for content indexing
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 

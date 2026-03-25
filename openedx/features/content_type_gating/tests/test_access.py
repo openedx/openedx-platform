@@ -1,7 +1,7 @@
 """
 Test audit user's access to various content based on content-gating features.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch, Mock
 
 import ddt

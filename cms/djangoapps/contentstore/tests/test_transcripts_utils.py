@@ -1,6 +1,6 @@
 """ Tests for transcripts_utils. """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import copy
 import json
 import re

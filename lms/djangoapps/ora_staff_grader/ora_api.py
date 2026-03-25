@@ -11,7 +11,7 @@ These are caught by status code and raise XBlockInternalError by convention.
 Other handlers return status OK even for an error, but contain error info in the returned payload.
 These are checked (usually by checking for a {"success":false} response) and raise errors, possibly with extra context.
 """
-import json
+import json  # noqa: I001
 from http import HTTPStatus
 
 from rest_framework.request import Request

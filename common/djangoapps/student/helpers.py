@@ -3,7 +3,7 @@ Helpers for the student app.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import mimetypes
 import urllib.parse

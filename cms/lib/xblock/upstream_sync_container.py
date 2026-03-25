@@ -4,7 +4,7 @@ Methods related to syncing a downstream XBlock with an upstream Container.
 See upstream_sync.py for general upstream sync code that applies even when the
 upstream is a container, not an XBlock.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import typing as t
 

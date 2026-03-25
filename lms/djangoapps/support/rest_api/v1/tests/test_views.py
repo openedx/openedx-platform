@@ -2,7 +2,7 @@
 Tests for support views.
 """
 
-import ddt
+import ddt  # noqa: I001
 from django.urls import reverse
 from rest_framework.test import APIClient
 

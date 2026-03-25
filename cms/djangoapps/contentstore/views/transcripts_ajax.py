@@ -7,7 +7,7 @@ All user changes are saved immediately.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import os
 

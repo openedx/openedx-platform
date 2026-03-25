@@ -2,7 +2,7 @@
 Defines URLs for the course experience.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from .views.course_home import outline_tab
 from .views.course_updates import CourseUpdatesView
 

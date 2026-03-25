@@ -1,7 +1,7 @@
 """
 Grades related signals.
 """
-import json
+import json  # noqa: I001
 from contextlib import contextmanager
 from logging import getLogger
 

@@ -2,7 +2,7 @@
 Progress Tab Views
 """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.http.response import Http404
 from edx_django_utils import monitoring as monitoring_utils
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication

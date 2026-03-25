@@ -9,7 +9,7 @@ mocks in the view tests.
 """
 
 
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 
 import ddt
 from django.core.cache import cache

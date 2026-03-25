@@ -1,7 +1,7 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 import textwrap
 
 import ddt

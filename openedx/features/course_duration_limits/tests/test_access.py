@@ -1,7 +1,7 @@
 """Tests of openedx.features.course_duration_limits.access"""
 
 
-import itertools
+import itertools  # noqa: I001
 from datetime import datetime, timedelta
 
 import ddt

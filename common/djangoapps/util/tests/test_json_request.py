@@ -3,7 +3,7 @@ Test for JsonResponse and JsonResponseBadRequest util classes.
 """
 
 
-import json
+import json  # noqa: I001
 import unittest
 
 from unittest import mock

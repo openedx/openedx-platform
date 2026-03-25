@@ -1,7 +1,7 @@
 """Tests of openedx.features.discounts.views"""
 
 
-import jwt
+import jwt  # noqa: I001
 from django.test.client import Client
 from django.urls import reverse
 

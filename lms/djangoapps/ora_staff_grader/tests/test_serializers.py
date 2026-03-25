@@ -1,7 +1,7 @@
 """
 Tests for ESG Serializers
 """
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, MagicMock, patch  # noqa: I001
 from urllib.parse import urljoin
 
 import ddt

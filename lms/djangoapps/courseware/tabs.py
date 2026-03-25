@@ -4,7 +4,7 @@ perform some LMS-specific tab display gymnastics for the Entrance Exams feature
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
 from xmodule.tabs import CourseTab, CourseTabList, key_checker

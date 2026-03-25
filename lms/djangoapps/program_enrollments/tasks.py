@@ -1,7 +1,7 @@
 """ Tasks for program enrollments """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 
 from celery import shared_task

@@ -3,7 +3,7 @@ Test utilities for OAuth access token exchange
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from social_django.models import Partial, UserSocialAuth
 
 from common.djangoapps.third_party_auth.tests.utils import ThirdPartyOAuthTestMixin

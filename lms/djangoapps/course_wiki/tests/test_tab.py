@@ -3,7 +3,7 @@ Tests for wiki views.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from lms.djangoapps.courseware.tabs import get_course_tab_list

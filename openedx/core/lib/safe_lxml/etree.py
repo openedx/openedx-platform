@@ -14,7 +14,7 @@ isort:skip_file
 # pylint: disable=unused-import, wildcard-import, unused-wildcard-import
 
 
-from lxml.etree import XMLParser as _XMLParser
+from lxml.etree import XMLParser as _XMLParser  # noqa: I001
 from lxml.etree import *  # lint-amnesty, pylint: disable=redefined-builtin
 # These private elements are used in some libraries to also defuse xml exploits for their own purposes.
 # We need to re-expose them so that the libraries still work.

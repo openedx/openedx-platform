@@ -3,7 +3,7 @@ Tests for the Studio Tagging XBlockAside
 """
 
 
-import json
+import json  # noqa: I001
 from datetime import datetime
 from io import StringIO
 

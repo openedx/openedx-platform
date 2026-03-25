@@ -1,7 +1,7 @@
 """
 Tests for certificate generation handler
 """
-import logging
+import logging  # noqa: I001
 from unittest import mock
 
 import ddt

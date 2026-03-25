@@ -3,7 +3,7 @@ Utility classes for reporting linter results.
 """
 
 
-import json
+import json  # noqa: I001
 import os
 import re
 

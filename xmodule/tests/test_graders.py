@@ -3,7 +3,7 @@ Grading tests
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from datetime import datetime
 import pytest
 import ddt

@@ -3,7 +3,7 @@ Classes that override default django-oauth-toolkit behavior
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from django.contrib.auth import authenticate, get_user_model
 from django.db.models.signals import pre_save

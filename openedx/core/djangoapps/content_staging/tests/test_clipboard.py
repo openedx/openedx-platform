@@ -2,7 +2,7 @@
 """
 Tests for the clipboard functionality
 """
-from textwrap import dedent
+from textwrap import dedent  # noqa: I001
 from xml.etree import ElementTree
 
 from rest_framework.test import APIClient

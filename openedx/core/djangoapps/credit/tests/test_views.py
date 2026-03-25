@@ -3,7 +3,7 @@ Tests for credit app views.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 
 import ddt

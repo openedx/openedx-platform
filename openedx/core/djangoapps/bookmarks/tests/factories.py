@@ -3,7 +3,7 @@ Factories for Bookmark models.
 """
 
 
-from functools import partial
+from functools import partial  # noqa: I001
 
 import factory
 from factory.django import DjangoModelFactory

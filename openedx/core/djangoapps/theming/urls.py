@@ -1,7 +1,7 @@
 """
 Defines URLs for theming views.
 """
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from . import helpers
 from . import views

@@ -3,7 +3,7 @@ Define some view level utility functions here that multiple view modules will sh
 """
 
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q

@@ -3,7 +3,7 @@ Models for the custom course feature
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime
 

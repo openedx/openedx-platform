@@ -3,7 +3,7 @@ Tests for VideoBlockURLTransformer.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order

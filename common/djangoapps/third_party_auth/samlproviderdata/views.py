@@ -1,7 +1,7 @@
 """
     Viewset for auth/saml/v0/samlproviderdata
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 import logging
 from requests.exceptions import SSLError, MissingSchema, HTTPError
 

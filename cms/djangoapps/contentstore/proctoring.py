@@ -6,7 +6,7 @@ Courses using the exam IDA are handled by ./exams.py
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from edx_proctoring.api import (

@@ -6,7 +6,7 @@ JSON views which the instructor dashboard requests.
 Many of these GETs may become PUTs in the future.
 """
 
-import csv
+import csv  # noqa: I001
 import datetime
 import json
 import logging

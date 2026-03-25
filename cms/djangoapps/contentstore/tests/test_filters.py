@@ -1,7 +1,7 @@
 """
 Unit tests for the asset upload endpoint.
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from urllib.parse import urljoin
 
 from pytz import UTC

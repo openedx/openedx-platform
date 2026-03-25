@@ -1,7 +1,7 @@
 """
 REST API utilities for content libraries
 """
-from functools import wraps
+from functools import wraps  # noqa: I001
 import logging
 
 from opaque_keys import InvalidKeyError

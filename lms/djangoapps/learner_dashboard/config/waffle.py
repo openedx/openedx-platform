@@ -3,7 +3,7 @@ This module contains various configuration settings via
 waffle switches for the learner_dashboard app.
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 # .. toggle_name: learner_dashboard.enable_program_tab_view
 # .. toggle_implementation: WaffleFlag

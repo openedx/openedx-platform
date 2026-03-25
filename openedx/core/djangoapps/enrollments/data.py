@@ -4,7 +4,7 @@ source to be used throughout the API.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.db import transaction

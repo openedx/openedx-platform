@@ -2,7 +2,7 @@
 This file calls the task that exports metadata about the course
 """
 
-from django.dispatch import receiver
+from django.dispatch import receiver  # noqa: I001
 from xmodule.modulestore.django import SignalHandler
 
 from .tasks import export_course_metadata_task

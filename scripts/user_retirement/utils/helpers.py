@@ -8,7 +8,7 @@ Common helper methods to use in user retirement scripts.
 # Jenkins.  PLAT-2287 tracks this Tech Debt.
 
 
-import io
+import io  # noqa: I001
 import json
 import sys
 import traceback

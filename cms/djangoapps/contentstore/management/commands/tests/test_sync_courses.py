@@ -1,7 +1,7 @@
 """
 Tests for sync courses management command
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.core.management import call_command
 from opaque_keys.edx.keys import CourseKey

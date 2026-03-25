@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile  # noqa: I001
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile

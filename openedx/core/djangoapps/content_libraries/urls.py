@@ -2,7 +2,7 @@
 URL configuration for Studio's Content Libraries REST API
 """
 
-from django.urls import include, path, re_path, register_converter
+from django.urls import include, path, re_path, register_converter  # noqa: I001
 from rest_framework import routers
 
 from .rest_api import blocks, collections, containers, libraries, url_converters

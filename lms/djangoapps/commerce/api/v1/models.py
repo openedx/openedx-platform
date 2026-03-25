@@ -1,7 +1,7 @@
 """ API v1 models. """
 
 
-import logging
+import logging  # noqa: I001
 from itertools import groupby
 
 from django.db import transaction

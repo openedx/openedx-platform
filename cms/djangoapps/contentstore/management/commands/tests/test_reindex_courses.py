@@ -1,7 +1,7 @@
 """ Tests for course reindex command """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from django.core.management import CommandError, call_command

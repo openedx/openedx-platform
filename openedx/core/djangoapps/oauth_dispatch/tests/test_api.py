@@ -1,7 +1,7 @@
 """ Tests for OAuth Dispatch python API module. """
 
 
-from django.http import HttpRequest
+from django.http import HttpRequest  # noqa: I001
 from django.test import TestCase
 from oauth2_provider.models import AccessToken
 

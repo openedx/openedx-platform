@@ -3,7 +3,7 @@ Contains all the URLs for the Course Home
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 
 from lms.djangoapps.course_home_api.course_metadata.views import CourseHomeMetadataView

@@ -2,7 +2,7 @@
 Tests for minimum grade and credit requirement status
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone  # noqa: I001
 from unittest import mock
 from uuid import uuid4
 

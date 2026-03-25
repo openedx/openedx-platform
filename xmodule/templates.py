@@ -11,7 +11,7 @@ samples.
 # should this move to cms since it's really only for module crud?
 
 
-import logging
+import logging  # noqa: I001
 from collections import defaultdict
 
 from xblock.core import XBlock

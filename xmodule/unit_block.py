@@ -6,7 +6,7 @@ and other legacy features.
 """
 
 
-from web_fragments.fragment import Fragment
+from web_fragments.fragment import Fragment  # noqa: I001
 from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 from xblock.fields import Scope, String

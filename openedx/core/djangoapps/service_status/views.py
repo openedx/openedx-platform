@@ -3,7 +3,7 @@ Django Views for service status app
 """
 
 
-import json
+import json  # noqa: I001
 import time
 
 from celery.exceptions import TimeoutError  # lint-amnesty, pylint: disable=redefined-builtin

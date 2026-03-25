@@ -3,7 +3,7 @@ Tests for instructor.basic
 """
 
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch  # noqa: I001
 
 import datetime
 import random

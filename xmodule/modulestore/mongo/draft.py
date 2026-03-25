@@ -7,7 +7,7 @@ and otherwise returns i4x://org/course/cat/name).
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from opaque_keys.edx.locator import BlockUsageLocator
 

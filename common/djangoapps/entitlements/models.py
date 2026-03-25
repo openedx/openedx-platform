@@ -1,7 +1,7 @@
 """Entitlement Models"""
 
 
-import logging
+import logging  # noqa: I001
 import uuid as uuid_tools
 from datetime import timedelta
 

@@ -1,7 +1,7 @@
 """ Course API URLs. """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 from django.urls.conf import include, path
 from rest_framework.routers import SimpleRouter

@@ -2,7 +2,7 @@
 Test credentials tasks
 """
 
-import logging
+import logging  # noqa: I001
 from unittest import mock
 from datetime import datetime, timezone, timedelta
 

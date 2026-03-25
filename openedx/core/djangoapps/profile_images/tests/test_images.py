@@ -1,7 +1,7 @@
 """
 Test cases for image processing functions in the profile image package.
 """
-from contextlib import closing
+from contextlib import closing  # noqa: I001
 from unittest import mock
 
 import pytest

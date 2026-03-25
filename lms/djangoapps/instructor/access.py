@@ -10,7 +10,7 @@ TO DO sync instructor and staff flags
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,

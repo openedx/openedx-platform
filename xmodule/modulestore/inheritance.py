@@ -3,7 +3,7 @@ Support for inheritance of fields down an XBlock hierarchy.
 """
 
 
-import warnings
+import warnings  # noqa: I001
 from django.utils import timezone
 from xblock.core import XBlockMixin
 from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String, Timedelta

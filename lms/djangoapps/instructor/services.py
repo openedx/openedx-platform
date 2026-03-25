@@ -3,7 +3,7 @@ Implementation of "Instructor" service
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import gettext as _

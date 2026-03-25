@@ -2,7 +2,7 @@
 Models for External User Ids that are sent out of Open edX
 """
 
-import uuid as uuid_tools
+import uuid as uuid_tools  # noqa: I001
 from logging import getLogger
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

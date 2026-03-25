@@ -2,7 +2,7 @@
 Urls of Studio.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.conf.urls.static import static
 from django.contrib.admin import autodiscover as django_autodiscover
 from django.urls import include

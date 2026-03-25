@@ -6,7 +6,7 @@ you need models here, please import them inside the function which uses them.
 """
 
 
-import os
+import os  # noqa: I001
 import re
 from logging import getLogger
 

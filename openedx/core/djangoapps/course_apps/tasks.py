@@ -2,7 +2,7 @@
 This file contains celery tasks for course apps.
 """
 
-from celery import shared_task
+from celery import shared_task  # noqa: I001
 from celery.utils.log import get_task_logger
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey

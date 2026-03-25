@@ -4,7 +4,7 @@ forums, and to the cohort admin views.
 """
 
 
-import logging
+import logging  # noqa: I001
 import random
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

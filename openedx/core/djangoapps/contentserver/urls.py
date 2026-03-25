@@ -2,7 +2,7 @@
 URL patterns for course asset serving.
 """
 
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from . import views
 

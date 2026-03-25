@@ -1,7 +1,7 @@
 """
 Content Groups REST API v2 URLs
 """
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from openedx.core.constants import COURSE_ID_PATTERN
 from openedx.core.djangoapps.course_groups.rest_api import views

@@ -7,7 +7,7 @@ paths actually work.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import textwrap
 from collections import namedtuple

@@ -3,7 +3,7 @@ Tests for courseware middleware
 """
 
 
-from django.http import Http404
+from django.http import Http404  # noqa: I001
 from django.test.client import RequestFactory
 
 from lms.djangoapps.courseware.exceptions import Redirect

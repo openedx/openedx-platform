@@ -3,7 +3,7 @@
 Tests for user enrollment.
 """
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 import json
 from unittest.mock import patch

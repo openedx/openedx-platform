@@ -1,7 +1,7 @@
 """
 Defines the sharing sites for different social media platforms
 """
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from urllib.parse import urlencode

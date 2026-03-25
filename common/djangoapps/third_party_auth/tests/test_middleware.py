@@ -3,7 +3,7 @@ Tests for third party auth middleware
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.contrib.messages.middleware import MessageMiddleware
 from django.http import HttpResponse
 from django.test.client import RequestFactory

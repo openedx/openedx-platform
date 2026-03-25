@@ -3,7 +3,7 @@ Tests for lang_pref middleware.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from unittest import mock
 
 import ddt

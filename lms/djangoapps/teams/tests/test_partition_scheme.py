@@ -3,7 +3,7 @@ Test the partitions and partitions services. The partitions tested
 in this file are the following:
 - TeamPartitionScheme
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: I001
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory

@@ -6,7 +6,7 @@ pytest from looking for the conftest.py module in the parent directory when
 only running cms tests.
 """
 
-import logging
+import logging  # noqa: I001
 
 import pytest
 

@@ -3,7 +3,7 @@ Tests for Calendar Sync views.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from django.test import TestCase
 from django.urls import reverse
 

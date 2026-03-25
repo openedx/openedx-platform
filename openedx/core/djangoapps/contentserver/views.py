@@ -5,7 +5,7 @@ For historical reasons, this is just one view that matches to three different UR
 re-parse the URL to determine which pattern is in effect. We should probably
 have 3 views as entry points.
 """
-import datetime
+import datetime  # noqa: I001
 import logging
 
 from django.http import (

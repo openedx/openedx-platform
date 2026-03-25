@@ -7,7 +7,7 @@ functionalities.
 """
 
 
-import json
+import json  # noqa: I001
 import uuid
 
 from unittest import mock

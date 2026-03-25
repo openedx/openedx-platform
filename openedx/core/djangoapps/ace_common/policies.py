@@ -1,6 +1,6 @@
 """Disable User Email OptOut Policy"""
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from edx_ace.channel import ChannelType

@@ -3,7 +3,7 @@ This module provides an abstraction for Module Stores that support Draft and Pub
 """
 
 
-import logging
+import logging  # noqa: I001
 import threading
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager

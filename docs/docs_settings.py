@@ -4,7 +4,7 @@ Basically the LMS devstack settings plus a few items needed to successfully
 import all the Studio code.
 """
 
-from textwrap import dedent
+from textwrap import dedent  # noqa: I001
 import os
 
 from openedx.core.lib.derived import derive_settings

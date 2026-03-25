@@ -3,7 +3,7 @@ API for the gating djangoapp
 """
 
 
-import logging
+import logging  # noqa: I001
 from collections import defaultdict
 
 from opaque_keys.edx.keys import UsageKey

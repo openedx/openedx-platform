@@ -2,7 +2,7 @@
 Tests authz.py
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import pytest
 from ccx_keys.locator import CCXLocator

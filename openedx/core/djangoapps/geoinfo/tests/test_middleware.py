@@ -3,7 +3,7 @@ Tests for CountryMiddleware.
 """
 
 
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch  # noqa: I001
 
 import geoip2
 import maxminddb

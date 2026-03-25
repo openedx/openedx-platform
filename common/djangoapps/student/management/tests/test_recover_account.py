@@ -1,7 +1,7 @@
 """
 Test cases for recover account management command
 """
-import re
+import re  # noqa: I001
 from tempfile import NamedTemporaryFile
 import pytest
 

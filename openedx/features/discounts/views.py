@@ -5,7 +5,7 @@ The Discount API Views should return information about discounts that apply to t
 # -*- coding: utf-8 -*-
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.utils.decorators import method_decorator

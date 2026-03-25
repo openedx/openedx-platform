@@ -2,7 +2,7 @@
 Course certificates are created for a student and an offering of a course (a course run).
 """
 
-import json
+import json  # noqa: I001
 import logging
 import os
 import uuid

@@ -3,7 +3,7 @@ Management command to bulk update many user's email addresses
 """
 
 
-import csv
+import csv  # noqa: I001
 import logging
 from os import path
 

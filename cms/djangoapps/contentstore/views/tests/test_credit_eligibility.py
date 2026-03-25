@@ -3,7 +3,7 @@ Unit tests for credit eligibility UI in Studio.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from cms.djangoapps.contentstore import toggles

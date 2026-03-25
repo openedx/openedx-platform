@@ -2,7 +2,7 @@
 Signal handler for invalidating cached course overviews
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.db import transaction
 from django.db.models.signals import post_save

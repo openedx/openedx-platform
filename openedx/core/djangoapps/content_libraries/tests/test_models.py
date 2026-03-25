@@ -3,7 +3,7 @@ Unit tests for Content Libraries models.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.test import TestCase
 from django.test import RequestFactory

@@ -1,7 +1,7 @@
 """
 Management command to perform data migration for copying values between date fields of Schedule Model
 """
-import time
+import time  # noqa: I001
 
 from django.core.management.base import BaseCommand
 from django.db import transaction

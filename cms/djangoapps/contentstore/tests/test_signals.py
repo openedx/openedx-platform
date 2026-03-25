@@ -1,7 +1,7 @@
 """Tests for verifying availability of resources for locking"""
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import ddt
 

@@ -3,7 +3,7 @@ Tests for the force_publish management command
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.core.management import CommandError, call_command
 

@@ -4,7 +4,7 @@ Enrollment operations for use by instructor APIs.
 Does not include any access control, be sure to check access before calling.
 """
 
-import json
+import json  # noqa: I001
 import logging
 from contextlib import ExitStack, contextmanager
 from datetime import datetime

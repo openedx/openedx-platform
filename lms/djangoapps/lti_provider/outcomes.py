@@ -4,7 +4,7 @@ in LTI v1.1.
 """
 
 
-import logging
+import logging  # noqa: I001
 import uuid
 
 import requests

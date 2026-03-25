@@ -3,7 +3,7 @@ Asynchronous tasks for the CCX app.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from ccx_keys.locator import CCXLocator
 from django.dispatch import receiver

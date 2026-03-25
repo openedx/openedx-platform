@@ -3,7 +3,7 @@ Test the cancel_user_retirement_request management command
 """
 
 
-import pytest
+import pytest  # noqa: I001
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.management import CommandError, call_command

@@ -3,7 +3,7 @@ Tests for branding page
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import Mock, patch
 
 from django.conf import settings

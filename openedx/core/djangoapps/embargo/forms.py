@@ -3,7 +3,7 @@ Defines forms for providing validation of embargo admin details.
 """
 
 
-import ipaddress
+import ipaddress  # noqa: I001
 from django import forms
 from django.utils.translation import gettext as _
 from opaque_keys import InvalidKeyError

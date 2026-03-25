@@ -1,7 +1,7 @@
 """ Tests for the Calendar Sync models """
 
 
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import UserFactory  # noqa: I001
 from openedx.features.calendar_sync.models import UserCalendarSyncConfig
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order

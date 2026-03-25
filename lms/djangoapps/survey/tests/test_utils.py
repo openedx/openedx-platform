@@ -3,7 +3,7 @@ Python tests for the Survey models
 """
 
 
-from collections import OrderedDict
+from collections import OrderedDict  # noqa: I001
 
 from django.test.client import Client
 

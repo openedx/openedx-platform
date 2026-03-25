@@ -3,7 +3,7 @@ Module for checking permissions with the comment_client backend
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from edx_django_utils.cache import DEFAULT_REQUEST_CACHE
 from opaque_keys.edx.keys import CourseKey

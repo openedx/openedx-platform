@@ -3,7 +3,7 @@ Tests for comprehensive themes.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib import staticfiles
 from django.test import TestCase
 from django.urls import reverse

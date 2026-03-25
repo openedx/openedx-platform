@@ -1,7 +1,7 @@
 """
 Signal handlers for discussions events
 """
-import logging
+import logging  # noqa: I001
 from uuid import uuid4
 
 from django.db import transaction

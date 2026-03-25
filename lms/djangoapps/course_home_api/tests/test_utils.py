@@ -1,6 +1,6 @@
 """ Tests for course home api utils """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 from rest_framework.exceptions import PermissionDenied
 from unittest import mock
 

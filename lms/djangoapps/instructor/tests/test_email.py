@@ -6,7 +6,7 @@ that the view is conditionally available when Course Auth is turned on.
 """
 
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.tests.factories import AdminFactory

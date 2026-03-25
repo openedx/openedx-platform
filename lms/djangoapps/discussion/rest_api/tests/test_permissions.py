@@ -3,7 +3,7 @@ Tests for discussion API permission logic
 """
 
 
-import itertools
+import itertools  # noqa: I001
 
 import ddt
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

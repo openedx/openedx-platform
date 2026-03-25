@@ -3,7 +3,7 @@ This module contains various configuration settings via
 waffle switches for the notifications app.
 """
 
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag, WaffleFlag
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag, WaffleFlag  # noqa: I001
 
 WAFFLE_NAMESPACE = 'notifications'
 

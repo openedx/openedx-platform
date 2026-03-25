@@ -9,7 +9,7 @@ Note: it is important to retain the reference in the certificate table until
 the files have been deleted, because that reference is the files' identifying descriptor.
 """
 
-import logging
+import logging  # noqa: I001
 import shlex
 
 from django.contrib.auth import get_user_model

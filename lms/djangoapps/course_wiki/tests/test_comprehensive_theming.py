@@ -3,7 +3,7 @@ Tests for wiki middleware.
 """
 
 
-from unittest import skip
+from unittest import skip  # noqa: I001
 
 from django.test.client import Client
 from wiki.models import URLPath

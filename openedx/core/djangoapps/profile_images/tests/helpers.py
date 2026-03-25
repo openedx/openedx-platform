@@ -2,7 +2,7 @@
 Helper methods for use in profile image tests.
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import os
 from tempfile import NamedTemporaryFile
 

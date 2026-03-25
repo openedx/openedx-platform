@@ -4,7 +4,7 @@ existing data accordingly.
 """
 
 
-import os
+import os  # noqa: I001
 from io import StringIO
 
 from unittest import mock

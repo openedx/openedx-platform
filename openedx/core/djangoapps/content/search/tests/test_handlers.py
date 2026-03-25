@@ -1,7 +1,7 @@
 """
 Tests for the search index update handlers
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest.mock import MagicMock, patch
 
 from django.test import LiveServerTestCase, override_settings

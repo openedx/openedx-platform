@@ -2,7 +2,7 @@
 Tests for EmbargoMiddleware
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 from unittest import mock
 from unittest.mock import patch, MagicMock
 

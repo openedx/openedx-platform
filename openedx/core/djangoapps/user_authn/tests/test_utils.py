@@ -1,7 +1,7 @@
 """ Test User Authentication utilities """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 from urllib.parse import urlencode  # pylint: disable=import-error
 import ddt
 from django.test import TestCase

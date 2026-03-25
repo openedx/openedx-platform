@@ -6,7 +6,7 @@ https://github.com/openedx/edx-platform/issues/37637
 Only Studio-specfic helper functions should be added here.
 Platform-wide Python APIs should be added to an appropriate api.py file instead.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 import json
 import logging
 import pathlib

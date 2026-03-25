@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 
 from edx_toggles.toggles.testutils import override_waffle_flag

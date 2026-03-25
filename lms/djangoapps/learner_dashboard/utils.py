@@ -2,7 +2,7 @@
 The utility methods and functions to help the djangoapp logic
 """
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.roles import GlobalStaff

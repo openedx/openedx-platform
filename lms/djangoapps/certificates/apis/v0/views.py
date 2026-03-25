@@ -1,7 +1,7 @@
 """ API v0 views. """
 
 
-import logging
+import logging  # noqa: I001
 
 import edx_api_doc_tools as apidocs
 from django.contrib.auth import get_user_model

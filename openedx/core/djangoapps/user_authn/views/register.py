@@ -3,7 +3,7 @@ Registration related views.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 import logging
 

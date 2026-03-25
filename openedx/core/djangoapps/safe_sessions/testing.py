@@ -35,7 +35,7 @@ def safe_cookie_test_session_patch():
         session cookie with a freshly computed safe_cookie_data
         before returning.
         """
-        from django.conf import settings
+        from django.conf import settings  # noqa: I001
         from django.contrib.auth import SESSION_KEY
         from .middleware import SafeSessionMiddleware
 
@@ -58,7 +58,7 @@ def safe_cookie_test_session_patch():
         access the session_id before it's actually converted,
         we use a try-except clause here to check both cases.
         """
-        from django.apps import apps
+        from django.apps import apps  # noqa: I001
         from django.conf import settings
         from importlib import import_module
         from .middleware import SafeCookieData, SafeCookieError, SafeSessionMiddleware

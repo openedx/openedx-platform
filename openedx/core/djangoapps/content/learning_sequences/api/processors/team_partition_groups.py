@@ -1,7 +1,7 @@
 """
 Outline processors for applying team user partition groups.
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from typing import Dict
 

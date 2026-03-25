@@ -2,7 +2,7 @@
     Viewset for auth/saml/v0/providerconfig/
 """
 
-from rest_framework import routers
+from rest_framework import routers  # noqa: I001
 
 from .views import SAMLProviderConfigViewSet
 

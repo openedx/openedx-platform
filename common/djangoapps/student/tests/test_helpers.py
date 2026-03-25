@@ -1,6 +1,6 @@
 """ Test Student helpers """
 
-import logging
+import logging  # noqa: I001
 from unittest.mock import patch
 
 import ddt

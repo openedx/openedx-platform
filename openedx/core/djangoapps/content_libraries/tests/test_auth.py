@@ -3,7 +3,7 @@ Unit tests for Content Libraries authentication module.
 """
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 
 
 from ..models import LtiProfile

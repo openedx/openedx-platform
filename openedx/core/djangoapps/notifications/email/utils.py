@@ -1,7 +1,7 @@
 """
 Email Notifications Utils
 """
-import datetime
+import datetime  # noqa: I001
 
 from bs4 import BeautifulSoup
 from django.conf import settings

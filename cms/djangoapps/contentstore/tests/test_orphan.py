@@ -3,7 +3,7 @@ Test finding orphans via the view and django config
 """
 
 
-import json
+import json  # noqa: I001
 
 from opaque_keys.edx.locator import BlockUsageLocator
 

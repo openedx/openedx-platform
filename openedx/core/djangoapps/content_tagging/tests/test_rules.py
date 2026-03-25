@@ -1,6 +1,6 @@
 """Tests content_tagging rules-based permissions"""
 
-import ddt
+import ddt  # noqa: I001
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator

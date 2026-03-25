@@ -2,7 +2,7 @@
 Contains configuration for schedules app
 """
 
-from crum import get_current_request
+from crum import get_current_request  # noqa: I001
 from edx_toggles.toggles import WaffleFlag, WaffleSwitch
 
 from lms.djangoapps.experiments.flags import ExperimentWaffleFlag

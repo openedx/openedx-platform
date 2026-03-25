@@ -2,7 +2,7 @@
 """" Common utilities for comment client wrapper """
 
 
-import logging
+import logging  # noqa: I001
 
 import requests  # pylint: disable=unused-import
 from opaque_keys.edx.keys import CourseKey

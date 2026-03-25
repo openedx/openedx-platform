@@ -3,7 +3,7 @@ Tests for send_email_base_command
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest import skipUnless
 from unittest.mock import DEFAULT, Mock, patch
 

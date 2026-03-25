@@ -3,7 +3,7 @@ Fragment for rendering the course dates sidebar.
 """
 
 
-from django.template.loader import render_to_string
+from django.template.loader import render_to_string  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 

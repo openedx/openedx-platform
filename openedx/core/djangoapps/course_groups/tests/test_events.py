@@ -4,7 +4,7 @@ Test classes for the events sent in the cohort assignment process.
 Classes:
     CohortEventTest: Test event sent after cohort membership changes.
 """
-from openedx.core.djangoapps.course_groups.models import CohortMembership
+from openedx.core.djangoapps.course_groups.models import CohortMembership  # noqa: I001
 from unittest.mock import Mock  # lint-amnesty, pylint: disable=wrong-import-order
 
 from openedx_events.learning.data import CohortData, CourseData, UserData, UserPersonalData  # lint-amnesty, pylint: disable=wrong-import-order

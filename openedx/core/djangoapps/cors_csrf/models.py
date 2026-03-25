@@ -1,7 +1,7 @@
 """Models for cross-domain configuration. """
 
 
-from config_models.models import ConfigurationModel
+from config_models.models import ConfigurationModel  # noqa: I001
 from django.db import models
 
 from django.utils.translation import gettext_lazy as _

@@ -2,7 +2,7 @@
 Tests for `generate_and_store_apple_transfer_id` management command
 """
 
-import json
+import json  # noqa: I001
 
 from unittest import mock
 from django.core.management import call_command

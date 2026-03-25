@@ -7,7 +7,7 @@ not migrating so as not to inconvenience users by logging them all out.
 """
 
 
-from functools import wraps
+from functools import wraps  # noqa: I001
 from urllib.parse import urlencode
 
 from django.core import cache

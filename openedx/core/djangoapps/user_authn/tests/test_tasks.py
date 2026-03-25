@@ -3,7 +3,7 @@ Tests for the Sending activation email celery tasks
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test import TestCase
 from edx_ace.errors import ChannelError, RecoverableChannelDeliveryError
 from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order

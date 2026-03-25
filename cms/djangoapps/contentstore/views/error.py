@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import functools
+import functools  # noqa: I001
 
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseServerError
 

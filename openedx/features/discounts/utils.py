@@ -2,7 +2,7 @@
 Utility functions for working with discounts and discounted pricing.
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from zoneinfo import ZoneInfo
 from django.conf import settings

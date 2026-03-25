@@ -3,7 +3,7 @@ Tests for schedules resolvers
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import Mock
 
 import crum

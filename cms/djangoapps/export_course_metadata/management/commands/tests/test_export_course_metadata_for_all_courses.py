@@ -2,7 +2,7 @@
 Tests for exporting course metadata for all courses.
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from edx_toggles.toggles.testutils import override_waffle_flag
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

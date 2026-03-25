@@ -3,7 +3,7 @@ Tests for testing the modulestore settings migration code.
 """
 
 
-import copy
+import copy  # noqa: I001
 from unittest import TestCase
 
 import pytest

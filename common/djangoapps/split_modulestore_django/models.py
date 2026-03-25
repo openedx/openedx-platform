@@ -1,7 +1,7 @@
 """
 Django model to store the "course index" data
 """
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId  # noqa: I001
 from django.contrib.auth import get_user_model
 from django.db import models
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator

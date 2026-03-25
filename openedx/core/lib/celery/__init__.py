@@ -17,7 +17,7 @@ Python module system as a singleton loader. (This is an incremental improvement
 over older code, and there is probably a better mechanism to be had.)
 """
 
-from celery import Celery
+from celery import Celery  # noqa: I001
 
 # WARNING: Do not refer to this unless you are cms.celery or
 # lms.celery. See module docstring!

@@ -1,7 +1,7 @@
 """
 Tests for certificate generation
 """
-import ddt
+import ddt  # noqa: I001
 import logging  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest import mock, skipUnless  # lint-amnesty, pylint: disable=wrong-import-order
 

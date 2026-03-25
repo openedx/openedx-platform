@@ -3,7 +3,7 @@ Check that view authentication works properly.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 from unittest.mock import patch
 import pytz

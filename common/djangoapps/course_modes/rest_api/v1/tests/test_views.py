@@ -2,7 +2,7 @@
 Tests for the course modes API.
 """
 
-import json
+import json  # noqa: I001
 
 import ddt
 from django.urls import reverse

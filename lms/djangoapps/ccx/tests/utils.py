@@ -3,7 +3,7 @@ Test utils for CCX
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 import pytz
 from django.conf import settings

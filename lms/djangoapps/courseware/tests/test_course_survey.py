@@ -3,7 +3,7 @@ Python tests for the Survey workflows
 """
 
 
-from collections import OrderedDict
+from collections import OrderedDict  # noqa: I001
 from copy import deepcopy
 from urllib.parse import quote
 

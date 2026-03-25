@@ -3,7 +3,7 @@ Unit tests for user messages.
 """
 
 
-import warnings
+import warnings  # noqa: I001
 
 import ddt
 from django.contrib.messages.middleware import MessageMiddleware

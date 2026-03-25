@@ -3,7 +3,7 @@ Defines a form for providing validation of CourseEmail templates.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django import forms
 from django.core.exceptions import ValidationError

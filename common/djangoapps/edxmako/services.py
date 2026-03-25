@@ -1,7 +1,7 @@
 """
 Supports rendering an XBlock to HTML using mako templates.
 """
-from django.template import engines
+from django.template import engines  # noqa: I001
 from django.template.utils import InvalidTemplateEngineError
 from xblock.reference.plugins import Service
 

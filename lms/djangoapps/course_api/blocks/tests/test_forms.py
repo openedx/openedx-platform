@@ -3,7 +3,7 @@ Tests for Course Blocks forms
 """
 
 
-from urllib.parse import urlencode
+from urllib.parse import urlencode  # noqa: I001
 
 import ddt
 import pytest

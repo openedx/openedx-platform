@@ -3,7 +3,7 @@ Platform plugins to support course bookmarks.
 """
 
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from django.utils.translation import gettext as _
 
 from lms.djangoapps.courseware.permissions import EDIT_BOOKMARK

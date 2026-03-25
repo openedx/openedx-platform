@@ -3,7 +3,7 @@
 Implements the Problem XBlock, which is built on top of the CAPA subsystem.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import copy
 import datetime

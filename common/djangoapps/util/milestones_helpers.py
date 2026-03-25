@@ -1,7 +1,7 @@
 """
 Utility library for working with the edx-milestones app
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.utils.translation import gettext as _
 from edx_toggles.toggles import SettingToggle
 from milestones import api as milestones_api

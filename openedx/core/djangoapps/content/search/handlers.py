@@ -2,7 +2,7 @@
 Signal/event handlers for content search
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.db.models.signals import post_delete
 from django.dispatch import receiver

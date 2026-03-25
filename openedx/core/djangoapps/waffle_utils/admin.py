@@ -2,7 +2,7 @@
 Django admin page for waffle utils models
 """
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 
 from config_models.admin import KeyedConfigurationModelAdmin
 

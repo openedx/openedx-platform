@@ -4,7 +4,7 @@ Unit tests for SafeCookieData
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from time import time
 from unittest.mock import patch
 

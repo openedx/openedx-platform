@@ -3,7 +3,7 @@ Milestone related tests for the mobile_api
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from crum import set_current_request
 from django.conf import settings

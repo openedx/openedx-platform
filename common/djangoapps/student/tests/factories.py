@@ -1,7 +1,7 @@
 """Provides factories for student models."""
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 

@@ -4,7 +4,7 @@ These transfer identifiers are used in the event of migrating an app from one te
 """
 
 
-import logging
+import logging  # noqa: I001
 import requests
 import time
 

@@ -1,7 +1,7 @@
 """
 Unit tests for instructor API v2 endpoints.
 """
-import json
+import json  # noqa: I001
 from datetime import datetime
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode

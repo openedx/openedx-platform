@@ -3,7 +3,7 @@ Module contains various XModule/XBlock services
 """
 
 
-import inspect
+import inspect  # noqa: I001
 import logging
 from functools import partial
 from typing import TYPE_CHECKING

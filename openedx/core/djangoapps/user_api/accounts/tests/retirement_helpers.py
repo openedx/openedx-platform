@@ -3,7 +3,7 @@ Helpers for testing retirement functionality
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 import pytest
 from zoneinfo import ZoneInfo

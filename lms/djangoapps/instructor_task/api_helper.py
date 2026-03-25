@@ -6,7 +6,7 @@ and task submission logic, including handling the Celery backend.
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import json
 import logging
 

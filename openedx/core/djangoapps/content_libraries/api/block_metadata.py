@@ -1,7 +1,7 @@
 """
 Content libraries data classes related to XBlocks/Components.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 from dataclasses import dataclass
 
 from django.utils.translation import gettext as _

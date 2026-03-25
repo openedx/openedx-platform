@@ -1,7 +1,7 @@
 """
 Permissions for the instructor dashboard and associated actions
 """
-from bridgekeeper import perms
+from bridgekeeper import perms  # noqa: I001
 from bridgekeeper.rules import is_staff
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import PermissionDenied

@@ -1,7 +1,7 @@
 """
 Test the openedx_content-based XBlock runtime and content libraries together.
 """
-import json
+import json  # noqa: I001
 
 from completion.test_utils import CompletionWaffleTestMixin
 from django.db import connections, transaction

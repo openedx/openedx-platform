@@ -2,7 +2,7 @@
 Test cases for cache_programs command.
 """
 
-import json
+import json  # noqa: I001
 import pytest
 import httpretty
 from django.core.cache import cache

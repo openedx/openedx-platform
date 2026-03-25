@@ -5,7 +5,7 @@ course-run-specific date which will be displayed to the user.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 import crum
 from babel.dates import format_timedelta

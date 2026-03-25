@@ -1,7 +1,7 @@
 """
 Course Grade Factory Class
 """
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 from logging import getLogger
 
 from openedx.core.djangoapps.signals.signals import (

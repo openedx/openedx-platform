@@ -4,7 +4,7 @@ adding users, removing users, and listing members
 """
 
 
-import logging
+import logging  # noqa: I001
 from abc import ABCMeta, abstractmethod
 from collections import defaultdict
 from contextlib import contextmanager
@@ -430,7 +430,7 @@ class RoleBase(AccessRole):
         # silently ignores anonymous and inactive users so that any that are
         # legit get updated.
         from common.djangoapps.student.models import \
-            CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+            CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported  # noqa: I001
         for user in users:
             if user.is_authenticated and user.is_active:
                 CourseAccessRole.objects.get_or_create(

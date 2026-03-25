@@ -3,7 +3,7 @@ Provides a UserPartition driver for cohorts.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from lms.djangoapps.courseware.masquerade import (
     get_course_masquerade,

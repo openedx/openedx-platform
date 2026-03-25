@@ -3,7 +3,7 @@ Specific overrides to the base prod settings to make development easier.
 """
 
 
-import logging
+import logging  # noqa: I001
 from os.path import abspath, dirname, join
 
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
@@ -228,7 +228,7 @@ ENTERPRISE_BACKEND_SERVICE_EDX_OAUTH2_PROVIDER_URL = "http://edx.devstack.lms/oa
 #####################################################################
 
 # pylint: disable=wrong-import-order, wrong-import-position
-from edx_django_utils.plugins import add_plugins
+from edx_django_utils.plugins import add_plugins  # noqa: I001
 # pylint: disable=wrong-import-order, wrong-import-position
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 

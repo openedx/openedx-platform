@@ -2,7 +2,7 @@
 Django admin for Video Pipeline models.
 """
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 
 from config_models.admin import ConfigurationModelAdmin
 from openedx.core.djangoapps.video_config.admin import CourseSpecificEnabledFlagBaseAdmin

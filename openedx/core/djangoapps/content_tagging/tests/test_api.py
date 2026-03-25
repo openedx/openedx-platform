@@ -1,5 +1,5 @@
 """Tests for the Tagging models"""
-import io
+import io  # noqa: I001
 import os
 import tempfile
 import ddt

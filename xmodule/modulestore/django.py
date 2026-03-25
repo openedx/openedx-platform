@@ -4,7 +4,7 @@ Module that provides a connection to the ModuleStore specified in the django set
 Passes settings.MODULESTORE as kwargs to MongoModuleStore
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 from importlib import import_module
 import importlib.resources as resources
 import gettext
@@ -19,7 +19,7 @@ from django.conf import settings
 if not settings.configured:
     settings.configure()
 
-from django.contrib.staticfiles.storage import staticfiles_storage  # lint-amnesty, pylint: disable=wrong-import-position
+from django.contrib.staticfiles.storage import staticfiles_storage  # lint-amnesty, pylint: disable=wrong-import-position  # noqa: I001
 from django.core.cache import caches, InvalidCacheBackendError  # lint-amnesty, pylint: disable=wrong-import-position
 import django.dispatch  # lint-amnesty, pylint: disable=wrong-import-position
 import django.utils  # lint-amnesty, pylint: disable=wrong-import-position
@@ -40,7 +40,7 @@ from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
 
 # We also may not always have the current request user (crum) module available
 try:
-    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
+    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService  # noqa: I001
     from crum import get_current_user
 
     HAS_USER_SERVICE = True

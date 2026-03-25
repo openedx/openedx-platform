@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import copy
+import copy  # noqa: I001
 from collections import namedtuple
 
 from xblock.core import XBlockAside

@@ -3,7 +3,7 @@ URLs for static_template_view app
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path
 
 from lms.djangoapps.static_template_view import views

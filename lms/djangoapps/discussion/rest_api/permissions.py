@@ -1,7 +1,7 @@
 """
 Discussion API permission logic
 """
-from typing import Dict, Set, Union
+from typing import Dict, Set, Union  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions

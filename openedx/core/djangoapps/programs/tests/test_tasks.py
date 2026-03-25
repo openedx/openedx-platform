@@ -2,7 +2,7 @@
 Tests for programs celery tasks.
 """
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime, timedelta
 from unittest import mock

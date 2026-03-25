@@ -3,7 +3,7 @@ Tests of the LMS XBlock Runtime and associated utilities
 """
 
 
-from unittest.mock import Mock
+from unittest.mock import Mock  # noqa: I001
 from urllib.parse import urlparse
 
 from django.conf import settings

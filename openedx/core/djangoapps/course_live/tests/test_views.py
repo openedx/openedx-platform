@@ -1,7 +1,7 @@
 """
 Test for course live app views
 """
-import json
+import json  # noqa: I001
 import ddt
 from django.test import RequestFactory
 from django.urls import reverse

@@ -1,7 +1,7 @@
 """ Tests for Logistration views. """
 
 
-from http.cookies import SimpleCookie
+from http.cookies import SimpleCookie  # noqa: I001
 from urllib.parse import urlencode
 from unittest import mock
 

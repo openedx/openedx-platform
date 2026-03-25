@@ -1,7 +1,7 @@
 """
 Unit tests for /api/contentstore/v2/downstreams/* JSON APIs.
 """
-import json
+import json  # noqa: I001
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 

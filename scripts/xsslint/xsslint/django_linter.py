@@ -1,7 +1,7 @@
 """
 Classes for Django Template Linting.
 """
-import re
+import re  # noqa: I001
 from xsslint.utils import Expression, StringLines
 from xsslint.reporting import ExpressionRuleViolation
 

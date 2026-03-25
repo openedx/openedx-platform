@@ -3,7 +3,7 @@ SubsectionGrade Class
 """
 
 
-from abc import ABCMeta
+from abc import ABCMeta  # noqa: I001
 from collections import OrderedDict
 from datetime import datetime, timezone
 from logging import getLogger

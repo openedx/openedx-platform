@@ -3,7 +3,7 @@ Test for contentstore signals receiver
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 

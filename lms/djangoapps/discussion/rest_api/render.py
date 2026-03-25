@@ -4,7 +4,7 @@ Content rendering functionality
 Note that this module is designed to imitate the front end behavior as
 implemented in Markdown.Sanitizer.js.
 """
-import nh3
+import nh3  # noqa: I001
 import markdown
 
 ALLOWED_TAGS = nh3.ALLOWED_TAGS | {

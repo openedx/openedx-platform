@@ -1,7 +1,7 @@
 """
 Configure the django app
 """
-from django.apps import AppConfig
+from django.apps import AppConfig  # noqa: I001
 from edx_django_utils.plugins import PluginSettings
 from edx_django_utils.plugins import PluginURLs
 

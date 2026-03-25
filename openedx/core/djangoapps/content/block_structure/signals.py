@@ -2,7 +2,7 @@
 Signal handlers for invalidating cached data.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.dispatch.dispatcher import receiver

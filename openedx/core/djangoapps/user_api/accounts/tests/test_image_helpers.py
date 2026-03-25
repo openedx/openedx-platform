@@ -3,7 +3,7 @@ Tests for helpers.py
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import hashlib
 from unittest.mock import patch
 

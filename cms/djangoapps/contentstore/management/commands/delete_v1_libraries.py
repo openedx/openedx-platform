@@ -1,6 +1,6 @@
 """A Command to  delete V1 Content Libraries index entires."""
 
-import logging
+import logging  # noqa: I001
 from textwrap import dedent
 
 from django.core.management import BaseCommand, CommandError

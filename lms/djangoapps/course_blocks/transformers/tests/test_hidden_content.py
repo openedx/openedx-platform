@@ -3,7 +3,7 @@ Tests for HiddenContentTransformer.
 """
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 
 import ddt
 from django.utils.timezone import now

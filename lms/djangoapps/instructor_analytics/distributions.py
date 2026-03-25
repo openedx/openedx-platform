@@ -22,7 +22,7 @@ The distribution in a course for gender might look like:
 """
 
 
-from django.db.models import Count
+from django.db.models import Count  # noqa: I001
 
 from common.djangoapps.student.models import CourseEnrollment, UserProfile
 

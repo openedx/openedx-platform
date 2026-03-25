@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 from collections import defaultdict  # lint-amnesty, pylint: disable=unused-import

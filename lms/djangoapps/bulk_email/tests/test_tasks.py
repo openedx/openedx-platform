@@ -7,7 +7,7 @@ paths actually work.
 """
 
 
-import json  # lint-amnesty, pylint: disable=wrong-import-order
+import json  # lint-amnesty, pylint: disable=wrong-import-order  # noqa: I001
 from datetime import datetime
 from itertools import chain, cycle, repeat  # lint-amnesty, pylint: disable=wrong-import-order
 from smtplib import (  # lint-amnesty, pylint: disable=wrong-import-order

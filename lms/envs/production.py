@@ -15,7 +15,7 @@ https://github.com/openedx/edx-platform/blob/master/docs/decisions/0022-settings
 # pylint: disable=invalid-name
 
 
-import codecs
+import codecs  # noqa: I001
 import datetime
 import os
 

@@ -3,7 +3,7 @@ Django ORM model specifications for the User API application
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user  # noqa: I001
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete, post_save, pre_save

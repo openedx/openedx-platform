@@ -3,7 +3,7 @@ Tests for instructor_task/models.py.
 """
 
 
-import copy
+import copy  # noqa: I001
 import time
 from io import StringIO
 import pytest

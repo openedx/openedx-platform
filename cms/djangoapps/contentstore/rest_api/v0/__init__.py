@@ -2,7 +2,7 @@
 Views for v0 contentstore API.
 """
 
-from cms.djangoapps.contentstore.rest_api.v0.views.assets import (
+from cms.djangoapps.contentstore.rest_api.v0.views.assets import (  # noqa: I001
     AssetsCreateRetrieveView,
     AssetsUpdateDestroyView
 )

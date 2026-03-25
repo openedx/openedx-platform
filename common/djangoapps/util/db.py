@@ -4,7 +4,7 @@ Utility functions related to databases.
 """
 
 
-import random
+import random  # noqa: I001
 # TransactionManagementError used below actually *does* derive from the standard "Exception" class.
 # lint-amnesty, pylint: disable=bad-option-value, nonstandard-exception
 from contextlib import contextmanager

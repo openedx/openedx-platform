@@ -1,7 +1,7 @@
 """
 Helper functions for caching course assets.
 """
-from django.core.cache import caches
+from django.core.cache import caches  # noqa: I001
 from django.core.cache.backends.base import InvalidCacheBackendError
 from opaque_keys import InvalidKeyError
 

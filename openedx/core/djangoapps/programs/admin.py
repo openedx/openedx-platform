@@ -3,7 +3,7 @@ django admin pages for program support models
 """
 
 
-from config_models.admin import ConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin  # noqa: I001
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 

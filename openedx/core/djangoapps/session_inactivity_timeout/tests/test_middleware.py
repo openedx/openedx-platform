@@ -2,7 +2,7 @@
 Unit tests for SessionInactivityTimeout middleware.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch, call, ANY
 
 import ddt

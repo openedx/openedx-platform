@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest import TestCase
 
 import pytest

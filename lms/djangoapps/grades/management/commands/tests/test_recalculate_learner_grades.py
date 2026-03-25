@@ -3,7 +3,7 @@ Tests for recalculate_learner_grades management command.
 """
 
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile  # noqa: I001
 from unittest import mock
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory

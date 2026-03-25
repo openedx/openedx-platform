@@ -2,7 +2,7 @@
 Objects and utilities used to construct registration forms.
 """
 
-import copy
+import copy  # noqa: I001
 import logging
 import re
 from importlib import import_module

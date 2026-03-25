@@ -2,7 +2,7 @@
 Utility methods for the account settings.
 """
 
-import logging
+import logging  # noqa: I001
 import random
 import re
 import string

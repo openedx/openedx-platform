@@ -1,7 +1,7 @@
 """ Command line script to change credit course eligibility deadline. """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand

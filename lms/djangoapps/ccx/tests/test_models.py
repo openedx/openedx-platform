@@ -3,7 +3,7 @@ tests for the models
 """
 
 
-import json
+import json  # noqa: I001
 from datetime import datetime, timedelta
 
 import ddt

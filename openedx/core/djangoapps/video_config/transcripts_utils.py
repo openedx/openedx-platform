@@ -4,7 +4,7 @@ Utility functions for transcripts.
 """
 
 
-import copy
+import copy  # noqa: I001
 import html
 import logging
 import os

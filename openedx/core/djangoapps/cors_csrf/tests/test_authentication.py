@@ -1,7 +1,7 @@
 """Tests for the CORS CSRF version of Django Rest Framework's SessionAuthentication."""
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.middleware.csrf import get_token
 from django.test import TestCase

@@ -2,7 +2,7 @@
 Utils methods for Discussion app waffle flags.
 """
 
-from openedx.core.djangoapps.discussions.config.waffle import (
+from openedx.core.djangoapps.discussions.config.waffle import (  # noqa: I001
     ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
     OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
 )

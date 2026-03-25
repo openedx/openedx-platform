@@ -2,7 +2,7 @@
 The Discount API Views should return information about discounts that apply to the user and course.
 
 """
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest  # noqa: I001
 from django.utils.decorators import method_decorator
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser

@@ -3,7 +3,7 @@ Signal handler for setting default course mode expiration dates
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from crum import get_current_user
 from django.conf import settings

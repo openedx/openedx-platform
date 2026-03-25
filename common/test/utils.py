@@ -1,7 +1,7 @@
 """
 General testing utilities.
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 
 import functools

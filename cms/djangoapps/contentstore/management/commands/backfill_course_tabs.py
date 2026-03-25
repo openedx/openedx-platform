@@ -9,7 +9,7 @@ This should be invoked from the Studio process.
 Note: This command will not fail due to updates, but can encounter errors and will log those out.
 Search for the error message to detect any issues.
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand
 from xmodule.tabs import CourseTabList

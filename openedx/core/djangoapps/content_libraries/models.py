@@ -32,7 +32,7 @@ logic assume no relationship or impact across the two applications.  The same
 reasoning applies to steps beyond the data model, such as at the XBlock
 runtime, authentication, and score handling, etc.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import contextlib
 import logging

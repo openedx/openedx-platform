@@ -3,7 +3,7 @@ Contains tests for OAuth2 model-retirement methods.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 from django.test import TestCase
 from oauth2_provider.models import AccessToken as DOTAccessToken

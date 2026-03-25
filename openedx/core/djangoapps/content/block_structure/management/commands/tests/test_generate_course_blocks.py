@@ -2,7 +2,7 @@
 Tests for generate_course_blocks management command.
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import itertools
 import pytest

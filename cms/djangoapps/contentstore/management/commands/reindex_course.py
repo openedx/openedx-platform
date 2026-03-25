@@ -1,7 +1,7 @@
 """ Management command to update courses' search index """
 
 
-import logging
+import logging  # noqa: I001
 from textwrap import dedent
 from time import time
 from datetime import date, datetime

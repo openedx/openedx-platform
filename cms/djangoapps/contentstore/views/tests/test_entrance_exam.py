@@ -3,7 +3,7 @@ Test module for Entrance Exams AJAX callback handler workflows
 """
 
 
-import json
+import json  # noqa: I001
 
 from django.conf import settings
 from django.test import override_settings

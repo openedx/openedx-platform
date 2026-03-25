@@ -2,7 +2,7 @@
 Common utility functions related to courses.
 """
 
-from django import forms
+from django import forms  # noqa: I001
 from django.conf import settings
 from django.http import Http404
 

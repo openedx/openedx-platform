@@ -7,7 +7,7 @@ create_comment, update_thread, update_comment, and related helpers, by invoking 
 request objects.
 """
 
-import itertools
+import itertools  # noqa: I001
 import random
 from datetime import datetime, timedelta
 from unittest import mock

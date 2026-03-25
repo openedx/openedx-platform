@@ -2,7 +2,7 @@
 Tests for the Third Party Auth permissions
 """
 
-import ddt
+import ddt  # noqa: I001
 from django.test import RequestFactory, TestCase
 from edx_rest_framework_extensions.auth.jwt.tests.utils import generate_jwt
 from rest_framework.response import Response

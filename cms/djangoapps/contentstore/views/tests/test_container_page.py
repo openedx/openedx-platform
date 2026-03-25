@@ -3,7 +3,7 @@ Unit tests for the container page.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import re
 from unittest.mock import Mock, patch
 

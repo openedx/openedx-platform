@@ -2,7 +2,7 @@
 Authn API Views
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from rest_framework import status
 from rest_framework.response import Response

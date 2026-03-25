@@ -1,7 +1,7 @@
 """
 Tests for SAMLProviderConfig endpoints
 """
-import copy
+import copy  # noqa: I001
 import re
 from uuid import uuid4
 from django.urls import reverse

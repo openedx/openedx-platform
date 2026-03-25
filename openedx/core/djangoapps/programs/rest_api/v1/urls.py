@@ -2,7 +2,7 @@
 REST APIs for Programs.
 """
 
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from openedx.core.djangoapps.programs.rest_api.v1.views import (
     ProgramProgressDetailView,

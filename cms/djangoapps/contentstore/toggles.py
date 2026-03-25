@@ -1,7 +1,7 @@
 """
 CMS feature toggles.
 """
-from edx_toggles.toggles import SettingToggle, WaffleFlag
+from edx_toggles.toggles import SettingToggle, WaffleFlag  # noqa: I001
 from openedx.core.djangoapps.content.search import api as search_api
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

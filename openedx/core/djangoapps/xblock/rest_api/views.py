@@ -1,7 +1,7 @@
 """
 Views that implement a RESTful API for interacting with XBlocks.
 """
-import json
+import json  # noqa: I001
 from pathlib import Path
 
 from common.djangoapps.util.json_request import JsonResponse

@@ -3,7 +3,7 @@ URLs for the Studio API [Course Run]
 """
 
 
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import DefaultRouter  # noqa: I001
 
 from .views.course_runs import CourseRunViewSet
 

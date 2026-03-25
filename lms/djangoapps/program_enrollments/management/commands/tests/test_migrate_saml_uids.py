@@ -1,7 +1,7 @@
 """
 Tests for the migrate_saml_uids management command.
 """
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open, patch  # noqa: I001
 
 from django.core.management import call_command
 from django.test import TestCase

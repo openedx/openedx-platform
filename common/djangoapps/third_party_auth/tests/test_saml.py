@@ -2,7 +2,7 @@
 Unit tests for third_party_auth SAML auth providers
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.utils.datastructures import MultiValueDictKeyError
 from social_core.exceptions import AuthMissingParameter

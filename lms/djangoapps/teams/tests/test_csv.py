@@ -1,5 +1,5 @@
 """ Tests for the functionality in csv """
-from csv import DictReader, DictWriter
+from csv import DictReader, DictWriter  # noqa: I001
 from io import BytesIO, StringIO, TextIOWrapper
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.testing import EventTestMixin

@@ -2,7 +2,7 @@
 Slightly customized python-social-auth backend for SAML 2.0 support
 """
 
-import logging
+import logging  # noqa: I001
 from copy import deepcopy
 
 import requests

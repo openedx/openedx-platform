@@ -3,7 +3,7 @@ Script for force publishing a course
 """
 
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError  # noqa: I001
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 

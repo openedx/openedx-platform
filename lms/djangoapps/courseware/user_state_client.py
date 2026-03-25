@@ -4,7 +4,7 @@ data in a Django ORM model.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import logging
 from operator import attrgetter
 from time import time

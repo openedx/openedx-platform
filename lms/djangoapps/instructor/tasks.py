@@ -1,6 +1,6 @@
 """ Celery Tasks for the Instructor App. """
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from celery_utils.logged_task import LoggedTask

@@ -3,7 +3,7 @@ HTTP endpoints for the Teams API.
 """
 
 
-import logging
+import logging  # noqa: I001
 from collections import Counter
 
 from django.conf import settings

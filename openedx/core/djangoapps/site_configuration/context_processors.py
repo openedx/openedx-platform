@@ -3,7 +3,7 @@ Django template context processors.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from urllib.parse import quote_plus  # lint-amnesty, pylint: disable=wrong-import-order
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

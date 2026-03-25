@@ -3,7 +3,7 @@ Commerce views
 """
 
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urljoin
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

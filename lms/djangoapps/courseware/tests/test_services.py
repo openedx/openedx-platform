@@ -3,7 +3,7 @@ Tests for courseware services.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import json
 
 import ddt

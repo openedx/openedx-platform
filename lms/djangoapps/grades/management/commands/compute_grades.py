@@ -3,7 +3,7 @@ Command to compute all grades for specified courses.
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import logging
 
 from django.core.management.base import BaseCommand

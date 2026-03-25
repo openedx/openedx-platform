@@ -3,7 +3,7 @@ This command will be run by an ansible script.
 """
 
 
-import fnmatch
+import fnmatch  # noqa: I001
 import json
 import logging
 import os

@@ -2,7 +2,7 @@
 Tests the ``notify_credentials`` management command.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest import mock
 
 from django.core.management import call_command

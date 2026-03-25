@@ -3,7 +3,7 @@ Dashboard view and supporting methods
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from collections import defaultdict
 from zoneinfo import ZoneInfo

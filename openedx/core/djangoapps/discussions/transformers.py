@@ -2,7 +2,7 @@
 Discussions Topic Link Transformer
 """
 
-from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
+from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer  # noqa: I001
 from openedx.core.djangoapps.discussions.models import DiscussionTopicLink, DiscussionsConfiguration
 from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_topic_url
 

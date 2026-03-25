@@ -1,7 +1,7 @@
 """ API for the Calendar Sync Application """
 
 
-from .models import UserCalendarSyncConfig
+from .models import UserCalendarSyncConfig  # noqa: I001
 
 SUBSCRIBE = 'subscribe'
 UNSUBSCRIBE = 'unsubscribe'

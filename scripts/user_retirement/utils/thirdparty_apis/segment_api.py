@@ -1,7 +1,7 @@
 """
 Segment API call wrappers
 """
-import logging
+import logging  # noqa: I001
 import sys
 import traceback
 

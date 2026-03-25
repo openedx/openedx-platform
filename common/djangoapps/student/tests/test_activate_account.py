@@ -1,6 +1,6 @@
 """Tests for account activation"""
 
-import urllib.parse
+import urllib.parse  # noqa: I001
 from datetime import datetime
 from unittest.mock import patch
 from uuid import uuid4

@@ -2,7 +2,7 @@
 API utils in order to communicate to edx-video-pipeline.
 """
 
-import json
+import json  # noqa: I001
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist

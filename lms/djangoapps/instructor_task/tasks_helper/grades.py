@@ -2,7 +2,7 @@
 Functionality for generating grade reports.
 """
 
-import csv
+import csv  # noqa: I001
 import logging
 import re
 from collections import OrderedDict, defaultdict

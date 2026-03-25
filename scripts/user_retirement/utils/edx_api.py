@@ -2,7 +2,7 @@
 edX API classes which call edX service REST API endpoints using the edx-rest-api-client module.
 """
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urljoin
 
 import backoff

@@ -2,7 +2,7 @@
 Tests for Course API views.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from hashlib import md5
 from unittest import TestCase
 

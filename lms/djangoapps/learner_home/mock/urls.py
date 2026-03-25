@@ -1,6 +1,6 @@
 """Learner Home mock URL routing configuration"""
 
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from lms.djangoapps.learner_home.mock import mock_views
 

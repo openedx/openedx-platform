@@ -4,7 +4,7 @@ Test of custom django-oauth-toolkit behavior
 
 # pylint: disable=protected-access
 
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 
 from django.conf import settings
@@ -17,7 +17,7 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationAc
 
 # oauth_dispatch is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
-    from oauth2_provider import models as dot_models
+    from oauth2_provider import models as dot_models  # noqa: I001
 
     from .. import adapters
     from .. import models

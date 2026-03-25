@@ -1,7 +1,7 @@
 """Views for assets"""
 
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # noqa: I001
 from django.views.decorators.csrf import ensure_csrf_cookie
 from cms.djangoapps.contentstore.asset_storage_handlers import (
     handle_assets,

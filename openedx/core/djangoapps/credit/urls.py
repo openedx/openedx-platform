@@ -3,7 +3,7 @@ URLs for the credit app.
 """
 
 
-from django.urls import include, path, re_path
+from django.urls import include, path, re_path  # noqa: I001
 
 from openedx.core.djangoapps.credit import models, routers, views
 

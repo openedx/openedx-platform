@@ -2,7 +2,7 @@
 Test the various password reset flows
 """
 
-import json
+import json  # noqa: I001
 import re
 import unicodedata
 from datetime import datetime, timedelta

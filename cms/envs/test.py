@@ -13,7 +13,7 @@ sessions. Assumes structure:
 # pylint: disable=wildcard-import, unused-wildcard-import
 
 
-import os
+import os  # noqa: I001
 import tempfile
 
 from django.utils.translation import gettext_lazy

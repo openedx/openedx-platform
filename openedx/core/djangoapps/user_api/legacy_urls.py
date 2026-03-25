@@ -1,7 +1,7 @@
 """
 Defines the URL routes for this app.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path, include
 from django.views.generic import RedirectView
 from rest_framework import routers

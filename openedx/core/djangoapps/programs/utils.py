@@ -1,6 +1,6 @@
 """Helper functions for working with Programs."""
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from collections import defaultdict
 from copy import deepcopy

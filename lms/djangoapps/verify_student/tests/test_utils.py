@@ -3,7 +3,7 @@ Tests for verify_student utility functions.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from datetime import timedelta
 from unittest import mock
 from unittest.mock import patch

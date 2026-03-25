@@ -1,7 +1,7 @@
 """
 Various helpful utilities for ESG
 """
-from functools import wraps
+from functools import wraps  # noqa: I001
 import json
 
 from opaque_keys.edx.keys import UsageKey

@@ -3,7 +3,7 @@ Django REST Framework serializers for the User API Accounts sub-application
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import re
 

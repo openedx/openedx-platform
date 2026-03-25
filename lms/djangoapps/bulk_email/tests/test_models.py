@@ -2,7 +2,7 @@
 Unit tests for bulk-email-related models.
 """
 
-import datetime
+import datetime  # noqa: I001
 from dateutil.relativedelta import relativedelta
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
 

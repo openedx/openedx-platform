@@ -1,5 +1,5 @@
 """Tests for static_replace"""
-from functools import partial
+from functools import partial  # noqa: I001
 
 import re
 from io import BytesIO

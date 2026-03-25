@@ -2,7 +2,7 @@
     Middleware utilities
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 
 from crum import CurrentRequestUserMiddleware
 from django.http import HttpResponse

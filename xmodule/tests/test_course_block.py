@@ -1,7 +1,7 @@
 """Tests the course blocks and their functions"""
 
 
-import itertools
+import itertools  # noqa: I001
 import unittest
 from datetime import datetime, timedelta
 import sys

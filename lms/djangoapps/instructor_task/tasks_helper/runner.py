@@ -3,7 +3,7 @@ Instrutor Task runner
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from time import time
 

@@ -4,7 +4,7 @@ Base class for tests related to emitted events to one of the tracking 'views'
 """
 
 
-import json
+import json  # noqa: I001
 
 from unittest.mock import sentinel
 from django.test.client import RequestFactory

@@ -3,7 +3,7 @@ Storage backend for course import and export.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from common.djangoapps.util.storage import resolve_storage_backend
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import setting

@@ -3,7 +3,7 @@ Model specific tests for user_api
 """
 
 
-import pytest
+import pytest  # noqa: I001
 
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,

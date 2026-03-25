@@ -2,7 +2,7 @@
 API Views for course team management in support app.
 """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from opaque_keys.edx.keys import CourseKey

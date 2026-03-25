@@ -3,7 +3,7 @@ Experimentation serializers
 """
 
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from rest_framework import serializers
 
 from .models import ExperimentData, ExperimentKeyValue

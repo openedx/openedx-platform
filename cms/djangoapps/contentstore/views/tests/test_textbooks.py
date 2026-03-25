@@ -1,7 +1,7 @@
 """ Test cases for the textbook index page. """
 
 
-import json
+import json  # noqa: I001
 from unittest import TestCase
 
 

@@ -2,7 +2,7 @@
 Defines URLs for Survey Report.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from .views import SurveyReportView
 
 urlpatterns = [

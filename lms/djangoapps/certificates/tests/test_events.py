@@ -5,7 +5,7 @@ Classes:
     CertificateEventTest: Test event sent after creating, changing or deleting
     certificates.
 """
-from unittest.mock import Mock
+from unittest.mock import Mock  # noqa: I001
 
 from openedx_events.learning.data import CertificateData, CourseData, UserData, UserPersonalData
 from openedx_events.learning.signals import CERTIFICATE_CHANGED, CERTIFICATE_CREATED, CERTIFICATE_REVOKED

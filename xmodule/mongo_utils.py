@@ -3,7 +3,7 @@ Common MongoDB connection functions.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 import pymongo
 from pymongo.read_preferences import (  # lint-amnesty, pylint: disable=unused-import

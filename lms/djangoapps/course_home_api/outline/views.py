@@ -1,7 +1,7 @@
 """
 Outline Tab Views
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from functools import cached_property
 
 from completion.exceptions import UnavailableCompletionData  # lint-amnesty, pylint: disable=wrong-import-order

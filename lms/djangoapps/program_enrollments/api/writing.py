@@ -6,7 +6,7 @@ from `lms.djangoapps.program_enrollments.api`.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from requests.structures import CaseInsensitiveDict
 from simple_history.utils import bulk_create_with_history

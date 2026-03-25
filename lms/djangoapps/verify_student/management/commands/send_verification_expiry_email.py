@@ -3,7 +3,7 @@ Django admin command to send verification expiry email to learners
 """
 
 
-import logging
+import logging  # noqa: I001
 import time
 from datetime import timedelta
 

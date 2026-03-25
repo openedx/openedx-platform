@@ -3,7 +3,7 @@ Add and create new modes for running courses on this particular LMS
 """
 
 
-from collections import defaultdict, namedtuple
+from collections import defaultdict, namedtuple  # noqa: I001
 from datetime import timedelta
 import logging
 from config_models.models import ConfigurationModel

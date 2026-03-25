@@ -2,7 +2,7 @@
 Unit tests for course_goals djangoapp
 """
 
-import json
+import json  # noqa: I001
 import uuid
 from unittest import mock
 

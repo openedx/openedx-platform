@@ -1,7 +1,7 @@
 """ Helper methods for CourseModes. """
 
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urljoin
 
 from django.conf import settings

@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import base64
+import base64  # noqa: I001
 from datetime import datetime, timedelta
 from unittest import mock
 from unittest.mock import patch

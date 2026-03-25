@@ -7,7 +7,7 @@ Other Django apps should use the API functions defined here in this module; othe
 certificates models or any other certificates modules.
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 
 from django.contrib.auth import get_user_model

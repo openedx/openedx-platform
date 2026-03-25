@@ -4,7 +4,7 @@ consist primarily of authentication, request validation, and serialization.
 
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import (  # lint-amnesty, pylint: disable=wrong-import-order
     ObjectDoesNotExist,

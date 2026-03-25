@@ -3,7 +3,7 @@ Django management command for sending nudge emails to learners after they comple
 to complete possible next course from same program.
 """
 
-import logging
+import logging  # noqa: I001
 from collections import defaultdict
 from copy import deepcopy
 from datetime import timedelta

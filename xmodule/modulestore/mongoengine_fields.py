@@ -3,7 +3,7 @@ Custom field types for mongoengine
 """
 
 
-import mongoengine
+import mongoengine  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locations import Location

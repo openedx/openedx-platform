@@ -3,7 +3,7 @@ Class for manipulating groups configuration on a course object.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from collections import defaultdict
 

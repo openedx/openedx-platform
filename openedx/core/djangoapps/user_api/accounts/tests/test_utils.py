@@ -1,7 +1,7 @@
 """ Unit tests for custom UserProfile properties. """
 
 
-import ddt
+import ddt  # noqa: I001
 from completion import models
 from completion.test_utils import CompletionWaffleTestMixin
 from django.test import TestCase

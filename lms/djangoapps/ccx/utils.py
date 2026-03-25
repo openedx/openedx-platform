@@ -5,7 +5,7 @@ Does not include any access control, be sure to check access before calling.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from contextlib import contextmanager
 from smtplib import SMTPException

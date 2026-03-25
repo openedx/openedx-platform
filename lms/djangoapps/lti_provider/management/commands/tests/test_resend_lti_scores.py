@@ -3,7 +3,7 @@ Test lti_provider management commands.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey, UsageKey

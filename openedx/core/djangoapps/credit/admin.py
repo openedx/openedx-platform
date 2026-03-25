@@ -3,7 +3,7 @@ Django admin page for credit eligibility
 """
 
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 
 from openedx.core.djangoapps.credit.models import (
     CreditConfig,

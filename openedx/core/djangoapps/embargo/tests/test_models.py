@@ -1,7 +1,7 @@
 """Test of models for embargo app"""
 
 
-import json
+import json  # noqa: I001
 import pytest
 from django.db.utils import IntegrityError
 from django.test import TestCase

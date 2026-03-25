@@ -1,5 +1,5 @@
 """Management command to unsubscribe user's email in bulk on Braze."""
-import csv
+import csv  # noqa: I001
 import logging
 
 from django.core.management.base import BaseCommand, CommandError

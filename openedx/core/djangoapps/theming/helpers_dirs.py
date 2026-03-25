@@ -4,7 +4,7 @@ as the discovery happens during the initial setup of Django settings.
 """
 
 
-import os
+import os  # noqa: I001
 
 from path import Path
 from functools import lru_cache

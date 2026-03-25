@@ -1,6 +1,6 @@
 """HomePageCoursesViewV2 APIView for getting content available to the logged in user."""
 
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from collections import OrderedDict
 from rest_framework.response import Response
 from rest_framework.request import Request

@@ -2,7 +2,7 @@
 Test for survey report commands.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.grades.models import PersistentCourseGrade

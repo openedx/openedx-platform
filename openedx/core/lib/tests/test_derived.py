@@ -3,7 +3,7 @@ Tests for derived.py
 """
 
 
-import sys
+import sys  # noqa: I001
 from unittest import TestCase
 from openedx.core.lib.derived import Derived, derive_settings
 

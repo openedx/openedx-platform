@@ -1,7 +1,7 @@
 """
 URL configuration for the new XBlock API
 """
-from django.urls import include, path, re_path, register_converter
+from django.urls import include, path, re_path, register_converter  # noqa: I001
 from . import url_converters
 from . import views
 

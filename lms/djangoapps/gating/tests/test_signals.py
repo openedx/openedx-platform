@@ -3,7 +3,7 @@ Unit tests for gating.signals module
 """
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.gating.signals import evaluate_subsection_gated_milestones

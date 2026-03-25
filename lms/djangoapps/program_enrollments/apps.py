@@ -29,5 +29,5 @@ class ProgramEnrollmentsConfig(AppConfig):
         """
         Connect handlers to signals.
         """
-        from lms.djangoapps.program_enrollments import signals  # pylint: disable=unused-import
+        from lms.djangoapps.program_enrollments import signals  # pylint: disable=unused-import  # noqa: I001
         from lms.djangoapps.program_enrollments import tasks    # pylint: disable=unused-import

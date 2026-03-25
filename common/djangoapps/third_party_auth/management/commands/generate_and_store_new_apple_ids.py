@@ -4,7 +4,7 @@ user for new migrated team.
 """
 
 
-import logging
+import logging  # noqa: I001
 import requests
 import time
 

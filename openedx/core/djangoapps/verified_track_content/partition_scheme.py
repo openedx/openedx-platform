@@ -3,7 +3,7 @@ UserPartitionScheme for enrollment tracks.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey

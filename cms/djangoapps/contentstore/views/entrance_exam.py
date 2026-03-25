@@ -4,7 +4,7 @@ Intended to be utilized as an AJAX callback handler, versus a proper view/screen
 """
 
 
-import logging
+import logging  # noqa: I001
 from functools import wraps
 
 from django.conf import settings

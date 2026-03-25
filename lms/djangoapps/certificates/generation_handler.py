@@ -6,7 +6,7 @@ exists but its state can be altered). If so, a celery task is launched to do the
 cannot be generated, a message is logged and no further action is taken.
 """
 
-import logging
+import logging  # noqa: I001
 from django.conf import settings
 from openedx_filters.learning.filters import CertificateCreationRequested
 

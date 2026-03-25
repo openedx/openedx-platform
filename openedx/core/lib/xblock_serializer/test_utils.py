@@ -1,7 +1,7 @@
 """
 Test the OLX serialization utils
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 import unittest
 
 import ddt

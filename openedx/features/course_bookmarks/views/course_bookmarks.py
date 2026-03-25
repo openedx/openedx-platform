@@ -3,7 +3,7 @@ Views to show a course's bookmarks.
 """
 
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # noqa: I001
 from django.shortcuts import render
 from django.template.context_processors import csrf
 from django.template.loader import render_to_string

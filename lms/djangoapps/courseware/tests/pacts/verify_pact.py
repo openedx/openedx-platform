@@ -1,6 +1,6 @@
 """pact test for user service client"""
 
-import logging
+import logging  # noqa: I001
 import os
 
 from django.test import LiveServerTestCase

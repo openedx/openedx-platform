@@ -1,5 +1,5 @@
 """ API Views for proctored exam settings and proctoring error """
-import copy
+import copy  # noqa: I001
 
 from django.conf import settings
 import edx_api_doc_tools as apidocs

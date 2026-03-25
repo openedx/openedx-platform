@@ -1,7 +1,7 @@
 """
 Tests for the Studio content search REST API.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import functools
 from unittest.mock import ANY, MagicMock, Mock, patch

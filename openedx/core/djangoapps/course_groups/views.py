@@ -3,7 +3,7 @@ Views related to course groups functionality.
 """
 
 
-import logging
+import logging  # noqa: I001
 import re
 
 from django.contrib.auth.decorators import login_required

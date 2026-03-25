@@ -2,7 +2,7 @@
 Agreements API
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from typing import Iterator
 

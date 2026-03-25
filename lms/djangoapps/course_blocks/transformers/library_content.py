@@ -3,7 +3,7 @@ Content Library Transformer.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from eventtracking import tracker

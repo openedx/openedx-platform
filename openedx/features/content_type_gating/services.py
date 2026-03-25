@@ -1,7 +1,7 @@
 """
 Content Type Gating service.
 """
-import crum
+import crum  # noqa: I001
 
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import (

@@ -1,7 +1,7 @@
 """Tests for contents"""
 
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import Mock, patch
 
 import ddt

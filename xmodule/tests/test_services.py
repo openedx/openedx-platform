@@ -1,7 +1,7 @@
 """
 Tests for SettingsService
 """
-import unittest
+import unittest  # noqa: I001
 from unittest import TestCase, mock
 from unittest.mock import Mock, patch
 

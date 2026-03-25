@@ -3,7 +3,7 @@ Utility methods for the entitlement application.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.utils import timezone
 

@@ -1,7 +1,7 @@
 """
 View for course live app
 """
-from typing import Dict
+from typing import Dict  # noqa: I001
 
 import edx_api_doc_tools as apidocs
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication

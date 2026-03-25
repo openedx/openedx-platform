@@ -17,7 +17,7 @@ The resulting JSON object has one entry for each block in the course:
 """
 
 
-import json
+import json  # noqa: I001
 from textwrap import dedent
 
 from django.core.management.base import BaseCommand, CommandError

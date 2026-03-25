@@ -2,7 +2,7 @@
 Discussions feature toggles
 """
 
-from openedx.core.djangoapps.discussions.config.waffle import WAFFLE_FLAG_NAMESPACE
+from openedx.core.djangoapps.discussions.config.waffle import WAFFLE_FLAG_NAMESPACE  # noqa: I001
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 # .. toggle_name: discussions.enable_discussions_mfe

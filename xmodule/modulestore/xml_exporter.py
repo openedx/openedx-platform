@@ -3,7 +3,7 @@ Methods for exporting course data to XML
 """
 
 
-import logging
+import logging  # noqa: I001
 import os
 from abc import abstractmethod
 from json import dumps

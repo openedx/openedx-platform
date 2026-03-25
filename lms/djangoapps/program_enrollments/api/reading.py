@@ -5,7 +5,7 @@ Outside of this subpackage, import these functions
 from `lms.djangoapps.program_enrollments.api`.
 """
 
-import re
+import re  # noqa: I001
 from functools import reduce
 from operator import or_
 

@@ -1,7 +1,7 @@
 """
 LTI Providers for course live module
 """
-from abc import ABC
+from abc import ABC  # noqa: I001
 from typing import List, Dict
 from django.conf import settings
 

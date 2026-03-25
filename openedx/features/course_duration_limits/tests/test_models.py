@@ -2,7 +2,7 @@
 Tests of CourseDurationLimitConfig.
 """
 
-import itertools
+import itertools  # noqa: I001
 from datetime import datetime, timedelta
 from unittest.mock import Mock
 

@@ -2,7 +2,7 @@
 Creates Call to Actions for resetting a Personalized Learner Schedule for use inside of Courseware.
 """
 
-import logging
+import logging  # noqa: I001
 
 from crum import get_current_request
 

@@ -5,7 +5,7 @@ course level, such as available course modes.
 """
 
 
-import importlib
+import importlib  # noqa: I001
 import logging
 
 from django.conf import settings

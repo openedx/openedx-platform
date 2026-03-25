@@ -2,7 +2,7 @@
 Django Celery tasks for service status app
 """
 
-import logging
+import logging  # noqa: I001
 from smtplib import SMTPException
 
 import requests

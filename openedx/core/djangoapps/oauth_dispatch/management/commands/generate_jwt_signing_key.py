@@ -4,7 +4,7 @@ Management command for generating an asymmetric keypair to sign JSON Web Tokens.
 # pylint: disable=missing-docstring
 
 
-import json
+import json  # noqa: I001
 import logging
 import random
 import string

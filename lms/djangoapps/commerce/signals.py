@@ -2,7 +2,7 @@
 Signal handling functions for use with external commerce service.
 """
 
-import logging
+import logging  # noqa: I001
 
 from crum import get_current_request
 from django.contrib.auth.models import AnonymousUser

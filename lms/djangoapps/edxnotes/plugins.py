@@ -1,7 +1,7 @@
 """
 Registers the "edX Notes" feature for the edX platform.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

@@ -2,7 +2,7 @@
 Additional utilities for Learner Home
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model

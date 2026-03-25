@@ -2,7 +2,7 @@
 Survey Report models.
 """
 
-import uuid
+import uuid  # noqa: I001
 
 from django.db import models
 from jsonfield import JSONField

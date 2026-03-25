@@ -2,7 +2,7 @@
 Defines URLs for course bookmarks.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from .views.course_bookmarks import CourseBookmarksFragmentView, CourseBookmarksView
 
 urlpatterns = [

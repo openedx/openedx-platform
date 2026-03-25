@@ -3,7 +3,7 @@ Instructor tasks related to enrollments.
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from time import time
 from pytz import UTC

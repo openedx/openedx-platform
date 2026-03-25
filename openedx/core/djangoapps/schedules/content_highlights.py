@@ -4,7 +4,7 @@ schedule experience built on the Schedules app.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from openedx.core.djangoapps.course_date_signals.utils import spaced_out_sections
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist
@@ -131,7 +131,7 @@ def _get_course_block(course_descriptor, user):
     # Adding courseware imports here to insulate other apps (e.g. schedules) to
     # avoid import errors.
     # TODO remove the LMS dependency https://github.com/openedx/edx-platform/issues/37659
-    from lms.djangoapps.courseware.model_data import FieldDataCache
+    from lms.djangoapps.courseware.model_data import FieldDataCache  # noqa: I001
     from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 
     # Fake a request to fool parts of the courseware that want to inspect it.

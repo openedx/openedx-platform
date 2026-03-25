@@ -1,5 +1,5 @@
 """ Tasks for sending notification to ace push channel """
-from celery.utils.log import get_task_logger
+from celery.utils.log import get_task_logger  # noqa: I001
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from edx_ace import ace

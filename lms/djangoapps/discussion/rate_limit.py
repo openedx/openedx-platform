@@ -1,7 +1,7 @@
 """
 Contains all code related to rate limit
 """
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from django.conf import settings
 from django_ratelimit import ALL
 from django_ratelimit.core import is_ratelimited as _ratelimit

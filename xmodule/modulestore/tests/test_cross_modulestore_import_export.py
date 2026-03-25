@@ -13,7 +13,7 @@ and then for each combination of modulestores, performing the sequence:
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import os
 from shutil import rmtree
 from tempfile import mkdtemp

@@ -2,7 +2,7 @@
 Waffle flags for instructor dashboard.
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 
 # Namespace for instructor waffle flags.

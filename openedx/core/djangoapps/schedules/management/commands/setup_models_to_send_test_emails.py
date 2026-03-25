@@ -3,7 +3,7 @@ A managment command that can be used to set up Schedules with various configurat
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from textwrap import dedent
 
 import factory

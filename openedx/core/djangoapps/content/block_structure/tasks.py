@@ -3,7 +3,7 @@ Asynchronous tasks related to the Course Blocks sub-application.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from django.conf import settings

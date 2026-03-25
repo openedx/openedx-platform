@@ -12,7 +12,7 @@ file and check it in at the same time as your model changes. To do that,
 ASSUMPTIONS: modules have unique IDs, even across different module_types
 
 """
-import csv
+import csv  # noqa: I001
 import hashlib
 import json
 import logging

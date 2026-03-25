@@ -3,7 +3,7 @@ Tests for openedx.core.djangolib.translation_utils
 """
 
 
-import unittest
+import unittest  # noqa: I001
 
 import datetime
 import ddt

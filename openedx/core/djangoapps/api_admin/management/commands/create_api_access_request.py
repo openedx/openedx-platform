@@ -1,7 +1,7 @@
 """ Management command to create an ApiAccessRequest for given users """
 
 
-import logging
+import logging  # noqa: I001
 from contextlib import contextmanager
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

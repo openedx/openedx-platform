@@ -3,7 +3,7 @@ Tests for the fix_not_found management command
 """
 
 
-from django.core.management import CommandError, call_command
+from django.core.management import CommandError, call_command  # noqa: I001
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

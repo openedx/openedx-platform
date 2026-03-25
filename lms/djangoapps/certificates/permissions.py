@@ -2,7 +2,7 @@
 Permission definitions for the certificates djangoapp
 """
 
-from bridgekeeper import perms
+from bridgekeeper import perms  # noqa: I001
 
 from lms.djangoapps.courseware.rules import HasAccessRule
 

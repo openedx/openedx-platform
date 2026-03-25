@@ -7,7 +7,7 @@ without needing to manually re-link their account.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from io import open as py3_open
 from textwrap import dedent

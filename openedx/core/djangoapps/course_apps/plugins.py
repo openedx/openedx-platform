@@ -1,7 +1,7 @@
 """
 Course Apps plugin base class and plugin manager.
 """
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional  # noqa: I001
 
 from abc import ABC, abstractmethod
 from edx_django_utils.plugins import PluginManager

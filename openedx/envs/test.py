@@ -4,7 +4,7 @@ Common test related Django settings for Open edX services.
 Shared test values between the LMS and CMS should be declared here when possible
 rather than duplicated or imported accross services.
 """
-import os
+import os  # noqa: I001
 from path import Path as path
 from uuid import uuid4
 

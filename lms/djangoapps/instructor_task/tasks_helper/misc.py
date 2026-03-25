@@ -5,7 +5,7 @@ running state of a course.
 """
 
 
-import csv
+import csv  # noqa: I001
 import logging
 from collections import OrderedDict
 from contextlib import contextmanager

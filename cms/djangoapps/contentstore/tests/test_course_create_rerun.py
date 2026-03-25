@@ -3,7 +3,7 @@ Test view handler for rerun (and eventually create)
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from itertools import product
 from unittest import mock
 

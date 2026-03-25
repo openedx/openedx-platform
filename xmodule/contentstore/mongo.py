@@ -3,7 +3,7 @@ MongoDB/GridFS-level code for the contentstore.
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import json
 import os
 

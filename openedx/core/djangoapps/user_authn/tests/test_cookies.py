@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-from datetime import date, datetime
+from datetime import date, datetime  # noqa: I001
 import json
 from pytz import UTC
 from unittest.mock import MagicMock, patch

@@ -10,7 +10,7 @@ The following internal data structures are implemented:
 """
 
 
-from copy import deepcopy
+from copy import deepcopy  # noqa: I001
 from functools import partial
 from logging import getLogger
 

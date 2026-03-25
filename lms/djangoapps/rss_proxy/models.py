@@ -1,7 +1,7 @@
 """
 Models for the rss_proxy djangoapp.
 """
-from django.db import models
+from django.db import models  # noqa: I001
 
 from model_utils.models import TimeStampedModel
 

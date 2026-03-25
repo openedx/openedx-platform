@@ -11,7 +11,7 @@ file and check it in at the same time as your model changes. To do that,
 3. Add the migration file created in edx-platform/common/djangoapps/student/migrations/
 """
 
-import hashlib
+import hashlib  # noqa: I001
 import json
 import logging
 import uuid

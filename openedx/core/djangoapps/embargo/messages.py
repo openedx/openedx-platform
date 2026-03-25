@@ -5,7 +5,7 @@ from either enrolling in or accessing a course.
 
 """
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 BlockedMessage = namedtuple('BlockedMessage', [
     # A user-facing description of the message

@@ -1,7 +1,7 @@
 """
 Tests for the LTI provider views
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: I001
 
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase

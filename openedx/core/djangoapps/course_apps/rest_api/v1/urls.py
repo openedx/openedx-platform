@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from openedx.core.constants import COURSE_ID_PATTERN
 from .views import CourseAppsView

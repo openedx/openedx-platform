@@ -4,7 +4,7 @@ Returns statically authored JSON data
 """
 # pylint: disable=line-too-long
 
-import json
+import json  # noqa: I001
 from os import path
 
 from rest_framework.response import Response

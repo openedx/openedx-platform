@@ -1,7 +1,7 @@
 """
 Tests of the instructor dashboard spoc gradebook
 """
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 
 from xblocks_contrib.problem.capa.tests.response_xml_factory import StringResponseXMLFactory
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory

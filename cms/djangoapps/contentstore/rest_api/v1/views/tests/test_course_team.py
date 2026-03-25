@@ -1,7 +1,7 @@
 """
 Unit tests for course team.
 """
-import ddt
+import ddt  # noqa: I001
 from django.urls import reverse
 from rest_framework import status
 

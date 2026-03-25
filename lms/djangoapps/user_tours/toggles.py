@@ -2,7 +2,7 @@
 Toggles for the User Tours Experience.
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 # .. toggle_name: user_tours.tours_disabled
 # .. toggle_implementation: WaffleFlag

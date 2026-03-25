@@ -1,7 +1,7 @@
 """
 Serializers for use in the support app.
 """
-import json
+import json  # noqa: I001
 
 from rest_framework import serializers
 

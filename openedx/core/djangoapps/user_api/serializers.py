@@ -3,7 +3,7 @@ Django REST Framework serializers for the User API application
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user  # noqa: I001
 from rest_framework import serializers
 
 from lms.djangoapps.verify_student.models import (

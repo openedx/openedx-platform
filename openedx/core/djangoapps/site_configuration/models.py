@@ -3,7 +3,7 @@ Django models for site configurations.
 """
 
 
-import collections
+import collections  # noqa: I001
 from logging import getLogger
 
 from django.contrib.sites.models import Site

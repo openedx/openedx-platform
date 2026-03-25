@@ -3,7 +3,7 @@ Django admin dashboard configuration for Video XModule.
 """
 
 
-from config_models.admin import ConfigurationModelAdmin, KeyedConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin, KeyedConfigurationModelAdmin  # noqa: I001
 from django.contrib import admin
 
 from openedx.core.djangoapps.video_config.forms import (

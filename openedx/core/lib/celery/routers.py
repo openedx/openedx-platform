@@ -4,7 +4,7 @@ Custom routers used by both lms and cms when routing tasks to worker queues.
 For more, see https://celery.readthedocs.io/en/latest/userguide/routing.html#routers
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 

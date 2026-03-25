@@ -1,7 +1,7 @@
 """Helper methods for CORS and CSRF checks. """
 
 
-import contextlib
+import contextlib  # noqa: I001
 import logging
 import urllib.parse
 

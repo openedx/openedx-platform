@@ -3,7 +3,7 @@ Tests i18n in courseware
 """
 
 
-import json
+import json  # noqa: I001
 import re
 
 from django.conf import settings

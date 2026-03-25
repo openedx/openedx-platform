@@ -2,7 +2,7 @@
 Defines URLs for Calendar Sync.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from .views.calendar_sync import CalendarSyncView
 
 urlpatterns = [

@@ -1,7 +1,7 @@
 """Defines ``Group`` and ``UserPartition`` models for partitioning"""
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 from stevedore.extension import ExtensionManager
 

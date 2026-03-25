@@ -2,7 +2,7 @@
 Audience based filters for notifications and Notification filters
 """
 
-from abc import abstractmethod
+from abc import abstractmethod  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 

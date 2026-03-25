@@ -1,7 +1,7 @@
 """URLs for API access management."""
 
 
-from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.admin.views.decorators import staff_member_required  # noqa: I001
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path, re_path
 

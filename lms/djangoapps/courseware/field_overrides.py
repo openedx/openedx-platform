@@ -16,7 +16,7 @@ by `authored_data`, e.g. course content and settings stored in Mongo.
 """
 
 
-import threading
+import threading  # noqa: I001
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 

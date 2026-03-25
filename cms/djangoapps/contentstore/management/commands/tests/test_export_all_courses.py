@@ -3,7 +3,7 @@ Test for export all courses.
 """
 
 
-import shutil
+import shutil  # noqa: I001
 from tempfile import mkdtemp
 from unittest import skip
 

@@ -1,6 +1,6 @@
 """ Views related to auth. """
 
-import json
+import json  # noqa: I001
 from common.djangoapps.util.json_request import JsonResponse
 from django.conf import settings
 

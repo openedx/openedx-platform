@@ -2,7 +2,7 @@
 This file contains celery tasks for sending email
 """
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError

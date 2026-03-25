@@ -2,7 +2,7 @@
 Admin site configurations for verify_student.
 """
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 
 from lms.djangoapps.verify_student.models import (
     ManualVerification,

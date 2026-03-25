@@ -1,7 +1,7 @@
 """Tests for course run serializers"""
 
 
-import datetime
+import datetime  # noqa: I001
 import ddt
 import pytz
 from django.test import RequestFactory

@@ -2,7 +2,7 @@
 Views for course info API
 """
 
-import logging
+import logging  # noqa: I001
 from typing import Dict, List, Optional, Union
 
 import django

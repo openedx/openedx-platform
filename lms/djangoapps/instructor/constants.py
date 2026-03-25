@@ -1,7 +1,7 @@
 """
 Constants used by Instructor.
 """
-from enum import StrEnum
+from enum import StrEnum  # noqa: I001
 
 # this is the UserPreference key for the user's recipient invoice copy
 INVOICE_KEY = 'pref-invoice-copy'

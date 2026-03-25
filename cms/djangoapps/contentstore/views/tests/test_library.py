@@ -5,7 +5,7 @@ More important high-level tests are in contentstore/tests/test_libraries.py
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import patch
 
 import ddt

@@ -3,7 +3,7 @@ Test the ability to export courses to xml from studio
 """
 
 
-import copy
+import copy  # noqa: I001
 import os
 import shutil
 import subprocess

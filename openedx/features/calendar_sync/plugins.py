@@ -3,7 +3,7 @@ Platform plugins to support Calendar Sync toggle.
 """
 
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from django.utils.translation import gettext as _
 
 from openedx.features.calendar_sync.api import SUBSCRIBE, UNSUBSCRIBE

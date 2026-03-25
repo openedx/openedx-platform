@@ -4,7 +4,7 @@ recommender system
 """
 
 
-import codecs
+import codecs  # noqa: I001
 import itertools
 import unittest
 from copy import deepcopy

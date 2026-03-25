@@ -6,7 +6,7 @@ This API is exposed via the middleware(emabargo/middileware.py) layer but may be
 
 """
 
-import logging
+import logging  # noqa: I001
 from typing import List, Optional
 
 from django.conf import settings

@@ -3,7 +3,7 @@ Unit tests for the Mixed Modulestore, with DDT for the various stores (Split, Dr
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 import logging
 import mimetypes

@@ -6,7 +6,7 @@ If student does not yet answered - `num_inputs` numbers of text inputs.
 If student have answered - words he entered and cloud.
 """
 
-from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
+from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock  # noqa: I001
 
 import json
 import logging

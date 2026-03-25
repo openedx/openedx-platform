@@ -1,7 +1,7 @@
 """
 Tests for the milestones helpers library, which is the integration point for the edx_milestones API
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 import pytest

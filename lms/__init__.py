@@ -11,7 +11,7 @@ registration and discovery can work correctly.
 #
 # FWIW, this is identical behavior to what happens in Kombu if pkg_resources
 # isn't available.
-import kombu.utils
+import kombu.utils  # noqa: I001
 kombu.utils.entrypoints = lambda namespace: iter([])
 
 # This will make sure the app is always imported when Django starts so

@@ -3,7 +3,7 @@
 Script to process pytest warnings output by pytest-json-report plugin and output it as a html
 """
 
-import argparse
+import argparse  # noqa: I001
 import io  # lint-amnesty, pylint: disable=unused-import
 import itertools
 import json

@@ -1,7 +1,7 @@
 """Handle events that were forwarded from the Segment webhook integration"""
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from dateutil import parser

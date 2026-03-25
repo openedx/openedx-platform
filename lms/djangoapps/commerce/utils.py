@@ -1,7 +1,7 @@
 """Utilities to assist with commerce tasks."""
 
 
-import json
+import json  # noqa: I001
 import logging
 from urllib.parse import urlencode, urljoin
 

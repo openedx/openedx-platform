@@ -1,7 +1,7 @@
 """
 Configure URL endpoints for the djangoapp
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 
 from .views import (

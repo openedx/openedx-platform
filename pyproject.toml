@@ -213,7 +213,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "W"]
+select = ["E", "W", "I"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (pylint enforces this at 120 chars while ignoring trailing comments)
@@ -226,11 +226,9 @@ ignore = [
     "E721",  # use `isinstance()` for type comparisons
 ]
 
-[tool.isort]
-indent = "    "
-line_length = 120
-multi_line_output = 3
-skip = ["envs", "migrations"]
+[tool.ruff.lint.isort]
+# match previous [tool.isort] behavior
+lines-after-imports = 2
 
 [tool.importlinter]
 root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog"]

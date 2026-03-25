@@ -3,7 +3,7 @@ Tests of Zendesk interaction utility functions
 """
 
 
-import json
+import json  # noqa: I001
 from collections import OrderedDict
 
 from unittest.mock import MagicMock, patch

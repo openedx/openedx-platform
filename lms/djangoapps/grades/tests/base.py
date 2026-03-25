@@ -3,7 +3,7 @@ Base file for Grades tests
 """
 
 
-from crum import set_current_request
+from crum import set_current_request  # noqa: I001
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 

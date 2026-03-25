@@ -8,7 +8,7 @@ Part of https://github.com/openedx/edx-platform/issues/36275.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import time
 from unittest import mock
 from urllib.parse import quote_plus, unquote

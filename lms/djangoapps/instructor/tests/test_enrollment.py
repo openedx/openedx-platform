@@ -3,7 +3,7 @@ Unit tests for instructor.enrollment methods.
 """
 
 
-import json
+import json  # noqa: I001
 from abc import ABCMeta
 from unittest.mock import patch
 

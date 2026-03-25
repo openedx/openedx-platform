@@ -4,7 +4,7 @@ Helper functions for logic related to learning (courseare & course home) URLs.
 Centralized in openedx/features/course_experience instead of lms/djangoapps/courseware
 because the Studio course outline may need these utilities.
 """
-from typing import Optional
+from typing import Optional  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

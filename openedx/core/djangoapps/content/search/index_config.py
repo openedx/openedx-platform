@@ -1,5 +1,5 @@
 """Configuration for the search index."""
-from .documents import Fields
+from .documents import Fields  # noqa: I001
 
 
 INDEX_DISTINCT_ATTRIBUTE = "usage_key"

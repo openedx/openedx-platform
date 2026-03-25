@@ -3,7 +3,7 @@ Code used to calculate learner grades.
 """
 
 
-import abc
+import abc  # noqa: I001
 import inspect
 import logging
 import random

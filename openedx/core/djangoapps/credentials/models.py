@@ -3,7 +3,7 @@ Models for credentials support for the LMS and Studio.
 """
 
 
-from urllib.parse import urljoin  # pylint: disable=import-error
+from urllib.parse import urljoin  # pylint: disable=import-error  # noqa: I001
 
 from config_models.models import ConfigurationModel
 from django.conf import settings

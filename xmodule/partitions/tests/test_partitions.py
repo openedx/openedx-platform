@@ -4,7 +4,7 @@ Test the partitions and partitions service
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest.mock import Mock
 
 import pytest

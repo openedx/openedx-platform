@@ -3,7 +3,7 @@ Tests for views/tools.py.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 import unittest
 from unittest import mock

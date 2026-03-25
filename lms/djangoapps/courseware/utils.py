@@ -1,7 +1,7 @@
 """Utility functions that have to do with the courseware."""
 
 
-import datetime
+import datetime  # noqa: I001
 import hashlib
 import logging
 from bs4 import BeautifulSoup

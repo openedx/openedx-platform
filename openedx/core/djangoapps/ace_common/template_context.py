@@ -2,7 +2,7 @@
 Context dictionary for templates that use the ace_common base template.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import NoReverseMatch, reverse
 
 from lms.djangoapps.branding.api import get_logo_url_for_email

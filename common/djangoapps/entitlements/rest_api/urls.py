@@ -2,7 +2,7 @@
 URLs file for the Entitlements API.
 """
 
-from django.urls import include
+from django.urls import include  # noqa: I001
 from django.urls import path
 
 app_name = 'entitlements'

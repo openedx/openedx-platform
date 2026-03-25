@@ -6,7 +6,7 @@ A fix has been included in the retirement pipeline to properly purge this data d
 used to purge PII from accounts that have already been retired.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand

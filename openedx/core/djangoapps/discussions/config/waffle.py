@@ -2,7 +2,7 @@
 This module contains various configuration settings via
 waffle switches for the discussions app.
 """
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag  # noqa: I001
 
 WAFFLE_FLAG_NAMESPACE = "discussions"
 

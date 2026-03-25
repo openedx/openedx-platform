@@ -6,7 +6,7 @@ apply them to the appropriate events.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 import six  # lint-amnesty, pylint: disable=unused-import

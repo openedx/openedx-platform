@@ -2,7 +2,7 @@
 Mixins for JWT auth tests.
 """
 
-from time import time
+from time import time  # noqa: I001
 
 from django.conf import settings
 import jwt

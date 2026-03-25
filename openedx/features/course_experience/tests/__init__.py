@@ -2,7 +2,7 @@
 Common test code for course_experience, like shared base classes.
 """
 
-from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models import CourseEnrollment  # noqa: I001
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.courses import get_course_info_usage_key
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order

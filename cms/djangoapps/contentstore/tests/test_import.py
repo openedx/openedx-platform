@@ -4,7 +4,7 @@ Tests for import_course_from_xml using the mongo modulestore.
 """
 
 
-import copy
+import copy  # noqa: I001
 from unittest import skip
 from unittest.mock import patch
 from uuid import uuid4

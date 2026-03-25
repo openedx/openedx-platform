@@ -1,7 +1,7 @@
 """Views for assets"""
 
 
-import json
+import json  # noqa: I001
 import logging
 import math
 import re

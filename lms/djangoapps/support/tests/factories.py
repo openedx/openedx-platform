@@ -1,5 +1,5 @@
 """ Factories for course reset models """
-import factory
+import factory  # noqa: I001
 from factory.django import DjangoModelFactory
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 

@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for courseware views.
 """
-from django.http import HttpResponse
+from django.http import HttpResponse  # noqa: I001
 from django.test import override_settings
 from django.urls import reverse
 from openedx_filters import PipelineStep

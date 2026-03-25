@@ -20,7 +20,7 @@ below::
 """
 
 
-import inspect
+import inspect  # noqa: I001
 import warnings
 from importlib import import_module
 

@@ -3,7 +3,7 @@ Blocks API Transformer
 """
 
 
-from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer
+from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer  # noqa: I001
 
 from .block_counts import BlockCountsTransformer
 from .block_depth import BlockDepthTransformer

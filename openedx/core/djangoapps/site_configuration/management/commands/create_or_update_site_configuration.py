@@ -2,7 +2,7 @@
 Create or updates the SiteConfiguration for a site.
 """
 
-import codecs
+import codecs  # noqa: I001
 import json
 import logging
 

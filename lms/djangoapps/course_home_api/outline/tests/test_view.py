@@ -2,7 +2,7 @@
 Tests for Outline Tab API in the Course Home API
 """
 
-import itertools
+import itertools  # noqa: I001
 import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch

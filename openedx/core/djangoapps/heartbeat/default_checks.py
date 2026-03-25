@@ -5,7 +5,7 @@ Other checks should be included in their respective modules/djangoapps
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from time import sleep, time
 
 from django.conf import settings

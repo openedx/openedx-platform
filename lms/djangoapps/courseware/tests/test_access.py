@@ -3,7 +3,7 @@ Test the access control framework
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 
 from unittest.mock import Mock, patch

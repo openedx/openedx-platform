@@ -1,7 +1,7 @@
 """
 Test the retire_one_learner.py script
 """
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, patch  # noqa: I001
 
 from click.testing import CliRunner
 

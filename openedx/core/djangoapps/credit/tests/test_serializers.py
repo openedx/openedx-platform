@@ -1,6 +1,6 @@
 """ Tests for Credit API serializers. """
 
-import pytest
+import pytest  # noqa: I001
 from django.test import TestCase
 from rest_framework.exceptions import PermissionDenied
 

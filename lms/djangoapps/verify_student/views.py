@@ -2,7 +2,7 @@
 Views for the verification flow
 """
 
-import decimal
+import decimal  # noqa: I001
 import json
 import logging
 import urllib

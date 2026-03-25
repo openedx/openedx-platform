@@ -2,7 +2,7 @@
 API Serializers for content tagging org
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from rest_framework import serializers, fields
 

@@ -2,7 +2,7 @@
 Tests of experiment functionality
 """
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from decimal import Decimal
 from unittest import TestCase
 

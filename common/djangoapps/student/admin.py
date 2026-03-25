@@ -1,7 +1,7 @@
 """ Django admin pages for student app """
 
 
-from functools import wraps
+from functools import wraps  # noqa: I001
 from dal_select2.views import Select2ListView
 from dal_select2.widgets import ListSelect2
 from django_countries import countries

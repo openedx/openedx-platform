@@ -2,7 +2,7 @@
 Feature toggles used for effort estimation.
 """
 
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag  # noqa: I001
 
 
 WAFFLE_FLAG_NAMESPACE = 'effort_estimation'

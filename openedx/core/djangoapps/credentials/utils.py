@@ -1,6 +1,6 @@
 """Helper functions for working with Credentials."""
 
-import logging
+import logging  # noqa: I001
 from typing import Dict, List
 from urllib.parse import urljoin
 

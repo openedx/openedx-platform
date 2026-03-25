@@ -2,7 +2,7 @@
 URLs for the Agreements API
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path, include
 from rest_framework.routers import DefaultRouter
 

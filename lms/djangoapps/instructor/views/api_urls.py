@@ -3,7 +3,7 @@
 Instructor API endpoint urls.
 """
 
-from django.urls import path, re_path
+from django.urls import path, re_path  # noqa: I001
 
 from lms.djangoapps.instructor.views import api, gradebook_api, api_v2
 from openedx.core.constants import COURSE_ID_PATTERN

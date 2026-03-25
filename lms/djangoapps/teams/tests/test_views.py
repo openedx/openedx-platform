@@ -2,7 +2,7 @@
 Tests for the teams API at the HTTP request level.
 """
 
-import json
+import json  # noqa: I001
 import unittest
 from datetime import datetime
 from unittest.mock import patch

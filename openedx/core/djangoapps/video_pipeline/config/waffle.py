@@ -3,7 +3,7 @@ This module contains configuration settings via waffle flags
 for the Video Pipeline app.
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

@@ -1,7 +1,7 @@
 """
 Tests for wiki course app.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.conf import settings
 

@@ -3,7 +3,7 @@ Unittests for exporting to git via management command.
 """
 
 
-import copy
+import copy  # noqa: I001
 import os
 import shutil
 import subprocess

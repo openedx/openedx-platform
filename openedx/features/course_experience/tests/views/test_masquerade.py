@@ -2,7 +2,7 @@
 Tests for masquerading functionality on course_experience
 """
 
-from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
+from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin  # noqa: I001
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order

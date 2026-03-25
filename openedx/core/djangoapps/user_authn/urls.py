@@ -1,6 +1,6 @@
 """ URLs for User Authentication """
 
-from django.urls import include, path
+from django.urls import include, path  # noqa: I001
 
 from .views import auth, login, login_form
 

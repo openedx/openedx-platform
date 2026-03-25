@@ -3,7 +3,7 @@ Models for bulk email
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 

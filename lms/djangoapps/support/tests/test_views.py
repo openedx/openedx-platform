@@ -2,7 +2,7 @@
 Tests for support views.
 """
 
-import itertools
+import itertools  # noqa: I001
 import json
 import re
 from datetime import datetime, timedelta

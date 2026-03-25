@@ -1,4 +1,4 @@
-from urllib.parse import urljoin
+from urllib.parse import urljoin  # noqa: I001
 
 import responses
 

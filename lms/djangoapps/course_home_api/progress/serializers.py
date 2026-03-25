@@ -1,7 +1,7 @@
 """
 Progress Tab Serializers
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse

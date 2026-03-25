@@ -1,7 +1,7 @@
 """
 Tests for the python api for course apps.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import Mock
 
 import ddt

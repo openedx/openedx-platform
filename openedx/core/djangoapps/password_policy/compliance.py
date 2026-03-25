@@ -2,7 +2,7 @@
 Utilities for enforcing and tracking compliance with password policy rules.
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from zoneinfo import ZoneInfo
 from django.conf import settings

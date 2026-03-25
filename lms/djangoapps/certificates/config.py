@@ -2,7 +2,7 @@
 This module contains various configuration settings via
 waffle switches for the Certificates app.
 """
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 # Namespace
 WAFFLE_NAMESPACE = 'certificates'

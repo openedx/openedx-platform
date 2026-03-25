@@ -5,7 +5,7 @@ Integration tests for submitting problem responses and getting grades.
 # pylint: disable=attribute-defined-outside-init
 
 
-import json
+import json  # noqa: I001
 import os
 from datetime import datetime
 from textwrap import dedent

@@ -3,7 +3,7 @@ Test user retirement methods
 """
 
 
-import json
+import json  # noqa: I001
 
 import ddt
 import pytest

@@ -1,7 +1,7 @@
 """ Views related to logout. """
 
 
-import re
+import re  # noqa: I001
 import urllib.parse as parse  # pylint: disable=import-error
 from urllib.parse import parse_qs, urlsplit, urlunsplit  # pylint: disable=import-error
 

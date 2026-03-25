@@ -3,7 +3,7 @@ Test for split test XModule
 """
 
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock  # noqa: I001
 from django.urls import reverse
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory

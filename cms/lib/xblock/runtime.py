@@ -2,7 +2,7 @@
 XBlock runtime implementations for edX Studio
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.urls import reverse
 

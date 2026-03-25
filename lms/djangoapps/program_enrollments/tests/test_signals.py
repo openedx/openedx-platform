@@ -3,7 +3,7 @@ Test signal handlers for program_enrollments
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 import pytest

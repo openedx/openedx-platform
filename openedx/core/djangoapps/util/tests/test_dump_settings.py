@@ -6,7 +6,7 @@ settings files themselves. Remember that tests only run with (lms,cms)/envs/test
 which are based on (lms,cms)/envs/common.py, so these tests will not execute any of the
 YAML-loading or post-processing defined in (lms,cms)/envs/production.py.
 """
-import json
+import json  # noqa: I001
 
 from django.core.management import call_command
 

@@ -4,7 +4,7 @@ Tests for OAuth token exchange forms
 """
 
 
-import unittest
+import unittest  # noqa: I001
 
 import httpretty
 import social_django.utils as social_utils

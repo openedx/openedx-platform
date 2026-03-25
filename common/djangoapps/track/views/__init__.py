@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import json
+import json  # noqa: I001
 import six
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

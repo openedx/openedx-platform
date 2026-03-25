@@ -1,7 +1,7 @@
 """
 Signal handler for setting default course verification dates
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save

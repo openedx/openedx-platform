@@ -1,7 +1,7 @@
 """
 Code related to LTI course tab functionality.
 """
-from typing import Dict
+from typing import Dict  # noqa: I001
 from urllib.parse import quote
 
 from django.contrib.auth.models import AbstractBaseUser

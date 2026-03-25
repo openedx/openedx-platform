@@ -2,7 +2,7 @@
 Management command to recover learners accounts
 """
 
-import logging
+import logging  # noqa: I001
 from os import path
 import unicodecsv
 

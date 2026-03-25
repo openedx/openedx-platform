@@ -1,7 +1,7 @@
 """
 Tests for `backfill_course_outlines` Studio (cms) management command.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from django.core.management import call_command

@@ -2,7 +2,7 @@
 Serializers for the Agreements app
 """
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from openedx.core.djangoapps.agreements.models import (
     IntegritySignature, LTIPIISignature, UserAgreement,

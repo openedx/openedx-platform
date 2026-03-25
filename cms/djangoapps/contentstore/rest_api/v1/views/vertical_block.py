@@ -1,6 +1,6 @@
 """ API Views for unit page """
 
-import logging
+import logging  # noqa: I001
 
 import edx_api_doc_tools as apidocs
 from django.http import HttpResponseBadRequest, HttpResponsePermanentRedirect

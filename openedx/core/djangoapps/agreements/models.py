@@ -2,7 +2,7 @@
 Agreements models
 """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.db import models
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField

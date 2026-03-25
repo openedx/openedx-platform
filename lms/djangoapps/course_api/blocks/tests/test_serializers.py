@@ -3,7 +3,7 @@ Tests for Course Blocks serializers
 """
 
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock  # noqa: I001
 
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory

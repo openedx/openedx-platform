@@ -2,7 +2,7 @@
 Tests for the course updates page.
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from django.urls import reverse
 from zoneinfo import ZoneInfo

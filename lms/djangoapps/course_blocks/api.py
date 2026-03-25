@@ -4,7 +4,7 @@ get_course_blocks function.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from edx_when import field_data
 
 from lms.djangoapps.course_api.blocks.transformers.block_completion import BlockCompletionTransformer

@@ -1,5 +1,5 @@
 """Main module."""
-import hashlib
+import hashlib  # noqa: I001
 
 
 RETIRED_USERNAME_DEFAULT_FMT = 'retired_username_{}'

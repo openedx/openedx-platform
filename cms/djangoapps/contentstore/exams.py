@@ -2,7 +2,7 @@
 Code related to working with the exam service
 """
 
-import logging
+import logging  # noqa: I001
 
 import requests
 from django.conf import settings

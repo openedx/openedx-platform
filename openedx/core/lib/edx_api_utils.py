@@ -1,7 +1,7 @@
 """Helper functions to get data from APIs"""
 
 
-import logging
+import logging  # noqa: I001
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 

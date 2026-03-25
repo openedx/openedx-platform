@@ -1,5 +1,5 @@
 """ Unit tests for SplitModulestoreCourseIndex """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from bson.objectid import ObjectId
 from django.db import IntegrityError, transaction

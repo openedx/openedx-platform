@@ -2,7 +2,7 @@
 Tests for the Unit XBlock
 """
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import patch
 from xml.etree import ElementTree
 

@@ -2,7 +2,7 @@
 Tests for toggles, where there is logic beyond enable/disable.
 """
 
-import ddt
+import ddt  # noqa: I001
 from django.test import override_settings, TestCase
 
 from lms.djangoapps.branding.toggles import use_catalog_mfe

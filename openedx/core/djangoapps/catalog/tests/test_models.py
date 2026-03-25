@@ -1,7 +1,7 @@
 """Catalog model tests."""
 
 
-import ddt
+import ddt  # noqa: I001
 
 from django.test import override_settings
 

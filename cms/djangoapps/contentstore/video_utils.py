@@ -3,7 +3,7 @@ Utils related to the videos.
 """
 
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urljoin
 
 import requests

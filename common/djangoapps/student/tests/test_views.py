@@ -3,7 +3,7 @@ Test the student dashboard view.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import json
 import unittest
 from datetime import datetime, timedelta  # lint-amnesty, pylint: disable=unused-import

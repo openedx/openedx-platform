@@ -1,7 +1,7 @@
 """
 Discussion API views
 """
-import logging
+import logging  # noqa: I001
 import uuid
 
 import edx_api_doc_tools as apidocs

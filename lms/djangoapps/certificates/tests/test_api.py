@@ -1,6 +1,6 @@
 """Tests for the certificates Python API. """
 
-import uuid
+import uuid  # noqa: I001
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest import mock

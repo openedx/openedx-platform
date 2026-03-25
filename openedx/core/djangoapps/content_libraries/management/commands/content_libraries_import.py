@@ -2,7 +2,7 @@
 Command to import modulestore content into Content Libraries.
 """
 
-import argparse
+import argparse  # noqa: I001
 import logging
 
 from django.conf import settings

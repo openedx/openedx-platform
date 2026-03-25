@@ -2,7 +2,7 @@
 Tests for triggering a Jenkins job.
 """
 
-import json
+import json  # noqa: I001
 import re
 import unittest
 from itertools import islice

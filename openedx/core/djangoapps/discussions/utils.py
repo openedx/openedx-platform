@@ -1,7 +1,7 @@
 """
 Shared utility code related to discussions.
 """
-import logging
+import logging  # noqa: I001
 from typing import Dict, List, Optional, Tuple
 
 from opaque_keys.edx.keys import CourseKey

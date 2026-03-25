@@ -3,7 +3,7 @@ Test the Data Aggregation Layer for Course Enrollments.
 
 """
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 
 import ddt

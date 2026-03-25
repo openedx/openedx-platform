@@ -1,6 +1,6 @@
 """ Tests for setting and displaying the site status message. """
 
-import ddt
+import ddt  # noqa: I001
 from django.conf import settings
 from django.core.cache import cache
 from django.test import TestCase

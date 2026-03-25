@@ -5,7 +5,7 @@ Management command to sync platform users with hubspot
 """
 
 
-import json
+import json  # noqa: I001
 import time
 import traceback
 import urllib.parse  # pylint: disable=import-error

@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-from unittest.mock import patch, sentinel
+from unittest.mock import patch, sentinel  # noqa: I001
 
 import ddt
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

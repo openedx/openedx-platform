@@ -1,7 +1,7 @@
 """
 Simple data structures used for XBlock serialization
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 from typing import NamedTuple
 
 

@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for models/views in the student app.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.http import HttpResponse
 from django.test import override_settings
 from django.urls import reverse

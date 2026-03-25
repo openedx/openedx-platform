@@ -1,7 +1,7 @@
 """
 Tests for (some of) the view utilities.
 """
-from django.test.utils import override_settings
+from django.test.utils import override_settings  # noqa: I001
 from django.urls import re_path
 from rest_framework.response import Response
 from rest_framework.test import APITestCase

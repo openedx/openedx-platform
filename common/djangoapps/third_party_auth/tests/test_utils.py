@@ -2,7 +2,7 @@
 Tests for third_party_auth utility functions.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import MagicMock
 
 import ddt

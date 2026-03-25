@@ -2,7 +2,7 @@
 Tests for account linking Python API.
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from uuid import uuid4
 
 import ddt

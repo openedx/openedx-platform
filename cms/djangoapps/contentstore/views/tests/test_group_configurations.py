@@ -3,7 +3,7 @@ Group Configuration Tests.
 """
 
 
-import json
+import json  # noqa: I001
 from operator import itemgetter
 from unittest.mock import patch
 from edx_toggles.toggles.testutils import override_waffle_flag

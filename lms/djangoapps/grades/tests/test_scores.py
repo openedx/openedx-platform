@@ -3,7 +3,7 @@ Tests for grades.scores module.
 """
 
 # pylint: disable=protected-access
-import itertools
+import itertools  # noqa: I001
 from collections import namedtuple
 import pytest
 

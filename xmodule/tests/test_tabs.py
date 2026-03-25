@@ -1,7 +1,7 @@
 """
 Tests for CourseTabsListTestCase.
 """
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 import ddt
 
 from xmodule.tabs import CourseTabList, InvalidTabsException

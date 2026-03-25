@@ -3,7 +3,7 @@ Test module to test the discussion enabled flag.
 """
 
 
-import json
+import json  # noqa: I001
 
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 

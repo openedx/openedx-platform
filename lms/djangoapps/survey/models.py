@@ -3,7 +3,7 @@ Models to support Course Surveys feature
 """
 
 
-import logging
+import logging  # noqa: I001
 from collections import OrderedDict
 
 from django.core.exceptions import ValidationError

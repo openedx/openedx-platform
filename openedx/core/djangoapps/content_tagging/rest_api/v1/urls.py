@@ -2,7 +2,7 @@
 Taxonomies API v1 URLs.
 """
 
-from django.urls.conf import include, path
+from django.urls.conf import include, path  # noqa: I001
 from openedx_tagging.rest_api.v1 import views as oel_tagging_views
 from openedx_tagging.rest_api.v1 import views_import as oel_tagging_views_import
 from openedx_tagging.rest_api.v1.views import ObjectTagCountsView

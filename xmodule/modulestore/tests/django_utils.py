@@ -3,7 +3,7 @@ Modulestore configuration for test cases.
 """
 
 
-import copy
+import copy  # noqa: I001
 import functools
 import os
 from contextlib import contextmanager

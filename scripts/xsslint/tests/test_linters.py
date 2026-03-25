@@ -3,7 +3,7 @@ Tests for linters.py
 """
 
 
-import textwrap
+import textwrap  # noqa: I001
 from unittest import TestCase
 
 from ddt import data, ddt

@@ -1,7 +1,7 @@
 """Models for API management."""
 
 
-import logging
+import logging  # noqa: I001
 from smtplib import SMTPException
 from urllib.parse import urlunsplit
 

@@ -3,7 +3,7 @@ Tests of student.roles
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from unittest.mock import patch
 from django.contrib.auth.models import Permission
 from django.test import TestCase
@@ -69,7 +69,7 @@ class RolesTestCase(TestCase):
         This simulates the one-time database seeding that would happen
         during application deployment, separate from the runtime policy loading.
         """
-        import pkg_resources
+        import pkg_resources  # noqa: I001
         from openedx_authz.engine.utils import migrate_policy_between_enforcers
         import casbin
 

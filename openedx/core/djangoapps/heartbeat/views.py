@@ -3,7 +3,7 @@ Views for verifying the health (heartbeat) of the app.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from common.djangoapps.util.json_request import JsonResponse
 

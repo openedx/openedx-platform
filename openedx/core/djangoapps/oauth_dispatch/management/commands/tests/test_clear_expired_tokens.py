@@ -2,7 +2,7 @@
 Tests the ``edx_clear_expired_tokens`` management command.
 """
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest.mock import patch
 
 import math

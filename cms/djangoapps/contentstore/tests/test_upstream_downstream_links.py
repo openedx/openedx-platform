@@ -2,7 +2,7 @@
 Tests for upstream downstream tracking links.
 """
 
-from io import StringIO
+from io import StringIO  # noqa: I001
 from uuid import uuid4
 
 from django.core.management import call_command

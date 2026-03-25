@@ -13,7 +13,7 @@ HOWEVER, those assumptions may loosen in the future. So, we consider these to be
 INTERNAL ASSUMPIONS that should not be exposed through this module's public
 Python interface.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 import typing as t

@@ -1,7 +1,7 @@
 # Default xsslint config module.
 
 
-from xsslint.linters import (
+from xsslint.linters import (  # noqa: I001
     JavaScriptLinter, MakoTemplateLinter,
     PythonLinter, UnderscoreTemplateLinter,
     DjangoTemplateLinter

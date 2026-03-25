@@ -2,7 +2,7 @@
 Tests for Django management commands
 """
 
-import datetime
+import datetime  # noqa: I001
 import json
 from io import StringIO
 

@@ -1,7 +1,7 @@
 """
 Test some of the functions in url_helpers
 """
-import ddt
+import ddt  # noqa: I001
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings

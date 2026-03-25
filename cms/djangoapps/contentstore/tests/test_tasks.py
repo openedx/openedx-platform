@@ -1,7 +1,7 @@
 """
 Unit tests for course import and export Celery tasks
 """
-import copy
+import copy  # noqa: I001
 import json
 import logging
 from unittest import mock

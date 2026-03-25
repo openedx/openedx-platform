@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 import factory
 from zoneinfo import ZoneInfo

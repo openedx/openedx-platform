@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring,unused-argument
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from config_models.models import ConfigurationModel

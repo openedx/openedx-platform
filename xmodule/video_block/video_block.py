@@ -13,7 +13,7 @@ Examples of html5 videos for manual testing:
 """
 
 
-import copy
+import copy  # noqa: I001
 import json
 import logging
 import warnings

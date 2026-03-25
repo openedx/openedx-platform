@@ -2,7 +2,7 @@
 Django model specifications for the Program Enrollments API
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.db import models

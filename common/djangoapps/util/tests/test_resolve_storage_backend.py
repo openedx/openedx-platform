@@ -2,7 +2,7 @@
 Tests for the resolve_storage_backend function in common.djangoapps.util.storage.
 """
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from django.test.utils import override_settings
 from unittest.mock import patch, MagicMock
 

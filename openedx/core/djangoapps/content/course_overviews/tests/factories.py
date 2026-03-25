@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 import json
 
 from django.utils import timezone

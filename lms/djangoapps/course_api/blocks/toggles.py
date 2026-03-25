@@ -3,7 +3,7 @@ Toggles for Course API.
 """
 
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 COURSE_BLOCKS_API_NAMESPACE = 'course_blocks_api'
 

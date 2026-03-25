@@ -6,7 +6,7 @@ allows us to share code between the XModuleMixin and CourseOverview and
 BlockStructure.
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from logging import getLogger
 from markupsafe import Markup
 

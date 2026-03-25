@@ -3,7 +3,7 @@ Tests for the Credit xBlock service
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from datetime import datetime
 import ddt
 

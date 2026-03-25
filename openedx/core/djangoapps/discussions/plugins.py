@@ -1,7 +1,7 @@
 """
 Course app configuration for discussions.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

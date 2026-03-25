@@ -3,7 +3,7 @@ All Course Outline related business logic. Do not import from this module
 directly. Use openedx.core.djangoapps.content.learning_sequences.api -- that
 __init__.py imports from here, and is a more stable place to import from.
 """
-import logging
+import logging  # noqa: I001
 from collections import defaultdict
 from datetime import datetime
 from typing import Dict, FrozenSet, List, Optional, Union

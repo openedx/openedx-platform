@@ -1,7 +1,7 @@
 """
 Instructor Dashboard Views
 """
-import datetime
+import datetime  # noqa: I001
 import logging
 from functools import reduce
 

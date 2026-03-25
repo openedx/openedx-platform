@@ -1,7 +1,7 @@
 """
 Test grading events across apps.
 """
-import ddt
+import ddt  # noqa: I001
 from unittest.mock import call as mock_call
 from unittest.mock import patch
 

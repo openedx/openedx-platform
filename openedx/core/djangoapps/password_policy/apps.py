@@ -2,7 +2,7 @@
 Configuration for password_policy Django app
 """
 
-import logging
+import logging  # noqa: I001
 from dateutil.parser import parse as parse_date
 from django.apps import AppConfig
 from django.conf import settings

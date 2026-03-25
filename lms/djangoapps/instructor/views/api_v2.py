@@ -5,7 +5,7 @@ This module contains the v2 API endpoints for instructor functionality.
 These APIs are designed to be consumed by MFEs and other API clients.
 """
 
-import csv
+import csv  # noqa: I001
 import io
 import logging
 import re

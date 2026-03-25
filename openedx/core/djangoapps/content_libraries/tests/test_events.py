@@ -1,7 +1,7 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from opaque_keys.edx.locator import (
+from opaque_keys.edx.locator import (  # noqa: I001
     LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,

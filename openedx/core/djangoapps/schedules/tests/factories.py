@@ -3,7 +3,7 @@ Factories for schedules tests
 """
 
 
-import factory
+import factory  # noqa: I001
 from zoneinfo import ZoneInfo
 
 from openedx.core.djangoapps.schedules import models

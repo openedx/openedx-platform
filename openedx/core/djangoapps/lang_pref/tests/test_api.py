@@ -1,5 +1,5 @@
 """ Tests for the language API. """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

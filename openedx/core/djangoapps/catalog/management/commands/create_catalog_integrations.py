@@ -1,7 +1,7 @@
 '''CatalogIntegration management command'''
 
 
-from django.core.management import BaseCommand, CommandError
+from django.core.management import BaseCommand, CommandError  # noqa: I001
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 
 

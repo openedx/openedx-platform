@@ -1,7 +1,7 @@
 ''' useful functions for finding content and its position '''
 
 
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 
 from lms.djangoapps.courseware.access import has_access

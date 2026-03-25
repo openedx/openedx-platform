@@ -13,7 +13,7 @@ sessions. Assumes structure:
 # pylint: disable=wildcard-import, unused-wildcard-import
 
 
-import logging
+import logging  # noqa: I001
 from collections import OrderedDict
 
 from edx_django_utils.plugins import add_plugins

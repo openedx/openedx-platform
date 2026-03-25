@@ -3,7 +3,7 @@ Models used by the block structure framework.
 """
 
 
-import errno
+import errno  # noqa: I001
 from contextlib import contextmanager
 from datetime import datetime
 from logging import getLogger

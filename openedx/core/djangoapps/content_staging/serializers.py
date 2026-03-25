@@ -1,7 +1,7 @@
 """
 Serializers for the content libraries REST API
 """
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from common.djangoapps.student.auth import has_studio_read_access
 from xmodule.modulestore.django import modulestore

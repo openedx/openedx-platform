@@ -5,7 +5,7 @@ Tests for course group views
 # pylint: disable=no-member
 
 
-import json
+import json  # noqa: I001
 from collections import namedtuple
 import pytest
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

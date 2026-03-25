@@ -3,7 +3,7 @@ Django management command to generate a test course from a course config json
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

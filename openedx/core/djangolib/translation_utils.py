@@ -3,7 +3,7 @@ i18n utility functions
 """
 
 
-from django.utils.translation import override
+from django.utils.translation import override  # noqa: I001
 from django.utils.formats import dateformat, get_format
 
 

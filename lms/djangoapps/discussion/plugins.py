@@ -3,7 +3,7 @@ Views handling read (GET) requests for the Discussion tab and inline discussions
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import reverse
 from django.utils.translation import gettext_noop
 

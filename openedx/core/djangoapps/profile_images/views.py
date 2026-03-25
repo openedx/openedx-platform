@@ -3,7 +3,7 @@ This module implements the upload and remove endpoints of the profile image api.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 import logging
 from contextlib import closing

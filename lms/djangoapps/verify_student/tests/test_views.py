@@ -2,7 +2,7 @@
 Tests of verify_student views.
 """
 
-import base64
+import base64  # noqa: I001
 import codecs
 import urllib
 from datetime import timedelta

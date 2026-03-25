@@ -6,7 +6,7 @@ Views for Enhanced Staff Grader
 
 # NOTE: we intentionally add extra args using @require_params
 # pylint: disable=arguments-differ
-import logging
+import logging  # noqa: I001
 
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import (

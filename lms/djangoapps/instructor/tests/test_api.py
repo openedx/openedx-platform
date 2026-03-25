@@ -1,7 +1,7 @@
 """
 Unit tests for instructor.api methods.
 """
-import datetime
+import datetime  # noqa: I001
 import functools
 import io
 import json

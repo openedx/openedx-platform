@@ -3,7 +3,7 @@ This file contains celery tasks related to course content gating.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

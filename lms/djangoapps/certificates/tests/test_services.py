@@ -3,7 +3,7 @@ Unit Tests for the Certificate service
 """
 
 
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import UserFactory  # noqa: I001
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.services import CertificateService

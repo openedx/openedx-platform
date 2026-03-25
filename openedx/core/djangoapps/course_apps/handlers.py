@@ -1,7 +1,7 @@
 """
 Signal handlers for course apps.
 """
-from django.db import transaction
+from django.db import transaction  # noqa: I001
 from django.dispatch import receiver
 from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.django import SignalHandler

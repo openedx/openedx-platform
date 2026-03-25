@@ -4,7 +4,7 @@ via callable methods/lambdas. The derivation time can be controlled to happen af
 other settings have been set. The derived setting can also be overridden by setting the
 derived setting to an actual value.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import re
 import sys

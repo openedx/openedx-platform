@@ -3,7 +3,7 @@ Mixins classes being used by all test classes within this folder
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from pytz import UTC
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase

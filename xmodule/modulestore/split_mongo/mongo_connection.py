@@ -3,7 +3,7 @@ Segregation of pymongo functions from the data modeling mechanisms for split mod
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 import math
 import pickle

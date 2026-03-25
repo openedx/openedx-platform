@@ -3,7 +3,7 @@ Views to manage the Survey Reports.
 """
 
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # noqa: I001
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie

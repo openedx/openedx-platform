@@ -1,7 +1,7 @@
 """
 Views related to operations on course objects
 """
-import copy
+import copy  # noqa: I001
 import json
 import logging
 import random

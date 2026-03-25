@@ -1,7 +1,7 @@
 """
 Test that various filters are executed for models in the course_groups app.
 """
-from django.test import override_settings
+from django.test import override_settings  # noqa: I001
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CohortAssignmentRequested, CohortChangeRequested
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase

@@ -3,7 +3,7 @@ Test models, managers, and validators.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from completion.test_utils import CompletionWaffleTestMixin
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.urls import reverse

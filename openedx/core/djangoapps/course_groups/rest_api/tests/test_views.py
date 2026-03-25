@@ -1,7 +1,7 @@
 """
 Tests for Content Groups REST API v2.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.test import override_settings
 from rest_framework import status

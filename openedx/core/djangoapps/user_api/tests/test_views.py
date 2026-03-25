@@ -1,6 +1,6 @@
 """Tests for the user API at the HTTP request level. """
 
-import pytest
+import pytest  # noqa: I001
 import ddt
 from django.test.utils import override_settings
 from django.urls import reverse

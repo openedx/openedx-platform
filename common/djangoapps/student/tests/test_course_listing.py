@@ -3,7 +3,7 @@ Unit tests for getting the list of courses for a user through iterating all cour
 by reversing group name formats.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.conf import settings
 from django.test.client import Client
 from milestones.tests.utils import MilestonesTestCaseMixin

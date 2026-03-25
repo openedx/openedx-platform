@@ -1,7 +1,7 @@
 """
 Test CMS's upstream->downstream syncing system
 """
-import datetime
+import datetime  # noqa: I001
 
 import ddt
 from organizations.api import ensure_organization

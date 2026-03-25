@@ -2,7 +2,7 @@
 Utility functions for third_party_auth
 """
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from uuid import UUID
 from zoneinfo import ZoneInfo

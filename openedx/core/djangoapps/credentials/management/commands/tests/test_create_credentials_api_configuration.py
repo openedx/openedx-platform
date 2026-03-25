@@ -2,7 +2,7 @@
 Tests for the create_credentials_api_configuration command
 """
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 
 from unittest import mock
 import pytest

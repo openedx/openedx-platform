@@ -3,7 +3,7 @@ Support for course tool plugins.
 """
 
 
-from enum import Enum
+from enum import Enum  # noqa: I001
 
 from edx_django_utils.plugins import PluginManager
 

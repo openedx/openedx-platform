@@ -2,7 +2,7 @@
 Waffle flags and switches
 """
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 WAFFLE_NAMESPACE = 'courseware'
 

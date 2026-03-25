@@ -3,7 +3,7 @@ Django Admin page for SurveyReport.
 """
 
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 from django.conf import settings
 from .models import SurveyReport
 from .api import send_report_to_external_api

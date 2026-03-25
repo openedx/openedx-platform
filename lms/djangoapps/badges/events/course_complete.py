@@ -3,7 +3,7 @@ Helper functions for the course complete event that was originally included with
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import logging
 
 from django.utils.text import slugify

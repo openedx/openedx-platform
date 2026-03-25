@@ -1,7 +1,7 @@
 """
 Test for lms courseware app, block render unit
 """
-import json
+import json  # noqa: I001
 import textwrap
 from datetime import datetime
 from functools import partial

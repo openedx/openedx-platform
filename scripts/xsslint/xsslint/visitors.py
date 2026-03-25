@@ -3,7 +3,7 @@ Custom AST NodeVisitor classes uses for Python xss linting.
 """
 
 
-import ast
+import ast  # noqa: I001
 import re
 
 from xsslint.reporting import ExpressionRuleViolation

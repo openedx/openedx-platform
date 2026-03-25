@@ -3,7 +3,7 @@ Asynchronous tasks for the LTI provider app.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from edx_django_utils.monitoring import set_code_owner_attribute

@@ -3,7 +3,7 @@ Performance tests for field overrides.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from datetime import datetime
 from unittest import mock
 

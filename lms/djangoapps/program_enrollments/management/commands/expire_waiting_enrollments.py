@@ -1,7 +1,7 @@
 """ Management command to cleanup old waiting enrollments """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand
 

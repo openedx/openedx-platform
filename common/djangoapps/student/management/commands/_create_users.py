@@ -1,5 +1,5 @@
 """ Shared behavior between create_test_users and create_random_users """
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.core.validators import ValidationError
 from xmodule.modulestore.django import modulestore
 

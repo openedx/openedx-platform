@@ -1,7 +1,7 @@
 """
 Module for the dual-branch fall-back Draft->Published Versioning ModuleStore
 """
-from edx_django_utils.monitoring import function_trace
+from edx_django_utils.monitoring import function_trace  # noqa: I001
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryUsageLocator
 
 from xmodule.exceptions import InvalidVersionError

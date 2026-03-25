@@ -5,7 +5,7 @@ set CODE_JAIL_REST_SERVICE_REMOTE_EXEC to use this module path.
 TODO: Remove this file in a future release using the standard DEPR process.
 """
 
-import warnings
+import warnings  # noqa: I001
 
 warnings.warn(
     "The 'xmodule.capa.safe_exec.remote_exec' module is deprecated and has been moved. "

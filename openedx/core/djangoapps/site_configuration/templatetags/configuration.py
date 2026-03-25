@@ -4,7 +4,7 @@ based on the current site.
 """
 
 
-from django import template
+from django import template  # noqa: I001
 from django.conf import settings
 from django.templatetags.static import static
 

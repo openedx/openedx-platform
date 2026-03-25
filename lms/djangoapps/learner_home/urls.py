@@ -2,7 +2,7 @@
 Learner Home URL routing configuration
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from django.urls import include, re_path
 
 from lms.djangoapps.learner_home import views

@@ -3,7 +3,7 @@ Course API URLs
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import include, path, re_path
 
 from .views import CourseDetailView, CourseIdListView, CourseListView

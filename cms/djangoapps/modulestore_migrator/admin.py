@@ -1,7 +1,7 @@
 """
 A nice little admin interface for migrating courses and libraries from modulstore to openedx_content.
 """
-import logging
+import logging  # noqa: I001
 
 from django import forms
 from django.contrib import admin, messages

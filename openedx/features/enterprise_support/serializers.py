@@ -3,11 +3,11 @@ Defines serializers for enterprise_support.
 """
 
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 try:
     from enterprise.api.v1.serializers import \
-        EnterpriseCourseEnrollmentReadOnlySerializer as BaseEnterpriseCourseEnrollmentSerializer
+        EnterpriseCourseEnrollmentReadOnlySerializer as BaseEnterpriseCourseEnrollmentSerializer  # noqa: I001
     from enterprise.models import EnterpriseCourseEnrollment
 except ImportError:  # pragma: no cover
     pass

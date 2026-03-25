@@ -4,7 +4,7 @@ Show Event outputs.
 """
 
 
-import json
+import json  # noqa: I001
 import sys
 import traceback
 

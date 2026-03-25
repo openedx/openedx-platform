@@ -32,7 +32,7 @@ Patterns for using the error handler:
 """
 
 
-import logging
+import logging  # noqa: I001
 import sys
 import traceback
 from collections import namedtuple

@@ -2,7 +2,7 @@
 Tests for SAML provider configuration to skip optional checkboxes in registration form.
 """
 
-import logging
+import logging  # noqa: I001
 from unittest import mock
 
 from django.test import TestCase, override_settings
@@ -28,7 +28,7 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
 
     def _create_request(self):
         """Create a test request with session support."""
-        from importlib import import_module
+        from importlib import import_module  # noqa: I001
         from django.conf import settings
 
         request = self.factory.get('/register')

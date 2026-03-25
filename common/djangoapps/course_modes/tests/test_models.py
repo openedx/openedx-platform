@@ -6,7 +6,7 @@ Replace this with more appropriate tests for your application.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from datetime import timedelta
 from unittest.mock import patch
 

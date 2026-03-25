@@ -1,7 +1,7 @@
 """
 Tests for the public Python API functions of the Bulk Email app.
 """
-from testfixtures import LogCapture
+from testfixtures import LogCapture  # noqa: I001
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

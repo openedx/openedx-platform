@@ -3,7 +3,7 @@ Test the user api's partition extensions.
 """
 
 
-from collections import defaultdict
+from collections import defaultdict  # noqa: I001
 from unittest.mock import patch
 
 import pytest

@@ -1,6 +1,6 @@
 """ Utility functions related to HTTP requests """
 
-import logging
+import logging  # noqa: I001
 import re
 from urllib.parse import urlparse
 

@@ -1,6 +1,6 @@
 """Module for v2 serializers."""
 
-from cms.djangoapps.contentstore.rest_api.v2.serializers.downstreams import (
+from cms.djangoapps.contentstore.rest_api.v2.serializers.downstreams import (  # noqa: I001
     ComponentLinksSerializer,
     ContainerLinksSerializer,
     PublishableEntityLinksSummarySerializer,

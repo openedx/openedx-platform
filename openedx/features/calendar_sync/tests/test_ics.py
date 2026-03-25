@@ -1,6 +1,6 @@
 """ Tests for the Calendar Sync .ics methods """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 from zoneinfo import ZoneInfo

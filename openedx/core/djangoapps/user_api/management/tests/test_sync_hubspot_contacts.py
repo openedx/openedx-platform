@@ -3,7 +3,7 @@ Test the sync_hubspot_contacts management command
 """
 
 
-import json
+import json  # noqa: I001
 from datetime import timedelta
 from io import StringIO
 from unittest.mock import patch

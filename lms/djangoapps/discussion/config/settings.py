@@ -1,7 +1,7 @@
 """
 Discussion settings.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

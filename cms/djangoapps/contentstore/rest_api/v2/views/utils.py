@@ -1,7 +1,7 @@
 """
 Common utilities for V2 APIs.
 """
-from rest_framework.response import Response
+from rest_framework.response import Response  # noqa: I001
 from rest_framework.generics import GenericAPIView
 from rest_framework import permissions
 from cms.djangoapps.contentstore.rest_api.v2.serializers.utils import NumericalInputValidationRequestSerializer

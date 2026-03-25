@@ -4,7 +4,7 @@ csv file.
 """
 
 
-import logging
+import logging  # noqa: I001
 from os import path
 import unicodecsv
 

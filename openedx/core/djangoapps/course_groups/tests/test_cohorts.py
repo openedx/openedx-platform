@@ -3,7 +3,7 @@ Tests for cohorts
 """
 # pylint: disable=no-member
 
-from unittest.mock import call, patch
+from unittest.mock import call, patch  # noqa: I001
 import pytest
 import ddt
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user

@@ -1,7 +1,7 @@
 """Tests for embargo app views. """
 
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock  # noqa: I001
 
 import ddt
 import maxminddb

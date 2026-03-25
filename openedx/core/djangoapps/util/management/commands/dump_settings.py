@@ -1,7 +1,7 @@
 """
 Defines the dump_settings management command.
 """
-import inspect
+import inspect  # noqa: I001
 import json
 import re
 

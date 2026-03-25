@@ -3,7 +3,7 @@ Grades Service Tests
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest.mock import call, patch
 
 import ddt

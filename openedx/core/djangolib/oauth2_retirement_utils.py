@@ -3,7 +3,7 @@ Removes user PII from OAuth2 models.
 """
 
 
-from oauth2_provider.models import (
+from oauth2_provider.models import (  # noqa: I001
     AccessToken as DOTAccessToken,
     Application as DOTApplication,
     Grant as DOTGrant,

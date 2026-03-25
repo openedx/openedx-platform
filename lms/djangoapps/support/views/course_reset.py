@@ -1,6 +1,6 @@
 """ Views for the course reset feature """
 
-from rest_framework.response import Response
+from rest_framework.response import Response  # noqa: I001
 from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator
 from opaque_keys import InvalidKeyError

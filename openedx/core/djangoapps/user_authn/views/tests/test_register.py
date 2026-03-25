@@ -1,6 +1,6 @@
 """Tests for account creation"""
 
-import json
+import json  # noqa: I001
 from datetime import datetime
 from unittest import mock, skipIf, skipUnless
 from unittest.mock import patch

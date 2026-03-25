@@ -1,5 +1,5 @@
 """Tests for the goal_reminder_email command"""
-import uuid
+import uuid  # noqa: I001
 from datetime import datetime
 
 from botocore.exceptions import NoCredentialsError

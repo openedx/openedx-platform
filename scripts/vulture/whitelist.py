@@ -6,7 +6,7 @@
 # scripts/dead_code/find-dead-code.sh
 
 
-from vulture.whitelist_utils import Whitelist
+from vulture.whitelist_utils import Whitelist  # noqa: I001
 
 view_whitelilst = Whitelist()
 

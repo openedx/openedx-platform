@@ -17,7 +17,7 @@ An RSA private key can be in any of the following formats:
 """
 
 
-import base64
+import base64  # noqa: I001
 import binascii
 import hmac
 import logging

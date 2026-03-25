@@ -1,7 +1,7 @@
 """
 API for kicking off new migrations
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from celery.result import AsyncResult
 from opaque_keys.edx.locator import LibraryLocatorV2

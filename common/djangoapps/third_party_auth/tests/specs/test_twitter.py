@@ -3,7 +3,7 @@ Separate integration test for Twitter which is an OAuth1 provider.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from common.djangoapps.third_party_auth.tests.specs import base
 
 

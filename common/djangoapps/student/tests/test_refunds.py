@@ -2,7 +2,7 @@
     Tests for enrollment refund capabilities.
 """
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime, timedelta
 from unittest.mock import patch

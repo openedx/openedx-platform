@@ -1,7 +1,7 @@
 """
 Utils function for notifications app
 """
-from typing import Dict, List
+from typing import Dict, List  # noqa: I001
 
 from common.djangoapps.student.models import CourseAccessRole
 from openedx.core.djangoapps.django_comment_common.models import Role

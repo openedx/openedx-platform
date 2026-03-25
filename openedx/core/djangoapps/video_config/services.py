@@ -6,7 +6,7 @@ that are specific to the edx-platform implementation
 for the extracted video block in xblocks-contrib repository.
 """
 
-import logging
+import logging  # noqa: I001
 from typing import Any
 
 from django.conf import settings

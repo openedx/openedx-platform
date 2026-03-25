@@ -3,7 +3,7 @@ Base file for testing email sending functionality
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from collections import namedtuple
 from copy import deepcopy

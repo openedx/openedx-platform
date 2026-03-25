@@ -3,7 +3,7 @@ Synchronizes the announcement list with all active students.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand

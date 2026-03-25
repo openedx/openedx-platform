@@ -1,7 +1,7 @@
 """
 Tests for user authorization password-related functionality.
 """
-import json
+import json  # noqa: I001
 import logging
 import re
 from datetime import datetime, timedelta

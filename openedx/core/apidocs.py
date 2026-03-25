@@ -2,7 +2,7 @@
 Open API support.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from edx_api_doc_tools import make_api_info
 from rest_framework import serializers
 

@@ -3,7 +3,7 @@ django admin pages for certificates models
 """
 
 
-from operator import itemgetter
+from operator import itemgetter  # noqa: I001
 
 from config_models.admin import ConfigurationModelAdmin
 from django import forms

@@ -3,7 +3,7 @@ Miscellaneous waffle switches that both LMS and Studio need to access
 """
 
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 # Namespace
 WAFFLE_NAMESPACE = 'course_experience'

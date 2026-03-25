@@ -1,7 +1,7 @@
 """
 Test for the NotificationFilter class.
 """
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest import mock
 from unittest.mock import patch
 

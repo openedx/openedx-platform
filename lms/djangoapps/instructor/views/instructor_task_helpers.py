@@ -4,7 +4,7 @@ tasks.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from django.utils.translation import gettext as _

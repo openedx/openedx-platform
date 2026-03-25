@@ -2,7 +2,7 @@
 Feature flag support for experiments
 """
 
-import datetime
+import datetime  # noqa: I001
 import logging
 
 import dateutil
@@ -183,7 +183,7 @@ class ExperimentWaffleFlag(CourseWaffleFlag):
         """
         # Keep some imports in here, because this class is commonly used at a module level, and we want to avoid
         # circular imports for any models.
-        from lms.djangoapps.experiments.models import ExperimentKeyValue
+        from lms.djangoapps.experiments.models import ExperimentKeyValue  # noqa: I001
         from lms.djangoapps.courseware.masquerade import get_specific_masquerading_user
 
         request = get_current_request()

@@ -3,7 +3,7 @@ Useful django models for implementing XBlock infrastructure in django.
 """
 
 
-import logging
+import logging  # noqa: I001
 import warnings
 
 import opaque_keys.edx.django.models

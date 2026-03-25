@@ -2,7 +2,7 @@
 # pylint: disable=missing-class-docstring, invalid-name
 
 
-import uuid
+import uuid  # noqa: I001
 from functools import partial
 
 import factory

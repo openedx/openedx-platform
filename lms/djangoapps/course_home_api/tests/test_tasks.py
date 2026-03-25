@@ -2,7 +2,7 @@
 Tests for Celery tasks used by the `course_home_api` app.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 from testfixtures import LogCapture

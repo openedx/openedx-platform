@@ -1,6 +1,6 @@
 """Test for Poll Xmodule functional logic."""
 
-import json
+import json  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 from xblock.field_data import DictFieldData

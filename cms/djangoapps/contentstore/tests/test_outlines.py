@@ -2,7 +2,7 @@
 Test the interaction with the learning_sequences app, where course outlines are
 stored.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 

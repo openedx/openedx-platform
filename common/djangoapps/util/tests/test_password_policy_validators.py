@@ -1,7 +1,7 @@
 """Tests for util.password_policy_validators module."""
 
 
-import unittest
+import unittest  # noqa: I001
 
 import pytest
 from ddt import data, ddt, unpack

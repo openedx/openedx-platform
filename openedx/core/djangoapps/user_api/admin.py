@@ -1,7 +1,7 @@
 """
 Django admin configuration pages for the user_api app
 """
-from django.contrib import admin, messages
+from django.contrib import admin, messages  # noqa: I001
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.template.response import TemplateResponse

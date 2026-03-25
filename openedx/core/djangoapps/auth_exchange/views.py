@@ -6,7 +6,7 @@ The following are currently implemented:
     2. LoginWithAccessTokenView:
        1st party (open-edx) OAuth 2.0 access token -> session cookie
 """
-import logging
+import logging  # noqa: I001
 
 import jwt
 import django.contrib.auth as auth

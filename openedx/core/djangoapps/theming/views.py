@@ -3,7 +3,7 @@ Views file for theming administration.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect

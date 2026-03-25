@@ -9,7 +9,7 @@
 #
 # Usage: Key JSON accepted on stdin; enhanced key printed to stdout.
 
-import json
+import json  # noqa: I001
 import sys
 
 from jwt.algorithms import RSAAlgorithm

@@ -3,7 +3,7 @@ Unit tests for student optouts from course email
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import Mock, patch
 
 from django.core import mail

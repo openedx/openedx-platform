@@ -1,7 +1,7 @@
 """
 User Auth Views Utils
 """
-import logging
+import logging  # noqa: I001
 import re
 from typing import Dict
 

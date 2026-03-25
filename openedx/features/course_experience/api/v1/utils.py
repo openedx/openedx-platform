@@ -2,7 +2,7 @@
 """
 Course Experience API utilities.
 """
-import logging
+import logging  # noqa: I001
 from eventtracking import tracker
 
 from lms.djangoapps.courseware.access import has_access

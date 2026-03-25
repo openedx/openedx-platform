@@ -3,7 +3,7 @@ Tests for program enrollment reading Python API.
 """
 
 
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 
 import ddt
 import pytest

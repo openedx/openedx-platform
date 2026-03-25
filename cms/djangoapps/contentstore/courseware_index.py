@@ -1,6 +1,6 @@
 """ Code to allow module store to interface with courseware index """
 
-import logging
+import logging  # noqa: I001
 import re
 from abc import ABCMeta, abstractmethod
 from datetime import timedelta

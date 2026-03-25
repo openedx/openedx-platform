@@ -1,7 +1,7 @@
 """
 Unit tests for course rerun.
 """
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from rest_framework import status
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase

@@ -3,7 +3,7 @@ The Python API other app should use to work with Teams feature
 """
 
 
-import logging
+import logging  # noqa: I001
 from enum import Enum
 
 from django.db.models import Count, Q

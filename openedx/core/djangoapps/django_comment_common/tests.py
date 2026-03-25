@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-import pytest
+import pytest  # noqa: I001
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
 

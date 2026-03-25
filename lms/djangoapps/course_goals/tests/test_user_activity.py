@@ -2,7 +2,7 @@
 Unit tests for user activity methods.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import Mock, patch
 
 import ddt

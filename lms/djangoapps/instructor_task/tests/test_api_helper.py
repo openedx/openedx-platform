@@ -1,7 +1,7 @@
 """
 Tests for the Instructor Task `api_helper.py` functions.
 """
-import datetime
+import datetime  # noqa: I001
 import hashlib
 import json
 from unittest.mock import patch

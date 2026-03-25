@@ -3,7 +3,7 @@ Views related to the transcript preferences feature
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotFound

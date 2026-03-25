@@ -1,7 +1,7 @@
 """Tests for the lms module itself."""
 
 
-import logging
+import logging  # noqa: I001
 import mimetypes
 
 from django.conf import settings  # lint-amnesty, pylint: disable=unused-import

@@ -1,7 +1,7 @@
 """Management command to change many user enrollments at once."""
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction

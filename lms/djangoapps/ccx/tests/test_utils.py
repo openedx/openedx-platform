@@ -3,7 +3,7 @@ test utils
 """
 
 
-import uuid
+import uuid  # noqa: I001
 from smtplib import SMTPException
 from unittest import mock
 

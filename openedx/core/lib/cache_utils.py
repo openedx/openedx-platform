@@ -3,7 +3,7 @@ Utilities related to caching.
 """
 
 
-import collections
+import collections  # noqa: I001
 import functools
 import itertools
 import zlib

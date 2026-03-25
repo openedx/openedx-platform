@@ -3,7 +3,7 @@ Views for API management.
 """
 
 
-import logging
+import logging  # noqa: I001
 from functools import cached_property
 from urllib.parse import urljoin
 

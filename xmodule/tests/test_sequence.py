@@ -4,7 +4,7 @@ Tests for sequence block.
 # pylint: disable=no-member
 
 
-import ast
+import ast  # noqa: I001
 import json
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch

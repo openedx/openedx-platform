@@ -3,7 +3,7 @@ Bookmarks service.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import ObjectDoesNotExist
 from edx_django_utils.cache import DEFAULT_REQUEST_CACHE

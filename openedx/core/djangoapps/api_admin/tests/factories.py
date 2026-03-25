@@ -1,7 +1,7 @@
 """Factories for API management."""
 
 
-import factory
+import factory  # noqa: I001
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyInteger, FuzzyText
 from oauth2_provider.models import get_application_model

@@ -1,6 +1,6 @@
 """Tests for Bulk Un-enroll Management command"""
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile  # noqa: I001
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command

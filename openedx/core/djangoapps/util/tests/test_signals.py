@@ -1,7 +1,7 @@
 # pylint: disable=no-member, missing-docstring
 
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 from pytest import mark
 
 from celery import shared_task

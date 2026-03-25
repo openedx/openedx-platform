@@ -1,7 +1,7 @@
 """
 Celery task for course enrollment email
 """
-import logging
+import logging  # noqa: I001
 from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model

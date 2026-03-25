@@ -1,7 +1,7 @@
 """
 Salesforce API class that will call the Salesforce REST API using simple-salesforce.
 """
-import logging
+import logging  # noqa: I001
 import os
 
 import backoff

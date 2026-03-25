@@ -1,5 +1,5 @@
 # pylint: disable=consider-iterating-dictionary, missing-module-docstring
-import json
+import json  # noqa: I001
 from unittest.mock import patch
 
 from django.contrib.auth.models import AnonymousUser

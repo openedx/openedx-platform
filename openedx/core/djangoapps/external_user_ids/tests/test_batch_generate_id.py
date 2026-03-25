@@ -2,7 +2,7 @@
 Test batch_get_or_create in ExternalId model
 """
 
-import django
+import django  # noqa: I001
 from django.test import TransactionTestCase
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.external_user_ids.models import ExternalId

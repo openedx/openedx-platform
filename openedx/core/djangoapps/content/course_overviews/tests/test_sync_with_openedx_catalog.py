@@ -2,7 +2,7 @@
 Test that changes to courses get synced into the new openedx_catalog models.
 """
 
-import pytest
+import pytest  # noqa: I001
 
 from openedx_catalog import api as catalog_api
 from openedx_catalog.models_api import CatalogCourse, CourseRun

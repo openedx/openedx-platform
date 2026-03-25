@@ -3,7 +3,7 @@
 # pylint: disable=missing-docstring
 
 
-from collections import defaultdict
+from collections import defaultdict  # noqa: I001
 from datetime import timedelta
 from unittest import mock
 

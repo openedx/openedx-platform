@@ -3,7 +3,7 @@
 """
 
 
-from django.contrib.messages.middleware import MessageMiddleware
+from django.contrib.messages.middleware import MessageMiddleware  # noqa: I001
 from django.contrib.sites.models import Site
 from django.test import RequestFactory, TestCase, override_settings
 

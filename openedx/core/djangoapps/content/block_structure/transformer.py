@@ -4,7 +4,7 @@ Transformers.
 """
 
 
-from abc import abstractmethod
+from abc import abstractmethod  # noqa: I001
 import functools
 
 

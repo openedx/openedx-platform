@@ -5,7 +5,7 @@ and auto discover tasks in all installed django apps.
 Taken from: https://celery.readthedocs.org/en/latest/django/first-steps-with-django.html
 """
 
-import os
+import os  # noqa: I001
 
 # Patch the xml libs before anything else.
 from openedx.core.lib.safe_lxml import defuse_xml_libs

@@ -3,7 +3,7 @@ Test scenarios for the crowdsource hinter xblock.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 
 import simplejson as json
 from django.conf import settings

@@ -3,7 +3,7 @@ Code to implement backwards compatibility
 """
 # pylint: disable=no-member
 
-import warnings
+import warnings  # noqa: I001
 from django.conf import settings
 from django.core.cache import cache
 from django.template import TemplateDoesNotExist

@@ -3,7 +3,7 @@ unittests for xmodule
 """
 
 
-import inspect
+import inspect  # noqa: I001
 import json
 import os
 import sys

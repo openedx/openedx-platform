@@ -20,7 +20,7 @@ of the query for traversing StudentModule objects.
 
 """
 
-import logging
+import logging  # noqa: I001
 from functools import partial
 
 from celery import shared_task

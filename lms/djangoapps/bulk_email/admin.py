@@ -3,7 +3,7 @@ Django admin page for bulk email models
 """
 
 
-from config_models.admin import ConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin  # noqa: I001
 from django.contrib import admin
 
 from lms.djangoapps.bulk_email.forms import CourseAuthorizationAdminForm, CourseEmailTemplateForm

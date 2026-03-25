@@ -1,7 +1,7 @@
 """
 Utilities for the REST API views.
 """
-from functools import wraps
+from functools import wraps  # noqa: I001
 from django.http import HttpResponseBadRequest
 
 

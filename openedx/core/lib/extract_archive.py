@@ -6,7 +6,7 @@ Adapted from:
 http://stackoverflow.com/questions/10060069/safely-extract-zip-or-tar-using-python
 """
 
-import logging
+import logging  # noqa: I001
 from os.path import abspath, dirname
 from os.path import join as joinpath
 from os.path import realpath

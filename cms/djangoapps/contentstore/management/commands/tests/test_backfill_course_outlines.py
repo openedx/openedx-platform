@@ -1,7 +1,7 @@
 """
 Tests for `backfill_course_outlines` Studio (cms) management command.
 """
-from django.core.management import call_command
+from django.core.management import call_command  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview

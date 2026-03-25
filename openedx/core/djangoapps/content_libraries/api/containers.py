@@ -1,7 +1,7 @@
 """
 API for containers (Sections, Subsections, Units) in Content Libraries
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from datetime import datetime, timezone
 import logging

@@ -3,7 +3,7 @@ Unit tests for the calendar sync plugins.
 """
 
 
-import crum
+import crum  # noqa: I001
 import ddt
 from django.test import RequestFactory
 from edx_toggles.toggles.testutils import override_waffle_flag

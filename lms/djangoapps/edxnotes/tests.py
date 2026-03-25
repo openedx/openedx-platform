@@ -2,7 +2,7 @@
 Tests for the EdxNotes app.
 """
 
-import json
+import json  # noqa: I001
 from contextlib import contextmanager
 from datetime import datetime
 from unittest import skipUnless

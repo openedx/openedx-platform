@@ -4,7 +4,7 @@ when using the Split modulestore.
 """
 
 
-from shutil import rmtree
+from shutil import rmtree  # noqa: I001
 from tempfile import mkdtemp
 from unittest import skip
 

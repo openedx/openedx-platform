@@ -1,7 +1,7 @@
 """
 Tests for the views in the notifications app.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest import mock
 
 import ddt

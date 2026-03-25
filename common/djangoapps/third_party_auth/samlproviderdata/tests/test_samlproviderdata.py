@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-import copy
+import copy  # noqa: I001
 from datetime import datetime  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest import mock
 from uuid import uuid4  # lint-amnesty, pylint: disable=wrong-import-order

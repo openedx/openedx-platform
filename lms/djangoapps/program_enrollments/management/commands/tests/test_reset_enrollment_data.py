@@ -3,7 +3,7 @@ Tests for the reset_enrollment_data management command.
 """
 
 
-import sys
+import sys  # noqa: I001
 from contextlib import contextmanager
 from uuid import uuid4
 import pytest

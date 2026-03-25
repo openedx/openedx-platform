@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 # Lots of patching to stub in our own settings, and HTTP posting
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import patch
 
 import ddt

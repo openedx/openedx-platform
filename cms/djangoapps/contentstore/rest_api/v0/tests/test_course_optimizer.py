@@ -1,7 +1,7 @@
 """
 Unit tests for course optimizer
 """
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from django.urls import reverse
 

@@ -3,7 +3,7 @@
 # But w/o css delimiters between children
 
 
-from xmodule.vertical_block import VerticalBlock
+from xmodule.vertical_block import VerticalBlock  # noqa: I001
 
 # HACK: This shouldn't be hard-coded to two types
 # OBSOLETE: This obsoletes 'type'

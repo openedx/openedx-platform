@@ -2,7 +2,7 @@
 Tests for `remove_social_auth_users` management command
 """
 
-import sys
+import sys  # noqa: I001
 from contextlib import contextmanager
 from uuid import uuid4
 

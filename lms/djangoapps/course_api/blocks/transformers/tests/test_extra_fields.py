@@ -1,7 +1,7 @@
 """
 Tests for ExtraFieldsTransformer.
 """
-from django.test import override_settings
+from django.test import override_settings  # noqa: I001
 
 # pylint: disable=protected-access
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory

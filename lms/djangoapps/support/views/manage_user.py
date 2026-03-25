@@ -3,7 +3,7 @@ Support tool for disabling user accounts.
 """
 
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.decorators import method_decorator

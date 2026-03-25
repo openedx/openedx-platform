@@ -3,7 +3,7 @@ Course API forms
 """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 from django.core.exceptions import ValidationError
 from django.forms import CharField, Form

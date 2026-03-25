@@ -2,7 +2,7 @@
 Tests for LTI views.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test import TestCase, override_settings
 
 from .base import (

@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.template import Context, engines, Origin
 from edx_django_utils.cache import RequestCache
 from mako.template import Template as MakoTemplate

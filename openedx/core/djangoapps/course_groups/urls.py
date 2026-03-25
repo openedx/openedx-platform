@@ -3,7 +3,7 @@ Cohort API URLs
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import include, re_path
 
 import lms.djangoapps.instructor.views.api

@@ -2,7 +2,7 @@
 Signal handler for enabling/disabling self-generated certificates based on the course-pacing.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save

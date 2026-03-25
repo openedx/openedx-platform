@@ -3,7 +3,7 @@ Test that we have defused XML.
 """
 
 
-from lxml import etree
+from lxml import etree  # noqa: I001
 from defusedxml.common import EntitiesForbidden
 from .xmlparser import fromstring
 

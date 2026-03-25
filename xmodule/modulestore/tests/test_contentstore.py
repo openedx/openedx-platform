@@ -3,7 +3,7 @@
 """
 
 
-import logging
+import logging  # noqa: I001
 import mimetypes
 import shutil
 import unittest

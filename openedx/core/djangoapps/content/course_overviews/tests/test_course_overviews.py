@@ -1,7 +1,7 @@
 """
 Tests for course_overviews app.
 """
-import json
+import json  # noqa: I001
 import os
 from io import BytesIO
 from unittest import mock

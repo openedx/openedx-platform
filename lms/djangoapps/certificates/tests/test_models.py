@@ -1,7 +1,7 @@
 """Tests for certificate Django models. """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import patch
 from unittest import mock, skipUnless
 

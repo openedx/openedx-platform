@@ -3,7 +3,7 @@ Views for the credit Django app.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 
 from zoneinfo import ZoneInfo

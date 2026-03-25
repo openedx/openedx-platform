@@ -1,7 +1,7 @@
 """
 Enrollment notifications sender util.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from openedx_events.learning.data import UserNotificationData
 from openedx_events.learning.signals import USER_NOTIFICATION_REQUESTED

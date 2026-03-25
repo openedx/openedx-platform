@@ -2,7 +2,7 @@
 Start Date Transformer implementation.
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from pytz import UTC
 

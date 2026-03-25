@@ -3,7 +3,7 @@ CourseBlocks API views
 """
 
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError  # noqa: I001
 from django.db import transaction
 from django.http import Http404
 from django.utils.cache import patch_response_headers

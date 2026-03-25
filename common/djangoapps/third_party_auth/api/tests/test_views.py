@@ -2,7 +2,7 @@
 Tests for the Third Party Auth REST API
 """
 
-import urllib
+import urllib  # noqa: I001
 from types import SimpleNamespace
 from unittest.mock import patch
 

@@ -3,7 +3,7 @@ Test for LMS instructor background task views.
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import Mock, patch
 
 from celery.states import FAILURE, PENDING, REVOKED, SUCCESS

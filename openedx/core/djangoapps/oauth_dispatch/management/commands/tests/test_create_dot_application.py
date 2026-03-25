@@ -1,7 +1,7 @@
 """
 Tests the ``create_dot_application`` management command.
 """
-import pytest
+import pytest  # noqa: I001
 import ddt
 from django.core.management import call_command
 from django.test import TestCase

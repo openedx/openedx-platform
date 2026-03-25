@@ -1,7 +1,7 @@
 """ Tests for auto auth. """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import Mock, patch
 
 import ddt

@@ -2,7 +2,7 @@
 Tests for course_modes views.
 """
 
-import decimal
+import decimal  # noqa: I001
 from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.parse import urljoin

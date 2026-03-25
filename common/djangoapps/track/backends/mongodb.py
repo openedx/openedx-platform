@@ -1,7 +1,7 @@
 """MongoDB event tracker backend."""
 
 
-import logging
+import logging  # noqa: I001
 
 import pymongo
 from bson.errors import BSONError

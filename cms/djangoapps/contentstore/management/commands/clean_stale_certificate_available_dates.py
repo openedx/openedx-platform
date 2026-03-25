@@ -1,7 +1,7 @@
 """
 A management command that can be used to remove a stale `certificate_available_date` from a course-run.
 """
-import logging
+import logging  # noqa: I001
 import shlex
 
 from django.core.management.base import BaseCommand, CommandError

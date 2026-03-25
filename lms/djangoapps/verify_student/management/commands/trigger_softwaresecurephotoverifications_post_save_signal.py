@@ -3,7 +3,7 @@ Django admin command to save SoftwareSecurePhotoVerifications given an iterable 
 verification_ids, thereby re-emitting the post_save signal.
 """
 
-import datetime
+import datetime  # noqa: I001
 import logging
 import time
 

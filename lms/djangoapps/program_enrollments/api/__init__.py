@@ -14,7 +14,7 @@ using this API.
 """
 
 
-from .grades import iter_program_course_grades
+from .grades import iter_program_course_grades  # noqa: I001
 from .linking import link_program_enrollment_to_lms_user, link_program_enrollments
 from .reading import (
     fetch_program_course_enrollments,

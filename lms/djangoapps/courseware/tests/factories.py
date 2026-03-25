@@ -4,7 +4,7 @@ Build courseware-centric test factories
 Generic, LMS-agnostic factories can be found in:
 `common.djangoapps.student.tests.factories.py`
 """
-import json
+import json  # noqa: I001
 from functools import partial
 
 import factory

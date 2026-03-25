@@ -1,7 +1,7 @@
 """
 URLs for Enhanced Staff Grader (ESG) backend-for-frontend (BFF)
 """
-from django.urls import include
+from django.urls import include  # noqa: I001
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 

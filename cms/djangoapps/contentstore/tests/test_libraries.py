@@ -3,7 +3,7 @@ Content library unit tests that require the CMS runtime.
 """
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import ddt
 from django.test.utils import override_settings

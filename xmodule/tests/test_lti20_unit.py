@@ -1,7 +1,7 @@
 """Tests for LTI Xmodule LTIv2.0 functional logic."""
 
 
-import datetime
+import datetime  # noqa: I001
 import textwrap
 from django.conf import settings
 from django.test import TestCase, override_settings

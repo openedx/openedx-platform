@@ -1,7 +1,7 @@
 """Tests covering time zone utilities."""
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from freezegun import freeze_time
 from pytz import timezone
 

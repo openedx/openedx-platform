@@ -2,7 +2,7 @@
 Permission definitions for the ccx djangoapp
 """
 
-from bridgekeeper import perms
+from bridgekeeper import perms  # noqa: I001
 
 from lms.djangoapps.courseware.rules import HasAccessRule
 

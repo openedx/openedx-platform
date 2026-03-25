@@ -3,7 +3,7 @@ Linter classes containing logic for checking various filetypes.
 """
 
 
-import ast
+import ast  # noqa: I001
 import io
 import os
 import re

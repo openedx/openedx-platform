@@ -1,7 +1,7 @@
 """
 Class used to write pytest warning data  into html format
 """
-import textwrap
+import textwrap  # noqa: I001
 import six  # lint-amnesty, pylint: disable=unused-import
 
 

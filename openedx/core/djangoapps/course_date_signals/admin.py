@@ -3,7 +3,7 @@ Django Admin pages for SelfPacedRelativeDatesConfig.
 """
 
 
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 
 from openedx.core.djangoapps.config_model_utils.admin import StackedConfigModelAdmin
 

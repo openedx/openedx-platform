@@ -2,7 +2,7 @@
 Tests for the create_or_update_site_configuration management command.
 """
 
-import codecs
+import codecs  # noqa: I001
 import json
 import pytest
 import ddt

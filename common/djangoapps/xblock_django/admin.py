@@ -3,7 +3,7 @@ Django admin dashboard configuration.
 """
 
 
-from config_models.admin import ConfigurationModelAdmin, KeyedConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin, KeyedConfigurationModelAdmin  # noqa: I001
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 

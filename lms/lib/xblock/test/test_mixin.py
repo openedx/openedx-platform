@@ -3,7 +3,7 @@
 Tests of the LMS XBlock Mixin
 """
 
-import ddt
+import ddt  # noqa: I001
 from xblock.validation import ValidationMessage
 
 from lms.djangoapps.lms_xblock.mixin import (

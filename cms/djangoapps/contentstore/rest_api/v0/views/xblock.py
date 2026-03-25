@@ -1,7 +1,7 @@
 """
 Public rest API endpoints for the CMS API.
 """
-import logging
+import logging  # noqa: I001
 from rest_framework.generics import RetrieveUpdateDestroyAPIView, CreateAPIView
 from django.views.decorators.csrf import csrf_exempt
 

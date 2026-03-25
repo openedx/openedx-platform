@@ -3,7 +3,7 @@ Convenience classes for defining StackedConfigModel Admin pages.
 """
 
 
-from config_models.admin import ConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin  # noqa: I001
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.keys import CourseKey

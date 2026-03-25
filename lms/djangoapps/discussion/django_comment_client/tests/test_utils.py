@@ -1,7 +1,7 @@
 # pylint: skip-file
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 import unittest
 from unittest import mock

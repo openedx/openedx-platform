@@ -6,7 +6,7 @@ to decide whether to check course creator role, and other such functions.
 """
 
 
-from ccx_keys.locator import CCXBlockUsageLocator, CCXLocator
+from ccx_keys.locator import CCXBlockUsageLocator, CCXLocator  # noqa: I001
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from opaque_keys.edx.locator import LibraryLocator

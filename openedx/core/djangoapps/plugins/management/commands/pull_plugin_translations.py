@@ -4,7 +4,7 @@ Download the translations via atlas for the edx-platform plugins (edx_django_uti
 For the XBlock command check the `pull_xblock_translations` command.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from openedx.core.djangoapps.plugins.i18n_api import BaseAtlasPullCommand
 

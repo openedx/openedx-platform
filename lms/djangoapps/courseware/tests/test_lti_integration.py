@@ -1,7 +1,7 @@
 """LTI integration tests"""
 
 
-import importlib
+import importlib  # noqa: I001
 import json
 import re
 from collections import OrderedDict

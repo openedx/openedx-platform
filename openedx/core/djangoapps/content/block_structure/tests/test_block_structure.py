@@ -3,7 +3,7 @@ Tests for block_structure.py
 """
 
 
-import itertools
+import itertools  # noqa: I001
 # pylint: disable=protected-access
 from collections import namedtuple
 from copy import deepcopy

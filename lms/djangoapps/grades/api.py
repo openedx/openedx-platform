@@ -4,7 +4,7 @@ Python APIs exposed by the grades app to other in-process apps.
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 import pytz
 from django.core.exceptions import ObjectDoesNotExist
@@ -146,7 +146,7 @@ def _create_subsection_grade(user_id, course_key, usage_key):
     Given a user_id, course_key, and subsection usage_key,
     creates a new ``PersistentSubsectionGrade``.
     """
-    from lms.djangoapps.courseware.courses import get_course
+    from lms.djangoapps.courseware.courses import get_course  # noqa: I001
     from django.contrib.auth import get_user_model
     course = get_course(course_key, depth=None)
     subsection = course.get_child(usage_key)

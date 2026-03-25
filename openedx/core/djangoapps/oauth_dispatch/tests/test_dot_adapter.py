@@ -2,7 +2,7 @@
 Tests for DOT Adapter
 """
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 import pytest
 
 import ddt

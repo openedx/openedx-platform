@@ -7,7 +7,7 @@ Unit tests for LMS instructor-initiated background tasks helper functions.
 """
 
 
-import os
+import os  # noqa: I001
 import shutil
 import tempfile
 from collections import OrderedDict

@@ -1,7 +1,7 @@
 """ API v0 views. """
 
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urljoin
 
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication

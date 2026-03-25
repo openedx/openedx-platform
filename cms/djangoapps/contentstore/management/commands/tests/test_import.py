@@ -3,7 +3,7 @@ Unittests for importing a course via management command
 """
 
 
-import os
+import os  # noqa: I001
 import shutil
 import tempfile
 

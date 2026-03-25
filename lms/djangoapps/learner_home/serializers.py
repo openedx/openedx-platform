@@ -2,7 +2,7 @@
 Serializers for Learner Home
 """
 
-from datetime import date, timedelta
+from datetime import date, timedelta  # noqa: I001
 from urllib.parse import urlencode, urljoin
 
 from django.conf import settings

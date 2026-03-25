@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-import uuid
+import uuid  # noqa: I001
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 

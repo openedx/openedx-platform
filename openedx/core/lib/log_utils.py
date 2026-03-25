@@ -2,7 +2,7 @@
 Helper functions for logging.
 """
 
-import logging
+import logging  # noqa: I001
 
 log = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@ Management command to fix NotificationPreference records with invalid 'Mixed' em
 created during migration.
 """
 
-import logging
+import logging  # noqa: I001
 from django.core.management.base import BaseCommand
 
 from openedx.core.djangoapps.notifications.models import NotificationPreference

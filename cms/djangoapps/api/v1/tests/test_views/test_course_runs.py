@@ -1,7 +1,7 @@
 """Tests for Course run views"""
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch  # lint-amnesty, pylint: disable=unused-import
 
 import ddt

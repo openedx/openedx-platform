@@ -1,7 +1,7 @@
 """Helpers for tests related to emitting events to the tracking logs."""
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from zoneinfo import ZoneInfo
 
 from django.test import TestCase

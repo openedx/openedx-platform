@@ -3,7 +3,7 @@ Unit tests for the asset upload endpoint.
 """
 
 
-import json
+import json  # noqa: I001
 from datetime import datetime
 from io import BytesIO
 from unittest import mock

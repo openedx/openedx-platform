@@ -6,7 +6,7 @@ See lms/djangoapps/support for more details.
 """
 
 
-import logging
+import logging  # noqa: I001
 import urllib
 from functools import wraps
 

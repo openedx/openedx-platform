@@ -1,7 +1,7 @@
 """
 Tests for CourseData utility class.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import pytest
 

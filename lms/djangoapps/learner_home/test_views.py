@@ -2,7 +2,7 @@
 Test for Learner Home views and related functions
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import json
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode

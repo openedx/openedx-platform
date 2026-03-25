@@ -2,7 +2,7 @@
 Tests for Course API forms.
 """
 
-from itertools import product
+from itertools import product  # noqa: I001
 from urllib.parse import urlencode
 
 import ddt

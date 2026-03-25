@@ -1,7 +1,7 @@
 """
 Customize the django admin experience
 """
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 from django.contrib.admin import SimpleListFilter
 from django.contrib.admin.utils import quote
 from simple_history.admin import SimpleHistoryAdmin

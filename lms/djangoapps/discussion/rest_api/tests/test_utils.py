@@ -2,7 +2,7 @@
 Tests for Discussion REST API utils.
 """
 
-import unittest
+import unittest  # noqa: I001
 from datetime import datetime, timedelta
 
 import ddt

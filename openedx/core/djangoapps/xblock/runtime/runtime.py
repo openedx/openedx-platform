@@ -1,7 +1,7 @@
 """
 Common base classes for all new XBlock runtimes.
 """
-import logging
+import logging  # noqa: I001
 from typing import Callable, Protocol
 from urllib.parse import urljoin  # pylint: disable=import-error
 

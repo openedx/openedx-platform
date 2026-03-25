@@ -1,7 +1,7 @@
 """
 Models used to implement support related models in such as SSO History model
 """
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.db.models import ForeignKey, DO_NOTHING, CASCADE, TextChoices
 from django.db.models.fields import BooleanField, CharField, DateTimeField
 

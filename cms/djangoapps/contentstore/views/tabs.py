@@ -1,7 +1,7 @@
 """
 Views related to course tabs
 """
-from typing import Dict, Iterable, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required

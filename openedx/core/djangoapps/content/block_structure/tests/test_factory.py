@@ -2,7 +2,7 @@
 Tests for block_structure_factory.py
 """
 
-import pytest
+import pytest  # noqa: I001
 from django.test import TestCase
 
 from opaque_keys.edx.keys import CourseKey

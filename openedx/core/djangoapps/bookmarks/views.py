@@ -6,7 +6,7 @@ https://openedx.atlassian.net/wiki/display/TNL/Bookmarks+API
 """
 
 
-import logging
+import logging  # noqa: I001
 
 import eventtracking
 from django.conf import settings

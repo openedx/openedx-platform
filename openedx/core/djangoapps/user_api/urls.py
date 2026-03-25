@@ -3,7 +3,7 @@ Defines the URL routes for this app.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import include, path, re_path
 from rest_framework import routers
 

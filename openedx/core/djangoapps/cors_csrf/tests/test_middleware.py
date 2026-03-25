@@ -3,7 +3,7 @@ Tests for the CORS CSRF middleware
 """
 
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock  # noqa: I001
 import ddt
 import pytest
 from django.test import TestCase

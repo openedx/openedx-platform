@@ -1,7 +1,7 @@
 """
 This file contains celery tasks for notifications.
 """
-import uuid
+import uuid  # noqa: I001
 from datetime import datetime, timedelta
 
 from celery import shared_task

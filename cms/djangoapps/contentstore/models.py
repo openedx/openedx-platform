@@ -1,7 +1,7 @@
 """
 Models for contentstore
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime, timezone
 from itertools import chain
 

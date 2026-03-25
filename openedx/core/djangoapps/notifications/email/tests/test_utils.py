@@ -1,7 +1,7 @@
 """
 Test utils.py
 """
-import datetime
+import datetime  # noqa: I001
 import ddt
 import pytest
 

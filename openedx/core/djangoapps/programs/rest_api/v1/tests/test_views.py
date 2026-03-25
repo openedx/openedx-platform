@@ -2,7 +2,7 @@
 Unit tests for Programs REST APIs and Views
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from uuid import uuid4
 
 from django.core.cache import cache

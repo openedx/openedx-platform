@@ -2,7 +2,7 @@
 Content Type Gating Configuration Models
 """
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError  # noqa: I001
 from django.db import models
 from django.utils import timezone
 

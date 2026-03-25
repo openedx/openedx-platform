@@ -1,5 +1,5 @@
 """ Utility functions related to django storages """
-import logging
+import logging  # noqa: I001
 
 from typing import Optional, List
 from django.conf import settings

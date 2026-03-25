@@ -4,7 +4,7 @@ Test the partitions and partitions service
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 import django.test
 
 from lms.djangoapps.courseware.tests.test_masquerade import StaffMasqueradeTestCase

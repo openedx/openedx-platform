@@ -1,7 +1,7 @@
 """ Management command to link program enrollments and external student_keys to an LMS user """
 
 
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError

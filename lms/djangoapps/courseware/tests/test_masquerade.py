@@ -2,7 +2,7 @@
 Unit tests for masquerade.
 """
 
-import json
+import json  # noqa: I001
 import pickle
 from datetime import datetime
 from importlib import import_module

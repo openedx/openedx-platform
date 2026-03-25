@@ -3,7 +3,7 @@ Block for running content split tests
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import threading
 from functools import reduce

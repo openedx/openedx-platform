@@ -3,7 +3,7 @@ This module contains celery task functions for handling the management of subtas
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from contextlib import contextmanager
 from datetime import datetime

@@ -3,7 +3,7 @@ Enrollment track related signals.
 """
 
 
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 from openedx_events.learning.data import CourseAccessRoleData, UserData, UserPersonalData
 from openedx_events.learning.signals import COURSE_ACCESS_ROLE_ADDED, COURSE_ACCESS_ROLE_REMOVED

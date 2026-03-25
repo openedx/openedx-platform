@@ -3,7 +3,7 @@ Tests for CourseDetails
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from django.test import override_settings
 import pytest
 import ddt

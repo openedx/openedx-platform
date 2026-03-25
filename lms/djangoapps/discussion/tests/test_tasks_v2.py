@@ -2,7 +2,7 @@
 Tests the execution of forum notification tasks.
 """
 
-import math
+import math  # noqa: I001
 from datetime import datetime, timedelta
 from unittest import mock
 

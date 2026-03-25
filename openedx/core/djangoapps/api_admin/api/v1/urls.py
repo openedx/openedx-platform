@@ -2,7 +2,7 @@
 URL definitions for api access request API v1.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from openedx.core.djangoapps.api_admin.api.v1 import views
 
 app_name = 'v1'

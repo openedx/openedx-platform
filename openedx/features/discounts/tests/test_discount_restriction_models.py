@@ -3,7 +3,7 @@ Test discount restriction config
 """
 
 
-import itertools
+import itertools  # noqa: I001
 
 import ddt
 

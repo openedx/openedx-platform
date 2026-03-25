@@ -1,7 +1,7 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import json
 from io import BytesIO
 from urllib.parse import urlencode

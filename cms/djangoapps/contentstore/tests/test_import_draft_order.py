@@ -3,7 +3,7 @@ Tests Draft import order.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

@@ -2,7 +2,7 @@
 Discussion XBlock
 """
 
-import logging
+import logging  # noqa: I001
 import urllib
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage

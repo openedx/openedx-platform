@@ -1,7 +1,7 @@
 """
 Types used by content tagging API and implementation
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Dict, List, Union
 

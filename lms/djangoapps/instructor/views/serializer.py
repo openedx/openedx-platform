@@ -1,5 +1,5 @@
 """ Instructor apis serializers. """
-import re
+import re  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError

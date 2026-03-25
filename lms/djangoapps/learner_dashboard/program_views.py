@@ -1,6 +1,6 @@
 """Learner dashboard views"""
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # noqa: I001
 from django.views.decorators.http import require_GET
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from rest_framework import permissions, status

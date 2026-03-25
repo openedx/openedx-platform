@@ -2,7 +2,7 @@
 Management command to regenerate unverified certificates when a course
 transitions to honor code.
 """
-import logging
+import logging  # noqa: I001
 import time
 
 from django.contrib.auth import get_user_model

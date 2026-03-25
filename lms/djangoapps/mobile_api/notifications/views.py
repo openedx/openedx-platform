@@ -1,7 +1,7 @@
 """
 This module contains the view for registering a device for push notifications.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from rest_framework import status
 from rest_framework.response import Response
 

@@ -3,7 +3,7 @@ Third Party Auth REST API views
 """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

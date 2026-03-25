@@ -3,7 +3,7 @@ Tests for the score change signals defined in the courseware models module.
 """
 
 
-import re
+import re  # noqa: I001
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 

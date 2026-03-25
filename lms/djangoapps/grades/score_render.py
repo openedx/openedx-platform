@@ -2,7 +2,7 @@
 Score rendering when submission is evaluated for external grader and has been saved successfully
 """
 
-import logging
+import logging  # noqa: I001
 from functools import partial
 
 from django.http import Http404

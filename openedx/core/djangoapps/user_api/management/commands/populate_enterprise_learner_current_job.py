@@ -1,6 +1,6 @@
 """ Management command for populaing current job of learners in learner profile. """
 
-import logging
+import logging  # noqa: I001
 
 from edx_rest_api_client.client import OAuthAPIClient
 from urllib.parse import urljoin

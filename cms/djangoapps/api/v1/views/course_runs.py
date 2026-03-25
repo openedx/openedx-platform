@@ -1,7 +1,7 @@
 """HTTP endpoints for the Course Run API."""
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.http import Http404
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import parsers, permissions, status, viewsets

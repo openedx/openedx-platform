@@ -1,7 +1,7 @@
 """
 Settings for ace_common app.
 """
-from openedx.core.djangoapps.ace_common.utils import setup_firebase_app
+from openedx.core.djangoapps.ace_common.utils import setup_firebase_app  # noqa: I001
 
 ACE_ROUTING_KEY = 'edx.lms.core.default'
 

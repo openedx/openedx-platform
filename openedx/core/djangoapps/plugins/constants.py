@@ -3,7 +3,7 @@ Constants used by django app plugins
 """
 
 # expose constants from edx-django-utils so plugins using these continue to work
-from edx_django_utils.plugins import (  # lint-amnesty, pylint: disable=unused-import
+from edx_django_utils.plugins import (  # lint-amnesty, pylint: disable=unused-import  # noqa: I001
     PluginSettings,  # pylint: disable=unused-import
     PluginURLs,  # pylint: disable=unused-import
     PluginSignals,  # pylint: disable=unused-import

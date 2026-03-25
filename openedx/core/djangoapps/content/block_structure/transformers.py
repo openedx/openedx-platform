@@ -1,7 +1,7 @@
 """
 Module for a collection of BlockStructureTransformers.
 """
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 from .exceptions import TransformerDataIncompatible, TransformerException
 from .transformer import FilteringTransformerMixin, combine_filters

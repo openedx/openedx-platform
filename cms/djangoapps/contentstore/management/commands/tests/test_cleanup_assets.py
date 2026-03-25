@@ -4,7 +4,7 @@ or with filename which starts with "._")
 """
 
 
-from unittest import skip
+from unittest import skip  # noqa: I001
 from django.conf import settings
 from django.core.management import call_command
 from opaque_keys.edx.keys import CourseKey

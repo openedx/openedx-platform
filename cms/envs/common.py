@@ -38,7 +38,7 @@ When refering to XBlocks, we use the entry-point name. For example,
 # want to import all variables from base settings files
 # pylint: disable=unused-import, useless-suppression, wrong-import-order, wrong-import-position
 
-import importlib.util
+import importlib.util  # noqa: I001
 import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
@@ -1080,7 +1080,7 @@ ZENDESK_API_KEY = ''
 
 ############## Installed Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins
+from edx_django_utils.plugins import get_plugin_apps, add_plugins  # noqa: I001
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.CMS))

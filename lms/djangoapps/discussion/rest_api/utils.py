@@ -1,7 +1,7 @@
 """
 Utils for discussion API.
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from typing import Callable, Dict, List
 

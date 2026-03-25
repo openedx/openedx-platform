@@ -3,7 +3,7 @@ Synchronizes a mailchimp list with the students of a course.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import logging
 import math
 import random

@@ -1,7 +1,7 @@
 """
 Unit tests for the EnrollmentsNotificationSender class
 """
-import unittest
+import unittest  # noqa: I001
 import datetime
 from unittest.mock import MagicMock, patch
 

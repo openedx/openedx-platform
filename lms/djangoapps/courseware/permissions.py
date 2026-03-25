@@ -2,7 +2,7 @@
 Permission definitions for the courseware djangoapp
 """
 
-from bridgekeeper import perms
+from bridgekeeper import perms  # noqa: I001
 from .rules import HasAccessRule, HasStaffAccessToContent
 
 EDIT_BOOKMARK = 'courseware.edit_bookmark'

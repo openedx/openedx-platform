@@ -2,7 +2,7 @@
 Python API for library collections
 ==================================
 """
-from django.db import IntegrityError
+from django.db import IntegrityError  # noqa: I001
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2

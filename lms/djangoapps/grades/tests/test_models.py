@@ -3,7 +3,7 @@ Unit tests for grades models.
 """
 
 
-import json
+import json  # noqa: I001
 from base64 import b64encode
 from collections import OrderedDict
 from datetime import datetime

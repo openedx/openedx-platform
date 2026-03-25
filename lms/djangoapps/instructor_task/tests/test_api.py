@@ -2,7 +2,7 @@
 Test for LMS instructor background task queue management
 """
 
-import datetime
+import datetime  # noqa: I001
 import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4

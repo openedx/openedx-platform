@@ -3,7 +3,7 @@ Configuration models for Video XModule
 """
 
 
-from config_models.models import ConfigurationModel
+from config_models.models import ConfigurationModel  # noqa: I001
 from django.db import models
 from django.db.models import BooleanField, PositiveIntegerField, TextField
 from model_utils.models import TimeStampedModel

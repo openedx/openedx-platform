@@ -5,7 +5,7 @@ Bookmarks module.
 """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 DEFAULT_FIELDS = [
     'id',

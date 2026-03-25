@@ -3,7 +3,7 @@ Tests for the CCXCon celery tasks
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 

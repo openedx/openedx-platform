@@ -12,7 +12,7 @@ Note: The access control logic in this file does NOT check for enrollment in
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings  # pylint: disable=unused-import
 from django.contrib.auth.models import AnonymousUser

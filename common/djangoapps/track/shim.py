@@ -1,7 +1,7 @@
 """Map new event context values to old top-level field values. Ensures events can be parsed by legacy parsers."""
 
 
-import json
+import json  # noqa: I001
 
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey

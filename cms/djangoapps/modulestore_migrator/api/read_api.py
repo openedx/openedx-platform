@@ -1,7 +1,7 @@
 """
 API for reading information about previous migrations
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import typing as t
 from uuid import UUID

@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import logging
+import logging  # noqa: I001
 from functools import partial
 
 from django.conf import settings

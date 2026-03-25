@@ -2,7 +2,7 @@
 Toggles for verify_student app
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 # Namespace for verify_students waffle flags.
 WAFFLE_FLAG_NAMESPACE = 'verify_student'

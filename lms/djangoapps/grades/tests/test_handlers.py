@@ -1,7 +1,7 @@
 """
 Tests for the grades handlers
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest import mock
 from uuid import uuid4
 

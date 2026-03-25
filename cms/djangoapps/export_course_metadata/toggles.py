@@ -2,7 +2,7 @@
 Toggles for export_course_metadata app
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 # .. toggle_name: export_course_metadata
 # .. toggle_implementation: WaffleFlag

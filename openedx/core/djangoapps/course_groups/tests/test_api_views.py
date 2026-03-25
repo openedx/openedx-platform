@@ -3,7 +3,7 @@ Tests for Cohort API
 """
 
 
-import tempfile
+import tempfile  # noqa: I001
 
 import ddt
 from django.urls import reverse

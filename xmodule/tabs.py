@@ -3,7 +3,7 @@ Implement CourseTab
 """
 
 
-import logging
+import logging  # noqa: I001
 from abc import ABCMeta
 
 from django.utils.module_loading import import_string

@@ -2,7 +2,7 @@
 Tests for the course updates utility methods.
 """
 
-from django.test.client import RequestFactory
+from django.test.client import RequestFactory  # noqa: I001
 
 from openedx.core.djangoapps.user_api.course_tag.api import get_course_tag, set_course_tag
 from openedx.features.course_experience.course_updates import (

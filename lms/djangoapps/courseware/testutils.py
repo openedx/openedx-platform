@@ -3,7 +3,7 @@ Common test utilities for courseware functionality
 """
 
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractmethod  # noqa: I001
 from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.parse import urlencode

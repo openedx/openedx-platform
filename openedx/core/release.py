@@ -3,7 +3,7 @@ Information about the release line of this Open edX code.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 
 # The release line: an Open edX release name ("ficus"), or "master".
 # This should always be "master" on the master branch, and will be changed

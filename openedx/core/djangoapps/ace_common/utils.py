@@ -1,7 +1,7 @@
 """
 Utility functions for edx-ace.
 """
-import logging
+import logging  # noqa: I001
 
 log = logging.getLogger(__name__)
 

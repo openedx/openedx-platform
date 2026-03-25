@@ -6,7 +6,7 @@ Output is UTF-8 encoded by default.
 The output format is one course_id per line.
 """
 
-import datetime
+import datetime  # noqa: I001
 
 from textwrap import dedent
 

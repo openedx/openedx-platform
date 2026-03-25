@@ -5,7 +5,7 @@ For additional information and historical context, see:
 https://openedx.atlassian.net/wiki/display/TNL/User+API
 """
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from functools import wraps
 

@@ -2,7 +2,7 @@
 Django admin commands related to verify_student
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 import logging
 import time
 

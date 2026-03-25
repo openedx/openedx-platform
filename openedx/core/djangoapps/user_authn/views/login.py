@@ -4,7 +4,7 @@ Views for login / logout and associated functionality
 Much of this file was broken out from views.py, previous history can be found there.
 """
 
-import hashlib
+import hashlib  # noqa: I001
 import json
 import logging
 import re

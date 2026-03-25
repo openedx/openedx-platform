@@ -3,7 +3,7 @@ Tests for OAuth2.  This module is copied from django-rest-framework-oauth
 (tests/test_authentication.py) and updated to use our subclass of BearerAuthentication.
 """
 
-import itertools
+import itertools  # noqa: I001
 import json
 from collections import namedtuple
 from datetime import timedelta

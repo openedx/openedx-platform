@@ -13,7 +13,7 @@
 #   limitations under the License.
 LOOKUP = {}
 
-from .paths import add_lookup, clear_lookups, lookup_template, save_lookups  # lint-amnesty, pylint: disable=wrong-import-position
+from .paths import add_lookup, clear_lookups, lookup_template, save_lookups  # lint-amnesty, pylint: disable=wrong-import-position  # noqa: I001
 
 
 class Engines:

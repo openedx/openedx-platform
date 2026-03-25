@@ -3,7 +3,7 @@ Tests for credit course models.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 

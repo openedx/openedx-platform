@@ -6,7 +6,7 @@ from `lms.djangoapps.program_enrollments.api`.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from common.djangoapps.util.query import read_replica_or_default
 from lms.djangoapps.grades.api import CourseGradeFactory, clear_prefetched_course_grades, prefetch_course_grades

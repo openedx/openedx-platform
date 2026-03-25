@@ -3,7 +3,7 @@ User Partitions Transformer
 """
 
 
-from lms.djangoapps.courseware.access import has_access
+from lms.djangoapps.courseware.access import has_access  # noqa: I001
 from openedx.core.djangoapps.content.block_structure.transformer import (  # lint-amnesty, pylint: disable=unused-import
     BlockStructureTransformer
 )

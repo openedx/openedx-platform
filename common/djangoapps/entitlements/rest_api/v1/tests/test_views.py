@@ -1,7 +1,7 @@
 """
 Test file to test the Entitlement API Views.
 """
-import json
+import json  # noqa: I001
 import logging
 import uuid
 from datetime import datetime, timedelta
@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
-    from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
+    from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long  # noqa: I001
         CourseEntitlement,
         CourseEntitlementPolicy,
         CourseEntitlementSupportDetail

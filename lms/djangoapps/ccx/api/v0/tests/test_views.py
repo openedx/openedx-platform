@@ -3,7 +3,7 @@ Tests for the CCX REST APIs.
 """
 
 
-import json
+import json  # noqa: I001
 import math
 import string
 from datetime import timedelta

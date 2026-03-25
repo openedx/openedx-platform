@@ -2,7 +2,7 @@
 Top level API tests. Tests API public contracts only. Do not import/create/mock
 models for this app.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest.mock import patch, MagicMock
 import unittest
 

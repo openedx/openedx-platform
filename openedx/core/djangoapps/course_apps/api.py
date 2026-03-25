@@ -1,7 +1,7 @@
 """
 Python APIs for Course Apps.
 """
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 

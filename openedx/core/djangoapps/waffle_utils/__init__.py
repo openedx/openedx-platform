@@ -2,7 +2,7 @@
 Extra utilities for waffle: most classes are defined in edx_toggles.toggles (https://edx-toggles.readthedocs.io/), but
 we keep here some extra classes for usage within edx-platform. These classes cover course override use cases.
 """
-import logging
+import logging  # noqa: I001
 
 from edx_toggles.toggles import WaffleFlag
 from opaque_keys.edx.keys import CourseKey, LearningContextKey

@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import json
+import json  # noqa: I001
 from string import capwords
 from unittest.mock import Mock, patch
 

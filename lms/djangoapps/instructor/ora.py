@@ -1,6 +1,6 @@
 """Utilities for retrieving Open Response Assessments (ORAs) data for instructor dashboards."""
 
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _  # noqa: I001
 from django.conf import settings
 
 from openassessment.data import OraAggregateData

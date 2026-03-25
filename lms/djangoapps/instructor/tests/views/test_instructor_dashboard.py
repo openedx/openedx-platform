@@ -2,7 +2,7 @@
 Unit tests for instructor_dashboard.py.
 """
 
-import datetime
+import datetime  # noqa: I001
 import re
 from unittest.mock import patch
 

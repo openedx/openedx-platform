@@ -6,7 +6,7 @@ https://openedx.atlassian.net/wiki/display/TNL/User+API
 """
 
 
-from django.db import transaction
+from django.db import transaction  # noqa: I001
 from django.utils.translation import gettext as _
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser

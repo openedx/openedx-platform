@@ -1,5 +1,5 @@
 """Views for discussion forums."""
-import functools
+import functools  # noqa: I001
 import json
 import logging
 import random

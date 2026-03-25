@@ -1,7 +1,7 @@
 """
 Tests for Certificates app utility functions
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 import ddt

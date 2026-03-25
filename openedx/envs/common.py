@@ -25,7 +25,7 @@ def center_with_hashes(text: str, width: int = 76):
     print(f"{f' {text} ':#^{width}}")
 ```
 """
-import os
+import os  # noqa: I001
 import importlib.util
 from path import Path as path
 

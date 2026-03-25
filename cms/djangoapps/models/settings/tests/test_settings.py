@@ -2,7 +2,7 @@
 Tests for the advanced settings
 """
 
-import unittest
+import unittest  # noqa: I001
 
 import ddt
 

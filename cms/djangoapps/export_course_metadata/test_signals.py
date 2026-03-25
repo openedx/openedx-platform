@@ -2,7 +2,7 @@
 Tests for signals.py
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from django.test.utils import override_settings
 from django.conf import settings
 

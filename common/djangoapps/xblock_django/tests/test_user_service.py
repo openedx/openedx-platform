@@ -2,7 +2,7 @@
 Tests for the DjangoXBlockUserService.
 """
 
-import ddt
+import ddt  # noqa: I001
 import pytest
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey

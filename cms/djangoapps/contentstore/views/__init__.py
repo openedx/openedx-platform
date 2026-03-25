@@ -1,6 +1,6 @@
 "All view functions for contentstore, broken out into submodules"
 
-from .assets import *
+from .assets import *  # noqa: I001
 from .checklists import *
 from .component import *
 from .course import *  # lint-amnesty, pylint: disable=redefined-builtin

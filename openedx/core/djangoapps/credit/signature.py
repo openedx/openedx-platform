@@ -17,7 +17,7 @@ we receive from the credit provider.
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import hmac
 import logging
 

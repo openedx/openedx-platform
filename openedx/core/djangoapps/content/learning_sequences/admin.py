@@ -1,7 +1,7 @@
 """
 Read-only Django Admin for viewing Learning Sequences and Outline data.
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from enum import Enum
 import json
 

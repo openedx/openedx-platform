@@ -1,7 +1,7 @@
 # pylint: disable=too-many-lines
 """Core classes, mixins, and utilities for XModules and XBlock integration."""
 
-import logging
+import logging  # noqa: I001
 import os
 import time
 import warnings

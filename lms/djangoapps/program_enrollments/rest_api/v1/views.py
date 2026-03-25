@@ -1,7 +1,7 @@
 """
 ProgramEnrollment Views
 """
-from ccx_keys.locator import CCXLocator
+from ccx_keys.locator import CCXLocator  # noqa: I001
 from django.conf import settings
 from django.core.management import call_command
 from django.db import transaction

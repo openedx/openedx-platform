@@ -1,7 +1,7 @@
 """
 Course to Library Import API v1 URLs.
 """
-from django.urls import include, path
+from django.urls import include, path  # noqa: I001
 from rest_framework.routers import SimpleRouter
 
 from .views import (

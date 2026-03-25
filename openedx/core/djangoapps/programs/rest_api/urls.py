@@ -8,7 +8,7 @@ While these will still be reachable from `/dashboard/v0/programs` for backward
 compatibility, the API will now be part of `/learner_dashboard/v1/programs`.
 """
 
-from django.urls import include, path
+from django.urls import include, path  # noqa: I001
 
 from openedx.core.djangoapps.programs.rest_api.v1 import (
     urls as v1_programs_rest_api_urls,

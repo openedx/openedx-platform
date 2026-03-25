@@ -2,7 +2,7 @@
 Tests for serializers for the Learner Home
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone  # noqa: I001
 from itertools import product
 from random import randint
 from unittest import mock

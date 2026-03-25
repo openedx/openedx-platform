@@ -1,7 +1,7 @@
 """
 Tests for the Studio content search documents (what gets stored in the index)
 """
-import ddt
+import ddt  # noqa: I001
 from dataclasses import replace
 from datetime import datetime, timezone
 

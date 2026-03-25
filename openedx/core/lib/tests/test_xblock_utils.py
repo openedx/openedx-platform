@@ -3,7 +3,7 @@ Tests for xblock_utils.py
 """
 
 
-import uuid
+import uuid  # noqa: I001
 from unittest.mock import patch
 
 import ddt

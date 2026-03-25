@@ -3,7 +3,7 @@ Tests for helper function provided by site_configuration app.
 """
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.site_configuration.tests.test_util import (

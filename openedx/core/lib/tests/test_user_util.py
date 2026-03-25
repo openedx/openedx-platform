@@ -2,7 +2,7 @@
 
 """Tests for `user_util` package."""
 
-import pytest
+import pytest  # noqa: I001
 from types import GeneratorType
 
 from openedx.core.lib import user_util

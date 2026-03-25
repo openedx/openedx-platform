@@ -1,7 +1,7 @@
 """
 Tests utils of course expirience feature.
 """
-import datetime
+import datetime  # noqa: I001
 
 from django.urls import reverse
 from django.utils import timezone

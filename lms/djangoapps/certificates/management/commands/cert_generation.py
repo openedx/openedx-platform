@@ -2,7 +2,7 @@
 Management command to generate course certificates for one or more users in a given course run.
 """
 
-import logging
+import logging  # noqa: I001
 import shlex
 
 from django.contrib.auth import get_user_model

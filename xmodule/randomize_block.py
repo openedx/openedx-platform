@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import logging
+import logging  # noqa: I001
 import random
 
 from django.utils.functional import cached_property

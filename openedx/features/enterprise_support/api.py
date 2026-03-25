@@ -2,7 +2,7 @@
 APIs providing support for enterprise functionality.
 """
 
-import logging
+import logging  # noqa: I001
 import traceback
 from functools import wraps
 from urllib.parse import urljoin
@@ -30,7 +30,7 @@ from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.utils import get_data_consent_share_cache_key
 
 try:
-    from consent.models import DataSharingConsent, DataSharingConsentTextOverrides
+    from consent.models import DataSharingConsent, DataSharingConsentTextOverrides  # noqa: I001
     from enterprise.api.v1.serializers import (
         EnterpriseCustomerUserReadOnlySerializer,
         EnterpriseCustomerUserWriteSerializer

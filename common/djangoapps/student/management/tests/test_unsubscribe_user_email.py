@@ -1,6 +1,6 @@
 """Tests for unsubscribe user's email management command"""
 
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile  # noqa: I001
 from unittest.mock import patch
 
 import pytest

@@ -3,7 +3,7 @@ Unit tests for the VerificationDeadline signals
 """
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 
 from django.utils.timezone import now
 from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order

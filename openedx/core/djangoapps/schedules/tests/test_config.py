@@ -2,7 +2,7 @@
 Tests for schedules config flag code
 """
 
-import crum
+import crum  # noqa: I001
 import ddt
 from django.test import TestCase
 from django.test.client import RequestFactory

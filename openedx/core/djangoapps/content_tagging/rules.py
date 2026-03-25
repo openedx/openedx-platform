@@ -1,6 +1,6 @@
 """Django rules-based permissions for tagging"""
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Union
 

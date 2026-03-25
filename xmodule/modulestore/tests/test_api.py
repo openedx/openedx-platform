@@ -1,7 +1,7 @@
 """
 Tests for the modulestore and XBlock python APIs.
 """
-from unittest.mock import Mock
+from unittest.mock import Mock  # noqa: I001
 
 from django.conf import settings
 

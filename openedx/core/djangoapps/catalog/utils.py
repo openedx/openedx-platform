@@ -1,6 +1,6 @@
 """Helper functions for working with the catalog service."""
 
-import copy
+import copy  # noqa: I001
 import datetime
 import logging
 import uuid

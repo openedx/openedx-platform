@@ -3,7 +3,7 @@ Test cases to cover Accounts-related serializers of the User API application
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.test import TestCase
 from django.test.client import RequestFactory

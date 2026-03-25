@@ -3,7 +3,7 @@ Unit tests for cloning a course between the same and different module stores.
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import Mock, patch
 
 from django.conf import settings

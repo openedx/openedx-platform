@@ -3,7 +3,7 @@ Tests for main.py
 """
 
 
-import json
+import json  # noqa: I001
 import re
 from io import StringIO
 from unittest import TestCase

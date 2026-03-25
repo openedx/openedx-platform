@@ -3,7 +3,7 @@ Miscellaneous utility functions.
 """
 
 
-import re
+import re  # noqa: I001
 
 from opaque_keys.edx.locator import (
     CourseLocator,

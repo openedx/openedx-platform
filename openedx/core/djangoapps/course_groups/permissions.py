@@ -2,7 +2,7 @@
 Permissions for cohorts API
 """
 
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey  # noqa: I001
 from rest_framework import permissions
 
 from openedx.core.djangoapps.django_comment_common.models import (

@@ -1,6 +1,6 @@
 """Tests for Show Answer overrides for self-paced courses."""
 
-import ddt
+import ddt  # noqa: I001
 from django.test import RequestFactory
 from django.test.utils import override_settings
 

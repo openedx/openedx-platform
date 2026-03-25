@@ -3,7 +3,7 @@
 Tests for js_utils.py
 """
 
-import json
+import json  # noqa: I001
 import re
 import html
 from unittest import TestCase

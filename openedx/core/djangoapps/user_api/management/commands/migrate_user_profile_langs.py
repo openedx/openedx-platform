@@ -3,7 +3,7 @@ Migrates user preferences from one language code to another in batches. Dark lan
 """
 
 
-import logging
+import logging  # noqa: I001
 from time import sleep
 
 from django.conf import settings

@@ -3,7 +3,7 @@ Mixins for the EnterpriseApiClient.
 """
 
 
-import json
+import json  # noqa: I001
 
 from unittest import mock
 

@@ -3,7 +3,7 @@ CCX API v0 URLs.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import include, path, re_path
 
 from lms.djangoapps.ccx.api.v0 import views

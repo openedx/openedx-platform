@@ -3,7 +3,7 @@ Tests for the course grading API view
 """
 
 
-import json
+import json  # noqa: I001
 from collections import OrderedDict, namedtuple
 from contextlib import contextmanager
 from datetime import datetime

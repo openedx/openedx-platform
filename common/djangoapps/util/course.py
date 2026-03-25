@@ -3,7 +3,7 @@ Utility methods related to course
 """
 
 
-import logging
+import logging  # noqa: I001
 from urllib.parse import urlencode
 
 from django.conf import settings

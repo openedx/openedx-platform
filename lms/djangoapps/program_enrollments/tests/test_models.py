@@ -3,7 +3,7 @@ Unit tests for ProgramEnrollment models.
 """
 
 
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 import pytest
 import ddt
 from django.db.utils import IntegrityError

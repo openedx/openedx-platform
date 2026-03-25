@@ -4,7 +4,7 @@ Tests for BlockNavigationTransformer.
 """
 
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 
 import ddt
 

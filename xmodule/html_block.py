@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import copy
+import copy  # noqa: I001
 import logging
 import os
 import re

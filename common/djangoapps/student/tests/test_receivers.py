@@ -1,6 +1,6 @@
 """ Tests for student signal receivers. """
 
-from unittest import skipUnless
+from unittest import skipUnless  # noqa: I001
 from unittest.mock import patch
 
 from edx_toggles.toggles.testutils import override_waffle_flag

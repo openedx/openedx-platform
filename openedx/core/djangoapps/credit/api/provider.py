@@ -3,7 +3,7 @@ API for initiating and tracking requests for credit from a provider.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 import uuid
 

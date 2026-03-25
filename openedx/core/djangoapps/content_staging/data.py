@@ -1,7 +1,7 @@
 """
 Public python data types for content staging
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 from attrs import field, frozen, validators
 from datetime import datetime
 

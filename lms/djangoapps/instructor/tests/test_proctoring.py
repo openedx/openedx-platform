@@ -2,7 +2,7 @@
 Unit tests for Edx Proctoring feature flag in new instructor dashboard.
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.apps import apps

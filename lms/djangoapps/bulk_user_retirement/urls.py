@@ -2,7 +2,7 @@
 Defines the URL route for this app.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from .views import BulkUsersRetirementView
 

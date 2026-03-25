@@ -2,7 +2,7 @@
 Tests for logout
 """
 
-import urllib
+import urllib  # noqa: I001
 from unittest import mock
 import ddt
 import nh3

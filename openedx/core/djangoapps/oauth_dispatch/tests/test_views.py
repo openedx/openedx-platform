@@ -3,7 +3,7 @@ Tests for Blocks Views
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import call, patch
 
 import ddt

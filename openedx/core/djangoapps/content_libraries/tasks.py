@@ -14,7 +14,7 @@ Architecture note:
     A longer-term solution to this issue would be to move the content_libraries app to cms:
     https://github.com/openedx/edx-platform/issues/33428
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from io import StringIO
 import logging

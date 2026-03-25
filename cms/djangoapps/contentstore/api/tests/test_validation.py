@@ -1,7 +1,7 @@
 """
 Tests for the course import API views
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 

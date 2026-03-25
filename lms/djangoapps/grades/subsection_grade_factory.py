@@ -3,7 +3,7 @@ SubsectionGrade Factory Class
 """
 
 
-from collections import OrderedDict
+from collections import OrderedDict  # noqa: I001
 from logging import getLogger
 
 from django.conf import settings

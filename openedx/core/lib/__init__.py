@@ -6,7 +6,7 @@ Packages that are LMS-specific or CMS-specific should be in lms/ or cms/ instead
 This particular module contains a small handful of broadly useful utility functions.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.core.exceptions import ImproperlyConfigured
 
 

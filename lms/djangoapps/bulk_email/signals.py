@@ -1,7 +1,7 @@
 """
 Signal handlers for the bulk_email app
 """
-import logging
+import logging  # noqa: I001
 
 from django.dispatch import receiver
 from eventtracking import tracker

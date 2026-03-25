@@ -1,7 +1,7 @@
 """
 Views to support notification preferences.
 """
-import json
+import json  # noqa: I001
 import os
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from binascii import Error

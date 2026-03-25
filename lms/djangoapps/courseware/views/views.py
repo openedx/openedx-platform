@@ -3,7 +3,7 @@ Courseware views functions
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import urllib
 from collections import OrderedDict, namedtuple

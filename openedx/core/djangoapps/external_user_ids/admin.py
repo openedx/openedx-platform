@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import csv
+import csv  # noqa: I001
 from logging import getLogger
 
 from django import forms

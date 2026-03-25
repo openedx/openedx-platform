@@ -1,7 +1,7 @@
 """
 Discussion API internal interface
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import itertools
 import re

@@ -3,7 +3,7 @@ Tests for wiki permissions
 """
 
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group  # noqa: I001
 from wiki.models import URLPath
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

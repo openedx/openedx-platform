@@ -2,7 +2,7 @@
 Provides factories for third_party_auth models.
 """
 
-import factory
+import factory  # noqa: I001
 from factory import SubFactory
 from factory.django import DjangoModelFactory
 from faker import Factory as FakerFactory

@@ -5,7 +5,7 @@ View for Courseware Index
 # pylint: disable=attribute-defined-outside-init
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.views import redirect_to_login
 from django.utils.decorators import method_decorator

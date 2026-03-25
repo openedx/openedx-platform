@@ -2,7 +2,7 @@
 Test that various events are fired for models in the grades app.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from ccx_keys.locator import CCXLocator
 from django.utils.timezone import now

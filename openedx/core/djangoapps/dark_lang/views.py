@@ -3,7 +3,7 @@ Views file for the Darklang Django App
 """
 
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required  # noqa: I001
 from django.http import Http404
 from django.shortcuts import redirect
 from django.template.loader import render_to_string

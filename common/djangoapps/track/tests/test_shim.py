@@ -1,7 +1,7 @@
 """Ensure emitted events contain the fields legacy processors expect to find."""
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 from unittest.mock import sentinel
 import pytest
 import ddt

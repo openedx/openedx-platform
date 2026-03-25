@@ -1,7 +1,7 @@
 """Tests covering Credentials signals."""
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.conf import settings  # lint-amnesty, pylint: disable=unused-import
 from django.test import TestCase, override_settings  # lint-amnesty, pylint: disable=unused-import

@@ -4,7 +4,7 @@ Models used to implement SAML SSO support in third_party_auth
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import re
 

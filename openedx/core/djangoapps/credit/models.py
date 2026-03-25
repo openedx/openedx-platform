@@ -6,7 +6,7 @@ successful completion of a course on EdX
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from collections import defaultdict
 

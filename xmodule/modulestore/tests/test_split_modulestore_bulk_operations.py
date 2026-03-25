@@ -4,7 +4,7 @@ Tests for bulk operations in Split Modulestore.
 # pylint: disable=protected-access
 
 
-import copy
+import copy  # noqa: I001
 import unittest
 from unittest.mock import MagicMock, Mock, call
 

@@ -1,7 +1,7 @@
 """
 Togglable settings for Teams behavior
 """
-from edx_toggles.toggles import SettingToggle
+from edx_toggles.toggles import SettingToggle  # noqa: I001
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

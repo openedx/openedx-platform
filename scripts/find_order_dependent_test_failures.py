@@ -17,7 +17,7 @@ Sample usage::
 """
 
 
-import os
+import os  # noqa: I001
 import re
 import shutil
 import tempfile

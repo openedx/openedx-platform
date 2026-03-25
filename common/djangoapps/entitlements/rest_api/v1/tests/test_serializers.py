@@ -2,7 +2,7 @@
 Tests for the API Serializers.
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test import RequestFactory
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms

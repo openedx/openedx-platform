@@ -8,7 +8,7 @@ This management command will manually trigger the receivers we care about. (We d
 for these signals, since these are busy signals.)
 """
 
-import logging
+import logging  # noqa: I001
 import shlex
 
 from datetime import datetime, timedelta

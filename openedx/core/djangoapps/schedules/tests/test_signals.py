@@ -3,7 +3,7 @@ Tests for schedules signals
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 
 import ddt

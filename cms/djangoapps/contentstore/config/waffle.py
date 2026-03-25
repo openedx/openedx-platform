@@ -4,7 +4,7 @@ waffle switches for the contentstore app.
 """
 
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

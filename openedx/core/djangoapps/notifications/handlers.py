@@ -1,7 +1,7 @@
 """
 Handlers for notifications
 """
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction, ProgrammingError

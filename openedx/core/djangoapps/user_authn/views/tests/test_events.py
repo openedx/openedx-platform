@@ -7,7 +7,7 @@ Classes:
     LoginSessionEventTest: Test event sent after creating the user's login session
     user through the user API.
 """
-from unittest.mock import Mock
+from unittest.mock import Mock  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.urls import reverse

@@ -1,7 +1,7 @@
 """
 Unit tests for course index outline.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test import RequestFactory
 from django.urls import reverse
 from rest_framework import status

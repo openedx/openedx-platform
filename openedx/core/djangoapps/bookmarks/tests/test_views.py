@@ -3,7 +3,7 @@ Tests for bookmark views.
 """
 
 
-import json
+import json  # noqa: I001
 from urllib.parse import quote
 from unittest.mock import patch
 

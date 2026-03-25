@@ -2,7 +2,7 @@
 Tests for util.date_utils
 """
 
-import unittest
+import unittest  # noqa: I001
 from datetime import datetime, timedelta, tzinfo
 from unittest.mock import patch
 from zoneinfo import ZoneInfo

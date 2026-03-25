@@ -4,7 +4,7 @@ Python APIs exposed by the student app to other in-process apps.
 """
 
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING  # noqa: I001
 import logging
 
 from django.contrib.auth import get_user_model

@@ -1,7 +1,7 @@
 """
 Provide django models to back the discussions app
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 from collections import namedtuple

@@ -11,7 +11,7 @@ Tests for Studio Course Settings.
 # Part of https://github.com/openedx/edx-platform/issues/36275.
 """
 
-import copy
+import copy  # noqa: I001
 import datetime
 import json
 import unittest

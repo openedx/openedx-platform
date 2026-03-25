@@ -4,7 +4,7 @@ erroneous certificate names.
 """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 from django.core.management.base import BaseCommand
 

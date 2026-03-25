@@ -1,7 +1,7 @@
 """Common utility for testing third party oauth2 features."""
 
 
-import json
+import json  # noqa: I001
 from base64 import b64encode
 from unittest import skip
 

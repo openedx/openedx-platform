@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from common.djangoapps.util import milestones_helpers

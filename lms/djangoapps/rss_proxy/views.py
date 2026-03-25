@@ -3,7 +3,7 @@ Views for the rss_proxy djangoapp.
 """
 
 
-import requests
+import requests  # noqa: I001
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseNotFound

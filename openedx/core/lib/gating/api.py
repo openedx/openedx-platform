@@ -2,7 +2,7 @@
 API for the gating djangoapp
 """
 
-import json
+import json  # noqa: I001
 import logging
 
 from completion.models import BlockCompletion

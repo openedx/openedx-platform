@@ -3,7 +3,7 @@ This file contains receivers of course publication signals.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist

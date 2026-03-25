@@ -2,7 +2,7 @@
 CSV processing and generation utilities for Teams LMS app.
 """
 
-import csv
+import csv  # noqa: I001
 from collections import Counter
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

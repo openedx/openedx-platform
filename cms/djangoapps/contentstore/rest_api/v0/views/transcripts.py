@@ -1,7 +1,7 @@
 """
 Public rest API endpoints for the CMS API video assets.
 """
-import logging
+import logging  # noqa: I001
 from rest_framework.generics import (
     CreateAPIView,
     RetrieveAPIView,

@@ -1,7 +1,7 @@
 """
 Tests for the send_program_course_nudge_email management command.
 """
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest.mock import patch
 
 import ddt

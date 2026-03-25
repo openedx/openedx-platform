@@ -3,7 +3,7 @@ Test that various events are fired for models in the student app.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 import pytest

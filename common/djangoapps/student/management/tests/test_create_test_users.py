@@ -2,7 +2,7 @@
 Test the create_random_users command line script
 """
 
-import ddt
+import ddt  # noqa: I001
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError

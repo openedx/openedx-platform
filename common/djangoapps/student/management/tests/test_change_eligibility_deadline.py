@@ -1,7 +1,7 @@
 """ Test the change_eligibility_deadline command line script."""
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 import pytest
 
 from django.core.management import call_command

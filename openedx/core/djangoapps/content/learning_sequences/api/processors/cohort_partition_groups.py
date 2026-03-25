@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from typing import Union
 

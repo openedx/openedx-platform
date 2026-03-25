@@ -6,7 +6,7 @@ paths actually work.
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 import pytest

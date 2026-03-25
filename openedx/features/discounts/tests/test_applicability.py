@@ -1,7 +1,7 @@
 """Tests of openedx.features.discounts.applicability"""
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import Mock, patch
 
 import ddt

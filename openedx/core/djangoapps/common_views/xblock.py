@@ -3,7 +3,7 @@ Common views dedicated to rendering xblocks.
 """
 
 
-import logging
+import logging  # noqa: I001
 import mimetypes
 
 from django.http import Http404, HttpResponse

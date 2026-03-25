@@ -71,7 +71,7 @@ Settings:
                                                    login
 """
 
-import json
+import json  # noqa: I001
 import time
 
 import jwt

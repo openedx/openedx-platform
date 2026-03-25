@@ -3,7 +3,7 @@
 Tests the forum notification views.
 """
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime
 from unittest import mock

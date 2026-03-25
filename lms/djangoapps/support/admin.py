@@ -1,5 +1,5 @@
 """ Django admins for support models """
-from django import forms
+from django import forms  # noqa: I001
 from django.contrib import admin
 from lms.djangoapps.support.models import CourseResetCourseOptIn, CourseResetAudit
 from openedx.core.lib.courses import clean_course_id

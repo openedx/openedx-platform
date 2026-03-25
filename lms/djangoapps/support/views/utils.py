@@ -1,7 +1,7 @@
 """
 Various utility methods used by support app views.
 """
-import csv
+import csv  # noqa: I001
 from uuid import UUID
 
 from django.core.exceptions import ObjectDoesNotExist

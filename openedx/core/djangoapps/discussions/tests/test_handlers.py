@@ -1,7 +1,7 @@
 """
 Tests for discussions signal handlers
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from uuid import uuid4
 
 import ddt

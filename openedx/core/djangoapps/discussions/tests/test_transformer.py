@@ -2,7 +2,7 @@
 Tests for discussions course block transformer
 """
 
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # noqa: I001
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from lms.djangoapps.course_blocks.api import get_course_blocks

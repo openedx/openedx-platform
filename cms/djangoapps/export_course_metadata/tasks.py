@@ -2,7 +2,7 @@
 This file exports metadata about the course
 """
 
-import json
+import json  # noqa: I001
 
 from celery import shared_task
 from django.core.files.base import ContentFile

@@ -3,7 +3,7 @@ Management command for clear expired access tokens!
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 from time import sleep
 

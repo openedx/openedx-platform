@@ -2,7 +2,7 @@
 Test cases for create_sites_and_configurations command.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 import pytest
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site

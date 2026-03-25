@@ -4,7 +4,7 @@ Unit tests for the modulestore_migrator REST API v1 views.
 These tests focus on validation, HTTP status codes, and serialization/deserialization.
 Business logic is mocked out.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch  # noqa: I001
 from uuid import uuid4
 
 from django.contrib.auth import get_user_model

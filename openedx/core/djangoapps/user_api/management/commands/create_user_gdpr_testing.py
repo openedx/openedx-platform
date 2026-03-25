@@ -5,7 +5,7 @@ Optionally takes in username, email, and course UUID arguments.
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from textwrap import dedent
 from uuid import uuid4
 

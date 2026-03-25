@@ -7,7 +7,7 @@ from `lms.djangoapps.program_enrollments.api`.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction

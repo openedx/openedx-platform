@@ -1,7 +1,7 @@
 """
 Constants for course groups.
 """
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _  # noqa: I001
 
 COHORT_SCHEME = 'cohort'
 RANDOM_SCHEME = 'random'

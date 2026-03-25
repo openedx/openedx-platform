@@ -2,7 +2,7 @@
 Test the retirement_archive_and_cleanup.py script
 """
 
-import datetime
+import datetime  # noqa: I001
 import os
 from unittest.mock import DEFAULT, call, patch
 

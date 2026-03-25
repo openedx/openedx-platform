@@ -1,7 +1,7 @@
 """
 Test the enterprise support utils.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.case import TestCase
 
 from django.core.exceptions import ObjectDoesNotExist

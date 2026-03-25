@@ -1,6 +1,6 @@
 """Tests for self-paced course due date overrides."""
 
-import datetime
+import datetime  # noqa: I001
 
 from unittest.mock import patch
 import pytz

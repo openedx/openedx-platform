@@ -2,7 +2,7 @@
 Provides utility methods for video sharing functionality.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from opaque_keys.edx.keys import UsageKey

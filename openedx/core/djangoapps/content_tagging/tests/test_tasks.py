@@ -1,7 +1,7 @@
 """
 Test for auto-tagging content
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from unittest.mock import patch
 

@@ -4,7 +4,7 @@ access control rules.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from stevedore.extension import Extension, ExtensionManager
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase

@@ -2,7 +2,7 @@
 Miscellaneous tests for the student app.
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from urllib.parse import quote

@@ -12,7 +12,7 @@ Test utilities for mobile API tests:
 # pylint: disable=no-member
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 
 import ddt

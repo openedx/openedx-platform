@@ -3,7 +3,7 @@ This module contains all general use signals.
 """
 
 
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 # Signal that fires when a user is graded
 # providing_args=["user", "course_grade", "course_key", "deadline"]

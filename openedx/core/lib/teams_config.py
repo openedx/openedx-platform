@@ -1,7 +1,7 @@
 """
 Safe configuration wrapper for Course Teams feature.
 """
-import logging
+import logging  # noqa: I001
 import re
 from enum import Enum
 

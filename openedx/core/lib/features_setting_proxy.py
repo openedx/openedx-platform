@@ -1,7 +1,7 @@
 """
 Features Proxy Implementation
 """
-import warnings
+import warnings  # noqa: I001
 
 from collections.abc import MutableMapping, Mapping
 

@@ -3,7 +3,7 @@ Tests for EmbargoMiddleware with CountryAccessRules
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 import ddt
 from config_models.models import cache as config_cache
 from django.conf import settings

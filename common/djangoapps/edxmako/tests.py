@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=cyclic-import, missing-module-docstring
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import ddt
 from django.conf import settings

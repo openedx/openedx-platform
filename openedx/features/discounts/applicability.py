@@ -9,7 +9,7 @@ not other discounts like coupons or enterprise/program offers configured in ecom
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from zoneinfo import ZoneInfo
 from crum import get_current_request, impersonate

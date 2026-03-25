@@ -3,7 +3,7 @@ Tests for course_team reindex command.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.core.management import CommandError, call_command

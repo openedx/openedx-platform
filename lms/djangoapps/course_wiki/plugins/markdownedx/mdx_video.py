@@ -127,7 +127,7 @@ Test Gametrailers
 >>> markdown.markdown(s, ['video'])
 u'<p><object data="http://www.gametrailers.com/remote_wrap.php?mid=58079" height="392" type="application/x-shockwave-flash" width="480"><param name="movie" value="http://www.gametrailers.com/remote_wrap.php?mid=58079" /><param name="allowFullScreen" value="true" /></object></p>'
 """
-from xml.etree import ElementTree
+from xml.etree import ElementTree  # noqa: I001
 
 import markdown
 

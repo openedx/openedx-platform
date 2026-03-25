@@ -40,7 +40,7 @@ Conventions
 # and throws spurious errors. Therefore, we disable invalid-name checking.
 # pylint: disable=invalid-name
 
-import os
+import os  # noqa: I001
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
 from path import Path as path
@@ -1040,7 +1040,7 @@ SIMPLE_WIKI_REQUIRE_LOGIN_EDIT = True
 SIMPLE_WIKI_REQUIRE_LOGIN_VIEW = False
 
 ################################# WIKI ###################################
-from lms.djangoapps.course_wiki import settings as course_wiki_settings  # pylint: disable=wrong-import-position
+from lms.djangoapps.course_wiki import settings as course_wiki_settings  # pylint: disable=wrong-import-position  # noqa: I001
 
 # .. toggle_name: WIKI_ACCOUNT_HANDLING
 # .. toggle_implementation: DjangoSetting
@@ -1290,7 +1290,7 @@ MIDDLEWARE = [
 
 PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
 
-from openedx.core.lib.rooted_paths import rooted_glob  # pylint: disable=wrong-import-position
+from openedx.core.lib.rooted_paths import rooted_glob  # pylint: disable=wrong-import-position  # noqa: I001
 
 courseware_js = [
     'js/ajax-error.js',
@@ -2936,7 +2936,7 @@ ENFORCE_SESSION_EMAIL_MATCH = False
 ############### Settings for the ace_common plugin #################
 # Note that all settings are actually defined by the plugin
 # pylint: disable=wrong-import-position
-from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings
+from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings  # noqa: I001
 ACE_ROUTING_KEY = ace_common_settings.ACE_ROUTING_KEY
 
 ############### Settings for facebook ##############################
@@ -2950,7 +2950,7 @@ USER_STATE_BATCH_SIZE = 5000
 
 ############## Plugin Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
+from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order  # noqa: I001
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)

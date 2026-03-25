@@ -1,7 +1,7 @@
 """Ensure we can parse events sent to us from the Segment webhook integration"""
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import sentinel
 
 from dateutil import parser

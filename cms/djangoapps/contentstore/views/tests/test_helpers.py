@@ -2,7 +2,7 @@
 Unit tests for helpers.py.
 """
 
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock  # noqa: I001
 from urllib.parse import quote
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase

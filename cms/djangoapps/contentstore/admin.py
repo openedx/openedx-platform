@@ -2,7 +2,7 @@
 Admin site bindings for contentstore
 """
 
-import logging
+import logging  # noqa: I001
 
 from config_models.admin import ConfigurationModelAdmin
 from django.contrib import admin

@@ -3,7 +3,7 @@ Tests for send_upgrade_reminder management command.
 """
 
 
-import logging
+import logging  # noqa: I001
 from unittest import skipUnless
 from unittest.mock import patch
 

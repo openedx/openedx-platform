@@ -3,7 +3,7 @@
 Tests of the Capa XModule
 """
 
-import datetime
+import datetime  # noqa: I001
 import json
 import os
 import random

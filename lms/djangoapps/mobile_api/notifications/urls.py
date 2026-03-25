@@ -1,7 +1,7 @@
 """
 URLs for the mobile_api.notifications APIs.
 """
-from django.urls import path
+from django.urls import path  # noqa: I001
 from .views import GCMDeviceViewSet
 
 

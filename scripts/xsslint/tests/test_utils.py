@@ -1,4 +1,4 @@
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 
 from ddt import data, ddt
 

@@ -8,7 +8,7 @@ a student's score or the course grading policy changes. As they are
 persisted, course grades are also immune to changes in course content.
 """
 
-import json
+import json  # noqa: I001
 import logging
 from base64 import b64encode
 from collections import defaultdict, namedtuple

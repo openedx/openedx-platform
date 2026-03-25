@@ -1,7 +1,7 @@
 """
 Serializers for Discussion views.
 """
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError  # noqa: I001
 from lti_consumer.api import get_lti_pii_sharing_state_for_course
 from lti_consumer.models import LtiConfiguration
 from rest_framework import serializers

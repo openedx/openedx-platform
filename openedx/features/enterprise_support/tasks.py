@@ -3,7 +3,7 @@ Tasks for Enterprise.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from edx_django_utils.monitoring import set_code_owner_attribute

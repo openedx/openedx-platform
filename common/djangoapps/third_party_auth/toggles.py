@@ -2,7 +2,7 @@
 Togglable settings for Third Party Auth
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 THIRD_PARTY_AUTH_NAMESPACE = 'thirdpartyauth'
 

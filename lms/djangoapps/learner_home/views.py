@@ -2,7 +2,7 @@
 Views for Learner Home
 """
 
-import logging
+import logging  # noqa: I001
 from collections import OrderedDict
 
 from completion.exceptions import UnavailableCompletionData

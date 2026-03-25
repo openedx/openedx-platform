@@ -3,7 +3,7 @@ Mixin class that provides authoring capabilities for XBlocks.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from web_fragments.fragment import Fragment

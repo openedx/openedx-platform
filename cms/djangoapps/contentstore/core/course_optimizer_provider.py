@@ -1,7 +1,7 @@
 """
 Logic for handling actions in Studio related to Course Optimizer.
 """
-import json
+import json  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 from user_tasks.conf import settings as user_tasks_settings

@@ -2,7 +2,7 @@
 Tests for notification grouping module
 """
 
-import ddt
+import ddt  # noqa: I001
 import unittest
 from unittest.mock import MagicMock, patch
 from datetime import datetime

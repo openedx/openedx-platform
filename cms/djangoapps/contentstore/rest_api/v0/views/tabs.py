@@ -1,6 +1,6 @@
 """ API Views for course tabs """
 
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status

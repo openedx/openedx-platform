@@ -3,7 +3,7 @@ test views
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 import re
 from unittest.mock import MagicMock, patch

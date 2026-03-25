@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import datetime
+import datetime  # noqa: I001
 import hashlib
 from unittest import mock
 from unittest.mock import MagicMock

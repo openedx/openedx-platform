@@ -2,7 +2,7 @@
 Tests for `update_new_apple_ids_in_social_auth` management command
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.core.management import call_command
 from django.test import TestCase
 from social_django.models import UserSocialAuth

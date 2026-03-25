@@ -20,7 +20,7 @@ retirement_pipeline:
     - ['RETIRING_LMS', 'LMS_COMPLETE', 'LMS', 'retirement_lms_retire']
 """
 
-import logging
+import logging  # noqa: I001
 import sys
 from functools import partial
 from os import path
@@ -31,7 +31,7 @@ import click
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
-from scripts.user_retirement.utils.exception import HttpDoesNotExistException
+from scripts.user_retirement.utils.exception import HttpDoesNotExistException  # noqa: I001
 # pylint: disable=wrong-import-position
 from scripts.user_retirement.utils.helpers import (
     _config_or_exit,

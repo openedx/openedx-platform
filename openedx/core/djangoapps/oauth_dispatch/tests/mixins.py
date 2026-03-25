@@ -2,7 +2,7 @@
 OAuth Dispatch test mixins
 """
 
-import pytest
+import pytest  # noqa: I001
 from django.conf import settings
 from edx_rest_framework_extensions.auth.jwt.decoder import (
     get_verification_jwk_key_set,

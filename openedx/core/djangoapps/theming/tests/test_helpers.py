@@ -3,7 +3,7 @@ Test helpers for Comprehensive Theming.
 """
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 from django.conf import settings
 from django.test import TestCase, override_settings
 

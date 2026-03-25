@@ -3,7 +3,7 @@ This file contains celery tasks and utility functions responsible for syncing co
 between the monolith and the Credentials IDA.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional  # noqa: I001
 from urllib.parse import urljoin
 
 from celery import shared_task

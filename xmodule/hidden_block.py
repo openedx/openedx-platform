@@ -2,7 +2,7 @@
 The Hidden XBlock.
 """
 
-from web_fragments.fragment import Fragment
+from web_fragments.fragment import Fragment  # noqa: I001
 from xblock.core import XBlock
 from xmodule.raw_block import RawMixin
 from xmodule.xml_block import XmlMixin

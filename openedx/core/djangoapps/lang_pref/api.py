@@ -1,7 +1,7 @@
 """ Python API for language and translation management. """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 from django.conf import settings
 from django.utils.translation import gettext as _

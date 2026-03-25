@@ -1,5 +1,5 @@
 # pylint: disable=missing-docstring
-from urllib.parse import urlparse
+from urllib.parse import urlparse  # noqa: I001
 
 from crum import get_current_request
 from django import template

@@ -3,7 +3,7 @@ Unit tests for getting the list of courses for a user through iterating all cour
 by reversing group name formats.
 """
 
-import random
+import random  # noqa: I001
 from unittest.mock import Mock, patch
 
 import ddt

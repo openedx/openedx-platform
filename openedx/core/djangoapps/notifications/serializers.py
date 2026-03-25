@@ -2,7 +2,7 @@
 Serializers for the notifications API.
 """
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError  # noqa: I001
 from rest_framework import serializers
 
 from openedx.core.djangoapps.notifications.models import (

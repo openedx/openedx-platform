@@ -1,7 +1,7 @@
 # pylint: skip-file
 
 
-import json
+import json  # noqa: I001
 from logging import getLogger
 
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer

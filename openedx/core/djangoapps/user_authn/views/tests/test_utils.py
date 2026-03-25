@@ -1,7 +1,7 @@
 """
 Tests for user utils functionality.
 """
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from datetime import datetime
 from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username, _get_username_prefix
 import ddt

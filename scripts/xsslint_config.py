@@ -2,7 +2,7 @@
 # xsslint config module for edx-platform
 
 
-import os
+import os  # noqa: I001
 import sys
 
 # Temporarily add xsslint to sys.path so that we can import from it. This won't be necessary once
@@ -10,7 +10,7 @@ import sys
 scripts_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(scripts_dir, 'xsslint'))
 # pylint: disable=import-error,wrong-import-position
-from xsslint.linters import (
+from xsslint.linters import (  # noqa: I001
     JavaScriptLinter, MakoTemplateLinter,
     PythonLinter, UnderscoreTemplateLinter,
     DjangoTemplateLinter

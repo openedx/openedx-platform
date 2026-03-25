@@ -3,7 +3,7 @@ Unit tests for preference APIs.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 import pytest
 import ddt

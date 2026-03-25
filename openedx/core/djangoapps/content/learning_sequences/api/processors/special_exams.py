@@ -10,7 +10,7 @@ Please see the PR and discussion linked below for further context
 https://github.com/openedx/edx-platform/pull/24545#discussion_r501738511
 """
 
-import logging
+import logging  # noqa: I001
 
 from edx_proctoring.api import get_attempt_status_summary
 from edx_proctoring.exceptions import ProctoredExamNotFoundException

@@ -3,7 +3,7 @@ Defines the "ReSTful" API for course modes.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.shortcuts import get_object_or_404
 from edx_rest_framework_extensions import permissions

@@ -1,7 +1,7 @@
 """ Tests for API endpoints. """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 
 import freezegun

@@ -5,7 +5,7 @@ Command-line script to retrieve list of learners that have requested to be retir
 The script calls the appropriate LMS endpoint to get this list of learners.
 """
 
-import io
+import io  # noqa: I001
 import logging
 import sys
 from os import path
@@ -16,7 +16,7 @@ import yaml
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
-from scripts.user_retirement.utils.edx_api import LmsApi
+from scripts.user_retirement.utils.edx_api import LmsApi  # noqa: I001
 from scripts.user_retirement.utils.jenkins import export_learner_job_properties
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)

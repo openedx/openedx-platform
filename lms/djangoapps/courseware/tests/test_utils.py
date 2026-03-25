@@ -2,7 +2,7 @@
 Unit test for various Utility functions
 """
 
-import json
+import json  # noqa: I001
 from datetime import date, timedelta
 from unittest.mock import patch
 

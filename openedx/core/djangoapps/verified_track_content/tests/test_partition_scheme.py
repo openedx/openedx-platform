@@ -3,7 +3,7 @@ Tests for verified_track_content/partition_scheme.py.
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from zoneinfo import ZoneInfo
 import pytest

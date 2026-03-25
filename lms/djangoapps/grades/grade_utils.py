@@ -3,7 +3,7 @@ This module contains utility functions for grading.
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 
 from django.utils import timezone

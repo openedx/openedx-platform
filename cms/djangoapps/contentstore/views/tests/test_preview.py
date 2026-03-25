@@ -1,7 +1,7 @@
 """
 Tests for contentstore.views.preview.py
 """
-import re
+import re  # noqa: I001
 from unittest import mock
 
 import ddt

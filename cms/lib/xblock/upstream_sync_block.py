@@ -4,7 +4,7 @@ Methods related to syncing a downstream XBlock with an upstream XBlock.
 See upstream_sync.py for general upstream sync code that applies even when the
 upstream is a container, not an XBlock.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 import typing as t
@@ -96,7 +96,7 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
     If `downstream` lacks a valid+supported upstream link, this raises an UpstreamLinkException.
     """
     # We import load_block here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
-    from openedx.core.djangoapps.xblock.api import load_block, CheckPerm, LatestVersion  # pylint: disable=wrong-import-order
+    from openedx.core.djangoapps.xblock.api import load_block, CheckPerm, LatestVersion  # pylint: disable=wrong-import-order  # noqa: I001
     try:
         lib_block: XBlock = load_block(
             LibraryUsageLocatorV2.from_string(downstream.upstream),

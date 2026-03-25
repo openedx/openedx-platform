@@ -1,6 +1,6 @@
 """ Models for the User Tour Experience. """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 

@@ -1,6 +1,6 @@
 """ Generate .ics files from a user schedule """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from zoneinfo import ZoneInfo
 from django.conf import settings

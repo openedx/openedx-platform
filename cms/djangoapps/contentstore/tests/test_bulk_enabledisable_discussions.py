@@ -1,7 +1,7 @@
 """
 Test the enable/disable discussions for all units API endpoint.
 """
-import json
+import json  # noqa: I001
 
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey

@@ -1,7 +1,7 @@
 """
 REST API views for content staging
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.db import transaction
 from django.http import HttpResponse

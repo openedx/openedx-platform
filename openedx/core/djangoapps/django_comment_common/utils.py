@@ -2,7 +2,7 @@
 """
 Common comment client utility functions.
 """
-from openedx.core.djangoapps.django_comment_common.models import (
+from openedx.core.djangoapps.django_comment_common.models import (  # noqa: I001
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,

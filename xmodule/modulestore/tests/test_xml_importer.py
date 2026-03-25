@@ -3,7 +3,7 @@ Tests for XML importer.
 """
 
 
-import importlib
+import importlib  # noqa: I001
 import os
 import unittest
 from uuid import uuid4

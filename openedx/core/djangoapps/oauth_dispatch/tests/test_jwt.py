@@ -1,5 +1,5 @@
 """ Tests for OAuth Dispatch's jwt module. """
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest.mock import patch
 
 import ddt

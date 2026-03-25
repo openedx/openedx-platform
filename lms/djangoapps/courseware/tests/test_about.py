@@ -3,7 +3,7 @@ Test the about xblock
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 from unittest.mock import patch
 

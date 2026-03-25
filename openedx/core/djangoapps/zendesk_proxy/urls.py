@@ -2,7 +2,7 @@
 Map urls to the relevant view handlers
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from openedx.core.djangoapps.zendesk_proxy.v0.views import ZendeskPassthroughView as v0_view
 from openedx.core.djangoapps.zendesk_proxy.v1.views import ZendeskPassthroughView as v1_view
 

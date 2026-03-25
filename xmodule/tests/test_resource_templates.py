@@ -1,7 +1,7 @@
 """
 Tests for xmodule.x_module.ResourceTemplates
 """
-import pathlib
+import pathlib  # noqa: I001
 import unittest
 
 from django.test import override_settings

@@ -1,7 +1,7 @@
 """
 openedx_content XBlock Runtime code
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 from collections import defaultdict

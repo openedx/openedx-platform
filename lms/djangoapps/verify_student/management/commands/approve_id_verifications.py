@@ -3,7 +3,7 @@ Django admin commands related to verify_student
 """
 
 
-import logging
+import logging  # noqa: I001
 import os
 import time
 from pprint import pformat

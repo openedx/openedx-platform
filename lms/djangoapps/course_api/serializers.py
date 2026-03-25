@@ -3,7 +3,7 @@ Course API Serializers.  Representing course catalog data
 """
 
 
-import urllib
+import urllib  # noqa: I001
 
 from common.djangoapps.student.models import CourseEnrollment
 from django.contrib.auth import get_user_model

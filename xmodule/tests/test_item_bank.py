@@ -1,7 +1,7 @@
 """
 Unit tests for ItemBankBlock.
 """
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch  # noqa: I001
 from random import Random
 
 import ddt

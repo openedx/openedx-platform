@@ -8,7 +8,7 @@ NOTE: These views are deprecated.  These routes are superseded by
 # pylint: enable=unicode-format-string  # lint-amnesty, pylint: disable=bad-option-value
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 
 from .views import ProfileImageRemoveView, ProfileImageUploadView

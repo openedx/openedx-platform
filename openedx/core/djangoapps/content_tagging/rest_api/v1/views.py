@@ -1,7 +1,7 @@
 """
 Tagging Org API Views
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.db.models import Count
 from django.http import StreamingHttpResponse

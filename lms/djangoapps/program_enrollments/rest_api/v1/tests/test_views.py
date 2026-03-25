@@ -2,7 +2,7 @@
 Unit tests for ProgramEnrollment views.
 """
 
-import json
+import json  # noqa: I001
 from collections import OrderedDict, defaultdict
 from datetime import datetime, timedelta
 from unittest import mock

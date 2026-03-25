@@ -1,7 +1,7 @@
 """
 Test cases for notifications/email/tasks.py
 """
-import datetime
+import datetime  # noqa: I001
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 

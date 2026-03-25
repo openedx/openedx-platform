@@ -2,7 +2,7 @@
 Third party auth API related permissions
 """
 
-import logging
+import logging  # noqa: I001
 
 from edx_rest_framework_extensions.auth.jwt.decoder import decode_jwt_filters
 from edx_rest_framework_extensions.permissions import (

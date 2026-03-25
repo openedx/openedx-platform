@@ -1,7 +1,7 @@
 """
 Enrollments Service Tests
 """
-import ddt
+import ddt  # noqa: I001
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory

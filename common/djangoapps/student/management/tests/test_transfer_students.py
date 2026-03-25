@@ -2,7 +2,7 @@
 Tests the transfer student management command
 """
 
-from unittest.mock import call, patch
+from unittest.mock import call, patch  # noqa: I001
 
 import ddt
 from django.core.management import call_command

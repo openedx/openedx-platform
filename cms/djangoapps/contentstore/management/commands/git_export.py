@@ -14,7 +14,7 @@ attribute is set and the FEATURE['ENABLE_EXPORT_GIT'] is set.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import gettext as _

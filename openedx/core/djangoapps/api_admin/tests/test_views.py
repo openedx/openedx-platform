@@ -1,7 +1,7 @@
 """ Tests for the api_admin app's views. """
 
 
-import json
+import json  # noqa: I001
 
 import ddt
 import httpretty

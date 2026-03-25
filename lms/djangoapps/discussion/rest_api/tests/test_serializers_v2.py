@@ -3,7 +3,7 @@
 Tests for Discussion API serializers
 """
 
-import itertools
+import itertools  # noqa: I001
 from unittest import mock
 
 import ddt

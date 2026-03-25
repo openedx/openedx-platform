@@ -2,7 +2,7 @@
 Public views
 """
 
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus  # noqa: I001
 
 from django.conf import settings
 from django.http.response import Http404

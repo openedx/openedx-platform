@@ -2,7 +2,7 @@
 Wrapper to use pwnedpassword Service
 """
 
-import hashlib
+import hashlib  # noqa: I001
 import logging
 
 import requests

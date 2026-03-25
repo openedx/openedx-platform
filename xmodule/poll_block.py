@@ -6,7 +6,7 @@ If student does not yet anwered - Question with set of choices.
 If student have answered - Question with statistics for each answers.
 """
 
-import html
+import html  # noqa: I001
 import json
 import logging
 import warnings

@@ -1,7 +1,7 @@
 """Utilities for working with ID tokens."""
 
 
-import json
+import json  # noqa: I001
 import logging
 from time import time
 

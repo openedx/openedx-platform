@@ -2,7 +2,7 @@
 Tests for course optimizer
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import Mock
 
 from opaque_keys.edx.keys import CourseKey

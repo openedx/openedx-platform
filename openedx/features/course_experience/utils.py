@@ -2,7 +2,7 @@
 Common utilities for the course experience, including course outline.
 """
 
-from django.utils import timezone
+from django.utils import timezone  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.course_api.blocks.api import get_blocks

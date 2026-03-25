@@ -1,6 +1,6 @@
 """API Views for course index"""
 
-import logging
+import logging  # noqa: I001
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings

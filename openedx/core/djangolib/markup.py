@@ -2,7 +2,7 @@
 Utilities for use in Mako markup.
 """
 
-import markupsafe
+import markupsafe  # noqa: I001
 import nh3
 from lxml.html.clean import Cleaner
 from mako.filters import decode

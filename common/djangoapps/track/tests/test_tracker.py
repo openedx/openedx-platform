@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test import TestCase
 from django.test.utils import override_settings
 

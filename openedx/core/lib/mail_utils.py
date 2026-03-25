@@ -3,7 +3,7 @@ Utilities related to mailing.
 """
 
 
-import textwrap
+import textwrap  # noqa: I001
 
 MAX_LINE_LENGTH = 900
 

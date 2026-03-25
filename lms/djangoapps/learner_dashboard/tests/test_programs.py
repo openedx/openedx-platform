@@ -3,7 +3,7 @@ Unit tests covering the program listing and detail pages.
 """
 
 
-import json
+import json  # noqa: I001
 import re
 from unittest import mock
 from urllib.parse import urljoin

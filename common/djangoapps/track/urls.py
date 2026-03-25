@@ -1,7 +1,7 @@
 """
 URLs for track app
 """
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from . import views
 from .views import segmentio

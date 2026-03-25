@@ -3,7 +3,7 @@ Tests for student activation and login
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import hashlib
 import json
 import unicodedata

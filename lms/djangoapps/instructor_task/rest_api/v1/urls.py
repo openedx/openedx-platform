@@ -1,7 +1,7 @@
 """
 Instructor Task Django app REST API URLs.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 
 from lms.djangoapps.instructor_task.rest_api.v1.views import (

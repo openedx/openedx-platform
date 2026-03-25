@@ -1,7 +1,7 @@
 """
 API library for Django REST Framework permissions-oriented workflows
 """
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied  # noqa: I001
 from rest_framework.permissions import BasePermission
 
 from common.djangoapps.student.roles import CourseStaffRole, GlobalStaff, CourseInstructorRole

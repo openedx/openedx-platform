@@ -1,7 +1,7 @@
 """
 Celery tasks used by cms_user_tasks
 """
-import json
+import json  # noqa: I001
 
 import botocore
 from celery import shared_task

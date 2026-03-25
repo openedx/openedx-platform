@@ -1,7 +1,7 @@
 """Tests for block views."""
 
 
-import json
+import json  # noqa: I001
 import re
 from datetime import datetime, timedelta
 from unittest.mock import Mock, PropertyMock, patch

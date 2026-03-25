@@ -2,7 +2,7 @@
 Third_party_auth integration tests using a mock version of the TestShib provider
 """
 
-import datetime
+import datetime  # noqa: I001
 import json
 import logging
 import os

@@ -2,7 +2,7 @@
 Tests for the pull_xblock_translations management command.
 """
 
-from path import Path
+from path import Path  # noqa: I001
 from unittest.mock import patch
 
 from django.core.management import call_command

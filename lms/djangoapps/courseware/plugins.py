@@ -1,5 +1,5 @@
 """Course app config for courseware apps."""
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: I001
 
 from django import urls
 from django.conf import settings

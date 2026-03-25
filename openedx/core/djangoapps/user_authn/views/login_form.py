@@ -1,7 +1,7 @@
 """ Login related views """
 
 
-import json
+import json  # noqa: I001
 import logging
 import urllib
 

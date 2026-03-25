@@ -1,7 +1,7 @@
 """
 Common utility methods for Mobile APIs.
 """
-from organizations import api as organizations_api
+from organizations import api as organizations_api  # noqa: I001
 
 API_V05 = 'v0.5'
 API_V1 = 'v1'

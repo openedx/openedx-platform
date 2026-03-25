@@ -2,7 +2,7 @@
 Tests for the recently enrolled messaging within the Dashboard.
 """
 
-import datetime
+import datetime  # noqa: I001
 from zoneinfo import ZoneInfo
 
 import ddt

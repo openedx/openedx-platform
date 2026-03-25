@@ -9,7 +9,7 @@ the SessionMiddleware.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.utils.translation.trans_real import parse_accept_lang_header
 from django.utils.deprecation import MiddlewareMixin
 

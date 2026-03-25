@@ -3,7 +3,7 @@
 Command-line script to bulk update retirement states in LMS
 """
 
-import logging
+import logging  # noqa: I001
 import sys
 from datetime import datetime
 from functools import partial
@@ -16,7 +16,7 @@ from six import text_type
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
 # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.helpers import _config_or_exit, _fail, _fail_exception, _log, _setup_lms_api_or_exit
+from scripts.user_retirement.utils.helpers import _config_or_exit, _fail, _fail_exception, _log, _setup_lms_api_or_exit  # noqa: I001
 
 SCRIPT_SHORTNAME = 'Bulk Status'
 

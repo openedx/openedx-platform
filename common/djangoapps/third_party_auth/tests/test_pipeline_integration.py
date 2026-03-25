@@ -1,7 +1,7 @@
 """Integration tests for pipeline.py."""
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 from zoneinfo import ZoneInfo
 

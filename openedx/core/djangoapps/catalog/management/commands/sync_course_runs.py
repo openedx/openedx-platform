@@ -2,7 +2,7 @@
 Sync course runs from catalog service.
 """
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 import logging
 
 from django.core.management.base import BaseCommand

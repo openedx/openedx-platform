@@ -2,7 +2,7 @@
 Tests for experimentation feature flags
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 import pytz

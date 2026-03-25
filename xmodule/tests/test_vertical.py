@@ -5,7 +5,7 @@ Tests for vertical block.
 # pylint: disable=protected-access
 
 
-import json
+import json  # noqa: I001
 from collections import namedtuple
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch

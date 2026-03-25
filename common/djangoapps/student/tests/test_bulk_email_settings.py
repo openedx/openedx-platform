@@ -5,7 +5,7 @@ of email feature flag, and that the view is conditionally available when
 Course Auth is turned on.
 """
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 
 # This import is for an lms djangoapp.
 # Its testcases are only run under lms.

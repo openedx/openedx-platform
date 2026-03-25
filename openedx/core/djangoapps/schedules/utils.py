@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import datetime
+import datetime  # noqa: I001
 import logging
 
 from zoneinfo import ZoneInfo

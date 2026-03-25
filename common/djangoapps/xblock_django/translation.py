@@ -2,7 +2,7 @@
 XBlock translations pulling and compilation logic.
 """
 
-import os
+import os  # noqa: I001
 import gettext
 
 from django.utils.encoding import force_str

@@ -1,7 +1,7 @@
 """
 Tests for discussions tasks.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from edx_toggles.toggles.testutils import override_waffle_flag

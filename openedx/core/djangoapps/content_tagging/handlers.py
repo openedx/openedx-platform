@@ -2,7 +2,7 @@
 Automatic tagging of content
 """
 
-import crum
+import crum  # noqa: I001
 import logging
 
 from django.dispatch import receiver

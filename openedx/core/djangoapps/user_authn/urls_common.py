@@ -11,7 +11,7 @@ which leads to inconsistent prefixing.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib.auth.views import PasswordResetCompleteView
 from django.urls import path, re_path
 

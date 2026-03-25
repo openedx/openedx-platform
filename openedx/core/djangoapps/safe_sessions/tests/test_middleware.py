@@ -1,7 +1,7 @@
 """
 Unit tests for SafeSessionMiddleware
 """
-import uuid
+import uuid  # noqa: I001
 from unittest.mock import call, patch, MagicMock
 
 import ddt

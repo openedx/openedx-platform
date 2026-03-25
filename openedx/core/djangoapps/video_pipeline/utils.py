@@ -1,7 +1,7 @@
 """
 Utils for video_pipeline app.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from edx_rest_api_client.client import OAuthAPIClient
 

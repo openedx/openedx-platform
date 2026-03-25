@@ -2,7 +2,7 @@
 Tests for Discussion API views
 """
 
-import json
+import json  # noqa: I001
 from datetime import datetime
 from unittest import mock
 from urllib.parse import urlencode

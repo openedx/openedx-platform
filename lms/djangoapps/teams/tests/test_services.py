@@ -3,7 +3,7 @@ Tests for any Teams app services
 """
 
 
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory  # noqa: I001
 from lms.djangoapps.teams.services import TeamsService
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory

@@ -2,7 +2,7 @@
 Test cases to cover account retirement views
 """
 
-import datetime
+import datetime  # noqa: I001
 import json
 from unittest import mock
 

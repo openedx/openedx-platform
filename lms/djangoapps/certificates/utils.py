@@ -1,7 +1,7 @@
 """
 Certificates utilities
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 import logging
 
 from django.conf import settings

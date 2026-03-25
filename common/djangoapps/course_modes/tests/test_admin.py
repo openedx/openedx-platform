@@ -2,7 +2,7 @@
 Tests for the course modes Django admin interface.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 import ddt
 from django.conf import settings

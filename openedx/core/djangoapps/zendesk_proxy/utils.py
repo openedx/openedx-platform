@@ -3,7 +3,7 @@ Utility functions for zendesk interaction.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from urllib.parse import urljoin  # pylint: disable=import-error
 

@@ -1,6 +1,6 @@
 """ API Views for course grading """
 
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request

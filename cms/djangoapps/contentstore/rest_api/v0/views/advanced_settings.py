@@ -1,6 +1,6 @@
 """ API Views for course advanced settings """
 
-from django import forms
+from django import forms  # noqa: I001
 import edx_api_doc_tools as apidocs
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import ValidationError

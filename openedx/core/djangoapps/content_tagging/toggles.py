@@ -2,7 +2,7 @@
 Toggles for content tagging
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 

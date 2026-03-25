@@ -3,7 +3,7 @@ A tiny app that checks for a status message.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from .models import GlobalStatusMessage
 

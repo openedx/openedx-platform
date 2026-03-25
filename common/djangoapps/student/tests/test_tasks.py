@@ -1,7 +1,7 @@
 """
 Celery task tests
 """
-from unittest.mock import patch, Mock, PropertyMock
+from unittest.mock import patch, Mock, PropertyMock  # noqa: I001
 
 import pytest
 from django.conf import settings

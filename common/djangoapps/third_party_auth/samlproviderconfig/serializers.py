@@ -2,7 +2,7 @@
 Serializer for SAMLProviderConfig
 """
 
-import logging
+import logging  # noqa: I001
 from rest_framework import serializers
 
 from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration

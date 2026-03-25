@@ -1,7 +1,7 @@
 """Provides factories for User API models."""
 
 
-from factory import Sequence, SubFactory
+from factory import Sequence, SubFactory  # noqa: I001
 from factory.django import DjangoModelFactory
 from opaque_keys.edx.locator import CourseLocator
 

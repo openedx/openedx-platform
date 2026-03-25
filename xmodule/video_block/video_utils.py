@@ -3,7 +3,7 @@ Module contains utils specific for video_block but not for transcripts.
 """
 
 
-import logging
+import logging  # noqa: I001
 from collections import OrderedDict
 from urllib.parse import parse_qs, urlencode, urlparse, urlsplit, urlunsplit
 

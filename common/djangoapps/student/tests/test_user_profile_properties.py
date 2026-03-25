@@ -1,7 +1,7 @@
 """Unit tests for custom UserProfile properties."""
 
 
-import datetime
+import datetime  # noqa: I001
 import pytest
 import ddt
 from django.core.cache import cache

@@ -1,7 +1,7 @@
 """
 Exceptions that can be thrown by the Content Libraries API.
 """
-from django.db import IntegrityError
+from django.db import IntegrityError  # noqa: I001
 
 from openedx_content.models_api import Collection, Container
 from xblock.exceptions import XBlockNotFoundError

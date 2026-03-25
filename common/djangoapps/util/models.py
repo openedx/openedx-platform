@@ -1,7 +1,7 @@
 """Models for the util app. """
 
 
-import gzip
+import gzip  # noqa: I001
 import logging
 from io import BytesIO
 

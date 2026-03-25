@@ -3,7 +3,7 @@ Student Views
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 import urllib.parse
 import uuid
@@ -740,7 +740,7 @@ def validate_secondary_email(user, new_email):
     """
 
     from openedx.core.djangoapps.user_api.accounts.api import get_email_validation_error, \
-        get_secondary_email_validation_error
+        get_secondary_email_validation_error  # noqa: I001
 
     if get_email_validation_error(new_email):
         raise ValueError(_('Valid e-mail address required.'))

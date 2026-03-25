@@ -3,7 +3,7 @@ Split Test Block Transformer
 """
 
 
-from openedx.core.djangoapps.content.block_structure.transformer import (
+from openedx.core.djangoapps.content.block_structure.transformer import (  # noqa: I001
     BlockStructureTransformer,
     FilteringTransformerMixin
 )

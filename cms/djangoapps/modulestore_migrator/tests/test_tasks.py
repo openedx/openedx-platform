@@ -2,7 +2,7 @@
 Tests for the modulestore_migrator tasks
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import ddt
 from django.utils import timezone

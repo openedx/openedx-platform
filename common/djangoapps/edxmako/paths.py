@@ -1,7 +1,7 @@
 """
 Set up lookup paths for mako templates.
 """
-import contextlib
+import contextlib  # noqa: I001
 import hashlib
 import os
 import importlib.resources as resources

@@ -6,7 +6,7 @@ LegacyLibraryContentBlock, so these tests are all written with only that
 block type in mind.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from opaque_keys.edx.locator import LibraryLocator

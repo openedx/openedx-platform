@@ -5,7 +5,7 @@ These serializers handle data validation and business logic for instructor dashb
 Following REST best practices, serializers encapsulate most of the data processing logic.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.utils.html import escape

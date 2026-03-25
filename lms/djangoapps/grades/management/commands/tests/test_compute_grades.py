@@ -3,7 +3,7 @@ Tests for compute_grades management command.
 """
 
 # pylint: disable=protected-access
-from unittest.mock import ANY, patch
+from unittest.mock import ANY, patch  # noqa: I001
 
 import ddt
 import pytest

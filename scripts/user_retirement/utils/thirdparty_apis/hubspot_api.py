@@ -1,7 +1,7 @@
 """
 Helper API classes for calling Hubspot APIs.
 """
-import logging
+import logging  # noqa: I001
 import os
 
 import backoff

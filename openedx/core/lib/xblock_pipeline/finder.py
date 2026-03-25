@@ -2,7 +2,7 @@
 Django pipeline finder for handling static assets required by XBlocks.
 """
 
-import os
+import os  # noqa: I001
 from datetime import datetime, timezone
 import importlib.resources as resources
 

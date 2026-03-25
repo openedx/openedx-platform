@@ -3,7 +3,7 @@ Mock views for ESG
 """
 
 # pylint: disable=arguments-differ
-from rest_framework.response import Response
+from rest_framework.response import Response  # noqa: I001
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import APIView
 

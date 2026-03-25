@@ -4,7 +4,7 @@ in the verify_student module
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.core.management import call_command
 
 from freezegun import freeze_time

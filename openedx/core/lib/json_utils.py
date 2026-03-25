@@ -3,7 +3,7 @@ Helpers for json serialization
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from django.core.serializers.json import DjangoJSONEncoder
 from opaque_keys.edx.keys import CourseKey, UsageKey
 

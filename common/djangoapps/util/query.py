@@ -1,7 +1,7 @@
 """ Utility functions related to database queries """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 
 _READ_REPLICA_DB_ALIAS = "read_replica"

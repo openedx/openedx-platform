@@ -1,7 +1,7 @@
 """
 Tests for the Segment API functionality
 """
-import json
+import json  # noqa: I001
 from unittest import mock
 
 import pytest

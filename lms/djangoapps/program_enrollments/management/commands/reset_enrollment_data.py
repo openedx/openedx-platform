@@ -6,7 +6,7 @@ Intented for use in integration sandbox environments
 """
 
 
-import logging
+import logging  # noqa: I001
 from textwrap import dedent
 
 from django.core.management.base import BaseCommand, CommandError

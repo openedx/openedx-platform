@@ -3,7 +3,7 @@ Helper methods related to EdxNotes.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime
 from json import JSONEncoder

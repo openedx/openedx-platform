@@ -1,7 +1,7 @@
 """
 Contains the logic to manage survey report model.
 """
-import requests
+import requests  # noqa: I001
 
 from django.conf import settings
 from django.forms.models import model_to_dict

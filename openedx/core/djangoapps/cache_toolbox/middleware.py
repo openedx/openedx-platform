@@ -87,7 +87,7 @@ choice for most environments but you may be happy with the trade-offs of the
 """
 
 
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth import HASH_SESSION_KEY

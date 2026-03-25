@@ -1,7 +1,7 @@
 """
 Unit tests for the API module
 """
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 from urllib import parse
 from zoneinfo import ZoneInfo

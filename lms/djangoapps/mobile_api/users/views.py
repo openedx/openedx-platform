@@ -3,7 +3,7 @@ Views for user API
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 from functools import cached_property
 from typing import Dict, List, Optional, Set

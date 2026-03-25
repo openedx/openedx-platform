@@ -3,7 +3,7 @@ Test the populate_retirement_states management command
 """
 
 
-import copy
+import copy  # noqa: I001
 
 import pytest
 from django.core.management import CommandError, call_command

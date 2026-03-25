@@ -3,7 +3,7 @@ Tests for the link_program_enrollments management command.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from uuid import UUID
 
 from django.core.management import call_command

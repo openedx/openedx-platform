@@ -1,7 +1,7 @@
 """
 Structured Tagging based on XBlockAsides
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock, XBlockAside

@@ -2,7 +2,7 @@
 Unit and integration tests to ensure that syncing content from libraries to
 courses is working.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from typing import Any
 from xml.etree import ElementTree
 

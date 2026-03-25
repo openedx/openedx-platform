@@ -1,5 +1,5 @@
 """ Password reset logic and views . """
-import logging
+import logging  # noqa: I001
 
 from django import forms
 from django.conf import settings

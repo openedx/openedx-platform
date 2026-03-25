@@ -1,7 +1,7 @@
 """Unit tests for provider.py."""
 
 
-import re
+import re  # noqa: I001
 from unittest.mock import Mock, patch
 
 from django.contrib.sites.models import Site

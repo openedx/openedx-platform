@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-import pytest
+import pytest  # noqa: I001
 from django.template import VariableDoesNotExist
 from django.test import override_settings
 

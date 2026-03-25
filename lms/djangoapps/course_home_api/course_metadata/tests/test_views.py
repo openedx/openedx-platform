@@ -1,7 +1,7 @@
 """
 Tests for the Course Home Course Metadata API in the Course Home API
 """
-import json
+import json  # noqa: I001
 from unittest.mock import patch
 
 import ddt

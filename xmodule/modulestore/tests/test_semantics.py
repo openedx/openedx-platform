@@ -3,7 +3,7 @@ Tests of modulestore semantics: How do the interfaces methods of ModuleStore rel
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from collections import namedtuple
 from unittest.mock import patch
 

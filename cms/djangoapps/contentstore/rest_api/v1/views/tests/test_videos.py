@@ -1,7 +1,7 @@
 """
 Unit tests for course settings views.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.conf import settings

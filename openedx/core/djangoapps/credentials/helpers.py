@@ -2,7 +2,7 @@
 Helpers for the credentials service.
 """
 
-from edx_toggles.toggles import SettingToggle
+from edx_toggles.toggles import SettingToggle  # noqa: I001
 
 from openedx.core.djangoapps.site_configuration import helpers as config_helpers
 

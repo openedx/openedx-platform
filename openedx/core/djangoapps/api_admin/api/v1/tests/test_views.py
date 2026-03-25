@@ -2,7 +2,7 @@
 Tests for the `api_admin` api module.
 """
 
-import json
+import json  # noqa: I001
 
 from rest_framework.reverse import reverse
 

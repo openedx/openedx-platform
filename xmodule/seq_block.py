@@ -5,7 +5,7 @@ XBlock implementation of a learning sequence
 # pylint: disable=abstract-method
 
 
-import collections
+import collections  # noqa: I001
 import json
 import logging
 from datetime import datetime

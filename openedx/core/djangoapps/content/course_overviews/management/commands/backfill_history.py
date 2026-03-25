@@ -2,7 +2,7 @@
 """
 Management command to backfill history.
 """
-import csv
+import csv  # noqa: I001
 import logging
 import os
 import time

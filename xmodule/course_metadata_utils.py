@@ -7,7 +7,7 @@ classes, which both need these type of functions.
 """
 
 
-import dateutil.parser
+import dateutil.parser  # noqa: I001
 
 from base64 import b32encode
 from datetime import datetime, timedelta

@@ -2,7 +2,7 @@
 Test UserPreferenceModel and UserPreference events
 """
 
-import pytest
+import pytest  # noqa: I001
 from django.db import IntegrityError
 from django.test import TestCase
 

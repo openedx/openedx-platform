@@ -1,7 +1,7 @@
 """
 Subscription model is used to get users who are subscribed to the main thread/post i.e.
 """
-import logging
+import logging  # noqa: I001
 
 from . import models, settings, utils
 from forum import api as forum_api

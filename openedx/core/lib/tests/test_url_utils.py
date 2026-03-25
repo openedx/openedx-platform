@@ -2,7 +2,7 @@
 Tests for url_utils module.
 """
 
-from ddt import data, ddt
+from ddt import data, ddt  # noqa: I001
 from django.test import TestCase
 
 from openedx.core.lib.url_utils import quote_slashes, unquote_slashes

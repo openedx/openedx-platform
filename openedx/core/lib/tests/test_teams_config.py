@@ -3,7 +3,7 @@ Tests for Course Teams configuration.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from django.test import TestCase
 
 from ..teams_config import TeamsConfig, TeamsetConfig, MANAGED_TEAM_MAX_TEAM_SIZE, DEFAULT_COURSE_RUN_MAX_TEAM_SIZE

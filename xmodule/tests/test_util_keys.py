@@ -1,7 +1,7 @@
 """
 Tests for xmodule/util/keys.py
 """
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 from unittest.mock import Mock
 
 import ddt

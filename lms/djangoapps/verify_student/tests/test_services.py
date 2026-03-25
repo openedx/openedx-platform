@@ -2,7 +2,7 @@
 Tests for the service classes in verify_student.
 """
 
-import itertools
+import itertools  # noqa: I001
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch

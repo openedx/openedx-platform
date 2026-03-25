@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-import json
+import json  # noqa: I001
 import logging
 
 from django.utils.deprecation import MiddlewareMixin

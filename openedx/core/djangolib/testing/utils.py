@@ -9,7 +9,7 @@ Utility classes for testing django applications.
 """
 
 
-import copy
+import copy  # noqa: I001
 import re
 from unittest import skipUnless
 

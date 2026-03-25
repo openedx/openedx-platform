@@ -20,7 +20,7 @@ Guidelines:
 
 TODO: Validate all datetimes to be UTC.
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from enum import Enum
 from typing import Dict, FrozenSet, List, Optional

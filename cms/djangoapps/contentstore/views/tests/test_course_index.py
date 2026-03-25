@@ -3,7 +3,7 @@ Unit tests for getting the list of courses and the course outline.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 from unittest import mock, skip
 

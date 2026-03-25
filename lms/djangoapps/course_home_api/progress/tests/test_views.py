@@ -2,7 +2,7 @@
 Tests for Progress Tab API in the Course Home API
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 import dateutil

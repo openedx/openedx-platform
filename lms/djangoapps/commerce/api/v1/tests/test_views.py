@@ -1,7 +1,7 @@
 """ Commerce API v1 view tests. """
 
 
-import itertools
+import itertools  # noqa: I001
 import json
 from datetime import datetime, timedelta
 

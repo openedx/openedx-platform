@@ -1,7 +1,7 @@
 """
 Block for testing variously scoped XBlock fields.
 """
-import json
+import json  # noqa: I001
 
 from webob import Response
 from web_fragments.fragment import Fragment

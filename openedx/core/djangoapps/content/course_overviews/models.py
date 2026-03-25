@@ -3,7 +3,7 @@ Declaration of CourseOverview model
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime
 from urllib.parse import urlparse, urlunparse

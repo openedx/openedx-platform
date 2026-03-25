@@ -3,7 +3,7 @@ Utilities for grades related tests
 """
 
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 

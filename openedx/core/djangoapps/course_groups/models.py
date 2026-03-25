@@ -3,7 +3,7 @@ Django models related to course groups functionality.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

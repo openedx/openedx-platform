@@ -2,7 +2,7 @@
 Views to allow modification of the current coverage context during test runs.
 """
 
-import coverage
+import coverage  # noqa: I001
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt

@@ -8,7 +8,7 @@ def defuse_xml_libs():
     Monkey patch and defuse all stdlib xml packages and lxml.
     """
 
-    import lxml
+    import lxml  # noqa: I001
     import lxml.etree
     from . import etree as safe_etree
 

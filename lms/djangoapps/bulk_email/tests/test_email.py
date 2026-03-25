@@ -3,7 +3,7 @@ Unit tests for sending course email
 """
 
 
-import json
+import json  # noqa: I001
 import os
 from unittest import skipIf
 from unittest.mock import Mock, patch

@@ -1,7 +1,7 @@
 """Descriptors for XBlocks/Xmodules, that provide editing of atrributes"""
 
 
-import logging
+import logging  # noqa: I001
 
 from xblock.core import XBlock
 from xblock.fields import Boolean, Scope, String

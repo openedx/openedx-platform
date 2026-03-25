@@ -3,7 +3,7 @@ Unit tests for course tools.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 from unittest.mock import patch
 import crum

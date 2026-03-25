@@ -2,7 +2,7 @@
 Experimentation URLs
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import include, path, re_path
 
 from . import routers, views, views_custom

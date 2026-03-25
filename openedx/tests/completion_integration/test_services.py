@@ -3,7 +3,7 @@ Tests of completion xblock runtime services
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from completion.models import BlockCompletion
 from completion.services import CompletionService
 from completion.test_utils import CompletionWaffleTestMixin

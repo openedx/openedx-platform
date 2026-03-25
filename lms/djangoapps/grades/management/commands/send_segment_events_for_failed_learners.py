@@ -2,7 +2,7 @@
 Send segment events for failed learners.
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand

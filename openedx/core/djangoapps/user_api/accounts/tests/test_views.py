@@ -2,7 +2,7 @@
 Test cases to cover Accounts-related behaviors of the User API application
 """
 
-import datetime
+import datetime  # noqa: I001
 import hashlib
 import json
 from copy import deepcopy

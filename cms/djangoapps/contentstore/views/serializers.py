@@ -5,7 +5,7 @@ This module contains DRF serializers for various features such as certificates, 
 Add new serializers here as needed for API endpoints in this module.
 """
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 from django.core.exceptions import PermissionDenied
 
 from cms.djangoapps.contentstore.views.certificate_manager import (

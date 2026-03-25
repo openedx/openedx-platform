@@ -2,7 +2,7 @@
 Test that testing utils do what they say.
 """
 
-from crum import set_current_request
+from crum import set_current_request  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser

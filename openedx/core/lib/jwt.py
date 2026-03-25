@@ -2,7 +2,7 @@
 JWT Token handling and signing functions.
 """
 
-import jwt
+import jwt  # noqa: I001
 from time import time
 
 from django.conf import settings

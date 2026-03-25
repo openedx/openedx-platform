@@ -2,7 +2,7 @@
 Test cases for tabs.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch  # noqa: I001
 import ddt
 import pytest
 from crum import set_current_request

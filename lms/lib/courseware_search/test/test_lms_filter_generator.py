@@ -1,7 +1,7 @@
 """
 Tests for the lms_filter_generator
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 from lms.lib.courseware_search.lms_filter_generator import LmsSearchFilterGenerator
 from common.djangoapps.student.models import CourseEnrollment

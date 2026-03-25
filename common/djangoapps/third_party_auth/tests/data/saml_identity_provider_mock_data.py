@@ -1,7 +1,7 @@
 """Mock data for SAMLIdentityProvider"""
 
 
-from social_core.backends.saml import OID_MAIL, OID_GIVEN_NAME, OID_SURNAME, OID_COMMON_NAME, OID_USERID
+from social_core.backends.saml import OID_MAIL, OID_GIVEN_NAME, OID_SURNAME, OID_COMMON_NAME, OID_USERID  # noqa: I001
 
 expected_user_details = {
     'username': 'myself',

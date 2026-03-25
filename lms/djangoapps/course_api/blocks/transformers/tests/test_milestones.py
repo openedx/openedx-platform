@@ -3,7 +3,7 @@ Tests for ProctoredExamTransformer.
 """
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import ddt
 from milestones.tests.utils import MilestonesTestCaseMixin

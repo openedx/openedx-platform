@@ -3,7 +3,7 @@ Utility methods for Enterprise
 """
 
 
-import json
+import json  # noqa: I001
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
@@ -326,7 +326,7 @@ def get_enterprise_learner_portal(request):
     Caches and returns result in/from the user's request session if provided.
     """
     # Prevent a circular import.
-    from openedx.features.enterprise_support.api import enterprise_enabled, enterprise_customer_uuid_for_request
+    from openedx.features.enterprise_support.api import enterprise_enabled, enterprise_customer_uuid_for_request  # noqa: I001
 
     user = request.user
     # Only cache this if a learner is authenticated (AnonymousUser exists and should not be tracked)

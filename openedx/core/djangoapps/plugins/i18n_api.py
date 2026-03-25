@@ -2,7 +2,7 @@
 edx-platform specific i18n helpers for edx-django-utils plugins.
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict  # noqa: I001
 from collections import defaultdict
 import os
 from pathlib import Path

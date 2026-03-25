@@ -3,7 +3,7 @@ Tests of XML export
 """
 
 
-import shutil
+import shutil  # noqa: I001
 import unittest
 from datetime import datetime, timedelta, tzinfo
 from tempfile import mkdtemp

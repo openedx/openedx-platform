@@ -75,7 +75,7 @@ Custom Attributes:
         that failed when processing the response. See SafeSessionMiddleware._verify_user_and_log_mismatch
 """
 
-import inspect
+import inspect  # noqa: I001
 from hashlib import sha1, sha256
 from logging import getLogger
 from typing import Union

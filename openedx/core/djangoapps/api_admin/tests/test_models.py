@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-from smtplib import SMTPException
+from smtplib import SMTPException  # noqa: I001
 from unittest import mock
 
 import pytest

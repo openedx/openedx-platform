@@ -3,7 +3,7 @@ URLs for the Bulk Enrollment API
 """
 
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from .views import BulkEnrollView
 

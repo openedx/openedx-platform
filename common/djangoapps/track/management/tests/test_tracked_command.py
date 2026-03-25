@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import json
+import json  # noqa: I001
 from six import StringIO
 
 from django.core.management import call_command

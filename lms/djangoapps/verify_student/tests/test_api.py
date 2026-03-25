@@ -1,7 +1,7 @@
 """
 Tests of API module.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from datetime import datetime, timezone
 import ddt

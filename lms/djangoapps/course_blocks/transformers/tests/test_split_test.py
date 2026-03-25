@@ -3,7 +3,7 @@ Tests for SplitTestTransformer.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 
 import openedx.core.djangoapps.user_api.course_tag.api as course_tag_api
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory

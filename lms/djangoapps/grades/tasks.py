@@ -1,7 +1,7 @@
 """
 This module contains tasks for asynchronous execution of grade updates.
 """
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 from celery import shared_task
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask

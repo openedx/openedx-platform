@@ -1,7 +1,7 @@
 """
 Base setup for Notification Apps and Types.
 """
-from typing import Any, Literal, TypedDict, NotRequired
+from typing import Any, Literal, TypedDict, NotRequired  # noqa: I001
 
 from django.utils.translation import gettext_lazy as _
 

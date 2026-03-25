@@ -1,7 +1,7 @@
 """
 Unit tests for the course's certificate.
 """
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from rest_framework import status
 
 from openedx_authz.constants.roles import COURSE_STAFF, COURSE_EDITOR

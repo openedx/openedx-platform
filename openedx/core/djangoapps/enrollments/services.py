@@ -1,7 +1,7 @@
 """
 Enrollments Service
 """
-from functools import reduce
+from functools import reduce  # noqa: I001
 from operator import or_
 
 from django.conf import settings

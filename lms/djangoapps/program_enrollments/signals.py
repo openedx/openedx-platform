@@ -3,7 +3,7 @@ Signal handlers for program enrollments
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 
 from django.db.models.signals import pre_save, post_save

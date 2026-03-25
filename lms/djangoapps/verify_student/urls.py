@@ -3,7 +3,7 @@ URL definitions for the verify_student app.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path
 
 from lms.djangoapps.verify_student import views

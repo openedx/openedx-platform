@@ -3,7 +3,7 @@ Tests for OverrideDataTransformer.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 import ddt
 import pytz

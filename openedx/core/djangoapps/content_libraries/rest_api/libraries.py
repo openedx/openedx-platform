@@ -62,7 +62,7 @@ the api module instead.
     to openedx_content) atomic:
         https://github.com/openedx/edx-platform/pull/30456
 """
-import itertools
+import itertools  # noqa: I001
 import json
 import logging
 import warnings

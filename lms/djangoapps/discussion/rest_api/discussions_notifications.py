@@ -1,7 +1,7 @@
 """
 Discussion notifications sender util.
 """
-import re
+import re  # noqa: I001
 import html
 
 from bs4 import BeautifulSoup, Tag

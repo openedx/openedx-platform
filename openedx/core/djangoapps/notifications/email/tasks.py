@@ -1,7 +1,7 @@
 """
 Celery tasks for sending email notifications
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from bs4 import BeautifulSoup
 from celery import shared_task

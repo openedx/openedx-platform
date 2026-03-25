@@ -1,6 +1,6 @@
 """Test Entitlements models"""
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -22,7 +22,7 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
-    from common.djangoapps.entitlements.tests.factories import CourseEntitlementFactory
+    from common.djangoapps.entitlements.tests.factories import CourseEntitlementFactory  # noqa: I001
     from common.djangoapps.entitlements.models import CourseEntitlement
 
 

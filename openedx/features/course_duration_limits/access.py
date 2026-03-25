@@ -3,7 +3,7 @@ Contains code related to computing content gating course duration limits
 and course access based on these limits.
 """
 
-from django.utils import timezone
+from django.utils import timezone  # noqa: I001
 from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
 from web_fragments.fragment import Fragment

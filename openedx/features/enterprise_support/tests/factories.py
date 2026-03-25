@@ -3,7 +3,7 @@ Factoryboy factories.
 """
 
 
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 
 import factory
 from faker import Factory as FakerFactory

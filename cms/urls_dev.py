@@ -5,7 +5,7 @@ development mode; otherwise, it is ignored.
 """
 
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from cms.djangoapps.contentstore.views.dev import dev_mode
 
 urlpatterns = [

@@ -4,7 +4,7 @@ This is NOT part of the public API.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 import traceback
 from collections import defaultdict

@@ -3,7 +3,7 @@ Tests for AiAsideSummaryConfig class.
 """
 
 
-import sys
+import sys  # noqa: I001
 from unittest import TestCase
 from unittest.mock import Mock
 

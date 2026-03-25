@@ -3,7 +3,7 @@ Management command to send Schedule course updates
 """
 
 
-from textwrap import dedent
+from textwrap import dedent  # noqa: I001
 
 
 from openedx.core.djangoapps.schedules.management.commands import SendEmailBaseCommand

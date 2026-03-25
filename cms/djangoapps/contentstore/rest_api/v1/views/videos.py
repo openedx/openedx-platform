@@ -1,7 +1,7 @@
 """
 Public rest API endpoints for contentstore API video assets (outside authoring API)
 """
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 import logging
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request

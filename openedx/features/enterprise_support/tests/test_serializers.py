@@ -1,7 +1,7 @@
 """
 Tests for custom enterprise_support Serializers.
 """
-from uuid import uuid4
+from uuid import uuid4  # noqa: I001
 
 from django.test import TestCase
 from enterprise.models import LicensedEnterpriseCourseEnrollment

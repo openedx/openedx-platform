@@ -3,7 +3,7 @@ CourseDetails
 """
 
 
-import logging
+import logging  # noqa: I001
 import re
 
 from django.conf import settings

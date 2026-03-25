@@ -1,6 +1,6 @@
 """Utilities for XML parsing and XBlock/XModuleDescriptor serialization."""
 
-import copy
+import copy  # noqa: I001
 import datetime
 import json
 import logging

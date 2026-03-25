@@ -2,7 +2,7 @@
 Test the use cases of the views of the mfe api.
 """
 
-from unittest.mock import call, patch
+from unittest.mock import call, patch  # noqa: I001
 
 import ddt
 from django.core.cache import cache

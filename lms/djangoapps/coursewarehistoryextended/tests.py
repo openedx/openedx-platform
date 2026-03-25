@@ -6,7 +6,7 @@ backend tables.
 """
 
 
-import json
+import json  # noqa: I001
 from unittest import skipUnless
 from unittest.mock import patch
 

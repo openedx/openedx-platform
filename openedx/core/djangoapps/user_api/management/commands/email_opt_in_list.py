@@ -21,7 +21,7 @@ The command will always use the read replica database if one is configured.
 """
 
 
-import contextlib
+import contextlib  # noqa: I001
 import csv
 from datetime import datetime, timezone as dt_timezone
 import logging

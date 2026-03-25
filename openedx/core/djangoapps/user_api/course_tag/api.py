@@ -8,7 +8,7 @@ UserCourseTag model.
 """
 
 
-from collections import defaultdict
+from collections import defaultdict  # noqa: I001
 
 from openedx.core.lib.cache_utils import get_cache
 

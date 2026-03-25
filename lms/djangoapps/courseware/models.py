@@ -14,7 +14,7 @@ ASSUMPTIONS: modules have unique IDs, even across different module_types
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import logging
 
 from config_models.models import ConfigurationModel

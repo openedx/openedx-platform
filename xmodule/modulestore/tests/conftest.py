@@ -2,7 +2,7 @@
 Test fixture for the `xmodule.modulestore` module.
 """
 
-import shutil
+import shutil  # noqa: I001
 from contextlib import contextmanager
 from unittest.mock import Mock, patch
 

@@ -3,7 +3,7 @@ The data type and use of it for declaratively creating test courses.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from collections import namedtuple
 
 # used to create course subtrees in ModuleStoreTestCase.create_test_course

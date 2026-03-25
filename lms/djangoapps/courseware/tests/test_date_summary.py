@@ -2,7 +2,7 @@
 """Tests for course home page date summary blocks."""
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 import crum

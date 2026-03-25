@@ -3,7 +3,7 @@ Tests for Discussion API forms
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from unittest import TestCase
 from urllib.parse import urlencode
 

@@ -1,6 +1,6 @@
 """Contenstore API v2 URLs."""
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path
 
 from cms.djangoapps.contentstore.rest_api.v2.views import downstreams, home, utils

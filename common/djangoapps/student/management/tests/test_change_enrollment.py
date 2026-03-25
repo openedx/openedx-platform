@@ -1,7 +1,7 @@
 """ Test the change_enrollment command line script."""
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.core.management import call_command

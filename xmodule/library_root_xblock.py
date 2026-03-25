@@ -3,7 +3,7 @@
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock

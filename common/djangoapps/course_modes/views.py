@@ -3,7 +3,7 @@ Views for the course_mode module
 """
 
 
-import decimal
+import decimal  # noqa: I001
 import json
 import logging
 

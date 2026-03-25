@@ -3,7 +3,7 @@ Unit tests for video-related REST APIs.
 """
 
 
-import csv
+import csv  # noqa: I001
 import json
 import re
 from contextlib import contextmanager

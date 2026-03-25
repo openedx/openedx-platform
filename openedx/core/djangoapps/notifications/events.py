@@ -1,6 +1,6 @@
 """ Events for notification app. """
 
-from eventtracking import tracker
+from eventtracking import tracker  # noqa: I001
 
 from common.djangoapps.track import contexts, segment
 

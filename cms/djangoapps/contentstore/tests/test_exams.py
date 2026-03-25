@@ -1,7 +1,7 @@
 """
 Test the exams service integration into Studio
 """
-import itertools
+import itertools  # noqa: I001
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, Mock
 

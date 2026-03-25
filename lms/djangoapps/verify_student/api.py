@@ -1,7 +1,7 @@
 """
 API module.
 """
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

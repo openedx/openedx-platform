@@ -1,7 +1,7 @@
 """
 Tests for Blocks Views
 """
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest import mock
 from unittest.mock import MagicMock, Mock
 from urllib.parse import urlencode, urlunparse

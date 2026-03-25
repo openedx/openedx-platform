@@ -3,7 +3,7 @@ Simple test to ensure that modulestore base classes remain abstract
 """
 
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 import pytest
 
 from xmodule.modulestore import ModuleStoreRead, ModuleStoreWrite

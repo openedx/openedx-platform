@@ -1,5 +1,5 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from crum import set_current_request

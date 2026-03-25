@@ -2,7 +2,7 @@
 Base integration test for provider implementations.
 """
 
-import json
+import json  # noqa: I001
 import unittest
 from contextlib import contextmanager
 from unittest import mock

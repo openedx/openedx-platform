@@ -2,7 +2,7 @@
 Test cases for the modulestore migrator API.
 """
 
-import pytest
+import pytest  # noqa: I001
 from unittest.mock import patch
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2, CourseLocator
 from openedx_content import api as content_api

@@ -5,7 +5,7 @@ This duplicates functionality in django-oauth-provider,
 specifically long_token and short token functions which was used to create
 random tokens
 """
-import hashlib
+import hashlib  # noqa: I001
 from django.utils.encoding import force_bytes
 from django.utils.crypto import get_random_string
 from django.conf import settings

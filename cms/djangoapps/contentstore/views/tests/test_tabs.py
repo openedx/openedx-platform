@@ -1,7 +1,7 @@
 """ Tests for tab functions (just primitive). """
 
 
-import json
+import json  # noqa: I001
 import random
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase

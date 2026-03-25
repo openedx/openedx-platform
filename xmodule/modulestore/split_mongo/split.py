@@ -55,7 +55,7 @@ Representation:
 """
 
 
-import copy
+import copy  # noqa: I001
 import datetime
 import logging
 from collections import defaultdict

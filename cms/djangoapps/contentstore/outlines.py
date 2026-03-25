@@ -3,7 +3,7 @@ This is where Studio interacts with the learning_sequences application, which
 is responsible for holding course outline data. Studio _pushes_ that data into
 learning_sequences at publish time.
 """
-from datetime import timezone
+from datetime import timezone  # noqa: I001
 from typing import List, Tuple
 
 from edx_django_utils.monitoring import function_trace, set_custom_attribute

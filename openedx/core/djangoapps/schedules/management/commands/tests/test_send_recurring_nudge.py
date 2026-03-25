@@ -3,7 +3,7 @@ Tests for send_recurring_nudge management command.
 """
 
 
-from unittest import skipUnless
+from unittest import skipUnless  # noqa: I001
 
 import ddt
 from django.conf import settings

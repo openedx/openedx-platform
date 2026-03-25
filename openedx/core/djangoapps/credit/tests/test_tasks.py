@@ -3,7 +3,7 @@ Tests for credit course tasks.
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from unittest import mock
 from edx_proctoring.api import create_exam

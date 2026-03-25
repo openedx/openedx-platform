@@ -1,7 +1,7 @@
 """
 Basic unit tests for LegacyLibraryContentBlock
 """
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch  # noqa: I001
 
 import ddt
 from bson.objectid import ObjectId

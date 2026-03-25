@@ -3,7 +3,7 @@ Tests for the course import API views
 """
 
 
-import os
+import os  # noqa: I001
 import tarfile
 import tempfile
 

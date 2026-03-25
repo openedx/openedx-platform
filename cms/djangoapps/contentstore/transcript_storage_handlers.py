@@ -3,7 +3,7 @@ Business logic for video transcripts.
 """
 
 
-import logging
+import logging  # noqa: I001
 import os
 
 from django.core.files.base import ContentFile

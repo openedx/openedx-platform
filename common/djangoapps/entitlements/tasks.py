@@ -1,7 +1,7 @@
 """
 This file contains celery tasks for entitlements-related functionality.
 """
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from celery.utils.log import get_task_logger

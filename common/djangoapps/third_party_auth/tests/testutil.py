@@ -5,7 +5,7 @@ Used by Django and non-Django tests; must not have Django deps.
 """
 
 
-import os.path
+import os.path  # noqa: I001
 from contextlib import contextmanager
 from unittest import mock
 

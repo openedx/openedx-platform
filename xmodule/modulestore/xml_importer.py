@@ -21,7 +21,7 @@ Modulestore virtual   |          XML physical (draft, published)
              (a, b)   |  (a, b) | (x, b) | (x, x) | (x, y) | (a, x)
 """
 
-import json
+import json  # noqa: I001
 import logging
 import mimetypes
 import os

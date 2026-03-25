@@ -1,7 +1,7 @@
 """
 Studio URL configuration for Content Staging (& Clipboard)
 """
-from django.urls import path, include
+from django.urls import path, include  # noqa: I001
 
 from . import views
 

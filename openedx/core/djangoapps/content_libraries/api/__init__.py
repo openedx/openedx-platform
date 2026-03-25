@@ -1,7 +1,7 @@
 """
 Python API for working with content libraries
 """
-from .block_metadata import *
+from .block_metadata import *  # noqa: I001
 from .collections import *
 from .container_metadata import *
 from .containers import *

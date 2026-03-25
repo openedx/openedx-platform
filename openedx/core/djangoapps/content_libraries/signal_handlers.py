@@ -2,7 +2,7 @@
 Content library signal handlers.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.db.models.signals import m2m_changed, post_delete, post_save

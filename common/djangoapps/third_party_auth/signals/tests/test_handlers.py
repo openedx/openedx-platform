@@ -2,7 +2,7 @@
 Tests for SAML configuration signal handlers.
 """
 
-import ddt
+import ddt  # noqa: I001
 from unittest import mock
 from unittest.mock import call
 from django.test import TestCase

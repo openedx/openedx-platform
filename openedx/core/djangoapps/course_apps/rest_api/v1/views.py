@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-import logging
+import logging  # noqa: I001
 from typing import Dict
 
 from django.contrib.auth import get_user_model

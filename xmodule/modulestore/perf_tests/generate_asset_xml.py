@@ -5,7 +5,7 @@ Generates fake XML for asset metadata.
 """
 
 
-import random
+import random  # noqa: I001
 from datetime import datetime, timedelta
 
 from lxml import etree

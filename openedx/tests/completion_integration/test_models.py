@@ -2,7 +2,7 @@
 Test models, managers, and validators.
 """
 
-import pytest
+import pytest  # noqa: I001
 from completion import models
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH

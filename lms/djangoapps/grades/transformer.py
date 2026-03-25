@@ -3,7 +3,7 @@ Grades Transformer
 """
 
 
-import json
+import json  # noqa: I001
 from base64 import b64encode
 from functools import reduce as functools_reduce
 from hashlib import sha1

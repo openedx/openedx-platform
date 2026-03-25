@@ -3,7 +3,7 @@ Signal receivers for the "student" application.
 """
 
 # pylint: disable=unused-argument
-import logging
+import logging  # noqa: I001
 from asyncio.log import logger
 from django.conf import settings
 from django.contrib.auth import get_user_model

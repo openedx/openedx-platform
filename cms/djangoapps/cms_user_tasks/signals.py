@@ -1,7 +1,7 @@
 """
 Receivers of signals sent from django-user-tasks
 """
-import logging
+import logging  # noqa: I001
 import re
 from urllib.parse import urljoin
 

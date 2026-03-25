@@ -2,7 +2,7 @@
 Helpers for API tests.
 """
 
-import base64
+import base64  # noqa: I001
 import json
 import re
 

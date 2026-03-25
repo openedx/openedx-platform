@@ -8,7 +8,7 @@ of a student over a period of time. Right now, the only models are the abstract
 photo verification process as generic as possible.
 """
 
-import base64
+import base64  # noqa: I001
 import codecs
 import functools
 import json

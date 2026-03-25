@@ -1,7 +1,7 @@
 """
 Views for Course Experience API.
 """
-import logging
+import logging  # noqa: I001
 
 from django.utils.html import format_html
 from django.utils.translation import gettext as _

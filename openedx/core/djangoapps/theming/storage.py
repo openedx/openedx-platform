@@ -4,7 +4,7 @@ See https://docs.djangoproject.com/en/1.8/ref/contrib/staticfiles/
 """
 
 
-import os.path
+import os.path  # noqa: I001
 import posixpath
 import re
 

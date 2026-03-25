@@ -3,7 +3,7 @@ Tests for permissions defined in courseware.rules
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 import ddt
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory

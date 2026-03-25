@@ -1,7 +1,7 @@
 """Tests of comprehensive theming."""
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib import staticfiles
 from django.test import TestCase
 from path import Path

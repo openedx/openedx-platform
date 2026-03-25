@@ -1,7 +1,7 @@
 """
 Provides Python APIs exposed from Student models.
 """
-import datetime
+import datetime  # noqa: I001
 import logging
 from zoneinfo import ZoneInfo
 

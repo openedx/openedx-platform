@@ -1,5 +1,5 @@
 """Test for Word Cloud Block functional logic."""
-import json
+import json  # noqa: I001
 from unittest.mock import Mock
 
 from django.conf import settings

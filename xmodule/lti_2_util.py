@@ -4,7 +4,7 @@ keep the LTIBlock class from getting too big
 """
 
 
-import base64
+import base64  # noqa: I001
 import hashlib
 import json
 import logging

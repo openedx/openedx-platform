@@ -3,7 +3,7 @@ Functions for accessing and displaying courses within the
 courseware.
 """
 
-import logging
+import logging  # noqa: I001
 import pickle
 from collections import defaultdict, namedtuple
 from datetime import datetime

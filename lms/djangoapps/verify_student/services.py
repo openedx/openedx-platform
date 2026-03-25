@@ -2,7 +2,7 @@
 Implementation of abstraction layer for other parts of the system to make queries related to ID Verification.
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 from itertools import chain
 from urllib.parse import quote

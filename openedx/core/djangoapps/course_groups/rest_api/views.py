@@ -1,7 +1,7 @@
 """
 REST API views for content group configurations.
 """
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from django.conf import settings
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey

@@ -3,7 +3,7 @@ Defines common methods shared by Teams classes
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 TEAM_DISCUSSION_CONTEXT = 'standalone'
 

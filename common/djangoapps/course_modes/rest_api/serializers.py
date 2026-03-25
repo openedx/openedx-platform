@@ -3,7 +3,7 @@ Course modes API serializers.
 """
 
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode

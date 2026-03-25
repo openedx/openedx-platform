@@ -1,7 +1,7 @@
 """
 Shared test utilities for Safe Sessions tests
 """
-import pytest
+import pytest  # noqa: I001
 from contextlib import contextmanager  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 

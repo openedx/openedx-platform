@@ -2,7 +2,7 @@
 Management command to update new Apple ID from AppleMigrationUserIdInfo to UserSocialAuth.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction

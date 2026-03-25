@@ -5,7 +5,7 @@ Management command to
 ./manage.py lms create_orders_for_old_enterprise_course_enrollment --start-index=0 --end-index=100 --batch-size=20
 ./manage.py lms create_orders_for_old_enterprise_course_enrollment --start-index=0 --end-index=100 --sleep-time=1.5
 """
-import time
+import time  # noqa: I001
 import traceback
 from textwrap import dedent
 from urllib.parse import urljoin

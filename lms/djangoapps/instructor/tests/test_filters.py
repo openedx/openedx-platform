@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for models/views in the instructor app.
 """
-import re
+import re  # noqa: I001
 from django.http import HttpResponse
 from django.test import override_settings
 from django.urls import reverse

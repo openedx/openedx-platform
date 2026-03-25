@@ -4,7 +4,7 @@ committing and pushing the changes.
 """
 
 
-import logging
+import logging  # noqa: I001
 import os
 import subprocess
 from urllib.parse import urlparse

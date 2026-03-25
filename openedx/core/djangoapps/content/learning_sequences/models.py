@@ -37,7 +37,7 @@ that separated.
 yourself to the LearningContext and LearningSequence models. Other tables are
 not guaranteed to stick around, and values may be deleted unexpectedly.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.db import models
 from model_utils.models import TimeStampedModel

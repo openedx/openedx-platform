@@ -3,7 +3,7 @@ Black-box tests of the DjangoUserStateClient against the semantics
 defined in edx_user_state_client.
 """
 
-import pytz
+import pytz  # noqa: I001
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from xblock.fields import Scope
 from datetime import datetime

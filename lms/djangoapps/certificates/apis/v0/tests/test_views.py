@@ -3,7 +3,7 @@ Tests for the Certificate REST APIs.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.conf import settings

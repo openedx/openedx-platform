@@ -5,7 +5,7 @@ Namespace that defines fields common to all blocks used in the LMS
 #from django.utils.translation import gettext_noop as _
 
 
-from lazy import lazy
+from lazy import lazy  # noqa: I001
 from xblock.core import XBlock, XBlockMixin
 from xblock.exceptions import JsonHandlerError
 from xblock.fields import Boolean, Dict, Scope, String

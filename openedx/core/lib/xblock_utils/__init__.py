@@ -3,7 +3,7 @@ Functions that are used to modify XBlock fragments for use in the LMS and Studio
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import hashlib
 import json
 import logging

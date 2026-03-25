@@ -2,7 +2,7 @@
 Test data created by CourseSerializer and CourseDetailSerializer
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest import TestCase, mock
 
 import ddt

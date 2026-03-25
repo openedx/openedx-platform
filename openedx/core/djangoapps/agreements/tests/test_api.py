@@ -2,7 +2,7 @@
 Tests for the Agreements API
 """
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime, timedelta
 
 from django.test import TestCase

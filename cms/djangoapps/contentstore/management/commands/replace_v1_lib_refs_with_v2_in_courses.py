@@ -3,7 +3,7 @@ A Command which, given a mapping of V1 to V2 Libraries,
 edits all xblocks in courses which refer to the v1 library to point to the v2 library.
 """
 
-import logging
+import logging  # noqa: I001
 import csv
 
 from django.core.management import BaseCommand, CommandError

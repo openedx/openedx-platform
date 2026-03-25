@@ -1,6 +1,6 @@
 """ Tests for commerce views. """
 
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import UserFactory  # noqa: I001
 
 
 TEST_PASSWORD = "Password1234"

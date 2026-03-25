@@ -1,6 +1,6 @@
 """Tests for request_utils module."""
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import Mock, call, patch
 
 import ddt

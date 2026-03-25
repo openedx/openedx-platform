@@ -3,7 +3,7 @@ Tests for custom Teams Serializers.
 """
 
 
-import six
+import six  # noqa: I001
 from django.core.paginator import Paginator
 from django.test.client import RequestFactory
 

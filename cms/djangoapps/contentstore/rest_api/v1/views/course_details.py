@@ -1,6 +1,6 @@
 """ API Views for course details """
 
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from django.core.exceptions import ValidationError
 from common.djangoapps.util.json_request import JsonResponseBadRequest
 from opaque_keys.edx.keys import CourseKey

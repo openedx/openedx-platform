@@ -3,7 +3,7 @@ Views to toggle Calendar Sync settings for a user on a course
 """
 
 
-import json
+import json  # noqa: I001
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse

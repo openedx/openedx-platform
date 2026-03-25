@@ -2,7 +2,7 @@
 Tasks that operate on course certificates for a user
 """
 
-from difflib import unified_diff
+from difflib import unified_diff  # noqa: I001
 from logging import getLogger
 from typing import Any, Dict, List
 

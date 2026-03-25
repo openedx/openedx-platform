@@ -1,7 +1,7 @@
 """
 Signals for course apps.
 """
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 # A signal that's dispatched when the status for a course app that's available for a course
 # isn't present in the `CourseAppStatus` table.

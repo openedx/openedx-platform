@@ -2,7 +2,7 @@
 Management command to send Schedule course updates
 """
 
-import datetime
+import datetime  # noqa: I001
 from zoneinfo import ZoneInfo
 from textwrap import dedent  # lint-amnesty, pylint: disable=wrong-import-order
 

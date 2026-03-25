@@ -3,7 +3,7 @@ Django template system engine for Mako templates.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.template import TemplateDoesNotExist, TemplateSyntaxError
 from django.template.backends.base import BaseEngine

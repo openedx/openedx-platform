@@ -1,7 +1,7 @@
 """
 Amplitude API class that is used to delete user from Amplitude.
 """
-import logging
+import logging  # noqa: I001
 import os
 
 import backoff

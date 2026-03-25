@@ -3,7 +3,7 @@ Django module container for classes and operations related to the "Course Block"
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo

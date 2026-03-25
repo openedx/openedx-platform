@@ -2,7 +2,7 @@
 Enterprise support admin tests.
 """
 
-import csv
+import csv  # noqa: I001
 import os
 import tempfile
 

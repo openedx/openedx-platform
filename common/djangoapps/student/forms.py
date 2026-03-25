@@ -2,7 +2,7 @@
 Utility functions for validating forms
 """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
 from django.utils.http import int_to_base36

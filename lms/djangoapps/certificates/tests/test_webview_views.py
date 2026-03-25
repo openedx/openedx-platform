@@ -1,7 +1,7 @@
 """Tests for certificates views. """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest import skipUnless
 from unittest.mock import patch, Mock
 from urllib.parse import urlencode

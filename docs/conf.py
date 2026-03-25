@@ -6,7 +6,7 @@
 # http://www.sphinx-doc.org/en/master/config
 
 
-import os
+import os  # noqa: I001
 import sys
 from datetime import datetime
 from subprocess import check_call
@@ -24,7 +24,7 @@ root = Path('..').abspath()
 sys.path.insert(0, root)
 sys.path.append(root / "docs")
 
-from repository_docs import RepositoryDocs
+from repository_docs import RepositoryDocs  # noqa: I001
 
 # Use a settings module that allows all LMS and Studio code to be imported
 # without errors.  If running sphinx-apidoc, we already set a different

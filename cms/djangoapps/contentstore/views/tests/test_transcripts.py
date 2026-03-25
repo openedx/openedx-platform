@@ -1,7 +1,7 @@
 """Tests for items views."""
 
 
-import copy
+import copy  # noqa: I001
 import json
 import tempfile
 import textwrap

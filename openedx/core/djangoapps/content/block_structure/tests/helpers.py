@@ -3,7 +3,7 @@ Common utilities for tests in block_structure module
 """
 
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 from uuid import uuid4
 from unittest.mock import patch
 

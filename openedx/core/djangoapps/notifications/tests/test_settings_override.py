@@ -1,7 +1,7 @@
 """
 Unit tests for settings_override module using real base_notification configurations.
 """
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings  # noqa: I001
 
 from openedx.core.djangoapps.notifications.base_notification import (
     _COURSE_NOTIFICATION_APPS,

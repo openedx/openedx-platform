@@ -3,7 +3,7 @@ Tests student admin.py
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo

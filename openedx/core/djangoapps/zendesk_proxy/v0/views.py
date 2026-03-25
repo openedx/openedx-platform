@@ -2,7 +2,7 @@
 Define request handlers used by the zendesk_proxy djangoapp
 """
 
-from rest_framework import status
+from rest_framework import status  # noqa: I001
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.throttling import SimpleRateThrottle

@@ -1,7 +1,7 @@
 """Tests of Branding API """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.conf import settings
 from django.test import TestCase

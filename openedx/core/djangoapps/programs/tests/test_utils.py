@@ -1,6 +1,6 @@
 """Tests covering Programs utilities."""
 
-import datetime
+import datetime  # noqa: I001
 import json
 import uuid
 from collections import namedtuple

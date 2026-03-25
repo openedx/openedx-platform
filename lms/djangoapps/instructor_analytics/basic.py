@@ -5,7 +5,7 @@ Serve miscellaneous course and student data
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 import logging
 

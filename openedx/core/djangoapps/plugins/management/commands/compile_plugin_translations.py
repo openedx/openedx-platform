@@ -2,7 +2,7 @@
 Compile the translation files for the edx_django_utils.plugins.
 """
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand  # noqa: I001
 from django.conf import settings
 
 

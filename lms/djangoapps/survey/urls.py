@@ -3,7 +3,7 @@ URL mappings for the Survey feature
 """
 
 
-from django.urls import re_path
+from django.urls import re_path  # noqa: I001
 
 from lms.djangoapps.survey import views
 

@@ -2,7 +2,7 @@
 Tests for ContentLibraryTransformer.
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache

@@ -1,7 +1,7 @@
 """Django admin for course_modes"""
 
 
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo  # noqa: I001
 
 from django import forms
 from django.conf import settings

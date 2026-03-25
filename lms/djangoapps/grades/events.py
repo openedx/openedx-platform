@@ -1,7 +1,7 @@
 """
 Emits course grade events.
 """
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 from crum import get_current_user
 from django.conf import settings

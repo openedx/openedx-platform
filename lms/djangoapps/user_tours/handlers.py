@@ -1,6 +1,6 @@
 """ Signal handlers for User Tours. """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.db.models.signals import post_save
 from django.db.utils import ProgrammingError
 from django.dispatch import receiver

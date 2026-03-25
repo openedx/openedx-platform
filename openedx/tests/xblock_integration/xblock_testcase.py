@@ -36,7 +36,7 @@ Our next steps would be to:
 """
 
 
-import collections
+import collections  # noqa: I001
 import json
 import sys
 import unittest

@@ -3,7 +3,7 @@ This module contains various configuration settings via
 waffle switches for the teams app.
 """
 
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 # .. toggle_name: teams.enable_teams_app
 # .. toggle_implementation: WaffleFlag

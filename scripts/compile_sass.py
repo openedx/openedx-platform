@@ -39,7 +39,7 @@ We do this because:
 
 See docs/decisions/0017-reimplement-asset-processing.rst for more details.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import glob
 import os

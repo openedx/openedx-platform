@@ -2,7 +2,7 @@
 Tests for signal handlers in the contentstore.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 from unittest.mock import patch
 
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator

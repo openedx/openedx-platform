@@ -3,7 +3,7 @@ API v0 URLs.
 """
 
 
-from django.urls import include, path, re_path
+from django.urls import include, path, re_path  # noqa: I001
 
 from . import views
 

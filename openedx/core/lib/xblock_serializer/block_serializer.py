@@ -1,7 +1,7 @@
 """
 Code for serializing a modulestore XBlock to OLX.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 import logging
 import os
 

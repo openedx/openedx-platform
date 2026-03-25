@@ -3,7 +3,7 @@ Test helpers for testing course block transformers.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore

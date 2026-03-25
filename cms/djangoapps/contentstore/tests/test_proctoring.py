@@ -3,7 +3,7 @@ Tests for the edx_proctoring integration into Studio
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch, Mock
 
 import ddt

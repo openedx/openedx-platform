@@ -3,7 +3,7 @@ Tests for send_course_update management command.
 """
 
 
-from unittest import skipUnless
+from unittest import skipUnless  # noqa: I001
 from unittest.mock import patch
 
 import ddt

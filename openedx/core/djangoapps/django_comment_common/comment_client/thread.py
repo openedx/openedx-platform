@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring,protected-access
 
 
-import logging
+import logging  # noqa: I001
 import time
 
 from eventtracking import tracker

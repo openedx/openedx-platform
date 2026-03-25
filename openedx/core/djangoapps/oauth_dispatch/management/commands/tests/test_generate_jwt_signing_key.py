@@ -4,7 +4,7 @@ Tests the ``generate_jwt_signing_key`` management command.
 # pylint: disable=missing-docstring
 
 
-import os
+import os  # noqa: I001
 import sys
 import tempfile
 from contextlib import contextmanager

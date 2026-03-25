@@ -4,7 +4,7 @@ Specific overrides to the base prod settings to make development easier.
 
 
 # Silence noisy logs
-import logging
+import logging  # noqa: I001
 from os.path import abspath, dirname, join
 from urllib.parse import urlparse
 

@@ -3,7 +3,7 @@ Tests for the django comment client integration models
 """
 
 
-from django.test.testcases import TestCase
+from django.test.testcases import TestCase  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,

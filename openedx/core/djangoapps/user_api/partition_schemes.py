@@ -3,7 +3,7 @@ Provides partition support to the user service.
 """
 
 
-import logging
+import logging  # noqa: I001
 import random
 
 from eventtracking import tracker

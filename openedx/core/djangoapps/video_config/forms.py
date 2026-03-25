@@ -2,7 +2,7 @@
 Defines a form for providing validation of HLS Playback course-specific configuration.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django import forms
 

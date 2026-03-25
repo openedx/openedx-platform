@@ -1,7 +1,7 @@
 """ Common utilities for tests in the user_authn app. """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from enum import Enum
 from unittest.mock import patch
 

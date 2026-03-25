@@ -3,7 +3,7 @@ Tests for the Studio authoring XBlock mixin.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test.utils import override_settings
 from xblock.core import XBlock
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase

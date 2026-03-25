@@ -9,7 +9,7 @@ Usage:
 decorator `django.utils.decorators.decorator_from_middleware(middleware_class)`
 
 """
-import logging
+import logging  # noqa: I001
 
 from django.utils.deprecation import MiddlewareMixin
 from python_ipware import IpWare

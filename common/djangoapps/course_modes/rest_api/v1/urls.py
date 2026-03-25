@@ -3,7 +3,7 @@ URL definitions for the course_modes v1 API.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from django.urls import re_path
 from common.djangoapps.course_modes.rest_api.v1 import views

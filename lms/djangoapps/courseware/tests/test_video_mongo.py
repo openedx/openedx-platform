@@ -3,7 +3,7 @@ Video xmodule tests in mongo.
 """
 
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import json
 import shutil
 from collections import OrderedDict

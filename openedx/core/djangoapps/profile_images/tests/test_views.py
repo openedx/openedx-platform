@@ -1,7 +1,7 @@
 """
 Test cases for the HTTP endpoints of the profile image api.
 """
-from contextlib import closing
+from contextlib import closing  # noqa: I001
 from unittest import mock
 from unittest.mock import patch
 

@@ -1,7 +1,7 @@
 """
 Tests for `backfill_orgs_and_org_courses` CMS management command.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import ddt
 from django.core.management import CommandError, call_command

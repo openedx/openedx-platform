@@ -1,7 +1,7 @@
 """
 Tests for course utils.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from django.conf import settings

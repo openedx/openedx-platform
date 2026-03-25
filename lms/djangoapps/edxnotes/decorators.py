@@ -22,7 +22,7 @@ def edxnotes(cls):
         Returns raw html for the component.
         """
         # Import is placed here to avoid model import at project startup.
-        from .helpers import (
+        from .helpers import (  # noqa: I001
             generate_uid, get_edxnotes_id_token, get_public_endpoint, get_token_url, is_feature_enabled
         )
 

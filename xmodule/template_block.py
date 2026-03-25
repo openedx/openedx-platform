@@ -1,7 +1,7 @@
 """
 Template block
 """
-import logging
+import logging  # noqa: I001
 from string import Template
 
 from lxml import etree

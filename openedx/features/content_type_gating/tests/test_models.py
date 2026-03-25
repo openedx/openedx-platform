@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-import pytest
+import pytest  # noqa: I001
 
 
 import itertools  # lint-amnesty, pylint: disable=wrong-import-order

@@ -3,7 +3,7 @@ Utility methods for unit tests.
 """
 
 
-import filecmp
+import filecmp  # noqa: I001
 import pprint
 
 import pytest

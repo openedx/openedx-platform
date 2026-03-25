@@ -3,7 +3,7 @@ URLs for EdxNotes.
 """
 
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from . import views
 

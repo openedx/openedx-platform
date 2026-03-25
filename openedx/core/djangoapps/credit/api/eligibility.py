@@ -4,7 +4,7 @@ whether a user has satisfied those requirements.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 

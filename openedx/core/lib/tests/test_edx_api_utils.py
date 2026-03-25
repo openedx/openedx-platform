@@ -1,7 +1,7 @@
 """Tests covering edX API utilities."""
 # pylint: disable=missing-docstring
 
-import json
+import json  # noqa: I001
 from unittest import mock
 from urllib.parse import urljoin
 

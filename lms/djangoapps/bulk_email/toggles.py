@@ -2,7 +2,7 @@
 Toggles for bulk_email app
 """
 
-from edx_toggles.toggles import SettingToggle
+from edx_toggles.toggles import SettingToggle  # noqa: I001
 
 
 # .. toggle_name: bulk_email.EMAIL_USE_COURSE_ID_FROM_FOR_BULK

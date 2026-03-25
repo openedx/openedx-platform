@@ -2,7 +2,7 @@
 Tests courseware views.py
 """
 
-from contextlib import contextmanager
+from contextlib import contextmanager  # noqa: I001
 import html
 import itertools
 import json

@@ -1,7 +1,7 @@
 """
 Tests for third_party_auth/models.py.
 """
-import unittest
+import unittest  # noqa: I001
 from django.test import TestCase, override_settings
 
 from .factories import SAMLProviderConfigFactory

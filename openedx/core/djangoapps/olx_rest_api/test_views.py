@@ -1,7 +1,7 @@
 """
 Test for the OLX REST API app.
 """
-from xml.etree import ElementTree
+from xml.etree import ElementTree  # noqa: I001
 
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from common.djangoapps.student.roles import CourseStaffRole

@@ -3,7 +3,7 @@ Tests for StudentViewTransformer.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 
 # pylint: disable=protected-access
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory

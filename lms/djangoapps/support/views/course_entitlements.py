@@ -3,7 +3,7 @@ Support tool for changing and granting course entitlements
 """
 
 
-from django.utils.decorators import method_decorator
+from django.utils.decorators import method_decorator  # noqa: I001
 from django.views.generic import View
 
 from common.djangoapps.edxmako.shortcuts import render_to_response

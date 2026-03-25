@@ -1,7 +1,7 @@
 """
 Test the enterprise support APIs.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 import httpretty

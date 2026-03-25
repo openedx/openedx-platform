@@ -1,5 +1,5 @@
 """ View For Getting the Status of The Authoring API """
-import edx_api_doc_tools as apidocs
+import edx_api_doc_tools as apidocs  # noqa: I001
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response

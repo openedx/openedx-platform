@@ -2,7 +2,7 @@
 The enrollment_track dynamic partition generation to be part of the
 openedx.dynamic_partition plugin.
 """
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _

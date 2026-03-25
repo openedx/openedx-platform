@@ -1,7 +1,7 @@
 """
 Miscellaneous system checks
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.core import checks
 
 

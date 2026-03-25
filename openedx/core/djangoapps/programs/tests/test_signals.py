@@ -2,7 +2,7 @@
 This module contains tests for programs-related signals and signal handlers.
 """
 
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 
 from django.test import TestCase

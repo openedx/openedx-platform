@@ -1,7 +1,7 @@
 """
 Un-enroll Bulk users course wide as well as specified in csv
 """
-import logging
+import logging  # noqa: I001
 
 import unicodecsv
 from django.core.management.base import BaseCommand

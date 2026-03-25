@@ -4,7 +4,7 @@ that are stored in a database an accessible using their Location as an identifie
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import logging
 import re
 import threading

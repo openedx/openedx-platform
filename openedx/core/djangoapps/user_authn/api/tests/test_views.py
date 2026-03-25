@@ -1,7 +1,7 @@
 """
 Logistration API View Tests
 """
-import ddt
+import ddt  # noqa: I001
 import socket
 from django.conf import settings
 from django.test.utils import override_settings

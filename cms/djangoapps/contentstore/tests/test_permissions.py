@@ -2,7 +2,7 @@
 Test CRUD for authorization.
 """
 
-import copy
+import copy  # noqa: I001
 
 from edx_toggles.toggles.testutils import override_waffle_flag
 

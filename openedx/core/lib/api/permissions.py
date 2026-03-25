@@ -3,7 +3,7 @@ API library for Django REST Framework permissions-oriented workflows
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.http import Http404
 from edx_django_utils.monitoring import set_custom_attribute
 from opaque_keys import InvalidKeyError

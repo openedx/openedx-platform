@@ -3,7 +3,7 @@ Certificate HTML webview.
 """
 
 
-import logging
+import logging  # noqa: I001
 import urllib
 from datetime import datetime
 from uuid import uuid4

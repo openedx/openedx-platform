@@ -2,7 +2,7 @@
 Block rendering
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 import json
 import logging
 import textwrap

@@ -1,5 +1,5 @@
 """ API for User Tours. """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.db import transaction, IntegrityError
 from django.shortcuts import get_object_or_404
 from rest_framework.generics import RetrieveUpdateAPIView

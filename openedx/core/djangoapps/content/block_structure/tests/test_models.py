@@ -2,7 +2,7 @@
 Unit tests for Block Structure models.
 """
 # pylint: disable=protected-access
-import errno
+import errno  # noqa: I001
 from itertools import product
 from uuid import uuid4
 from unittest.mock import Mock, patch

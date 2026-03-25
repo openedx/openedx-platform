@@ -1,7 +1,7 @@
 """
 Instructor Task Django app REST API views.
 """
-import datetime
+import datetime  # noqa: I001
 import json
 import logging
 import pytz

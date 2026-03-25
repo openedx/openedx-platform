@@ -1,7 +1,7 @@
 """Views for enabling cross-domain requests. """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from django.conf import settings

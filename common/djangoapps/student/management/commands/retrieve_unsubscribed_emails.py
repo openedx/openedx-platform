@@ -1,6 +1,6 @@
 """Management command to retrieve unsubscribed emails from Braze."""
 
-import logging
+import logging  # noqa: I001
 import tempfile
 from datetime import datetime, timedelta
 

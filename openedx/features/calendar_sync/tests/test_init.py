@@ -1,7 +1,7 @@
 """ Tests the contents of the __init__.py file """
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.features.calendar_sync import get_calendar_event_id

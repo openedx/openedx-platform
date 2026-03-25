@@ -3,7 +3,7 @@ Index view for the support app.
 """
 
 
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy  # noqa: I001
 from django.utils.translation import gettext_lazy as _
 
 from common.djangoapps.edxmako.shortcuts import render_to_response

@@ -3,7 +3,7 @@ Tests for Bookmarks models.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from contextlib import contextmanager
 from unittest import mock
 from zoneinfo import ZoneInfo

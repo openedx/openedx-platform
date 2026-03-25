@@ -2,7 +2,7 @@
 Tests for manager.py
 """
 
-import pytest
+import pytest  # noqa: I001
 import ddt
 from unittest.mock import MagicMock
 from django.test import TestCase

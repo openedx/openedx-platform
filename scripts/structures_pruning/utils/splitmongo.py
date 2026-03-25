@@ -39,7 +39,7 @@ memory instead of working on subsets of the data. As a practical matter, this
 means that it will work for databases with up to about 10 million Structures
 before RAM usage starts to become a problem.
 """
-from collections import deque, namedtuple
+from collections import deque, namedtuple  # noqa: I001
 from itertools import count, takewhile
 import json
 import logging

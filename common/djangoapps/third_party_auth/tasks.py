@@ -3,7 +3,7 @@ Code to manage fetching and storing the metadata of IdPs.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 import requests
 from celery import shared_task

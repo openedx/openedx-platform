@@ -1,7 +1,7 @@
 """
 Events for email notifications
 """
-import datetime
+import datetime  # noqa: I001
 
 from eventtracking import tracker
 

@@ -1,7 +1,7 @@
 """
 Tests for the rest api for course apps.
 """
-import contextlib
+import contextlib  # noqa: I001
 import json
 from unittest import mock
 

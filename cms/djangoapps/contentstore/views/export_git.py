@@ -4,7 +4,7 @@ the giturl attribute is set.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied

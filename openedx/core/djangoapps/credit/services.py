@@ -1,7 +1,7 @@
 """
 Implementation of "credit" XBlock service
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 import logging
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -72,7 +72,7 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
-        from openedx.core.djangoapps.credit.api.eligibility import (
+        from openedx.core.djangoapps.credit.api.eligibility import (  # noqa: I001
             is_credit_course,
             get_credit_requirement_status,
         )
@@ -138,7 +138,7 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
-        from openedx.core.djangoapps.credit.api.eligibility import (
+        from openedx.core.djangoapps.credit.api.eligibility import (  # noqa: I001
             is_credit_course,
             set_credit_requirement_status as api_set_credit_requirement_status
         )
@@ -194,7 +194,7 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
-        from openedx.core.djangoapps.credit.api.eligibility import (
+        from openedx.core.djangoapps.credit.api.eligibility import (  # noqa: I001
             is_credit_course,
             remove_credit_requirement_status as api_remove_credit_requirement_status
         )

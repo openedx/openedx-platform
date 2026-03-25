@@ -1,7 +1,7 @@
 """
 XBlock runtime services for LegacyLibraryContentBlock
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist

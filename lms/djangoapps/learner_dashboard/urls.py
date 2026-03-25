@@ -1,6 +1,6 @@
 """Learner dashboard URL routing configuration"""
 
-from django.urls import path, re_path
+from django.urls import path, re_path  # noqa: I001
 
 from lms.djangoapps.learner_dashboard import programs, program_views
 

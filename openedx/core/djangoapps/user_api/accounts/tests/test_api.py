@@ -3,7 +3,7 @@ Unit tests for behavior that is specific to the api methods (vs. the view method
 Most of the functionality is covered in test_views.py.
 """
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 import unicodedata
 from unittest.mock import Mock, patch

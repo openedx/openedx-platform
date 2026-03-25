@@ -1,7 +1,7 @@
 """
 Tests for the sync course runs management command.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 import ddt
 from django.core.management import call_command

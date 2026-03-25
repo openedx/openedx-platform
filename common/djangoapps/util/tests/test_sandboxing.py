@@ -3,7 +3,7 @@ Tests for sandboxing.py in util app
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from django.test import TestCase
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import CourseKey

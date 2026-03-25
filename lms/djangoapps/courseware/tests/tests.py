@@ -3,7 +3,7 @@ Test for LMS courseware app.
 """
 
 
-from textwrap import dedent
+from textwrap import dedent  # noqa: I001
 from unittest import TestCase
 
 from unittest import mock

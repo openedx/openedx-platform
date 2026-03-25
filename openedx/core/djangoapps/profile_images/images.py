@@ -3,7 +3,7 @@ Image file manipulation functions related to profile images.
 """
 
 
-import binascii
+import binascii  # noqa: I001
 from collections import namedtuple
 from contextlib import closing
 from io import BytesIO

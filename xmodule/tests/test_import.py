@@ -1,7 +1,7 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
 
-import datetime
+import datetime  # noqa: I001
 from tempfile import mkdtemp
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo

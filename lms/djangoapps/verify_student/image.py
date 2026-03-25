@@ -3,7 +3,7 @@ Image encoding helpers for the verification app.
 """
 
 
-import base64
+import base64  # noqa: I001
 import logging
 
 log = logging.getLogger(__name__)

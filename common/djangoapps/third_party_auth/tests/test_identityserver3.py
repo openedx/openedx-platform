@@ -1,7 +1,7 @@
 """
 Unit tests for the IdentityServer3 OAuth2 Backend
 """
-import json
+import json  # noqa: I001
 import ddt
 from common.djangoapps.third_party_auth.identityserver3 import IdentityServer3
 from common.djangoapps.third_party_auth.tests import testutil

@@ -17,7 +17,7 @@ will be have the 'email-optin' tag set to 'False'.
 """
 
 
-import csv
+import csv  # noqa: I001
 import logging
 import time
 from textwrap import dedent

@@ -1,7 +1,7 @@
 """Tests for the certificates panel of the instructor dash. """
 
 
-import contextlib
+import contextlib  # noqa: I001
 import io
 import json
 from unittest import mock

@@ -1,7 +1,7 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 import os
 import zipfile
 import uuid
@@ -1785,7 +1785,7 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
         This simulates the one-time database seeding that would happen
         during application deployment, separate from the runtime policy loading.
         """
-        import pkg_resources
+        import pkg_resources  # noqa: I001
         from openedx_authz.engine.utils import migrate_policy_between_enforcers
         import casbin
 

@@ -1,7 +1,7 @@
 """
 Discussion API serializers
 """
-import html
+import html  # noqa: I001
 import re
 
 from bs4 import BeautifulSoup

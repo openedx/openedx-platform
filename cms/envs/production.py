@@ -10,7 +10,7 @@ https://github.com/openedx/edx-platform/blob/master/docs/decisions/0022-settings
 # pylint: disable=wildcard-import, unused-wildcard-import
 
 
-import codecs
+import codecs  # noqa: I001
 import os
 import warnings
 import yaml

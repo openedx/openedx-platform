@@ -3,7 +3,7 @@ This module contains various configuration settings via
 waffle switches for the instructor_task app.
 """
 
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag  # noqa: I001
 
 
 WAFFLE_NAMESPACE = 'instructor_task'

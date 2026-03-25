@@ -3,7 +3,7 @@ Delete course tests.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.core.management import CommandError, call_command
 from xmodule.contentstore.content import StaticContent

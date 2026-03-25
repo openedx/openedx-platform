@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 
 from openedx.core.djangoapps.oauth_dispatch.tests import factories

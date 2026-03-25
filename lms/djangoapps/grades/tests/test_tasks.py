@@ -3,7 +3,7 @@ Tests for the functionality and infrastructure of grades tasks.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from collections import OrderedDict
 from contextlib import contextmanager
 from datetime import datetime, timedelta

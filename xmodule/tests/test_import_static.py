@@ -3,7 +3,7 @@ Tests that check that we ignore the appropriate files when importing courses.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import Mock
 
 from opaque_keys.edx.locator import CourseLocator

@@ -1,7 +1,7 @@
 """
 Tests for static asset files in openedx_content-based Content Libraries
 """
-from uuid import UUID
+from uuid import UUID  # noqa: I001
 
 from opaque_keys.edx.keys import UsageKey
 

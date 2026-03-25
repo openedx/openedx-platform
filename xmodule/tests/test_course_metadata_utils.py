@@ -3,7 +3,7 @@ Tests for course_metadata_utils.
 """
 
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 from datetime import datetime, timedelta
 from unittest import TestCase
 from zoneinfo import ZoneInfo

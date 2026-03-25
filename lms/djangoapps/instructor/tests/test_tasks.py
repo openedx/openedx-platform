@@ -1,7 +1,7 @@
 """
 Tests for tasks.py
 """
-import json
+import json  # noqa: I001
 from unittest import mock
 
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH

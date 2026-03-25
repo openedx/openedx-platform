@@ -1,7 +1,7 @@
 """Tests for zendesk_proxy views."""
 
 
-from copy import deepcopy
+from copy import deepcopy  # noqa: I001
 import json
 from unittest.mock import MagicMock, patch
 

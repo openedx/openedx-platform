@@ -2,7 +2,7 @@
 Tests third_party_auth admin views
 """
 
-from django.contrib.admin.sites import AdminSite
+from django.contrib.admin.sites import AdminSite  # noqa: I001
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import models
 from django.urls import reverse

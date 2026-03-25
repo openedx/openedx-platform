@@ -1,5 +1,5 @@
 """ Constants used for the content libraries. """
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _  # noqa: I001
 
 
 # These are all the licenses we support so far.

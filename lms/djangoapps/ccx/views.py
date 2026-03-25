@@ -1,7 +1,7 @@
 """
 Views related to the Custom Courses feature.
 """
-import csv
+import csv  # noqa: I001
 import datetime
 import functools
 import json

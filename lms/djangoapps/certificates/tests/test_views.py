@@ -1,7 +1,7 @@
 """Tests for certificates views. """
 
 
-import datetime
+import datetime  # noqa: I001
 from uuid import uuid4
 
 from django.conf import settings

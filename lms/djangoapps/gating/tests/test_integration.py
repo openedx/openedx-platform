@@ -3,7 +3,7 @@ Integration tests for gated content.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from crum import set_current_request
 from edx_django_utils.cache import RequestCache

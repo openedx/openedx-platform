@@ -4,7 +4,7 @@ Tests for django admin commands in the verify_student module
 """
 
 
-import logging
+import logging  # noqa: I001
 import os
 import tempfile
 

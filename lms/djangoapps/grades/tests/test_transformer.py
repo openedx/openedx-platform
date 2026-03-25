@@ -3,7 +3,7 @@ Test the behavior of the GradesTransformer
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import random
 from copy import deepcopy
 

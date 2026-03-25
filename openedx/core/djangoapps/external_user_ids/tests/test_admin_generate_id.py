@@ -1,7 +1,7 @@
 """
 Test the logic behind the Generate External IDs tools in Admin
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 from common.djangoapps.student.tests.factories import UserFactory

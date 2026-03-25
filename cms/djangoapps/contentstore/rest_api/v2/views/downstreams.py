@@ -80,7 +80,7 @@ UpstreamLink response schema:
   }
 """
 
-import logging
+import logging  # noqa: I001
 
 from attrs import asdict as attrs_asdict
 from django.db.models import QuerySet

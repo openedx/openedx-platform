@@ -12,7 +12,7 @@ file and check it in at the same time as your model changes. To do that,
 """
 
 
-import ipaddress
+import ipaddress  # noqa: I001
 import json
 import logging
 from typing import List, Optional

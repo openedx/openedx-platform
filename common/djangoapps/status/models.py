@@ -3,7 +3,7 @@ Store status messages in the database.
 """
 
 
-from config_models.admin import ConfigurationModelAdmin
+from config_models.admin import ConfigurationModelAdmin  # noqa: I001
 from config_models.models import ConfigurationModel
 from django.contrib import admin
 from django.core.cache import cache

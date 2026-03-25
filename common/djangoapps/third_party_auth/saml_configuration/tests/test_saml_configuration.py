@@ -1,7 +1,7 @@
 """
 Tests for SAMLConfiguration endpoints
 """
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 from django.contrib.sites.models import Site
 
 from rest_framework import status

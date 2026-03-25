@@ -2,7 +2,7 @@
 Test for lms.djangoapps.grades.score_render module
 """
 
-import json
+import json  # noqa: I001
 from unittest.mock import MagicMock, patch
 
 from django.http import Http404

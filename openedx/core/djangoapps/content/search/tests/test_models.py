@@ -1,5 +1,5 @@
 """Content search model tests"""
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import ddt
 from django.test import RequestFactory

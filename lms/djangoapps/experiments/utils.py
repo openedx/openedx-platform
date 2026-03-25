@@ -3,7 +3,7 @@ Utilities to facilitate experimentation
 """
 
 
-import logging
+import logging  # noqa: I001
 from decimal import Decimal
 
 from django.utils.timezone import now

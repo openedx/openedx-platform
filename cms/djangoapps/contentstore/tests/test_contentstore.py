@@ -5,7 +5,7 @@
 # test case using override_waffle_flag(toggles.LEGACY_STUDIO_*, True) will need to be fixed.
 # Part of https://github.com/openedx/edx-platform/issues/36275.
 
-import copy
+import copy  # noqa: I001
 import re
 import shutil
 from datetime import timedelta

@@ -3,7 +3,7 @@ Tests for course access
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import itertools
 
 from unittest import mock

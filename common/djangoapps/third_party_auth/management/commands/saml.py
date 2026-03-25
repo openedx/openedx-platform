@@ -3,7 +3,7 @@ Management commands for third_party_auth
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 

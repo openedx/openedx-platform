@@ -2,7 +2,7 @@
 """
 Management command for expiring entitlements older than 1 year / 18 months.
 """
-import logging
+import logging  # noqa: I001
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from math import ceil

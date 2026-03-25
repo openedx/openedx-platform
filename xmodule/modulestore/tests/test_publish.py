@@ -3,7 +3,7 @@ Test the publish code (mostly testing that publishing doesn't result in orphans)
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import os
 import re
 import unittest

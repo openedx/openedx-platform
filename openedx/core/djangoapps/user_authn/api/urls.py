@@ -1,7 +1,7 @@
 """
 Authn API urls
 """
-from django.urls import path
+from django.urls import path  # noqa: I001
 from openedx.core.djangoapps.user_authn.api.views import (
     MFEContextView,
     SendAccountActivationEmail,

@@ -2,7 +2,7 @@
 Compile the translation files for the XBlocks.
 """
 
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand  # noqa: I001
 
 from xmodule.modulestore import api as xmodule_api
 

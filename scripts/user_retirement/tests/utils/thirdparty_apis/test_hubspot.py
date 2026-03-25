@@ -1,7 +1,7 @@
 """
 Tests for the Sailthru API functionality
 """
-import logging
+import logging  # noqa: I001
 import os
 import unittest
 from unittest import mock

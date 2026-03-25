@@ -1,6 +1,6 @@
 """ Tests for backpopulate user tours Command. """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.core.management import call_command
 from django.db.models.signals import post_save
 from django.test import TestCase

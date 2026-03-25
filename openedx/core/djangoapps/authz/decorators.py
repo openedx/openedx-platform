@@ -1,5 +1,5 @@
 """Decorators for AuthZ-based permissions enforcement."""
-import logging
+import logging  # noqa: I001
 from functools import wraps
 from collections.abc import Callable
 

@@ -1,7 +1,7 @@
 """
 Collections API Views
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.db.models import QuerySet
 from django.utils.text import slugify

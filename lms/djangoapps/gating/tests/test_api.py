@@ -3,7 +3,7 @@ Unit tests for gating.signals module
 """
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 from ddt import data, ddt, unpack
 from milestones import api as milestones_api

@@ -4,7 +4,7 @@ Management command for updating entitlements modes.
 """
 
 
-import logging
+import logging  # noqa: I001
 from textwrap import dedent
 
 from django.core.management import BaseCommand

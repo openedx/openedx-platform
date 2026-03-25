@@ -1,7 +1,7 @@
 """ Views related to auto auth. """
 
 
-import datetime
+import datetime  # noqa: I001
 import uuid
 
 from django.conf import settings

@@ -4,7 +4,7 @@ Module for the Storage of BlockStructure objects.
 # pylint: disable=protected-access
 
 
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 
 from openedx.core.lib.cache_utils import zpickle, zunpickle

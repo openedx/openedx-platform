@@ -3,7 +3,7 @@ Contains all the URLs
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import path, re_path
 
 from openedx.core.djangoapps.courseware_api import views

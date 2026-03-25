@@ -1,5 +1,5 @@
 """ Course run serializers. """
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db import transaction

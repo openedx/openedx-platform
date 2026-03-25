@@ -3,7 +3,7 @@ Test the import_staged_content_from_user_clipboard() method, which is used to
 allow users to paste XBlocks that were copied using the staged_content/clipboard
 APIs.
 """
-import ddt
+import ddt  # noqa: I001
 from opaque_keys.edx.keys import UsageKey
 from rest_framework.test import APIClient
 from openedx_events.content_authoring.signals import (

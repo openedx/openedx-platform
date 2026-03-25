@@ -1,7 +1,7 @@
 """
 Tests for site configuration's django models.
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 import pytest
 from django.contrib.sites.models import Site
 from django.db import IntegrityError, transaction

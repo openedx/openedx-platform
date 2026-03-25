@@ -12,7 +12,7 @@ except for making it optional.
 # pylint: skip-file
 
 
-from django.template import Library, TemplateDoesNotExist
+from django.template import Library, TemplateDoesNotExist  # noqa: I001
 from django.template.base import TemplateSyntaxError, token_kwargs
 from django.template.loader_tags import IncludeNode
 

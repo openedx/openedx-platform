@@ -3,7 +3,7 @@ Tests for BlockCompletionTransformer.
 """
 
 
-from completion.models import BlockCompletion
+from completion.models import BlockCompletion  # noqa: I001
 from completion.test_utils import CompletionWaffleTestMixin
 from xblock.completable import CompletableXBlockMixin, XBlockCompletionMode
 from xblock.core import XBlock

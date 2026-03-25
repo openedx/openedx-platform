@@ -2,7 +2,7 @@
 Default unit test configuration and fixtures.
 """
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 
 import pytest
 

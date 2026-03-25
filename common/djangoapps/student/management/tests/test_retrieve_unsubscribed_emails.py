@@ -1,6 +1,6 @@
 """Tests for retrieve unsubscribed emails management command"""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from tempfile import NamedTemporaryFile
 from unittest.mock import call
 from unittest.mock import patch, MagicMock

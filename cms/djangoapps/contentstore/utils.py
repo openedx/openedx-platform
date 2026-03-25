@@ -1,7 +1,7 @@
 """
 Common utility functions useful throughout the contentstore
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import configparser
 import html
@@ -1407,7 +1407,7 @@ def get_course_settings(request, course_key, course_block):
     It is used for both DRF and django views.
     """
 
-    from .views.course import get_courses_accessible_to_user, _process_courses_list
+    from .views.course import get_courses_accessible_to_user, _process_courses_list  # noqa: I001
 
     credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
     upload_asset_url = reverse_course_url('assets_handler', course_key)
@@ -1643,7 +1643,7 @@ def get_course_context(request):
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.views.course import (
+    from cms.djangoapps.contentstore.views.course import (  # noqa: I001
         get_courses_accessible_to_user,
         _process_courses_list,
     )
@@ -1720,7 +1720,7 @@ def get_home_context(request, no_course=False):
     Utils is used to get context of course home. Returned by DRF view.
     """
 
-    from cms.djangoapps.contentstore.views.course import (
+    from cms.djangoapps.contentstore.views.course import (  # noqa: I001
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
         user_can_create_organizations,
@@ -1800,7 +1800,7 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     It is used for both DRF and django views.
     """
 
-    from edx_toggles.toggles import WaffleSwitch
+    from edx_toggles.toggles import WaffleSwitch  # noqa: I001
     from edxval.api import (
         get_3rd_party_transcription_plans,
         get_transcript_credentials_state_for_org,
@@ -1901,7 +1901,7 @@ def _get_course_index_context(request, course_key, course_block):
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.views.course import (
+    from cms.djangoapps.contentstore.views.course import (  # noqa: I001
         course_outline_initial_state,
         _course_outline_json,
         _deprecated_blocks_info,
@@ -1987,7 +1987,7 @@ def get_container_handler_context(request, usage_key, course, xblock):  # pylint
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.views.component import (
+    from cms.djangoapps.contentstore.views.component import (  # noqa: I001
         get_component_templates,
         get_unit_tags,
         CONTAINER_TEMPLATES,
@@ -2176,7 +2176,7 @@ def get_group_configurations_context(course, store):
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.course_group_config import (
+    from cms.djangoapps.contentstore.course_group_config import (  # noqa: I001
         COHORT_SCHEME, ENROLLMENT_SCHEME, GroupConfiguration, RANDOM_SCHEME
     )
     from cms.djangoapps.contentstore.views.course import (

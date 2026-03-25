@@ -3,7 +3,7 @@
 Test the retire_one_learner.py script
 """
 
-import csv
+import csv  # noqa: I001
 import os
 import time
 import unicodedata

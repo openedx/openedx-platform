@@ -11,7 +11,7 @@ upgrading the model at a later date.
 """
 
 
-import copy
+import copy  # noqa: I001
 import logging
 
 from django.conf import settings

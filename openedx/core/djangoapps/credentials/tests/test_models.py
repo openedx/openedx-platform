@@ -1,7 +1,7 @@
 """Tests for models supporting Credentials-related functionality."""
 
 
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings  # noqa: I001
 
 from openedx.core.djangoapps.credentials.models import API_VERSION
 from openedx.core.djangoapps.credentials.tests.mixins import CredentialsApiConfigMixin

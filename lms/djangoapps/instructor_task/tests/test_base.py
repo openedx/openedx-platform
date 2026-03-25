@@ -4,7 +4,7 @@ Base test classes for LMS instructor-initiated background tasks
 """
 
 
-import json
+import json  # noqa: I001
 # pylint: disable=attribute-defined-outside-init
 import os
 import shutil

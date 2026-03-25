@@ -1,7 +1,7 @@
 """
 Test for lms courseware app, module data (runtime data storage for XBlocks)
 """
-import json
+import json  # noqa: I001
 from functools import partial
 from unittest.mock import Mock, patch
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, FilteredQueryCountMixin

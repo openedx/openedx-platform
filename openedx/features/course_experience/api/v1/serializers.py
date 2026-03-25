@@ -1,7 +1,7 @@
 """
 Serializer for Course Deadlines (Mobile)
 """
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey
 

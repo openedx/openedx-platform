@@ -1,6 +1,6 @@
 """Tests for display of certificates on the student dashboard. """
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 

@@ -1,7 +1,7 @@
 """
 Tests for the Amplitude API functionality
 """
-import logging
+import logging  # noqa: I001
 import os
 import unittest
 from unittest import mock
@@ -10,7 +10,7 @@ import ddt
 import requests_mock
 
 MAX_ATTEMPTS = int(os.environ.get("RETRY_MAX_ATTEMPTS", 5))
-from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import (
+from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import (  # noqa: I001
     AmplitudeApi,
     AmplitudeException,
     AmplitudeRecoverableException

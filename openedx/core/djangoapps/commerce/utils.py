@@ -1,7 +1,7 @@
 """ Commerce API Service. """
 
 
-import requests
+import requests  # noqa: I001
 import slumber
 import datetime
 import json

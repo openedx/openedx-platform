@@ -1,7 +1,7 @@
 """
 Management command for sending email digest
 """
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand  # noqa: I001
 
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.email.tasks import send_digest_email_to_all_users

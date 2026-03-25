@@ -1,7 +1,7 @@
 """
 Course API
 """
-import logging
+import logging  # noqa: I001
 from collections import defaultdict
 
 import search

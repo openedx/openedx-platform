@@ -2,7 +2,7 @@
 Table for storing information about whether or not Studio users have course creation privileges.
 """
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user  # noqa: I001
 from django.db import models
 from django.db.models.signals import post_init, post_save
 from django.dispatch import Signal, receiver

@@ -2,7 +2,7 @@
 Helper functions used by both content_type_gating and course_duration_limits.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.utils import timezone
 
@@ -79,7 +79,7 @@ def has_full_access_role_in_masquerade(user, course_key):
         None if we are not masquerading or masquerading as a specific student that should go through normal checks
     """
     # The masquerade module imports from us, so avoid a circular dependency here
-    from lms.djangoapps.courseware.masquerade import (
+    from lms.djangoapps.courseware.masquerade import (  # noqa: I001
         get_course_masquerade, is_masquerading_as_full_access, is_masquerading_as_non_audit_enrollment,
         is_masquerading_as_specific_student, is_masquerading_as_staff,
     )

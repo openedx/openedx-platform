@@ -3,7 +3,7 @@ URLs for mobile API
 """
 
 
-from django.urls import include, path
+from django.urls import include, path  # noqa: I001
 
 from .users.views import my_user_info
 

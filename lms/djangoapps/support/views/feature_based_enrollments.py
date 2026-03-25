@@ -2,7 +2,7 @@
 Support tool for viewing course duration information
 """
 
-from django.utils.decorators import method_decorator
+from django.utils.decorators import method_decorator  # noqa: I001
 from django.views.generic import View
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import GenericAPIView

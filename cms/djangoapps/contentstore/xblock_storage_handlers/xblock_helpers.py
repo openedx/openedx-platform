@@ -2,7 +2,7 @@
 general helper functions for xblocks
 """
 
-from opaque_keys.edx.keys import UsageKey
+from opaque_keys.edx.keys import UsageKey  # noqa: I001
 from xblock.core import XBlock
 from xmodule.modulestore.django import modulestore
 from xmodule.util.keys import BlockKey

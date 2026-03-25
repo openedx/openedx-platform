@@ -6,7 +6,7 @@ content libraries.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.contrib.auth.backends import ModelBackend
 

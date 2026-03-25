@@ -3,7 +3,7 @@ Tests for file.py
 """
 
 
-import os
+import os  # noqa: I001
 from datetime import datetime
 from io import StringIO
 from unittest.mock import Mock, patch

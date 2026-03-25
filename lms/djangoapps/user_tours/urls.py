@@ -1,6 +1,6 @@
 """ URLs for User Tours. """
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path
 
 from lms.djangoapps.user_tours.v1.views import UserTourView, UserDiscussionsToursView

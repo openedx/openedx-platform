@@ -1,7 +1,7 @@
 """
 Command to trigger sending reminder emails for learners to achieve their Course Goals
 """
-import time
+import time  # noqa: I001
 from datetime import date, datetime, timedelta
 
 import boto3

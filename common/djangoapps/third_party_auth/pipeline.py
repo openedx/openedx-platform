@@ -58,7 +58,7 @@ See https://python-social-auth.readthedocs.io/en/latest/pipeline.html for more d
 """
 
 
-import base64
+import base64  # noqa: I001
 import hashlib
 import hmac
 import json

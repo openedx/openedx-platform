@@ -3,7 +3,7 @@ Script for fixing the item not found errors in a course
 """
 
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand, CommandError  # noqa: I001
 from opaque_keys.edx.keys import CourseKey
 
 from xmodule.modulestore import ModuleStoreEnum

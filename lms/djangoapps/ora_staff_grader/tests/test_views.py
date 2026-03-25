@@ -1,7 +1,7 @@
 """
 Tests for ESG views
 """
-import json
+import json  # noqa: I001
 from unittest.mock import Mock, patch
 from uuid import uuid4
 

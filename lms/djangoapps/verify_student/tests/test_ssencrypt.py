@@ -3,7 +3,7 @@ Tests of the encryption and decryption utilities in the ssencrypt module.
 """
 
 
-import base64
+import base64  # noqa: I001
 import binascii
 
 from lms.djangoapps.verify_student.ssencrypt import (

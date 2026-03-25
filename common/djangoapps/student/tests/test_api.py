@@ -2,7 +2,7 @@
 Test Student api.py
 """
 
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # noqa: I001
 from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.student.api import (

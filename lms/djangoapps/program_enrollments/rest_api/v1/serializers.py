@@ -3,7 +3,7 @@ API Serializers
 """
 
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from lms.djangoapps.program_enrollments.api import is_course_staff_enrollment
 from lms.djangoapps.program_enrollments.models import ProgramCourseEnrollment, ProgramEnrollment

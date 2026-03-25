@@ -2,7 +2,7 @@
 Tests for `send_segment_events_for_failed_learners` management command.
 """
 
-import random
+import random  # noqa: I001
 from datetime import timedelta
 from unittest import mock
 from unittest.mock import patch

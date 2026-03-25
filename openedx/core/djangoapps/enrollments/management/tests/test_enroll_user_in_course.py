@@ -1,6 +1,6 @@
 """ Test the change_enrollment command line script."""
 
-from uuid import uuid4
+from uuid import uuid4  # noqa: I001
 
 import ddt
 import pytest

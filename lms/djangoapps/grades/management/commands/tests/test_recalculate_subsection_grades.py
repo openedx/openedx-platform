@@ -3,7 +3,7 @@ Tests for reset_grades management command.
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest.mock import MagicMock, patch
 
 import ddt

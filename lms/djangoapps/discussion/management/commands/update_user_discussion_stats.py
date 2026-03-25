@@ -1,7 +1,7 @@
 """
 Management command to update user stats for all users in a course.
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand
 from opaque_keys.edx.keys import CourseKey

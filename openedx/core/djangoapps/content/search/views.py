@@ -1,7 +1,7 @@
 """
 REST API for content search
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 

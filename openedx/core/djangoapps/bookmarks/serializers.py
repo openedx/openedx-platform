@@ -3,7 +3,7 @@ Serializers for Bookmarks.
 """
 
 
-from edx_api_doc_tools import is_schema_request
+from edx_api_doc_tools import is_schema_request  # noqa: I001
 from rest_framework import serializers
 
 from openedx.core.lib.api.serializers import CourseKeyField, UsageKeyField

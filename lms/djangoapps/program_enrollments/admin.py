@@ -1,7 +1,7 @@
 """
 Admin tool for the Program Enrollments models
 """
-from django.contrib import admin
+from django.contrib import admin  # noqa: I001
 from django.urls import reverse
 from django.utils.html import format_html
 

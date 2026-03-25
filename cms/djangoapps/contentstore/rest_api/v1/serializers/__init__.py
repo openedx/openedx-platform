@@ -1,7 +1,7 @@
 """
 Serializers for v1 contentstore API.
 """
-from .certificates import CourseCertificatesSerializer
+from .certificates import CourseCertificatesSerializer  # noqa: I001
 from .course_details import CourseDetailsSerializer
 from .course_index import CourseIndexSerializer
 from .course_rerun import CourseRerunSerializer

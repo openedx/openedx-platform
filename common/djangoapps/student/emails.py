@@ -1,7 +1,7 @@
 """
 ACE emails for Student app
 """
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.contrib.sites.models import Site

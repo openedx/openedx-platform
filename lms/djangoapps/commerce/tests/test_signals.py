@@ -3,7 +3,7 @@ Tests for signal handling in commerce djangoapp.
 """
 
 
-import base64
+import base64  # noqa: I001
 import json
 from unittest import mock
 from urllib.parse import urljoin

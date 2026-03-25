@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from django.test import RequestFactory
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
 from opaque_keys.edx.keys import CourseKey

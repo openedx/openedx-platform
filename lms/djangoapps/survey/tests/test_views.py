@@ -3,7 +3,7 @@ Python tests for the Survey views
 """
 
 
-import json
+import json  # noqa: I001
 from collections import OrderedDict
 
 from django.test.client import Client

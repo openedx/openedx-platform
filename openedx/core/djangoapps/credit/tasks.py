@@ -3,7 +3,7 @@ This file contains celery tasks for credit course views.
 """
 
 
-from celery import shared_task
+from celery import shared_task  # noqa: I001
 from celery.utils.log import get_task_logger
 from django.conf import settings
 from edx_django_utils.monitoring import set_code_owner_attribute

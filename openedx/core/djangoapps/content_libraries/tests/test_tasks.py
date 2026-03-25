@@ -1,7 +1,7 @@
 """
 Unit tests for content libraries Celery tasks
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.test import override_settings
 from ..models import ContentLibrary

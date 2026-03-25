@@ -3,7 +3,7 @@ Base class for Instructor celery tasks.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from celery import Task
 from celery.states import FAILURE, SUCCESS

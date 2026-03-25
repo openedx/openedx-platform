@@ -2,7 +2,7 @@
 Sync courses from catalog service.  This is used to setup a master's
 integration environment.
 """
-import logging
+import logging  # noqa: I001
 from textwrap import dedent
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

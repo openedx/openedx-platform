@@ -3,7 +3,7 @@ Instructor Tasks related to module state.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 from time import time
 

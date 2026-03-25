@@ -13,7 +13,7 @@ the marketing site and blog).
 
 """
 
-import logging
+import logging  # noqa: I001
 
 import six
 from django.conf import settings

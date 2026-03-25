@@ -1,7 +1,7 @@
 """
 Testing indexing of the courseware as it is changed
 """
-import json
+import json  # noqa: I001
 import time
 from datetime import datetime
 from unittest import skip

@@ -3,7 +3,7 @@ Tests for the API functions in the credit app.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import json
 from unittest import mock
 import pytest

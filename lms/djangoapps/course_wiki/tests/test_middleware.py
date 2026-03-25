@@ -3,7 +3,7 @@ Tests for wiki middleware.
 """
 
 
-from django.test.client import Client
+from django.test.client import Client  # noqa: I001
 from wiki.models import URLPath
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

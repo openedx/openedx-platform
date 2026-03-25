@@ -1,7 +1,7 @@
 """
 course_overview api tests
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from django.http.response import Http404
 from opaque_keys.edx.keys import CourseKey

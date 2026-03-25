@@ -3,7 +3,7 @@ Specialized models for oauth_dispatch djangoapp
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from django.db import models
 

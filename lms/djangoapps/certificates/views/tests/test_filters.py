@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for views in the certificates app.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.http import HttpResponse
 from django.test import override_settings
 from openedx_filters import PipelineStep

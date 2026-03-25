@@ -2,7 +2,7 @@
 Fragments for rendering programs.
 """
 
-import json
+import json  # noqa: I001
 from abc import ABC, abstractmethod
 from urllib.parse import quote
 

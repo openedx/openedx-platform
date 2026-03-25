@@ -4,7 +4,7 @@ too.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from datetime import datetime, timedelta
 import pytest
 import ddt

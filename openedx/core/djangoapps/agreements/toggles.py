@@ -2,7 +2,7 @@
 Toggle for lti pii acknowledgement feature.
 """
 
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey  # noqa: I001
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 # .. toggle_name: agreements.enable_lti_pii_acknowledgement

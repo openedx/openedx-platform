@@ -3,7 +3,7 @@ Unit tests for video utils.
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 from unittest import TestCase
 from unittest import mock
 

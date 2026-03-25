@@ -2,7 +2,7 @@
 Tests for credit courses on the student dashboard.
 """
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 

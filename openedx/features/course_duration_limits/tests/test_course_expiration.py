@@ -2,7 +2,7 @@
 Contains tests to verify correctness of course expiration functionality
 """
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from unittest import mock
 from unittest.mock import patch
 

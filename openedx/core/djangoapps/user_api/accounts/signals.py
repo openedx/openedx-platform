@@ -3,7 +3,7 @@ Django Signal related functionality for user_api accounts
 """
 
 
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 # Signal to retire a user from LMS-initiated mailings (course mailings, etc)
 # providing_args=["user"]

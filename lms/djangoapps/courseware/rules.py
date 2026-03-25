@@ -3,7 +3,7 @@ django-rules and Bridgekeeper rules for courseware related features
 """
 
 
-import logging
+import logging  # noqa: I001
 import traceback
 
 import laboratory

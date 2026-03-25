@@ -3,7 +3,7 @@ Third-party-auth module for Learning Tools Interoperability
 """
 
 
-import calendar
+import calendar  # noqa: I001
 import logging
 import time
 

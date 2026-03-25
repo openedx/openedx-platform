@@ -3,7 +3,7 @@ Views related to the video upload feature
 """
 
 
-import codecs
+import codecs  # noqa: I001
 import csv
 import io
 import json

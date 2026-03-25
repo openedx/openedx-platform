@@ -3,7 +3,7 @@ Utility methods for instructor tasks
 """
 
 
-from eventtracking import tracker
+from eventtracking import tracker  # noqa: I001
 
 from common.djangoapps.util.file import course_filename_prefix_generator
 from lms.djangoapps.instructor_task.models import ReportStore

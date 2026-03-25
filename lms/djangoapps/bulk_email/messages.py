@@ -1,7 +1,7 @@
 """
 Module to define email message related classes and methods
 """
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives

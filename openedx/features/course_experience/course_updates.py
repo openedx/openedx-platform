@@ -2,7 +2,7 @@
 Utilities for course updates.
 """
 
-import hashlib
+import hashlib  # noqa: I001
 from datetime import datetime
 
 from lms.djangoapps.courseware.courses import get_course_info_section_block

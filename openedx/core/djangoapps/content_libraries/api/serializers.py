@@ -1,7 +1,7 @@
 """
 Serializer classes for containers
 """
-from lxml import etree
+from lxml import etree  # noqa: I001
 
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.xblock_serializer.api import StaticFile, XBlockSerializer

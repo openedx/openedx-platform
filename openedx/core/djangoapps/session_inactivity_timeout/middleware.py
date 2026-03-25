@@ -13,7 +13,7 @@ which defaults to 1209600 (2 weeks, in seconds).
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 import logging
 
 from django.conf import settings

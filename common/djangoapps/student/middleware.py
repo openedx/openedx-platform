@@ -4,7 +4,7 @@ disabled accounts from accessing the site.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import gettext as _

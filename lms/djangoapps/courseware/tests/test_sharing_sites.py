@@ -2,7 +2,7 @@
 tests for the sharing sites
 """
 
-import ddt
+import ddt  # noqa: I001
 from unittest import TestCase
 from unittest.mock import patch
 from urllib.parse import parse_qsl

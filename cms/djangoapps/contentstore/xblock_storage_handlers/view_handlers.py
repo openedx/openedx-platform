@@ -8,7 +8,7 @@ We extracted all the logic from the `xblock_handler` endpoint that lives in
 contentstore/views/block.py to this file, because the logic is reused in another view now.
 Along with it, we moved the business logic of the other views in that file, since that is related.
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 from uuid import uuid4
 

@@ -3,7 +3,7 @@ Unit tests for the gating feature in Studio
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from milestones.tests.utils import MilestonesTestCaseMixin
 

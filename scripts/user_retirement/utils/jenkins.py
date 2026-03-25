@@ -2,7 +2,7 @@
 Methods to interact with the Jenkins API to perform various tasks.
 """
 
-import logging
+import logging  # noqa: I001
 import math
 import os.path
 import shutil

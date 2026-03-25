@@ -3,7 +3,7 @@ This module contains signals related to enterprise.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

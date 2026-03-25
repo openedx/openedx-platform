@@ -3,7 +3,7 @@ Tests of DarkLangMiddleware
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import Mock
 
 import ddt

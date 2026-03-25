@@ -3,7 +3,7 @@ Tests for the XBlock v2 runtime's "embed" view, using Content Libraries
 
 This view is used in the MFE to preview XBlocks that are in the library.
 """
-import re
+import re  # noqa: I001
 
 import ddt
 from django.core.exceptions import ValidationError

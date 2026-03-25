@@ -3,7 +3,7 @@ This file contains view functions for wrapping the django-wiki.
 """
 
 
-import logging
+import logging  # noqa: I001
 import re
 
 from django.conf import settings

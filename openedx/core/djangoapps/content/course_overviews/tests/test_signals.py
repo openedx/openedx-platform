@@ -3,7 +3,7 @@ Tests for the course_overviews app's signal functionality.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import patch
 from collections import namedtuple
 from zoneinfo import ZoneInfo

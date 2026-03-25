@@ -3,7 +3,7 @@ Test for user creation from sites with configuration overrides.
 """
 
 
-import json
+import json  # noqa: I001
 
 from unittest import mock
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

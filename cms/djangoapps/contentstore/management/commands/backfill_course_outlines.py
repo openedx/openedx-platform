@@ -7,7 +7,7 @@ upgrade process.
 
 This should be invoked from the Studio process.
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand
 

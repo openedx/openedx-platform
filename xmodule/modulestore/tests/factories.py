@@ -3,7 +3,7 @@ Factories for use in tests of XBlocks.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 import functools
 import logging
 import threading

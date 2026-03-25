@@ -3,7 +3,7 @@ Xml parsing tests for XModules
 """
 
 
-import pprint
+import pprint  # noqa: I001
 from unittest.mock import Mock
 
 from django.test import TestCase

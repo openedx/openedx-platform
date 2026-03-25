@@ -6,7 +6,7 @@ framework.
 """
 
 
-import hashlib
+import hashlib  # noqa: I001
 import json
 import logging
 import re

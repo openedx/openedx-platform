@@ -3,7 +3,7 @@ Courseware services.
 """
 
 
-import json
+import json  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 

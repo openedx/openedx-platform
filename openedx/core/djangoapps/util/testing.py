@@ -1,7 +1,7 @@
 """ Mixins for setting up particular course structures (such as split tests or cohorted content) """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 from zoneinfo import ZoneInfo
 

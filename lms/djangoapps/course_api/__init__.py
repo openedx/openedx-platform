@@ -1,7 +1,7 @@
 """ Course API """
 
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 
 WAFFLE_SWITCH_NAMESPACE = 'course_list_api_rate_limit'

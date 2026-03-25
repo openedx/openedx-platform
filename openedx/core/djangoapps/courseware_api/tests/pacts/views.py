@@ -1,7 +1,7 @@
 """
 Provider state views needed by pact to setup Provider state for pact verification.
 """
-import json
+import json  # noqa: I001
 from datetime import datetime
 
 from django.http import JsonResponse

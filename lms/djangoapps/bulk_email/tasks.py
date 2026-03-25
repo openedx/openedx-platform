@@ -3,7 +3,7 @@ This module contains celery task functions for handling the sending of bulk emai
 to a course.
 """
 
-import json
+import json  # noqa: I001
 import logging
 import random
 import re

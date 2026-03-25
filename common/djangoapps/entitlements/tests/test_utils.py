@@ -3,7 +3,7 @@ Test entitlements utilities
 """
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 
 from django.conf import settings
 from django.utils.timezone import now

@@ -1,7 +1,7 @@
 """
 Test the enterprise support APIs.
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.test.utils import override_settings
 
 from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory

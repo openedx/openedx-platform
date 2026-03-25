@@ -2,7 +2,7 @@
 Test app view logic
 """
 # pylint: disable=test-inherits-tests
-import itertools
+import itertools  # noqa: I001
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from unittest.mock import Mock, patch

@@ -1,6 +1,6 @@
 """Views for blocks."""
 
-import logging
+import logging  # noqa: I001
 from collections import OrderedDict
 from functools import partial
 

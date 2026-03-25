@@ -1,7 +1,7 @@
 """Signal handlers for writing course dates into edx_when."""
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 import logging
 
 from django.dispatch import receiver

@@ -1,6 +1,6 @@
 """URLs served by the embargo app. """
 
-from django.urls import path, re_path
+from django.urls import path, re_path  # noqa: I001
 from .views import CheckCourseAccessView, CourseAccessMessageView
 
 app_name = 'embargo'

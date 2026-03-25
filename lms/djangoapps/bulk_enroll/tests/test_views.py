@@ -3,7 +3,7 @@ Tests for the Bulk Enrollment views.
 """
 
 
-import json
+import json  # noqa: I001
 
 import ddt
 from django.conf import settings

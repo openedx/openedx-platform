@@ -1,7 +1,7 @@
 """
 Celery tasks for Content Staging.
 """
-from __future__ import annotations  # for list[int] type
+from __future__ import annotations  # for list[int] type  # noqa: I001
 import logging
 
 from celery import shared_task

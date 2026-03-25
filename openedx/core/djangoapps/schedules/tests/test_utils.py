@@ -2,7 +2,7 @@
 Tests for schedules utils
 """
 
-import datetime
+import datetime  # noqa: I001
 
 import ddt
 from zoneinfo import ZoneInfo

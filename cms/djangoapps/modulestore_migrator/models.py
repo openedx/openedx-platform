@@ -1,7 +1,7 @@
 """
 Models for the modulestore migration tool.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.db import models

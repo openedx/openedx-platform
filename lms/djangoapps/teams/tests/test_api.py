@@ -2,7 +2,7 @@
 Tests for Python APIs of the Teams app
 """
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from uuid import uuid4
 
 import ddt

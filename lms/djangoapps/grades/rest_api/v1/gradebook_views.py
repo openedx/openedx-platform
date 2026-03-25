@@ -3,7 +3,7 @@ Defines an endpoint for gradebook data related to a course.
 """
 
 
-import logging
+import logging  # noqa: I001
 from collections import namedtuple
 from contextlib import contextmanager
 from functools import wraps

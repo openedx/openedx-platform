@@ -3,7 +3,7 @@ Django storage backends for Open edX.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.contrib.staticfiles.storage import StaticFilesStorage
 from django.core.files.storage import FileSystemStorage
 from django.utils.deconstruct import deconstructible

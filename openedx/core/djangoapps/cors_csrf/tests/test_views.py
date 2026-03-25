@@ -1,7 +1,7 @@
 """Tests for cross-domain request views. """
 
 
-import json
+import json  # noqa: I001
 
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse

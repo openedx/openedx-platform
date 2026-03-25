@@ -2,7 +2,7 @@
 This module contains signals / handlers related to programs.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.dispatch import receiver
 

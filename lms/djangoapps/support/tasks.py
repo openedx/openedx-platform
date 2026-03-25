@@ -1,6 +1,6 @@
 """ Celery Tasks for the Instructor App. """
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 import logging
 from celery import shared_task
 from completion.models import BlockCompletion

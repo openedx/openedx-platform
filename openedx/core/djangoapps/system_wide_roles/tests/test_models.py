@@ -3,7 +3,7 @@ Tests for system wide roles' django models.
 """
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from common.djangoapps.student.tests.factories import UserFactory
 
 from openedx.core.djangoapps.system_wide_roles.models import SystemWideRole, SystemWideRoleAssignment

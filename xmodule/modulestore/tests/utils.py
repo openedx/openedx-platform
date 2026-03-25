@@ -1,7 +1,7 @@
 """
 Helper classes and methods for running modulestore tests without Django.
 """
-import os
+import os  # noqa: I001
 from contextlib import contextmanager, ExitStack
 from importlib import import_module
 from shutil import rmtree

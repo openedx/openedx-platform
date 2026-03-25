@@ -2,7 +2,7 @@
 Xblock services for creating xblocks.
 """
 
-from uuid import uuid4
+from uuid import uuid4  # noqa: I001
 
 from django.utils.translation import gettext as _
 from xmodule.modulestore.django import modulestore

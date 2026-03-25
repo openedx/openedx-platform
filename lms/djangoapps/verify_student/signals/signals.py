@@ -2,7 +2,7 @@
 Signal definitions and functions to send those signals for the verify_student application.
 """
 
-from django.dispatch import Signal
+from django.dispatch import Signal  # noqa: I001
 
 from openedx_events.learning.data import UserData, UserPersonalData, VerificationAttemptData
 from openedx_events.learning.signals import (

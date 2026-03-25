@@ -2,7 +2,7 @@
 Tests for Content Library internal api.
 """
 
-import base64
+import base64  # noqa: I001
 import hashlib
 import uuid
 from unittest import mock

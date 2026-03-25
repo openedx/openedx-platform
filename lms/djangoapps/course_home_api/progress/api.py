@@ -2,7 +2,7 @@
 Python APIs exposed for the progress tracking functionality of the course home API.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey

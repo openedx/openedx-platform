@@ -3,7 +3,7 @@
 Programmatic integration point for User API Accounts sub-application
 """
 
-import datetime
+import datetime  # noqa: I001
 import re
 
 from django.conf import settings

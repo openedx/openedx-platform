@@ -1,7 +1,7 @@
 """
 Test cases for catalog_integrations command.
 """
-import pytest
+import pytest  # noqa: I001
 from django.core.management import call_command, CommandError
 
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase

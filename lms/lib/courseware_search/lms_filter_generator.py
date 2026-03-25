@@ -2,7 +2,7 @@
 This file contains implementation override of SearchFilterGenerator which will allow
     * Filter by all courses in which the user is enrolled in
 """
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from search.filter_generator import SearchFilterGenerator
 
 from openedx.core.djangoapps.course_groups.partition_scheme import CohortPartitionScheme

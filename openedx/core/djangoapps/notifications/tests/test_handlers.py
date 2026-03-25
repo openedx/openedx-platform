@@ -1,7 +1,7 @@
 """
 Tests for the notifications handlers.
 """
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from unittest.mock import patch
 from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
 from openedx_events.learning.data import CourseNotificationData

@@ -1,7 +1,7 @@
 """
 Configuration for features of Learner Home
 """
-from edx_toggles.toggles import WaffleFlag
+from edx_toggles.toggles import WaffleFlag  # noqa: I001
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 

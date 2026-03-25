@@ -1,7 +1,7 @@
 """URLs for course_mode API"""
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 
 from django.urls import re_path
 from common.djangoapps.course_modes import views

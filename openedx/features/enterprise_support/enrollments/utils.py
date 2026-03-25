@@ -1,7 +1,7 @@
 """
 Utils for use in enrollment codebase such as views.
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import ObjectDoesNotExist  # lint-amnesty, pylint: disable=wrong-import-order
 from django.db import transaction

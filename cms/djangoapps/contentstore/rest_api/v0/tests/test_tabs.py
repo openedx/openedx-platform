@@ -2,7 +2,7 @@
 Tests for the course tab API.
 """
 
-import json
+import json  # noqa: I001
 import random
 from urllib.parse import urlencode
 

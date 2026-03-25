@@ -1,7 +1,7 @@
 """
 Utils functions for tagging
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from edx_django_utils.cache import RequestCache
 from opaque_keys import InvalidKeyError

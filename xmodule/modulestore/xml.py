@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import glob
+import glob  # noqa: I001
 import hashlib
 import itertools
 import json

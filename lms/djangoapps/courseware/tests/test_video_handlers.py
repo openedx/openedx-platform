@@ -1,7 +1,7 @@
 """Video xmodule tests in mongo."""
 
 
-import json
+import json  # noqa: I001
 import os
 import tempfile
 import textwrap

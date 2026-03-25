@@ -2,7 +2,7 @@
 General view for the Course Home that contains metadata every page needs.
 """
 
-from django.db import transaction
+from django.db import transaction  # noqa: I001
 from django.utils.decorators import method_decorator
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.generics import RetrieveAPIView

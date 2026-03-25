@@ -3,7 +3,7 @@ Milestones Transformer
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.utils.translation import gettext as _

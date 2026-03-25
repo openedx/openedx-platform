@@ -1,7 +1,7 @@
 """"Management command to add program information to the cache."""
 
 
-import logging
+import logging  # noqa: I001
 import sys
 from collections import defaultdict
 from urllib.parse import urljoin

@@ -3,7 +3,7 @@ Tests for content server.
 """
 
 
-import copy
+import copy  # noqa: I001
 import datetime
 import logging
 import unittest

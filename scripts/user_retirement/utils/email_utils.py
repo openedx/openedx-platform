@@ -2,7 +2,7 @@
 Convenience functions using boto and AWS SES to send email.
 """
 
-import logging
+import logging  # noqa: I001
 
 import backoff
 import boto3

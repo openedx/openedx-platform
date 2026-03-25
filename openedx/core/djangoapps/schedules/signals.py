@@ -2,7 +2,7 @@
 CourseEnrollment related signal handlers.
 """
 
-import datetime
+import datetime  # noqa: I001
 import logging
 
 from django.db.models.signals import post_save

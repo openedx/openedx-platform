@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring,unused-argument
 
 
-import logging
+import logging  # noqa: I001
 
 from .utils import CommentClientRequestError, extract, get_course_key
 from forum import api as forum_api

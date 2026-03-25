@@ -3,7 +3,7 @@ Tests for the views
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 
 import ddt
 from django.urls import reverse

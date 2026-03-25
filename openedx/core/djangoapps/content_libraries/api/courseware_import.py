@@ -8,7 +8,7 @@ remote platform instances as well as local modulestore APIs.  Additionally,
 there are Celery-based interfaces suitable for background processing controlled
 through RESTful APIs (see :mod:`.views`).
 """
-import abc
+import abc  # noqa: I001
 import collections
 import base64
 import hashlib

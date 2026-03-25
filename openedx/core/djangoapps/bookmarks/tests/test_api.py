@@ -1,7 +1,7 @@
 """
 Tests for bookmarks api.
 """
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import pytest
 import ddt

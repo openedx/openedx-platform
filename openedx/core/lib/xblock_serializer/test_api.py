@@ -1,7 +1,7 @@
 """
 Test for the XBlock serialization lib's API
 """
-from xml.etree import ElementTree
+from xml.etree import ElementTree  # noqa: I001
 
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.django import contentstore, modulestore

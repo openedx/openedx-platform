@@ -1,7 +1,7 @@
 """
 Views for the notifications API.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 
 from django.conf import settings
 from django.db.models import Count

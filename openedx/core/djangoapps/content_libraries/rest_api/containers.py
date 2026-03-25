@@ -1,7 +1,7 @@
 """
 REST API views for containers (sections, subsections, units) in content libraries
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 

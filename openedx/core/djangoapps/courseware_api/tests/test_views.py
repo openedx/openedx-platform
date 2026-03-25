@@ -2,7 +2,7 @@
 Tests for courseware API
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from urllib.parse import urlencode
 from typing import Optional
 from unittest import mock

@@ -4,7 +4,7 @@ Zendesk Proxy Configuration
 """
 
 
-from django.apps import AppConfig
+from django.apps import AppConfig  # noqa: I001
 from edx_django_utils.plugins import PluginURLs, PluginSettings
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType

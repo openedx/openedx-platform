@@ -1,5 +1,5 @@
 """Models governing integration with the catalog service."""
-from config_models.models import ConfigurationModel
+from config_models.models import ConfigurationModel  # noqa: I001
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models

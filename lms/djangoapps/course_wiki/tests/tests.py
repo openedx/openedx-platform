@@ -3,7 +3,7 @@ Tests for course wiki
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 from django.urls import reverse
 
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase

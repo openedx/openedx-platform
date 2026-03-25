@@ -17,7 +17,7 @@ big deal.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.core.cache import caches
 from xblock.runtime import KeyValueStore
 

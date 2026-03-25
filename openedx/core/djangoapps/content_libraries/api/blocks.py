@@ -3,7 +3,7 @@ Content libraries API methods related to XBlocks/Components.
 
 These methods don't enforce permissions (only the REST APIs do).
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 import logging
 import mimetypes
 from datetime import datetime, timezone

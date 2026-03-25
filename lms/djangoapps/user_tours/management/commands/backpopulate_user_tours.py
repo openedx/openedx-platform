@@ -1,6 +1,6 @@
 """ Management command to backpopulate User Tours. """
 
-import time
+import time  # noqa: I001
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand

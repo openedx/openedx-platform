@@ -7,7 +7,7 @@ profiles using the segment.identify() function. It processes users in
 batches to minimize memory usage and supports a dry-run mode for testing.
 """
 
-import logging
+import logging  # noqa: I001
 import time
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model

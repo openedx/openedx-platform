@@ -54,7 +54,7 @@ What is supported:
 """
 
 
-import base64
+import base64  # noqa: I001
 import datetime
 import hashlib
 import logging

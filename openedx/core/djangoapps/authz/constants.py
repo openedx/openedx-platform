@@ -1,6 +1,6 @@
 """Constants used by the Open edX Authorization (AuthZ) framework."""
 
-from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
+from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access  # noqa: I001
 from enum import Enum
 
 

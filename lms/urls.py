@@ -2,7 +2,7 @@
 URLs for LMS
 """
 
-from config_models.views import ConfigurationModelCurrentAPIView
+from config_models.views import ConfigurationModelCurrentAPIView  # noqa: I001
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin

@@ -9,7 +9,7 @@ username in their DBs.
 
 """
 
-import csv
+import csv  # noqa: I001
 import io
 import logging
 import sys
@@ -21,7 +21,7 @@ import yaml
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
-from scripts.user_retirement.utils.edx_api import (  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.edx_api import (  # pylint: disable=wrong-import-position  # noqa: I001
     CredentialsApi,
     DiscoveryApi,
     EcommerceApi,

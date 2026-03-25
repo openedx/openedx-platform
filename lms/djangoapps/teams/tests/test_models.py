@@ -3,7 +3,7 @@ Tests for the teams API at the HTTP request level.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 from contextlib import contextmanager
 from datetime import datetime
 from unittest.mock import MagicMock, patch

@@ -3,7 +3,7 @@ Test helpers for Site Configuration.
 """
 
 
-from functools import wraps
+from functools import wraps  # noqa: I001
 import contextlib
 
 from unittest.mock import patch

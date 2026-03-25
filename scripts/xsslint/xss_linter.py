@@ -4,7 +4,7 @@ A linting tool to check for xss vulnerabilities.
 """
 
 
-import argparse
+import argparse  # noqa: I001
 import importlib
 import json
 import os

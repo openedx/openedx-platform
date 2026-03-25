@@ -2,7 +2,7 @@
 Tests for experimentation views
 """
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 import six.moves.urllib.parse
 from datetime import timedelta

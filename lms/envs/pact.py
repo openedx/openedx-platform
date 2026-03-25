@@ -2,7 +2,7 @@
 Settings for Pact Verification Tests.
 """
 
-from .test import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from .test import *  # pylint: disable=wildcard-import, unused-wildcard-import  # noqa: I001
 
 #### Allow Pact Provider States URL ####
 PROVIDER_STATES_URL = True

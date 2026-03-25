@@ -3,7 +3,7 @@ Module containing API functions for the CCXCon
 """
 
 
-import logging
+import logging  # noqa: I001
 from urllib import parse
 
 from django.core.exceptions import ValidationError

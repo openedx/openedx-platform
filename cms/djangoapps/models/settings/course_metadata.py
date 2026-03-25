@@ -3,7 +3,7 @@ Django module for Course Metadata class -- manages advanced settings and related
 """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 
 import pytz

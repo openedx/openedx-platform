@@ -1,7 +1,7 @@
 """
 CourseOverview api
 """
-import logging
+import logging  # noqa: I001
 
 from django.http.response import Http404
 

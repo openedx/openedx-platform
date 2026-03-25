@@ -2,7 +2,7 @@
 Enterprise support admin views.
 """
 
-from django.contrib import messages
+from django.contrib import messages  # noqa: I001
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.generic.edit import FormView

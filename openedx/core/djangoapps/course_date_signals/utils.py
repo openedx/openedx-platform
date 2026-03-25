@@ -4,7 +4,7 @@ Utility functions around course dates.
 get_expected_duration: return the expected duration of a course (absent any user information)
 """
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 
 from django.conf import settings
 from openedx.core.djangoapps.catalog.utils import get_course_run_details

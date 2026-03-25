@@ -2,7 +2,7 @@
 Viewset for auth/saml/v0/samlproviderconfig
 """
 
-from django.shortcuts import get_list_or_404
+from django.shortcuts import get_list_or_404  # noqa: I001
 from django.db.utils import IntegrityError
 from edx_rbac.mixins import PermissionRequiredMixin
 from rest_framework import permissions, viewsets, status

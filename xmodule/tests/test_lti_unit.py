@@ -1,7 +1,7 @@
 """Test for LTI Xmodule functional logic."""
 
 
-import datetime
+import datetime  # noqa: I001
 import textwrap
 from copy import copy
 from unittest.mock import Mock, PropertyMock, patch

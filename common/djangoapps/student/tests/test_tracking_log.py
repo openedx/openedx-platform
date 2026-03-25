@@ -1,5 +1,5 @@
 """Test to verify tracking logs are emitted correctly"""
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock  # noqa: I001
 
 from django.test import TestCase
 

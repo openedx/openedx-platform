@@ -1,7 +1,7 @@
 """ receivers of course_published and library_updated events in order to trigger indexing task """
 
 
-import logging
+import logging  # noqa: I001
 from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional
@@ -129,7 +129,7 @@ def listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable=
     search indexing
     """
     # import here, because signal is registered at startup, but items in tasks are not yet able to be loaded
-    from cms.djangoapps.contentstore.tasks import (
+    from cms.djangoapps.contentstore.tasks import (  # noqa: I001
         update_outline_from_modulestore_task,
         update_search_index,
         update_special_exams_and_publish

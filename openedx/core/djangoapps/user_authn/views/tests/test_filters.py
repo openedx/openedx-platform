@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for the vies in the user_authn app.
 """
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from django.test import override_settings
 from django.urls import reverse
 from openedx_filters import PipelineStep

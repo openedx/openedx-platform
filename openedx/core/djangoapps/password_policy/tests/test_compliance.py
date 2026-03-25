@@ -2,7 +2,7 @@
 Test password policy utilities
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 import pytest

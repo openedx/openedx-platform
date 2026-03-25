@@ -13,7 +13,7 @@ have a Course + User with these properties?" is the responsibility of the
 Where possible, seed data using public API methods (e.g. replace_course_outline
 from this app, edx-when's set_dates_for_course).
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone  # noqa: I001
 
 import ddt
 from opaque_keys.edx.keys import CourseKey

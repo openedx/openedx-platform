@@ -1,7 +1,7 @@
 """
 Definition of "Library" as a learning context.
 """
-import logging
+import logging  # noqa: I001
 
 from django.core.exceptions import PermissionDenied
 from rest_framework.exceptions import NotFound

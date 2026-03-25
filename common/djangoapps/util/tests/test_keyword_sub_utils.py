@@ -1,7 +1,7 @@
 """
 Tests for keyword_substitution.py
 """
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from ddt import ddt, file_data
 

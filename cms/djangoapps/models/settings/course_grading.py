@@ -1,7 +1,7 @@
 """Grading policy"""
 
 
-import json
+import json  # noqa: I001
 import logging
 from base64 import b64encode
 from datetime import timedelta

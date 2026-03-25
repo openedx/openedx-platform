@@ -3,7 +3,7 @@ Tests for failing old tasks
 """
 
 
-from datetime import datetime
+from datetime import datetime  # noqa: I001
 import pytest
 import ddt
 import pytz

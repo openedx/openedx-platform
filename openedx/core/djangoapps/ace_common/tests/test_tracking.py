@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 
-from unittest import TestCase
+from unittest import TestCase  # noqa: I001
 
 from django.test import override_settings
 

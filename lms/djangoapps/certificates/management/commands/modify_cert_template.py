@@ -1,5 +1,5 @@
 """Management command to modify certificate templates."""
-import logging
+import logging  # noqa: I001
 import shlex
 from argparse import RawDescriptionHelpFormatter
 

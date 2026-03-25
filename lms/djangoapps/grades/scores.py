@@ -3,7 +3,7 @@ Functionality for problem scores.
 """
 
 
-from logging import getLogger
+from logging import getLogger  # noqa: I001
 
 from numpy import around
 from xblock.core import XBlock

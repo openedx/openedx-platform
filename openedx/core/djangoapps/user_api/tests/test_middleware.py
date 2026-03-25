@@ -1,7 +1,7 @@
 """Tests for user API middleware"""
 
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import RequestFactory

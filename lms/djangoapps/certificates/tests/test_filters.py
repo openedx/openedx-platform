@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for models in the certificates app.
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 
 from django.core.management import call_command
 from django.test import override_settings

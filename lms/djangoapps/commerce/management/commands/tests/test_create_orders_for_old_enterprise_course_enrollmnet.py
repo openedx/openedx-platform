@@ -2,7 +2,7 @@
 Test the create_orders_for_old_enterprise_course_enrollment management command
 """
 
-import re
+import re  # noqa: I001
 from io import StringIO
 from unittest.mock import patch
 

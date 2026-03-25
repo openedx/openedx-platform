@@ -5,7 +5,7 @@ Signal handlers are connected here.
 """
 
 
-from django.apps import AppConfig
+from django.apps import AppConfig  # noqa: I001
 from django.conf import settings
 from edx_django_utils.plugins import connect_plugin_receivers
 

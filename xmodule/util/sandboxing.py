@@ -1,6 +1,6 @@
 """Utilities for managing course code libraries and sandbox execution."""
 
-import re
+import re  # noqa: I001
 
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey, LearningContextKey

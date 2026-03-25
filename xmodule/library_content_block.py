@@ -8,7 +8,7 @@ https://github.com/openedx/edx-platform/issues/32457
 
 We need to retain backwards-compatibility, but please do not build any new features into this.
 """
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import json
 import logging

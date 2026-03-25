@@ -3,7 +3,7 @@ Views for building plugins.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage

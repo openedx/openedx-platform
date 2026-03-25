@@ -3,7 +3,7 @@
 Tests for basic common operations related to Course Action State managers
 """
 
-from collections import namedtuple
+from collections import namedtuple  # noqa: I001
 
 import pytest
 from ddt import data, ddt

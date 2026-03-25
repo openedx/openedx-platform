@@ -30,7 +30,7 @@ class Command(BaseDeletionCommand):
 """
 
 
-import logging
+import logging  # noqa: I001
 import time
 
 from django.core.management.base import BaseCommand, CommandError

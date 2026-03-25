@@ -5,7 +5,7 @@ multiple courses.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required

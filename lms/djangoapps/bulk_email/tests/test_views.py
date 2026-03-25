@@ -2,7 +2,7 @@
 Test the bulk email opt out view.
 """
 
-import ddt
+import ddt  # noqa: I001
 import pytest
 from django.http import Http404
 from django.test.client import RequestFactory

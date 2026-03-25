@@ -1,7 +1,7 @@
 """
 Tests for the course advanced settings API.
 """
-import json
+import json  # noqa: I001
 import pkg_resources
 from unittest.mock import patch
 

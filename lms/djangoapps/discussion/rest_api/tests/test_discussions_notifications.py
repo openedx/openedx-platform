@@ -1,7 +1,7 @@
 """
 Unit tests for the DiscussionNotificationSender class
 """
-import re
+import re  # noqa: I001
 import unittest
 from unittest.mock import MagicMock, patch
 

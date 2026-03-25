@@ -1,7 +1,7 @@
 """
 Tests the simulate_publish management command.
 """
-from django.core.management import call_command
+from django.core.management import call_command  # noqa: I001
 from django.core.management.base import CommandError
 from testfixtures import LogCapture
 

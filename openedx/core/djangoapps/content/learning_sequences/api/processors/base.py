@@ -2,7 +2,7 @@
 This module defines the base OutlineProcessor class that is the primary method
 of adding new logic that manipulates the Course Outline for a given student.
 """
-import logging
+import logging  # noqa: I001
 from datetime import datetime
 
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=unused-import

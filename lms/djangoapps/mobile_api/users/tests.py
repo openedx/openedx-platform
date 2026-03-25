@@ -3,7 +3,7 @@ Tests for users API
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest.mock import MagicMock, Mock, patch
 from urllib.parse import parse_qs
 

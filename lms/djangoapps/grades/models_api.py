@@ -2,7 +2,7 @@
 Provides Python APIs exposed from Grades models.
 """
 
-from django.db import transaction
+from django.db import transaction  # noqa: I001
 
 from opaque_keys.edx.keys import CourseKey, UsageKey
 

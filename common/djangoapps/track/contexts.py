@@ -1,7 +1,7 @@
 """Generates common contexts"""
 
 
-import logging
+import logging  # noqa: I001
 
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, LearningContextKey

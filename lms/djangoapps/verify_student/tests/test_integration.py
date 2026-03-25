@@ -2,7 +2,7 @@
 Integration tests of the payment flow, including course mode selection.
 """
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: I001
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment

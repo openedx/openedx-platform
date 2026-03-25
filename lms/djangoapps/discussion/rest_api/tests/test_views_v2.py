@@ -7,7 +7,7 @@ and integration with the underlying discussion service. These tests ensure that 
 various user roles, input data, and edge cases, and that they return appropriate HTTP status codes and response bodies.
 """
 
-import json
+import json  # noqa: I001
 import random
 from datetime import datetime
 from unittest import mock

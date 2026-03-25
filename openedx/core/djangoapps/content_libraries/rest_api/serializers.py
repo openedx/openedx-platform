@@ -2,7 +2,7 @@
 Serializers for the content libraries REST API
 """
 # pylint: disable=abstract-method
-import json
+import json  # noqa: I001
 import logging
 
 from django.core.validators import validate_unicode_slug

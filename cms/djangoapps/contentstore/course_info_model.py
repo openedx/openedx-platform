@@ -13,7 +13,7 @@ Current db representation:
 """
 
 
-import logging
+import logging  # noqa: I001
 import re
 
 from django.http import HttpResponseBadRequest

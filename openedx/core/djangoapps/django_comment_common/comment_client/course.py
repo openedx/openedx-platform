@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 """Provides base Commentable model class"""
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 from typing import Dict, Optional
 

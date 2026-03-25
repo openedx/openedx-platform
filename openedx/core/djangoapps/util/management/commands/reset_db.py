@@ -13,7 +13,7 @@ originally from http://www.djangosnippets.org/snippets/828/ by dnordberg
 """
 
 
-import logging
+import logging  # noqa: I001
 
 import configparser
 import django

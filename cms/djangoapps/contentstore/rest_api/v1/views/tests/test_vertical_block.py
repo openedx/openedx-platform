@@ -2,7 +2,7 @@
 Unit tests for the vertical block.
 """
 
-from urllib.parse import quote
+from urllib.parse import quote  # noqa: I001
 
 from django.urls import reverse
 from rest_framework import status

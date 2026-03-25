@@ -15,7 +15,7 @@ Note: You should NEVER disable rate limiting in production.
 """
 
 
-import logging
+import logging  # noqa: I001
 from functools import wraps
 
 from rest_framework.views import APIView

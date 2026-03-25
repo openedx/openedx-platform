@@ -2,7 +2,7 @@
 Unit tests covering the program discussion iframe API.
 """
 
-from uuid import uuid4
+from uuid import uuid4  # noqa: I001
 import ddt
 
 from django.urls import reverse_lazy

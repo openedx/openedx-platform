@@ -3,7 +3,7 @@ Helpers for courseware tests.
 """
 
 
-import json
+import json  # noqa: I001
 from collections import OrderedDict
 from datetime import timedelta
 from unittest.mock import Mock

@@ -5,7 +5,7 @@
 # List of valid templates is explicitly managed for (short-term)
 # security reasons.
 
-import logging
+import logging  # noqa: I001
 import mimetypes
 
 from django.conf import settings

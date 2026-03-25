@@ -2,7 +2,7 @@
 Tests for block_structure/cache.py
 """
 
-import pytest
+import pytest  # noqa: I001
 import ddt
 
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase

@@ -1,7 +1,7 @@
 """
 API v1 views.
 """
-import logging
+import logging  # noqa: I001
 from uuid import UUID
 
 import edx_api_doc_tools as apidocs

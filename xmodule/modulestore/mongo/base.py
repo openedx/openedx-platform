@@ -13,7 +13,7 @@ structure:
 """
 
 
-import logging
+import logging  # noqa: I001
 import re
 import sys
 from datetime import datetime

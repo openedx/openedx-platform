@@ -3,7 +3,7 @@ Integration tests for importing courses containing pure XBlocks.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from xblock.core import XBlock
 from xblock.fields import String
 

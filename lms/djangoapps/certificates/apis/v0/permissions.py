@@ -3,7 +3,7 @@ This module provides a custom DRF Permission class for supporting the course cer
 to Admin users and users whom they belongs to.
 """
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model  # noqa: I001
 from rest_framework.permissions import BasePermission
 
 from openedx.core.djangoapps.user_api.models import UserPreference

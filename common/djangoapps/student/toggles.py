@@ -1,7 +1,7 @@
 """
 Toggles for Dashboard page.
 """
-from edx_toggles.toggles import WaffleFlag, WaffleSwitch
+from edx_toggles.toggles import WaffleFlag, WaffleSwitch  # noqa: I001
 
 # Namespace for student waffle flags.
 WAFFLE_FLAG_NAMESPACE = 'student'

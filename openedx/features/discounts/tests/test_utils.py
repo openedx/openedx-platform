@@ -1,7 +1,7 @@
 """
 Tests of the openedx.features.discounts.utils module.
 """
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock  # noqa: I001
 
 import ddt
 from django.contrib.auth.models import AnonymousUser

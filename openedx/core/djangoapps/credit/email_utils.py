@@ -3,7 +3,7 @@ This file contains utility functions which will responsible for sending emails.
 """
 
 
-import html
+import html  # noqa: I001
 import logging
 import os
 import urllib

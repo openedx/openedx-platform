@@ -3,7 +3,7 @@ tests for overrides
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from unittest import mock
 
 import pytz

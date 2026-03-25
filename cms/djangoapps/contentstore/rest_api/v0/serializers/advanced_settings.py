@@ -1,5 +1,5 @@
 """ Serializers for course advanced settings"""
-from typing import Type, Dict as DictType
+from typing import Type, Dict as DictType  # noqa: I001
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers

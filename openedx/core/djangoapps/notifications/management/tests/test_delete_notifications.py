@@ -1,7 +1,7 @@
 """
 Tests delete_notifications management command
 """
-import ddt
+import ddt  # noqa: I001
 
 from unittest import mock
 

@@ -1,7 +1,7 @@
 """ API v0 views. """
 
 
-import json
+import json  # noqa: I001
 import logging
 from collections import defaultdict
 from contextlib import contextmanager

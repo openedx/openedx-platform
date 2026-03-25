@@ -3,7 +3,7 @@ Test the CCXModulestoreWrapper
 """
 
 
-import datetime
+import datetime  # noqa: I001
 from collections import deque
 from itertools import chain
 

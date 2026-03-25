@@ -1,5 +1,5 @@
 """Word cloud integration tests using mongo modulestore."""
-import importlib
+import importlib  # noqa: I001
 import json
 import re
 from operator import itemgetter

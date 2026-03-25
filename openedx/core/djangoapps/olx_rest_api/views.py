@@ -1,7 +1,7 @@
 """
 REST API for getting modulestore XBlocks as OLX
 """
-from django.http import HttpResponse
+from django.http import HttpResponse  # noqa: I001
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator

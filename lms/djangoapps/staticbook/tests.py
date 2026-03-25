@@ -3,7 +3,7 @@ Test the lms/staticbook views.
 """
 
 
-import textwrap
+import textwrap  # noqa: I001
 from unittest import mock
 
 import pytest

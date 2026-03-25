@@ -3,7 +3,7 @@ Unit tests for the course bookmarks feature.
 """
 
 
-import ddt
+import ddt  # noqa: I001
 from django.test import RequestFactory
 
 from xmodule.modulestore import ModuleStoreEnum

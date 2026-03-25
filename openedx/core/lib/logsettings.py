@@ -1,7 +1,7 @@
 """Get log settings."""
 
 
-import logging
+import logging  # noqa: I001
 import platform
 import sys
 import warnings

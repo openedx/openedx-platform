@@ -3,7 +3,7 @@ Tests for User deactivation API permissions
 """
 
 
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase  # noqa: I001
 
 from common.djangoapps.student.tests.factories import (  # lint-amnesty, pylint: disable=line-too-long
     AdminFactory,

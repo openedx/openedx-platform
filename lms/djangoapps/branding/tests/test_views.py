@@ -1,7 +1,7 @@
 """Tests of Branding API views. """
 
 
-import json
+import json  # noqa: I001
 from unittest import mock
 
 import ddt

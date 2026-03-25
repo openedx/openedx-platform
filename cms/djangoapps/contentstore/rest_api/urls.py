@@ -2,7 +2,7 @@
 Contentstore API URLs.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from django.urls import include
 
 from .v0 import urls as v0_urls

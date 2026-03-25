@@ -3,7 +3,7 @@ Tests for the LTI outcome service handlers, both in outcomes.py and in tasks.py
 """
 
 
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch  # noqa: I001
 
 from django.test import TestCase
 from lxml import etree

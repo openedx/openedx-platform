@@ -1,7 +1,7 @@
 """
 Test cases for forum v2 based tasks.py
 """
-from unittest import mock
+from unittest import mock  # noqa: I001
 from unittest.mock import Mock
 
 import ddt

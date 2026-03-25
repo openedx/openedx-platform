@@ -1,7 +1,7 @@
 """Tests of email marketing signal handlers."""
 
 
-import logging
+import logging  # noqa: I001
 from datetime import timedelta
 from unittest.mock import patch
 

@@ -3,7 +3,7 @@ Theme aware pipeline template tags.
 """
 
 
-from django import template
+from django import template  # noqa: I001
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from pipeline.templatetags.pipeline import JavascriptNode, StylesheetNode

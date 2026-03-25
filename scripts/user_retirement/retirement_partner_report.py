@@ -5,7 +5,7 @@
 Command-line script to drive the partner reporting part of the retirement process
 """
 
-import logging
+import logging  # noqa: I001
 import os
 import sys
 import unicodedata
@@ -20,7 +20,7 @@ from six import text_type
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from scripts.user_retirement.utils.thirdparty_apis.google_api import DriveApi  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.thirdparty_apis.google_api import DriveApi  # pylint: disable=wrong-import-position  # noqa: I001
 # pylint: disable=wrong-import-position
 from scripts.user_retirement.utils.helpers import (
     _config_with_drive_or_exit,

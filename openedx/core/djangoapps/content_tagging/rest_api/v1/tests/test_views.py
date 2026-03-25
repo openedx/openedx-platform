@@ -2,7 +2,7 @@
 Tests tagging rest api views
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import abc
 import json

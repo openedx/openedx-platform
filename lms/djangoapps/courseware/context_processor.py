@@ -5,7 +5,7 @@ This is meant to simplify the process of sending user preferences (espec. time_z
 to the templates without having to append every view file.
 
 """
-import string
+import string  # noqa: I001
 
 from django.utils.translation import get_language
 from pytz import timezone

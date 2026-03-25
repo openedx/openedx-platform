@@ -1,6 +1,6 @@
 """Views for the Programs REST API v1."""
 
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING  # noqa: I001
 import logging
 
 from django.db.models.query import EmptyQuerySet
@@ -19,7 +19,7 @@ from openedx.core.djangoapps.programs.utils import (
 from openedx.features.enterprise_support.api import get_enterprise_course_enrollments, enterprise_is_enabled
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
+    from django.http import HttpRequest, HttpResponse  # noqa: I001
     from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
     from django.contrib.sites.models import Site
     from django.db.models.query import QuerySet

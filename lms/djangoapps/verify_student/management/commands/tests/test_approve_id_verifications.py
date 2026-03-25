@@ -2,7 +2,7 @@
 Tests for django admin commands in the verify_student module
 
 """
-import ddt
+import ddt  # noqa: I001
 import logging
 import os
 import tempfile

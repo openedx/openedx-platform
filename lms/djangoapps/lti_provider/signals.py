@@ -2,7 +2,7 @@
 Signals handlers for the lti_provider Django app.
 """
 
-import logging
+import logging  # noqa: I001
 
 from django.conf import settings
 from django.dispatch import receiver

@@ -3,7 +3,7 @@ Third-party auth provider configuration API.
 """
 
 
-from django.contrib.sites.models import Site
+from django.contrib.sites.models import Site  # noqa: I001
 
 from openedx.core.djangoapps.theming.helpers import get_current_request
 

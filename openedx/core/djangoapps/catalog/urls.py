@@ -2,7 +2,7 @@
 Defines the URL routes for this app.
 """
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 from . import views
 
 app_name = 'catalog'

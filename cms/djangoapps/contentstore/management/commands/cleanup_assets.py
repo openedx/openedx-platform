@@ -4,7 +4,7 @@ or with filename which starts with "._") for all courses
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand
 

@@ -9,7 +9,7 @@ DriveApi is for managing files in google drive.
 # does NOT tolerate unicode text on sys.stdout, namely python 2 on Build
 # Jenkins  PLAT-2287 tracks this Tech Debt..
 
-import json
+import json  # noqa: I001
 import logging
 from itertools import count
 

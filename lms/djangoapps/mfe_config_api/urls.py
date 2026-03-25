@@ -1,6 +1,6 @@
 """ URLs configuration for the mfe api."""
 
-from django.urls import path
+from django.urls import path  # noqa: I001
 
 from lms.djangoapps.mfe_config_api.views import MFEConfigView
 

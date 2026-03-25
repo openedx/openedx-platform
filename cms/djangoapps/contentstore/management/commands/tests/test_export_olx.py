@@ -3,7 +3,7 @@ Tests for exporting OLX content.
 """
 
 
-import shutil
+import shutil  # noqa: I001
 import tarfile
 import unittest
 from io import BytesIO

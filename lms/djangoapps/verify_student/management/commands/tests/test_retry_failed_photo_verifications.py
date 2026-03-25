@@ -4,7 +4,7 @@ Tests for django admin commands in the verify_student module
 Lots of imports from verify_student's model tests, since they cover similar ground
 """
 
-from freezegun import freeze_time
+from freezegun import freeze_time  # noqa: I001
 from unittest.mock import call, patch, ANY
 
 from django.conf import settings

@@ -4,7 +4,7 @@ automatically caching template fragments.
 """
 
 
-from django import template
+from django import template  # noqa: I001
 from django.core.cache import cache
 from django.template import Node, TemplateSyntaxError, Variable
 from django.template import resolve_variable  # lint-amnesty, pylint: disable=no-name-in-module

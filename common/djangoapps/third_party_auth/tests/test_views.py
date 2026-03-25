@@ -3,7 +3,7 @@ Test the views served by third_party_auth.
 """
 
 
-import unittest
+import unittest  # noqa: I001
 from unittest.mock import patch
 
 import ddt

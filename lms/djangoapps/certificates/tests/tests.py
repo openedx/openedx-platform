@@ -3,7 +3,7 @@ Tests for the certificates models.
 """
 
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from unittest.mock import patch
 
 from ddt import data, ddt, unpack

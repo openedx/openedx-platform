@@ -1,6 +1,6 @@
 """Views for the branding app. """
 
-import logging
+import logging  # noqa: I001
 import urllib.parse
 
 from django.conf import settings

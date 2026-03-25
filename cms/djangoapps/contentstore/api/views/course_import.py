@@ -3,7 +3,7 @@ APIs related to Course Import.
 """
 
 
-import base64
+import base64  # noqa: I001
 import logging
 import os
 

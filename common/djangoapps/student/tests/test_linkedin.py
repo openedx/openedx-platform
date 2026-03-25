@@ -1,6 +1,6 @@
 """Tests for LinkedIn Add to Profile configuration. """
 
-from types import SimpleNamespace
+from types import SimpleNamespace  # noqa: I001
 from urllib.parse import quote
 import ddt
 from django.conf import settings

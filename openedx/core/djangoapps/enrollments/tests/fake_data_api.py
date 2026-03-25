@@ -3,7 +3,7 @@ A Fake Data API for testing purposes.
 """
 
 
-import copy
+import copy  # noqa: I001
 import datetime
 
 _DEFAULT_FAKE_MODE = {

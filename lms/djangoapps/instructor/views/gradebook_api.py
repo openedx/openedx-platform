@@ -4,7 +4,7 @@ which is currently use by ccx and instructor apps.
 """
 
 
-import math
+import math  # noqa: I001
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.db import transaction

@@ -2,7 +2,7 @@
 Serializer for user API
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional  # noqa: I001
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block

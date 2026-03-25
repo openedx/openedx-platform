@@ -3,7 +3,7 @@ Test the create_random_users command line script
 """
 
 
-import pytest
+import pytest  # noqa: I001
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from opaque_keys import InvalidKeyError

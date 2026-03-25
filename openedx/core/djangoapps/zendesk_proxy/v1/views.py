@@ -1,7 +1,7 @@
 """
 Define request handlers used by the zendesk_proxy djangoapp
 """
-import logging
+import logging  # noqa: I001
 
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser

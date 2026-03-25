@@ -1,7 +1,7 @@
 """Tests for the email opt-in list management command. """
 
 
-import csv
+import csv  # noqa: I001
 import os.path
 import shutil
 import tempfile

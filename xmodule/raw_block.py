@@ -1,6 +1,6 @@
 """Mixin classes for handling raw XML data in XBlocks."""
 
-import logging
+import logging  # noqa: I001
 import re
 
 from lxml import etree

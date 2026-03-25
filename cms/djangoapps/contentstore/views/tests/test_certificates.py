@@ -3,7 +3,7 @@ Certificates Tests.
 """
 
 
-import itertools
+import itertools  # noqa: I001
 import json
 from unittest import mock
 

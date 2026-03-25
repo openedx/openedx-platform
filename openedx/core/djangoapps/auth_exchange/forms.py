@@ -2,7 +2,7 @@
 Forms to support third-party to first-party OAuth 2.0 access token exchange
 """
 
-from django import forms
+from django import forms  # noqa: I001
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.forms import CharField
 from django.conf import settings

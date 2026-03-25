@@ -2,7 +2,7 @@
 API Filters for content tagging org
 """
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Q  # noqa: I001
 from rest_framework.filters import BaseFilterBackend
 
 import openedx_tagging.rules as oel_tagging

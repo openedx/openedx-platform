@@ -1,6 +1,6 @@
 """Django integration utilities for loading and accessing the content store."""
 
-from importlib import import_module
+from importlib import import_module  # noqa: I001
 
 from django.conf import settings
 

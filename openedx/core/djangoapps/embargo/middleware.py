@@ -26,7 +26,7 @@ Usage:
 
 """
 
-import logging
+import logging  # noqa: I001
 import re
 from typing import Optional
 

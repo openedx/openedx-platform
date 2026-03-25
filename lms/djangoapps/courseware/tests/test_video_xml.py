@@ -15,7 +15,7 @@ course, section, subsection, unit, etc.
 """
 
 
-from django.test import TestCase
+from django.test import TestCase  # noqa: I001
 from xmodule.video_block import VideoBlock
 
 SOURCE_XML = """

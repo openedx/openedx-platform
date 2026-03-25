@@ -3,7 +3,7 @@ Load Override Data Transformer
 """
 
 
-import json
+import json  # noqa: I001
 
 from lms.djangoapps.courseware.models import StudentFieldOverride
 from openedx.core.djangoapps.content.block_structure.transformer import BlockStructureTransformer

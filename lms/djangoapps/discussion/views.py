@@ -2,7 +2,7 @@
 Views handling read (GET) requests for the Discussion tab and inline discussions.
 """
 
-import logging
+import logging  # noqa: I001
 from functools import wraps
 from urllib.parse import urljoin
 

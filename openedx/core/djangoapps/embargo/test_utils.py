@@ -1,6 +1,6 @@
 """Utilities for writing unit tests that involve course embargos. """
 
-import contextlib
+import contextlib  # noqa: I001
 from unittest.mock import MagicMock, patch
 
 import maxminddb

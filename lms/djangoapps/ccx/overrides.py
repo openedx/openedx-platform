@@ -4,7 +4,7 @@ by the individual custom courses feature.
 """
 
 
-import json
+import json  # noqa: I001
 import logging
 
 from ccx_keys.locator import CCXBlockUsageLocator, CCXLocator

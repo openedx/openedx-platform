@@ -1,7 +1,7 @@
 """
 Tests for token handling
 """
-import unittest
+import unittest  # noqa: I001
 from time import time
 
 from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, MissingRequiredClaimError

@@ -1,7 +1,7 @@
 """ Tests for auth. """
 
 
-import json
+import json  # noqa: I001
 from django.test import TestCase
 from django.conf import settings
 from django.urls import reverse

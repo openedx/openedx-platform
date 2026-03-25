@@ -13,7 +13,7 @@ behavior to trigger the necessary data updates.
 """
 
 
-import copy
+import copy  # noqa: I001
 import logging
 import sys
 import textwrap

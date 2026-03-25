@@ -2,7 +2,7 @@
 Tests for the course import API views
 """
 
-from rest_framework.test import APIClient
+from rest_framework.test import APIClient  # noqa: I001
 from rest_framework import status
 from openedx_authz.constants.roles import COURSE_STAFF, COURSE_DATA_RESEARCHER
 

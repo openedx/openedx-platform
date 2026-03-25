@@ -2,7 +2,7 @@
 Tests for the gating API
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: I001
 
 import pytest
 from completion.models import BlockCompletion

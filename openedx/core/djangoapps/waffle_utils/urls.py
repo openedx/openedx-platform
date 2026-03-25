@@ -1,5 +1,5 @@
 """ URL definitions for waffle utils. """
-from django.urls import path
+from django.urls import path  # noqa: I001
 from openedx.core.djangoapps.waffle_utils.views import ToggleStateView
 
 urlpatterns = [

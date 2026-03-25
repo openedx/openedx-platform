@@ -1,6 +1,6 @@
 """ Serializer for UserTourView. """
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from lms.djangoapps.user_tours.models import UserTour, UserDiscussionsTours
 

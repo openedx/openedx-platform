@@ -3,7 +3,7 @@ Instructor tasks related to certificates.
 """
 
 
-import logging
+import logging  # noqa: I001
 
 from time import time
 

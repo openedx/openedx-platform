@@ -3,7 +3,7 @@ Helpers methods for site configuration.
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from openedx.core.lib.cache_utils import request_cached
 
 

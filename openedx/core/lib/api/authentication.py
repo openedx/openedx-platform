@@ -1,6 +1,6 @@
 """ Common Authentication Handlers used across projects. """
 
-import logging
+import logging  # noqa: I001
 
 import django.utils.timezone
 from oauth2_provider import models as dot_models

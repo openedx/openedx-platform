@@ -3,7 +3,7 @@ Bookmarks Python public API.
 """
 # pylint: disable=unused-import
 
-from .api_impl import (
+from .api_impl import (  # noqa: I001
     BookmarksLimitReachedError,
     get_bookmark,
     get_bookmarks,

@@ -4,7 +4,7 @@ Management command to recreate upstream-dowstream links in ComponentLink for cou
 This command can be run for all the courses or for given list of courses.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: I001
 
 import logging
 from datetime import datetime, timezone

@@ -1,7 +1,7 @@
 """
 Test the get_learners_to_retire.py script
 """
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, patch  # noqa: I001
 
 import os
 

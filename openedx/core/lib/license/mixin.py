@@ -2,7 +2,7 @@
 License mixin for XBlocks and XModules
 """
 
-from xblock.core import XBlockMixin
+from xblock.core import XBlockMixin  # noqa: I001
 from xblock.fields import Scope, String
 
 # Make '_' a no-op so we can scrape strings. Using lambda instead of

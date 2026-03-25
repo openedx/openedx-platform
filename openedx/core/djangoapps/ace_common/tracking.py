@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs  # noqa: I001
 
 import attr
 from django.utils.http import urlencode

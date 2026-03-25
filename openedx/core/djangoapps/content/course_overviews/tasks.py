@@ -1,6 +1,6 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-import logging
+import logging  # noqa: I001
 
 from celery import shared_task
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask

@@ -3,7 +3,7 @@ Contains URLs for the Course Experience API
 """
 
 
-from django.conf import settings
+from django.conf import settings  # noqa: I001
 from django.urls import re_path, path
 
 from openedx.features.course_experience.api.v1.views import (

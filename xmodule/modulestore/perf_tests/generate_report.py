@@ -5,7 +5,7 @@ various parts of the system.
 """
 
 
-import sqlite3
+import sqlite3  # noqa: I001
 
 import lxml.html
 from lxml.builder import E

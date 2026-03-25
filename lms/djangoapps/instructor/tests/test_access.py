@@ -3,7 +3,7 @@ Test instructor.access
 """
 
 
-import pytest
+import pytest  # noqa: I001
 
 from common.djangoapps.student.roles import CourseBetaTesterRole, CourseCcxCoachRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory

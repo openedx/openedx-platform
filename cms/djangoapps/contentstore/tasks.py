@@ -2,7 +2,7 @@
 This file contains celery tasks for contentstore views
 """
 
-import asyncio
+import asyncio  # noqa: I001
 import base64
 import json
 import os

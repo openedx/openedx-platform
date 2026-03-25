@@ -3,7 +3,7 @@ Unit tests for the gating feature in Studio
 """
 
 
-import json
+import json  # noqa: I001
 from unittest.mock import patch
 
 import ddt

@@ -1,7 +1,7 @@
 """
 Management command for deleting notifications with parameters
 """
-import datetime
+import datetime  # noqa: I001
 import logging
 
 from django.core.management.base import BaseCommand

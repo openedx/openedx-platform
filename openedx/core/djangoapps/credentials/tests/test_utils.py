@@ -1,6 +1,6 @@
 """Tests covering Credentials utilities."""
 
-import uuid
+import uuid  # noqa: I001
 from unittest import mock
 
 from common.djangoapps.student.tests.factories import UserFactory

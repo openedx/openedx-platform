@@ -8,7 +8,7 @@ Note that these views are only for interacting with existing blocks. Other
 Studio APIs cover use cases like adding/deleting/editing blocks.
 """
 # pylint: disable=unused-import
-from enum import Enum
+from enum import Enum  # noqa: I001
 from datetime import datetime
 import logging
 import threading

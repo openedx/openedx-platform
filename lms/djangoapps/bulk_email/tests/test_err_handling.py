@@ -3,7 +3,7 @@ Unit tests for handling email sending errors
 """
 
 
-import json
+import json  # noqa: I001
 from itertools import cycle
 from smtplib import SMTPConnectError, SMTPDataError, SMTPServerDisconnected
 from unittest.mock import Mock, patch

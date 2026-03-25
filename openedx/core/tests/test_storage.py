@@ -2,7 +2,7 @@
 Tests for the get_storage utility function.
 """
 
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings  # noqa: I001
 from django.core.files.storage import FileSystemStorage
 
 from openedx.core.storage import get_storage

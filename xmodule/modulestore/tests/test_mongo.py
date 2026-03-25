@@ -3,7 +3,7 @@ Unit tests for the Mongo modulestore
 """
 
 
-import logging
+import logging  # noqa: I001
 
 import ddt
 import pytest

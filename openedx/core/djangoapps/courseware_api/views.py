@@ -1,7 +1,7 @@
 """
 Course API Views
 """
-from completion.exceptions import UnavailableCompletionData
+from completion.exceptions import UnavailableCompletionData  # noqa: I001
 from completion.utilities import get_key_to_last_completed_block
 from django.conf import settings
 from django.db import transaction

@@ -3,7 +3,7 @@ Tests for experimentation views
 """
 
 
-from datetime import timedelta
+from datetime import timedelta  # noqa: I001
 from uuid import uuid4
 
 from django.urls import reverse

@@ -3,7 +3,7 @@ django admin page for the course creators table
 """
 
 
-import logging
+import logging  # noqa: I001
 from smtplib import SMTPException
 
 from django import forms

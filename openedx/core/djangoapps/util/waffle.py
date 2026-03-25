@@ -3,7 +3,7 @@ Waffle flags and switches
 """
 
 
-from edx_toggles.toggles import WaffleSwitch
+from edx_toggles.toggles import WaffleSwitch  # noqa: I001
 
 # .. toggle_name: open_edx_util.display_maintenance_warning
 # .. toggle_implementation: WaffleSwitch

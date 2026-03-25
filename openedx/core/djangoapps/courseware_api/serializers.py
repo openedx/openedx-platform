@@ -2,7 +2,7 @@
 Course API Serializers.  Representing course catalog data
 """
 
-from rest_framework import serializers
+from rest_framework import serializers  # noqa: I001
 
 from lms.djangoapps.course_home_api.progress.serializers import CertificateDataSerializer
 from lms.djangoapps.course_home_api.outline.serializers import CourseGoalsSerializer

@@ -2,7 +2,7 @@
 Unit tests for reset_student_course task
 """
 
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch, Mock, call  # noqa: I001
 
 from django.conf import settings
 from django.core import mail

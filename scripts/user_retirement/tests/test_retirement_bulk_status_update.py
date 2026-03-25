@@ -1,7 +1,7 @@
 """
 Test the retirement_bulk_status_update.py script
 """
-from unittest.mock import DEFAULT, patch
+from unittest.mock import DEFAULT, patch  # noqa: I001
 
 from click.testing import CliRunner
 

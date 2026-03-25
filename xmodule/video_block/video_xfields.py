@@ -3,7 +3,7 @@ XFields for video block.
 """
 
 
-import datetime
+import datetime  # noqa: I001
 
 from xblock.fields import Boolean, DateTime, Dict, Float, List, RelativeTime, Scope, String
 

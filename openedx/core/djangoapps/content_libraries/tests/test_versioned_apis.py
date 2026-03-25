@@ -1,7 +1,7 @@
 """
 Tests that several XBlock APIs support versioning
 """
-from django.test.utils import override_settings
+from django.test.utils import override_settings  # noqa: I001
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_libraries.tests.base import (

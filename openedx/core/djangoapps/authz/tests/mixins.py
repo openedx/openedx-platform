@@ -1,6 +1,6 @@
 """ Mixins for testing course-scoped AuthZ endpoints. """
 
-import casbin
+import casbin  # noqa: I001
 import pkg_resources
 
 from unittest.mock import patch

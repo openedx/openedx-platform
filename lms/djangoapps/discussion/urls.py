@@ -3,7 +3,7 @@ Forum urls for the django_comment_client.
 """
 
 
-from django.urls import path, re_path
+from django.urls import path, re_path  # noqa: I001
 
 from . import views
 

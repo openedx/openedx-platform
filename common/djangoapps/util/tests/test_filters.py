@@ -1,7 +1,7 @@
 """
 Test that various filters are fired for models/views in the student app.
 """
-from django.test import override_settings
+from django.test import override_settings  # noqa: I001
 from common.djangoapps.util import course
 from openedx_filters import PipelineStep
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

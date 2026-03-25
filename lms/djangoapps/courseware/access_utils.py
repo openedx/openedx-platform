@@ -3,7 +3,7 @@ Simple utility functions for computing access.
 It allows us to share code between access.py and block transformers.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: I001
 from logging import getLogger
 
 from crum import get_current_request

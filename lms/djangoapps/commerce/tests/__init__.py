@@ -1,7 +1,7 @@
 """ Commerce app tests package. """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from urllib.parse import urljoin
 
 import httpretty

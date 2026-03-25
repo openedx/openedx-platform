@@ -1,7 +1,7 @@
 """
 Tests for the instructor_task app's REST API v1 views.
 """
-import datetime
+import datetime  # noqa: I001
 import json
 from uuid import uuid4
 import pytz

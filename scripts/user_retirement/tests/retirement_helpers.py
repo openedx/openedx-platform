@@ -3,7 +3,7 @@
 """
 Common functionality for retirement related tests
 """
-import json
+import json  # noqa: I001
 import unicodedata
 from datetime import datetime
 

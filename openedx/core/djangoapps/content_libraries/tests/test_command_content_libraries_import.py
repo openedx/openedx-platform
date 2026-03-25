@@ -3,7 +3,7 @@ Unit tests for content_libraries_import command.
 """
 
 
-from unittest import mock
+from unittest import mock  # noqa: I001
 from io import StringIO
 
 from django.core.management import call_command

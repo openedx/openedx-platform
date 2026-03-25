@@ -1,7 +1,7 @@
 """ Command line script to change user enrollments. """
 
 
-import logging
+import logging  # noqa: I001
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction

@@ -3,7 +3,7 @@ Utilities for tests within the django_comment_client module.
 """
 
 
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: I001
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore

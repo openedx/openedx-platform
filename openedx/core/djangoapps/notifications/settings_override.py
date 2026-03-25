@@ -4,7 +4,7 @@ Settings override module for notification configurations.
 This module provides functionality to override notification configurations
 via Django settings.
 """
-from copy import deepcopy
+from copy import deepcopy  # noqa: I001
 from typing import Dict, Set, Any
 from django.conf import settings
 

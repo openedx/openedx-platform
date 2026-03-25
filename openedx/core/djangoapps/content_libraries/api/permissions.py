@@ -6,7 +6,7 @@ See https://github.com/openedx/openedx-platform/issues/37409.
 """
 # pylint: disable=unused-import
 
-from ..permissions import (
+from ..permissions import (  # noqa: I001
     CAN_CREATE_CONTENT_LIBRARY,
     CAN_DELETE_THIS_CONTENT_LIBRARY,
     CAN_EDIT_THIS_CONTENT_LIBRARY,

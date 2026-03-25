@@ -2,7 +2,7 @@
 Test the user course tag API.
 """
 
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser  # noqa: I001
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
 

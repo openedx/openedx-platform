@@ -3,7 +3,7 @@ Middleware for user api.
 Adds user's tags to tracking event context.
 """
 
-from django.utils.deprecation import MiddlewareMixin
+from django.utils.deprecation import MiddlewareMixin  # noqa: I001
 
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError

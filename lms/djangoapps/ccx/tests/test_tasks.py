@@ -3,7 +3,7 @@ Tests for celery tasks defined in tasks module
 """
 
 
-import contextlib
+import contextlib  # noqa: I001
 from unittest import mock
 
 from ccx_keys.locator import CCXLocator
