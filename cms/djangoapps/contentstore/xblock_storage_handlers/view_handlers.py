@@ -579,7 +579,7 @@ def sync_library_content(
                         content_models.Subsection.type_code,
                     ):
                         # We don't support other container types for now.
-                        log.error("Unexpected upstream child container type: %s", upstream_child.container_type)
+                        log.error("Unexpected upstream child container type: %s", upstream_child.container_type_code)
                         continue
                     # convert "unit" -> "vertical", "subsection" -> "sequential"
                     block_type = content_api.get_container_subclass(upstream_child.container_type_code).olx_tag_name
