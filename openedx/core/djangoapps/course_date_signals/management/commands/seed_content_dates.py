@@ -1,5 +1,6 @@
 """
-Django management command to extract assignment dates from modulestore and populate ContentDate table.
+Django management command to extract assignment dates from modulestore and populate
+ContentDate table.
 """
 
 import logging
@@ -8,7 +9,7 @@ from typing import List
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from edx_when.api import update_or_create_assignments_due_dates, models as when_models
+from edx_when.api import get_existing_due_locations, update_or_create_assignments_due_dates
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.django import modulestore
@@ -28,21 +29,31 @@ class Command(BaseCommand):
 
     Example usage:
         # Dry run for all courses
-        python manage.py lms seed_content_dates --dry-run
+        python manage.py lms seed_content_dates --username admin --dry-run
 
         # Seed specific course
-        python manage.py lms seed_content_dates --course-id "course-v1:MITx+6.00x+2023_Fall"
+        python manage.py lms seed_content_dates --username admin \\
+            --course-id "course-v1:Org+Course+Run"
 
         # Seed all courses for specific org
-        python manage.py lms seed_content_dates --org "MITx"
+        python manage.py lms seed_content_dates --username admin --org "MITx"
 
         # Force update existing entries
-        python manage.py lms seed_content_dates --force-update
+        python manage.py lms seed_content_dates --username admin --force-update
     """
 
     help = "Extract assignment dates from modulestore and populate ContentDate table"
 
     def add_arguments(self, parser):
+        """
+        Define CLI arguments for username, course/org scope, dry-run, and batching.
+        """
+        parser.add_argument(
+            "--username",
+            type=str,
+            required=True,
+            help="Username of an active staff user to use when loading course assignments.",
+        )
         parser.add_argument(
             "--course-id",
             type=str,
@@ -67,9 +78,21 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        """
+        Resolve the staff user, iterate courses, and print aggregate counts.
+        """
         self.dry_run = options["dry_run"]  # pylint: disable=attribute-defined-outside-init
         self.force_update = options["force_update"]  # pylint: disable=attribute-defined-outside-init
         self.batch_size = options["batch_size"]  # pylint: disable=attribute-defined-outside-init
+
+        try:
+            staff_user = User.objects.get(
+                username=options["username"], is_staff=True, is_active=True
+            )
+        except User.DoesNotExist as exc:
+            raise CommandError(
+                f"No active staff user found with username: {options['username']}"
+            ) from exc
 
         if self.dry_run:
             self.stdout.write(
@@ -80,6 +103,7 @@ class Command(BaseCommand):
 
         try:
             course_keys = self._get_course_keys(options)
+            store = modulestore()
 
             total_processed = 0
             total_created = 0
@@ -91,7 +115,7 @@ class Command(BaseCommand):
 
                 try:
                     processed, created, updated, skipped = self._process_course(
-                        course_key
+                        course_key, store, staff_user
                     )
                     total_processed += processed
                     total_created += created
@@ -105,11 +129,9 @@ class Command(BaseCommand):
 
                 except Exception as e:  # pylint: disable=broad-exception-caught
                     self.stdout.write(
-                        self.style.ERROR(
-                            f"Error processing course {course_key}: {str(e)}"
-                        )
+                        self.style.ERROR(f"Error processing course {course_key}: {str(e)}")
                     )
-                    log.exception(f"Error processing course {course_key}")
+                    log.exception("Error processing course %s", course_key)
                     continue
 
             self.stdout.write(
@@ -156,30 +178,24 @@ class Command(BaseCommand):
 
         return course_keys
 
-    def _process_course(self, course_key: CourseKey) -> tuple[int, int, int, int]:
+    def _process_course(
+        self, course_key: CourseKey, store, staff_user
+    ) -> tuple[int, int, int, int]:
         """
         Process a single course and return (processed, created, updated, skipped) counts.
         """
-        store = modulestore()
-
         try:
             course = store.get_course(course_key)
             if not course:
-                raise ItemNotFoundError(
-                    f"Course not found in modulestore: {course_key}"
-                )
+                raise ItemNotFoundError(f"Course not found in modulestore: {course_key}")
         except ItemNotFoundError:
-            log.warning(f"Course not found in modulestore: {course_key}")
+            log.warning("Course not found in modulestore: %s", course_key)
             return (0, 0, 0, 0)
 
-        staff_user = User.objects.filter(is_staff=True).first()
-        if not staff_user:
-            log.warning("No staff user found; cannot load assignments")
-            return (0, 0, 0, 0)
         assignments = get_course_assignments(course_key, staff_user)
 
         if not assignments:
-            log.info(f"No assignments with due dates found in course: {course_key}")
+            log.info("No assignments with due dates found in course: %s", course_key)
             return (0, 0, 0, 0)
 
         processed = len(assignments)
@@ -189,29 +205,28 @@ class Command(BaseCommand):
 
         if self.dry_run:
             self.stdout.write(f"  Would process {processed} assignments")
-            for assignment in assignments[:5]:  # Show first 5 as preview
+            for assignment in assignments[:5]:
                 self.stdout.write(f"    - {assignment.title} (due: {assignment.date})")
             if len(assignments) > 5:
                 self.stdout.write(f"    ... and {len(assignments) - 5} more")
             return processed, 0, 0, 0
 
-        existing_due_locations: set = set(
-            when_models.ContentDate.objects.filter(
-                course_id=course_key, field="due"
-            ).values_list("location", flat=True)
-        )
+        existing_due_locations = get_existing_due_locations(course_key)
 
-        with transaction.atomic():
-            for i in range(0, len(assignments), self.batch_size):
-                batch = assignments[i : i + self.batch_size]
-                batch_created, batch_updated, batch_skipped = (
-                    self._process_assignment_batch(
-                        course_key, batch, existing_due_locations
-                    )
+        for i in range(0, len(assignments), self.batch_size):
+            batch = assignments[i : i + self.batch_size]
+            try:
+                batch_created, batch_updated, batch_skipped = self._process_assignment_batch(
+                    course_key, batch, existing_due_locations
                 )
-                created += batch_created
-                updated += batch_updated
-                skipped += batch_skipped
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                log.error(
+                    "Failed to process assignment batch in course %s: %s", course_key, str(e)
+                )
+                continue
+            created += batch_created
+            updated += batch_updated
+            skipped += batch_skipped
 
         return processed, created, updated, skipped
 
@@ -224,48 +239,28 @@ class Command(BaseCommand):
         """
         Process a batch of assignments and return (created, updated, skipped) counts.
 
+        Assignments that already exist in ContentDate are skipped unless --force-update is set.
+        The entire batch is written atomically; on failure the batch is rolled back and the
+        exception is re-raised to the caller.
+
         existing_due_locations is updated in place when new ContentDate rows are created.
         """
-        created = 0
-        updated = 0
-        skipped = 0
+        to_skip = [
+            a for a in assignments
+            if a.block_key in existing_due_locations and not self.force_update
+        ]
+        to_process = [
+            a for a in assignments
+            if a.block_key not in existing_due_locations or self.force_update
+        ]
 
-        for assignment in assignments:
-            self.stdout.write(
-                f"Processing assignment: {assignment.block_key}/{assignment.assignment_type} (due: {assignment.date})"
-            )
-            already_exists = assignment.block_key in existing_due_locations
+        skipped = len(to_skip)
+        created = sum(1 for a in to_process if a.block_key not in existing_due_locations)
+        updated = len(to_process) - created
 
-            if already_exists and not self.force_update:
-                skipped += 1
-                log.info(
-                    f"Skipping existing ContentDate for {assignment.title} "
-                    f"in course {course_key}"
-                )
-                continue
-
-            try:
-                update_or_create_assignments_due_dates(course_key, [assignment])
-                existing_due_locations.add(assignment.block_key)
-
-                if already_exists:
-                    updated += 1
-                    log.info(
-                        f"Updated ContentDate for {assignment.title} "
-                        f"in course {course_key}"
-                    )
-                else:
-                    created += 1
-                    log.info(
-                        f"Created ContentDate for {assignment.title} "
-                        f"in course {course_key}"
-                    )
-
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                log.error(
-                    f"Failed to process assignment {assignment.title} "
-                    f"in course {course_key}: {str(e)}"
-                )
-                continue
+        if to_process:
+            with transaction.atomic():
+                update_or_create_assignments_due_dates(course_key, to_process)
+            existing_due_locations.update(a.block_key for a in to_process)
 
         return created, updated, skipped
