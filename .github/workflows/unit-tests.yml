@@ -22,7 +22,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.11"
           - "3.12"
         django-version:
           - "pinned"
@@ -57,18 +56,18 @@ jobs:
         #
         # We're testing the older version of Ubuntu and running the xmodule tests since those rely on many
         # dependent complex libraries and will hopefully catch most issues quickly.
-        include:
-          - shard_name: "xmodule-with-cms"
-            python-version: "3.11"
-            django-version: "pinned"
-            mongo-version: "7.0"
-            os-version: "ubuntu-22.04"
-          - shard_name: "xmodule-with-lms"
-            python-version: "3.11"
-            django-version: "pinned"
-            mongo-version: "7.0"
-            os-version: "ubuntu-22.04"
-
+        #
+        # include:
+        #  - shard_name: "xmodule-with-cms"
+        #    python-version: "3.12"
+        #    django-version: "pinned"
+        #    mongo-version: "7.0"
+        #    os-version: "ubuntu-24.04"
+        #  - shard_name: "xmodule-with-lms"
+        #    python-version: "3.12"
+        #    django-version: "pinned"
+        #    mongo-version: "7.0"
+        #    os-version: "ubuntu-24.04"
     steps:
       - name: checkout repo
         uses: actions/checkout@v6
@@ -156,7 +155,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
 
       - name: install system requirements
         run: |
@@ -278,7 +277,7 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - 3.11
+          - 3.12
     steps:
       - name: Checkout repo
         uses: actions/checkout@v6

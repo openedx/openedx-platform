@@ -10,7 +10,6 @@ from django.core.exceptions import BadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
 from pytz import utc
-from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffle-import
 
 from lms.djangoapps.branding.api import get_logo_url_for_email
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, UsernameDecryptionException
@@ -19,7 +18,6 @@ from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
     get_default_values_of_preferences
 )
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_EMAIL_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_preference_unsubscribe_event
@@ -32,28 +30,6 @@ from .notification_icons import NotificationTypeIcons
 from ..utils import create_account_notification_pref_if_not_exists
 
 User = get_user_model()
-
-
-def is_email_notification_flag_enabled(user=None):
-    """
-    Returns if waffle flag is enabled for user or not
-    """
-    flag_model = get_waffle_flag_model()
-    try:
-        flag = flag_model.objects.get(name=ENABLE_EMAIL_NOTIFICATIONS.name)
-    except flag_model.DoesNotExist:
-        return False
-    if flag.everyone is not None:
-        return flag.everyone
-    if user:
-        role_value = flag.is_active_for_user(user)
-        if role_value is not None:
-            return role_value
-        try:
-            return flag.users.contains(user)
-        except ValueError:
-            pass
-    return False
 
 
 def create_datetime_string(datetime_instance):

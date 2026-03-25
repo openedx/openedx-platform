@@ -16,6 +16,7 @@ Examples of html5 videos for manual testing:
 import copy
 import json
 import logging
+import warnings
 from collections import OrderedDict, defaultdict
 from operator import itemgetter
 
@@ -121,6 +122,10 @@ class _BuiltInVideoBlock(
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.webm"/>
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.ogv"/>
         </video>
+
+    .. deprecated:: 2026-03
+       This built-in video block is deprecated. Please use the extracted ``VideoBlock``
+       from ``xblocks_contrib.video`` instead.
     """
     is_extracted = False
     has_custom_completion = True
@@ -1196,3 +1201,14 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+if not settings.USE_EXTRACTED_VIDEO_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.video.VideoBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

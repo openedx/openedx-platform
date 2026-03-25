@@ -15,14 +15,12 @@ from zoneinfo import ZoneInfo
 from openedx.core.djangoapps.notifications.audience_filters import NotificationFilter
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preference,
-    get_notification_content
+    get_notification_content, get_default_values_of_preferences
 )
 
 from openedx.core.djangoapps.notifications.email.tasks import send_immediate_cadence_email
 from openedx.core.djangoapps.notifications.config.waffle import (
-    ENABLE_NOTIFICATIONS,
-    ENABLE_PUSH_NOTIFICATIONS
+    ENABLE_PUSH_NOTIFICATIONS, DISABLE_NOTIFICATIONS
 )
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_generated_event
@@ -105,11 +103,10 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
     """
     Send notifications to the users.
     """
-    # pylint: disable=too-many-statements
-    course_key = CourseKey.from_string(course_key)
-    if not ENABLE_NOTIFICATIONS.is_enabled():
+    if DISABLE_NOTIFICATIONS.is_enabled():
         return
 
+    course_key = CourseKey.from_string(course_key)
     if not is_notification_valid(notification_type, context):
         raise ValidationError(f"Notification is not valid {app_name} {notification_type} {context}")
 
@@ -120,7 +117,7 @@ def send_notifications(user_ids, course_key: str, app_name, notification_type, c
     grouping_enabled = group_by_id and grouping_function is not None
     generated_notification = None
     sender_id = context.pop('sender_id', None)
-    default_web_config = get_default_values_of_preference(app_name, notification_type).get('web', False)
+    default_web_config = get_default_values_of_preferences().get(notification_type, {}).get('web', False)
     generated_notification_audience = []
     email_notification_mapping = {}
     push_notification_audience = []
