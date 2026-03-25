@@ -25,7 +25,7 @@ class NotificationType(TypedDict):
     notification_app: str
     # Unique identifier for this notification type.
     name: str
-    # Mark this as a core notification.
+    # Whether this notification type uses the notification app's default settings.
     # When True, user preferences are taken from the notification app's configuration,
     # overriding the `web`, `email`, `push`, `email_cadence`, and `non_editable` attributes set here.
     use_app_defaults: bool
@@ -38,8 +38,7 @@ class NotificationType(TypedDict):
     content_context: dict[str, Any]
     filters: list[str]
 
-    # All fields below are required unless `is_core` is True.
-    # Core notifications take this config from the associated notification app instead (and ignore anything set here).
+    # All fields below are required unless `use_app_defaults` is True.
 
     # Set to True to enable delivery on web.
     web: NotRequired[bool]
@@ -306,9 +305,7 @@ class NotificationApp(TypedDict):
 
     Each notification type defined in COURSE_NOTIFICATION_TYPES also references an app.
 
-    Each notification type can also be optionally defined as a core notification.
     In this case, the delivery preferences for that notification are taken
-    from the `core_*` fields of the associated notification app.
     """
     # Set to True to enable this app and linked notification types.
     enabled: bool
@@ -366,106 +363,6 @@ COURSE_NOTIFICATION_TYPES = get_notification_types_config()
 COURSE_NOTIFICATION_APPS = get_notification_apps_config()
 
 
-class NotificationTypeManager:
-    """
-    Manager for notification types
-    """
-
-    def __init__(self):
-        self.notification_types = COURSE_NOTIFICATION_TYPES
-
-    def get_notification_types_by_app(self, notification_app: str):
-        """
-        Returns notification types for the given notification app name.
-        """
-        return [
-            notification_type.copy() for _, notification_type in self.notification_types.items()
-            if notification_type.get('notification_app', None) == notification_app
-        ]
-
-    def get_core_and_non_core_notification_types(
-        self, notification_app: str
-    ) -> tuple[NotificationType, NotificationType]:
-        """
-        Returns notification types for the given app name, split by core and non core.
-
-        Return type is a tuple of (core_notification_types, non_core_notification_types).
-        """
-        notification_types = self.get_notification_types_by_app(notification_app)
-        core_notification_types = []
-        non_core_notification_types = []
-        for notification_type in notification_types:
-            if notification_type.get('use_app_defaults', None):
-                core_notification_types.append(notification_type)
-            else:
-                non_core_notification_types.append(notification_type)
-        return core_notification_types, non_core_notification_types
-
-    @staticmethod
-    def get_non_core_notification_type_preferences(non_core_notification_types, email_opt_out=False):
-        """
-        Returns non-core notification type preferences for the given notification types.
-        """
-        non_core_notification_type_preferences = {}
-        for notification_type in non_core_notification_types:
-            non_core_notification_type_preferences[notification_type.get('name')] = {
-                'web': notification_type.get('web', False),
-                'email': False if email_opt_out else notification_type.get('email', False),
-                'push': notification_type.get('push', False),
-                'email_cadence': notification_type.get('email_cadence', 'Daily'),
-            }
-        return non_core_notification_type_preferences
-
-    def get_notification_app_preference(self, notification_app, email_opt_out=False):
-        """
-        Returns notification app preferences for the given notification app.
-        """
-        core_notification_types, non_core_notification_types = self.get_core_and_non_core_notification_types(
-            notification_app,
-        )
-        non_core_notification_types_preferences = self.get_non_core_notification_type_preferences(
-            non_core_notification_types, email_opt_out
-        )
-        core_notification_types_name = [notification_type.get('name') for notification_type in core_notification_types]
-        return non_core_notification_types_preferences, core_notification_types_name
-
-
-class NotificationAppManager:
-    """
-    Notification app manager
-    """
-
-    def add_core_notification_preference(self, notification_app_attrs, notification_types, email_opt_out=False):
-        """
-        Adds core notification preference for the given notification app.
-        """
-        notification_types['core'] = {
-            'web': notification_app_attrs.get('web', False),
-            'email': False if email_opt_out else notification_app_attrs.get('email', False),
-            'push': notification_app_attrs.get('push', False),
-            'email_cadence': notification_app_attrs.get('email_cadence', 'Daily'),
-        }
-
-    def get_notification_app_preferences(self, email_opt_out=False):
-        """
-        Returns notification app preferences for the given name.
-        """
-        course_notification_preference_config = {}
-        for notification_app_key, notification_app_attrs in COURSE_NOTIFICATION_APPS.items():
-            notification_app_preferences = {}
-            notification_types, core_notifications = NotificationTypeManager().get_notification_app_preference(
-                notification_app_key,
-                email_opt_out
-            )
-            self.add_core_notification_preference(notification_app_attrs, notification_types, email_opt_out)
-
-            notification_app_preferences['enabled'] = notification_app_attrs.get('enabled', False)
-            notification_app_preferences['core_notification_types'] = core_notifications
-            notification_app_preferences['notification_types'] = notification_types
-            course_notification_preference_config[notification_app_key] = notification_app_preferences
-        return course_notification_preference_config
-
-
 def get_notification_content(notification_type: str, context: dict[str, Any]):
     """
     Returns notification content for the given notification type with provided context.
@@ -489,8 +386,8 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
     if notification_type == 'course_update':
         notification_type = 'course_updates'
 
-    # Retrieve the notification type object from NotificationTypeManager.
-    notification_type = NotificationTypeManager().notification_types.get(notification_type, None)
+    # Retrieve the notification type object from the default preferences (derived from COURSE_NOTIFICATION_TYPES).
+    notification_type = get_default_values_of_preferences().get(notification_type, None)
 
     if notification_type:
         # Check if the notification is grouped.
@@ -510,19 +407,6 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
             return template.format(**context)
 
     return ''
-
-
-def get_default_values_of_preference(notification_app, notification_type):
-    """
-    Returns default preference for notification_type
-    """
-    default_prefs = NotificationAppManager().get_notification_app_preferences()
-    app_prefs = default_prefs.get(notification_app, {})
-    core_notification_types = app_prefs.get('core_notification_types', [])
-    notification_types = app_prefs.get('notification_types', {})
-    if notification_type in core_notification_types:
-        return notification_types.get('core', {})
-    return notification_types.get(notification_type, {})
 
 
 def get_default_values_of_preferences() -> dict[str, dict[str, Any]]:

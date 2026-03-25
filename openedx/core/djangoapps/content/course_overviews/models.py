@@ -478,9 +478,9 @@ class CourseOverview(TimeStampedModel):
         return course_metadata_utils.clean_course_key(self.location.course_key, padding_char)
 
     @property
-    def location(self):
+    def usage_key(self):
         """
-        Returns the UsageKey of this course.
+        Returns the UsageKey of the root block of this course.
 
         UsageKeyField has a strange behavior where it fails to parse the "run"
         of a course out of the serialized form of a Mongo Draft UsageKey. This
@@ -490,6 +490,13 @@ class CourseOverview(TimeStampedModel):
         if self._location.run is None:
             self._location = self._location.map_into_course(self.id)
         return self._location
+
+    @property
+    def location(self):
+        """
+        The old name for `usage_key`. This method is analogous to `XModuleMixin.location`.
+        """
+        return self.usage_key
 
     @property
     def number(self):
@@ -506,9 +513,9 @@ class CourseOverview(TimeStampedModel):
     @property
     def url_name(self):
         """
-        Returns this course's URL name.
+        The old name for `block_id`. This method is analogous to `XModuleMixin.url_name`.
         """
-        return block_metadata_utils.url_name_for_block(self)
+        return self.usage_key.block_id
 
     @property
     def display_name_with_default(self):

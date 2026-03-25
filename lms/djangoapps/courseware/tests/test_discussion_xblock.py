@@ -163,13 +163,13 @@ class TestViews(TestDiscussionXBlock):
         """
         fragment = self.block.author_view()
         assert isinstance(fragment, Fragment)
-        mock_render_django_template.assert_called_once_with(
-            'templates/discussion/_discussion_inline_studio.html',
-            {
-                'discussion_id': self.discussion_id,
-                'is_visible': True,
-            }
-        )
+        mock_render_django_template.assert_called_once()
+        call_args = mock_render_django_template.call_args[0]
+        assert call_args[0].endswith('_discussion_inline_studio.html')
+        assert call_args[1] == {
+            'discussion_id': self.discussion_id,
+            'is_visible': True,
+        }
 
     @override_settings(FEATURES=dict(settings.FEATURES, ENABLE_DISCUSSION_SERVICE='True'))
     @ddt.data(
@@ -203,7 +203,7 @@ class TestViews(TestDiscussionXBlock):
         )
 
         self.block.has_permission = lambda perm: permission_dict[perm]
-        with mock.patch('xmodule.discussion_block.render_to_string', return_value='') as mock_render:
+        with mock.patch(f'{DiscussionXBlock.__module__}.render_to_string', return_value='') as mock_render:
             self.block.student_view()
             # Get context from the mock call
             assert mock_render.call_count == 1
@@ -216,7 +216,7 @@ class TestViews(TestDiscussionXBlock):
         """
         Test proper js init function is called.
         """
-        with mock.patch('xmodule.discussion_block.render_to_string', return_value=''):
+        with mock.patch(f'{DiscussionXBlock.__module__}.render_to_string', return_value=''):
             fragment = self.block.student_view()
         assert fragment.js_init_fn == 'DiscussionInlineBlock'
 

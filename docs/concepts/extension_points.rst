@@ -1,9 +1,9 @@
-Options for Extending the edX Platform
---------------------------------------
+Options for Extending the Open edX Platform
+--------------------------------------------
 
-Open edX platform development follows the `Open-Closed Principle`_: we want Open edX to be an extensible platform that allows developers to build extensions that integrate with the core of the platform. This allows the core to remain small, while volatile extensions remain in the periphery.
+Open edX platform development follows the `Open-Closed Principle`_: we want the Open edX platform to be an extensible platform that allows developers to build extensions that integrate with the core of the platform. This allows the core to remain small, while volatile extensions remain in the periphery.
 
-As you can see in this document, there are many different ways to integrate with Open edX. However, we know that there are still some features/integrations that are not possible today without modifying the core. If you have such a need, please consider proposing a new extension point in the core that would make possible the functionality you have in mind. When you submit a pull request for a new extension point, be sure to include a change to this file to document your new extension point. (Doing so will also notify reviewers that want to help with making the platform more extensible.)
+As you can see in this document, there are many different ways to integrate with the Open edX software. However, we know that there are still some features/integrations that are not possible today without modifying the core. If you have such a need, please consider proposing a new extension point in the core that would make possible the functionality you have in mind. When you submit a pull request for a new extension point, be sure to include a change to this file to document your new extension point. (Doing so will also notify reviewers that want to help with making the platform more extensible.)
 
 Throughout this document, we will refer to the **Status** (**Adoption** and **Completion**) of each specific integration point. The Completion refers to how complete and stable an integration point is: either "Limited" (incomplete, or unstable) or "Stable" (complete and stable enough for general use in some or all cases). Adoption shows how the integration point is currently being used, and whether or not it should be used in the future:
 
@@ -75,7 +75,7 @@ For a more detailed comparison of content integration options, see `Options for 
 .. _Options for Extending the edX Platform: https://docs.openedx.org/en/latest/developers/references/developer_guide/extending_platform/extending.html
 .. _custom JavaScript application: https://docs.openedx.org/en/latest/educators/references/course_development/exercise_tools/custom_javascript.html
 .. _external grader documentation: https://docs.openedx.org/en/latest/educators/concepts/exercise_tools/about_external_graders.html
-.. _You can follow this guide to install and enable custom TinyMCE plugins: extensions/tinymce_plugins.rst
+.. _You can follow this guide to install and enable custom TinyMCE plugins: ../extensions/tinymce_plugins.html
 
 
 
@@ -166,35 +166,28 @@ Here are the different integration points that python plugins can use:
 Platform Look & Feel
 ====================
 
-Themes ("Comprehensive Theming")
+Frontend Plugin Framework Slots
+*********************************
+
+*Status: Adopt, Stable*
+
+Utilizing *frontend plugin framework slots*, site operators now have the ability to customize various portions of Open edX MFEs. A “frontend plugin framework slot” refers to an area of a web page - comprising one or more visual elements - that can be “swapped out” with other visual elements using custom code defined in an ``env.config.jsx file``. Note: In some cases a slot may default to being empty, existing solely to be a placeholder for optional elements.
+
+See the `FPF Slots how-to <https://docs.openedx.org/en/latest/site_ops/how-tos/use-frontend-plugin-slots.html#use-a-frontend-plugin-framework-slot>`_ for more detail.
+
+Design Tokens (Theming)
 ********************************
 
-*Status: Hold, Stable*
+*Status: Adopt, Stable*
 
-Changing the look and feel of the edX platform is generally done by creating a new "theme". See `Changing Themes for an Open edX Site`_ for documentation. Note that most theming documentation applies to the legacy UI components used in edX, which are .html files (django/mako templates) rendered by the backend and styled using either the "v1" or "v2" (a.k.a. "Pattern Library") stylesheets. However, the platform UI is slowly being replaced by new React-based "MicroFrontEnds" (MFEs), and a different approach is required for theming MFEs (see `Theming Microfrontends`_).
+Open edX frontend applications are built using the `Paragon design system <https://paragon-openedx.netlify.app/>`_, which supports runtime theming. Paragon uses design tokens (`see the Design Tokens concept page <https://docs.openedx.org/en/latest/developers/concepts/design_tokens.html#design-token>`_) to define its built-in styles, compiling them into CSS custom properties (variables) for visual properties like colors, spacing, and typography. A theme can override those defaults by compiling its own design tokens into a stylesheet that sets new values for those variables. A theme can also include custom SCSS that compiles into additional CSS, allowing for additional customization past the scope of the defined tokens. These themes can be loaded at runtime, meaning this customization can be done without rebuilding any frontend applications
 
-Theming Microfrontends
-**********************
 
-*Status: Trial, Limited*
-
-Methods for theming MFEs are still being developed. It is likely to involve:
-
-#. Branding: modifying fonts, colors, and logos via themes/css (there is an |example edx theme|_ that you can use as a template for defining fonts and colors, but some MFEs currently lack a mechanism for changing the theme).
-#. Configuration: modifying settings and toggles via MFE configuration settings
-#. Customization: gives the ability to override specific elements like the header and footer to better reflect your branding or offer different functionality - see `Overriding Brand Specific Elements`_.
-#. Frontend Plugins: runtime configuration of frontend components in designated slots on frontend pages
-
-In addition, Open edX operators will be able to replace entire MFEs with completely custom MFE implementations that use the same backend APIs.
-
-.. |example edx theme| replace:: example ``edx`` theme
-.. _example edx theme: https://github.com/openedx/paragon/tree/master/scss/edx
-.. _Changing Themes for an Open edX Site: https://docs.openedx.org/en/latest/site_ops/install_configure_run_guide/configuration/changing_appearance/theming/index.html
-.. _Overriding Brand Specific Elements: https://github.com/openedx/brand-openedx
-
-Custom frontends
+Custom MFEs
 ****************
 
 *Status: Trial, Limited*
 
-If you need a *very* custom look and feel for your users, and you have the time and resources required for a huge project, you can consider creating a custom frontend for Open edX, which is a completely separate application that runs on its own domain and integrates with Open edX using REST APIs. The edX Mobile App can be thought of as an example of a separate frontend that connects to Open edX using only REST APIs. Another example is `LabXchange <https://www.labxchange.org/>`_. If you develop your custom frontend using Django, you may wish to use the `auth-backends <https://github.com/openedx/auth-backends>`_ django plugin for user authentication.
+Forking an MFE is generally not a recommended way of customizing an MFE, as it causes a lot of headache and rework to upgrade to a new release. Utilize Frontend Plugin Framework Slots instead to customize an existing MFE.
+
+Occasionally an operator may have a need for an entirely new MFE. This requires substantial development resources, but can be done. To do so, fork the `frontend-template-application <https://github.com/openedx/frontend-template-application>`_ and customize according to your requirements. See also `this helpful tutorial <https://opencraft.com/building-your-own-micro-front-end-for-open-edx/>`_.
