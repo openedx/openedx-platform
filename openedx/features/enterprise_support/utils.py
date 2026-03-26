@@ -3,7 +3,7 @@ Utility methods for Enterprise
 """
 
 
-import json  # noqa: I001
+import json
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
@@ -24,6 +24,7 @@ from lms.djangoapps.branding.api import get_privacy_url
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.cookies import standard_cookie_settings
 from openedx.core.djangolib.markup import HTML, Text
+
 
 ENTERPRISE_HEADER_LINKS = WaffleFlag('enterprise.enterprise_header_links', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
 
@@ -326,7 +327,10 @@ def get_enterprise_learner_portal(request):
     Caches and returns result in/from the user's request session if provided.
     """
     # Prevent a circular import.
-    from openedx.features.enterprise_support.api import enterprise_enabled, enterprise_customer_uuid_for_request  # noqa: I001
+    from openedx.features.enterprise_support.api import (
+        enterprise_customer_uuid_for_request,
+        enterprise_enabled,
+    )
 
     user = request.user
     # Only cache this if a learner is authenticated (AnonymousUser exists and should not be tracked)
