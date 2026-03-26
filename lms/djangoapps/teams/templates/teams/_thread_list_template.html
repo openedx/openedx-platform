@@ -1,0 +1,58 @@
+<%!
+from django.utils.translation import gettext as _
+%>
+
+<script type="text/template" id="thread-list-template">
+    <div class="forum-nav-thread-list-wrapper" id="sort-filter-wrapper" tabindex="-1">
+        <div class="forum-nav-refine-bar">
+            <label class="forum-nav-filter-main">
+                ## Translators: This labels a filter menu in forum navigation
+                <span class="sr">${_("Filter:")}</span>
+                <select class="forum-nav-filter-main-control">
+                    ## Translators: Show all posts
+                    <option value="all">${_("Show all posts")}</option>
+
+                    ## Translators: Unread posts
+                    <option value="unread">${_("Unread posts")}</option>
+
+                    ## Translators: Unanswered posts
+                    <option value="unanswered">${_("Unanswered posts")}</option>
+
+                    % if flag_moderator:
+                        ## Translators: Flagged posts
+                        <option value="flagged">${_("Flagged")}</option>
+                    % endif
+                </select>
+            </label>
+
+            % if isDiscussionDivisionEnabled and isPrivilegedUser:
+                <label class="forum-nav-filter-cohort">
+                    ## Translators: Group label
+                    <span class="sr">${_("Group:")}</span>
+                    <select class="forum-nav-filter-cohort-control">
+                        <option value="">${_("in all groups")}</option>
+
+                        % if groups:
+                            % for group in groups:
+                                <option value="${group.id}">${group.name}</option>
+                            % endfor
+                        % endif
+                    </select>
+                </label>
+            % endif
+
+            <label class="forum-nav-sort">
+                ## Translators: Sort label
+                <span class="sr">${_("Sort:")}</span>
+                <select class="forum-nav-sort-control">
+                    <option value="activity">${_("by recent activity")}</option>
+                    <option value="comments">${_("by most activity")}</option>
+                    <option value="votes">${_("by most votes")}</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="search-alerts"></div>
+        <ul class="forum-nav-thread-list"></ul>
+    </div>
+</script>

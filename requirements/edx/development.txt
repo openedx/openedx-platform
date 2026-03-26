@@ -758,7 +758,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.7.0
+edx-enterprise==6.8.1
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
@@ -1400,7 +1400,7 @@ openedx-django-wiki==3.1.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-openedx-events==10.5.0
+openedx-events==11.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
