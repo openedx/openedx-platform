@@ -4,20 +4,19 @@ Public API for content library backup (zip export) utilities.
 from __future__ import annotations
 
 import os
-from datetime import datetime
 import shutil
-from tempfile import mkdtemp
 import zipfile
+from datetime import datetime
+from tempfile import mkdtemp
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryLocatorV2, log
+from openedx_content.api import create_zip_file as create_lib_zip_file
 from path import Path
 
-from openedx_content.api import create_zip_file as create_lib_zip_file
-
-__all__ = ["create_library_v2_zip", "export_library_v2_to_dir"]
+__all__ = ["create_library_v2_zip", "extract_library_v2_zip_to_dir"]
 
 
 def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
@@ -44,7 +43,7 @@ def create_library_v2_zip(library_key: LibraryLocatorV2, user) -> tuple:
     return root_dir, file_path
 
 
-def export_library_v2_to_dir(library_key, root_dir, library_dir, user=None):
+def extract_library_v2_zip_to_dir(library_key, root_dir, library_dir, user=None):
     """
     Export a v2 library to a directory by creating a zip backup and extracting it.
 

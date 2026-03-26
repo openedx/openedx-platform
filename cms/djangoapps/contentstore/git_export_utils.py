@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
 
-from openedx.core.djangoapps.content_libraries.api import export_library_v2_to_dir
+from openedx.core.djangoapps.content_libraries.api import extract_library_v2_zip_to_dir
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.xml_exporter import export_course_to_xml, export_library_to_xml
@@ -88,7 +88,7 @@ def export_to_git(content_key, repo, user='', rdir=None):
     is_library_v2 = isinstance(content_key, LibraryLocatorV2)
     if is_library_v2:
         # V2 libraries use backup API with zip extraction
-        content_export_func = export_library_v2_to_dir
+        content_export_func = extract_library_v2_zip_to_dir
     elif isinstance(content_key, LibraryLocator):
         content_export_func = export_library_to_xml
     else:
@@ -164,9 +164,9 @@ def export_to_git(content_key, repo, user='', rdir=None):
             # V1 libraries and courses: use XML export (no user parameter)
             content_export_func(modulestore(), contentstore(), content_key,
                             root_dir, content_dir)
-    except (OSError, AttributeError) as ex:
+    except (OSError, AttributeError):
         log.exception('Failed to export %s', content_type_label)
-        raise GitExportError(GitExportError.XML_EXPORT_FAIL) from  # noqa: B904 ex
+        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Get current branch if not already set
     if not branch:
