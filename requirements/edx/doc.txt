@@ -1007,7 +1007,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-openedx-core @ git+https://github.com/openedx/openedx-core.git@braden/container-type
+openedx-core==0.38.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
