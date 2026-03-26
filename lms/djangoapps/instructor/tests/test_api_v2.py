@@ -17,7 +17,7 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from edx_when.api import set_dates_for_course, set_date_for_block
-from common.djangoapps.student.roles import CourseDataResearcherRole, CourseInstructorRole
+from common.djangoapps.student.roles import CourseBetaTesterRole, CourseDataResearcherRole, CourseInstructorRole
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
@@ -1830,3 +1830,223 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIsInstance(extension['email'], str)
         self.assertIsInstance(extension['unit_title'], str)
         self.assertIsInstance(extension['unit_location'], str)
+
+
+class CourseEnrollmentsViewTest(SharedModuleStoreTestCase):
+    """Tests for the CourseEnrollmentsView v2 GET endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory(course_key=self.course.id)
+        self.url = reverse(
+            'instructor_api_v2:course_enrollments',
+            kwargs={'course_id': str(self.course.id)}
+        )
+
+        self.enrolled_users = []
+        for i in range(30):
+            user = UserFactory(
+                username=f'student_{i}',
+                email=f'student{i}@example.com',
+                first_name=f'Student{i}',
+                last_name=f'Learner{i}'
+            )
+            CourseEnrollmentFactory(
+                user=user,
+                course_id=self.course.id,
+                is_active=True
+            )
+            self.enrolled_users.append(user)
+
+        # Inactive enrollments should not appear
+        for i in range(5):
+            user = UserFactory(
+                username=f'inactive_{i}',
+                email=f'inactive{i}@example.com'
+            )
+            CourseEnrollmentFactory(
+                user=user,
+                course_id=self.course.id,
+                is_active=False
+            )
+
+    def test_unauthenticated_returns_401(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_student_returns_403(self):
+        student = UserFactory()
+        self.client.force_authenticate(user=student)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_default_pagination(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(data['course_id'], str(self.course.id))
+        self.assertEqual(data['count'], 30)
+        self.assertEqual(data['num_pages'], 3)
+        self.assertEqual(data['current_page'], 1)
+        self.assertIn('next', data)
+        self.assertIsNone(data['previous'])
+        self.assertIn('results', data)
+        # DefaultPagination page_size=10
+        self.assertEqual(len(data['results']), 10)
+
+    def test_custom_pagination(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page': 1, 'page_size': 15})
+        data = response.data
+        self.assertEqual(data['count'], 30)
+        self.assertEqual(data['num_pages'], 2)
+        self.assertEqual(data['current_page'], 1)
+        self.assertEqual(len(data['results']), 15)
+
+    def test_second_page(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page': 2, 'page_size': 10})
+        data = response.data
+        self.assertEqual(data['current_page'], 2)
+        self.assertEqual(len(data['results']), 10)
+        self.assertIsNotNone(data['previous'])
+
+    def test_last_page_partial(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page': 3, 'page_size': 10})
+        data = response.data
+        self.assertEqual(data['current_page'], 3)
+        self.assertEqual(len(data['results']), 10)
+        self.assertIsNone(data['next'])
+
+    def test_search_by_username(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': 'student_2', 'page_size': 100})
+        data = response.data
+        # Matches student_2, student_20..student_29 = 11
+        self.assertEqual(data['count'], 11)
+        for user in data['results']:
+            self.assertIn('student_2', user['username'])
+
+    def test_search_by_email(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': 'student7@example.com'})
+        data = response.data
+        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['results'][0]['email'], 'student7@example.com')
+
+    def test_search_case_insensitive(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': 'STUDENT_5'})
+        data = response.data
+        self.assertEqual(data['count'], 1)
+        self.assertEqual(data['results'][0]['username'], 'student_5')
+
+    def test_search_no_results(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': 'nonexistent'})
+        data = response.data
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(len(data['results']), 0)
+
+    def test_excludes_inactive_enrollments(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': 'inactive'})
+        data = response.data
+        self.assertEqual(data['count'], 0)
+
+    def test_invalid_page_returns_404(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page': 999})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_ordered_by_username(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page_size': 5})
+        data = response.data
+        usernames = [u['username'] for u in data['results']]
+        self.assertEqual(usernames, sorted(usernames))
+
+    def test_staff_can_access(self):
+        staff = StaffFactory(course_key=self.course.id)
+        self.client.force_authenticate(user=staff)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_includes_mode_field(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page_size': 1})
+        enrollment = response.data['results'][0]
+        self.assertIn('mode', enrollment)
+
+    def test_includes_full_name_field(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page_size': 1})
+        enrollment = response.data['results'][0]
+        self.assertIn('full_name', enrollment)
+
+    def test_includes_is_beta_tester_field(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'page_size': 100})
+        for enrollment in response.data['results']:
+            self.assertIn('is_beta_tester', enrollment)
+            self.assertFalse(enrollment['is_beta_tester'])
+
+    def test_beta_tester_flag_true(self):
+        beta_role = CourseBetaTesterRole(self.course.id)
+        target_user = self.enrolled_users[0]
+        beta_role.add_users(target_user)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'search': target_user.username})
+        data = response.data
+        self.assertEqual(data['count'], 1)
+        self.assertTrue(data['results'][0]['is_beta_tester'])
+
+    def test_filter_beta_testers_only(self):
+        beta_role = CourseBetaTesterRole(self.course.id)
+        beta_users = self.enrolled_users[:3]
+        for user in beta_users:
+            beta_role.add_users(user)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'is_beta_tester': 'true', 'page_size': 100})
+        data = response.data
+        self.assertEqual(data['count'], 3)
+        for enrollment in data['results']:
+            self.assertTrue(enrollment['is_beta_tester'])
+
+    def test_filter_non_beta_testers_only(self):
+        beta_role = CourseBetaTesterRole(self.course.id)
+        beta_users = self.enrolled_users[:3]
+        for user in beta_users:
+            beta_role.add_users(user)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'is_beta_tester': 'false', 'page_size': 100})
+        data = response.data
+        self.assertEqual(data['count'], 27)
+        for enrollment in data['results']:
+            self.assertFalse(enrollment['is_beta_tester'])
+
+    def test_filter_beta_testers_with_search(self):
+        beta_role = CourseBetaTesterRole(self.course.id)
+        beta_users = self.enrolled_users[:5]
+        for user in beta_users:
+            beta_role.add_users(user)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {
+            'is_beta_tester': 'true',
+            'search': self.enrolled_users[0].username,
+        })
+        data = response.data
+        self.assertEqual(data['count'], 1)
+        self.assertTrue(data['results'][0]['is_beta_tester'])

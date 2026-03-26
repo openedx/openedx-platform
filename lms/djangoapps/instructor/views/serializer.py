@@ -29,6 +29,9 @@ class RoleNameSerializer(serializers.Serializer):  # pylint: disable=abstract-me
     """
 
     rolename = serializers.CharField(help_text=_("Role name"))
+    search = serializers.CharField(required=False, allow_blank=True, help_text=_("Search term"))
+    page = serializers.IntegerField(required=False, min_value=1, help_text=_("Page number"))
+    page_size = serializers.IntegerField(required=False, min_value=1, max_value=100, help_text=_("Page size"))
 
     def validate_rolename(self, value):
         """
@@ -43,6 +46,15 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name']
+
+
+class EnrollmentListSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+    """
+    Serializer for enrollment list request parameters.
+    """
+    search = serializers.CharField(required=False, allow_blank=True, help_text=_("Search term"))
+    page = serializers.IntegerField(required=False, min_value=1, help_text=_("Page number"))
+    page_size = serializers.IntegerField(required=False, min_value=1, max_value=100, help_text=_("Page size"))
 
 
 class UniqueStudentIdentifierSerializer(serializers.Serializer):
