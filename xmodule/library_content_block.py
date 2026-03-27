@@ -142,6 +142,20 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         """
         return self.is_source_lib_migrated_to_v2 and not self.is_migrated_to_v2
 
+    def get_context(self):
+        """
+        Extend context adding `show_deprecated_warning` flag
+        """
+        from cms.djangoapps.contentstore.utils import get_libraries_list_url
+
+        library_url = get_libraries_list_url()
+
+        context = super().get_context()
+        context["show_deprecated_warning"] = True
+        context["library_url"] = library_url
+
+        return context
+
     def author_view(self, context):
         """
         Renders the Studio views.
