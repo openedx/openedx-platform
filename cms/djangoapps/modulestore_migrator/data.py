@@ -18,8 +18,7 @@ from opaque_keys.edx.locator import (
     LibraryLocatorV2,
     LibraryUsageLocatorV2,
 )
-
-from openedx.core.djangoapps.content_libraries.api import ContainerType
+from openedx_content import models_api as content_models
 
 
 class CompositionLevel(Enum):
@@ -32,9 +31,9 @@ class CompositionLevel(Enum):
     Component = 'component'
 
     # Container types currently supported by Content Libraries
-    Unit = ContainerType.Unit.value
-    Subsection = ContainerType.Subsection.value
-    Section = ContainerType.Section.value
+    Unit = content_models.Unit.type_code  # "unit"
+    Subsection = content_models.Subsection.type_code  # "subsection"
+    Section = content_models.Section.type_code  # "section"
 
     @property
     def is_container(self) -> bool:

@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
+from django.test import SimpleTestCase, override_settings
 from django.urls import NoReverseMatch
 from django.urls import reverse
 from opaque_keys import InvalidKeyError
@@ -27,6 +28,7 @@ from common.djangoapps.student.tests.factories import (
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from lms.djangoapps.courseware.models import StudentModule
+from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, TEST_DATA_SPLIT_MODULESTORE
 from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
@@ -456,6 +458,44 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
         self.assertNotIn('bulk_email', tab_ids)
 
+    @patch('lms.djangoapps.instructor.views.serializers_v2.is_bulk_email_feature_enabled')
+    @override_settings(COMMUNICATIONS_MICROFRONTEND_URL='http://localhost:1984')
+    def test_bulk_email_tab_url_uses_communications_mfe(self, mock_bulk_email_enabled):
+        """
+        Test that the bulk_email tab URL uses COMMUNICATIONS_MICROFRONTEND_URL,
+        not INSTRUCTOR_MICROFRONTEND_URL.
+        """
+        mock_bulk_email_enabled.return_value = True
+
+        tabs = self._get_tabs_from_response(self.staff)
+        bulk_email_tab = next((tab for tab in tabs if tab['tab_id'] == 'bulk_email'), None)
+
+        self.assertIsNotNone(bulk_email_tab)
+        expected_url = f'http://localhost:1984/courses/{self.course.id}/bulk_email'
+        self.assertEqual(bulk_email_tab['url'], expected_url)
+
+    @patch('lms.djangoapps.instructor.views.serializers_v2.is_bulk_email_feature_enabled')
+    @override_settings(COMMUNICATIONS_MICROFRONTEND_URL=None)
+    def test_bulk_email_tab_logs_warning_when_communications_mfe_url_not_set(self, mock_bulk_email_enabled):
+        """
+        Test that a warning is logged when COMMUNICATIONS_MICROFRONTEND_URL is not set,
+        and the resulting URL does not contain 'None'.
+        """
+        mock_bulk_email_enabled.return_value = True
+
+        with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
+            tabs = self._get_tabs_from_response(self.staff)
+
+        self.assertTrue(
+            any('COMMUNICATIONS_MICROFRONTEND_URL is not configured' in msg for msg in cm.output)
+        )
+        bulk_email_tab = next((tab for tab in tabs if tab['tab_id'] == 'bulk_email'), None)
+        self.assertIsNotNone(bulk_email_tab)
+        self.assertFalse(
+            bulk_email_tab['url'].startswith('None'),
+            f"Tab URL should not start with 'None': {bulk_email_tab['url']}"
+        )
+
     def test_tabs_have_sort_order(self):
         """
         Test that all tabs include a sort_order field.
@@ -503,7 +543,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
             tabs = self._get_tabs_from_response(self.staff)
 
         self.assertTrue(
-            any('INSTRUCTOR_MICROFRONTEND_URL is not set' in msg for msg in cm.output)
+            any('INSTRUCTOR_MICROFRONTEND_URL is not configured' in msg for msg in cm.output)
         )
         # Tab URLs should use empty string as base, not "None"
         for tab in tabs:
@@ -532,6 +572,62 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['pacing'], 'self')
+
+
+class BuildTabUrlTest(SimpleTestCase):
+    """
+    Unit tests for CourseInformationSerializerV2._build_tab_url.
+
+    Tests the helper directly to verify URL joining behavior without
+    going through the full API stack.
+    """
+
+    def _build(self, setting_name, *parts):
+        return CourseInformationSerializerV2._build_tab_url(setting_name, *parts)  # pylint: disable=protected-access
+
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    def test_joins_base_and_path_parts(self):
+        """Parts are joined with '/' separators."""
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')
+
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/')
+    def test_strips_trailing_slash_from_base(self):
+        """A trailing slash on the base URL does not produce a double slash."""
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')
+
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    def test_strips_slashes_from_path_parts(self):
+        """Leading and trailing slashes on path parts are stripped before joining."""
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', '/instructor/', '/course-v1:edX+DemoX+Demo/', '/grading/')
+        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')
+
+    @override_settings(COMMUNICATIONS_MICROFRONTEND_URL=None)
+    def test_logs_warning_and_returns_relative_url_when_setting_is_none(self):
+        """When the setting is None, a warning is logged and the URL is relative (no 'None' prefix)."""
+        with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
+            result = self._build(
+                'COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email'
+            )
+
+        self.assertTrue(any('COMMUNICATIONS_MICROFRONTEND_URL is not configured' in msg for msg in cm.output))
+        self.assertFalse(result.startswith('None'))
+        self.assertEqual(result, '/courses/course-v1:edX+DemoX+Demo/bulk_email')
+
+    def test_logs_warning_when_setting_does_not_exist(self):
+        """When the setting name is not defined at all, behavior matches the None case."""
+        with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
+            result = self._build('NONEXISTENT_MFE_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
+
+        self.assertTrue(any('NONEXISTENT_MFE_URL is not configured' in msg for msg in cm.output))
+        self.assertEqual(result, '/instructor/course-v1:edX+DemoX+Demo/grading')
+
+    @override_settings(COMMUNICATIONS_MICROFRONTEND_URL='http://localhost:1984/communications/')
+    def test_base_with_subpath_and_trailing_slash(self):
+        """Base URL with a subpath and trailing slash is joined cleanly."""
+        result = self._build('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email')
+        self.assertEqual(result, 'http://localhost:1984/communications/courses/course-v1:edX+DemoX+Demo/bulk_email')
 
 
 @ddt.ddt

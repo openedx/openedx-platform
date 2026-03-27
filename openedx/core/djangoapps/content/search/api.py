@@ -26,6 +26,7 @@ from opaque_keys.edx.locator import (
     LibraryLocatorV2,
 )
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from rest_framework.request import Request
 
 from common.djangoapps.student.role_helpers import get_course_roles
@@ -530,11 +531,11 @@ def rebuild_index(status_cb: Callable[[str], None] | None = None, incremental=Fa
                     doc = searchable_doc_for_container(container_key)
                     doc.update(searchable_doc_tags(container_key))
                     doc.update(searchable_doc_collections(container_key))
-                    container_type = lib_api.ContainerType(container_key.container_type)
-                    match container_type:
-                        case lib_api.ContainerType.Unit:
+                    container_type_code = container_key.container_type
+                    match container_type_code:
+                        case content_models.Unit.type_code:
                             doc.update(searchable_doc_containers(container_key, "subsections"))
-                        case lib_api.ContainerType.Subsection:
+                        case content_models.Subsection.type_code:
                             doc.update(searchable_doc_containers(container_key, "sections"))
                     docs.append(doc)
                 except Exception as err:  # pylint: disable=broad-except
@@ -827,19 +828,19 @@ def update_library_containers_collections(
     """
     library_key = collection_key.lib_key
     library = lib_api.get_library(library_key)
-    containers = content_api.get_collection_containers(
+    container_entities = content_api.get_collection_entities(
         library.learning_package_id,
         collection_key.collection_id,
-    )
+    ).exclude(container=None).select_related("container")
 
-    paginator = Paginator(containers, batch_size)
+    paginator = Paginator(container_entities, batch_size)
     for page in paginator.page_range:
         docs = []
 
-        for container in paginator.page(page).object_list:
+        for container_entity in paginator.page(page).object_list:
             container_key = lib_api.library_container_locator(
                 library_key,
-                container,
+                container_entity.container,
             )
             doc = searchable_doc_for_key(container_key)
             doc.update(searchable_doc_collections(container_key))

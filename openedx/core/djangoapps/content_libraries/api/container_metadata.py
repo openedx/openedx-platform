@@ -1,6 +1,7 @@
 """
 Content libraries data classes related to Containers.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field as dataclass_field
@@ -12,94 +13,53 @@ from openedx_content import api as content_api
 from openedx_content.models_api import (
     Component,
     Container,
-    ContainerVersion,
     Unit,
-    UnitVersion,
     Subsection,
-    SubsectionVersion,
     Section,
-    SectionVersion,
     PublishableEntity,
+    PublishableEntityMixin,
 )
 
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 
 from ..models import ContentLibrary
-from .exceptions import ContentLibraryContainerNotFound
+from .exceptions import ContentLibraryBlockNotFound, ContentLibraryContainerNotFound
 from .libraries import PublishableItem, library_component_usage_key
 
 # The public API is only the following symbols:
 __all__ = [
     # Models
     "ContainerMetadata",
-    "ContainerType",
     # Methods
+    "container_subclass_for_olx_tag",
     "library_container_locator",
 ]
 
+# For now, we only allow the following types of containers in content libraries, and their hierarchy is hard-coded.
+LIBRARY_ALLOWED_CONTAINER_TYPES = [
+    Unit.type_code,
+    Subsection.type_code,
+    Section.type_code,
+]
 
-class ContainerType(Enum):
+
+def container_subclass_for_olx_tag(olx_tag: str) -> content_api.ContainerSubclass:
     """
-    The container types supported by content_libraries, and logic to map them to OLX.
+    Given an OLX tag code (e.g. `"vertical"` for `<vertical>`), get the
+    corresponding `Container` subclass, e.g. `Unit`.
+
+    This method is specific to content libraries.
     """
-    Unit = "unit"
-    Subsection = "subsection"
-    Section = "section"
-
-    @property
-    def container_model_classes(self) -> tuple[type[Container], type[ContainerVersion]]:
-        """
-        Get the container, containerversion subclasses associated with this type.
-        @@TODO Is this what we want, a hard mapping between container_types and Container classes?
-          * If so, then expand on this pattern, so that all ContainerType logic is contained within
-            this class, and get rid of the match-case statements that are all over the content_libraries
-            app.
-          * If not, then figure out what to do instead.
-        """
-        match self:
-            case self.Unit:
-                return (Unit, UnitVersion)
-            case self.Subsection:
-                return (Subsection, SubsectionVersion)
-            case self.Section:
-                return (Section, SectionVersion)
-        raise TypeError(f"unexpected ContainerType: {self!r}")
-
-    @property
-    def olx_tag(self) -> str:
-        """
-        Canonical XML tag to use when representing this container as OLX.
-
-        For example, Units are encoded as <vertical>...</vertical>.
-
-        These tag names are historical. We keep them around for the backwards compatibility of OLX
-        and for easier interaction with legacy modulestore-powered structural XBlocks
-        (e.g., copy-paste of Units between courses and V2 libraries).
-        """
-        match self:
-            case self.Unit:
-                return "vertical"
-            case self.Subsection:
-                return "sequential"
-            case self.Section:
-                return "chapter"
-        raise TypeError(f"unexpected ContainerType: {self!r}")
-
-    @classmethod
-    def from_source_olx_tag(cls, olx_tag: str) -> 'ContainerType':
-        """
-        Get the ContainerType that this OLX tag maps to.
-        """
-        if olx_tag == "unit":
-            # There is an alternative implementation to VerticalBlock called UnitBlock whose
-            # OLX tag is <unit>. When converting from OLX, we want to handle both <vertical>
-            # and <unit> as Unit containers, although the canonical serialization is still <vertical>.
-            return cls.Unit
-        try:
-            return next(ct for ct in cls if olx_tag == ct.olx_tag)
-        except StopIteration:
-            raise ValueError(f"no container_type for XML tag: <{olx_tag}>") from None
+    try:
+        subclass = next(ct for ct in content_api.get_all_container_subclasses() if olx_tag == ct.olx_tag_name)
+    except StopIteration:
+        raise ValueError(f"Content libraries does not support containers with XML tag: <{olx_tag}>") from None
+    if subclass.type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
+        raise ValueError(
+            f'Content libraries does not support "{subclass.type_code}" containers (with XML tag <{olx_tag}>)'
+        ) from None
+    return subclass
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -107,8 +67,9 @@ class ContainerMetadata(PublishableItem):
     """
     Class that represents the metadata about a Container (e.g. Unit) in a content library.
     """
+
     container_key: LibraryContainerLocator
-    container_type: ContainerType
+    container_type_code: str
     container_pk: int
 
     @classmethod
@@ -121,7 +82,6 @@ class ContainerMetadata(PublishableItem):
             library_key,
             container=container,
         )
-        container_type = ContainerType(container_key.container_type)
         published_by = None
         if last_publish_log and last_publish_log.published_by:
             published_by = last_publish_log.published_by.username
@@ -137,7 +97,7 @@ class ContainerMetadata(PublishableItem):
 
         return cls(
             container_key=container_key,
-            container_type=container_type,
+            container_type_code=container_key.container_type,
             container_pk=container.pk,
             display_name=draft.title,
             created=container.created,
@@ -164,6 +124,7 @@ class ContainerHierarchy:
     database queries in the future. More details being discussed in
     https://github.com/openedx/edx-platform/pull/36813#issuecomment-3136631767
     """
+
     sections: list[ContainerHierarchyMember] = dataclass_field(default_factory=list)
     subsections: list[ContainerHierarchyMember] = dataclass_field(default_factory=list)
     units: list[ContainerHierarchyMember] = dataclass_field(default_factory=list)
@@ -174,6 +135,7 @@ class ContainerHierarchy:
         """
         Enumeratable levels contained by the ContainerHierarchy.
         """
+
         none = 0
         components = 1
         units = 2
@@ -295,10 +257,12 @@ def _get_containers_with_entities(
     """
     qs = Container.objects.none()
     for member in members:
-        qs = qs.union(content_api.get_containers_with_entity(
-            member.entity.pk,
-            ignore_pinned=ignore_pinned,
-        ))
+        qs = qs.union(
+            content_api.get_containers_with_entity(
+                member.entity.pk,
+                ignore_pinned=ignore_pinned,
+            )
+        )
     return qs
 
 
@@ -338,6 +302,7 @@ class ContainerHierarchyMember:
     """
     Represents an individual member of ContainerHierarchy which is ready to be serialized.
     """
+
     id: LibraryContainerLocator | LibraryUsageLocatorV2
     display_name: str
     has_unpublished_changes: bool
@@ -396,23 +361,11 @@ def library_container_locator(
     """
     Returns a LibraryContainerLocator for the given library + container.
     """
-    container_type = None
-    if hasattr(container, 'unit'):
-        container_type = ContainerType.Unit
-    elif hasattr(container, 'subsection'):
-        container_type = ContainerType.Subsection
-    elif hasattr(container, 'section'):
-        container_type = ContainerType.Section
-    else:
-        # This should never happen, but we assert to ensure that we handle all cases.
-        # If this fails, it means that a new Container type was added without updating this code.
-        raise ValueError(f"Unexpected container type: {container!r}")
+    container_type_code = content_api.get_container_type_code_of(container)
+    if container_type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
+        raise ValueError(f"Unsupported container type for content libraries: {container!r}")
 
-    return LibraryContainerLocator(
-        library_key,
-        container_type=container_type.value,
-        container_id=container.publishable_entity.key,
-    )
+    return LibraryContainerLocator(library_key, container_type=container_type_code, container_id=container.key)
 
 
 def get_container_from_key(container_key: LibraryContainerLocator, include_deleted=False) -> Container:
@@ -425,13 +378,27 @@ def get_container_from_key(container_key: LibraryContainerLocator, include_delet
     content_library = ContentLibrary.objects.get_by_key(container_key.lib_key)
     learning_package = content_library.learning_package
     assert learning_package is not None
-    container = content_api.get_container_by_key(
-        learning_package.id,
-        key=container_key.container_id,
-    )
+    container = content_api.get_container_by_key(learning_package.id, key=container_key.container_id)
+    assert content_api.get_container_type_code_of(container) in LIBRARY_ALLOWED_CONTAINER_TYPES
     # We only return the container if it exists and either:
     # 1. the container has a draft version (which means it is not soft-deleted) OR
     # 2. the container was soft-deleted but the `include_deleted` flag is set to True
     if container and (include_deleted or container.versioning.draft):
         return container
     raise ContentLibraryContainerNotFound
+
+
+def get_entity_from_key(
+    key: LibraryContainerLocator | LibraryUsageLocatorV2, /, *, include_deleted=False
+) -> PublishableEntityMixin:
+    """
+    Given a key for an item in a library, load it as a `Component` or a `Container` subclass.
+    """
+    if isinstance(key, LibraryContainerLocator):
+        return get_container_from_key(key, include_deleted=False)
+    else:
+        assert isinstance(key, LibraryUsageLocatorV2)
+        component = get_component_from_usage_key(key)
+        if not include_deleted and not component.versioning.draft:
+            raise ContentLibraryBlockNotFound("Component has been deleted.")
+        return component

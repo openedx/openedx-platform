@@ -11,6 +11,7 @@ from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content import models_api as content_models
 from organizations.models import Organization
 
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
@@ -220,6 +221,11 @@ class _BaseDownstreamViewTestMixin:
         self._publish_library_block(self.html_lib_id)
         self._publish_library_block(self.video_lib_id)
         self._publish_library_block(self.html_lib_id)
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     def _api(self, method, url, data, expect_response):
         """

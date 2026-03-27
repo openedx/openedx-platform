@@ -29,6 +29,7 @@ urlpatterns = [
     path(
         "object_tags/<str:context_id>/export/",
         views.ObjectTagExportView.as_view(),
+        name="taxonomy-object-tag-export",
     ),
     path('', include(router.urls))
 ]

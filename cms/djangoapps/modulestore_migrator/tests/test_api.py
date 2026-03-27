@@ -6,6 +6,7 @@ import pytest
 from unittest.mock import patch
 from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2, CourseLocator
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from organizations.tests.factories import OrganizationFactory
 
 from cms.djangoapps.modulestore_migrator import api
@@ -147,6 +148,11 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
                 parent_location=self.lib_key_v1_3.make_usage_key("vertical", "X"),
                 user_id=self.user.id, publish_item=False,
             )
+
+    def tearDown(self):
+        # If we're working with Containers in test cases, we need this line:
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     def test_start_migration_to_library(self):
         """

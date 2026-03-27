@@ -56,6 +56,9 @@ from common.djangoapps.student.auth import (
     has_studio_advanced_settings_access,
     is_content_creator,
 )
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
+from openedx_authz.constants.permissions import COURSES_MANAGE_COURSE_UPDATES, COURSES_VIEW_COURSE_UPDATES
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseStaffRole,
@@ -1100,8 +1103,14 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
     if provided_id == '':
         provided_id = None
 
-    # check that logged in user has permissions to this item (GET shouldn't require this level?)
-    if not has_studio_write_access(request.user, usage_key.course_key):
+    if request.method == 'GET':
+        authz_perm = COURSES_VIEW_COURSE_UPDATES.identifier
+        legacy_perm = LegacyAuthoringPermission.READ
+    else:
+        authz_perm = COURSES_MANAGE_COURSE_UPDATES.identifier
+        legacy_perm = LegacyAuthoringPermission.WRITE
+
+    if not user_has_course_permission(request.user, authz_perm, usage_key.course_key, legacy_perm):
         raise PermissionDenied()
 
     if request.method == 'GET':

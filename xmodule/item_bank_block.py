@@ -439,7 +439,7 @@ class ItemBankMixin(
             # Show a summary message and instructions.
             summary_html = loader.render_django_template('templates/item_bank/author_view.html', {
                 # Due to template interpolation limitations, we have to pass some HTML for the link here:
-                "view_link": f'<a target="_top" href="/container/{self.usage_key}">',
+                "view_link": f'<a href="/container/{self.usage_key}" class="xblock-view-action-button">',
                 "blocks": [
                     {"display_name": display_name_with_default(child)}
                     for child in self.get_children()

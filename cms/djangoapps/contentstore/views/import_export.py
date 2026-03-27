@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 from wsgiref.util import FileWrapper
+from openedx_authz.constants.permissions import COURSES_EXPORT_COURSE, COURSES_IMPORT_COURSE
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -32,8 +33,9 @@ from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.conf import settings as user_tasks_settings
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from common.djangoapps.edxmako.shortcuts import render_to_response
-from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.monitoring import monitor_import_failure
 from common.djangoapps.util.views import ensure_valid_course_key
@@ -87,7 +89,12 @@ def import_handler(request, course_key_string):
         successful_url = reverse_course_url('course_handler', courselike_key)
         context_name = 'context_course'
         courselike_block = modulestore().get_course(courselike_key)
-    if not has_course_author_access(request.user, courselike_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_IMPORT_COURSE.identifier,
+        course_key=courselike_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     if 'application/json' in request.META.get('HTTP_ACCEPT', 'application/json'):
@@ -257,7 +264,12 @@ def import_status_handler(request, course_key_string, filename=None):
 
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_IMPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     # The task status record is authoritative once it's been created
@@ -318,7 +330,12 @@ def export_handler(request, course_key_string):
     a link appearing on the page once it's ready.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
     library = isinstance(course_key, LibraryLocator)
     if library:
@@ -373,7 +390,12 @@ def export_status_handler(request, course_key_string):
     returned.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     # The task status record is authoritative once it's been created
@@ -435,7 +457,12 @@ def export_output_handler(request, course_key_string):
     filesystem instead of an external service like S3.
     """
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        user=request.user,
+        authz_permission=COURSES_EXPORT_COURSE.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
 
     task_status = _latest_task_status(request, course_key_string, export_output_handler)

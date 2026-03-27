@@ -29,9 +29,13 @@ from opaque_keys.edx.locator import LibraryLocator
 from path import Path as path
 from storages.backends.s3boto3 import S3Boto3Storage
 from user_tasks.models import UserTaskStatus
+from rest_framework import status
+from rest_framework.test import APIClient
+
 
 from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore import errors as import_error
+from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
@@ -39,8 +43,11 @@ from cms.djangoapps.contentstore.utils import reverse_course_url
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
+from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.lib.extract_archive import safe_extractall
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import LIBRARY_ROOT, ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -229,11 +236,11 @@ class ImportTestCase(CourseTestCase):
         cls.VerifyingError = -2
         cls.UpdatingError = -3
 
-    def assertImportStatusResponse(self, response, status=None, expected_message=None):
+    def assertImportStatusResponse(self, response, expected_status=None, expected_message=None):
         """
         Fail if the import response does not match with the provided status and message.
         """
-        self.assertEqual(response["ImportStatus"], status)
+        self.assertEqual(response["ImportStatus"], expected_status)
         if expected_message:
             self.assertEqual(response['Message'], expected_message)
 
@@ -774,8 +781,8 @@ class ExportTestCase(CourseTestCase):
         self.assertEqual(resp.status_code, 200)
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
-        status = result['ExportStatus']
-        self.assertEqual(status, 3)
+        res_status = result['ExportStatus']
+        self.assertEqual(res_status, 3)
         self.assertIn('ExportOutput', result)
         output_url = result['ExportOutput']
         resp = self.client.get(output_url)
@@ -1367,3 +1374,375 @@ class TestCourseExportImportProblem(CourseTestCase):
         )
 
         self.assert_problem_definition(dest_course.location, expected_problem_content)
+
+
+class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests Course Import Course authorization using openedx-authz.
+    """
+
+    view_name = 'import_handler'
+    course_key_arg_name = 'course_key_string'
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+
+    def setUp(self):
+        super().setUp()
+
+        self.content_dir = path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.content_dir)
+
+        # Create tar test files -----------------------------------------------
+        # OK course:
+        good_dir = tempfile.mkdtemp(dir=self.content_dir)
+        # test course being deeper down than top of tar file
+        embedded_dir = os.path.join(good_dir, "grandparent", "parent")
+        os.makedirs(os.path.join(embedded_dir, "course"))
+        with open(os.path.join(embedded_dir, "course.xml"), "w+") as f:
+            f.write('<course url_name="2013_Spring" org="EDx" course="0.00x"/>')
+
+        with open(os.path.join(embedded_dir, "course", "2013_Spring.xml"), "w+") as f:
+            f.write('<course></course>')
+
+        self.file_to_upload = os.path.join(self.content_dir, "good.tar.gz")
+        with tarfile.open(self.file_to_upload, "w:gz") as gtar:
+            gtar.add(good_dir)
+
+    def import_file_in_course(self, client, course_key: str = None):
+        """Helper method to import provided file in the course."""
+        with open(self.file_to_upload, 'rb') as file_data:
+            args = {"name": self.file_to_upload, "course-data": [file_data]}
+            course_key = course_key or str(self.course_key)
+            url = self.get_url(course_key)
+            return client.post(url, args)
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.import_file_in_course(self.authorized_client)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.import_file_in_course(self.unauthorized_client)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.import_file_in_course(self.authorized_client, other_course.id)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+        resp = self.import_file_in_course(self.client)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, username='superuser', password=self.password)
+
+        client = APIClient()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = self.import_file_in_course(client)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = APIClient()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests Course Import Course Staus authorization using openedx-authz.
+    """
+
+    view_name = 'import_status_handler'
+    course_key_arg_name = 'course_key_string'
+    extra_request_args = {'filename': 'test.xml'}
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.unauthorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.get(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, username='superuser', password=self.password)
+
+        client = APIClient()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = APIClient()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests Course Export Course Status authorization using openedx-authz.
+    """
+
+    view_name = 'export_status_handler'
+    course_key_arg_name = 'course_key_string'
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.unauthorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.get(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, username='superuser', password=self.password)
+
+        client = APIClient()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = APIClient()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests Course Export Course authorization using openedx-authz.
+    """
+
+    view_name = 'export_handler'
+    course_key_arg_name = 'course_key_string'
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.post(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.unauthorized_client.post(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.post(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.post(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, username='superuser', password=self.password)
+
+        client = APIClient()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = client.post(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = APIClient()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.post(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests Course Export Course Output authorization using openedx-authz.
+    """
+
+    view_name = 'export_output_handler'
+    course_key_arg_name = 'course_key_string'
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    def _mock_artifact(self, spec=None, file_url=None):
+        """
+        Creates a Mock of the UserTaskArtifact model for testing exports handler
+        code without touching the database.
+        """
+        mock_artifact = Mock()
+        mock_artifact.file.name = 'testfile.tar.gz'
+        mock_artifact.file.storage = Mock(spec=spec)
+        mock_artifact.file.storage.url.return_value = file_url
+        return mock_artifact
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        self.authorized_client.post(reverse_course_url('export_handler', self.course_key))
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.unauthorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+        self.authorized_client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.authorized_client.get(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+        self.client.post(reverse_course_url('export_handler', self.course_key))
+        resp = self.client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    @patch('user_tasks.models.UserTaskArtifact.objects.get')
+    @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
+    @patch('cms.djangoapps.contentstore.views.import_export.course_import_export_storage')
+    def test_superuser_allowed(
+        self,
+        mock_storage,
+        mock_latest_task_status,
+        mock_get_user_task_artifact,
+    ):
+        """Superusers should always be allowed."""
+        mock_latest_task_status.return_value = Mock(state=UserTaskStatus.SUCCEEDED)
+        mock_get_user_task_artifact.return_value = self._mock_artifact(
+            file_url='/path/to/testfile.tar.gz',
+        )
+        mock_tarball = Mock()
+        mock_tarball.name = 'testfile.tar.gz'
+        mock_storage.open.return_value = mock_tarball
+        mock_storage.size.return_value = 0
+
+        superuser = UserFactory(is_superuser=True, username='superuser', password=self.password)
+
+        client = APIClient()
+        client.login(username=superuser.username, password=self.password)
+        resp = client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = APIClient()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

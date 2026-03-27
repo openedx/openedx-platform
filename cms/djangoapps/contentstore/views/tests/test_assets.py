@@ -14,13 +14,18 @@ from django.conf import settings
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import AssetKey
 from opaque_keys.edx.locator import CourseLocator
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_EDITOR, COURSE_ADMIN
+from rest_framework.test import APIClient
+
 from PIL import Image
 from pytz import UTC
 
+from common.djangoapps.student.tests.factories import UserFactory
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
 from cms.djangoapps.contentstore.views import assets
 from common.djangoapps.static_replace import replace_static_urls
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from xmodule.assetstore import AssetMetadata  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -587,3 +592,153 @@ class DeleteAssetTestCase(AssetsTestCase):
         contentstore().save(self.content)
         resp = self.client.delete(test_url, HTTP_ACCEPT="application/json")
         self.assertEqual(resp.status_code, 204)
+
+
+class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
+    """
+    Unit tests for validating authorization on Assets endpoints when AuthZ is enabled.
+    """
+
+    authz_roles_to_assign = []
+
+    @property
+    def course_key(self):
+        return self.course.id
+
+    def setUp(self):
+        super().setUp()
+
+        # Upload a file for GET/PUT/DELETE tests
+        r = self.upload_asset('authz_test_file')
+
+        if r.status_code == 200:
+            sample_asset_key = json.loads(r.content.decode('utf-8'))['asset']['id']
+            self.asset_url = reverse_course_url(
+                'assets_handler',
+                self.course.id,
+                kwargs={'asset_key_string': sample_asset_key}
+            )
+            self.asset_usage_url = reverse_course_url(
+                'asset_usage_path_handler',
+                self.course.id,
+                kwargs={'asset_key_string': sample_asset_key}
+            )
+
+    def _put_asset(self, client):
+        # Simulate a PUT (edit) request with a JSON body
+        return client.put(
+            self.asset_url,
+            data=json.dumps({"locked": True}),
+            content_type="application/json"
+        )
+
+    def _delete_asset(self, client):
+        return client.delete(self.asset_url, HTTP_ACCEPT="application/json")
+
+    def test_auditor_permissions(self):
+        """Auditor: read allowed, write/edit/delete forbidden."""
+        user = UserFactory(password=self.user_password)
+        self.add_user_to_role(user, COURSE_AUDITOR.external_key)
+
+        client = APIClient()
+        client.login(username=user.username, password=self.user_password)
+
+        # GET assets_handler allowed
+        resp = client.get(self.asset_url)
+        self.assertEqual(resp.status_code, 200)
+
+        # GET asset_usage_path_handler allowed
+        resp = client.get(self.asset_usage_url)
+        self.assertEqual(resp.status_code, 200)
+
+        # POST assets_handler forbidden
+        resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
+        self.assertEqual(resp.status_code, 403)
+
+        # PUT assets_handler forbidden
+        resp = self._put_asset(client)
+        self.assertEqual(resp.status_code, 403)
+
+        # DELETE assets_handler forbidden
+        resp = self._delete_asset(client)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_editor_permissions(self):
+        """Editor: read/create/edit allowed, delete forbidden."""
+        user = UserFactory(password=self.user_password)
+        self.add_user_to_role(user, COURSE_EDITOR.external_key)
+        client = APIClient()
+        client.login(username=user.username, password=self.user_password)
+
+        # GET assets_handler allowed
+        resp = client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+        # GET asset_usage_path_handler allowed
+        resp = client.get(self.asset_usage_url)
+        self.assertEqual(resp.status_code, 200)
+
+        # POST assets_handler allowed
+        resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
+        self.assertEqual(resp.status_code, 200)
+
+        # PUT assets_handler allowed
+        resp = self._put_asset(client)
+        self.assertIn(resp.status_code, [200, 201])
+
+        # DELETE assets_handler forbidden
+        resp = self._delete_asset(client)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_admin_permissions(self):
+        """Admin: full access."""
+        user = UserFactory(password=self.user_password)
+        self.add_user_to_role(user, COURSE_ADMIN.external_key)
+        client = APIClient()
+        client.login(username=user.username, password=self.user_password)
+
+        # GET assets_handler allowed
+        resp = client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+        # GET asset_usage_path_handler allowed
+        resp = client.get(self.asset_usage_url)
+        self.assertEqual(resp.status_code, 200)
+
+        # POST assets_handler allowed
+        resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
+        self.assertEqual(resp.status_code, 200)
+
+        # PUT assets_handler allowed
+        resp = self._put_asset(client)
+        self.assertIn(resp.status_code, [200, 201])
+
+        # DELETE assets_handler allowed
+        resp = self._delete_asset(client)
+        self.assertEqual(resp.status_code, 204)
+
+    def test_no_role_permissions(self):
+        """No role: all forbidden."""
+        user = UserFactory(password=self.user_password)
+        client = APIClient()
+        client.login(username=user.username, password=self.user_password)
+
+        # GET assets_handler forbidden
+        resp = client.get(self.url)
+        self.assertEqual(resp.status_code, 403)
+
+        # GET asset_usage_path_handler forbidden
+        resp = client.get(self.asset_usage_url)
+        self.assertEqual(resp.status_code, 403)
+
+        # POST assets_handler forbidden
+        resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
+        self.assertEqual(resp.status_code, 403)
+
+        # PUT assets_handler forbidden
+        resp = self._put_asset(client)
+        self.assertEqual(resp.status_code, 403)
+
+        # DELETE assets_handler forbidden
+        resp = self._delete_asset(client)
+        self.assertEqual(resp.status_code, 403)

@@ -18,6 +18,8 @@ class BaseCourseViewTest(SharedModuleStoreTestCase, APITestCase):
     Base test class for course data views.
     """
     view_name = None  # The name of the view to use in reverse() call in self.get_url()
+    course_key_arg_name = 'course_id'
+    extra_request_args = {}
 
     @classmethod
     def setUpClass(cls):
@@ -86,9 +88,10 @@ class BaseCourseViewTest(SharedModuleStoreTestCase, APITestCase):
         """
         Helper function to create the url
         """
+        args = {
+            self.course_key_arg_name: course_id,
+        }
         return reverse(
             self.view_name,
-            kwargs={
-                'course_id': course_id
-            }
+            kwargs= args | self.extra_request_args
         )

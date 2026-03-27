@@ -13,14 +13,17 @@ from urllib.parse import parse_qs, urlparse
 import ddt
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
+from openedx_authz.constants.roles import COURSE_STAFF
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
+
 
 from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import (
@@ -31,7 +34,10 @@ from common.djangoapps.student.roles import (
     OrgLibraryUserRole,
     OrgStaffRole
 )
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 from openedx.core.djangoapps.content_libraries.api import AccessLevel, create_library, set_library_user_permissions
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
@@ -2051,6 +2057,55 @@ class TestContentObjectChildrenExportView(TaggedCourseMixin, APITestCase):  # ty
         response = self.client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+@skip_unless_cms
+class TestContentObjectChildrenExportViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestCase, APITestCase):
+    """
+    Tests Tags Export in Course authorization using openedx-authz.
+    """
+
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.password = 'test'
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+        cls.staff = StaffFactory(course_key=cls.course_key, password=cls.password)
+
+    def get_url(self, course_key):
+        return reverse('content_tagging:taxonomy-object-tag-export', kwargs={'context_id': course_key})
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        resp = self.unauthorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        resp = self.authorized_client.get(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """Staff users should still pass through legacy fallback."""
+        self.client.force_authenticate(user=self.staff)
+        resp = self.client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True)
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        resp = client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
 @skip_unless_cms
 @ddt.ddt

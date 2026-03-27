@@ -252,8 +252,9 @@ class UpstreamLink:
         If link exists, is supported, and is followable, returns UpstreamLink.
         Otherwise, raises an UpstreamLinkException.
         """
-        # We import this here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
+        # We import these here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
         from openedx.core.djangoapps.content_libraries import api as lib_api
+        from openedx_content import api as content_api
 
         if not isinstance(downstream, UpstreamSyncMixin):
             raise BadDownstream(_("Downstream is not an XBlock or is missing required UpstreamSyncMixin"))
@@ -290,7 +291,8 @@ class UpstreamLink:
                 container_meta = lib_api.get_container(upstream_key)
             except lib_api.ContentLibraryContainerNotFound as exc:
                 raise BadUpstream(_("Linked upstream library container was not found in the system")) from exc
-            expected_downstream_block_type = container_meta.container_type.olx_tag
+            container_cls = content_api.get_container_subclass(container_meta.container_type_code)
+            expected_downstream_block_type = container_cls.olx_tag_name
             version_available = container_meta.published_version_num
         else:
             raise BadUpstream(_("Linked `upstream_key` is not a valid key"))

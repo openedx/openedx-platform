@@ -11,7 +11,7 @@ from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey, OpaqueKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api
-from openedx_content.models_api import Collection
+from openedx_content.models_api import Collection, Section, Subsection, Unit
 from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content.search.models import SearchAccess
@@ -624,16 +624,16 @@ def searchable_doc_for_container(
     elif container.has_unpublished_changes:
         publish_status = PublishStatus.modified
 
-    container_type = lib_api.ContainerType(container_key.container_type)
+    container_type_code = container_key.container_type
 
     def get_child_keys(children) -> list[str]:
-        match container_type:
-            case lib_api.ContainerType.Unit:
+        match container_type_code:
+            case Unit.type_code:
                 return [
                     str(child.usage_key)
                     for child in children
                 ]
-            case lib_api.ContainerType.Subsection | lib_api.ContainerType.Section:
+            case Subsection.type_code | Section.type_code:
                 return [
                     str(child.container_key)
                     for child in children

@@ -60,9 +60,7 @@ def get_forwarding_for_blocks(source_keys: t.Iterable[UsageKey]) -> dict[UsageKe
         # For building component key
         "forwarded__target__component__component_type",
         # For building container key
-        "forwarded__target__container__section",
-        "forwarded__target__container__subsection",
-        "forwarded__target__container__unit",
+        "forwarded__target__container__container_type",
         # For determining title and version
         "forwarded__change_log_record__new_version",
     )
@@ -166,11 +164,7 @@ def get_migration_blocks(migration_pk: int) -> dict[UsageKey, ModulestoreBlockMi
             # For building component key
             "target__component__component_type",
             # For building container key.
-            # (Hard-coding these exact 3 container types here is not a good pattern, but it's what is needed
-            #  here in order to avoid additional SELECTs while determining the container type).
-            "target__container__section",
-            "target__container__subsection",
-            "target__container__unit",
+            "target__container__container_type",
             # For determining title and version
             "change_log_record__new_version",
         )

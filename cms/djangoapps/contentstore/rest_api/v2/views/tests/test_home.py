@@ -3,10 +3,9 @@ Unit tests for home page view.
 """
 
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import ddt
-import pytz
 from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
@@ -36,7 +35,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             display_name="Demo Course (Sample)",
             id=archived_course_key,
             org=archived_course_key.org,
-            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=pytz.UTC),
+            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),
         )
         self.non_staff_client, _ = self.create_non_staff_authed_user_client()
 
@@ -256,7 +255,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             display_name="Course (Demo)",
             id=archived_course_key,
             org=archived_course_key.org,
-            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=pytz.UTC),
+            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),
         )
         active_course_key = self.store.make_course_key("foo-org", "foo-number", "foo-run")
         CourseOverviewFactory.create(
