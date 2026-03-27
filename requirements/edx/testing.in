@@ -27,7 +27,6 @@ factory-boy               # Library for creating test fixtures, used in many tes
 freezegun                 # Allows tests to mock the output of assorted datetime module functions
 httpretty                 # Library for mocking HTTP requests, used in many tests
 import-linter             # Tool for making assertions about which modules can import which others
-isort                     # For checking and fixing the order of imports
 mock                      # Deprecated alias to standard library `unittest.mock`
 ruff                      # Fast Python linter and formatter
 polib                     # Library for manipulating gettext translation files, used to test paver i18n commands

@@ -865,9 +865,7 @@ isodate==0.7.2
     #   -r requirements/edx/base.txt
     #   python3-saml
 isort==8.0.1
-    # via
-    #   -r requirements/edx/testing.in
-    #   pylint
+    # via pylint
 jinja2==3.1.6
     # via
     #   -r requirements/edx/base.txt
