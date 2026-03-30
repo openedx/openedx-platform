@@ -15,8 +15,6 @@ WAFFLE_NAMESPACE = 'discussion'
 #   for daily digest. This setting enables deprecation of daily digest.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2020-03-09
-ENABLE_FORUM_DAILY_DIGEST = 'enable_forum_daily_digest'
-
 
 def is_forum_daily_digest_enabled():
     """Returns whether forum notification features should be visible"""
