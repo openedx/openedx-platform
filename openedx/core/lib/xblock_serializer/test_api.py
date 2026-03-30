@@ -98,7 +98,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         root1 = Tag.objects.create(taxonomy=cls.taxonomy1, value="ROOT1")
         root2 = Tag.objects.create(taxonomy=cls.taxonomy2, value="ROOT2")
         Tag.objects.create(taxonomy=cls.taxonomy1, value="normal tag", parent=root1)
-        Tag.objects.create(taxonomy=cls.taxonomy1, value="<special \"'-=,. |= chars > tag", parent=root1)
+        Tag.objects.create(taxonomy=cls.taxonomy1, value="<special \"'-=,. |= chars> tag", parent=root1)
         Tag.objects.create(taxonomy=cls.taxonomy1, value="anotherTag", parent=root1)
         Tag.objects.create(taxonomy=cls.taxonomy2, value="tag", parent=root2)
         Tag.objects.create(taxonomy=cls.taxonomy2, value="other tag", parent=root2)
@@ -322,7 +322,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(unit.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
         tagging_api.tag_object(
             object_id=str(unit.location),
@@ -345,7 +345,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         self.assertEqual(
             serialized.tags, {
                 str(unit.location): {
-                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
                     self.taxonomy2.id: ["tag", "other tag"],
                 }
             }
@@ -371,7 +371,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(html_block.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
         tagging_api.tag_object(
             object_id=str(html_block.location),
@@ -398,7 +398,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         self.assertEqual(
             serialized.tags, {
                 str(html_block.location): {
-                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
                     self.taxonomy2.id: ["tag", "other tag"],
                 }
             }
@@ -436,7 +436,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(regular_problem.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
         tagging_api.tag_object(
             object_id=str(regular_problem.location),
@@ -446,7 +446,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(python_problem.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
         tagging_api.tag_object(
             object_id=str(python_problem.location),
@@ -472,7 +472,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         self.assertEqual(
             serialized.tags, {
                 str(regular_problem.location): {
-                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
                     self.taxonomy2.id: ["tag", "other tag"],
                 }
             }
@@ -494,7 +494,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         self.assertEqual(
             serialized.tags, {
                 str(python_problem.location): {
-                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                    self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
                     self.taxonomy2.id: ["tag", "other tag"],
                 }
             }
@@ -518,7 +518,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(lc_block.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
 
         # Check that the tags data is serialized, omitted from the OLX, and properly escaped
@@ -537,7 +537,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         )
         self.assertEqual(serialized.tags, {
             str(lc_block.location): {
-                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }
         })
 
@@ -556,7 +556,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(video_block.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
 
         # Check that the tags data is serialized and omitted from the OLX.
@@ -574,7 +574,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         )
         self.assertEqual(serialized.tags, {
             str(video_block.location): {
-                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }
         })
 
@@ -593,19 +593,19 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         tagging_api.tag_object(
             object_id=str(openassessment_block.location),
             taxonomy=self.taxonomy1,
-            tags=["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"]
+            tags=["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"]
         )
 
         # Check that the tags data is serialized and omitted from the OLX
         serialized = api.serialize_xblock_to_olx(openassessment_block)
 
         self.assertNotIn("normal tag", serialized.olx_str)
-        self.assertNotIn("<special \"'-=,. |= chars > tag", serialized.olx_str)
+        self.assertNotIn("<special \"'-=,. |= chars> tag", serialized.olx_str)
         self.assertNotIn("anotherTag", serialized.olx_str)
 
         self.assertEqual(serialized.tags, {
             str(openassessment_block.location): {
-                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars > tag", "anotherTag"],
+                self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }
         })
 

@@ -6,7 +6,6 @@ import datetime
 import ddt
 from organizations.api import ensure_organization
 from organizations.models import Organization
-from pytz import utc
 
 from cms.lib.xblock.upstream_sync import (
     BadDownstream,
@@ -292,7 +291,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # Modifing downstream-only fields are "safe" customizations
         downstream.display_name = "Downstream Title Override"
         downstream.attempts_before_showanswer_button = 2
-        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=utc)
+        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)
         downstream.force_save_button = True
         downstream.graceperiod = '2d'
         downstream.grading_method = 'last_score'
@@ -320,7 +319,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # but "safe" customizations survive
         assert downstream.display_name == "Downstream Title Override"
         assert downstream.attempts_before_showanswer_button == 2
-        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=utc)
+        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)
         assert downstream.force_save_button
         assert downstream.graceperiod == '2d'
         assert downstream.grading_method == 'last_score'

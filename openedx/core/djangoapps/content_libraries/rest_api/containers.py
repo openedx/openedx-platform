@@ -14,6 +14,7 @@ from drf_yasg import openapi
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_200_OK
@@ -51,10 +52,10 @@ class LibraryContainersView(GenericAPIView):
         serializer = serializers.LibraryContainerMetadataSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        container_type = serializer.validated_data['container_type']
+        container_type_code = serializer.validated_data['container_type_code']
         container = api.create_container(
             library_key,
-            container_type,
+            container_cls=content_api.get_container_subclass(container_type_code),
             title=serializer.validated_data['display_name'],
             slug=serializer.validated_data.get('slug'),
             user_id=request.user.id,
@@ -190,7 +191,7 @@ class LibraryContainerChildrenView(GenericAPIView):
             permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
         )
         child_entities = api.get_container_children(container_key, published=published)
-        if container_key.container_type == api.ContainerType.Unit.value:
+        if container_key.container_type == content_models.Unit.type_code:
             data = serializers.LibraryXBlockMetadataSerializer(child_entities, many=True).data
         else:
             data = serializers.LibraryContainerMetadataSerializer(child_entities, many=True).data
@@ -215,7 +216,7 @@ class LibraryContainerChildrenView(GenericAPIView):
 
         container = api.update_container_children(
             container_key,
-            children_ids=serializer.validated_data["usage_keys"],
+            children_keys=serializer.validated_data["usage_keys"],
             user_id=request.user.id,
             entities_action=action,
         )

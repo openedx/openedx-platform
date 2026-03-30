@@ -30,6 +30,7 @@ from openedx_events.content_authoring.signals import (
 )
 from openedx_authz.api.users import get_user_role_assignments_in_scope
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 
 from common.djangoapps.student.tests.factories import UserFactory
 from .. import api
@@ -320,7 +321,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         # Create a subsection container
         self.subsection1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-1',
             'Subsection 1',
             None,
@@ -784,21 +785,21 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         self.lib1 = ContentLibrary.objects.get(slug="test-lib-cont-1")
 
         # Create Units
-        self.unit1 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-1', 'Unit 1', None)
-        self.unit2 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-2', 'Unit 2', None)
-        self.unit3 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-3', 'Unit 3', None)
+        self.unit1 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-1', 'Unit 1', None)
+        self.unit2 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-2', 'Unit 2', None)
+        self.unit3 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-3', 'Unit 3', None)
 
         # Create Subsections
         self.subsection1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-1',
             'Subsection 1',
             None,
         )
         self.subsection2 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-2',
             'Subsection 2',
             None,
@@ -807,14 +808,14 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         # Create Sections
         self.section1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Section,
+            content_models.Section,
             'section-1',
             'Section 1',
             None,
         )
         self.section2 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Section,
+            content_models.Section,
             'section-2',
             'Section 2',
             None,
@@ -1085,7 +1086,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
     def test_call_object_changed_signal_when_remove_unit(self) -> None:
-        unit4 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-4', 'Unit 4', None)
+        unit4 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-4', 'Unit 4', None)
 
         api.update_container_children(
             self.subsection2.container_key,
@@ -1119,7 +1120,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
     def test_call_object_changed_signal_when_remove_subsection(self) -> None:
         subsection3 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-3',
             'Subsection 3',
             None,
@@ -1202,8 +1203,8 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         event_reciver = mock.Mock()
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.connect(event_reciver)
 
-        unit4 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-4', 'Unit 4', None)
-        unit5 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-5', 'Unit 5', None)
+        unit4 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-4', 'Unit 4', None)
+        unit5 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-5', 'Unit 5', None)
 
         api.update_container_children(
             self.subsection2.container_key,
@@ -1241,14 +1242,14 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
         subsection3 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-3',
             'Subsection 3',
             None,
         )
         subsection4 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-4',
             'Subsection 4',
             None,
@@ -1323,7 +1324,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
         # Verify that the container is copied
-        assert new_container.container_type == self.section1.container_type
+        assert new_container.container_type_code == self.section1.container_type_code
         assert new_container.display_name == self.section1.display_name
 
         # Verify that the children are linked
@@ -1346,7 +1347,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
         # Verify that the container is copied
-        assert new_container.container_type == self.section1.container_type
+        assert new_container.container_type_code == self.section1.container_type_code
         assert new_container.display_name == self.section1.display_name
 
         # Verify that the children are copied

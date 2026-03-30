@@ -1,6 +1,7 @@
 """
 API for containers (Sections, Subsections, Units) in Content Libraries
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -23,10 +24,8 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED,
 )
 from openedx_content import api as content_api
-from openedx_content.models_api import Container, ContainerVersion, Component
+from openedx_content.models_api import Container, Unit
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
-
-from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 
 from .. import tasks
 from ..models import ContentLibrary
@@ -34,9 +33,10 @@ from .block_metadata import LibraryXBlockMetadata
 from .container_metadata import (
     ContainerHierarchy,
     ContainerMetadata,
-    ContainerType,
     library_container_locator,
     get_container_from_key,
+    get_entity_from_key,
+    LIBRARY_ALLOWED_CONTAINER_TYPES,
 )
 from .serializers import ContainerSerializer
 
@@ -79,7 +79,7 @@ def get_container(
         associated_collections = content_api.get_entity_collections(
             container.publishable_entity.learning_package_id,
             container_key.container_id,
-        ).values('key', 'title')
+        ).values("key", "title")
     else:
         associated_collections = None
     container_meta = ContainerMetadata.from_container(
@@ -87,13 +87,13 @@ def get_container(
         container,
         associated_collections=associated_collections,
     )
-    assert container_meta.container_type.value == container_key.container_type
+    assert container_meta.container_type_code == container_key.container_type
     return container_meta
 
 
 def create_container(
     library_key: LibraryLocatorV2,
-    container_type: ContainerType,
+    container_cls: content_api.ContainerSubclass,
     slug: str | None,
     title: str,
     user_id: int | None,
@@ -104,61 +104,37 @@ def create_container(
 
     It will initially be empty.
     """
+    assert container_cls.type_code in LIBRARY_ALLOWED_CONTAINER_TYPES
     assert isinstance(library_key, LibraryLocatorV2)
     content_library = ContentLibrary.objects.get_by_key(library_key)
     assert content_library.learning_package_id  # Should never happen but we made this a nullable field so need to check
     if slug is None:
         # Automatically generate a slug. Append a random suffix so it should be unique.
-        slug = slugify(title, allow_unicode=True) + '-' + uuid4().hex[-6:]
+        slug = slugify(title, allow_unicode=True) + "-" + uuid4().hex[-6:]
     # Make sure the slug is valid by first creating a key for the new container:
     container_key = LibraryContainerLocator(
         library_key,
-        container_type=container_type.value,
+        container_type=container_cls.type_code,
         container_id=slug,
     )
 
     if not created:
         created = datetime.now(tz=timezone.utc)
 
-    container: Container
-    _initial_version: ContainerVersion
-
     # Then try creating the actual container:
-    match container_type:
-        case ContainerType.Unit:
-            container, _initial_version = content_api.create_unit_and_version(
-                content_library.learning_package_id,
-                key=slug,
-                title=title,
-                created=created,
-                created_by=user_id,
-            )
-        case ContainerType.Subsection:
-            container, _initial_version = content_api.create_subsection_and_version(
-                content_library.learning_package_id,
-                key=slug,
-                title=title,
-                created=created,
-                created_by=user_id,
-            )
-        case ContainerType.Section:
-            container, _initial_version = content_api.create_section_and_version(
-                content_library.learning_package_id,
-                key=slug,
-                title=title,
-                created=created,
-                created_by=user_id,
-            )
-        case _:
-            raise NotImplementedError(f"Library does not support {container_type} yet")
+    container, _initial_version = content_api.create_container_and_version(
+        content_library.learning_package_id,
+        key=slug,
+        title=title,
+        container_cls=container_cls,
+        entities=[],
+        created=created,
+        created_by=user_id,
+    )
 
     # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-    LIBRARY_CONTAINER_CREATED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    )
+    LIBRARY_CONTAINER_CREATED.send_event(library_container=LibraryContainerData(container_key=container_key))
 
     return ContainerMetadata.from_container(library_key, container)
 
@@ -175,78 +151,41 @@ def update_container(
     library_key = container_key.lib_key
     created = datetime.now(tz=timezone.utc)
 
-    container_type = ContainerType(container_key.container_type)
-
-    version: ContainerVersion
-    affected_containers: list[ContainerMetadata] = []
     # Get children containers or components to update their index data
-    children = get_container_children(
-        container_key,
-        published=False,
+    children = get_container_children(container_key, published=False)
+
+    version = content_api.create_next_container_version(
+        container,
+        title=display_name,
+        created=created,
+        created_by=user_id,
     )
-    child_key_name = 'container_key'
-
-    match container_type:
-        case ContainerType.Unit:
-            version = content_api.create_next_unit_version(
-                container.unit,
-                title=display_name,
-                created=created,
-                created_by=user_id,
-            )
-            affected_containers = get_containers_contains_item(container_key)
-            # Components have usage_key instead of container_key
-            child_key_name = 'usage_key'
-        case ContainerType.Subsection:
-            version = content_api.create_next_subsection_version(
-                container.subsection,
-                title=display_name,
-                created=created,
-                created_by=user_id,
-            )
-            affected_containers = get_containers_contains_item(container_key)
-        case ContainerType.Section:
-            version = content_api.create_next_section_version(
-                container.section,
-                title=display_name,
-                created=created,
-                created_by=user_id,
-            )
-
-            # The `affected_containers` are not obtained, because the sections are
-            # not contained in any container.
-        case _:
-            raise NotImplementedError(f"Library does not support {container_type} yet")
 
     # Send event related to the updated container
     # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
     # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-    LIBRARY_CONTAINER_UPDATED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    )
+    LIBRARY_CONTAINER_UPDATED.send_event(library_container=LibraryContainerData(container_key=container_key))
 
     # Send events related to the containers that contains the updated container.
     # This is to update the children display names used in the section/subsection previews.
+    affected_containers = get_containers_contains_item(container_key)
     for affected_container in affected_containers:
         # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
         # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
         LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=affected_container.container_key,
-            )
+            library_container=LibraryContainerData(container_key=affected_container.container_key)
         )
     # Update children components and containers index data, for example,
     # All subsections under a section have section key in index that needs to be updated.
     # So if parent section name has been changed, it needs to be reflected in sections key of children
+    is_unit = container_key.container_type == Unit.type_code
     for child in children:
         # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
         # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
-                object_id=str(getattr(child, child_key_name)),
-                changes=[container_key.container_type + "s"],
+                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
+                changes=[container_key.container_type + "s"],  # e.g. "units"
             ),
         )
 
@@ -311,11 +250,10 @@ def delete_container(
                 container_key=affected_container.container_key,
             )
         )
-    container_type = ContainerType(container_key.container_type)
-    key_name = 'container_key'
-    if container_type == ContainerType.Unit:
+    key_name = "container_key"
+    if isinstance(container, Unit):
         # Components have usage_key instead of container_key
-        key_name = 'usage_key'
+        key_name = "usage_key"
     # Update children components and containers index data, for example,
     # All subsections under a section have section key in index that needs to be updated.
     # So if parent section is deleted, it needs to be removed from sections key of children
@@ -346,10 +284,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
     # Fetch related containers after restore
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
-    children = get_container_children(
-        container_key,
-        published=False,
-    )
+    children = get_container_children(container_key, published=False)
 
     # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
@@ -362,7 +297,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
     content_changes = ["collections", "tags"]
     if affected_containers and len(affected_containers) > 0:
         # Update parent key data in index. Eg. `sections` key in index for subsection
-        content_changes.append(str(affected_containers[0].container_type.value) + "s")
+        content_changes.append(str(affected_containers[0].container_type_code) + "s")
     # Add tags, collections and parent data back to index
     # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
     # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
@@ -398,10 +333,8 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
                 container_key=affected_container.container_key,
             )
         )
-    container_type = ContainerType(container_key.container_type)
-    key_name = 'container_key'
-    if container_type == ContainerType.Unit:
-        key_name = 'usage_key'
+
+    is_unit = container_key.container_type == Unit.type_code
     # Update children components and containers index data, for example,
     # All subsections under a section have section key in index that needs to be updated.
     # Should restore removed parent section in sections key of children subsections
@@ -410,7 +343,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
         # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
             content_object=ContentObjectChangedData(
-                object_id=str(getattr(child, key_name)),
+                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
                 changes=[container_key.container_type + "s"],
             ),
         )
@@ -426,33 +359,16 @@ def get_container_children(
     (e.g. the components/xblocks in a unit, units in a subsection, subsections in a section)
     """
     container = get_container_from_key(container_key)
-    container_type = ContainerType(container_key.container_type)
 
-    match container_type:
-        case ContainerType.Unit:
-            child_components = content_api.get_components_in_unit(container.unit, published=published)
-            return [LibraryXBlockMetadata.from_component(
-                container_key.lib_key,
-                entry.component
-            ) for entry in child_components]
-        case ContainerType.Subsection:
-            child_units = content_api.get_units_in_subsection(container.subsection, published=published)
-            return [ContainerMetadata.from_container(
-                container_key.lib_key,
-                entry.unit
-            ) for entry in child_units]
-        case ContainerType.Section:
-            child_subsections = content_api.get_subsections_in_section(container.section, published=published)
-            return [ContainerMetadata.from_container(
-                container_key.lib_key,
-                entry.subsection,
-            ) for entry in child_subsections]
-        case _:
-            child_entities = content_api.get_entities_in_container(container, published=published)
-            return [ContainerMetadata.from_container(
-                container_key.lib_key,
-                entry.entity
-            ) for entry in child_entities]
+    child_entities = content_api.get_entities_in_container(container, published=published)
+    result: list[LibraryXBlockMetadata | ContainerMetadata] = []
+    for entry in child_entities:
+        if hasattr(entry.entity, "component"):  # the child is a Component
+            result.append(LibraryXBlockMetadata.from_component(container_key.lib_key, entry.entity.component))
+        else:
+            assert isinstance(entry.entity.container, Container)
+            result.append(ContainerMetadata.from_container(container_key.lib_key, entry.entity.container))
+    return result
 
 
 def get_container_children_count(
@@ -468,78 +384,32 @@ def get_container_children_count(
 
 def update_container_children(
     container_key: LibraryContainerLocator,
-    children_ids: list[LibraryUsageLocatorV2] | list[LibraryContainerLocator],
+    children_keys: list[LibraryUsageLocatorV2] | list[LibraryContainerLocator],
     user_id: int | None,
     entities_action: content_api.ChildrenEntitiesAction = content_api.ChildrenEntitiesAction.REPLACE,
 ):
     """
     [ 🛑 UNSTABLE ] Adds children components or containers to given container.
     """
-    library_key = container_key.lib_key
-    container_type = ContainerType(container_key.container_type)
     container = get_container_from_key(container_key)
     created = datetime.now(tz=timezone.utc)
-    new_version: ContainerVersion
-    match container_type:
-        case ContainerType.Unit:
-            components = [get_component_from_usage_key(key) for key in children_ids]  # type: ignore[arg-type]
-            new_version = content_api.create_next_unit_version(
-                container.unit,
-                components=components,  # type: ignore[arg-type]
-                created=created,
-                created_by=user_id,
-                entities_action=entities_action,
-            )
 
-            for key in children_ids:
-                # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-                # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-                CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-                    content_object=ContentObjectChangedData(
-                        object_id=str(key),
-                        changes=["units"],
-                    ),
-                )
-        case ContainerType.Subsection:
-            units = [get_container_from_key(key).unit for key in children_ids]  # type: ignore[arg-type]
-            new_version = content_api.create_next_subsection_version(
-                container.subsection,
-                units=units,  # type: ignore[arg-type]
-                created=created,
-                created_by=user_id,
-                entities_action=entities_action,
-            )
-
-            for key in children_ids:
-                # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-                # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-                CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-                    content_object=ContentObjectChangedData(
-                        object_id=str(key),
-                        changes=["subsections"],
-                    ),
-                )
-        case ContainerType.Section:
-            subsections = [get_container_from_key(key).subsection for key in children_ids]  # type: ignore[arg-type]
-            new_version = content_api.create_next_section_version(
-                container.section,
-                subsections=subsections,  # type: ignore[arg-type]
-                created=created,
-                created_by=user_id,
-                entities_action=entities_action,
-            )
-
-            for key in children_ids:
-                # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-                # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-                CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-                    content_object=ContentObjectChangedData(
-                        object_id=str(key),
-                        changes=["sections"],
-                    ),
-                )
-        case _:
-            raise ValueError(f"Invalid container type: {container_type}")
+    new_version = content_api.create_next_container_version(
+        container,
+        created=created,
+        created_by=user_id,
+        entities=[get_entity_from_key(key) for key in children_keys],
+        entities_action=entities_action,
+    )
+    for key in children_keys:
+        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+            content_object=ContentObjectChangedData(
+                object_id=str(key),
+                changes=[f"{container_key.container_type}s"],  # "units", "subsections", "sections"
+            ),
+        )
 
     # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
     # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
@@ -549,30 +419,16 @@ def update_container_children(
         )
     )
 
-    return ContainerMetadata.from_container(library_key, new_version.container)
+    return ContainerMetadata.from_container(container_key.lib_key, new_version.container)
 
 
-def get_containers_contains_item(
-    key: LibraryUsageLocatorV2 | LibraryContainerLocator
-) -> list[ContainerMetadata]:
+def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLocator) -> list[ContainerMetadata]:
     """
     [ 🛑 UNSTABLE ] Get containers that contains the item, that can be a component or another container.
     """
-    item: Component | Container
-
-    if isinstance(key, LibraryUsageLocatorV2):
-        item = get_component_from_usage_key(key)
-
-    elif isinstance(key, LibraryContainerLocator):
-        item = get_container_from_key(key)
-
-    containers = content_api.get_containers_with_entity(
-        item.publishable_entity.pk,
-    )
-    return [
-        ContainerMetadata.from_container(key.lib_key, container)
-        for container in containers
-    ]
+    entity = get_entity_from_key(key)
+    containers = content_api.get_containers_with_entity(entity.pk).select_related("container_type")
+    return [ContainerMetadata.from_container(key.lib_key, container) for container in containers]
 
 
 def publish_container_changes(
@@ -611,7 +467,7 @@ def copy_container(container_key: LibraryContainerLocator, user_id: int) -> User
     """
     container_metadata = get_container(container_key)
     container_serializer = ContainerSerializer(container_metadata)
-    block_type = ContainerType(container_key.container_type).olx_tag
+    block_type = content_api.get_container_subclass(container_key.container_type).olx_tag_name
 
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 

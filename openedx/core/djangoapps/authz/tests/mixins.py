@@ -33,6 +33,7 @@ class CourseAuthoringAuthzTestMixin:
             return_value=True,
         )
         cls.toggle_patcher.start()
+        cls.password = 'test'
         super().setUpClass()
 
     @classmethod
@@ -45,8 +46,8 @@ class CourseAuthoringAuthzTestMixin:
 
         self._seed_policies()
 
-        self.authorized_user = UserFactory()
-        self.unauthorized_user = UserFactory()
+        self.authorized_user = UserFactory(password=self.password)
+        self.unauthorized_user = UserFactory(password=self.password)
 
         self.authorized_client = APIClient()
         self.authorized_client.force_authenticate(user=self.authorized_user)

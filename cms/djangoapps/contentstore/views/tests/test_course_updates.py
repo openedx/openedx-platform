@@ -4,10 +4,15 @@ unit tests for course_info views and models.
 
 
 import json
+
 from opaque_keys.edx.keys import UsageKey
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.test_course_settings import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.lib.xblock_utils import get_course_update_items
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -312,3 +317,125 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         course_updates = modulestore().get_item(updates_location)
         del course_updates.items[0]["status"]
         self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])
+
+
+class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
+    """
+    Tests course_info_update_handler authorization using openedx-authz.
+    """
+
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    @property
+    def course_key(self):
+        return self.course.id
+
+    def create_update_url(self, provided_id=None):
+        kwargs = {'provided_id': str(provided_id)} if provided_id else None
+        return reverse_course_url('course_info_update_handler', self.course.id, kwargs=kwargs)
+
+    def setUp(self):
+        super().setUp()
+        self.auditor_user = UserFactory(password=self.password)
+        self.add_user_to_role(self.auditor_user, COURSE_AUDITOR.external_key)
+
+        self.staff_client = self._make_client_for_user(self.authorized_user)
+        self.auditor_client = self._make_client_for_user(self.auditor_user)
+        self.unauthorized_client = self._make_client_for_user(self.unauthorized_user)
+
+    def _make_client_for_user(self, user):
+        client = AjaxEnabledTestClient()
+        client.login(username=user.username, password=self.password)
+        return client
+
+    def _create_update(self, client):
+        return client.ajax_post(
+            self.create_update_url(),
+            {'content': 'Test update', 'date': 'January 1, 2026'},
+        )
+
+    # -- Authorized user (course_staff): full access --
+
+    def test_authorized_user_can_get(self):
+        resp = self.staff_client.get_json(self.create_update_url())
+        self.assertEqual(resp.status_code, 200)
+
+    def test_authorized_user_can_post(self):
+        resp = self._create_update(self.staff_client)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_authorized_user_can_put(self):
+        update_id = self._create_update(self.staff_client).json()['id']
+        resp = self.staff_client.ajax_post(
+            self.create_update_url(update_id),
+            {'content': 'Updated', 'date': 'January 2, 2026'},
+            HTTP_X_HTTP_METHOD_OVERRIDE="PUT",
+            REQUEST_METHOD="POST",
+        )
+        self.assertEqual(resp.status_code, 200)
+
+    def test_authorized_user_can_delete(self):
+        update_id = self._create_update(self.staff_client).json()['id']
+        resp = self.staff_client.delete(self.create_update_url(update_id))
+        self.assertEqual(resp.status_code, 200)
+
+    # -- View-only user (course_auditor): GET only --
+
+    def test_auditor_can_get(self):
+        resp = self.auditor_client.get_json(self.create_update_url())
+        self.assertEqual(resp.status_code, 200)
+
+    def test_auditor_cannot_post(self):
+        resp = self._create_update(self.auditor_client)
+        self.assertEqual(resp.status_code, 403)
+
+    def test_auditor_cannot_put(self):
+        update_id = self._create_update(self.staff_client).json()['id']
+        resp = self.auditor_client.ajax_post(
+            self.create_update_url(update_id),
+            {'content': 'Test', 'date': 'January 2, 2026'},
+            HTTP_X_HTTP_METHOD_OVERRIDE="PUT",
+            REQUEST_METHOD="POST",
+        )
+        self.assertEqual(resp.status_code, 403)
+
+    def test_auditor_cannot_delete(self):
+        update_id = self._create_update(self.staff_client).json()['id']
+        resp = self.auditor_client.delete(self.create_update_url(update_id))
+        self.assertEqual(resp.status_code, 403)
+
+    # -- Unauthorized user: no access --
+
+    def test_unauthorized_user_cannot_get(self):
+        resp = self.unauthorized_client.get_json(self.create_update_url())
+        self.assertEqual(resp.status_code, 403)
+
+    def test_unauthorized_user_cannot_post(self):
+        resp = self._create_update(self.unauthorized_client)
+        self.assertEqual(resp.status_code, 403)
+
+    # -- Staff/superuser without authz role: access via enforcer admin check --
+
+    def test_django_staff_without_role_can_get(self):
+        staff_user = UserFactory(is_staff=True, password=self.password)
+        client = self._make_client_for_user(staff_user)
+        resp = client.get_json(self.create_update_url())
+        self.assertEqual(resp.status_code, 200)
+
+    def test_django_staff_without_role_can_post(self):
+        staff_user = UserFactory(is_staff=True, password=self.password)
+        client = self._make_client_for_user(staff_user)
+        resp = self._create_update(client)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_superuser_without_role_can_get(self):
+        superuser = UserFactory(is_superuser=True, password=self.password)
+        client = self._make_client_for_user(superuser)
+        resp = client.get_json(self.create_update_url())
+        self.assertEqual(resp.status_code, 200)
+
+    def test_superuser_without_role_can_post(self):
+        superuser = UserFactory(is_superuser=True, password=self.password)
+        client = self._make_client_for_user(superuser)
+        resp = self._create_update(client)
+        self.assertEqual(resp.status_code, 200)
