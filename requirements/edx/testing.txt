@@ -589,7 +589,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.8.1
+edx-enterprise==6.8.3
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
