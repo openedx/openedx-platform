@@ -9,6 +9,7 @@ import logging
 from uuid import uuid4
 import typing
 
+from django.db import transaction
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_events.content_authoring.data import (
@@ -134,7 +135,11 @@ def create_container(
 
     # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-    LIBRARY_CONTAINER_CREATED.send_event(library_container=LibraryContainerData(container_key=container_key))
+    transaction.on_commit(lambda: LIBRARY_CONTAINER_CREATED.send_event(
+        library_container=LibraryContainerData(
+            container_key=container_key,
+        )
+    ))
 
     return ContainerMetadata.from_container(library_key, container)
 
@@ -200,8 +205,27 @@ def delete_container(
 
     No-op if container doesn't exist or has already been soft-deleted.
     """
+    def send_container_deleted_signal():
+        # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
+        # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
+        LIBRARY_CONTAINER_DELETED.send_event(
+            library_container=LibraryContainerData(
+                container_key=container_key,
+            )
+        )
+
+    try:
+        container = get_container_from_key(container_key)
+    except Container.DoesNotExist:
+        # There may be cases where entries are created in the
+        # search index, but the container is not created
+        # (an intermediate error occurred).
+        # In that case, we keep the index updated by removing the entry,
+        # but still raise the error so the caller knows the container did not exist.
+        send_container_deleted_signal()
+        raise
+
     library_key = container_key.lib_key
-    container = get_container_from_key(container_key)
 
     # Fetch related collections and containers before soft-delete
     affected_collections = content_api.get_entity_collections(
@@ -216,13 +240,7 @@ def delete_container(
     )
     content_api.soft_delete_draft(container.pk)
 
-    # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
-    # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
-    LIBRARY_CONTAINER_DELETED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    )
+    send_container_deleted_signal()
 
     # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
     # collection indexing asynchronously.
