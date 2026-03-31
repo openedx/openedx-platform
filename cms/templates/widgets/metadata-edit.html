@@ -52,7 +52,11 @@
               "Legacy libraries will be unsupported in Willow. Any content you create in a"
               " legacy library will soon need to be migrated. Consider using the "
             )}
-            <a href="${library_url}" target="_blank">${_("Libraries feature")}</a>
+            % if libraries_list_url:
+                <a href="${library_url}" target="_blank">${_("Libraries feature")}</a>
+            % else:
+                ${_("Libraries feature")}
+            % endif
             ${_(" instead.")}
           </p>
         </div>

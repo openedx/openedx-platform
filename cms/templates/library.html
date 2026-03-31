@@ -42,7 +42,7 @@ from openedx.core.djangolib.markup import HTML, Text
 </%block>
 
 <%block name="content">
-
+<% libraries_list_url = get_libraries_list_url() %>
 
 <div class="wrapper-mast wrapper">
     <header class="mast has-actions has-navigation has-subtitle">
@@ -91,7 +91,11 @@ from openedx.core.djangolib.markup import HTML, Text
                                     "Legacy libraries will be unsupported in Willow. Any content you create in a"
                                     " legacy library will soon need to be migrated. Consider using the "
                                 )}
-                                <a href="${get_libraries_list_url()}" target="_blank">${_("Libraries feature")}</a>
+                                % if libraries_list_url:
+                                    <a href="${get_libraries_list_url() or "#"}" targht="_blank">${_("Libraries feature")}</a>
+                                % else:
+                                    ${_("Libraries feature")}
+                                % endif
                                 ${_(" instead.")}
                           </p>
                         </div>

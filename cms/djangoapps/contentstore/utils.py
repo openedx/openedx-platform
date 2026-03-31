@@ -547,18 +547,15 @@ def get_taxonomy_list_url() -> str | None:
     return f'{mfe_base_url}/taxonomies'
 
 
-def get_libraries_list_url() -> str:
+def get_libraries_list_url() -> str | None:
     """
     Gets course authoring microfrontend URL for libraries list view.
     """
     mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
-    if mfe_base_url:
-        return f'{mfe_base_url}/libraries'
+    if not mfe_base_url:
+        return None
 
-    raise ImproperlyConfigured(
-        "The COURSE_AUTHORING_MICROFRONTEND_URL must be configured. "
-        "Please set it to the base url for your authoring MFE."
-    )
+    return f'{mfe_base_url}/libraries'
 
 
 def get_taxonomy_tags_widget_url(course_locator=None) -> str | None:
