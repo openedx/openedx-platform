@@ -63,7 +63,7 @@ COMPONENT_TYPES = [
     'drag-and-drop-v2',
 ]
 
-BETA_COMPONENT_TYPES = ['library_v2', 'itembank']
+BETA_COMPONENT_TYPES = []
 
 ADVANCED_COMPONENT_TYPES = sorted({name for name, class_ in XBlock.load_classes()} - set(COMPONENT_TYPES))
 

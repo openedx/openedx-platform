@@ -293,7 +293,6 @@ class AccountViewSet(ViewSet):
         If the user makes the request for her own account, or makes a request for another account and has "is_staff" access, an HTTP 200 "OK" response is returned. The response contains the following values.
 
         * `id`: numerical lms user id in db
-        * `activation_key`: auto-genrated activation key when signed up via email
         * `bio`: null or textual representation of user biographical information ("about me").
         * `country`: An ISO 3166 country code or null.
         * `date_joined`: The date the account was created, in the string format provided by datetime. For example, "2014-08-26T17:52:11Z".

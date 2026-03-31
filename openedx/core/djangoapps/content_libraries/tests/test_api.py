@@ -7,6 +7,7 @@ import hashlib
 import uuid
 from unittest import mock
 
+from django.db import transaction
 from django.test import TestCase
 from user_tasks.models import UserTaskStatus
 
@@ -18,18 +19,26 @@ from opaque_keys.edx.keys import (
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
+    LibraryBlockData,
     LibraryCollectionData,
     LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+    LIBRARY_BLOCK_CREATED,
+    LIBRARY_BLOCK_DELETED,
+    LIBRARY_BLOCK_UPDATED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
     LIBRARY_COLLECTION_UPDATED,
+    LIBRARY_CONTAINER_CREATED,
+    LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
+from openedx_content.models_api import Component, Container
 from openedx_authz.api.users import get_user_role_assignments_in_scope
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 
 from common.djangoapps.student.tests.factories import UserFactory
 from .. import api
@@ -320,7 +329,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         # Create a subsection container
         self.subsection1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-1',
             'Subsection 1',
             None,
@@ -659,6 +668,69 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             },
         )
 
+    def test_delete_container_when_container_does_not_exist(self) -> None:
+        """
+        Test that delete_container raises Container.DoesNotExist and still sends
+        LIBRARY_CONTAINER_DELETED (to clean up stale search-index entries) when
+        the Container does not exist in the DB.
+        """
+        container_key = LibraryContainerLocator.from_string(self.unit1["id"])
+
+        event_receiver = mock.Mock()
+        LIBRARY_CONTAINER_DELETED.connect(event_receiver)
+        self.addCleanup(LIBRARY_CONTAINER_DELETED.disconnect, event_receiver)
+
+        with mock.patch(
+            "openedx.core.djangoapps.content_libraries.api.containers.get_container_from_key",
+            side_effect=Container.DoesNotExist,
+        ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
+            with self.assertRaises(Container.DoesNotExist):
+                api.delete_container(container_key)
+            mock_soft_delete.assert_not_called()
+
+        assert event_receiver.call_count == 1
+        self.assertDictContainsEntries(
+            event_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_CONTAINER_DELETED,
+                "library_container": LibraryContainerData(
+                    container_key=container_key,
+                ),
+            },
+        )
+
+    def test_delete_library_block_when_component_does_not_exist(self) -> None:
+        """
+        Test that delete_library_block raises Component.DoesNotExist and still sends
+        LIBRARY_BLOCK_DELETED (to clean up stale search-index entries) when the
+        Component does not exist in the DB.
+        """
+        usage_key = LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"])
+
+        event_receiver = mock.Mock()
+        LIBRARY_BLOCK_DELETED.connect(event_receiver)
+        self.addCleanup(LIBRARY_BLOCK_DELETED.disconnect, event_receiver)
+
+        with mock.patch(
+            "openedx.core.djangoapps.content_libraries.api.blocks.get_component_from_usage_key",
+            side_effect=Component.DoesNotExist,
+        ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
+            with self.assertRaises(Component.DoesNotExist):
+                api.delete_library_block(usage_key)
+            mock_soft_delete.assert_not_called()
+
+        assert event_receiver.call_count == 1
+        self.assertDictContainsEntries(
+            event_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_BLOCK_DELETED,
+                "library_block": LibraryBlockData(
+                    library_key=self.lib1.library_key,
+                    usage_key=usage_key,
+                ),
+            },
+        )
+
     def test_restore_library_block(self) -> None:
         api.update_library_collection_items(
             self.lib1.library_key,
@@ -784,21 +856,21 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         self.lib1 = ContentLibrary.objects.get(slug="test-lib-cont-1")
 
         # Create Units
-        self.unit1 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-1', 'Unit 1', None)
-        self.unit2 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-2', 'Unit 2', None)
-        self.unit3 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-3', 'Unit 3', None)
+        self.unit1 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-1', 'Unit 1', None)
+        self.unit2 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-2', 'Unit 2', None)
+        self.unit3 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-3', 'Unit 3', None)
 
         # Create Subsections
         self.subsection1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-1',
             'Subsection 1',
             None,
         )
         self.subsection2 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-2',
             'Subsection 2',
             None,
@@ -807,14 +879,14 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         # Create Sections
         self.section1 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Section,
+            content_models.Section,
             'section-1',
             'Section 1',
             None,
         )
         self.section2 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Section,
+            content_models.Section,
             'section-2',
             'Section 2',
             None,
@@ -1085,7 +1157,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
     def test_call_object_changed_signal_when_remove_unit(self) -> None:
-        unit4 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-4', 'Unit 4', None)
+        unit4 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-4', 'Unit 4', None)
 
         api.update_container_children(
             self.subsection2.container_key,
@@ -1119,7 +1191,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
     def test_call_object_changed_signal_when_remove_subsection(self) -> None:
         subsection3 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-3',
             'Subsection 3',
             None,
@@ -1202,8 +1274,8 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         event_reciver = mock.Mock()
         CONTENT_OBJECT_ASSOCIATIONS_CHANGED.connect(event_reciver)
 
-        unit4 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-4', 'Unit 4', None)
-        unit5 = api.create_container(self.lib1.library_key, api.ContainerType.Unit, 'unit-5', 'Unit 5', None)
+        unit4 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-4', 'Unit 4', None)
+        unit5 = api.create_container(self.lib1.library_key, content_models.Unit, 'unit-5', 'Unit 5', None)
 
         api.update_container_children(
             self.subsection2.container_key,
@@ -1241,14 +1313,14 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
         subsection3 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-3',
             'Subsection 3',
             None,
         )
         subsection4 = api.create_container(
             self.lib1.library_key,
-            api.ContainerType.Subsection,
+            content_models.Subsection,
             'subsection-4',
             'Subsection 4',
             None,
@@ -1323,7 +1395,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
         # Verify that the container is copied
-        assert new_container.container_type == self.section1.container_type
+        assert new_container.container_type_code == self.section1.container_type_code
         assert new_container.display_name == self.section1.display_name
 
         # Verify that the children are linked
@@ -1346,7 +1418,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         )
 
         # Verify that the container is copied
-        assert new_container.container_type == self.section1.container_type
+        assert new_container.container_type_code == self.section1.container_type_code
         assert new_container.display_name == self.section1.display_name
 
         # Verify that the children are copied
@@ -1389,6 +1461,101 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
 
         # This is the same unit, so it should not be duplicated
         assert units_subsection1[0].container_key == units_subsection2[0].container_key
+
+    def test_set_library_block_olx_no_signal_on_rollback(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED is NOT emitted when set_library_block_olx is called
+        within a transaction that is later rolled back.
+        """
+        event_receiver = mock.Mock()
+        LIBRARY_BLOCK_UPDATED.connect(event_receiver)
+        self.addCleanup(LIBRARY_BLOCK_UPDATED.disconnect, event_receiver)
+
+        try:
+            with transaction.atomic():
+                api.set_library_block_olx(
+                    self.problem_block_usage_key,
+                    "<problem>Updated inside rolled-back transaction</problem>",
+                )
+                raise RuntimeError("Force rollback")
+        except RuntimeError:
+            pass
+
+        assert event_receiver.call_count == 0
+
+    def test_set_library_block_olx_signal_emitted_on_success(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED IS emitted when set_library_block_olx completes
+        successfully.
+        """
+        event_receiver = mock.Mock()
+        LIBRARY_BLOCK_UPDATED.connect(event_receiver)
+        self.addCleanup(LIBRARY_BLOCK_UPDATED.disconnect, event_receiver)
+
+        api.set_library_block_olx(
+            self.problem_block_usage_key,
+            "<problem>Updated successfully</problem>",
+        )
+
+        assert event_receiver.call_count == 1
+        self.assertDictContainsEntries(
+            event_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_BLOCK_UPDATED,
+                "library_block": LibraryBlockData(
+                    library_key=self.lib1.library_key,
+                    usage_key=self.problem_block_usage_key,
+                ),
+            },
+        )
+
+    def test_import_container_no_signals_on_failure(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard fails mid-way, none of
+        LIBRARY_CONTAINER_CREATED, LIBRARY_BLOCK_CREATED, or LIBRARY_BLOCK_UPDATED
+        are emitted, so the search index is not polluted with orphan entries.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+
+        event_receiver = mock.Mock()
+        for signal in [LIBRARY_CONTAINER_CREATED, LIBRARY_BLOCK_CREATED, LIBRARY_BLOCK_UPDATED]:
+            signal.connect(event_receiver)
+            self.addCleanup(signal.disconnect, event_receiver)
+
+        # Simulate a failure at the last step of the import (after the container
+        # and its child components have been created in the DB).
+        with mock.patch(
+            "openedx.core.djangoapps.content_libraries.api.blocks.update_container_children",
+            side_effect=RuntimeError("Simulated failure"),
+        ), self.assertRaises(RuntimeError):
+            api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
+
+        assert event_receiver.call_count == 0
+
+    def test_import_container_signals_emitted_on_success(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard succeeds, LIBRARY_CONTAINER_CREATED
+        is emitted for the new container.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+
+        container_created_receiver = mock.Mock()
+        LIBRARY_CONTAINER_CREATED.connect(container_created_receiver)
+        self.addCleanup(LIBRARY_CONTAINER_CREATED.disconnect, container_created_receiver)
+
+        new_container = api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
+
+        assert container_created_receiver.call_count == 1
+        assert hasattr(new_container, "container_key")
+        self.assertDictContainsEntries(
+            container_created_receiver.call_args_list[0].kwargs,
+            {
+                "signal": LIBRARY_CONTAINER_CREATED,
+                "library_container": LibraryContainerData(
+                    container_key=new_container.container_key,  # type: ignore[union-attr]
+                ),
+            },
+        )
 
 
 class ContentLibraryExportTest(ContentLibrariesRestApiTest):

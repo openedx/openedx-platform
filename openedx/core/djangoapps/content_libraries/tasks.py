@@ -104,7 +104,9 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
     """
     publish_log = PublishLog.objects.get(pk=publish_log_pk)
     library_key = LibraryLocatorV2.from_string(library_key_str)
-    affected_entities = publish_log.records.select_related("entity", "entity__container", "entity__component").all()
+    affected_entities = publish_log.records.select_related(
+        "entity", "entity__container", "entity__container__container_type", "entity__component",
+    ).all()
     affected_containers: set[LibraryContainerLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):
@@ -122,9 +124,13 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
             # Publishing a container will auto-publish its children, but publishing a single component or all changes
             # in the library will NOT usually include any parent containers. But we do need to notify listeners that the
             # parent container(s) have changed, e.g. so the search index can update the "has_unpublished_changes"
-            for parent_container in api.get_containers_contains_item(usage_key):
-                affected_containers.add(parent_container.container_key)
-                # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    affected_containers.add(parent_container.container_key)
+                    # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            except api.ContentLibraryBlockNotFound:
+                # The component has been deleted.
+                pass
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
             affected_containers.add(container_key)
@@ -224,8 +230,12 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
             # If any containers contain this component, their child list / component count may need to be updated
             # e.g. if this was a newly created component in the container and is now deleted, or this was deleted and
             # is now restored.
-            for parent_container in api.get_containers_contains_item(usage_key):
-                updated_container_keys.add(parent_container.container_key)
+            # TODO: we should be able to rewrite this to use the "side effects" functionality of the publishing API.
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    updated_container_keys.add(parent_container.container_key)
+            except api.ContentLibraryBlockNotFound:
+                pass  # The item 'usage_key' has been deleted. But shouldn't we still handle that?
 
             # TODO: do we also need to send CONTENT_OBJECT_ASSOCIATIONS_CHANGED for this component, or is
             # LIBRARY_BLOCK_UPDATED sufficient?

@@ -758,7 +758,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.8.1
+edx-enterprise==6.8.3
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
@@ -885,7 +885,7 @@ enmerkar-underscore==2.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-enterprise-integrated-channels==0.1.54
+enterprise-integrated-channels==0.1.55
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1382,7 +1382,7 @@ openedx-calc==5.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   xblocks-contrib
-openedx-core==0.36.0
+openedx-core==0.38.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
@@ -2326,7 +2326,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/testing.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.15.1
+xblocks-contrib==0.15.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt

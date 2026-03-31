@@ -17,15 +17,23 @@ from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods, require_POST
 from opaque_keys.edx.keys import AssetKey, CourseKey
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from pymongo import ASCENDING, DESCENDING
 
-from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.models import UserPreference
+from openedx_authz.constants.permissions import (
+    COURSES_VIEW_FILES,
+    COURSES_CREATE_FILES,
+    COURSES_DELETE_FILES,
+    COURSES_EDIT_FILES,
+)
 from openedx_filters.content_authoring.filters import LMSPageURLRequested
+from openedx.core.toggles import enable_authz_course_authoring
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
@@ -73,8 +81,8 @@ def handle_assets(request, course_key_string=None, asset_key_string=None):
         json: delete an asset
     '''
     course_key = CourseKey.from_string(course_key_string)
-    if not has_course_author_access(request.user, course_key):
-        raise PermissionDenied()
+    # Enforce file permissions.
+    _authz_enforce_file_permissions(request, course_key)
 
     response_format = get_response_format(request)
     if request_response_format_is_json(request, response_format):
@@ -91,12 +99,60 @@ def handle_assets(request, course_key_string=None, asset_key_string=None):
     return HttpResponseNotFound()
 
 
+def _authz_enforce_file_permissions(request, course_key):
+    """
+    Enforce permissions for file operations in asset handler.
+    When the authz.enable_course_authoring flag is enabled for the specified course,
+    This function enforces the appropriate file permission depending on request content.
+    When the flag is disabled, it enforces the legacy has_studio_write_access permission.
+    """
+    # Enforce permission to view files.
+    # This is the minimum permission needed for handling assets.
+    if not user_has_course_permission(
+        request.user,
+        COURSES_VIEW_FILES.identifier,
+        course_key,
+        LegacyAuthoringPermission.WRITE
+    ):
+        raise PermissionDenied()
+
+    if enable_authz_course_authoring(course_key):
+        # Check create, edit and delete permissions for AuthZ-enabled courses.
+        if request.method in ('PUT', 'POST'):
+            permission = (
+                COURSES_CREATE_FILES.identifier
+                if 'file' in request.FILES
+                else COURSES_EDIT_FILES.identifier
+            )
+
+            if not user_has_course_permission(
+                request.user,
+                permission,
+                course_key,
+                LegacyAuthoringPermission.WRITE
+            ):
+                raise PermissionDenied()
+
+        if request.method == 'DELETE' and not user_has_course_permission(
+            request.user,
+            COURSES_DELETE_FILES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE
+        ):
+            raise PermissionDenied()
+
+
 def get_asset_usage_path_json(request, course_key, asset_key_string):
     """
     Get a list of units with ancestors that use given asset.
     """
     course_key = CourseKey.from_string(course_key)
-    if not has_course_author_access(request.user, course_key):
+    if not user_has_course_permission(
+        request.user,
+        COURSES_VIEW_FILES.identifier,
+        course_key,
+        LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
     asset_location = AssetKey.from_string(asset_key_string) if asset_key_string else None
     usage_locations = _get_asset_usage_path(course_key, [{'asset_key': asset_location}])
