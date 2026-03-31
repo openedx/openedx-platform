@@ -24,7 +24,7 @@ packaging==26.0
     # via pytest
 pluggy==1.6.0
     # via pytest
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pymongo==4.4.0
     # via
