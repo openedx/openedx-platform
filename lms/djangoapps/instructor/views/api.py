@@ -1105,17 +1105,18 @@ class ListCourseRoleMembersView(APIView):
 
         # Apply search filter
         if search:
+            search_lower = search.lower()
             users = [
                 user for user in users
-                if search.lower() in user.username.lower()
-                or search.lower() in user.email.lower()
-                or search.lower() in (user.first_name or '').lower()
-                or search.lower() in (user.last_name or '').lower()
+                if search_lower in user.username.lower()
+                or search_lower in user.email.lower()
+                or search_lower in (user.first_name or '').lower()
+                or search_lower in (user.last_name or '').lower()
             ]
 
         # Calculate pagination
         total_count = len(users)
-        num_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
         paginated_users = users[start_idx:end_idx]
@@ -1177,7 +1178,8 @@ class ListCourseEnrollmentsView(APIView):
             Http404: If the course does not exist.
         """
         course_key = CourseKey.from_string(course_id)
-        course = get_course_with_access(
+        # Verify the user has staff-level access to the course; raises Http404 if not.
+        get_course_with_access(
             request.user, 'staff', course_key, depth=None
         )
 
@@ -1204,13 +1206,13 @@ class ListCourseEnrollmentsView(APIView):
 
         # Calculate pagination
         total_count = enrollments.count()
-        num_pages = (total_count + page_size - 1) // page_size if page_size > 0 else 1
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
         start_idx = (page - 1) * page_size
         end_idx = start_idx + page_size
         paginated_enrollments = enrollments[start_idx:end_idx]
 
         # Extract user data from enrollments
-        users = [enrollment.user for enrollment in paginated_enrollments]
+        users = [enr.user for enr in paginated_enrollments]
         serializer = UserSerializer(users, many=True)
 
         response_payload = {
@@ -2301,7 +2303,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
 
         elif all_students:
@@ -2313,7 +2315,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
         else:
             return HttpResponseBadRequest()

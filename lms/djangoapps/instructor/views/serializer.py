@@ -23,15 +23,20 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
 from .tools import get_student_from_identifier
 
 
-class RoleNameSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class PaginatedSearchSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
-    Serializer that describes the response of the problem response report generation API.
+    Base serializer for paginated list requests with optional search.
     """
-
-    rolename = serializers.CharField(help_text=_("Role name"))
     search = serializers.CharField(required=False, allow_blank=True, help_text=_("Search term"))
     page = serializers.IntegerField(required=False, min_value=1, help_text=_("Page number"))
     page_size = serializers.IntegerField(required=False, min_value=1, max_value=100, help_text=_("Page size"))
+
+
+class RoleNameSerializer(PaginatedSearchSerializer):  # pylint: disable=abstract-method
+    """
+    Serializer for role member list requests.
+    """
+    rolename = serializers.CharField(help_text=_("Role name"))
 
     def validate_rolename(self, value):
         """
@@ -48,13 +53,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'first_name', 'last_name']
 
 
-class EnrollmentListSerializer(serializers.Serializer):  # pylint: disable=abstract-method
+class EnrollmentListSerializer(PaginatedSearchSerializer):  # pylint: disable=abstract-method
     """
     Serializer for enrollment list request parameters.
     """
-    search = serializers.CharField(required=False, allow_blank=True, help_text=_("Search term"))
-    page = serializers.IntegerField(required=False, min_value=1, help_text=_("Page number"))
-    page_size = serializers.IntegerField(required=False, min_value=1, max_value=100, help_text=_("Page size"))
 
 
 class UniqueStudentIdentifierSerializer(serializers.Serializer):

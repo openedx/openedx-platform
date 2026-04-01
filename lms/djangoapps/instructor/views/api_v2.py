@@ -55,7 +55,7 @@ from lms.djangoapps.instructor_task.models import ReportStore
 from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
-from .filters import CourseEnrollmentFilter
+from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
     InstructorTaskListSerializer,
     CourseInformationSerializerV2,

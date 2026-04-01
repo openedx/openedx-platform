@@ -27,7 +27,7 @@ class CourseEnrollmentFilter(filters.FilterSet):
 
     def _get_course_key(self):
         """Extract the course key from the view's URL kwargs."""
-        return CourseKey.from_string(self.request.parser_context['kwargs']['course_id'])
+        return CourseKey.from_string(self.request.resolver_match.kwargs['course_id'])
 
     def filter_search(self, queryset, name, value):
         """Filter enrollments by username, email, first name, or last name."""

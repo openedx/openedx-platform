@@ -313,7 +313,7 @@ class TestListCourseEnrollments(SharedModuleStoreTestCase, LoginEnrollmentTestCa
         assert len(res_json['enrollments']) == 10
 
     def test_list_enrollments_last_page(self):
-        """Test listing enrollments on last page with partial results."""
+        """Test listing enrollments on last page."""
         response = self.client.post(self.url, {
             'page': 3,
             'page_size': 10

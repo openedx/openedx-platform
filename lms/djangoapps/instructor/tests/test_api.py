@@ -2445,7 +2445,7 @@ class TestInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTe
             'course_id': str(self.course.id),
             'beta': [],
             'count': 0,
-            'num_pages': 0,
+            'num_pages': 1,
             'current_page': 1,
         }
         res_json = json.loads(response.content.decode('utf-8'))
