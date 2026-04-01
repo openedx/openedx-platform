@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Safer version of lxml.etree.
 
@@ -5,8 +6,6 @@ It overrides some unsafe functions from lxml.etree with safer versions from defu
 It also includes a safer XMLParser.
 
 For processing xml always prefer this over using lxml.etree directly.
-
-isort:skip_file
 """
 
 # Names are imported into this module so that it can be a stand-in for

@@ -263,7 +263,7 @@ if core_toggles.ENTRANCE_EXAMS.is_enabled():
 
 # Enable Web/HTML Certificates
 if settings.FEATURES.get('CERTIFICATES_HTML_VIEW'):
-    from cms.djangoapps.contentstore.views.certificates import (
+    from cms.djangoapps.contentstore.views.certificates import (  # noqa: I001 - conditional import inside if block
         CertificateActivationAPIView,
         CertificateDetailAPIView,
         certificates_list_handler,
@@ -342,9 +342,9 @@ if 'openedx.testing.coverage_context_listener' in settings.INSTALLED_APPS:
     ]
 
 # pylint: disable=wrong-import-position, wrong-import-order
-from edx_django_utils.plugins import get_plugin_url_patterns  # isort:skip
+from edx_django_utils.plugins import get_plugin_url_patterns  # noqa: I001 - must be after urlpatterns are built
 # pylint: disable=wrong-import-position
-from openedx.core.djangoapps.plugins.constants import ProjectType  # isort:skip
+from openedx.core.djangoapps.plugins.constants import ProjectType  # noqa: I001 - must be after urlpatterns are built
 
 urlpatterns.extend(get_plugin_url_patterns(ProjectType.CMS))
 

@@ -1,3 +1,4 @@
+# ruff: noqa: I001 - settings file: star-import order is semantically significant
 """
 Override common.py with key-value pairs from YAML (plus some extra defaults & post-processing).
 

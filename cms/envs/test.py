@@ -13,7 +13,8 @@ sessions. Assumes structure:
 # pylint: disable=wildcard-import, unused-wildcard-import
 
 
-import os
+
+import os  # noqa: I001 - suppresses linting for this whole block, sort imports manually as needed
 import tempfile
 
 from django.utils.translation import gettext_lazy
@@ -22,10 +23,10 @@ from edx_django_utils.plugins import add_plugins
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import derive_settings
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
-from openedx.envs.test import *  # pylint: disable=wrong-import-order
 from xmodule.modulestore.modulestore_settings import update_module_store_settings  # pylint: disable=wrong-import-order
 
 from .common import *
+from openedx.envs.test import *  # must come after .common to override Derived values with literals
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())

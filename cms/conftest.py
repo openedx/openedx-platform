@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Studio unit test configuration and fixtures.
 
@@ -13,7 +14,7 @@ import pytest
 from openedx.core.pytest_hooks import DeferPlugin
 
 # Patch the xml libs before anything else.
-from openedx.core.lib.safe_lxml import defuse_xml_libs  # isort:skip
+from openedx.core.lib.safe_lxml import defuse_xml_libs  # must patch xml libs before other imports execute
 defuse_xml_libs()
 
 

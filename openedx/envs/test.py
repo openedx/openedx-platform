@@ -1,3 +1,4 @@
+# ruff: noqa: I001 - settings file: star-import order is semantically significant
 """
 Common test related Django settings for Open edX services.
 

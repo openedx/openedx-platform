@@ -32,6 +32,7 @@ from django.utils.translation import gettext_lazy as _
 from path import Path as path
 
 from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
+
 # We have legacy components that reference these constants via the settings module.
 # New code should import them directly from `openedx.core.constants` instead.
 from openedx.core.constants import (  # pylint: disable=unused-import
@@ -40,7 +41,7 @@ from openedx.core.constants import (  # pylint: disable=unused-import
     COURSE_KEY_PATTERN,
     COURSE_KEY_REGEX,
     USAGE_ID_PATTERN,
-    USAGE_KEY_PATTERN
+    USAGE_KEY_PATTERN,
 )
 from openedx.core.djangoapps.theming.helpers_dirs import get_theme_base_dirs_from_settings, get_themes_unchecked
 from openedx.core.lib.derived import Derived

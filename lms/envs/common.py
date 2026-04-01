@@ -44,6 +44,7 @@ import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
 from django.utils.translation import gettext_lazy as _
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
 from enterprise.constants import (
     DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
     ENTERPRISE_ADMIN_ROLE,
@@ -57,11 +58,12 @@ from enterprise.constants import (
     ENTERPRISE_SSO_ORCHESTRATOR_OPERATOR_ROLE,
     PROVISIONING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
-    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE
+    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
 )
 from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
 from path import Path as path
 
+from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.envs.common import *  # pylint: disable=wildcard-import
@@ -2952,13 +2954,6 @@ FACEBOOK_API_VERSION = None
 USER_STATE_BATCH_SIZE = 5000
 
 ############## Plugin Django Apps #########################
-
-from edx_django_utils.plugins import (  # pylint: disable=wrong-import-position,wrong-import-order
-    add_plugins,
-    get_plugin_apps
-)
-
-from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)

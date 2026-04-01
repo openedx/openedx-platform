@@ -1,3 +1,4 @@
+# ruff: noqa: I001 - settings file: star-import order is semantically significant
 """
 Specific overrides to the base prod settings to make development easier.
 """
