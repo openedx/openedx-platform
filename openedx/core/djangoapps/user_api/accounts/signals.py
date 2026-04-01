@@ -10,7 +10,7 @@ from django.dispatch import Signal
 USER_RETIRE_MAILINGS = Signal()
 
 # Signal to retire LMS critical information
-# providing_args=["user"]
+# providing_args=["user", "retired_username", "retired_email"]
 USER_RETIRE_LMS_CRITICAL = Signal()
 
 # Signal to retire LMS misc information

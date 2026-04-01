@@ -3,9 +3,9 @@ import datetime
 import hashlib
 from unittest import mock
 from unittest.mock import MagicMock
+from zoneinfo import ZoneInfo
 
 import ddt
-import pytz
 from crum import set_current_request
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.cache import cache
@@ -15,7 +15,6 @@ from django.test import TestCase, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -150,7 +149,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
             course_id=course.id,
             mode_slug=CourseMode.VERIFIED,
             # This must be in the future to ensure it is returned by downstream code.
-            expiration_datetime=datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=1)
+            expiration_datetime=datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=1)
         )
         enrollment = CourseEnrollmentFactory(course_id=course.id, mode=CourseMode.AUDIT)
         Schedule.objects.all().delete()
@@ -164,7 +163,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
             course_id=course.id,
             mode_slug=CourseMode.VERIFIED,
             # This must be in the future to ensure it is returned by downstream code.
-            expiration_datetime=datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=30),
+            expiration_datetime=datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=30),
         )
         course_overview = CourseOverview.load_from_module_store(course.id)
         CourseEnrollmentFactory(
@@ -172,7 +171,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
             mode=CourseMode.AUDIT,
             course=course_overview,
         )
-        Schedule.objects.update(upgrade_deadline=datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=5))
+        Schedule.objects.update(upgrade_deadline=datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=5))
         enrollment = CourseEnrollment.objects.first()
 
         # The schedule's upgrade deadline should be used if a schedule exists
@@ -189,7 +188,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
     @skip_unless_lms
     def test_upgrade_deadline_instructor_paced(self):
         course = CourseFactory(self_paced=False)
-        course_upgrade_deadline = datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=1)
+        course_upgrade_deadline = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=1)
         CourseModeFactory(
             course_id=course.id,
             mode_slug=CourseMode.VERIFIED,
@@ -226,7 +225,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
             course_id=course.id,
             mode_slug=CourseMode.VERIFIED,
             # This must be in the future to ensure it is returned by downstream code.
-            expiration_datetime=datetime.datetime.now(pytz.UTC) + datetime.timedelta(days=30),
+            expiration_datetime=datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=30),
         )
 
         # Create a CourseOverview with an outdated version
@@ -280,7 +279,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
 
     def test_first_check_streak_celebration(self):
         STREAK_LENGTH_TO_CELEBRATE = UserCelebration.perform_streak_updates(self.user, self.course_key)
-        today = datetime.datetime.now(UTC).date()
+        today = datetime.datetime.now(ZoneInfo("UTC")).date()
         assert self.user.celebration.streak_length == 1
         assert self.user.celebration.last_day_of_streak == today
         assert STREAK_LENGTH_TO_CELEBRATE is None
@@ -300,7 +299,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/9/21  | 6                   | 2/9/21             | None                    | Day 6 of Streak                     |
         +---------+---------------------+--------------------+-------------------------+------------------+------------------+
         """
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, (self.STREAK_LENGTH_TO_CELEBRATE * 2) + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 STREAK_LENGTH_TO_CELEBRATE = UserCelebration.perform_streak_updates(self.user, self.course_key)
@@ -321,7 +320,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/9/21  | 6                   | 2/9/21             | None                    | longest_streak_ever is 6               |
         +---------+---------------------+--------------------+-------------------------+------------------+---------------------+
         """
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, (self.STREAK_LENGTH_TO_CELEBRATE * 2) + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 UserCelebration.perform_streak_updates(self.user, self.course_key)
@@ -342,7 +341,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/6/21  | 3                   | 2/6/21             | None                    | Already celebrated this streak.               |
         +---------+---------------------+--------------------+-------------------------+------------------+----------------------------+
         """
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 streak_length_to_celebrate = UserCelebration.perform_streak_updates(self.user, self.course_key)
@@ -382,7 +381,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/10/21 | 3                   | 2/10/21            | 3                       | Completed 3 Day Streak so we should celebrate |
         +---------+---------------------+--------------------+-------------------------+------------------+-----------------------------------------------+
         """
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH + self.STREAK_LENGTH_TO_CELEBRATE + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 if self.STREAK_LENGTH_TO_CELEBRATE < i <= self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH:
@@ -413,7 +412,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/12/21 | 1                   | 2/12/21            | None                    | Day 2 of streak was missed, so streak resets  |
         +---------+---------------------+--------------------+-------------------------+------------------+-----------------------------------------------+
         """
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE * 3 + 1, 2):
             with freeze_time(now + datetime.timedelta(days=i)):
                 streak_length_to_celebrate = UserCelebration.perform_streak_updates(self.user, self.course_key)
@@ -440,7 +439,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         +---------+---------------------+--------------------+-------------------------+------------------+
         """
         UserCelebration.STREAK_BREAK_LENGTH = 2
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE * 3 + 1, 2):
             with freeze_time(now + datetime.timedelta(days=i)):
                 streak_length_to_celebrate = UserCelebration.perform_streak_updates(self.user, self.course_key)
@@ -831,7 +830,7 @@ class TestUserPostSaveCallback(SharedModuleStoreTestCase):
             return CourseEnrollment.get_enrollment(student, self.course.id)
 
         # Set enrollment end date to a past date so that enrollment is ended
-        enrollment_end = datetime.datetime.now(pytz.UTC) - datetime.timedelta(days=2)
+        enrollment_end = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=2)
         course_overview = CourseOverviewFactory.create(id=self.course.id, enrollment_end=enrollment_end)
         course_overview.save()
 

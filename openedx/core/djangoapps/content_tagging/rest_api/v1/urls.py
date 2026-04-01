@@ -3,9 +3,9 @@ Taxonomies API v1 URLs.
 """
 
 from django.urls.conf import include, path
-from openedx_tagging.core.tagging.rest_api.v1 import views as oel_tagging_views
-from openedx_tagging.core.tagging.rest_api.v1 import views_import as oel_tagging_views_import
-from openedx_tagging.core.tagging.rest_api.v1.views import ObjectTagCountsView
+from openedx_tagging.rest_api.v1 import views as oel_tagging_views
+from openedx_tagging.rest_api.v1 import views_import as oel_tagging_views_import
+from openedx_tagging.rest_api.v1.views import ObjectTagCountsView
 from rest_framework.routers import DefaultRouter
 
 from . import views
@@ -29,6 +29,7 @@ urlpatterns = [
     path(
         "object_tags/<str:context_id>/export/",
         views.ObjectTagExportView.as_view(),
+        name="taxonomy-object-tag-export",
     ),
     path('', include(router.urls))
 ]

@@ -10,7 +10,7 @@ from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from organizations.tests.factories import OrganizationFactory
 from rest_framework import status
 
@@ -272,7 +272,7 @@ class HomePageLibrariesViewTest(LibraryTestCase):
         self.url = reverse("cms.djangoapps.contentstore:v1:libraries")
         # Create a collection to migrate this library to
         collection_key = "test-collection"
-        authoring_api.create_collection(
+        content_api.create_collection(
             learning_package_id=learning_package.id,
             key=collection_key,
             title="Test Collection",

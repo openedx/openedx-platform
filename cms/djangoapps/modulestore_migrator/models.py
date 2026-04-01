@@ -11,7 +11,7 @@ from opaque_keys.edx.django.models import (
     LearningContextKeyField,
     UsageKeyField,
 )
-from openedx_learning.api.authoring_models import (
+from openedx_content.models_api import (
     Collection,
     DraftChangeLog,
     DraftChangeLogRecord,
@@ -47,8 +47,8 @@ class ModulestoreSource(models.Model):
       control whether `forwarded` is set to any given migration.
     """
     key = LearningContextKeyField(
-        max_length=255,
         unique=True,
+        case_sensitive=True,
         help_text=_('Key of the content source (a course or a legacy library)'),
     )
     forwarded = models.OneToOneField(
@@ -68,7 +68,7 @@ class ModulestoreSource(models.Model):
 class ModulestoreMigration(models.Model):
     """
     Tracks the action of a user importing a Modulestore-based course or legacy library into a
-    learning-core based learning package
+    openedx_content based learning package
 
     Notes:
     * As of Ulmo, a learning package is always associated with a v2 content library, but we
@@ -189,7 +189,7 @@ class ModulestoreBlockSource(TimeStampedModel):
         related_name="blocks",
     )
     key = UsageKeyField(
-        max_length=255,
+        case_sensitive=True,
         unique=True,
         help_text=_('Original usage key of the XBlock that has been imported.'),
     )

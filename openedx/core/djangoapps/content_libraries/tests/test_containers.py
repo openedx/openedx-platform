@@ -1,5 +1,5 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from datetime import datetime, timezone
 import textwrap
@@ -604,7 +604,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         assert unit_as_read['collections'] == [{"title": col1.title, "key": col1.key}]
 
     def test_section_hierarchy(self):
-        with self.assertNumQueries(133):
+        with self.assertNumQueries(126):
             hierarchy = self._get_container_hierarchy(self.section_with_subsections["id"])
         assert hierarchy["object_key"] == self.section_with_subsections["id"]
         assert hierarchy["components"] == [
@@ -630,7 +630,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         ]
 
     def test_subsection_hierarchy(self):
-        with self.assertNumQueries(95):
+        with self.assertNumQueries(91):
             hierarchy = self._get_container_hierarchy(self.subsection_with_units["id"])
         assert hierarchy["object_key"] == self.subsection_with_units["id"]
         assert hierarchy["components"] == [
@@ -653,7 +653,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         ]
 
     def test_units_hierarchy(self):
-        with self.assertNumQueries(60):
+        with self.assertNumQueries(56):
             hierarchy = self._get_container_hierarchy(self.unit_with_components["id"])
         assert hierarchy["object_key"] == self.unit_with_components["id"]
         assert hierarchy["components"] == [
@@ -679,7 +679,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
     def test_block_hierarchy(self):
-        with self.assertNumQueries(27):
+        with self.assertNumQueries(24):
             hierarchy = self._get_block_hierarchy(self.problem_block["id"])
         assert hierarchy["object_key"] == self.problem_block["id"]
         assert hierarchy["components"] == [
@@ -840,6 +840,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         # Test the actual OLX in the clipboard:
         olx_data = staging_api.get_staged_content_olx(clipboard_data.content.id)
         assert olx_data is not None
+        # pylint: disable=line-too-long
         assert olx_data == textwrap.dedent(f"""\
           <chapter copied_from_block="{self.section_with_subsections["id"]}" copied_from_version="2" display_name="Section with subsections">
             <sequential copied_from_block="{self.subsection["id"]}" copied_from_version="1" display_name="Subsection Alpha"/>
@@ -858,6 +859,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
             <sequential copied_from_block="{self.subsection_3["id"]}" copied_from_version="1" display_name="Test Subsection 3"/>
           </chapter>
         """)
+        # pylint: enable=line-too-long
 
     def test_publish_subsection(self) -> None:
         """
@@ -875,7 +877,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
         # TODO -- remove this when containers publish their children:
-        # https://github.com/openedx/openedx-learning/pull/307
+        # https://github.com/openedx/openedx-core/pull/307
         # Removing the unit with components because the components (children of children) are not published.
         # If the unit is kept, the subsection continues to have changes even after it is published.
         self._remove_container_children(
@@ -951,7 +953,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         )
 
         # TODO -- remove this when containers publish their children:
-        # https://github.com/openedx/openedx-learning/pull/307
+        # https://github.com/openedx/openedx-core/pull/307
         # Removing the subsection with units because the units (children of children) are not published.
         # If the subsection is kept, the section continues to have changes even after it is published.
         self._remove_container_children(

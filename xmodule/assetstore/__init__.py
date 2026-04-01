@@ -5,9 +5,9 @@ Classes representing asset metadata.
 
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import dateutil.parser
-import pytz
 from lxml import etree
 from opaque_keys.edx.keys import AssetKey, CourseKey
 
@@ -80,7 +80,7 @@ class AssetMetadata:
         self.thumbnail = thumbnail
         self.curr_version = curr_version
         self.prev_version = prev_version
-        now = datetime.now(pytz.utc)
+        now = datetime.now(ZoneInfo("UTC"))
         self.edited_by = edited_by
         self.edited_by_email = edited_by_email
         self.edited_on = edited_on or now

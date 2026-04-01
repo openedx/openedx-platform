@@ -46,6 +46,7 @@ from lms.djangoapps.certificates.api import (
     get_certificate_invalidation_entry,
     get_certificate_url,
     get_certificates_for_user,
+    get_course_ids_from_certs_for_user,
     get_certificates_for_user_by_course_keys,
     has_self_generated_certificates_enabled,
     is_certificate_invalidated,
@@ -1275,3 +1276,46 @@ class CertificatesLearnerRetirementFunctionality(ModuleStoreTestCase):
         cert_course2 = GeneratedCertificate.objects.get(user=self.user, course_id=self.course2.id)
         assert cert_course1.name == ""
         assert cert_course2.name == ""
+
+
+class GetCourseIdsForUsernameTests(TestCase):
+    """
+    Test suite for the `get_course_ids_from_certs_for_user` function.
+    """
+
+    def setUp(self):
+        """
+        Set up a user and two course certificates for testing.
+
+        Creates a test user using a factory and generates two course certificates
+        associated with distinct course keys.
+        """
+        self.user = UserFactory()
+        self.course_key_1 = CourseKey.from_string("course-v1:some+fake+course1")
+        self.course_key_2 = CourseKey.from_string("course-v1:some+fake+course2")
+
+        GeneratedCertificate.objects.create(user=self.user, course_id=self.course_key_1)
+        GeneratedCertificate.objects.create(user=self.user, course_id=self.course_key_2)
+
+    def test_returns_correct_course_ids(self):
+        """
+        Test that the function returns all course IDs for which the user has certificates.
+
+        Verifies that both course keys created in setUp are returned when the
+        user's username is passed to the function.
+        """
+        course_ids = get_course_ids_from_certs_for_user(self.user)
+
+        self.assertIn(self.course_key_1, course_ids)
+        self.assertIn(self.course_key_2, course_ids)
+        self.assertEqual(len(course_ids), 2)
+
+    def test_returns_empty_for_unknown_user(self):
+        """
+        Test that the function returns an empty list if the user has no certificates.
+
+        Uses a non-existent username to ensure that the function does not raise
+        errors and returns an empty list as expected.
+        """
+        course_ids = get_course_ids_from_certs_for_user("nonexistentuser")
+        self.assertEqual(course_ids, [])

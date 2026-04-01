@@ -90,7 +90,6 @@ PARENTAL_CONSENT_AGE_LIMIT = 13
 # Test theme
 TEST_THEME = Derived(lambda settings: settings.COMMON_ROOT / "test" / "test-theme")
 ENABLE_COMPREHENSIVE_THEMING = True
-COMPREHENSIVE_THEME_DIRS = Derived(lambda settings: [settings.REPO_ROOT / "themes", settings.REPO_ROOT / "common/test"])
 
 # Enable EdxNotes for tests
 ENABLE_EDXNOTES = True

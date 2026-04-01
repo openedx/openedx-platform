@@ -421,7 +421,7 @@ def handle_external_grader_score(signal, sender, score, **kwargs):
         # NOTE: Importing this at module level causes a circular import because
         # score_render → block_render → grades signals → back into this module.
         # Keeping it inside the handler avoids that by loading it only when needed.
-        from xmodule.capa.score_render import load_xblock_for_external_grader
+        from lms.djangoapps.grades.score_render import load_xblock_for_external_grader
         instance = load_xblock_for_external_grader(score.user_id,
                                                    course_key,
                                                    usage_key,

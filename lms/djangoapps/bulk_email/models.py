@@ -255,7 +255,7 @@ class CourseEmail(Email):
     class Meta:
         app_label = "bulk_email"
 
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
     # to_option is deprecated and unused, but dropping db columns is hard so it's still here for legacy reasons
     to_option = models.CharField(max_length=64, choices=[("deprecated", "deprecated")])
     targets = models.ManyToManyField(Target)
@@ -314,7 +314,7 @@ class Optout(models.Model):
     # We need to first create the 'user' column with some sort of default in order to run the data migration,
     # and given the unique index, 'null' is the best default value.
     user = models.ForeignKey(User, db_index=True, null=True, on_delete=models.CASCADE)
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
 
     class Meta:
         app_label = "bulk_email"
@@ -430,7 +430,7 @@ class CourseAuthorization(models.Model):
         app_label = "bulk_email"
 
     # The course that these features are attached to.
-    course_id = CourseKeyField(max_length=255, db_index=True, unique=True)
+    course_id = CourseKeyField(db_index=True, unique=True)
 
     # Whether or not to enable instructor email
     email_enabled = models.BooleanField(default=False)
@@ -462,7 +462,7 @@ class DisabledCourse(models.Model):
     class Meta:
         app_label = "bulk_email"
 
-    course_id = CourseKeyField(max_length=255, db_index=True, unique=True)
+    course_id = CourseKeyField(db_index=True, unique=True)
 
     @classmethod
     def instructor_email_disabled_for_course(cls, course_id):

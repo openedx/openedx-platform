@@ -1,13 +1,13 @@
 """
 CMS feature toggles.
 """
-from edx_toggles.toggles import SettingDictToggle, WaffleFlag
+from edx_toggles.toggles import SettingToggle, WaffleFlag
 from openedx.core.djangoapps.content.search import api as search_api
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 
-# .. toggle_name: FEATURES['ENABLE_EXPORT_GIT']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: ENABLE_EXPORT_GIT
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: When enabled, a "Export to Git" menu item is added to the course studio for courses that have a
 #   valid "giturl" attribute. Exporting a course to git causes the course to be exported in the directory indicated by
@@ -17,8 +17,8 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 #   existing directory.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2014-02-13
-EXPORT_GIT = SettingDictToggle(
-    "FEATURES", "ENABLE_EXPORT_GIT", default=False, module_name=__name__
+EXPORT_GIT = SettingToggle(
+    "ENABLE_EXPORT_GIT", default=False, module_name=__name__
 )
 
 # Namespace for studio dashboard waffle flags.
@@ -121,25 +121,6 @@ def use_video_gallery_flow():
     Returns a boolean = true if the video gallery flow is enabled
     """
     return ENABLE_VIDEO_GALLERY_FLOW_FLAG.is_enabled()
-
-
-# .. toggle_name: legacy_studio.problem_editor
-# .. toggle_implementation: WaffleFlag
-# .. toggle_default: False
-# .. toggle_description: Temporarily fall back to the old Problem component (a.k.a. CAPA/problem block) editor.
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2025-03-14
-# .. toggle_target_removal_date: 2025-09-14
-# .. toggle_tickets: https://github.com/openedx/edx-platform/issues/36275
-# .. toggle_warning: In Ulmo, this toggle will be removed. Only the new (React-based) experience will be available.
-LEGACY_STUDIO_PROBLEM_EDITOR = CourseWaffleFlag('legacy_studio.problem_editor', __name__)
-
-
-def use_new_problem_editor(course_key):
-    """
-    Returns a boolean if new problem editor is enabled
-    """
-    return not LEGACY_STUDIO_PROBLEM_EDITOR.is_enabled(course_key)
 
 
 # .. toggle_name: contentstore.individualize_anonymous_user_id
@@ -278,19 +259,22 @@ def use_new_export_page(course_key):
 # .. toggle_name: contentstore.new_studio_mfe.use_new_video_uploads_page
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
-# .. toggle_description: This flag enables the use of the new studio video uploads page mfe
-# .. toggle_use_cases: temporary
-# .. toggle_creation_date: 2023-5-15
-# .. toggle_target_removal_date: 2023-8-31
-# .. toggle_tickets: TNL-10619
-# .. toggle_warning:
+# .. toggle_description: This flag enables the use of the new studio video uploads page MFE.
+#      Note: This page only works on edx.org or other sites that have reverse-engineered
+#      the edX video pipeline. It is off by default for the community.
+# .. toggle_use_cases: opt_in
+# .. toggle_creation_date: 2023-05-15
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/37972
 ENABLE_NEW_STUDIO_VIDEO_UPLOADS_PAGE = CourseWaffleFlag(
     f'{CONTENTSTORE_NAMESPACE}.new_studio_mfe.use_new_video_uploads_page', __name__)
 
 
 def use_new_video_uploads_page(course_key):
     """
-    Returns a boolean if new studio video uploads mfe is enabled
+    Returns a boolean if new studio video uploads MFE is enabled.
+
+    This is off by default because the video uploads page requires the edX
+    video pipeline which is not available to the open source community.
     """
     return ENABLE_NEW_STUDIO_VIDEO_UPLOADS_PAGE.is_enabled(course_key)
 
@@ -425,8 +409,8 @@ def default_enable_flexible_peer_openassessments(course_key):
     return DEFAULT_ENABLE_FLEXIBLE_PEER_OPENASSESSMENTS.is_enabled(course_key)
 
 
-# .. toggle_name: FEATURES['ENABLE_CONTENT_LIBRARIES']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: ENABLE_CONTENT_LIBRARIES
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: True
 # .. toggle_description: Enables use of the legacy and v2 libraries waffle flags.
 #    Note that legacy content libraries are only supported in courses using split mongo.
@@ -435,8 +419,8 @@ def default_enable_flexible_peer_openassessments(course_key):
 # .. toggle_target_removal_date: 2025-04-09
 # .. toggle_warning: This flag is deprecated in Sumac, and will be removed in favor of the disable_legacy_libraries and
 #    disable_new_libraries waffle flags.
-ENABLE_CONTENT_LIBRARIES = SettingDictToggle(
-    "FEATURES", "ENABLE_CONTENT_LIBRARIES", default=True, module_name=__name__
+ENABLE_CONTENT_LIBRARIES = SettingToggle(
+    "ENABLE_CONTENT_LIBRARIES", default=True, module_name=__name__
 )
 
 # .. toggle_name: contentstore.new_studio_mfe.disable_legacy_libraries

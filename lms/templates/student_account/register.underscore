@@ -56,14 +56,16 @@
     <div class="form-fields <% if (context.is_require_third_party_auth_enabled) { %>hidden<% } %>">
         <%= context.fields /* xss-lint: disable=underscore-not-escaped */ %>
 
-        <div class="form-field checkbox-optional_fields_toggle">
-            <input type="checkbox" id="toggle_optional_fields" class="input-block checkbox"">
-            <label for="toggle_optional_fields">
-                <span class="label-text-small">
-                    <%- gettext("Support education research by providing additional information") %>
-                </span>
-            </label>
-        </div>
+        <% if (!context.skipRegistrationOptionalCheckboxes) { %>
+            <div class="form-field checkbox-optional_fields_toggle">
+                <input type="checkbox" id="toggle_optional_fields" class="input-block checkbox"">
+                <label for="toggle_optional_fields">
+                    <span class="label-text-small">
+                        <%- gettext("Support education research by providing additional information") %>
+                    </span>
+                </label>
+            </div>
+        <% } %>
 
         <button type="submit" class="action action-primary action-update js-register register-button">
             <% if ( context.registerFormSubmitButtonText ) { %><%- context.registerFormSubmitButtonText %><% } else { %><%- gettext("Create Account") %><% } %>

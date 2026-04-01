@@ -3,6 +3,7 @@ Tests for the Third Party Auth REST API
 """
 
 import urllib
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import ddt
@@ -447,3 +448,24 @@ class TestThirdPartyAuthUserStatusView(ThirdPartyAuthTestMixin, APITestCase):
                    'connect_url': f'/auth/login/google-oauth2/?auth_entry=account_settings&next={next_url}',
                    'connected': False, 'id': 'oa2-google-oauth2'
                }])
+
+    def test_get_uses_site_config_account_mfe_url(self):
+        """
+        The providers API uses site-configured ACCOUNT_MICROFRONTEND_URL in the next link.
+        """
+        self.client.login(username=self.user.username, password=PASSWORD)
+        siteconf_url = "https://accounts.siteconf.example"
+
+        helpers_stub = SimpleNamespace(
+            get_value=lambda key, default=None, *args, **kwargs:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default
+        )
+
+        with patch("common.djangoapps.third_party_auth.api.views.configuration_helpers", new=helpers_stub):
+            response = self.client.get(self.url)
+
+        assert response.status_code == 200
+        providers = response.data
+        google = next(p for p in providers if p["id"].endswith("google-oauth2"))
+        qs = urllib.parse.parse_qs(urllib.parse.urlparse(google["connect_url"]).query)
+        assert qs.get("next") == [siteconf_url]

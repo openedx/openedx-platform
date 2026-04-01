@@ -86,23 +86,23 @@ def link_video_to_component(video_component, user):
     if not edx_video_id:
         edx_video_id = create_external_video(display_name='external video')
         video_component.edx_video_id = edx_video_id
-        video_component.save_with_metadata(user)
+        video_component.save_with_metadata(user.id)
 
     return edx_video_id
 
 
-def save_video_transcript_in_learning_core(
+def save_video_transcript_in_openedx_content(
     usage_key,
     input_format,
     transcript_content,
     language_code
 ):
     """
-    Saves a video transcript to the learning core.
+    Saves a video transcript with the openedx_content API.
 
-    Learning Core uses the standard `.srt` format for subtitles.
+    openedx_content uses the standard `.srt` format for subtitles.
     Note: SJSON is an edx-specific format that we're trying to move away from,
-    so for all new stuff related to Learning Core should only use `.srt`.
+    so for all new stuff related to openedx_content should only use `.srt`.
 
     Arguments:
         usage_key: UsageKey of the block
@@ -191,7 +191,7 @@ def validate_video_block(request, locator):
     error, item = None, None
     try:
         item = _get_item(request, {'locator': locator})
-        if item.category != 'video':
+        if item.usage_key.block_type != 'video':
             error = _('Transcripts are supported only for "video" blocks.')
 
     except (InvalidKeyError, ItemNotFoundError):
@@ -258,7 +258,7 @@ def upload_transcripts(request):
         if not edx_video_id:
             edx_video_id = create_external_video(display_name='external video')
             video.edx_video_id = edx_video_id
-            video.save_with_metadata(request.user)
+            video.save_with_metadata(request.user.id)
 
         response = JsonResponse({'edx_video_id': edx_video_id, 'status': 'Success'}, status=200)
 
@@ -282,7 +282,7 @@ def upload_transcripts(request):
             )
 
             video.transcripts['en'] = f"{edx_video_id}-en.srt"
-            video.save_with_metadata(request.user)
+            video.save_with_metadata(request.user.id)
             if transcript_created is None:
                 response = JsonResponse({'status': 'Invalid Video ID'}, status=400)
 
@@ -523,7 +523,7 @@ def _validate_transcripts_data(request):
     except (InvalidKeyError, ItemNotFoundError):
         raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # lint-amnesty, pylint: disable=raise-missing-from
 
-    if item.category != 'video':
+    if item.usage_key.block_type != 'video':
         raise TranscriptsRequestValidationException(_('Transcripts are supported only for "video" blocks.'))
 
     # parse data form request.GET.['data']['video'] to useful format
@@ -615,7 +615,7 @@ def choose_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -669,7 +669,7 @@ def rename_transcripts(request):
 
         # 3. Upload the retrieved transcript to DS for the linked video ID.
         if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-            success = save_video_transcript_in_learning_core(
+            success = save_video_transcript_in_openedx_content(
                 video.usage_key,
                 input_format,
                 transcript_content,
@@ -725,7 +725,7 @@ def replace_transcripts(request):
         for transcript in transcript_content:
             [language_code, json_content] = transcript
             if isinstance(video.usage_key.context_key, LibraryLocatorV2):
-                success = save_video_transcript_in_learning_core(
+                success = save_video_transcript_in_openedx_content(
                     video.usage_key,
                     Transcript.SJSON,
                     json_content,

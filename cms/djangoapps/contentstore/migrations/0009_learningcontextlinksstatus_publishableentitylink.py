@@ -4,8 +4,8 @@ import uuid
 
 import django.db.models.deletion
 import opaque_keys.edx.django.models
-import openedx_learning.lib.fields
-import openedx_learning.lib.validators
+import openedx_django_lib.fields
+import openedx_django_lib.validators
 from django.db import migrations, models
 
 
@@ -39,8 +39,8 @@ class Migration(migrations.Migration):
                         max_length=20,
                     ),
                 ),
-                ('created', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
-                ('updated', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
+                ('created', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
+                ('updated', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
             ],
             options={
                 'verbose_name': 'Learning Context Links status',
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     'upstream_context_key',
-                    openedx_learning.lib.fields.MultiCollationCharField(
+                    openedx_django_lib.fields.MultiCollationCharField(
                         db_collations={'mysql': 'utf8mb4_bin', 'sqlite': 'BINARY'},
                         db_index=True,
                         help_text='Upstream context key i.e., learning_package/library key',
@@ -72,8 +72,8 @@ class Migration(migrations.Migration):
                 ('downstream_context_key', opaque_keys.edx.django.models.CourseKeyField(db_index=True, max_length=255)),
                 ('version_synced', models.IntegerField()),
                 ('version_declined', models.IntegerField(blank=True, null=True)),
-                ('created', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
-                ('updated', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
+                ('created', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
+                ('updated', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
                 (
                     'upstream_block',
                     models.ForeignKey(

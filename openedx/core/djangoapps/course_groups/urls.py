@@ -4,7 +4,7 @@ Cohort API URLs
 
 
 from django.conf import settings
-from django.urls import re_path
+from django.urls import include, re_path
 
 import lms.djangoapps.instructor.views.api
 import openedx.core.djangoapps.course_groups.views
@@ -38,4 +38,6 @@ urlpatterns = [
         lms.djangoapps.instructor.views.api.CohortCSV.as_view(),
         name='cohort_users_csv',
     ),
+    # v2 Content Groups API
+    re_path(r'', include('openedx.core.djangoapps.course_groups.rest_api.urls')),
 ]

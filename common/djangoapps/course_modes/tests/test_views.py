@@ -6,11 +6,11 @@ import decimal
 from datetime import datetime, timedelta
 from unittest.mock import patch
 from urllib.parse import urljoin
+from zoneinfo import ZoneInfo
 
 import ddt
 import freezegun
 import httpretty
-import pytz
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
@@ -50,7 +50,7 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
     @patch.dict(settings.FEATURES, {'MODE_CREATION_FOR_TESTING': True})
     def setUp(self):
         super().setUp()
-        now = datetime.now(pytz.utc)
+        now = datetime.now(ZoneInfo("UTC"))
         day = timedelta(days=1)
         tomorrow = now + day
         yesterday = now - day

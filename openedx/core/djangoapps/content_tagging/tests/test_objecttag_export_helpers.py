@@ -4,7 +4,7 @@ Test the objecttag_export_helpers module
 import time
 from unittest.mock import patch
 
-from openedx_tagging.core.tagging.models import ObjectTag
+from openedx_tagging.models import ObjectTag
 from organizations.models import Organization
 
 from openedx.core.djangoapps.content_libraries import api as library_api

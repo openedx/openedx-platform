@@ -3,7 +3,7 @@ LegacyLibraryContent: The XBlock used to randomly select a subset of blocks from
 
 In Studio, it's called the "Randomized Content Module".
 
-In the long-term, this block is deprecated in favor of "v2" (learning core-backed) library references:
+In the long-term, this block is deprecated in favor of "v2" (openedx_content-backed) library references:
 https://github.com/openedx/edx-platform/issues/32457
 
 We need to retain backwards-compatibility, but please do not build any new features into this.
@@ -17,13 +17,13 @@ from gettext import gettext, ngettext
 
 import nh3
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
-from opaque_keys.edx.locator import LibraryLocator, LibraryLocatorV2
+from opaque_keys.edx.locator import LibraryLocator, LibraryUsageLocatorV2
 from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock
 from xblock.fields import Boolean, Scope, String
 
-from xmodule.capa.responsetypes import registry
+from xblocks_contrib.problem.capa.responsetypes import registry
 from xmodule.item_bank_block import ItemBankMixin
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -136,7 +136,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         )
 
     @property
-    def is_ready_to_migrated_to_v2(self) -> bool:
+    def is_ready_to_migrate_to_v2(self) -> bool:
         """
         Returns whether the block can be migrated to v2.
         """
@@ -315,7 +315,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         self.sync_from_library(upgrade_to_latest=False)
         return True  # Children have been handled
 
-    def _v2_update_children_upstream_version(self):
+    def v2_update_children_upstream_version(self, user_id=None):
         """
         Update the upstream and upstream version fields of all children to point to library v2 version of the legacy
         library blocks. This essentially converts this legacy block to new ItemBankBlock.
@@ -324,11 +324,15 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         store = modulestore()
         with store.bulk_operations(self.course_id):
             children = self.get_children()
-            child_migrations = migrator_api.get_forwarding_for_blocks([child.usage_key for child in children])
-            for child in children:
-                old_upstream_key, _ = self.runtime.modulestore.get_block_original_usage(child.usage_key)
+            # These are the v1 library item upstream UsageKeys
+            child_old_upstream_keys = [
+                self.runtime.modulestore.get_block_original_usage(child.usage_key)[0]
+                for child in children
+            ]
+            child_migrations = migrator_api.get_forwarding_for_blocks(child_old_upstream_keys)
+            for child, old_upstream_key in zip(children, child_old_upstream_keys):
                 upstream_migration = child_migrations.get(old_upstream_key)
-                if upstream_migration and isinstance(upstream_migration.target_key, LibraryLocatorV2):
+                if upstream_migration and isinstance(upstream_migration.target_key, LibraryUsageLocatorV2):
                     child.upstream = str(upstream_migration.target_key)
                     if upstream_migration.target_version_num:
                         child.upstream_version = upstream_migration.target_version_num
@@ -336,17 +340,17 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
                     child.upstream = ""
                 # Use `modulestore()` instead of `self.runtime.modulestore` to make sure that the XBLOCK_UPDATED signal
                 # is triggered
-                store.update_item(child, None)
+                store.update_item(child, user_id)
             self.is_migrated_to_v2 = True
             self.save()
-            store.update_item(self, None)
+            store.update_item(self, user_id)
 
     def _validate_library_version(self, validation, lib_tools, version, library_key):
         """
         Validates library version
         """
         latest_version = lib_tools.get_latest_library_version(library_key)
-        if self.is_ready_to_migrated_to_v2:
+        if self.is_ready_to_migrate_to_v2:
             validation.set_summary(
                 StudioValidationMessage(
                     StudioValidationMessage.WARNING,
@@ -405,7 +409,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
             return Response(_("The block has already been upgraded to version 2"), status=400)
         # If the source library is migrated but this block still depends on legacy library
         # Migrate the block by setting upstream field to all children blocks
-        self._v2_update_children_upstream_version()
+        self.v2_update_children_upstream_version()
         return Response()
 
     def validate(self):

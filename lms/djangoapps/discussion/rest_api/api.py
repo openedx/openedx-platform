@@ -1018,7 +1018,6 @@ def get_thread_list(
         "group_id": group_id,
         "page": page,
         "per_page": page_size,
-        "text": text_search,
         "sort_key": cc_map.get(order_by),
         "author_id": author_id,
         "flagged": flagged,

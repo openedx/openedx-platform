@@ -25,7 +25,6 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.util.date_utils import strftime_localized
 from lms.djangoapps.certificates import api as certificate_api
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.commerce.utils import EcommerceService, get_program_price_info
 from openedx.core.djangoapps.catalog.api import get_programs_by_type
 from openedx.core.djangoapps.catalog.constants import PathwayType
@@ -341,7 +340,7 @@ class ProgramProgressMeter:
         Returns a dict of {uuid_string: available_datetime}
         """
         # Query for all user certs up front, for performance reasons (rather than querying per course run).
-        user_certificates = GeneratedCertificate.eligible_available_certificates.filter(user=self.user)
+        user_certificates = certificate_api.get_eligible_and_available_certificates(user=self.user)
         certificates_by_run = {cert.course_id: cert for cert in user_certificates}
 
         completed = {}

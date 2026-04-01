@@ -138,6 +138,23 @@ class TestUpdateIndexHandlers(ImmediateOnCommitMixin, ModuleStoreTestCase, LiveS
             "block-v1orgatest_coursetest_runtypeverticalblocktest_vertical-011f143b"
         )
 
+    def test_library_creation_creates_search_access(self, meilisearch_client):
+        """
+        Test that creating a library automatically creates a SearchAccess record.
+        This is required for course creators to search library content immediately after creation.
+        """
+        # Create a library
+        library = library_api.create_library(
+            org=self.orgA,
+            slug="test_lib",
+            title="Test Library",
+            description="Test library for SearchAccess creation",
+        )
+
+        assert SearchAccess.objects.filter(context_key=library.key).exists()
+        search_access = SearchAccess.objects.get(context_key=library.key)
+        assert search_access.context_key == library.key
+
     def test_create_delete_library_block(self, meilisearch_client):
         # Create library
         library = library_api.create_library(
@@ -146,7 +163,7 @@ class TestUpdateIndexHandlers(ImmediateOnCommitMixin, ModuleStoreTestCase, LiveS
             title="Library Org A",
             description="This is a library from Org A",
         )
-        lib_access, _ = SearchAccess.objects.get_or_create(context_key=library.key)
+        lib_access = SearchAccess.objects.get(context_key=library.key)
 
         # Populate it with a problem, freezing the date so we can verify created date serializes correctly.
         created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)

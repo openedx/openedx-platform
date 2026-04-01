@@ -307,6 +307,7 @@ class DatesTab(EnrolledTab):
     title = gettext_noop("Dates")
     priority = 30
     view_name = "dates"
+    is_hideable = True
 
     def __init__(self, tab_dict):
         def link_func(course, _reverse_func):
@@ -314,6 +315,13 @@ class DatesTab(EnrolledTab):
 
         tab_dict['link_func'] = link_func
         super().__init__(tab_dict)
+
+    @classmethod
+    def is_enabled(cls, course, user=None):
+        if not super().is_enabled(course, user=user):
+            return False
+        dates_tab = CourseTabList.get_tab_by_id(course.tabs, 'dates')
+        return bool(dates_tab and not dates_tab.is_hidden)
 
 
 def get_course_tab_list(user, course):

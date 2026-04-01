@@ -25,7 +25,7 @@
 
   .discussion-board &,
   .discussion-user-profile-board & {
-    margin-top: -($baseline / 4);
+    margin-top: calc(-1 * var(--baseline) / 4);
   }
 }
 
@@ -50,7 +50,7 @@
 
   position: relative;
   overflow: hidden;
-  margin: ($baseline/2) ($baseline/4) ($baseline/4) ($baseline/4);
+  margin: calc(var(--baseline) / 2) calc(var(--baseline) / 4) calc(var(--baseline) / 4) calc(var(--baseline) / 4);
   padding: 0;
   height: 30px;
 }
@@ -87,7 +87,7 @@
   display: inline-block;
   width: 20px;
   height: 20px;
-  background-image: url('#{$static-path}/images/wmd-buttons-transparent.png');
+  background-image: url('#{var(--static-path)}/images/wmd-buttons-transparent.png');
   background-position: 0 0;
   background-repeat: no-repeat;
 }
@@ -112,37 +112,37 @@
 
   box-sizing: border-box;
   width: 100%;
-  background: $forum-color-background;
+  background: var(--forum-color-background);
 }
 
 .wmd-prompt-background {
-  background-color: $black;
+  background-color: var(--black);
 }
 
 .wmd-prompt-dialog {
   @extend .modal;
 
-  background: $forum-color-background;
-  padding: $baseline;
+  background: var(--forum-color-background);
+  padding: var(--baseline);
 
   > div {
-    font-size: $forum-base-font-size;
+    font-size: var(--forum-base-font-size);
     font-family: arial, helvetica, sans-serif;
   }
 
   b {
-    font-size: $forum-large-font-size;
+    font-size: var(--forum-large-font-size);
   }
 
   > form > input[type="text"] {
-    border-radius: $forum-border-radius;
+    border-radius: var(--forum-border-radius);
     color: #333;
   }
 
   > form > input[type="button"] {
     border: 1px solid #888;
-    font-family: $font-family-sans-serif;
-    font-size: $forum-x-large-font-size;
+    font-family: var(--font-family-sans-serif);
+    font-size: var(--forum-x-large-font-size);
   }
 
   > form > input[type="file"] {
@@ -156,7 +156,7 @@
   }
 
   .field-input-label {
-    font-size: $forum-base-font-size;
+    font-size: var(--forum-base-font-size);
   }
 
   .input-text {
@@ -164,15 +164,15 @@
     height: 40px; // align with choose file button
 
     &.has-error {
-      border-color: $forum-color-error;
+      border-color: var(--forum-color-error);
     }
   }
 
   .field-message.has-error {
     width: calc(100% - 175px); // align with input-text
-    background-color: $forum-color-error;
-    color: $white;
-    padding: $baseline / 2;
+    background-color: var(--forum-color-error);
+    color: var(--white);
+    padding: calc(var(--baseline) / 2);
     box-sizing: border-box;
   }
 
@@ -181,7 +181,7 @@
   }
 
   .input-checkbox {
-    @include margin-right($baseline / 5);
+    @include margin-right(calc(var(--baseline) / 5));
   }
 
   #new-url-input {

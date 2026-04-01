@@ -14,9 +14,9 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
+from ..config.waffle import DISABLE_NOTIFICATIONS
 
-from ..config.waffle import ENABLE_NOTIFICATIONS
-from ..models import CourseNotificationPreference, Notification, NotificationPreference
+from ..models import Notification, NotificationPreference
 from ..tasks import (
     delete_notifications,
     send_notifications,
@@ -43,13 +43,6 @@ class SendNotificationsTest(ModuleStoreTestCase):
             run='testrun'
         )
 
-        self.preference_v1 = CourseNotificationPreference.objects.create(
-            user_id=self.user.id,
-            course_id=self.course_1.id,
-            config_version=0,
-        )
-
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.data(
         ('discussion', 'new_comment_on_response'),  # core notification
         ('discussion', 'new_response'),  # non core notification
@@ -75,6 +68,9 @@ class SendNotificationsTest(ModuleStoreTestCase):
 
         # Assert that `Notification` objects have been created for the users.
         notification = Notification.objects.filter(user_id=self.user.id).first()
+        # Removing uuid from content_context for assertion
+        if 'uuid' in notification.content_context:
+            notification.content_context.pop('uuid')
         # Assert that the `Notification` objects have the correct properties.
         self.assertEqual(notification.user_id, self.user.id)
         self.assertEqual(notification.app_name, app_name)
@@ -86,8 +82,8 @@ class SendNotificationsTest(ModuleStoreTestCase):
     @ddt.data(True, False)
     def test_enable_notification_flag(self, flag_value):
         """
-        Tests if notification is sent when flag is enabled and notification
-        is not sent when flag is disabled
+        Tests that notification is NOT sent when DISABLE_NOTIFICATIONS flag is enabled,
+        and IS sent when the flag is disabled.
         """
         app_name = "discussion"
         notification_type = "new_response"
@@ -96,12 +92,11 @@ class SendNotificationsTest(ModuleStoreTestCase):
             'replier_name': 'replier name',
         }
         content_url = 'https://example.com/'
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, active=flag_value):
+        with override_waffle_flag(DISABLE_NOTIFICATIONS, active=flag_value):
             send_notifications([self.user.id], str(self.course_1.id), app_name, notification_type, context, content_url)
-        created_notifications_count = 1 if flag_value else 0
+        created_notifications_count = 0 if flag_value else 1
         self.assertEqual(len(Notification.objects.all()), created_notifications_count)
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     def test_notification_not_send_with_preference_disabled(self):
         """
         Tests notification not send if preference is disabled
@@ -114,12 +109,6 @@ class SendNotificationsTest(ModuleStoreTestCase):
         }
         content_url = 'https://example.com/'
 
-        preference = CourseNotificationPreference.get_user_course_preference(self.user.id, self.course_1.id)
-        app_prefs = preference.notification_preference_config[app_name]
-        app_prefs['notification_types']['core']['web'] = False
-        app_prefs['notification_types']['core']['email'] = False
-        app_prefs['notification_types']['core']['push'] = False
-        preference.save()
         account_preferences, __created = NotificationPreference.objects.get_or_create(
             user_id=self.user.id,
             app=app_name,
@@ -133,16 +122,10 @@ class SendNotificationsTest(ModuleStoreTestCase):
         send_notifications([self.user.id], str(self.course_1.id), app_name, notification_type, context, content_url)
         self.assertEqual(len(Notification.objects.all()), 0)
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     def test_send_notification_with_grouping_enabled(self):
         """
         Test send_notifications with grouping enabled.
         """
-        (
-            self.preference_v1.notification_preference_config['discussion']
-            ['notification_types']['new_discussion_post']['web']
-        ) = True
-        self.preference_v1.save()
 
         account_preferences, __created = NotificationPreference.objects.get_or_create(
             user_id=self.user.id,
@@ -177,7 +160,6 @@ class SendNotificationsTest(ModuleStoreTestCase):
             self.assertEqual(Notification.objects.filter(user_id=self.user.id).count(), 1)
             user_notifications_mock.assert_called_once()
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     def test_notification_not_created_when_context_is_incomplete(self):
         try:
             send_notifications([self.user.id], str(self.course_1.id), "discussion", "new_comment", {}, "")
@@ -214,11 +196,10 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             CourseEnrollment.enroll(user=user, course_key=self.course.id)
         return users
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.data(
-        (settings.NOTIFICATION_CREATION_BATCH_SIZE, 10, 3),
-        (settings.NOTIFICATION_CREATION_BATCH_SIZE + 10, 12, 5),
-        (settings.NOTIFICATION_CREATION_BATCH_SIZE - 10, 10, 3),
+        (settings.NOTIFICATION_CREATION_BATCH_SIZE, 11, 4),
+        (settings.NOTIFICATION_CREATION_BATCH_SIZE + 10, 13, 6),
+        (settings.NOTIFICATION_CREATION_BATCH_SIZE - 10, 11, 4),
     )
     @ddt.unpack
     def test_notification_is_send_in_batch(self, creation_size, prefs_query_count, notifications_query_count):
@@ -239,16 +220,6 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
                                context, "http://test.url")
 
-        # Updating preferences for notification creation
-        preferences = CourseNotificationPreference.objects.filter(
-            user_id__in=user_ids,
-            course_id=self.course.id
-        )
-        for preference in preferences:
-            discussion_config = preference.notification_preference_config['discussion']
-            discussion_config['notification_types'][notification_type]['web'] = True
-            preference.save()
-
         # Creating notifications and asserting query count
         with self.assertNumQueries(notifications_query_count):
             send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
@@ -267,10 +238,9 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             "post_title": "Test Post",
             "username": "Test Author"
         }
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, active=True):
-            with self.assertNumQueries(10):
-                send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
-                                   context, "http://test.url")
+        with self.assertNumQueries(11):
+            send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
+                               context, "http://test.url")
 
     def test_preference_created_for_default_on_preference(self):
         """
@@ -287,39 +257,25 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             "author_name": "Test Author",
             "replier_name": "Replier Name"
         }
-        with override_waffle_flag(ENABLE_NOTIFICATIONS, active=True):
-            with self.assertNumQueries(12):
-                send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
-                                   context, "http://test.url")
+        with self.assertNumQueries(13):
+            send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
+                               context, "http://test.url")
 
-    def _update_user_preference(self, user_id, pref_exists):
-        """
-        Removes or creates user preference based on pref_exists
-        """
-        if pref_exists:
-            CourseNotificationPreference.objects.get_or_create(user_id=user_id, course_id=self.course.id)
-        else:
-            CourseNotificationPreference.objects.filter(user_id=user_id, course_id=self.course.id).delete()
-
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.data(
-        ("new_response", True, True, 2),
-        ("new_response", False, False, 2),
-        ("new_response", True, False, 2),
-        ("new_discussion_post", True, True, 0),
-        ("new_discussion_post", False, False, 0),
-        ("new_discussion_post", True, False, 0),
+        ("new_response", 2),
+        ("new_response", 2),
+        ("new_response", 2),
+        ("new_discussion_post", 0),
+        ("new_discussion_post", 0),
+        ("new_discussion_post", 0),
     )
     @ddt.unpack
-    def test_preference_enabled_in_batch_audience(self, notification_type,
-                                                  user_1_pref_exists, user_2_pref_exists, generated_count):
+    def test_preference_enabled_in_batch_audience(self, notification_type, generated_count):
         """
         Tests if users with preference enabled in batch gets notification
         """
         users = self._create_users(2)
         user_ids = [user.id for user in users]
-        self._update_user_preference(user_ids[0], user_1_pref_exists)
-        self._update_user_preference(user_ids[1], user_2_pref_exists)
 
         app_name = "discussion"
         context = {
@@ -417,11 +373,6 @@ class NotificationCreationOnChannelsTests(ModuleStoreTestCase):
             run='testrun'
         )
 
-        self.preference = CourseNotificationPreference.objects.create(
-            user_id=self.user.id,
-            course_id=self.course.id,
-            config_version=0,
-        )
         self.account_preference, __created = NotificationPreference.objects.get_or_create(
             user_id=self.user.id,
             app='discussion',
@@ -430,7 +381,6 @@ class NotificationCreationOnChannelsTests(ModuleStoreTestCase):
             email=False,
         )
 
-    @override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
     @ddt.data(
         (False, False, 0),
         (False, True, 1),

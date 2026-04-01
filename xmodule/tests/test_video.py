@@ -35,7 +35,8 @@ from xblock.fields import ScopeIds
 
 from xmodule.tests import get_test_descriptor_system
 from xmodule.validation import StudioValidationMessage
-from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, VideoBlock, create_youtube_string
+from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, create_youtube_string
+from xmodule.video_block.video_block import _BuiltInVideoBlock as VideoBlock
 from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
 from xblock.core import XBlockAside
 from xmodule.modulestore.tests.test_asides import AsideTestType
@@ -319,7 +320,7 @@ class VideoBlockImportTestCase(TestCase):
         })
 
     @XBlockAside.register_temp_plugin(AsideTestType, "test_aside")
-    @patch('xmodule.video_block.video_block.VideoBlock.load_file')
+    @patch('xmodule.video_block.video_block._BuiltInVideoBlock.load_file')
     @patch('xmodule.video_block.video_block.is_pointer_tag')
     @ddt.data(True, False)
     def test_parse_xml_with_asides(self, video_xml_has_aside, mock_is_pointer_tag, mock_load_file):
@@ -1080,47 +1081,6 @@ class VideoBlockIndexingTestCase(unittest.TestCase):
                             'transcript_ge': 'sprechen sie deutsch? Ja, ich spreche Deutsch',
                             'transcript_hr': 'Dobar dan! Kako ste danas?'}, 'content_type': 'Video'}
 
-    def test_video_with_multiple_transcripts_translation_retrieval(self):
-        """
-        Test translation retrieval of a video block with
-        multiple transcripts uploaded by a user.
-        """
-        xml_data_transcripts = '''
-            <video display_name="Test Video"
-                   youtube="1.0:p2Q6BrNhdh8,0.75:izygArpw-Qo,1.25:1EeWXzPdhSA,1.5:rABDYkeK0x8"
-                   show_captions="false"
-                   download_track="false"
-                   start_time="00:00:01"
-                   download_video="false"
-                   end_time="00:01:00">
-              <source src="http://www.example.com/source.mp4"/>
-              <track src="http://www.example.com/track"/>
-              <handout src="http://www.example.com/handout"/>
-              <transcript language="ge" src="subs_grmtran1.srt" />
-              <transcript language="hr" src="subs_croatian1.srt" />
-            </video>
-        '''
-
-        block = instantiate_block(data=xml_data_transcripts)
-        translations = block.available_translations(block.get_transcripts_info())
-        assert sorted(translations) == sorted(['hr', 'ge'])
-
-    def test_video_with_no_transcripts_translation_retrieval(self):
-        """
-        Test translation retrieval of a video block with
-        no transcripts uploaded by a user- ie, that retrieval
-        does not throw an exception.
-        """
-        block = instantiate_block(data=None)
-        translations_with_fallback = block.available_translations(block.get_transcripts_info())
-        assert translations_with_fallback == ['en']
-
-        with patch.dict(settings.FEATURES, FALLBACK_TO_ENGLISH_TRANSCRIPTS=False):
-            # Some organizations don't have English transcripts for all videos
-            # This feature makes it configurable
-            translations_no_fallback = block.available_translations(block.get_transcripts_info())
-            assert translations_no_fallback == []
-
     @override_settings(ALL_LANGUAGES=ALL_LANGUAGES)
     def test_video_with_language_do_not_have_transcripts_translation(self):
         """
@@ -1142,7 +1102,12 @@ class VideoBlockIndexingTestCase(unittest.TestCase):
             </video>
         '''
         block = instantiate_block(data=xml_data_transcripts)
-        translations = block.available_translations(block.get_transcripts_info(), verify_assets=False)
+        video_config_service = block.runtime.service(block, 'video_config')
+        translations = video_config_service.available_translations(
+            block,
+            block.get_transcripts_info(),
+            verify_assets=False
+        )
         assert translations != ['ur']
 
     def assert_validation_message(self, validation, expected_msg):

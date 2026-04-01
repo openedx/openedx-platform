@@ -1,26 +1,26 @@
 // Layouts for discussion pages
 .discussion-user-profile-board {
   .discussion-profile-title {
-    margin-bottom: $baseline / 5;
-    font-size: $forum-x-large-font-size;
+    margin-bottom: var(--baseline) / 5;
+    font-size: var(--forum-x-large-font-size);
   }
 
   .discussion-profile-count {
-    margin-top: $baseline / 4;
+    margin-top: calc(var(--baseline) / 4);
   }
 
   .discussion-profile-info {
-    @include margin-right($baseline);
+    @include margin-right(var(--baseline));
   }
 
   .user-name {
-    @include margin-right($baseline);
+    @include margin-right(var(--baseline));
 
-    font-size: $forum-x-large-font-size;
+    font-size: var(--forum-x-large-font-size);
   }
 
   .user-roles {
-    font-size: $forum-small-font-size;
+    font-size: var(--forum-small-font-size);
     font-style: italic;
   }
 }
@@ -34,10 +34,10 @@
 
 .discussion-column {
   flex-grow: 1;  // This column should consume all the available space
-  margin-bottom: $baseline;
+  margin-bottom: var(--baseline);
 
   @include media-breakpoint-up(md) {
-    @include margin-left($baseline);
+    @include margin-left(var(--baseline));
 
     min-height: 500px;
     margin-bottom: 0;
@@ -45,6 +45,6 @@
   }
 
   .new-post-article {
-    margin-top: -$baseline;
+    margin-top: calc(-1 * var(--baseline));
   }
 }

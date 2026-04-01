@@ -2,12 +2,12 @@
 
 import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
-from pytz import UTC
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -22,8 +22,8 @@ from openedx.core.djangoapps.site_configuration.tests.test_util import with_site
 
 # pylint: disable=no-member
 
-PAST_DATE = datetime.datetime.now(UTC) - datetime.timedelta(days=2)
-FUTURE_DATE = datetime.datetime.now(UTC) + datetime.timedelta(days=2)
+PAST_DATE = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=2)
+FUTURE_DATE = datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=2)
 
 
 class CertificateDisplayTestBase(SharedModuleStoreTestCase):
@@ -92,7 +92,7 @@ class CertificateDashboardMessageDisplayTest(CertificateDisplayTestBase):
     def _check_message(self, visible_date):  # lint-amnesty, pylint: disable=missing-function-docstring
         response = self.client.get(reverse('dashboard'))
 
-        is_past = visible_date < datetime.datetime.now(UTC)
+        is_past = visible_date < datetime.datetime.now(ZoneInfo("UTC"))
 
         if is_past:
             test_message = 'Your grade and certificate will be ready after'

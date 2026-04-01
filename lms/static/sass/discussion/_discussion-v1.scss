@@ -12,14 +12,14 @@
   );
 
   display: inline-block;
-  border: 1px solid $forum-color-active-thread;
+  border: 1px solid var(--forum-color-active-thread);
   border-radius: 3px;
   margin: 0;
   background-image: none;
   box-shadow: none;
   height: 40px;
   text-shadow: none;
-  font-family: $font-family-sans-serif; // without this, it would fallback to lms button tag style
+  font-family: var(--font-family-sans-serif); // without this, it would fallback to lms button tag style
   font-size: 14px;
   font-weight: 600;
   word-wrap: break-word;
@@ -44,11 +44,11 @@
   &:focus {
     // Note:these rules all need !important in order to beat out
     // the base button styling defined in the courseware.
-    border-color: $forum-color-hover !important;
-    background-color: $forum-color-hover !important;
+    border-color: var(--forum-color-hover) !important;
+    background-color: var(--forum-color-hover) !important;
     background-image: none !important;
     box-shadow: none !important;
-    color: $forum-color-active-text !important;
+    color: var(--forum-color-active-text) !important;
     text-decoration: none !important;  // Don't show underlines on links that are styled as buttons
   }
 }
@@ -59,15 +59,15 @@
   .btn {
     @extend %pattern-library-btn;
 
-    background-color: $forum-color-background;
-    color: $forum-color-active-thread;
+    background-color: var(--forum-color-background);
+    color: var(--forum-color-active-thread);
   }
 
   .btn-brand {
     @extend %pattern-library-btn;
 
-    background-color: $forum-color-active-thread;
-    color: $forum-color-active-text;
+    background-color: var(--forum-color-active-thread);
+    color: var(--forum-color-active-text);
   }
 }
 

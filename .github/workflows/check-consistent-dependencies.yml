@@ -20,7 +20,7 @@ jobs:
 
     steps:
       # Always checkout the code because we don't always have a PR url.
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # Only run remaining steps if there are changes to requirements/**
       # We do this instead of using path based short-circuiting.
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-python@v6
         if: ${{ env.RELEVANT == 'true' }}
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Recompile requirements"
         if: ${{ env.RELEVANT == 'true' }}
@@ -65,7 +65,7 @@ jobs:
           developers.
 
           Please see the requirements README for information on how to resolve this:
-          https://github.com/openedx/edx-platform/blob/master/requirements/README.rst#inconsistent-dependencies
+          https://github.com/openedx/openedx-platform/blob/master/requirements/README.rst#inconsistent-dependencies
           EOMARKDOWN
           )
 

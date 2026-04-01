@@ -3,8 +3,8 @@ import uuid
 
 import django.db.models.deletion
 import opaque_keys.edx.django.models
-import openedx_learning.lib.fields
-import openedx_learning.lib.validators
+import openedx_django_lib.fields
+import openedx_django_lib.validators
 from django.db import migrations, models
 
 
@@ -40,13 +40,13 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name='UUID')),
-                ('upstream_context_key', openedx_learning.lib.fields.MultiCollationCharField(db_collations={'mysql': 'utf8mb4_bin', 'sqlite': 'BINARY'}, db_index=True, help_text='Upstream context key i.e., learning_package/library key', max_length=500)),
+                ('upstream_context_key', openedx_django_lib.fields.MultiCollationCharField(db_collations={'mysql': 'utf8mb4_bin', 'sqlite': 'BINARY'}, db_index=True, help_text='Upstream context key i.e., learning_package/library key', max_length=500)),
                 ('downstream_usage_key', opaque_keys.edx.django.models.UsageKeyField(max_length=255, unique=True)),
                 ('downstream_context_key', opaque_keys.edx.django.models.CourseKeyField(db_index=True, max_length=255)),
                 ('version_synced', models.IntegerField()),
                 ('version_declined', models.IntegerField(blank=True, null=True)),
-                ('created', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
-                ('updated', models.DateTimeField(validators=[openedx_learning.lib.validators.validate_utc_datetime])),
+                ('created', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
+                ('updated', models.DateTimeField(validators=[openedx_django_lib.validators.validate_utc_datetime])),
                 ('upstream_container_key', opaque_keys.edx.django.models.ContainerKeyField(help_text='Upstream block key (e.g. lct:...), this value cannot be null and is useful to track upstream library blocks that do not exist yet or were deleted.', max_length=255)),
                 ('upstream_container', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='links', to='oel_publishing.container')),
             ],

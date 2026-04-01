@@ -73,24 +73,23 @@ def _user_can_create_library_for_org(user, org=None):
     elif user.is_staff:
         return True
     elif settings.FEATURES.get('ENABLE_CREATOR_GROUP', False):
-        org_filter_params = {}
-        if org:
-            org_filter_params['org'] = org
         is_course_creator = get_course_creator_status(user) == 'granted'
-        has_org_staff_role = OrgStaffRole().get_orgs_for_user(user).filter(**org_filter_params).exists()
-        has_course_staff_role = (
-            UserBasedRole(user=user, role=CourseStaffRole.ROLE)
-            .courses_with_role()
-            .filter(**org_filter_params)
-            .exists()
-        )
-        has_course_admin_role = (
-            UserBasedRole(user=user, role=CourseInstructorRole.ROLE)
-            .courses_with_role()
-            .filter(**org_filter_params)
-            .exists()
-        )
-        return is_course_creator or has_org_staff_role or has_course_staff_role or has_course_admin_role
+        if is_course_creator:
+            return True
+
+        has_org_staff_role = OrgStaffRole().has_org_for_user(user, org)
+        if has_org_staff_role:
+            return True
+
+        has_course_staff_role = UserBasedRole(user=user, role=CourseStaffRole.ROLE).has_courses_with_role(org)
+        if has_course_staff_role:
+            return True
+
+        has_course_admin_role = UserBasedRole(user=user, role=CourseInstructorRole.ROLE).has_courses_with_role(org)
+        if has_course_admin_role:
+            return True
+
+        return False
     else:
         # EDUCATOR-1924: DISABLE_LIBRARY_CREATION overrides DISABLE_COURSE_CREATION, if present.
         disable_library_creation = settings.FEATURES.get('DISABLE_LIBRARY_CREATION', None)

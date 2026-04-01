@@ -7,6 +7,7 @@ import datetime
 import itertools
 
 from unittest.mock import Mock, patch
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 import pytest
 import ddt
 import pytz
@@ -70,7 +71,7 @@ from openedx.features.enterprise_support.tests.factories import (
 )
 from crum import set_current_request
 
-QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 # pylint: disable=protected-access
 
@@ -681,7 +682,8 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         assert access._has_access_course(staff, 'see_in_catalog', course)
         assert access._has_access_course(staff, 'see_about_page', course)
 
-    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True, 'MILESTONES_APP': True})
+    @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
+    @override_settings(MILESTONES_APP=True)
     def test_access_on_course_with_pre_requisites(self):
         """
         Test course access when a course has pre-requisite course yet to be completed
@@ -878,15 +880,15 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         if user_attr_name == 'user_staff' and action == 'see_exists':
             # always checks staff role, and if the course has started, check the duration configuration
             if course_attr_name == 'course_started':
-                num_queries = 2
-            else:
-                num_queries = 1
-        elif user_attr_name == 'user_normal' and action == 'see_exists':
-            if course_attr_name == 'course_started':
                 num_queries = 4
             else:
+                num_queries = 3
+        elif user_attr_name == 'user_normal' and action == 'see_exists':
+            if course_attr_name == 'course_started':
+                num_queries = 6
+            else:
                 # checks staff role and enrollment data
-                num_queries = 2
+                num_queries = 4
         elif user_attr_name == 'user_anonymous' and action == 'see_exists':
             if course_attr_name == 'course_started':
                 num_queries = 1
@@ -895,7 +897,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         else:
             # if the course has started, check the duration configuration
             if action == 'see_exists' and course_attr_name == 'course_started':
-                num_queries = 3
+                num_queries = 5
             else:
                 num_queries = 0
 
@@ -949,17 +951,17 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         if user_attr_name == 'user_staff':
             if course_attr_name == 'course_started':
                 # read: CourseAccessRole + django_comment_client.Role
-                num_queries = 2
+                num_queries = 4
             else:
                 # read: CourseAccessRole + EnterpriseCourseEnrollment
-                num_queries = 2
+                num_queries = 4
         elif user_attr_name == 'user_normal':
             if course_attr_name == 'course_started':
                 # read: CourseAccessRole + django_comment_client.Role + FBEEnrollmentExclusion + CourseMode
-                num_queries = 4
+                num_queries = 6
             else:
                 # read: CourseAccessRole + CourseEnrollmentAllowed + EnterpriseCourseEnrollment
-                num_queries = 3
+                num_queries = 5
         elif user_attr_name == 'user_anonymous':
             if course_attr_name == 'course_started':
                 # read: CourseMode

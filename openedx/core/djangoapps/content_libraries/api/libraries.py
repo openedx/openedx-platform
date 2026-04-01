@@ -42,6 +42,7 @@ could be promoted to the core XBlock API and made generic.
 from __future__ import annotations
 
 import logging
+import warnings
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from datetime import datetime
@@ -63,8 +64,8 @@ from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_DELETED,
     CONTENT_LIBRARY_UPDATED,
 )
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring_models import Component, LearningPackage
+from openedx_content import api as content_api
+from openedx_content.models_api import Component, LearningPackage
 from organizations.models import Organization
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 from xblock.core import XBlock
@@ -303,7 +304,7 @@ def get_libraries_for_user(user, org=None, text_search=None, order=None) -> Quer
 
 def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = None) -> list[ContentLibraryMetadata]:
     """
-    Take a list of ContentLibrary objects and return metadata from Learning Core.
+    Take a list of ContentLibrary objects and return metadata from openedx_content.
     """
     if text_search:
         queryset = queryset.filter(org__short_name__icontains=text_search)
@@ -322,7 +323,7 @@ def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = N
             allow_public_read=lib.allow_public_read,
 
             # These are currently dummy values to maintain the REST API contract
-            # while we shift to Learning Core models.
+            # while we shift to openedx_content models.
             num_blocks=0,
             last_published=None,
             has_unpublished_changes=False,
@@ -364,9 +365,9 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
     ref = ContentLibrary.objects.get_by_key(library_key)
     learning_package = ref.learning_package
     assert learning_package is not None  # Shouldn't happen - this is just for the type checker
-    num_blocks = authoring_api.get_all_drafts(learning_package.id).count()
-    last_publish_log = authoring_api.get_last_publish(learning_package.id)
-    last_draft_log = authoring_api.get_entities_with_unpublished_changes(learning_package.id) \
+    num_blocks = content_api.get_all_drafts(learning_package.id).count()
+    last_publish_log = content_api.get_last_publish(learning_package.id)
+    last_draft_log = content_api.get_entities_with_unpublished_changes(learning_package.id) \
         .order_by('-created').first()
     last_draft_created = last_draft_log.created if last_draft_log else None
     last_draft_created_by = last_draft_log.created_by.username if last_draft_log and last_draft_log.created_by else ""
@@ -374,11 +375,12 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
 
     # TODO: I'm doing this one to match already-existing behavior, but this is
     # something that we should remove. It exists to accomodate some complexities
-    # with how Blockstore staged changes, but Learning Core works differently,
+    # with how Blockstore staged changes, but openedx_content works differently,
     # and has_unpublished_changes should be sufficient.
     # Ref: https://github.com/openedx/edx-platform/issues/34283
-    has_unpublished_deletes = authoring_api.get_entities_with_unpublished_deletes(learning_package.id) \
-                                           .exists()
+    has_unpublished_deletes = (
+        content_api.get_entities_with_unpublished_deletes(learning_package.id).exists()
+    )
 
     published_by = ""
     if last_publish_log and last_publish_log.published_by:
@@ -450,7 +452,7 @@ def create_library(
             if learning_package:
                 # A temporary LearningPackage was passed in, so update its key to match the library,
                 # and also update its title/description in case they differ.
-                authoring_api.update_learning_package(
+                content_api.update_learning_package(
                     learning_package.id,
                     key=str(ref.library_key),
                     title=title,
@@ -458,7 +460,7 @@ def create_library(
                 )
             else:
                 # We have to generate a new LearningPackage for this library.
-                learning_package = authoring_api.create_learning_package(
+                learning_package = content_api.create_learning_package(
                     key=str(ref.library_key),
                     title=title,
                     description=description,
@@ -485,7 +487,7 @@ def create_library(
         allow_public_learning=ref.allow_public_learning,
         allow_public_read=ref.allow_public_read,
         license=library_license,
-        learning_package_id=ref.learning_package.pk,
+        learning_package_id=ref.learning_package.pk,  # type: ignore[union-attr]
     )
 
 
@@ -493,6 +495,14 @@ def get_library_team(library_key: LibraryLocatorV2) -> list[ContentLibraryPermis
     """
     Get the list of users/groups granted permission to use this library.
     """
+    warnings.warn(
+        "get_library_team is deprecated. "
+        "Use get_all_user_role_assignments_in_scope from the openedx-authz API instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     ref = ContentLibrary.objects.get_by_key(library_key)
     return [
         ContentLibraryPermissionEntry(user=entry.user, group=entry.group, access_level=entry.access_level)
@@ -505,6 +515,14 @@ def get_library_user_permissions(library_key: LibraryLocatorV2, user: UserType) 
     Fetch the specified user's access information. Will return None if no
     permissions have been granted.
     """
+    warnings.warn(
+        "get_library_user_permissions is deprecated. "
+        "Use get_user_role_assignments_in_scope from the openedx-authz API instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(user, AnonymousUser):
         return None  # Mostly here for the type checker
     ref = ContentLibrary.objects.get_by_key(library_key)
@@ -524,6 +542,14 @@ def set_library_user_permissions(library_key: LibraryLocatorV2, user: UserType, 
 
     access_level should be one of the AccessLevel values defined above.
     """
+    warnings.warn(
+        "set_library_user_permissions is deprecated. "
+        "Use assign_library_role_to_user instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     if isinstance(user, AnonymousUser):
         raise TypeError("Invalid user type")  # Mostly here for the type checker
     ref = ContentLibrary.objects.get_by_key(library_key)
@@ -572,6 +598,14 @@ def set_library_group_permissions(library_key: LibraryLocatorV2, group, access_l
 
     access_level should be one of the AccessLevel values defined above.
     """
+    warnings.warn(
+        "set_library_group_permissions is deprecated. "
+        "Use assign_library_role_to_user instead. "
+        "See https://github.com/openedx/openedx-platform/issues/37409.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     ref = ContentLibrary.objects.get_by_key(library_key)
 
     if access_level is None:
@@ -625,7 +659,7 @@ def update_library(
             content_lib.save()
 
         if learning_pkg_changed:
-            authoring_api.update_learning_package(
+            content_api.update_learning_package(
                 learning_package_id,
                 title=title,
                 description=description,
@@ -717,7 +751,7 @@ def publish_changes(library_key: LibraryLocatorV2, user_id: int | None = None):
     """
     learning_package = ContentLibrary.objects.get_by_key(library_key).learning_package
     assert learning_package is not None  # shouldn't happen but it's technically possible.
-    publish_log = authoring_api.publish_all_drafts(learning_package.id, published_by=user_id)
+    publish_log = content_api.publish_all_drafts(learning_package.id, published_by=user_id)
 
     # Update the search index (and anything else) for the affected blocks
     # This is mostly synchronous but may complete some work asynchronously if there are a lot of changes.
@@ -735,8 +769,8 @@ def revert_changes(library_key: LibraryLocatorV2, user_id: int | None = None) ->
     """
     learning_package = ContentLibrary.objects.get_by_key(library_key).learning_package
     assert learning_package is not None  # shouldn't happen but it's technically possible.
-    with authoring_api.bulk_draft_changes_for(learning_package.id) as draft_change_log:
-        authoring_api.reset_drafts_to_published(learning_package.id, reset_by=user_id)
+    with content_api.bulk_draft_changes_for(learning_package.id) as draft_change_log:
+        content_api.reset_drafts_to_published(learning_package.id, reset_by=user_id)
 
     # Call the event handlers as needed.
     tasks.wait_for_post_revert_events(draft_change_log, library_key)

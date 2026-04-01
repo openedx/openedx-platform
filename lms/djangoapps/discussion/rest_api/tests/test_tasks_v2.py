@@ -7,7 +7,6 @@ from unittest.mock import Mock
 import ddt
 import httpretty
 from django.conf import settings
-from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
 
 from common.djangoapps.student.models import CourseEnrollment
@@ -29,7 +28,6 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_STUDENT,
     CourseDiscussionSettings
 )
-from openedx.core.djangoapps.notifications.config.waffle import ENABLE_NOTIFICATIONS
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -45,7 +43,6 @@ def _get_mfe_url(course_id, post_id):
 
 
 @ddt.ddt
-@override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
 class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Test for the send_response_notifications function
@@ -404,7 +401,6 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
 
 
 @ddt.ddt
-@override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
 class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Test case to send new_comment notification
@@ -497,7 +493,6 @@ class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCas
 @ddt.ddt
 @httpretty.activate
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-@override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
 class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Test cases related to new_discussion_post and new_question_post notification types
@@ -690,7 +685,6 @@ class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTe
         self.assertEqual(handler.call_count, 1)
 
 
-@override_waffle_flag(ENABLE_NOTIFICATIONS, active=True)
 class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
     """
     Test case to send response endorsed notifications

@@ -19,6 +19,7 @@ from .tasks import send_task_complete_email
 LOGGER = logging.getLogger(__name__)
 LIBRARY_CONTENT_TASK_NAME_TEMPLATE = 'updating .*type@library_content.* from library'
 LIBRARY_IMPORT_TASK_NAME_TEMPLATE = '(.*)?migrate_from_modulestore'
+LEGACY_LIB_CONTENT_REF_UPDATE_TASK_TEMPLATE = 'updating legacy library content blocks references of course-v1:.*'
 
 
 @receiver(user_task_stopped, dispatch_uid="cms_user_task_stopped")
@@ -63,6 +64,14 @@ def user_task_stopped_handler(sender, **kwargs):  # pylint: disable=unused-argum
         p = re.compile(LIBRARY_IMPORT_TASK_NAME_TEMPLATE)
         return p.match(task_name) is not None
 
+    def is_legacy_library_content_reference_update(task_name: str) -> bool:
+        """
+        Decides whether to suppress an end-of-task email on the basis that the just-ended task
+        was a legacy library content reference update operation.
+        """
+        p = re.compile(LEGACY_LIB_CONTENT_REF_UPDATE_TASK_TEMPLATE)
+        return p.match(task_name) is not None
+
     def get_olx_validation_from_artifact():
         """
         Get olx validation error if available for current task.
@@ -96,7 +105,8 @@ def user_task_stopped_handler(sender, **kwargs):  # pylint: disable=unused-argum
             is_library_content_update(task_name) or
             is_library_backup_task(task_name) or
             is_library_restore_task(task_name) or
-            is_library_import_task(task_name)
+            is_library_import_task(task_name) or
+            is_legacy_library_content_reference_update(task_name)
         )
 
     status = kwargs['status']

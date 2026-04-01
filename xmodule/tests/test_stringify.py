@@ -8,6 +8,7 @@ from xmodule.stringify import stringify_children
 
 
 def test_stringify():
+    """Test that `stringify_children` correctly concatenates text and child elements."""
     text = 'Hi <div x="foo">there <span>Bruce</span><b>!</b></div>'
     html = f"""<html a="b" foo="bar">{text}</html>"""
     xml = etree.fromstring(html)
@@ -16,6 +17,7 @@ def test_stringify():
 
 
 def test_stringify_again():
+    """Test that `stringify_children` handles complex HTML without duplicating content."""
     html = r"""<html name="Voltage Source Answer" >A voltage source is non-linear!
 <div align="center">
     <img src="/static/images/circuits/voltage-source.png"/>

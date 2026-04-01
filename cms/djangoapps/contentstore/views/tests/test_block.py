@@ -13,7 +13,6 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
 from django.test.utils import override_settings
-from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
@@ -23,7 +22,6 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.asides import AsideUsageKeyV2
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from pyquery import PyQuery
 from pytz import UTC
 from bs4 import BeautifulSoup
 from web_fragments.fragment import Fragment
@@ -57,7 +55,6 @@ from xmodule.partitions.partitions import (
 from xmodule.partitions.tests.test_partitions import MockPartitionService
 from xmodule.x_module import STUDENT_VIEW, STUDIO_VIEW
 
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import (
     reverse_course_url,
@@ -229,7 +226,6 @@ class GetItemTest(ItemTest):
         resp = self.create_xblock(
             parent_usage_key=child_vertical_usage_key,
             category="problem",
-            boilerplate="multiplechoice.yaml",
         )
         self.assertEqual(resp.status_code, 200)
 
@@ -258,7 +254,6 @@ class GetItemTest(ItemTest):
         resp = self.create_xblock(
             parent_usage_key=wrapper_usage_key,
             category="problem",
-            boilerplate="multiplechoice.yaml",
         )
         self.assertEqual(resp.status_code, 200)
 
@@ -286,7 +281,6 @@ class GetItemTest(ItemTest):
         resp = self.create_xblock(
             parent_usage_key=child_vertical_usage_key,
             category="problem",
-            boilerplate="multiplechoice.yaml",
         )
         self.assertEqual(resp.status_code, 200)
         usage_key = self.response_usage_key(resp)
@@ -311,18 +305,13 @@ class GetItemTest(ItemTest):
         resp = self.create_xblock(
             parent_usage_key=split_test_usage_key,
             category="html",
-            boilerplate="announcement.yaml",
         )
         self.assertEqual(resp.status_code, 200)
         resp = self.create_xblock(
             parent_usage_key=split_test_usage_key,
             category="html",
-            boilerplate="latex_html.yaml",
         )
         self.assertEqual(resp.status_code, 200)
-        html, __ = self._get_container_preview(split_test_usage_key)
-        self.assertIn("Announcement", html)
-        self.assertIn("LaTeX", html)
 
     def test_split_test_edited(self):
         """
@@ -608,33 +597,12 @@ class TestCreateItem(ItemTest):
         course = self.get_item_from_modulestore(self.usage_key)
         self.assertIn(chap_usage_key, course.children)
 
-        # use default display name
-        resp = self.create_xblock(parent_usage_key=chap_usage_key, category="vertical")
-        vert_usage_key = self.response_usage_key(resp)
-
-        # create problem w/ boilerplate
-        template_id = "multiplechoice.yaml"
-        resp = self.create_xblock(
-            parent_usage_key=vert_usage_key, category="problem", boilerplate=template_id
-        )
-        prob_usage_key = self.response_usage_key(resp)
-        problem = self.get_item_from_modulestore(prob_usage_key)
-        # check against the template
-        course = CourseFactory.create()
-        problem_block = BlockFactory.create(category="problem", parent_location=course.location)
-        template = problem_block.get_template(template_id)
-        self.assertEqual(problem.data, template["data"])
-        self.assertEqual(problem.display_name, template["metadata"]["display_name"])
-        self.assertEqual(problem.markdown, template["metadata"]["markdown"])
-
     def test_create_block_negative(self):
         """
         Negative tests for create_item
         """
         # non-existent boilerplate: creates a default
-        resp = self.create_xblock(
-            category="problem", boilerplate="nosuchboilerplate.yaml"
-        )
+        resp = self.create_xblock(category="problem")
         self.assertEqual(resp.status_code, 200)
 
     def test_create_with_future_date(self):
@@ -836,7 +804,6 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
         resp = self.create_xblock(
             parent_usage_key=self.vert_usage_key,
             category="problem",
-            boilerplate="multiplechoice.yaml",
         )
         self.problem_usage_key = self.response_usage_key(resp)
 
@@ -935,19 +902,6 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
             duplicated_item = self.get_item_from_modulestore(usage_key)
             self.assertEqual(duplicated_item.display_name, expected_name)
             return usage_key
-
-        # Display name comes from template.
-        dupe_usage_key = verify_name(
-            self.problem_usage_key,
-            self.vert_usage_key,
-            "Duplicate of 'Multiple Choice'",
-        )
-        # Test dupe of dupe.
-        verify_name(
-            dupe_usage_key,
-            self.vert_usage_key,
-            "Duplicate of 'Duplicate of 'Multiple Choice''",
-        )
 
         # Uses default display_name of 'Text' from HTML component.
         verify_name(self.html_usage_key, self.vert_usage_key, "Duplicate of 'Text'")
@@ -1847,7 +1801,6 @@ class TestDuplicateItemWithAsides(ItemTest, DuplicateHelper):
         resp = self.create_xblock(
             parent_usage_key=self.seq_usage_key,
             category="problem",
-            boilerplate="multiplechoice.yaml",
         )
         self.problem_usage_key = self.response_usage_key(resp)
 
@@ -1930,11 +1883,9 @@ class TestEditItemSetup(ItemTest):
         self.seq2_update_url = reverse_usage_url("xblock_handler", self.seq2_usage_key)
 
         # create problem w/ boilerplate
-        template_id = "multiplechoice.yaml"
         resp = self.create_xblock(
             parent_usage_key=self.seq_usage_key,
             category="problem",
-            boilerplate=template_id,
         )
         self.problem_usage_key = self.response_usage_key(resp)
         self.problem_update_url = reverse_usage_url(
@@ -1964,19 +1915,6 @@ class TestEditItem(TestEditItemSetup):
         )
         problem = self.get_item_from_modulestore(self.problem_usage_key)
         self.assertEqual(problem.rerandomize, 'never')
-
-    def test_null_field(self):
-        """
-        Sending null in for a field 'deletes' it
-        """
-        problem = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertIsNotNone(problem.markdown)
-        self.client.ajax_post(
-            self.problem_update_url,
-            data={'nullout': ['markdown']}
-        )
-        problem = self.get_item_from_modulestore(self.problem_usage_key)
-        self.assertIsNone(problem.markdown)
 
     def test_date_fields(self):
         """
@@ -2427,28 +2365,6 @@ class TestEditItem(TestEditItemSetup):
         )  # See xmodule/fields.py
 
 
-class TestEditItemSplitMongo(TestEditItemSetup):
-    """
-    Tests for EditItem running on top of the SplitMongoModuleStore.
-    """
-
-    def test_editing_view_wrappers(self):
-        """
-        Verify that the editing view only generates a single wrapper, no matter how many times it's loaded
-
-        Exposes: PLAT-417
-        """
-        view_url = reverse_usage_url(
-            "xblock_view_handler", self.problem_usage_key, {"view_name": STUDIO_VIEW}
-        )
-
-        for __ in range(3):
-            resp = self.client.get(view_url, HTTP_ACCEPT="application/json")
-            self.assertEqual(resp.status_code, 200)
-            content = json.loads(resp.content.decode("utf-8"))
-            self.assertEqual(len(PyQuery(content["html"])(f".xblock-{STUDIO_VIEW}")), 1)
-
-
 class TestEditSplitModule(ItemTest):
     """
     Tests around editing instances of the split_test block.
@@ -2864,7 +2780,6 @@ class TestComponentHandler(TestCase):
         assert mocked_get_aside_from_xblock.called is is_get_aside_called
 
 
-@override_waffle_flag(toggles.LEGACY_STUDIO_PROBLEM_EDITOR, True)
 class TestComponentTemplates(CourseTestCase):
     """
     Unit tests for the generation of the component templates for a course.
@@ -3012,12 +2927,6 @@ class TestComponentTemplates(CourseTestCase):
         self.course.allow_unsupported_xblocks = True
         self.templates = get_component_templates(self.course)
         self._verify_basic_component("video", "Video", "us")
-        problem_templates = self.get_templates_of_type("problem")
-        problem_no_boilerplate = self.get_template(
-            problem_templates, "Blank Problem"
-        )
-        self.assertIsNotNone(problem_no_boilerplate)
-        self.assertEqual("us", problem_no_boilerplate["support_level"])
 
         # Now fully disable video through XBlockConfiguration
         XBlockConfiguration.objects.create(name="video", enabled=False)
@@ -3060,20 +2969,6 @@ class TestComponentTemplates(CourseTestCase):
         XBlockConfiguration.objects.create(name="done", enabled=False)
         self.templates = get_component_templates(self.course)
         self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))
-
-    def test_advanced_problems(self):
-        """
-        Test the handling of advanced problem templates.
-        """
-        problem_templates = self.get_templates_of_type("problem")
-        circuit_template = self.get_template(
-            problem_templates, "Circuit Schematic Builder"
-        )
-        self.assertIsNotNone(circuit_template)
-        self.assertEqual(circuit_template.get("category"), "problem")
-        self.assertEqual(
-            circuit_template.get("boilerplate_name"), "circuitschematic.yaml"
-        )
 
     def test_deprecated_no_advance_component_button(self):
         """
@@ -3611,7 +3506,7 @@ class TestXBlockInfo(ItemTest):
                     self.validate_xblock_info_consistency(
                         child_response,
                         has_child_info=(
-                            not child_response.get("child_info", None) is None
+                            child_response.get("child_info", None) is not None
                         ),
                         course_outline=course_outline,
                     )

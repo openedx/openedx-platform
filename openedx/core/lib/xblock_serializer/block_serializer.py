@@ -49,8 +49,7 @@ class XBlockSerializer:
         runtime_supports_explicit_assets = hasattr(block.runtime, 'get_block_assets')
         if runtime_supports_explicit_assets:
             # If a block supports explicitly tracked assets, things are simple.
-            # Learning Core backed content supports this, which currently means
-            # v2 Content Libraries.
+            # openedx_content (v2 Content Libraries) currently supports this.
             self.static_files.extend(
                 block.runtime.get_block_assets(block, fetch_asset_data)
             )

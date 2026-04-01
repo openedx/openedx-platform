@@ -17,11 +17,13 @@
 # Stay on LTS version, remove once this is added to common constraint
 Django<6.0
 
-# Date: 2020-02-26
-# As it is not clarified what exact breaking changes will be introduced as per
-# the next major release, ensure the installed version is within boundaries.
+# Date: 2026-01-13
+# We would normally pin celery to <6.0.0 to avoid auto-updating across a major
+# version boundary without more thorough testing. The reason it's currently also
+# pinned to !=5.6.1 is because of a celery bug related to the eta and countdown
+# parameters. This bug caused operational issues in MIT's deployment.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35280
-celery>=5.2.2,<6.0.0
+celery>=5.2.2,!=5.6.1,<6.0.0
 
 # Date: 2020-02-10
 # django-oauth-toolkit version >=2.0.0 has breaking changes. More details
@@ -42,7 +44,7 @@ django-stubs<6
 # The team that owns this package will manually bump this package rather than having it pulled in automatically.
 # This is to allow them to better control its deployment and to do it in a process that works better
 # for them.
-edx-enterprise==6.5.1
+edx-enterprise==6.8.3
 
 # Date: 2023-07-26
 # Our legacy Sass code is incompatible with anything except this ancient libsass version.
@@ -52,16 +54,18 @@ edx-enterprise==6.5.1
 libsass==0.10.0
 
 # Date: 2024-07-16
-# We need to upgrade the version of elasticsearch to atleast 7.15 before we can upgrade to Numpy 2.0.0
+# We need to upgrade the version of elasticsearch to at least 7.15 before we can upgrade to Numpy 2.0.0
 # Otherwise we see a failure while running the following command:
 # export DJANGO_SETTINGS_MODULE=cms.envs.test; python manage.py cms check_reserved_keywords --override_file db_keyword_overrides.yml --report_path reports/reserved_keywords --report_file cms_reserved_keyword_report.csv
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35126
 numpy<2.0.0
 
 # Date: 2023-09-18
-# pinning this version to avoid updates while the library is being developed
+# Library is still in active development. Minor versions (0.x, 0.x+1) may have
+# breaking changes which openedx-core devs want to roll out manually. New patch versions
+# are OK to accept automatically.
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35269
-openedx-learning==0.30.2
+openedx-core<0.39
 
 # Date: 2023-11-29
 # Open AI version 1.0.0 dropped support for openai.ChatCompletion which is currently in use in enterprise.
@@ -73,11 +77,6 @@ openai<=0.28.1
 # needs to be investigated and fixed separately
 # Issue for unpinning: https://github.com/openedx/edx-platform/issues/35267
 path<16.12.0
-
-# Date: 2022-08-03
-# pycodestyle==2.9.0 generates false positive error E275.
-# Constraint can be removed once the issue https://github.com/PyCQA/pycodestyle/issues/1090 is fixed.
-pycodestyle<2.9.0
 
 # Date: 2021-08-25
 # At the time of writing this comment, we do not know whether py2neo>=2022
@@ -136,3 +135,30 @@ django-debug-toolbar<6.0.0
 # Issue: https://github.com/openedx/edx-platform/issues/37435
 cryptography<46.0.0
 pact-python<3.0.0
+
+# Date 2026-01-13
+# Sphinx-autoapi changed the version of astroid it needs
+# but the newer version is not compatible with the current pylint version
+# which wants a newer version of astroid.  This can be removed once we're
+# building requirements with Python 3.12
+# https://github.com/openedx/edx-platform/issues/37880
+sphinx-autoapi<3.6.1
+
+# Date 2026-03-02
+# setuptools 82.0.0 removed pkg_resources from its distribution, but fs (pyfilesystem2)
+# still uses pkg_resources for namespace package declarations. This constraint can be
+# removed once pyfilesystem2 drops its pkg_resources usage.
+# https://github.com/PyFilesystem/pyfilesystem2/issues/577
+# Issue for unpinning: https://github.com/openedx/openedx-platform/issues/38068
+setuptools<82
+
+# Date 2026-03-02
+# The latest version of pylint pins back astroid to an older version.
+# This holdback is not caught in the docs requirements file and since both the docs
+# and testing file are required in the development.in file, we fail to compile
+# development.txt because of conflicting dependencies.
+#
+# Holding astroid back until pylint releases a new version that works with the latest
+# version of astroid.
+# https://github.com/openedx/openedx-platform/issues/38066
+astroid==4.0.4

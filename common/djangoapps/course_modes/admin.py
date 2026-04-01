@@ -1,13 +1,14 @@
 """Django admin for course_modes"""
 
 
+from zoneinfo import ZoneInfo
+
 from django import forms
 from django.conf import settings
 from django.contrib import admin
 from django.http.request import QueryDict
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC, timezone
 
 from common.djangoapps.course_modes.models import CourseMode, CourseModeExpirationConfig
 # Technically, we shouldn't be doing this, since verify_student is defined
@@ -73,7 +74,7 @@ class CourseModeForm(forms.ModelForm):
             # However, the args copy above before the super() call handles this case.
             pass
 
-        default_tz = timezone(settings.TIME_ZONE)
+        default_tz = ZoneInfo(settings.TIME_ZONE)
 
         if self.instance._expiration_datetime:
             # django admin is using default timezone. To avoid time conversion from db to form
@@ -81,7 +82,7 @@ class CourseModeForm(forms.ModelForm):
             _expiration_datetime = self.instance._expiration_datetime.replace(
                 tzinfo=None
             )
-            self.initial["_expiration_datetime"] = default_tz.localize(_expiration_datetime)
+            self.initial["_expiration_datetime"] = _expiration_datetime.replace(tzinfo=default_tz)
         # Load the verification deadline
         # Since this is stored on a model in verify student, we need to load it from there.
         # We need to munge the timezone a bit to get Django admin to display it without converting
@@ -90,7 +91,7 @@ class CourseModeForm(forms.ModelForm):
         if self.instance.course_id and self.instance.mode_slug in CourseMode.VERIFIED_MODES:
             deadline = verification_models.VerificationDeadline.deadline_for_course(self.instance.course_id)
             self.initial["verification_deadline"] = (
-                default_tz.localize(deadline.replace(tzinfo=None))
+                deadline.replace(tzinfo=default_tz)
                 if deadline is not None else None
             )
 
@@ -107,14 +108,14 @@ class CourseModeForm(forms.ModelForm):
         # django admin saving the date with default timezone to avoid time conversion from form to db
         # changes its tzinfo to UTC
         if self.cleaned_data.get("_expiration_datetime"):
-            return self.cleaned_data.get("_expiration_datetime").replace(tzinfo=UTC)
+            return self.cleaned_data.get("_expiration_datetime").replace(tzinfo=ZoneInfo("UTC"))
 
     def clean_verification_deadline(self):
         """
         Ensure that the verification deadline we save uses the UTC timezone.
         """
         if self.cleaned_data.get("verification_deadline"):
-            return self.cleaned_data.get("verification_deadline").replace(tzinfo=UTC)
+            return self.cleaned_data.get("verification_deadline").replace(tzinfo=ZoneInfo("UTC"))
 
     def clean(self):
         """

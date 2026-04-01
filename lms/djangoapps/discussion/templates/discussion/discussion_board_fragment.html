@@ -1,78 +1,76 @@
-## mako
+{% load static i18n %}
 
-<%namespace name='static' file='../static_content.html'/>
-
-<%page expression_filter="h"/>
-
-<%!
-import json
-from django.utils.translation import gettext as _
-from django.template.defaultfilters import escapejs
-from django.urls import reverse
-
-from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
-from openedx.core.djangolib.js_utils import dump_js_escaped_json, js_escaped_string
-from openedx.core.djangolib.markup import HTML
-%>
-
-<section class="discussion discussion-board page-content-container" id="discussion-container"
-         data-course-id="${course.id}"
-         data-user-create-comment="${json.dumps(can_create_comment)}"
-         data-user-create-subcomment="${json.dumps(can_create_subcomment)}"
+<section class="discussion discussion-board page-content-container"
+         id="discussion-container"
+         data-course-id="{{ course.id }}"
+         data-user-create-comment="{{ can_create_comment|yesno:'true,false' }}"
+         data-user-create-subcomment="{{ can_create_subcomment|yesno:'true,false' }}"
          data-read-only="false"
-         data-sort-preference="${sort_preference}"
-         data-flag-moderator="${json.dumps(flag_moderator)}"
-         data-user-group-id="${user_group_id}">
+         data-sort-preference="{{ sort_preference }}"
+         data-flag-moderator="{{ flag_moderator|yesno:'true,false' }}"
+         data-user-group-id="{{ user_group_id }}">
+
     <header class="page-header has-secondary">
-        ## Breadcrumb navigation
+        {# Breadcrumb navigation #}
         <div class="page-header-main">
-            <nav aria-label="${_('Discussions')}" class="sr-is-focusable" tabindex="-1">
+            <nav aria-label="{% trans 'Discussions' as tmsg %} {{tmsg|force_escape}}" class="sr-is-focusable" tabindex="-1">
                 <div class="has-breadcrumbs"></div>
             </nav>
         </div>
+
         <div class="page-header-secondary">
-            ## Add Post button
-            % if has_permission(user, 'create_thread', course.id):
+            {# Add Post button #}             
+            {% if can_create_thread %}
             <div class="forum-actions">
-                <button class="btn btn-outline-primary btn-small new-post-btn">${_("Add a Post")}</button>
+                <button class="btn btn-outline-primary btn-small new-post-btn">
+                    {% trans "Add a Post" as tmsg %} {{tmsg|force_escape}}
+                </button>
             </div>
-            % endif
-            ## Search box
+            {% endif %}
+           {# Search box #}
             <div class="forum-search"></div>
         </div>
     </header>
-    % if course_expiration_fragment:
-        ${HTML(course_expiration_fragment.content)}
-    % endif
+
+    {% if course_expiration_fragment %}
+        {{ course_expiration_fragment.content|safe }}
+    {% endif %}
+
     <div class="page-content"
-      % if getattr(course, 'language'):
-        lang="${course.language}"
-      % endif
+         {% if course.language %}
+             lang="{{ course.language }}"
+         {% endif %}
     >
         <div class="discussion-body">
             <main id="main" class="discussion-column" aria-label="Content" tabindex="-1">
-                <article class="new-post-article is-hidden" style="display: none" tabindex="-1" aria-label="${_("New topic form")}"></article>
+                <article class="new-post-article is-hidden" style="display: none" tabindex="-1" aria-label="{% trans 'New topic form' as tmsg %} {{tmsg|force_escape}}">
+                </article>
                 <div class="forum-content"></div>
             </main>
-            <aside class="forum-nav" role="complementary" aria-label="${_("Discussion thread list")}">
-                <%include file="_filter_dropdown.html" />
+            <aside class="forum-nav" role="complementary" aria-label="{% trans 'Discussion thread list' as tmsg %} {{tmsg|force_escape}}">
+                {% include "discussion/_filter_dropdown.html" %}
                 <div class="discussion-thread-list-container"></div>
             </aside>
         </div>
     </div>
 </section>
 
-<%include file="_underscore_templates.html" />
-<%include file="_thread_list_template.html" />
+{% include "discussion/_underscore_templates.html" %}
+{% include "discussion/_thread_list_template.html" %}
 
-<%static:require_module_async module_name="js/commerce/track_ecommerce_events" class_name="TrackECommerceEvents">
+<script>
+require(["js/commerce/track_ecommerce_events"], function (TrackECommerceEvents) {
 
-  var fbeLink = $("#FBE_banner");
+    var fbeLink = $("#FBE_banner");
 
-  TrackECommerceEvents.trackUpsellClick(fbeLink, 'discussion_audit_access_expires', {
-      pageName: "discussion_tab",
-      linkType: "link",
-      linkCategory: "FBE_banner"
-  });
-
-</%static:require_module_async>
+    TrackECommerceEvents.trackUpsellClick(
+        fbeLink,
+        'discussion_audit_access_expires',
+        {
+            pageName: "discussion_tab",
+            linkType: "link",
+            linkCategory: "FBE_banner"
+        }
+    );
+});
+</script>

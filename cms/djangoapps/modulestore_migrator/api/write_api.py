@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from celery.result import AsyncResult
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_learning.api.authoring import get_collection
+from openedx_content.api import get_collection
 
 from openedx.core.types.user import AuthUser
 from openedx.core.djangoapps.content_libraries.api import get_library

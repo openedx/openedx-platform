@@ -20,23 +20,9 @@ class TemplateTests(ModuleStoreTestCase):
         self.assertIsNotNone(found.get('course'))
         self.assertIsNotNone(found.get('about'))
         self.assertIsNotNone(found.get('html'))
-        self.assertIsNotNone(found.get('problem'))
         self.assertEqual(len(found.get('course')), 0)
         self.assertEqual(len(found.get('about')), 1)
         self.assertGreaterEqual(len(found.get('html')), 2)
-        self.assertGreaterEqual(len(found.get('problem')), 10)
-        dropdown = None
-        for template in found['problem']:
-            self.assertIn('metadata', template)
-            self.assertIn('display_name', template['metadata'])
-            if template['metadata']['display_name'] == 'Dropdown':
-                dropdown = template
-                break
-        self.assertIsNotNone(dropdown)
-        self.assertIn('markdown', dropdown['metadata'])
-        self.assertIn('data', dropdown)
-        self.assertRegex(dropdown['metadata']['markdown'], r'.*dropdown problems.*')
-        self.assertRegex(dropdown['data'], r'<problem>\s*<optionresponse>\s*<p>.*dropdown problems.*')
 
     def test_get_some_templates(self):
         course = CourseFactory.create()

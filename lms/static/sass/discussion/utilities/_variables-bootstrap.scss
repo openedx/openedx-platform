@@ -8,32 +8,32 @@ $forum-color-background-light: rgb(245, 245, 245) !default;
 
 // contextual color variables
 $forum-color-background: theme-color("inverse");
-$forum-color-active-thread: $forum-color-primary !default;
+$forum-color-active-thread: var(--forum-color-primary) !default;
 $forum-color-hover: rgb(6, 86, 131) !default;
-$forum-color-active-text: $white !default;
+$forum-color-active-text: var(--white) !default;
 $forum-color-pinned: rgb(152, 44, 98) !default;
 $forum-color-reported: rgb(152, 44, 98) !default;
-$forum-color-closed: $black !default;
-$forum-color-following: $forum-color-primary !default;
-$forum-color-staff: $forum-color-primary !default;
-$forum-color-community-ta: $green !default;
+$forum-color-closed: var(--black) !default;
+$forum-color-following: var(--forum-color-primary) !default;
+$forum-color-staff: var(--forum-color-primary) !default;
+$forum-color-community-ta: var(--green) !default;
 $forum-color-marked-answer: theme-color("success") !default;
-$forum-color-border: $gray-300 !default;
+$forum-color-border: var(--gray-300) !default;
 $forum-color-error: theme-color("danger") !default;
-$forum-color-hover-thread: $forum-color-background-light !default;
-$forum-color-reading-thread: $forum-color-background-light !default;
-$forum-color-read-post: $forum-color-copy-light !default;
-$forum-color-never-read-post: $forum-color-primary !default;
-$forum-color-editor-preview-label: $forum-color-copy-light !default;
-$forum-color-response-count: $forum-color-copy-light !default;
-$forum-color-navigation-bar: $forum-color-background-light !default;
-$forum-color-count: $forum-color-copy-light !default;
-$forum-color-background-label: $gray-700 !default;
+$forum-color-hover-thread: var(--forum-color-background-light) !default;
+$forum-color-reading-thread: var(--forum-color-background-light) !default;
+$forum-color-read-post: var(--forum-color-copy-light) !default;
+$forum-color-never-read-post: var(--forum-color-primary) !default;
+$forum-color-editor-preview-label: var(--forum-color-copy-light) !default;
+$forum-color-response-count: var(--forum-color-copy-light) !default;
+$forum-color-navigation-bar: var(--forum-color-background-light) !default;
+$forum-color-count: var(--forum-color-copy-light) !default;
+$forum-color-background-label: var(--gray-700) !default;
 
 // post images
-$post-image-dimension: ($baseline*3) !default;  // image size  + margin
-$response-image-dimension: ($baseline*2.5) !default; // image size  + margin
-$comment-image-dimension: ($baseline*2) !default; // image size  + margin
+$post-image-dimension: calc(var(--baseline) * 3) !default;  // image size  + margin
+$response-image-dimension: calc(var(--baseline) * 2.5) !default; // image size  + margin
+$comment-image-dimension: calc(var(--baseline) * 2) !default; // image size  + margin
 
 // action-dropdown
 $actions-dropdown-width: 145px; // best estimate in RU

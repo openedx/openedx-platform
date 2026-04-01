@@ -7,7 +7,9 @@ from django.utils.translation import gettext_lazy as _
 
 from .email_notifications import EmailCadence
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
-from .utils import find_app_in_normalized_apps, find_pref_in_normalized_prefs
+
+from .settings_override import get_notification_types_config, get_notification_apps_config
+
 from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA
 from .notification_content import get_notification_type_context_function
 
@@ -23,10 +25,10 @@ class NotificationType(TypedDict):
     notification_app: str
     # Unique identifier for this notification type.
     name: str
-    # Mark this as a core notification.
-    # When True, user preferences are taken from the notification app's `core_*` configuration,
+    # Whether this notification type uses the notification app's default settings.
+    # When True, user preferences are taken from the notification app's configuration,
     # overriding the `web`, `email`, `push`, `email_cadence`, and `non_editable` attributes set here.
-    is_core: bool
+    use_app_defaults: bool
     # Template string for notification content (see ./docs/templates.md).
     # Wrap in gettext_lazy (_) for translation support.
     content_template: str
@@ -34,12 +36,9 @@ class NotificationType(TypedDict):
     # The values for these variables are passed to the templates when generating the notification.
     # NOTE: this field is for documentation purposes only; it is not used.
     content_context: dict[str, Any]
-    # Template used when delivering notifications via email.
-    email_template: str
     filters: list[str]
 
-    # All fields below are required unless `is_core` is True.
-    # Core notifications take this config from the associated notification app instead (and ignore anything set here).
+    # All fields below are required unless `use_app_defaults` is True.
 
     # Set to True to enable delivery on web.
     web: NotRequired[bool]
@@ -61,24 +60,24 @@ class NotificationType(TypedDict):
 
 
 # For help defining new notifications, see ./docs/creating_a_new_notification_guide.md
-COURSE_NOTIFICATION_TYPES = {
+_COURSE_NOTIFICATION_TYPES = {
     'new_comment_on_response': {
         'notification_app': 'discussion',
         'name': 'new_comment_on_response',
-        'is_core': True,
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> commented on your response to the post '
                               '<{strong}>{post_title}</{strong}></{p}>'),
         'content_context': {
             'post_title': 'Post title',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'new_comment': {
         'notification_app': 'discussion',
         'name': 'new_comment',
-        'is_core': True,
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> commented on <{strong}>{author_name}'
                               '</{strong}> response to your post <{strong}>{post_title}</{strong}></{p}>'),
         'content_context': {
@@ -86,13 +85,13 @@ COURSE_NOTIFICATION_TYPES = {
             'author_name': 'author name',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'new_response': {
         'notification_app': 'discussion',
         'name': 'new_response',
-        'is_core': True,
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> responded to your '
                               'post <{strong}>{post_title}</{strong}></{p}>'),
         'grouped_content_template': _('<{p}><{strong}>{replier_name}</{strong}> and others have responded to your post '
@@ -101,13 +100,13 @@ COURSE_NOTIFICATION_TYPES = {
             'post_title': 'Post title',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'new_discussion_post': {
         'notification_app': 'discussion',
         'name': 'new_discussion_post',
-        'is_core': False,
+
         'info': '',
         'web': False,
         'email': False,
@@ -121,13 +120,13 @@ COURSE_NOTIFICATION_TYPES = {
             'post_title': 'Post title',
             'username': 'Post author name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'new_question_post': {
         'notification_app': 'discussion',
         'name': 'new_question_post',
-        'is_core': False,
+
         'info': '',
         'web': False,
         'email': False,
@@ -139,15 +138,13 @@ COURSE_NOTIFICATION_TYPES = {
             'post_title': 'Post title',
             'username': 'Post author name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'response_on_followed_post': {
         'notification_app': 'discussion',
         'name': 'response_on_followed_post',
-        'is_core': True,
-        'info': '',
-        'non_editable': [],
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> responded to a post you’re following: '
                               '<{strong}>{post_title}</{strong}></{p}>'),
         'grouped_content_template': _('<{p}><{strong}>{replier_name}</{strong}> and others responded to a post you’re '
@@ -156,15 +153,13 @@ COURSE_NOTIFICATION_TYPES = {
             'post_title': 'Post title',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'comment_on_followed_post': {
         'notification_app': 'discussion',
         'name': 'comment_on_followed_post',
-        'is_core': True,
-        'info': '',
-        'non_editable': [],
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}</{strong}> commented on <{strong}>{author_name}'
                               '</{strong}> response in a post you’re following <{strong}>{post_title}'
                               '</{strong}></{p}>'),
@@ -173,13 +168,13 @@ COURSE_NOTIFICATION_TYPES = {
             'author_name': 'author name',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'content_reported': {
         'notification_app': 'discussion',
         'name': 'content_reported',
-        'is_core': False,
+
         'info': '',
         'web': True,
         'email': True,
@@ -194,42 +189,38 @@ COURSE_NOTIFICATION_TYPES = {
             'author_name': 'author name',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'visible_to': [FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA]
     },
     'response_endorsed_on_thread': {
         'notification_app': 'discussion',
         'name': 'response_endorsed_on_thread',
-        'is_core': True,
-        'info': '',
-        'non_editable': [],
+        'use_app_defaults': True,
         'content_template': _('<{p}><{strong}>{replier_name}\'s</{strong}> response has been endorsed in your post '
                               '<{strong}>{post_title}</{strong}></{p}>'),
         'content_context': {
             'post_title': 'Post title',
             'replier_name': 'replier name',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'response_endorsed': {
         'notification_app': 'discussion',
         'name': 'response_endorsed',
-        'is_core': True,
-        'info': '',
-        'non_editable': [],
+        'use_app_defaults': True,
         'content_template': _('<{p}>Your response has been endorsed on the post <{strong}>{post_title}</{strong}></{'
                               'p}>'),
         'content_context': {
             'post_title': 'Post title',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'course_updates': {
         'notification_app': 'updates',
         'name': 'course_updates',
-        'is_core': False,
+
         'info': '',
         'web': True,
         'email': True,
@@ -240,13 +231,13 @@ COURSE_NOTIFICATION_TYPES = {
         'content_context': {
             'course_update_content': 'Course update',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
     'ora_staff_notifications': {
         'notification_app': 'grading',
         'name': 'ora_staff_notifications',
-        'is_core': False,
+
         'info': 'Notifications for when a submission is made for ORA that includes staff grading step.',
         'web': True,
         'email': False,
@@ -260,14 +251,14 @@ COURSE_NOTIFICATION_TYPES = {
         'content_context': {
             'ora_name': 'Name of ORA in course',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
         'visible_to': [CourseStaffRole.ROLE, CourseInstructorRole.ROLE]
     },
     'ora_grade_assigned': {
         'notification_app': 'grading',
         'name': 'ora_grade_assigned',
-        'is_core': False,
+
         'info': '',
         'web': True,
         'email': True,
@@ -281,13 +272,13 @@ COURSE_NOTIFICATION_TYPES = {
             'points_earned': 'Points earned',
             'points_possible': 'Points possible',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE],
     },
     'new_instructor_all_learners_post': {
         'notification_app': 'discussion',
         'name': 'new_instructor_all_learners_post',
-        'is_core': False,
+
         'info': '',
         'web': True,
         'email': True,
@@ -299,7 +290,7 @@ COURSE_NOTIFICATION_TYPES = {
         'content_context': {
             'post_title': 'Post title',
         },
-        'email_template': '',
+
         'filters': [FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE]
     },
 }
@@ -314,281 +305,62 @@ class NotificationApp(TypedDict):
 
     Each notification type defined in COURSE_NOTIFICATION_TYPES also references an app.
 
-    Each notification type can also be optionally defined as a core notification.
     In this case, the delivery preferences for that notification are taken
-    from the `core_*` fields of the associated notification app.
     """
     # Set to True to enable this app and linked notification types.
     enabled: bool
-    # Description to be displayed about core notifications for this app.
+    # Description to be displayed about grouped notifications for this app.
     # This string should be wrapped in the gettext_lazy function (imported as `_`) to support translation.
-    core_info: str
-    # Set to True to enable delivery for associated core notifications on web.
-    core_web: bool
-    # Set to True to enable delivery for associated core notifications via emails.
-    core_email: bool
-    # Set to True to enable delivery for associated core notifications via push notifications.
+    info: str
+    # Set to True to enable delivery for associated grouped notifications on web.
+    web: bool
+    # Set to True to enable delivery for associated grouped notifications via emails.
+    email: bool
+    # Set to True to enable delivery for associated grouped notifications via push notifications.
     # NOTE: push notifications are not implemented yet
-    core_push: bool
-    # How often email notifications are sent for associated core notifications.
-    core_email_cadence: Literal[EmailCadence.DAILY, EmailCadence.WEEKLY, EmailCadence.IMMEDIATELY, EmailCadence.NEVER]
-    # Items in the list represent core notification delivery channels
+    push: bool
+    # How often email notifications are sent for associated grouped notifications.
+    email_cadence: Literal[EmailCadence.DAILY, EmailCadence.WEEKLY, EmailCadence.IMMEDIATELY, EmailCadence.NEVER]
+    # Items in the list represent grouped notification delivery channels
     # where the user is blocked from changing from what is defined for the app here
-    # (see `core_web`, `core_email`, and `core_push` above).
+    # (see `web`, `email`, and `push` above).
     non_editable: list[Literal["web", "email", "push"]]
 
 
 # For help defining new notifications and notification apps, see ./docs/creating_a_new_notification_guide.md
-COURSE_NOTIFICATION_APPS: dict[str, NotificationApp] = {
+_COURSE_NOTIFICATION_APPS: dict[str, NotificationApp] = {
     'discussion': {
         'enabled': True,
-        'core_info': _('Notifications for responses and comments on your posts, and the ones you’re '
-                       'following, including endorsements to your responses and on your posts.'),
-        'core_web': True,
-        'core_email': True,
-        'core_push': True,
-        'core_email_cadence': EmailCadence.DAILY,
+        'info': _('Notifications for responses and comments on your posts, and the ones you’re '
+                  'following, including endorsements to your responses and on your posts.'),
+        'web': True,
+        'email': True,
+        'push': True,
+        'email_cadence': EmailCadence.DAILY,
         'non_editable': []
     },
     'updates': {
         'enabled': True,
-        'core_info': _('Notifications for new announcements and updates from the course team.'),
-        'core_web': True,
-        'core_email': True,
-        'core_push': True,
-        'core_email_cadence': EmailCadence.DAILY,
+        'info': _('Notifications for new announcements and updates from the course team.'),
+        'web': True,
+        'email': True,
+        'push': True,
+        'email_cadence': EmailCadence.DAILY,
         'non_editable': []
     },
     'grading': {
         'enabled': True,
-        'core_info': _('Notifications for submission grading.'),
-        'core_web': True,
-        'core_email': True,
-        'core_push': True,
-        'core_email_cadence': EmailCadence.DAILY,
+        'info': _('Notifications for submission grading.'),
+        'web': True,
+        'email': True,
+        'push': True,
+        'email_cadence': EmailCadence.DAILY,
         'non_editable': []
     },
 }
 
-
-class NotificationPreferenceSyncManager:
-    """
-    Sync Manager for Notification Preferences
-    """
-
-    @staticmethod
-    def normalize_preferences(preferences):
-        """
-        Normalizes preferences to reduce depth of structure.
-        This simplifies matching of preferences reducing effort to get difference.
-        """
-        apps = []
-        prefs = []
-        non_editable = {}
-        core_notifications = {}
-
-        for app, app_pref in preferences.items():
-            apps.append({
-                'name': app,
-                'enabled': app_pref.get('enabled')
-            })
-            for pref_name, pref_values in app_pref.get('notification_types', {}).items():
-                prefs.append({
-                    'name': pref_name,
-                    'app_name': app,
-                    **pref_values
-                })
-            non_editable[app] = app_pref.get('non_editable', {})
-            core_notifications[app] = app_pref.get('core_notification_types', [])
-
-        normalized_preferences = {
-            'apps': apps,
-            'preferences': prefs,
-            'non_editable': non_editable,
-            'core_notifications': core_notifications,
-        }
-        return normalized_preferences
-
-    @staticmethod
-    def denormalize_preferences(normalized_preferences):
-        """
-        Denormalizes preference from simplified to normal structure for saving it in database
-        """
-        denormalized_preferences = {}
-        for app in normalized_preferences.get('apps', []):
-            app_name = app.get('name')
-            app_toggle = app.get('enabled')
-            denormalized_preferences[app_name] = {
-                'enabled': app_toggle,
-                'core_notification_types': normalized_preferences.get('core_notifications', {}).get(app_name, []),
-                'notification_types': {},
-                'non_editable': normalized_preferences.get('non_editable', {}).get(app_name, {}),
-            }
-
-        for preference in normalized_preferences.get('preferences', []):
-            pref_name = preference.get('name')
-            app_name = preference.get('app_name')
-            denormalized_preferences[app_name]['notification_types'][pref_name] = {
-                'web': preference.get('web'),
-                'push': preference.get('push'),
-                'email': preference.get('email'),
-                'email_cadence': preference.get('email_cadence'),
-            }
-        return denormalized_preferences
-
-    @staticmethod
-    def update_preferences(preferences, email_opt_out=False):
-        """
-        Creates a new preference version from old preferences.
-        New preference is created instead of updating old preference
-
-        Steps to update existing user preference
-            1) Normalize existing user preference
-            2) Normalize default preferences
-            3) Iterate over all the apps in default preference, if app_name exists in
-               existing preference, update new preference app enabled value as
-               existing enabled value
-            4) Iterate over all preferences, if preference_name exists in existing
-               preference, update new preference values of web, email and push as
-               existing web, email and push respectively
-            5) Denormalize new preference
-        """
-        old_preferences = NotificationPreferenceSyncManager.normalize_preferences(preferences)
-        default_prefs = NotificationAppManager().get_notification_app_preferences(email_opt_out)
-        new_prefs = NotificationPreferenceSyncManager.normalize_preferences(default_prefs)
-
-        for app in new_prefs.get('apps'):
-            app_pref = find_app_in_normalized_apps(app.get('name'), old_preferences.get('apps'))
-            if app_pref:
-                app['enabled'] = app_pref['enabled']
-
-        for preference in new_prefs.get('preferences'):
-            pref_name = preference.get('name')
-            app_name = preference.get('app_name')
-            pref = find_pref_in_normalized_prefs(pref_name, app_name, old_preferences.get('preferences'))
-            if pref:
-                for channel in ['web', 'email', 'push', 'email_cadence']:
-                    preference[channel] = pref.get(channel, preference.get(channel))
-        return NotificationPreferenceSyncManager.denormalize_preferences(new_prefs)
-
-
-class NotificationTypeManager:
-    """
-    Manager for notification types
-    """
-
-    def __init__(self):
-        self.notification_types = COURSE_NOTIFICATION_TYPES
-
-    def get_notification_types_by_app(self, notification_app: str):
-        """
-        Returns notification types for the given notification app name.
-        """
-        return [
-            notification_type.copy() for _, notification_type in self.notification_types.items()
-            if notification_type.get('notification_app', None) == notification_app
-        ]
-
-    def get_core_and_non_core_notification_types(
-        self, notification_app: str
-    ) -> tuple[NotificationType, NotificationType]:
-        """
-        Returns notification types for the given app name, split by core and non core.
-
-        Return type is a tuple of (core_notification_types, non_core_notification_types).
-        """
-        notification_types = self.get_notification_types_by_app(notification_app)
-        core_notification_types = []
-        non_core_notification_types = []
-        for notification_type in notification_types:
-            if notification_type.get('is_core', None):
-                core_notification_types.append(notification_type)
-            else:
-                non_core_notification_types.append(notification_type)
-        return core_notification_types, non_core_notification_types
-
-    @staticmethod
-    def get_non_editable_notification_channels(notification_types):
-        """
-        Returns non_editable notification channels for the given notification types.
-        """
-        non_editable_notification_channels = {}
-        for notification_type in notification_types:
-            if notification_type.get('non_editable', None):
-                non_editable_notification_channels[notification_type.get('name')] = \
-                    notification_type.get('non_editable')
-        return non_editable_notification_channels
-
-    @staticmethod
-    def get_non_core_notification_type_preferences(non_core_notification_types, email_opt_out=False):
-        """
-        Returns non-core notification type preferences for the given notification types.
-        """
-        non_core_notification_type_preferences = {}
-        for notification_type in non_core_notification_types:
-            non_core_notification_type_preferences[notification_type.get('name')] = {
-                'web': notification_type.get('web', False),
-                'email': False if email_opt_out else notification_type.get('email', False),
-                'push': notification_type.get('push', False),
-                'email_cadence': notification_type.get('email_cadence', 'Daily'),
-            }
-        return non_core_notification_type_preferences
-
-    def get_notification_app_preference(self, notification_app, email_opt_out=False):
-        """
-        Returns notification app preferences for the given notification app.
-        """
-        core_notification_types, non_core_notification_types = self.get_core_and_non_core_notification_types(
-            notification_app,
-        )
-        non_core_notification_types_preferences = self.get_non_core_notification_type_preferences(
-            non_core_notification_types, email_opt_out
-        )
-        core_notification_types_name = [notification_type.get('name') for notification_type in core_notification_types]
-        return non_core_notification_types_preferences, core_notification_types_name
-
-
-class NotificationAppManager:
-    """
-    Notification app manager
-    """
-
-    def add_core_notification_preference(self, notification_app_attrs, notification_types, email_opt_out=False):
-        """
-        Adds core notification preference for the given notification app.
-        """
-        notification_types['core'] = {
-            'web': notification_app_attrs.get('core_web', False),
-            'email': False if email_opt_out else notification_app_attrs.get('core_email', False),
-            'push': notification_app_attrs.get('core_push', False),
-            'email_cadence': notification_app_attrs.get('core_email_cadence', 'Daily'),
-        }
-
-    def add_core_notification_non_editable(self, notification_app_attrs, non_editable_channels):
-        """
-        Adds non_editable for core notification.
-        """
-        if notification_app_attrs.get('non_editable', None):
-            non_editable_channels['core'] = notification_app_attrs.get('non_editable')
-
-    def get_notification_app_preferences(self, email_opt_out=False):
-        """
-        Returns notification app preferences for the given name.
-        """
-        course_notification_preference_config = {}
-        for notification_app_key, notification_app_attrs in COURSE_NOTIFICATION_APPS.items():
-            notification_app_preferences = {}
-            notification_types, core_notifications = NotificationTypeManager().get_notification_app_preference(
-                notification_app_key,
-                email_opt_out
-            )
-            self.add_core_notification_preference(notification_app_attrs, notification_types, email_opt_out)
-
-            notification_app_preferences['enabled'] = notification_app_attrs.get('enabled', False)
-            notification_app_preferences['core_notification_types'] = core_notifications
-            notification_app_preferences['notification_types'] = notification_types
-            course_notification_preference_config[notification_app_key] = notification_app_preferences
-        return course_notification_preference_config
+COURSE_NOTIFICATION_TYPES = get_notification_types_config()
+COURSE_NOTIFICATION_APPS = get_notification_apps_config()
 
 
 def get_notification_content(notification_type: str, context: dict[str, Any]):
@@ -614,8 +386,8 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
     if notification_type == 'course_update':
         notification_type = 'course_updates'
 
-    # Retrieve the notification type object from NotificationTypeManager.
-    notification_type = NotificationTypeManager().notification_types.get(notification_type, None)
+    # Retrieve the notification type object from the default preferences (derived from COURSE_NOTIFICATION_TYPES).
+    notification_type = get_default_values_of_preferences().get(notification_type, None)
 
     if notification_type:
         # Check if the notification is grouped.
@@ -637,14 +409,36 @@ def get_notification_content(notification_type: str, context: dict[str, Any]):
     return ''
 
 
-def get_default_values_of_preference(notification_app, notification_type):
+def get_default_values_of_preferences() -> dict[str, dict[str, Any]]:
     """
-    Returns default preference for notification_type
+    Returns default preferences for all notification apps
     """
-    default_prefs = NotificationAppManager().get_notification_app_preferences()
-    app_prefs = default_prefs.get(notification_app, {})
-    core_notification_types = app_prefs.get('core_notification_types', [])
-    notification_types = app_prefs.get('notification_types', {})
-    if notification_type in core_notification_types:
-        return notification_types.get('core', {})
-    return notification_types.get(notification_type, {})
+    preferences = {}
+    for name, values in COURSE_NOTIFICATION_TYPES.items():
+        if values.get('use_app_defaults', None):
+            app_defaults = COURSE_NOTIFICATION_APPS[values['notification_app']]
+            preferences[name] = {**app_defaults, **values}
+        else:
+            preferences[name] = {**values}
+    return preferences
+
+
+def filter_notification_types_by_app(app_name, use_app_defaults=None) -> dict[str, dict[str, Any]]:
+    """
+    Filter notification types by app name and optionally by use_app_defaults flag.
+
+    Args:
+        app_name (str): The notification app name to filter by (e.g., 'discussion', 'grading', 'updates')
+        use_app_defaults (bool, optional): If provided, additionally filter by use_app_defaults value
+
+    Returns:
+        dict: Filtered dictionary containing only matching notification types
+    """
+    notification_types = get_default_values_of_preferences()
+    if use_app_defaults is None:
+        return {k: v for k, v in notification_types.items()
+                if v.get('notification_app') == app_name}
+
+    return {k: v for k, v in notification_types.items()
+            if v.get('notification_app') == app_name
+            and v.get('use_app_defaults', False) == use_app_defaults}

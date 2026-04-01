@@ -65,7 +65,7 @@ class BlockStructureTransformer:
         identify the transformer's cached data. So it should be unique
         and not conflict with other transformers. Consider using the
         same name that is used in the Transformer Registry. For example,
-        for Stevedore, it is specified in the setup.py file.
+        for Stevedore, it is specified in the package configuration (pyproject.toml).
 
         Once the transformer is in use and its data is cached, do not
         modify this name value without consideration of backward

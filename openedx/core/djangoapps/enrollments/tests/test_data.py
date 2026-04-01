@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.roles import AuthzCompatCourseAccessRole
 from openedx.core.djangoapps.enrollments import data
 from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentClosedError,
@@ -387,8 +388,15 @@ class EnrollmentDataTest(ModuleStoreTestCase):
         expected_role = CourseAccessRoleFactory.create(
             course_id=self.course.id, user=self.user, role="SuperCoolTestRole",
         )
+        expected_role_compat = AuthzCompatCourseAccessRole(
+            user_id=expected_role.user.id,
+            username=expected_role.user.username,
+            org=expected_role.org,
+            course_id=expected_role.course_id,
+            role=expected_role.role,
+        )
         roles = data.get_user_roles(self.user.username)
-        assert roles == {expected_role}
+        assert roles == {expected_role_compat}
 
     def test_get_roles_no_roles(self):
         """Get roles for a user who has no roles"""

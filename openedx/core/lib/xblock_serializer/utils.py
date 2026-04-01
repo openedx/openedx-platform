@@ -225,17 +225,18 @@ def override_export_fs(block):
     XmlMixin.export_to_file = old_global_export_to_file
 
 
-def learning_core_def_key_from_modulestore_usage_key(usage_key):
+def openedx_core_def_key_from_modulestore_usage_key(usage_key):
     """
     In modulestore, the "definition key" is a MongoDB ObjectID kept in split's
     definitions table, which theoretically allows the same block to be used in
     many places (each with a unique usage key). However, that functionality is
     not exposed in Studio (other than via content libraries). So when we import
-    into learning core, we assume that each usage is unique, don't generate a usage
-    key, and create a new "definition key" from the original usage key.
+    into the OeX core content API, we assume that each usage is unique, don't
+    generate a usage key, and create a new "definition key" from the original
+    usage key.
     So modulestore usage key
         block-v1:A+B+C+type@html+block@introduction
-    will become learning core definition key
+    will become openedx_content definition key
         html/introduction
     """
     block_type = usage_key.block_type

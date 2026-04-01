@@ -45,11 +45,11 @@ def create_user_account_preferences(sender, instance, created, **kwargs):  # pyl
     if created:
         try:
             with transaction.atomic():
-                for name in COURSE_NOTIFICATION_TYPES.keys():
+                for name in COURSE_NOTIFICATION_TYPES:
                     preferences.append(create_notification_preference(instance.id, name))
                 NotificationPreference.objects.bulk_create(preferences, ignore_conflicts=True)
         except IntegrityError:
-            log.info(f'Account-level CourseNotificationPreference already exists for user {instance.id}')
+            log.info(f'Account-level Notification Preference already exists for user {instance.id}')
         except ProgrammingError as e:
             # This is here because there is a dependency issue in the migrations where
             # this signal handler tries to run before the NotificationPreference model is created.

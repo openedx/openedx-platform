@@ -19,14 +19,14 @@ jobs:
 
     steps:
       - name: Check out target branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: "${{ inputs.branch }}"
 
       - name: Set up Python environment
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Run make compile-requirements
         env:
@@ -44,7 +44,7 @@ jobs:
 
       - name: Make a PR
         id: make-pr
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: "${{ github.triggering_actor }}/compile-python-deps"
           branch-suffix: short-commit-hash

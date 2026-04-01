@@ -16,7 +16,7 @@ def send_user_email_digest_sent_event(user, cadence_type, notifications, message
     """
     Sends tracker and segment email for user email digest
     """
-    notification_breakdown = {key: 0 for key in COURSE_NOTIFICATION_APPS.keys()}
+    notification_breakdown = {key: 0 for key in COURSE_NOTIFICATION_APPS}
     for notification in notifications:
         notification_breakdown[notification.app_name] += 1
 

@@ -7,6 +7,7 @@ import json
 from operator import itemgetter
 from unittest.mock import patch
 from edx_toggles.toggles.testutils import override_waffle_flag
+from rest_framework import status
 
 import ddt
 
@@ -16,8 +17,13 @@ from cms.djangoapps.contentstore.course_group_config import (
     ENROLLMENT_SCHEME,
     GroupConfiguration
 )
+from django.test import Client
+from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from common.djangoapps.student.tests.factories import UserFactory
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID
 from openedx.features.content_type_gating.partitions import CONTENT_TYPE_GATING_SCHEME
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
@@ -1236,3 +1242,306 @@ class GroupConfigurationsValidationTestCase(CourseTestCase, HelperMethods):
         Tests if validation message is not present when updating usage info.
         """
         self.verify_validation_update_usage_info(None, None)  # pylint: disable=no-value-for-parameter
+
+class PostGroupConfigurationsListHandlerAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests endpoint used to create new Course Group Configurations
+    (group_configurations_list_handler) authorization using openedx-authz.
+    The endpoint uses COURSES_MANAGE_GROUP_CONFIGURATIONS permission.
+    """
+
+    view_name = "group_configurations_list_handler"
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+    course_key_arg_name = 'course_key_string'
+
+    def setUp(self):
+        super().setUp()
+        # Function-based views require session auth, not DRF force_authenticate.
+        # Re-initialize clients using Django's test Client with login().
+        self.authorized_client = Client()
+        self.authorized_client.login(
+            username=self.authorized_user.username, password=self.password
+        )
+        self.unauthorized_client = Client()
+        self.unauthorized_client.login(
+            username=self.unauthorized_user.username, password=self.password
+        )
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        resp = self.authorized_client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        resp = self.unauthorized_client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        resp = self.authorized_client.post(
+            self.get_url(other_course.id),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """
+        Staff users should still pass through legacy fallback.
+        """
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, password=self.password)
+
+        client = Client()
+        client.login(
+            username=superuser.username, password=self.password
+        )
+
+        resp = client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        User without permissions should be denied.
+        This case validates that a non-staff user cannot access even
+        if they have course author access to the course.
+        """
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = Client()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(
+            username=non_staff_user.username, password=self.password
+        )
+
+        resp = non_staff_client.post(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PutGroupConfigurationsDetailHandlerAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests endpoint used to update Course Group Configurations
+    (group_configurations_detail_handler) authorization using openedx-authz.
+    The endpoint uses COURSES_MANAGE_GROUP_CONFIGURATIONS permission.
+    """
+
+    view_name = "group_configurations_detail_handler"
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+    course_key_arg_name = 'course_key_string'
+    extra_request_args = {'group_configuration_id': 999}
+
+    def setUp(self):
+        super().setUp()
+        self.authorized_client = Client()
+        self.authorized_client.login(
+            username=self.authorized_user.username, password=self.password
+        )
+        self.unauthorized_client = Client()
+        self.unauthorized_client.login(
+            username=self.unauthorized_user.username, password=self.password
+        )
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        resp = self.authorized_client.put(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        resp = self.unauthorized_client.put(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run2", self.staff.id)
+
+        resp = self.authorized_client.put(
+            self.get_url(other_course.id),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """Staff users should still pass through legacy fallback."""
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.put(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, password=self.password)
+
+        client = Client()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = client.put(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+    def test_non_staff_user_cannot_access(self):
+        """User without permissions should be denied."""
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = Client()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.put(
+            self.get_url(self.course_key),
+            data=json.dumps(GROUP_CONFIGURATION_JSON),
+            content_type='application/json',
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class DeleteGroupConfigurationsDetailHandlerAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
+    """
+    Tests DELETE on group_configurations_detail_handler authorization using openedx-authz.
+    The endpoint uses COURSES_MANAGE_GROUP_CONFIGURATIONS permission.
+    """
+
+    PARTITION_ID = 999
+
+    view_name = "group_configurations_detail_handler"
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+    course_key_arg_name = 'course_key_string'
+    extra_request_args = {'group_configuration_id': PARTITION_ID}
+
+    def setUp(self):
+        super().setUp()
+        # Seed a random-scheme partition so DELETE finds a configuration to remove.
+        self.course.user_partitions = [
+            UserPartition(
+                self.PARTITION_ID, 'Test Config', 'Test description',
+                [Group(0, 'Group A'), Group(1, 'Group B')],
+                scheme=None, scheme_id='random',
+            )
+        ]
+        self.store.update_item(self.course, self.staff.id)
+
+        self.authorized_client = Client()
+        self.authorized_client.login(
+            username=self.authorized_user.username, password=self.password
+        )
+        self.unauthorized_client = Client()
+        self.unauthorized_client.login(
+            username=self.unauthorized_user.username, password=self.password
+        )
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can delete."""
+        resp = self.authorized_client.delete(
+            self.get_url(self.course_key),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot delete."""
+        resp = self.unauthorized_client.delete(
+            self.get_url(self.course_key),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run3", self.staff.id)
+
+        resp = self.authorized_client.delete(
+            self.get_url(other_course.id),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """Staff users should still pass through legacy fallback."""
+        self.client.login(username=self.staff.username, password=self.password)
+
+        resp = self.client.delete(
+            self.get_url(self.course_key),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True, password=self.password)
+
+        client = Client()
+        client.login(username=superuser.username, password=self.password)
+
+        resp = client.delete(
+            self.get_url(self.course_key),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_non_staff_user_cannot_access(self):
+        """User without permissions should be denied."""
+        non_staff_user = UserFactory(password=self.password)
+        non_staff_client = Client()
+        self.add_user_to_role(non_staff_user, COURSE_DATA_RESEARCHER.external_key)
+        non_staff_client.login(username=non_staff_user.username, password=self.password)
+
+        resp = non_staff_client.delete(
+            self.get_url(self.course_key),
+            HTTP_ACCEPT='application/json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)

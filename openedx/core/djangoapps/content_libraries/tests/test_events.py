@@ -1,5 +1,5 @@
 """
-Tests for Learning-Core-based Content Libraries
+Tests for openedx_content-based Content Libraries
 """
 from opaque_keys.edx.locator import (
     LibraryCollectionLocator,
@@ -35,7 +35,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_cms
 @skip_unless_cms
 class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
     """
-    Event tests for Learning-Core-based Content Libraries
+    Event tests for openedx_content-based Content Libraries
 
     These tests use the REST API, which in turn relies on the Python API.
     """

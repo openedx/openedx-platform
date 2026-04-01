@@ -19,7 +19,7 @@ from common.test.utils import normalize_repr
 from lms.djangoapps.bulk_email.api import create_course_email
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import CertificateGenerationHistory
+from lms.djangoapps.certificates.api import get_certificate_generation_history
 from lms.djangoapps.instructor_task.api import (
     SpecificStudentIdMissingError,
     generate_anonymous_ids,
@@ -417,12 +417,13 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
             self.create_task_request(self.instructor),
             self.course.id
         )
-        certificate_generation_history = CertificateGenerationHistory.objects.filter(
-            course_id=self.course.id,
-            generated_by=self.instructor,
-            instructor_task=instructor_task,
-            is_regeneration=False
-        )
+        cert_args = {
+            "course_id": self.course.id,
+            "generated_by": self.instructor,
+            "instructor_task": instructor_task,
+            "is_regeneration": False
+        }
+        certificate_generation_history = get_certificate_generation_history(**cert_args)
 
         # Validate that record was added to CertificateGenerationHistory
         assert certificate_generation_history.exists()
@@ -432,12 +433,13 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
             self.course.id,
             [CertificateStatuses.downloadable, CertificateStatuses.generating]
         )
-        certificate_generation_history = CertificateGenerationHistory.objects.filter(
-            course_id=self.course.id,
-            generated_by=self.instructor,
-            instructor_task=instructor_task,
-            is_regeneration=True
-        )
+        cert_args = {
+            "course_id": self.course.id,
+            "generated_by": self.instructor,
+            "instructor_task": instructor_task,
+            "is_regeneration": True
+        }
+        certificate_generation_history = get_certificate_generation_history(**cert_args)
 
         # Validate that record was added to CertificateGenerationHistory
         assert certificate_generation_history.exists()

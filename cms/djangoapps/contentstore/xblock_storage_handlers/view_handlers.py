@@ -9,7 +9,7 @@ contentstore/views/block.py to this file, because the logic is reused in another
 Along with it, we moved the business logic of the other views in that file, since that is related.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from attrs import asdict
@@ -20,8 +20,20 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.translation import gettext as _
 from edx_django_utils.plugins import pluggable_override
-from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, ContainerType, LibraryXBlockMetadata
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
+from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
+from openedx.core import toggles as core_toggles
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import (
+    COURSES_EDIT_COURSE_CONTENT,
+    COURSES_MANAGE_COURSE_UPDATES,
+    COURSES_MANAGE_PAGES_AND_RESOURCES,
+    COURSES_PUBLISH_COURSE_CONTENT,
+    COURSES_VIEW_COURSE,
+    COURSES_VIEW_COURSE_UPDATES,
+)
 from edx_proctoring.api import (
     does_backend_support_onboarding,
     get_exam_by_content_id,
@@ -30,7 +42,6 @@ from edx_proctoring.api import (
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
 from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
-from pytz import UTC
 from xblock.core import XBlock
 from xblock.fields import Scope
 from .xblock_helpers import get_block_key_string
@@ -99,6 +110,12 @@ log = logging.getLogger(__name__)
 
 CREATE_IF_NOT_FOUND = ["course_info"]
 
+# Request body fields that indicate substantive content changes (as opposed to pure publish actions)
+_CONTENT_FIELDS = frozenset({
+    'metadata', 'data', 'children', 'fields', 'nullout', 'graderType',
+    'isPrereq', 'prereqUsageKey', 'prereqMinScore', 'prereqMinCompletion',
+})
+
 # Useful constants for defining predicates
 NEVER = lambda x: False
 ALWAYS = lambda x: True
@@ -156,6 +173,95 @@ def _get_block_parent_children(xblock):
     return response
 
 
+def _get_xblock_authz_permission(request, usage_key, category=None):
+    """
+    Determine the required authz permission for an xblock operation.
+
+    Args:
+        request: The HTTP request
+        usage_key: The UsageKey for the xblock
+        category: Optional category for block creation (when usage_key is the parent)
+
+    Returns:
+        str: The openedx-authz permission identifier (e.g., 'courses.view_course'),
+             or None if the operation is not covered by openedx-authz.
+    """
+    # Libraries v1 use LibraryUsageLocator keys, which we filter out here. They will
+    # authorize with the legacy role-based checks (has_studio_{read/write}_access).
+    # Libraries v2 use newer REST API endpoints which do not use this function.
+    if isinstance(usage_key, LibraryUsageLocator):
+        return None
+
+    # Ensure the authz feature flag is enabled for this course.
+    if not core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(usage_key.course_key):
+        return None
+
+    # Determine block type from usage_key or category parameter
+    block_type = category if category else usage_key.block_type
+
+    # Determine permission based on HTTP method and block type
+    if request.method == "GET":
+        if block_type == "course_info":
+            return COURSES_VIEW_COURSE_UPDATES.identifier
+        return COURSES_VIEW_COURSE.identifier
+
+    elif request.method == "DELETE":
+        if block_type == "static_tab":
+            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+        return COURSES_EDIT_COURSE_CONTENT.identifier
+
+    elif request.method in ("POST", "PUT", "PATCH"):
+        if block_type == "course_info":
+            return COURSES_MANAGE_COURSE_UPDATES.identifier
+
+        if block_type == "static_tab":
+            return COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+
+        # Check for publish action in request body
+        request_data = getattr(request, 'json', {}) or {}
+        publish_action = request_data.get("publish")
+
+        # A pure publish action (no content changes) requires publish permission;
+        # everything else (edits, edits+republish, unknown actions) requires edit permission.
+        if publish_action:
+            has_content_changes = any(field in request_data for field in _CONTENT_FIELDS)
+            is_pure_publish = (
+                publish_action == "discard_changes"
+                or (publish_action in ("make_public", "republish") and not has_content_changes)
+            )
+            if is_pure_publish:
+                return COURSES_PUBLISH_COURSE_CONTENT.identifier
+
+        return COURSES_EDIT_COURSE_CONTENT.identifier
+
+    # Fallback
+    return COURSES_VIEW_COURSE.identifier
+
+
+def _check_xblock_permission(request, usage_key, category=None):
+    """
+    Check authz or legacy permission for an xblock operation. Raises PermissionDenied if denied.
+
+    Returns:
+        str or None: The resolved permission identifier, or None if legacy checks were used.
+    """
+    permission = _get_xblock_authz_permission(request, usage_key, category=category)
+
+    if permission is not None:
+        if not authz_api.is_user_allowed(request.user.username, permission, str(usage_key.course_key)):
+            raise PermissionDenied()
+    else:
+        access_check = (
+            has_studio_read_access
+            if request.method == "GET"
+            else has_studio_write_access
+        )
+        if not access_check(request.user, usage_key.course_key):
+            raise PermissionDenied()
+
+    return permission
+
+
 def handle_xblock(request, usage_key_string=None):
     """
     Service method with all business logic for handling xblock requests.
@@ -166,13 +272,8 @@ def handle_xblock(request, usage_key_string=None):
 
         usage_key = usage_key_with_run(usage_key_string)
 
-        access_check = (
-            has_studio_read_access
-            if request.method == "GET"
-            else has_studio_write_access
-        )
-        if not access_check(request.user, usage_key.course_key):
-            raise PermissionDenied()
+        # Check authz permission
+        _check_xblock_permission(request, usage_key)
 
         if request.method == "GET":
             accept_header = request.META.get("HTTP_ACCEPT", "application/json")
@@ -215,10 +316,13 @@ def handle_xblock(request, usage_key_string=None):
             )
             source_course = duplicate_source_usage_key.course_key
             dest_course = parent_usage_key.course_key
-            if not has_studio_write_access(
-                request.user, dest_course
-            ) or not has_studio_read_access(request.user, source_course):
-                raise PermissionDenied()
+
+            # Check authz permission for destination
+            permission = _check_xblock_permission(request, parent_usage_key)
+            # Legacy path also requires read access on the source course
+            if permission is None:
+                if not has_studio_read_access(request.user, source_course):
+                    raise PermissionDenied()
 
             # Libraries have a maximum component limit enforced on them
             if isinstance(
@@ -257,12 +361,10 @@ def handle_xblock(request, usage_key_string=None):
                 request.json.get("parent_locator")
             )
             target_index = request.json.get("target_index")
-            if not has_studio_write_access(
-                request.user, target_parent_usage_key.course_key
-            ) or not has_studio_read_access(
-                request.user, target_parent_usage_key.course_key
-            ):
-                raise PermissionDenied()
+
+            # Check authz permission
+            _check_xblock_permission(request, target_parent_usage_key)
+
             return _move_item(
                 move_source_usage_key,
                 target_parent_usage_key,
@@ -558,7 +660,7 @@ def sync_library_content(
         with store.bulk_operations(downstream.usage_key.context_key):
             upstream_children = sync_from_upstream_container(downstream=downstream, user=request.user)
             downstream_children = downstream.get_children()
-            downstream_children_keys = [child.upstream for child in downstream_children]
+            downstream_children_key_strings: list[str] = [child.upstream for child in downstream_children]
             # Sync the children:
             notices = []
             # Store final children keys to update order of items in containers
@@ -568,22 +670,19 @@ def sync_library_content(
 
             for i, upstream_child in enumerate(upstream_children):
                 if isinstance(upstream_child, LibraryXBlockMetadata):
-                    upstream_key = str(upstream_child.usage_key)
+                    upstream_child_key_string = str(upstream_child.usage_key)
                     block_type = upstream_child.usage_key.block_type
                 elif isinstance(upstream_child, ContainerMetadata):
-                    upstream_key = str(upstream_child.container_key)
-                    match upstream_child.container_type:
-                        case ContainerType.Unit:
-                            block_type = "vertical"
-                        case ContainerType.Subsection:
-                            block_type = "sequential"
-                        case _:
-                            # We don't support other container types for now.
-                            log.error(
-                                "Unexpected upstream child container type: %s",
-                                upstream_child.container_type,
-                            )
-                            continue
+                    upstream_child_key_string = str(upstream_child.container_key)
+                    if upstream_child.container_type_code not in (
+                        content_models.Unit.type_code,
+                        content_models.Subsection.type_code,
+                    ):
+                        # We don't support other container types for now.
+                        log.error("Unexpected upstream child container type: %s", upstream_child.container_type_code)
+                        continue
+                    # convert "unit" -> "vertical", "subsection" -> "sequential"
+                    block_type = content_api.get_container_subclass(upstream_child.container_type_code).olx_tag_name
                 else:
                     log.error(
                         "Unexpected type of upstream child: %s",
@@ -591,7 +690,7 @@ def sync_library_content(
                     )
                     continue
 
-                if upstream_key not in downstream_children_keys:
+                if upstream_child_key_string not in downstream_children_key_strings:
                     # This upstream_child is new, create it.
                     downstream_child = store.create_child(
                         parent_usage_key=downstream.usage_key,
@@ -601,14 +700,14 @@ def sync_library_content(
                         # TODO: Can we generate a unique but friendly block_id, perhaps using upstream block_id
                         block_id=f"{block_type}{uuid4().hex[:8]}",
                         fields={
-                            "upstream": upstream_key,
+                            "upstream": upstream_child_key_string,
                             "top_level_downstream_parent_key": get_block_key_string(
                                 top_level_downstream_parent.usage_key,
                             ),
                         },
                     )
                 else:
-                    downstream_child_old_index = downstream_children_keys.index(upstream_key)
+                    downstream_child_old_index = downstream_children_key_strings.index(upstream_child_key_string)
                     downstream_child = downstream_children[downstream_child_old_index]
 
                 children.append(downstream_child.usage_key)
@@ -638,8 +737,10 @@ def _create_block(request):
     """View for create blocks."""
     parent_locator = request.json["parent_locator"]
     usage_key = usage_key_with_run(parent_locator)
-    if not has_studio_write_access(request.user, usage_key.course_key):
-        raise PermissionDenied()
+    category = request.json.get("category")
+
+    # Check authz permission, passing category for block creation
+    _check_xblock_permission(request, usage_key, category=category)
 
     if request.json.get("staged_content") == "clipboard":
         # Paste from the user's clipboard (content_staging app clipboard, not browser clipboard) into 'usage_key':
@@ -1202,12 +1303,15 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "edited_on": get_default_time_display(xblock.subtree_edited_on)
                 if xblock.subtree_edited_on
                 else None,
+                "edited_on_raw": str(xblock.subtree_edited_on)
+                if xblock.subtree_edited_on
+                else None,
                 "published": published,
                 "published_on": published_on,
                 "studio_url": xblock_studio_url(xblock, parent_xblock),
                 "lms_url": xblock_lms_url(xblock),
                 "embed_lms_url": xblock_embed_lms_url(xblock),
-                "released_to_students": datetime.now(UTC) > xblock.start,
+                "released_to_students": datetime.now(timezone.utc) > xblock.start,
                 "release_date": release_date,
                 "visibility_state": visibility_state,
                 "has_explicit_staff_lock": xblock.fields[
@@ -1331,7 +1435,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
             # Disable adding or removing children component if xblock is imported from library
             xblock_actions["childAddable"] = False
             # Enable unlinking only for top level imported components
-            xblock_actions["unlinkable"] = not upstream_info["has_top_level_parent"]
+            xblock_actions["unlinkable"] = not upstream_info["top_level_parent_key"]
 
         if is_xblock_unit:
             # if xblock is a Unit we add the discussion_enabled option
@@ -1546,7 +1650,7 @@ def _compute_visibility_state(
         return VisibilityState.needs_attention
 
     is_unscheduled = xblock.start == DEFAULT_START_DATE
-    is_live = is_course_self_paced or datetime.now(UTC) > xblock.start
+    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start
     if child_info and child_info.get("children", []):  # pylint: disable=too-many-nested-blocks
         all_staff_only = True
         all_unscheduled = True

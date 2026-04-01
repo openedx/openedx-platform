@@ -10,6 +10,7 @@ from .views import (
     LibraryCourseMigrationViewSet,
     MigrationInfoViewSet,
     MigrationViewSet,
+    PreviewMigration,
 )
 
 ROUTER = SimpleRouter()
@@ -25,4 +26,5 @@ urlpatterns = [
     path('', include(ROUTER.urls)),
     path('migration_info/', MigrationInfoViewSet.as_view(), name='migration-info'),
     path('migration_blocks/', BlockMigrationInfo.as_view(), name='migration-blocks'),
+    path('migration_preview/', PreviewMigration.as_view(), name='migration-preview'),
 ]

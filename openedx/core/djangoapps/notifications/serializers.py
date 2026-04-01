@@ -5,7 +5,6 @@ Serializers for the notifications API.
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.notifications.models import (
     Notification,
     get_additional_notification_channel_settings,
@@ -49,7 +48,7 @@ def add_info_to_notification_config(config_obj):
         }
 
     For each notification type:
-    - If the type is 'core', its info is fetched from `COURSE_NOTIFICATION_APPS[notification_app]['core_info']`.
+    - If the type is 'core', its info is fetched from `COURSE_NOTIFICATION_APPS[notification_app]['info']`.
     - For all other types, info is fetched from `COURSE_NOTIFICATION_TYPES[notification_type]['info']`.
 
     Parameters:
@@ -64,21 +63,11 @@ def add_info_to_notification_config(config_obj):
         notification_types = app_prefs.get('notification_types', {})
         for notification_type, type_prefs in notification_types.items():
             if notification_type == "core":
-                type_info = COURSE_NOTIFICATION_APPS.get(notification_app, {}).get('core_info', '')
+                type_info = COURSE_NOTIFICATION_APPS.get(notification_app, {}).get('info', '')
             else:
                 type_info = COURSE_NOTIFICATION_TYPES.get(notification_type, {}).get('info', '')
             type_prefs['info'] = type_info
     return config_obj
-
-
-class CourseOverviewSerializer(serializers.ModelSerializer):
-    """
-    Serializer for CourseOverview model.
-    """
-
-    class Meta:
-        model = CourseOverview
-        fields = ('id', 'display_name')
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -149,17 +138,6 @@ def validate_notification_channel(notification_channel: str) -> str:
     return notification_channel
 
 
-def get_non_editable_channels(app_name):
-    """
-    Returns a dict of notification: [non-editable channels] for the given app name.
-    """
-    non_editable = {"core": COURSE_NOTIFICATION_APPS[app_name].get("non_editable", [])}
-    for type_name, type_dict in COURSE_NOTIFICATION_TYPES.items():
-        if type_dict.get("non_editable") and not type_dict["is_core"]:
-            non_editable[type_name] = type_dict["non_editable"]
-    return non_editable
-
-
 def add_non_editable_in_preference(preference):
     """
     Add non_editable preferences to the preference dict
@@ -220,13 +198,15 @@ class UserNotificationPreferenceUpdateAllSerializer(serializers.Serializer):
             })
 
         # Validate notification type
-        if all([not COURSE_NOTIFICATION_TYPES.get(notification_type), notification_type != "core"]):
+        if all([
+            not COURSE_NOTIFICATION_TYPES.get(notification_type),
+            notification_type != "grouped_notification",
+        ]):
             raise ValidationError(f'{notification_type} is not a valid notification type.')
 
         # Validate notification type and channel is editable
         if notification_channel and notification_type:
             if not is_notification_type_channel_editable(
-                notification_app,
                 notification_type,
                 "email" if notification_channel == "email_cadence" else notification_channel
             ):

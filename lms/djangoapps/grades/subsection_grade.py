@@ -8,11 +8,12 @@ from collections import OrderedDict
 from datetime import datetime, timezone
 from logging import getLogger
 from lazy import lazy
+from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.grades.models import BlockRecord, PersistentSubsectionGrade
 from lms.djangoapps.grades.scores import compute_percent, get_score, possibly_scored
 from xmodule import block_metadata_utils, graders  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.graders import AggregatedScore, ShowCorrectness  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.graders import AggregatedScore  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = getLogger(__name__)
 
@@ -25,7 +26,7 @@ class SubsectionGradeBase(metaclass=ABCMeta):
     def __init__(self, subsection):
         self.location = subsection.location
         self.display_name = block_metadata_utils.display_name_with_default(subsection)
-        self.url_name = block_metadata_utils.url_name_for_block(subsection)
+        self.url_name = subsection.usage_key.block_id
 
         self.due = block_metadata_utils.get_datetime_field(subsection, 'due', None)
         self.end = getattr(subsection, 'end', None)

@@ -68,7 +68,8 @@ def send_course_enrollment_email(
             "LMS_ROOT_URL", settings.LMS_ROOT_URL
         ),
         "learning_base_url": configuration_helpers.get_value(
-            "LEARNING_MICROFRONTEND_URL", settings.LEARNING_MICROFRONTEND_URL
+            "LEARNING_MICROFRONTEND_URL",
+            settings.LEARNING_MICROFRONTEND_URL,
         ),
         "track_mode": track_mode
     }

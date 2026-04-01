@@ -16,15 +16,15 @@ jobs:
         os: [ubuntu-latest]
         node-version: [20]
         python-version:
-          - "3.11"
+          - "3.12"
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Fetch master to compare coverage
         run: git fetch --depth=1 origin master
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -55,7 +55,7 @@ jobs:
 
       - name: Cache pip dependencies
         id: cache-dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ steps.pip-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/base.txt') }}
@@ -73,7 +73,7 @@ jobs:
           npm run test
 
       - name: Save Job Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Build-Artifacts
           path: |

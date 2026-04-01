@@ -5,6 +5,7 @@ from django.conf import settings
 
 from openedx_events.learning.data import UserNotificationData
 from openedx_events.learning.signals import USER_NOTIFICATION_REQUESTED
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 
 class EnrollmentNotificationSender:
@@ -21,6 +22,10 @@ class EnrollmentNotificationSender:
         """
         Send audit access expiring soon notification to user
         """
+        learning_microfrontend_url = configuration_helpers.get_value(
+            'LEARNING_MICROFRONTEND_URL',
+            settings.LEARNING_MICROFRONTEND_URL,
+        )
 
         notification_data = UserNotificationData(
             user_ids=[int(self.user_id)],
@@ -29,7 +34,7 @@ class EnrollmentNotificationSender:
                 'audit_access_expiry': self.audit_access_expiry,
             },
             notification_type='audit_access_expiring_soon',
-            content_url=f"{settings.LEARNING_MICROFRONTEND_URL}/course/{str(self.course.id)}/home",
+            content_url=f"{learning_microfrontend_url}/course/{str(self.course.id)}/home",
             app_name="enrollments",
             course_key=self.course.id,
         )

@@ -7,14 +7,15 @@ classes, which both need these type of functions.
 """
 
 
+import dateutil.parser
+
 from base64 import b32encode
 from datetime import datetime, timedelta
 from math import exp
+from zoneinfo import ZoneInfo
 
-import dateutil.parser
-from pytz import utc
 
-DEFAULT_START_DATE = datetime(2030, 1, 1, tzinfo=utc)
+DEFAULT_START_DATE = datetime(2030, 1, 1, tzinfo=ZoneInfo("UTC"))
 
 """
 Default grading policy for a course run.
@@ -95,7 +96,7 @@ def has_course_started(start_date):
         start_date (datetime): The start datetime of the course in question.
     """
     # TODO: This will throw if start_date is None... consider changing this behavior?
-    return datetime.now(utc) > start_date
+    return datetime.now(ZoneInfo("UTC")) > start_date
 
 
 def has_course_ended(end_date):
@@ -107,7 +108,7 @@ def has_course_ended(end_date):
     Arguments:
         end_date (datetime): The end datetime of the course in question.
     """
-    return datetime.now(utc) > end_date if end_date is not None else False
+    return datetime.now(ZoneInfo("UTC")) > end_date if end_date is not None else False
 
 
 def is_enrollment_open(enrollment_start_date, enrollment_end_date):
@@ -118,9 +119,9 @@ def is_enrollment_open(enrollment_start_date, enrollment_end_date):
         enrollment_start_date (datetime): The enrollment start datetime of the course.
         enrollment_end_date (datetime): The enrollment end datetime of the course.
     """
-    now = datetime.now(utc)
-    enrollment_start_date = enrollment_start_date or datetime.min.replace(tzinfo=utc)
-    enrollment_end_date = enrollment_end_date or datetime.max.replace(tzinfo=utc)
+    now = datetime.now(ZoneInfo("UTC"))
+    enrollment_start_date = enrollment_start_date or datetime.min.replace(tzinfo=ZoneInfo("UTC"))
+    enrollment_end_date = enrollment_end_date or datetime.max.replace(tzinfo=ZoneInfo("UTC"))
     return enrollment_start_date < now < enrollment_end_date
 
 
@@ -133,7 +134,7 @@ def course_starts_within(start_date, look_ahead_days):
         start_date (datetime): The start datetime of the course in question.
         look_ahead_days (int): number of days to see in future for course start date.
     """
-    return datetime.now(utc) + timedelta(days=look_ahead_days) > start_date
+    return datetime.now(ZoneInfo("UTC")) + timedelta(days=look_ahead_days) > start_date
 
 
 def course_start_date_is_default(start, advertised_start):
@@ -179,10 +180,10 @@ def sorting_dates(start, advertised_start, announcement):
     try:
         start = dateutil.parser.parse(advertised_start)
         if start.tzinfo is None:
-            start = start.replace(tzinfo=utc)
+            start = start.replace(tzinfo=ZoneInfo("UTC"))
     except (TypeError, ValueError, AttributeError):
         start = start  # lint-amnesty, pylint: disable=self-assigning-variable
 
-    now = datetime.now(utc)
+    now = datetime.now(ZoneInfo("UTC"))
 
     return announcement, start, now

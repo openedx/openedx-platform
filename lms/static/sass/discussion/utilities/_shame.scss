@@ -29,13 +29,13 @@
 
 // Override global input rules
 .forum-nav-browse-filter-input {
-  @include padding-left($baseline/4);
-  @include padding-right($baseline/2 + 12px); // Leave room for icon
+  @include padding-left(calc(var(--baseline) / 4));
+  @include padding-right(calc(var(--baseline) / 2) + 12px); // Leave room for icon
 
   box-shadow: none !important;
-  border-radius: $forum-border-radius !important;
+  border-radius: var(--forum-border-radius) !important;
   height: auto !important;
-  font-size: $forum-small-font-size !important;
+  font-size: var(--forum-small-font-size) !important;
 }
 
 // --------------------------------
@@ -107,11 +107,11 @@ li[class*=forum-nav-thread-label-] {
     padding-bottom: 0 !important;  // overrides default header styling
 
     .posted-details {
-      margin: ($baseline/5) 0 !important; // overrides courseware p styling
+      margin: calc(var(--baseline) / 5) 0 !important; // overrides courseware p styling
     }
 
     .post-labels {
-      font-size: $forum-base-font-size; // overrides default heading styling
+      font-size: var(--forum-base-font-size); // overrides default heading styling
     }
 
     .post-title {
@@ -124,7 +124,7 @@ li[class*=forum-nav-thread-label-] {
 .discussion-article {
   .response-header {
     line-height: 1 !important;
-    font-size: $forum-base-font-size !important;
+    font-size: var(--forum-base-font-size) !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
   }

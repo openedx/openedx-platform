@@ -12,7 +12,6 @@ defuse_xml_libs()
 import os  # lint-amnesty, pylint: disable=wrong-import-order, wrong-import-position
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "lms.envs.aws")
-os.environ.setdefault("SERVICE_VARIANT", "lms")
 
 # This application object is used by the development server
 # as well as any WSGI server configured to use this file.

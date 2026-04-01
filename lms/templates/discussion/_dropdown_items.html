@@ -1,0 +1,15 @@
+{% for child, c_type in map.children %}
+    {% if c_type == "entry" %}
+        {% for entry_key, entry_value in map.entries.items %}
+            {% if entry_key == child %}
+                {% include "discussion/_dropdown_entry.html" with entry_name=child entry=entry_value topic_list=topic_list %}
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% for category_key, category_value in map.subcategories.items %}
+            {% if category_key == child %}
+                {% include "discussion/_dropdown_category.html" with category_name=child category=category_value topic_list=topic_list %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endfor %}

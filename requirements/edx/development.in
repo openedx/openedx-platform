@@ -21,5 +21,6 @@ django-stubs[compatible-mypy]           # Typing stubs for Django, so it works w
 djangorestframework-stubs               # Typing stubs for DRF
 mypy                                    # static type checking
 pywatchman                              # More efficient checking for runserver reload trigger events
+types-requests                          # Typing stubs for requests
 vulture                                 # Detects possible dead/unused code, used in scripts/find-dead-code.sh
 watchdog                                # Used by `npm run watch` to auto-recompile when assets are changed

@@ -10,13 +10,13 @@ from django.urls import reverse
 from urllib.parse import quote_plus
 from django.utils.translation import gettext as _
 from pytz import UTC
+from xblock.scorable import ShowCorrectness
 
 from common.djangoapps.course_modes.models import CourseMode
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.grades.api import constants as grades_constants
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name
-from xmodule.graders import ShowCorrectness
 %>
 
 <%

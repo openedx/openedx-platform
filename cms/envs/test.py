@@ -14,6 +14,7 @@ sessions. Assumes structure:
 
 
 import os
+import tempfile
 
 from django.utils.translation import gettext_lazy
 from edx_django_utils.plugins import add_plugins
@@ -38,7 +39,8 @@ STUDIO_SHORT_NAME = gettext_lazy("𝓢𝓽𝓾𝓭𝓲𝓸")
 
 COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"
 
-WEBPACK_LOADER["DEFAULT"]["STATS_FILE"] = STATIC_ROOT / "webpack-stats.json"
+COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]
+
 WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'
 
 GITHUB_REPO_ROOT = TEST_ROOT / "data"
@@ -208,7 +210,7 @@ for theme_dir in COMPREHENSIVE_THEME_DIRS:  # pylint: disable=not-an-iterable
 
 RATELIMIT_RATE = '2/m'
 
-############## openedx-learning (Learning Core) config ##############
+############## openedx_content config ##############
 OPENEDX_LEARNING = {
     "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}
 }

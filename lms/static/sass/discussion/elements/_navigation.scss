@@ -6,10 +6,10 @@
 // ------
 .discussion-board > .page-header {
   .has-breadcrumbs .breadcrumbs {
-    margin-bottom: ($baseline / 2);
+    margin-bottom: calc(var(--baseline) / 2);
     font-size: font-size(base);
     font-weight: font-weight(semi-bold);
-    line-height: $line-height-base;
+    line-height: var(--line-height-base);
   }
 }
 
@@ -17,20 +17,20 @@
 // Browse menu
 // -----------
 .forum-nav-browse-menu-wrapper {
-  border-bottom: 1px solid $forum-color-border;
+  border-bottom: 1px solid var(--forum-color-border);
   background: theme-color("light");
 }
 
 .forum-nav-browse-filter {
   position: relative;
-  border-bottom: 1px solid $forum-color-border;
-  padding: ($baseline/4);
+  border-bottom: 1px solid var(--forum-color-border);
+  padding: calc(var(--baseline) / 4);
 }
 
 .forum-nav-browse-filter .icon {
-  @include right($baseline/4 + 1px + $baseline / 4); // Wrapper padding + border + input padding
+  @include right(calc(var(--baseline)/4 + 1px + calc(var(--baseline) / 4))); // Wrapper padding + border + input padding
 
-  font-size: $forum-small-font-size;
+  font-size: var(--forum-small-font-size);
   position: absolute;
   margin-top: -6px;
   top: 75%;
@@ -43,14 +43,14 @@
 .forum-nav-browse-menu-following {
   .icon {
     @include float(left);
-    @include left($baseline / 2);
+    @include left(calc(var(--baseline) / 2));
 
     position: relative;
     top: 13px;
   }
 
   .forum-nav-browse-title {
-    @include padding-left($baseline * 1.5);
+    @include padding-left(calc(var(--baseline) * 1.5));
   }
 }
 
@@ -65,8 +65,8 @@
   width: 100%;
   border: 0;
   border-radius: 0;
-  border-bottom: 1px solid $forum-color-border;
-  padding: ($baseline/2);
+  border-bottom: 1px solid var(--forum-color-border);
+  padding: calc(var(--baseline) / 2);
   background: transparent;
   box-shadow: none;
   background-image: none;
@@ -79,19 +79,19 @@
     // need to override button styles
     background-image: none !important;
     box-shadow: none !important;
-    background: $forum-color-background !important; /* stylelint-disable-line */
+    background: var(--forum-color-background) !important; /* stylelint-disable-line */
   }
 }
 
 .forum-nav-browse-title .icon {
-  @include margin-right($baseline/2);
+  @include margin-right(calc(var(--baseline) / 2));
 }
 
 .forum-nav-browse-menu {
   @include padding-left(0);
 
   margin: 0;
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
   overflow-y: scroll;
   list-style: none;
   max-height: 600px;
@@ -104,7 +104,7 @@
 
   li {
     .forum-nav-browse-title {
-      @include padding-left($baseline);
+      @include padding-left(var(--baseline));
     }
   }
 }
@@ -115,13 +115,13 @@
 
 .forum-nav-refine-bar {
   @include clearfix();
-  @include border-radius($forum-border-radius, $forum-border-radius, 0, 0);
+  @include border-radius(var(--forum-border-radius), var(--forum-border-radius), 0, 0);
 
-  font-size: $forum-small-font-size;
-  border-bottom: 1px solid $forum-color-border;
+  font-size: var(--forum-small-font-size);
+  border-bottom: 1px solid var(--forum-color-border);
   background-color: theme-color("light");
-  padding: ($baseline/4) ($baseline/2);
-  color: $black;
+  padding: calc(var(--baseline) / 4) calc(var(--baseline) / 2);
+  color: var(--black);
 }
 
 .forum-nav-filter-main {
@@ -194,9 +194,9 @@
   }
 
   .thread-preview-body {
-    margin-top: $baseline / 4;
-    color: $forum-color-response-count;
-    font-size: $forum-small-font-size;
+    margin-top: calc(var(--baseline) / 4);
+    color: var(--forum-color-response-count);
+    font-size: var(--forum-small-font-size);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -221,24 +221,24 @@
 }
 
 .forum-nav-thread {
-  border-bottom: 1px solid $forum-color-border;
-  background-color: $forum-color-background;
+  border-bottom: 1px solid var(--forum-color-border);
+  background-color: var(--forum-color-background);
   margin-bottom: 0;
 
   &:last-child {
     // Overrides pattern library default li:last-child style
-    border-bottom: 1px solid $forum-color-border;
+    border-bottom: 1px solid var(--forum-color-border);
   }
 
   .forum-nav-thread-link {
     @include border-left(3px solid transparent);
 
     display: flex;
-    padding: $baseline / 2;
+    padding: calc(var(--baseline) / 2);
     transition: none;
     align-items: center;
     justify-content: space-between;
-    color: $forum-color-read-post;
+    color: var(--forum-color-read-post);
 
     &:hover,
     &:active,
@@ -247,25 +247,25 @@
     }
 
     &:hover {
-      background-color: $forum-color-hover-thread;
+      background-color: var(--forum-color-hover-thread);
     }
 
     &.is-active {
-      background-color: $forum-color-reading-thread;
+      background-color: var(--forum-color-reading-thread);
     }
 
     .forum-nav-thread-unread-comments-count {
       display: inline-block;
-      font-size: $forum-small-font-size;
+      font-size: var(--forum-small-font-size);
       white-space: nowrap;
     }
   }
 
   &.never-read {
     .forum-nav-thread-link {
-      @include border-left(3px solid $forum-color-never-read-post);
+      @include border-left(3px solid var(--forum-color-never-read-post));
 
-      color: $forum-color-never-read-post;
+      color: var(--forum-color-never-read-post);
     }
   }
 }
@@ -278,12 +278,12 @@
 .forum-nav-thread-wrapper-0 {
   @extend %forum-nav-thread-wrapper;
 
-  @include margin-right($baseline/5);
+  @include margin-right(calc(var(--baseline) / 5));
 
   align-self: flex-start;
 
   .icon {
-    font-size: $forum-base-font-size;
+    font-size: var(--forum-base-font-size);
     width: 18px;
     text-align: center;
 
@@ -298,7 +298,7 @@
 .forum-nav-thread-wrapper-1 {
   @extend %forum-nav-thread-wrapper;
 
-  margin: 0 ($baseline / 4);
+  margin: 0 calc(var(--baseline) / 4);
   // 125 is the width we need to save for the "X new" comments indicator - and we want to clip the preview
   // at the same length whether there are unread comments for this story or not.
   max-width: calc(100% - 75px);
@@ -317,17 +317,17 @@
 .forum-nav-thread-title {
   @include margin-left(0);
 
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
   display: block;
 }
 
 %forum-nav-thread-wrapper-2-content {
-  @include margin-right($baseline/4);
+  @include margin-right(calc(var(--baseline) / 4));
 
-  font-size: $forum-small-font-size;
+  font-size: var(--forum-small-font-size);
   display: inline-block;
   text-align: center;
-  color: $black;
+  color: var(--black);
 
   &:last-child {
     @include margin-right(0);
@@ -344,11 +344,11 @@
 
   position: relative;
 
-  @include margin-left($baseline/4);
+  @include margin-left(calc(var(--baseline) / 4));
 
-  margin-bottom: ($baseline/4); // Because tail is position: absolute
-  border-radius: $forum-border-radius;
-  padding: ($baseline/10) ($baseline/5);
+  margin-bottom: calc(var(--baseline) / 4); // Because tail is position: absolute
+  border-radius: var(--forum-border-radius);
+  padding: calc(var(--baseline) / 10) calc(var(--baseline) / 5);
   min-width: 2em; // Fit most comment counts but allow expansion if necessary
   background-color: theme-color("light");
 
@@ -357,42 +357,42 @@
     content: '';
     display: block;
     position: absolute;
-    bottom: (-$baseline/4);
+    bottom: calc(-1 * var(--baseline) / 4);
 
-    @include right($baseline/4);
+    @include right(calc(var(--baseline) / 4));
 
     width: 0;
     height: 0;
     border-style: solid;
 
-    @include border-width(0, ($baseline/4), ($baseline/4), 0);
-    @include border-color(transparent, $forum-color-border, transparent, transparent);
+    @include border-width(0, calc(var(--baseline) / 4), calc(var(--baseline) / 4), 0);
+    @include border-color(transparent, var(--forum-color-border), transparent, transparent);
   }
 }
 
 .forum-nav-load-more {
-  border-bottom: 1px solid $forum-color-border;
+  border-bottom: 1px solid var(--forum-color-border);
   background-color: theme-color("light");
 }
 
 %forum-nav-load-more-content {
   display: block;
-  padding: $baseline 0;
+  padding: var(--baseline) 0;
   text-align: center;
 }
 
 .forum-nav-load-more-link {
   @extend %forum-nav-load-more-content;
 
-  color: $link-color;
+  color: var(--link-color);
   width: 100%;
 
   &:hover,
   &:focus {
-    color: $forum-color-active-text;
+    color: var(--forum-color-active-text);
     // !important overrides the one set here:
     // https://github.com/openedx/edx-platform/blob/master/lms/static/sass/elements/_controls.scss#L472
-    background-color: $forum-color-active-thread !important;
+    background-color: var(--forum-color-active-thread) !important;
   }
 }
 

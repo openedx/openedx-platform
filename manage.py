@@ -44,7 +44,6 @@ def parse_args():
         help_string=lms.format_help(),
         settings_base='lms/envs',
         default_settings='lms.envs.devstack',
-        service_variant='lms',
     )
 
     cms = subparsers.add_parser(
@@ -62,16 +61,15 @@ def parse_args():
         help_string=cms.format_help(),
         settings_base='cms/envs',
         default_settings='cms.envs.devstack',
-        service_variant='cms',
     )
 
-    edx_args, django_args = parser.parse_known_args()
+    known_args, remaining_args = parser.parse_known_args()
 
-    if edx_args.help:
+    if known_args.help:
         print("edX:")
-        print(edx_args.help_string)
+        print(known_args.help_string)
 
-    return edx_args, django_args
+    return known_args, remaining_args
 
 
 if __name__ == "__main__":
@@ -84,7 +82,6 @@ if __name__ == "__main__":
         os.environ["DJANGO_SETTINGS_MODULE"] = edx_args_base + os.environ["EDX_PLATFORM_SETTINGS"]
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", edx_args.default_settings)
-    os.environ.setdefault("SERVICE_VARIANT", edx_args.service_variant)
 
     if edx_args.help:
         print("Django:")

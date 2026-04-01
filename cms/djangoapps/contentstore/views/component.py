@@ -33,7 +33,6 @@ from cms.djangoapps.contentstore.helpers import (
 from cms.djangoapps.contentstore.toggles import (
     libraries_v1_enabled,
     libraries_v2_enabled,
-    use_new_problem_editor,
     use_new_unit_page,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
@@ -64,7 +63,7 @@ COMPONENT_TYPES = [
     'drag-and-drop-v2',
 ]
 
-BETA_COMPONENT_TYPES = ['library_v2', 'itembank']
+BETA_COMPONENT_TYPES = []
 
 ADVANCED_COMPONENT_TYPES = sorted({name for name, class_ in XBlock.load_classes()} - set(COMPONENT_TYPES))
 
@@ -368,16 +367,14 @@ def get_component_templates(courselike, library=False):  # lint-amnesty, pylint:
                             )
                         )
 
-        #If using new problem editor, we select problem type inside the editor
-        # because of this, we only show one problem.
-        if category == 'problem' and use_new_problem_editor(courselike.context_key):
+        if category == 'problem':
             templates_for_category = [
                 template for template in templates_for_category if template['boilerplate_name'] == 'blank_common.yaml'
             ]
 
         # Add any advanced problem types. Note that these are different xblocks being stored as Advanced Problems,
         # currently not supported in libraries .
-        if category == 'problem' and not library and not use_new_problem_editor(courselike.context_key):
+        if category == 'problem' and not library:
             disabled_block_names = [block.name for block in disabled_xblocks()]
             advanced_problem_types = [advanced_problem_type for advanced_problem_type in ADVANCED_PROBLEM_TYPES
                                       if advanced_problem_type['component'] not in disabled_block_names]
@@ -617,7 +614,7 @@ def get_unit_tags(usage_key):
     Get the tags of a Unit and build a json to be read by the UI
 
     Note: When migrating the `TagList` subview from `container_subview.js` to the course-authoring MFE,
-    this function can be simplified to use the REST API of openedx-learning,
+    this function can be simplified to use the REST API of openedx_tagging,
     which already provides this grouping + sorting logic.
     """
     # Get content tags from content tagging API

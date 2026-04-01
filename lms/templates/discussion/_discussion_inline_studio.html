@@ -1,15 +1,16 @@
-<%! from django.utils.translation import gettext as _ %>
-<%page expression_filter="h"/>
+{% load i18n %}
 
-<div class="discussion-module" data-discussion-id="${discussion_id}">
+<div class="discussion-module" data-discussion-id="{{ discussion_id }}">
     <p>
         <span class="discussion-preview">
-            <span class="icon fa fa-comment"/>
-            ${_("To view live discussions, click Preview or View Live in Unit Settings.")}<br />
-            ${_("Discussion ID: {discussion_id}").format(discussion_id=discussion_id)}
-            % if not is_visible:
-            <br /><b>${_('The discussion block is disabled for this course as it is not using a compatible discussion provider.')}</b>
-            % endif
+            <span class="icon fa fa-comment"></span>
+            {% trans "To view live discussions, click Preview or View Live in Unit Settings." as tmsg %} {{tmsg|force_escape}}<br />
+            {% filter force_escape %}
+                {% blocktrans with discussion_id=discussion_id %}Discussion ID: {{ discussion_id }}{% endblocktrans %}
+            {% endfilter %}
+            {% if not is_visible %}
+            <br /><b>{% trans "The discussion block is disabled for this course as it is not using a compatible discussion provider." as tmsg %} {{tmsg|force_escape}}</b>
+            {% endif %}
         </span>
     </p>
 </div>

@@ -19,7 +19,6 @@ from testfixtures import LogCapture
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.certificates.api import get_recently_modified_certificates
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from lms.djangoapps.grades.models_api import get_recently_modified_grades
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
@@ -189,7 +188,7 @@ class TestHandleNotifyCredentialsTask(TestCase):
             grade2 = PersistentCourseGrade.objects.create(user_id=self.user.id, course_id='course-v1:edX+Test+22',
                                                           percent_grade=1)
 
-        total_certificates = GeneratedCertificate.objects.filter(**cert_filter_args).order_by('modified_date')  # pylint: disable=no-member
+        total_certificates = get_recently_modified_certificates(**cert_filter_args)
         total_grades = PersistentCourseGrade.objects.all()
 
         self.options['auto'] = True
@@ -550,7 +549,7 @@ class TestSendGradeIfInteresting(TestCase):
         _mock_is_learner_issuance_enabled
     ):
         assert is_learner_records_enabled()
-        with override_settings(FEATURES={"ENABLE_LEARNER_RECORDS": False}):
+        with override_settings(ENABLE_LEARNER_RECORDS=False):
             assert not is_learner_records_enabled()
             tasks.send_grade_if_interesting(self.user, self.key, 'verified', 'downloadable', None, None)
         assert not mock_send_grade_to_credentials.delay.called

@@ -16,8 +16,8 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_COLLECTION_DELETED,
     LIBRARY_COLLECTION_UPDATED
 )
-from openedx_learning.api.authoring import get_components, get_containers
-from openedx_learning.api.authoring_models import Collection, CollectionPublishableEntity, PublishableEntity
+from openedx_content.api import get_components, get_containers
+from openedx_content.models_api import Collection, CollectionPublishableEntity, PublishableEntity
 
 from lms.djangoapps.grades.api import signals as grades_signals
 

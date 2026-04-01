@@ -220,7 +220,7 @@ def dump_block_extensions(course, unit):
     """
     header = [_("Username"), _("Full Name"), _("Extended Due Date")]
     data = []
-    for username, fullname, due_date in api.get_overrides_for_block(course.id, unit.location):
+    for username, fullname, due_date, *unused in api.get_overrides_for_block(course.id, unit.location):
         due_date = due_date.strftime('%Y-%m-%d %H:%M')
         data.append(dict(list(zip(header, (username, fullname, due_date)))))
     data.sort(key=operator.itemgetter(_("Username")))

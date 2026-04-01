@@ -24,7 +24,7 @@ from .fields_test_block import FieldsTestBlock
 class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
     """
     Tests for embed_view and interacting with draft/published/past versions of
-    Learning-Core-based XBlocks (in Content Libraries).
+    openedx_content-based XBlocks (in Content Libraries).
 
     These tests use the REST API, which in turn relies on the Python API.
     Some tests may use the python API directly if necessary to provide

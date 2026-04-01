@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 
 import requests
 from crum import get_current_request
+from django.apps import apps as django_apps
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
@@ -373,7 +374,7 @@ def enterprise_enabled():
     """
     Determines whether the Enterprise app is installed
     """
-    return 'enterprise' in settings.INSTALLED_APPS and settings.FEATURES.get('ENABLE_ENTERPRISE_INTEGRATION', False)
+    return django_apps.is_installed('enterprise') and settings.FEATURES.get('ENABLE_ENTERPRISE_INTEGRATION', False)
 
 
 def enterprise_is_enabled(otherwise=None):

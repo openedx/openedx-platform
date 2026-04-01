@@ -24,10 +24,10 @@ from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
 from lms.djangoapps.discussion.django_comment_client.permissions import (
     check_permissions_by_view,
-    get_team,
-    has_permission
+    get_team
 )
 from lms.djangoapps.discussion.django_comment_client.settings import MAX_COMMENT_DEPTH
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort_id
 from openedx.core.djangoapps.discussions.utils import (
     get_accessible_discussion_xblocks,

@@ -5,42 +5,42 @@
 
 .discussion.inline-discussion {
   .inline-threads {
-    border: 1px solid $forum-color-border;
-    border-radius: $forum-border-radius;
+    border: 1px solid var(--forum-color-border);
+    border-radius: var(--forum-border-radius);
   }
 
   .inline-thread {
-    border: 1px solid $forum-color-border;
-    border-radius: $forum-border-radius;
+    border: 1px solid var(--forum-color-border);
+    border-radius: var(--forum-border-radius);
 
     .forum-nav-bar {
-      padding: ($baseline / 2) ($baseline / 4);
-      color: $forum-color-navigation-bar;
+      padding: calc(var(--baseline) / 2) calc(var(--baseline) / 4);
+      color: var(--forum-color-navigation-bar);
       position: relative;
 
       .all-posts-btn {
-        color: $forum-color-primary;
+        color: var(--forum-color-primary);
 
         .icon {
-          @include margin-left($baseline / 2);
+          @include margin-left(calc(var(--baseline) / 2));
         }
       }
     }
 
     .forum-content {
-      padding: $baseline / 2;
+      padding: calc(var(--baseline) / 2);
       overflow-y: auto;
     }
   }
 
   .new-post-article {
     position: relative;
-    border: 1px solid $forum-color-border;
+    border: 1px solid var(--forum-color-border);
 
     .add-post-cancel {
-      @include right($baseline / 2);
+      @include right(calc(var(--baseline) / 2));
 
-      top: $baseline / 2;
+      top: calc(var(--baseline) / 2);
       position: absolute;
       color: theme-color("primary");
 

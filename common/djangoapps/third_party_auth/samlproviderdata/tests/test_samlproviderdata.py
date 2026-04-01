@@ -3,8 +3,8 @@ import copy
 from datetime import datetime  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest import mock
 from uuid import uuid4  # lint-amnesty, pylint: disable=wrong-import-order
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -33,7 +33,7 @@ SINGLE_PROVIDER_DATA = {
     'entity_id': 'http://entity-id-1',
     'sso_url': 'http://test.url',
     'public_key': 'a-key0Aid98',
-    'fetched_at': datetime.now(pytz.UTC).replace(microsecond=0)
+    'fetched_at': datetime.now(ZoneInfo("UTC")).replace(microsecond=0)
 }
 
 SINGLE_PROVIDER_DATA_2 = copy.copy(SINGLE_PROVIDER_DATA)

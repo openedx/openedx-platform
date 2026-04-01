@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Union
 
 import django.contrib.auth.models
-import openedx_tagging.core.tagging.rules as oel_tagging
+import openedx_tagging.rules as oel_tagging
 import rules
 from organizations.models import Organization
 

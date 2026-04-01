@@ -34,7 +34,10 @@ from openedx.core.djangoapps.schedules.resolvers import (
 )
 from openedx.core.djangoapps.schedules.tests.factories import ScheduleConfigFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory, SiteFactory
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin, skip_unless_lms
+
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
 class SchedulesResolverTestMixin(CacheIsolationMixin):
@@ -276,7 +279,7 @@ class TestCourseNextSectionUpdateResolver(SchedulesResolverTestMixin, ModuleStor
     def test_schedule_context(self):
         resolver = self.create_resolver()
         # using this to make sure the select_related stays intact
-        with self.assertNumQueries(26):
+        with self.assertNumQueries(22, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             sc = resolver.get_schedules()
             schedules = list(sc)
         apple_logo_url = 'http://email-media.s3.amazonaws.com/edX/2021/store_apple_229x78.jpg'

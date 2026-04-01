@@ -5,7 +5,7 @@ API Filters for content tagging org
 from django.db.models import Exists, OuterRef, Q
 from rest_framework.filters import BaseFilterBackend
 
-import openedx_tagging.core.tagging.rules as oel_tagging
+import openedx_tagging.rules as oel_tagging
 
 from ...rules import get_admin_orgs, get_user_orgs
 from ...models import TaxonomyOrg

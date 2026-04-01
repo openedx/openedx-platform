@@ -240,8 +240,7 @@ class TestSafeSessionProcessResponse(TestSafeSessionsLogMixin, TestCase):
         safe_cookie_data = SafeCookieData.parse(serialized_cookie_data)
         assert safe_cookie_data.version == SafeCookieData.CURRENT_VERSION
         assert safe_cookie_data.session_id == 'some_session_id'
-        with self.settings(DEFAULT_HASHING_ALGORITHM='sha256'):
-            assert safe_cookie_data.verify(self.user.id)
+        assert safe_cookie_data.verify(self.user.id)
 
     def test_cant_update_cookie_at_step_3_error(self):
         self.client.response.cookies[settings.SESSION_COOKIE_NAME] = None

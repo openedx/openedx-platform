@@ -25,6 +25,7 @@ from openedx_events.learning.signals import (
 
 import lms.djangoapps.discussion.django_comment_client.settings as cc_settings
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 from common.djangoapps.student.roles import GlobalStaff
 from common.djangoapps.track import contexts
 from common.djangoapps.util.file import store_uploaded_file
@@ -33,8 +34,7 @@ from lms.djangoapps.courseware.courses import get_course_overview_with_access, g
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.discussion.django_comment_client.permissions import (
     check_permissions_by_view,
-    get_team,
-    has_permission
+    get_team
 )
 from lms.djangoapps.discussion.django_comment_client.utils import (
     JsonError,

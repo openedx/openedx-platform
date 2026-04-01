@@ -388,3 +388,44 @@ class TestCourseEnrollmentEmailTask(ModuleStoreTestCase):
             )
         pytest.raises(Exception, task.get)
         self.assertEqual(mock_get_email_client.call_count, (MAX_RETRIES + 1))
+
+    @patch("common.djangoapps.student.tasks.get_course_uuid_for_course")
+    @patch("common.djangoapps.student.tasks.get_owners_for_course")
+    @patch("common.djangoapps.student.tasks.get_course_run_details")
+    @patch("common.djangoapps.student.tasks.get_course_dates_for_email")
+    @patch("common.djangoapps.student.tasks.get_email_client")
+    def test_learning_base_url_uses_site_config(
+        self,
+        mock_get_email_client,
+        mock_get_course_dates_for_email,
+        mock_get_course_run_details,
+        mock_get_owners_for_course,
+        mock_get_course_uuid_for_course,
+    ):
+        """Test Braze payload sets learning_base_url from site-configured MFE URL."""
+        mock_get_course_uuid_for_course.return_value = self.course_uuid
+        mock_get_owners_for_course.return_value = self._get_course_owners()
+        mock_get_course_run_details.return_value = self._get_course_run()
+        mock_get_course_dates_for_email.return_value = self._get_course_dates()
+
+        siteconf_url = "https://learningmfe.siteconf"
+
+        def _get_value(key, default):
+            return siteconf_url if key == "LEARNING_MICROFRONTEND_URL" else default
+
+        with patch(
+            "common.djangoapps.student.tasks.configuration_helpers.get_value",
+            side_effect=_get_value,
+        ) as mock_get_value:
+            send_course_enrollment_email.apply_async(kwargs=self.send_course_enrollment_email_kwargs)
+
+        expected = self._get_canvas_properties()
+        expected["learning_base_url"] = siteconf_url
+
+        mock_get_email_client.return_value.send_canvas_message.assert_called_with(
+            canvas_id=BRAZE_COURSE_ENROLLMENT_CANVAS_ID,
+            recipients=[{"external_user_id": self.user.id}],
+            canvas_entry_properties=expected,
+        )
+        mock_get_value.assert_any_call("LEARNING_MICROFRONTEND_URL", settings.LEARNING_MICROFRONTEND_URL)
+        mock_get_value.assert_any_call("LMS_ROOT_URL", settings.LMS_ROOT_URL)

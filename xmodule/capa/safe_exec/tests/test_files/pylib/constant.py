@@ -1,1 +1,0 @@
-THE_CONST = 23

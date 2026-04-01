@@ -32,6 +32,7 @@ from cms.djangoapps.modulestore_migrator.rest_api.v1.views import (
     BulkMigrationViewSet,
     MigrationInfoViewSet,
     MigrationViewSet,
+    PreviewMigration,
 )
 from openedx.core.djangoapps.content_libraries import api as lib_api
 
@@ -1109,3 +1110,147 @@ class TestBlockMigrationInfo(TestCase):
         response = self.view(request)
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+class TestPreviewMigration(TestCase):
+    """
+    Test the PreviewMigration.get() endpoint.
+    """
+    def setUp(self):
+        """Set up test fixtures."""
+        self.factory = APIRequestFactory()
+        self.view = PreviewMigration.as_view()
+
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='testuser@test.com',
+            password='password'
+        )
+
+    @patch('cms.djangoapps.modulestore_migrator.rest_api.v1.views.migrator_api')
+    @patch('cms.djangoapps.modulestore_migrator.rest_api.v1.views.lib_api')
+    def test_preview_migration_success(self, mock_lib_api, mock_migrator_api):
+        """
+        Test successful retrieval of preview migration.
+        """
+        mock_lib_api.require_permission_for_library_key.return_value = None
+
+        expected = {
+            "state": "partial",
+            "unsupported_blocks": 4,
+            "unsupported_percentage": 25,
+            "blocks_limit": 1000,
+            "total_blocks": 20,
+            "total_components": 10,
+            "sections": 2,
+            "subsections": 3,
+            "units": 5,
+        }
+
+        mock_migrator_api.preview_migration.return_value = expected
+
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'target_key': 'lib:TestOrg:TestLibrary',
+                'source_key': 'course-v1:TestOrg+TestCourse+TestRun',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_200_OK
+
+        for key, value in expected.items():
+            assert response.data[key] == value
+
+    @patch('cms.djangoapps.modulestore_migrator.rest_api.v1.views.lib_api')
+    def test_preview_migration_without_library_access(self, mock_lib_api):
+        """
+        Test that users without library view access get 403 Forbidden.
+        """
+        mock_lib_api.require_permission_for_library_key.side_effect = PermissionDenied(
+            "User lacks permission to view this library"
+        )
+
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'target_key': 'lib:TestOrg:TestLibrary',
+                'source_key': 'course-v1:TestOrg+TestCourse+TestRun',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_preview_migration_missing_target_key(self):
+        """
+        Test that missing target_key parameter returns 400 Bad Request.
+        """
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'source_key': 'course-v1:TestOrg+TestCourse+TestRun',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'target' in response.data.get('error', '').lower()
+
+    def test_preview_migration_invalid_target_key(self):
+        """
+        Test that invalid target_key returns 400 Bad Request.
+        """
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'target_key': 'not-a-valid-key',
+                'source_key': 'course-v1:TestOrg+TestCourse+TestRun',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_preview_migration_missing_source_key(self):
+        """
+        Test that missing target_key parameter returns 400 Bad Request.
+        """
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'target_key': 'lib:TestOrg:TestLibrary',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'source' in response.data.get('error', '').lower()
+
+    def test_preview_migration_invalid_source_key(self):
+        """
+        Test that invalid target_key returns 400 Bad Request.
+        """
+        request = self.factory.get(
+            '/api/modulestore_migrator/v1/migration_preview/',
+            {
+                'target_key': 'lib:TestOrg:TestLibrary',
+                'source_key': 'not-a-valid-key',
+            }
+        )
+        force_authenticate(request, user=self.user)
+
+        response = self.view(request)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

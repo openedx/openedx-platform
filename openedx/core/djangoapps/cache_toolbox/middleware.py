@@ -113,7 +113,6 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
         super().__init__(*args, **kwargs)
 
     def process_request(self, request):
-        set_custom_attribute('DEFAULT_HASHING_ALGORITHM', settings.DEFAULT_HASHING_ALGORITHM)
         try:
             # Try and construct a User instance from data stored in the cache
             session_user_id = SafeSessionMiddleware.get_user_id_from_session(request)
@@ -147,19 +146,6 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
 
             # session hash is verified from the default algo, so skip legacy check
             if session_hash_verified:
-                set_custom_attribute('session_hash_verified', "default")
-                return
-
-            if (
-                session_hash and
-                hasattr(request.user, '_legacy_get_session_auth_hash') and
-                constant_time_compare(
-                    session_hash,
-                    request.user._legacy_get_session_auth_hash()  # pylint: disable=protected-access
-                )
-            ):
-                # session hash is verified from legacy hashing algorithm.
-                set_custom_attribute('session_hash_verified', "fallback")
                 return
 
             # The session hash has changed due to a password

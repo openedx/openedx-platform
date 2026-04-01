@@ -1,12 +1,13 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=too-many-lines
+"""Core classes, mixins, and utilities for XModules and XBlock integration."""
 
-import importlib.resources as resources
 import logging
 import os
 import time
 import warnings
 from collections import namedtuple
 from functools import partial
+from importlib.resources import as_file, files
 
 import yaml
 from django.conf import settings
@@ -17,7 +18,7 @@ from web_fragments.fragment import Fragment
 from webob import Response
 from webob.multidict import MultiDict
 from xblock.core import XBlock
-from xblock.fields import Dict, Float, Integer, List, Scope, String, UserScope
+from xblock.fields import Dict, Float, Integer, List, RelativeTime, Scope, String, UserScope
 from xblock.runtime import IdGenerator, IdReader, Runtime
 
 from common.djangoapps.xblock_django.constants import (
@@ -31,7 +32,6 @@ from common.djangoapps.xblock_django.constants import (
 )
 from openedx.core.djangolib.markup import HTML
 from xmodule import block_metadata_utils
-from xmodule.fields import RelativeTime
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 
@@ -196,7 +196,7 @@ def shim_xmodule_js(fragment, js_module_name):
     """
     # Delay this import so that it is only used (and django settings are parsed) when
     # they are required (rather than at startup)
-    import webpack_loader.utils  # lint-amnesty, pylint: disable=unused-import
+    import webpack_loader.utils  # pylint: disable=unused-import,import-outside-toplevel
 
     if not fragment.js_init_fn:
         fragment.initialize_js("XBlockToXModuleShim")
@@ -205,7 +205,7 @@ def shim_xmodule_js(fragment, js_module_name):
         add_webpack_js_to_fragment(fragment, "XModuleShim")
 
 
-class XModuleFields:
+class XModuleFields:  # pylint: disable=too-few-public-methods
     """
     Common fields for XModules.
     """
@@ -221,7 +221,7 @@ class XModuleFields:
 
 
 @XBlock.needs("i18n")
-class XModuleMixin(XModuleFields, XBlock):
+class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-methods
     """
     Fields and methods used by XModules internally.
 
@@ -274,6 +274,7 @@ class XModuleMixin(XModuleFields, XBlock):
 
     @property
     def runtime(self):
+        """Return the runtime for this XBlock instance."""
         return self._runtime
 
     @runtime.setter
@@ -310,15 +311,32 @@ class XModuleMixin(XModuleFields, XBlock):
 
     @property
     def course_id(self):
-        return self.location.course_key
+        """
+        Return the key of the block to which this Course belongs.
+
+        New code should always used `context_key`, which is the key of the Learning Context to which
+        this block belongs. "Learning Context" is a generalized notion of Courses which is inclusive
+        of Content Libraries, et al.
+        """
+        return self.context_key
 
     @property
     def category(self):
+        """
+        Return the block type, formerly known as "category".
+
+        Preferred forms for new code: `self.usage_key.block_type` or `self.scope_ids.blocks_type`
+        """
         return self.scope_ids.block_type
 
     @property
     def location(self):
-        return self.scope_ids.usage_id
+        """
+        Return the usage key identifying this block instance, formerly called the "location".
+
+        `self.usage_key` is always preferred in new code.
+        """
+        return self.usage_key
 
     @location.setter
     def location(self, value):
@@ -330,7 +348,12 @@ class XModuleMixin(XModuleFields, XBlock):
 
     @property
     def url_name(self):
-        return block_metadata_utils.url_name_for_block(self)
+        """
+        Return the URL-friendly name for this block.
+
+        Preferred forms for new code: `self.usage_key.block_id`
+        """
+        return self.usage_key.block_id
 
     @property
     def display_name_with_default(self):
@@ -392,15 +415,13 @@ class XModuleMixin(XModuleFields, XBlock):
         any set to None.)
         """
         result = {}
-        for field in self.fields.values():  # lint-amnesty, pylint: disable=no-member
+        for field in self.fields.values():
             if field.scope == scope and field.is_set_on(self):
                 try:
                     result[field.name] = field.read_json(self)
                 except TypeError as exception:
-                    exception_message = "{message}, Block-location:{location}, Field-name:{field_name}".format(
-                        message=str(exception), location=str(self.location), field_name=field.name
-                    )
-                    raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from
+                    exception_message = f"{exception}, Block-location:{self.location}, Field-name:{field.name}"
+                    raise TypeError(exception_message) from exception
         return result
 
     def has_children_at_depth(self, depth):
@@ -419,12 +440,13 @@ class XModuleMixin(XModuleFields, XBlock):
         So the example above would return True for `has_children_at_depth(2)`, and False
         for depth > 2
         """
-        if depth < 0:  # lint-amnesty, pylint: disable=no-else-raise
+        if depth < 0:
             raise ValueError("negative depth argument is invalid")
-        elif depth == 0:
+
+        if depth == 0:
             return bool(self.get_children())
-        else:
-            return any(child.has_children_at_depth(depth - 1) for child in self.get_children())
+
+        return any(child.has_children_at_depth(depth - 1) for child in self.get_children())
 
     def get_content_titles(self):
         r"""
@@ -448,11 +470,11 @@ class XModuleMixin(XModuleFields, XBlock):
         """
         if self.has_children:
             return sum((child.get_content_titles() for child in self.get_children()), [])
-        else:
-            # xss-lint: disable=python-deprecated-display-name
-            return [self.display_name_with_default_escaped]
 
-    def get_children(self, usage_id_filter=None, usage_key_filter=None):  # pylint: disable=arguments-differ
+        # xss-lint: disable=python-deprecated-display-name
+        return [self.display_name_with_default_escaped]
+
+    def get_children(self, usage_id_filter=None, usage_key_filter=None):
         """Returns a list of XBlock instances for the children of
         this module"""
 
@@ -581,7 +603,7 @@ class XModuleMixin(XModuleFields, XBlock):
         self.clear_child_cache()
 
         # Clear out any cached field data scoped to the old user.
-        for field in self.fields.values():  # lint-amnesty, pylint: disable=no-member
+        for field in self.fields.values():
             if field.scope in (Scope.parent, Scope.children):
                 continue
 
@@ -660,8 +682,8 @@ class XModuleMixin(XModuleFields, XBlock):
             """Localize a text value that might be None."""
             if value is None:
                 return None
-            else:
-                return self.runtime.service(self, "i18n").ugettext(value)
+
+            return self.runtime.service(self, "i18n").ugettext(value)
 
         # gets the 'default_value' and 'explicitly_set' attrs
         metadata_field_editor_info = self.runtime.get_field_provenance(self, field)
@@ -714,7 +736,7 @@ class XModuleMixin(XModuleFields, XBlock):
                 "Sign in or register, and enroll in this course to view it."
             ).format(display_name=self.display_name)
         else:
-            display_text = _(DEFAULT_PUBLIC_VIEW_MESSAGE)  # lint-amnesty, pylint: disable=translation-of-non-string
+            display_text = _(DEFAULT_PUBLIC_VIEW_MESSAGE)  # pylint: disable=translation-of-non-string
 
         return Fragment(alert_html.format(display_text))
 
@@ -737,7 +759,7 @@ class XModuleToXBlockMixin:
         XBlock handler that wraps `handle_ajax`
         """
 
-        class FileObjForWebobFiles:
+        class FileObjForWebobFiles:  # pylint: disable=too-few-public-methods
             """
             Turn Webob cgi.FieldStorage uploaded files into pure file objects.
 
@@ -802,7 +824,7 @@ class ResourceTemplates:
         if not os.path.exists(template_path):
             return None
 
-        with open(template_path) as file_object:
+        with open(template_path, encoding="utf-8") as file_object:
             template = yaml.safe_load(file_object)
             template["template_id"] = template_id
             return template
@@ -840,21 +862,21 @@ class ResourceTemplates:
         return list(templates.values())
 
     @classmethod
-    def get_template_dir(cls):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_template_dir(cls):
+        """Return the directory name for the class’s built-in resource templates."""
         if getattr(cls, "template_dir_name", None):
-            dirname = os.path.join("templates", cls.template_dir_name)  # lint-amnesty, pylint: disable=no-member
-            template_path = resources.files(__name__.rsplit(".", 1)[0]) / dirname
+            dirname = os.path.join("templates", cls.template_dir_name)
+            template_path = files(__name__.rsplit(".", 1)[0]) / dirname
 
             if not template_path.is_dir():
                 log.warning(
-                    "No resource directory {dir} found when loading {cls_name} templates".format(
-                        dir=dirname,
-                        cls_name=cls.__name__,
-                    )
+                    "No resource directory %s found when loading %s templates",
+                    dirname,
+                    cls.__name__,
                 )
-                return
+                return None
             return dirname
-        return
+        return None
 
     @classmethod
     def get_template_dirpaths(cls):
@@ -864,9 +886,9 @@ class ResourceTemplates:
         template_dirpaths = []
         template_dirname = cls.get_template_dir()
         if template_dirname:
-            template_path = resources.files(__name__.rsplit(".", 1)[0]) / template_dirname
+            template_path = files(__name__.rsplit(".", 1)[0]) / template_dirname
             if template_path.is_dir():
-                with resources.as_file(template_path) as template_real_path:
+                with as_file(template_path) as template_real_path:
                     template_dirpaths.append(str(template_real_path))
 
         custom_template_dir = cls.get_custom_template_dir()
@@ -883,7 +905,7 @@ class ResourceTemplates:
         template_dir_name = getattr(cls, "template_dir_name", None)
 
         if template_dir_name is None:
-            return
+            return None
 
         resource_dir = settings.CUSTOM_RESOURCE_TEMPLATES_DIRECTORY
 
@@ -894,6 +916,7 @@ class ResourceTemplates:
 
         if os.path.exists(template_dir_path):
             return template_dir_path
+
         return None
 
     @classmethod
@@ -906,6 +929,8 @@ class ResourceTemplates:
             abs_path = os.path.join(directory, template_id)
             if os.path.exists(abs_path):
                 return cls._load_template(abs_path, template_id)
+
+        return None
 
 
 class _ConfigurableFragmentWrapper:
@@ -940,7 +965,9 @@ class _ConfigurableFragmentWrapper:
 
         return frag
 
-    def wrap_aside(self, block, aside, view, frag, context):  # pylint: disable=unused-argument
+    def wrap_aside(
+        self, block, aside, view, frag, context
+    ):  # pylint: disable=unused-argument,too-many-arguments,too-many-positional-arguments
         """
         See :func:`Runtime.wrap_child`
         """
@@ -974,7 +1001,7 @@ def block_global_local_resource_url(block, uri):
     """
     raise NotImplementedError(
         "Applications must monkey-patch this function before using local_resource_url for studio_view"
-    )  # lint-amnesty, pylint: disable=line-too-long
+    )
 
 
 class _MetricsMixin:
@@ -982,7 +1009,8 @@ class _MetricsMixin:
     Mixin for adding metric logging for render and handle methods in the ModuleStoreRuntime.
     """
 
-    def render(self, block, view_name, context=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def render(self, block, view_name, context=None):
+        """Render a block view while recording execution time."""
         context = context or {}
         start_time = time.time()
         try:
@@ -998,9 +1026,8 @@ class _MetricsMixin:
                 getattr(block, "location", ""),
             )
 
-    def handle(
-        self, block, handler_name, request, suffix=""
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def handle(self, block, handler_name, request, suffix=""):
+        """Handle a block request while recording execution time."""
         start_time = time.time()
         try:
             return super().handle(block, handler_name, request, suffix=suffix)
@@ -1038,7 +1065,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=3,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_ANONYMOUS_USER_ID)
         return None
@@ -1070,7 +1097,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_USER_ID)
         return None
@@ -1087,7 +1114,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_USER_IS_STAFF)
         return None
@@ -1104,7 +1131,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_REQUEST_COUNTRY_CODE)
         return None
@@ -1125,7 +1152,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_user_by_anonymous_id
         return None
@@ -1144,9 +1171,11 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return partial(user_service.get_current_user().opt_attrs.get, ATTR_KEY_USER_ROLE)
+
+        return None
 
     @property
     def user_is_beta_tester(self):
@@ -1160,9 +1189,11 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_USER_IS_BETA_TESTER)
+
+        return None
 
     @property
     def user_is_admin(self):
@@ -1176,9 +1207,11 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        user_service = self._services.get("user")
+        user_service = self._services.get("user")  # pylint: disable=no-member
         if user_service:
             return user_service.get_current_user().opt_attrs.get(ATTR_KEY_USER_IS_GLOBAL_STAFF)
+
+        return None
 
     @property
     def render_template(self):
@@ -1195,7 +1228,7 @@ class _ModuleSystemShim:
         )
         if hasattr(self, "_deprecated_render_template"):
             return self._deprecated_render_template
-        render_service = self._services.get("mako")
+        render_service = self._services.get("mako")  # pylint: disable=no-member
         if render_service:
             return render_service.render_template
         return None
@@ -1222,7 +1255,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        sandbox_service = self._services.get("sandbox")
+        sandbox_service = self._services.get("sandbox")  # pylint: disable=no-member
         if sandbox_service:
             return sandbox_service.can_execute_unsafe_code
         # Default to saying "no unsafe code".
@@ -1243,7 +1276,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        sandbox_service = self._services.get("sandbox")
+        sandbox_service = self._services.get("sandbox")  # pylint: disable=no-member
         if sandbox_service:
             return sandbox_service.get_python_lib_zip
         # Default to saying "no lib data"
@@ -1263,7 +1296,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self._services.get("cache") or DoNothingCache()
+        return self._services.get("cache") or DoNothingCache()  # pylint: disable=no-member
 
     @property
     def filestore(self):
@@ -1277,7 +1310,7 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.resources_fs
+        return self.resources_fs  # pylint: disable=no-member
 
     @property
     def node_path(self):
@@ -1318,9 +1351,11 @@ class _ModuleSystemShim:
             DeprecationWarning,
             stacklevel=2,
         )
-        rebind_user_service = self._services.get("rebind_user")
+        rebind_user_service = self._services.get("rebind_user")  # pylint: disable=no-member
         if rebind_user_service:
             return partial(rebind_user_service.rebind_noauth_module_to_user)
+
+        return None
 
     # noinspection PyPep8Naming
     @property
@@ -1351,6 +1386,8 @@ class _ModuleSystemShim:
         if hasattr(self, "_deprecated_course_id"):
             return self._deprecated_course_id.for_branch(None)
 
+        return None
+
     @course_id.setter
     def course_id(self, course_id):
         """
@@ -1364,7 +1401,7 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
     Base class for :class:`Runtime`s to be used with :class:`XBlock`s loaded from ModuleStore.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         load_item,
         resources_fs,
@@ -1417,7 +1454,7 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
             # Dashboard bulk emails tab, when rendering the HtmlBlock for its WYSIWYG editor. * during testing, when
             # fetching factory-created blocks.
             if "mako" not in self._services:
-                from common.djangoapps.edxmako.services import MakoService
+                from common.djangoapps.edxmako.services import MakoService  # pylint: disable=import-outside-toplevel
 
                 self._services["mako"] = MakoService()
 
@@ -1460,20 +1497,23 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
         :param xblock:
         :param field:
         """
-        # pylint: disable=protected-access
+
         # in runtime b/c runtime contains app-specific xblock behavior. Studio's the only app
         # which needs this level of introspection right now. runtime also is 'allowed' to know
         # about the kvs, dbmodel, etc.
 
         result = {}
-        result["explicitly_set"] = xblock._field_data.has(xblock, field.name)
+        result["explicitly_set"] = xblock._field_data.has(xblock, field.name)  # pylint: disable=protected-access
         try:
-            result["default_value"] = xblock._field_data.default(xblock, field.name)
+            result["default_value"] = xblock._field_data.default(xblock, field.name)  # pylint: disable=protected-access
         except KeyError:
             result["default_value"] = field.to_json(field.default)
         return result
 
-    def handler_url(self, block, handler_name, suffix="", query="", thirdparty=False):
+    def handler_url(  # pylint: disable=too-many-positional-arguments
+        self, block, handler_name, suffix="", query="", thirdparty=False
+    ):  # pylint: disable=too-many-arguments
+        """Return the handler URL for a block, using override if provided."""
         # When the Modulestore instantiates ModuleStoreRuntime, we will reference a
         # global function that the application can override, unless a specific function is
         # defined for LMS/CMS through the handler_url_override property.
@@ -1510,17 +1550,18 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
         raise NotImplementedError("edX Platform doesn't currently implement XBlock resource urls")
 
     def add_block_as_child_node(self, block, node):
+        """Append the block’s XML to the given parent XML node."""
         child = etree.SubElement(node, block.category)
         child.set("url_name", block.url_name)
         block.add_xml_to_node(child)
 
-    def publish(self, block, event_type, event):  # lint-amnesty, pylint: disable=arguments-differ
+    def publish(self, block, event_type, event_data):
         """
         Publish events through the `EventPublishingService`.
         This ensures that the correct track method is used for Instructor tasks.
         """
         if publish_service := self._services.get("publish"):
-            publish_service.publish(block, event_type, event)
+            publish_service.publish(block, event_type, event_data)
 
     def service(self, block, service_name):
         """
@@ -1544,13 +1585,18 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
             return service(block)
         return service
 
-    def wrap_aside(self, block, aside, view, frag, context):
+    def wrap_aside(
+        self, block, aside, view, frag, context
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         # LMS/CMS can define custom wrap aside using wrap_asides_override as required.
         if getattr(self, "wrap_asides_override", None):
             return self.wrap_asides_override(block, aside, view, frag, context, request_token=self.request_token)
         return super().wrap_aside(block, aside, view, frag, context)
 
-    def layout_asides(self, block, context, frag, view_name, aside_frag_fns):
+    def layout_asides(
+        self, block, context, frag, view_name, aside_frag_fns
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        """Layout aside fragments for a block, with LMS/CMS override support."""
         # LMS/CMS can define custom layout aside using layout_asides_override as required.
         if getattr(self, "layout_asides_override", None):
             return self.layout_asides_override(block, context, frag, view_name, aside_frag_fns)
@@ -1561,7 +1607,8 @@ class DoNothingCache:
     """A duck-compatible object to use in ModuleSystemShim when there's no cache."""
 
     def get(self, _key):
+        """Return None for any requested cache key."""
         return None
 
     def set(self, key, value, timeout=None):
-        pass
+        """Ignore cache set calls and store nothing."""

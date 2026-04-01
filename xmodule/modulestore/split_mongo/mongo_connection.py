@@ -11,12 +11,15 @@ import re
 import zlib
 from contextlib import contextmanager
 from time import time
+from zoneinfo import ZoneInfo
 
 from ccx_keys.locator import CCXLocator
 from django.core.cache import caches, InvalidCacheBackendError
+from django.db.models import F
+from django.db.models.functions import Lower
+from django.db.models.lookups import Exact
 from django.db.transaction import TransactionManagementError
 import pymongo
-import pytz
 # Import this just to export it
 from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import
 from edx_django_utils import monitoring
@@ -488,7 +491,7 @@ class MongoPersistenceBackend:
         with TIMER.timer("insert_course_index", course_context):
             # Set last_update which is used to avoid collisions, unless a subclass already set it before calling super()
             if not self.with_mysql_subclass:
-                course_index['last_update'] = datetime.datetime.now(pytz.utc)
+                course_index['last_update'] = datetime.datetime.now(ZoneInfo("UTC"))
             # Insert the new index:
             self.course_index.insert_one(course_index)
 
@@ -515,7 +518,7 @@ class MongoPersistenceBackend:
                 }
             # Set last_update which is used to avoid collisions, unless a subclass already set it before calling super()
             if not self.with_mysql_subclass:
-                course_index['last_update'] = datetime.datetime.now(pytz.utc)
+                course_index['last_update'] = datetime.datetime.now(ZoneInfo("UTC"))
             # Update the course index:
             result = self.course_index.replace_one(query, course_index, upsert=False,)
             if result.modified_count == 0:
@@ -659,13 +662,15 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # We never include the branch or the version in the course key in the SplitModulestoreCourseIndex table:
         key = key.for_branch(None).version_agnostic()
         if not ignore_case:
-            query = {"course_id": key}
+            query_expr = Exact(F("course_id"), str(key))
         else:
             # Case insensitive search is important when creating courses to reject course IDs that differ only by
             # capitalization.
-            query = {"course_id__iexact": key}
+            # WARNING: 'course_id__iexact=key' does not work on this table as it uses a case-sensitive collation.
+            # We need to use the following explicit lowercase comparison in order to correctly query:
+            query_expr = Exact(Lower("course_id"), str(key).lower())
         try:
-            return SplitModulestoreCourseIndex.objects.get(**query).as_v1_schema()
+            return SplitModulestoreCourseIndex.objects.get(query_expr).as_v1_schema()
         except SplitModulestoreCourseIndex.DoesNotExist:
             # The mongo implementation does not retrieve by string key; it retrieves by (org, course, run) tuple.
             # As a result, it will handle read requests for a CCX key like
@@ -729,7 +734,7 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # This is a relatively large hammer for the problem, but we mostly only use one course at a time.
         RequestCache(namespace="course_index_cache").clear()
 
-        course_index['last_update'] = datetime.datetime.now(pytz.utc)
+        course_index['last_update'] = datetime.datetime.now(ZoneInfo("UTC"))
         new_index = SplitModulestoreCourseIndex(**SplitModulestoreCourseIndex.fields_from_v1_schema(course_index))
         new_index.save()
         # Also write to MongoDB, so we can switch back to using it if this new MySQL version doesn't work well.
@@ -751,7 +756,7 @@ class DjangoFlexPersistenceBackend(MongoPersistenceBackend):
         # This code is just copying the behavior of the existing MongoPersistenceBackend
         # See https://github.com/openedx/edx-platform/pull/5200 for context
         RequestCache(namespace="course_index_cache").clear()
-        course_index['last_update'] = datetime.datetime.now(pytz.utc)
+        course_index['last_update'] = datetime.datetime.now(ZoneInfo("UTC"))
         # Find the SplitModulestoreCourseIndex entry that we'll be updating:
         index_obj = SplitModulestoreCourseIndex.objects.get(objectid=course_index["_id"])
 

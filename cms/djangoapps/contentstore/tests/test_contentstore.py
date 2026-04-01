@@ -1275,6 +1275,7 @@ class ContentStoreTest(ContentStoreTestCase):
         resp = self.client.ajax_post('/course/', self.course_data)
         self.assertEqual(resp.status_code, 200)
         data = parse_json(resp)
+        assert 'ErrMsg' in data, "Expected the course creation to fail"
         self.assertRegex(data['ErrMsg'], error_message)
         if test_enrollment:
             # One test case involves trying to create the same course twice. Hence for that course,
@@ -1450,8 +1451,6 @@ class ContentStoreTest(ContentStoreTestCase):
         problem_loc = UsageKey.from_string(payload['locator'])
         problem = self.store.get_item(problem_loc)
         self.assertIsInstance(problem, ProblemBlock, "New problem is not a ProblemBlock")
-        context = problem.get_context()
-        self.assertIn('markdown', context, "markdown is missing from context")
         self.assertNotIn('markdown', problem.editable_metadata_fields, "Markdown slipped into the editable metadata fields")  # lint-amnesty, pylint: disable=line-too-long
 
     def test_cms_imported_course_walkthrough(self):

@@ -18,12 +18,15 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from openedx.core.djangoapps.config_model_utils.models import Provenance
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, CacheIsolationTestCase, FilteredQueryCountMixin
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
 @ddt.ddt
-class TestCourseDurationLimitConfig(CacheIsolationTestCase):
+class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestCase):
     """
     Tests of CourseDurationLimitConfig
     """
@@ -74,9 +77,9 @@ class TestCourseDurationLimitConfig(CacheIsolationTestCase):
         user = self.user
         course_key = self.course_overview.id  # lint-amnesty, pylint: disable=unused-variable
 
-        query_count = 7
+        query_count = 9
 
-        with self.assertNumQueries(query_count):
+        with self.assertNumQueries(query_count, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             enabled = CourseDurationLimitConfig.enabled_for_enrollment(user, self.course_overview)
             assert (not enrolled_before_enabled) == enabled
 

@@ -19,8 +19,7 @@ from openedx.core.djangoapps.notifications.email.utils import update_user_prefer
 from openedx.core.djangoapps.notifications.models import NotificationPreference
 from openedx.core.djangoapps.notifications.permissions import allow_any_authenticated_user
 
-from .base_notification import COURSE_NOTIFICATION_APPS, NotificationAppManager, COURSE_NOTIFICATION_TYPES, \
-    NotificationTypeManager
+from .base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, filter_notification_types_by_app
 from .events import (
     notification_preference_update_event,
     notification_read_event,
@@ -31,13 +30,11 @@ from .models import Notification
 from .serializers import (
     NotificationSerializer,
     UserNotificationPreferenceUpdateAllSerializer,
-    add_info_to_notification_config,
     add_non_editable_in_preference
 )
-from .tasks import create_notification_preference
 from .utils import (
     get_show_notifications_tray,
-    exclude_inaccessible_preferences
+    exclude_inaccessible_preferences, create_account_notification_pref_if_not_exists
 )
 
 
@@ -253,7 +250,7 @@ def preference_update_from_encrypted_username_view(request, username, patch=""):
 
 
 @allow_any_authenticated_user()
-class NotificationPreferencesView(APIView):
+class NotificationPreferencesViewV3(APIView):
     """
     API view to retrieve and structure the notification preferences for the
     authenticated user.
@@ -264,7 +261,7 @@ class NotificationPreferencesView(APIView):
         Handles GET requests to retrieve notification preferences.
 
         This method fetches the user's active notification preferences and
-        merges them with a default structure provided by NotificationAppManager.
+        merges them with a default structure provided.
         This provides a complete view of all possible notifications and the
         user's current settings for them.
 
@@ -273,60 +270,36 @@ class NotificationPreferencesView(APIView):
                       notification preferences or an error message.
         """
         user_preferences_qs = NotificationPreference.objects.filter(user=request.user)
-        user_preferences_map = {pref.type: pref for pref in user_preferences_qs}
 
         # Ensure all notification types are present in the user's preferences.
-        # If any are missing, create them with default values.
-        diff = set(COURSE_NOTIFICATION_TYPES.keys()) - set(user_preferences_map.keys())
-        missing_types = []
-        for missing_type in diff:
-            new_pref = create_notification_preference(
-                user_id=request.user.id,
-                notification_type=missing_type,
-
-            )
-            missing_types.append(new_pref)
-            user_preferences_map[missing_type] = new_pref
-        if missing_types:
-            NotificationPreference.objects.bulk_create(missing_types)
-
-        # If no user preferences are found, return an error response.
-        if not user_preferences_map:
-            return Response({
-                'status': 'error',
-                'message': 'No active notification preferences found for this user.'
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        # Get the structured preferences from the NotificationAppManager.
-        # This will include all apps and their notification types.
-        structured_preferences = NotificationAppManager().get_notification_app_preferences()
-
-        for app_name, app_settings in structured_preferences.items():
-            notification_types = app_settings.get('notification_types', {})
-
-            # Process all notification types (core and non-core) in a single loop.
-            for type_name, type_details in notification_types.items():
-                if type_name == 'core':
-                    if structured_preferences[app_name]['core_notification_types']:
-                        # If the app has core notification types, use the first one as the type name.
-                        # This assumes that the first core notification type is representative of the core settings.
-                        notification_type = structured_preferences[app_name]['core_notification_types'][0]
-                    else:
-                        notification_type = 'core'
-                    user_pref = user_preferences_map.get(notification_type)
-                else:
-                    user_pref = user_preferences_map.get(type_name)
-                if user_pref:
-                    # If a preference exists, update the dictionary for this type.
-                    # This directly modifies the 'type_details' dictionary.
-                    type_details['web'] = user_pref.web
-                    type_details['email'] = user_pref.email
-                    type_details['push'] = user_pref.push
-                    type_details['email_cadence'] = user_pref.email_cadence
-        exclude_inaccessible_preferences(structured_preferences, request.user)
-        structured_preferences = add_non_editable_in_preference(
-            add_info_to_notification_config(structured_preferences)
+        user_preferences_qs = create_account_notification_pref_if_not_exists(
+            user_ids=[request.user.id],
+            existing_preferences=user_preferences_qs,
+            notification_types=COURSE_NOTIFICATION_TYPES.keys()
         )
+        structured_preferences = {
+            app_name: {
+                'notification_types': {},
+                'enabled': COURSE_NOTIFICATION_APPS[app_name].get('enabled', True),
+                'non_editable': []
+
+            } for app_name in COURSE_NOTIFICATION_APPS.keys()}
+
+        for user_preference in user_preferences_qs:
+            app_name = user_preference.app
+            type_name = user_preference.type
+
+            if user_preference.is_grouped:
+                structured_preferences[app_name]['notification_types']['grouped_notification'] = {
+                    **user_preference.config
+                }
+                continue
+
+            structured_preferences[app_name]['notification_types'][type_name] = {**user_preference.config}
+
+        exclude_inaccessible_preferences(structured_preferences, request.user)
+        structured_preferences = add_non_editable_in_preference(structured_preferences)
+
         return Response({
             'status': 'success',
             'message': 'Notification preferences retrieved successfully.',
@@ -359,12 +332,9 @@ class NotificationPreferencesView(APIView):
         # Build query set based on notification type
         query_set = NotificationPreference.objects.filter(user_id=request.user.id)
 
-        if validated_data['notification_type'] == 'core':
-            # Get core notification types for the app
-            __, core_types = NotificationTypeManager().get_notification_app_preference(
-                notification_app=validated_data['notification_app']
-            )
-            query_set = query_set.filter(type__in=core_types)
+        if validated_data['notification_type'] == 'grouped_notification':
+            grouped_types = filter_notification_types_by_app(validated_data['notification_app'], use_app_defaults=True)
+            query_set = query_set.filter(type__in=grouped_types.keys())
         else:
             # Filter by single notification type
             query_set = query_set.filter(type=validated_data['notification_type'])

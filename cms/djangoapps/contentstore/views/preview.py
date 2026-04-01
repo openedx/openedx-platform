@@ -15,15 +15,16 @@ from opaque_keys.edx.locator import LibraryContainerLocator
 from rest_framework.request import Request
 from web_fragments.fragment import Fragment
 from xblock.django.request import django_to_webob_request, webob_to_django_response
-from xblock.exceptions import NoSuchHandlerError
+from xblock.exceptions import NoSuchHandlerError, NotFoundError, ProcessingError
 from xblock.runtime import KvsFieldData
 
 from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from xmodule.contentstore.django import contentstore
-from xmodule.exceptions import NotFoundError, ProcessingError
+from xmodule.exceptions import NotFoundError as XModuleNotFoundError
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.partitions.partitions_service import PartitionService
-from xmodule.services import SettingsService, TeamsConfigurationService
+from xmodule.services import SettingsService, TeamsConfigurationService, XQueueService
 from xmodule.studio_editable import has_author_view
 from xmodule.util.sandboxing import SandboxService
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
@@ -81,7 +82,7 @@ def preview_handler(request, usage_key_string, handler, suffix=''):
         log.exception("XBlock %s attempted to access missing handler %r", instance, handler)
         raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
 
-    except NotFoundError:
+    except (XModuleNotFoundError, NotFoundError):
         log.exception("Module indicating to user that request doesn't exist")
         raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
 
@@ -200,6 +201,17 @@ def _prepare_runtime_for_preview(request, block):
         # See the docstring of `DjangoXBlockUserService`.
         deprecated_anonymous_user_id = anonymous_id_for_user(request.user, None)
 
+    # NOTE: As of Ulmo, these services only apply to the preview views. If you want a service to be present in all
+    # Studio ModuleStoreRuntimes, then add it to load_services_for_studio.
+    # HISTORICAL CONTEXT: Until Ulmo, the `block.runtime._services.update(service)` call below would
+    # actually update the services dictionary for all runtimes, as `_services` was aliased between them.
+    # This caused a grading bug, under certain conditions, so it was fixed
+    # in https://github.com/openedx/openedx-platform/pull/37825; now, every runtime gets a fresh,
+    # independent copy of `_services`. That's good, except that some Studio code had become dependent
+    # on the bugged behavior and thus expected the "preview" services below to be present in all Studio runtimes.
+    # We fixed the known instance of that bugged assumption here:
+    # https://github.com/openedx/openedx-platform/pull/37900.
+    # This comment is left here as a note for future devs investigating similar bugs.
     services = {
         "studio_user_permissions": StudioPermissionsService(request.user),
         "i18n": XBlockI18nService,
@@ -217,6 +229,8 @@ def _prepare_runtime_for_preview(request, block):
         "cache": CacheService(cache),
         'replace_urls': ReplaceURLService,
         'video_config': VideoConfigService(),
+        'discussion_config_service': DiscussionConfigService(),
+        'xqueue': XQueueService(block),
     }
 
     block.runtime.get_block_for_descriptor = partial(_load_preview_block, request)

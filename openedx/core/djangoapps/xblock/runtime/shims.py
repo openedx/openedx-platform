@@ -102,7 +102,7 @@ class RuntimeShim:
 
         Only used for capa problems.
         """
-        # TODO: load the python code from Learning Core. Ensure it's not publicly accessible.
+        # TODO: load the python code from openedx_content. Ensure it's not publicly accessible.
         return None
 
     @property

@@ -7,17 +7,17 @@ import logging
 from copy import copy
 from datetime import datetime
 from functools import reduce
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.conf import settings
 from lxml import etree
 from openedx_filters.learning.filters import VerticalBlockChildRenderStarted, VerticalBlockRenderCompleted
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.fields import Boolean, Scope
+from xblock.progress import Progress
 
 from xmodule.mako_block import MakoTemplateBlockBase
-from xmodule.progress import Progress
 from xmodule.seq_block import SequenceFields
 from xmodule.studio_editable import StudioEditableBlock
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
@@ -137,7 +137,7 @@ class VerticalBlock(
             })
 
         completed = self.is_block_complete_for_assignments(completion_service)
-        past_due = completed is False and self.due and self.due < datetime.now(pytz.UTC)
+        past_due = completed is False and self.due and self.due < datetime.now(ZoneInfo("UTC"))
         cta_service = self.runtime.service(self, 'call_to_action')
         vertical_banner_ctas = cta_service.get_ctas(self, 'vertical_banner', completed) if cta_service else []
 

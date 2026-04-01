@@ -9,11 +9,11 @@ from datetime import datetime, timedelta, tzinfo
 from tempfile import mkdtemp
 from textwrap import dedent
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 import ddt
 import lxml.etree
-import pytz
 from django.utils.translation import gettext_lazy
 from fs.osfs import OSFS
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -196,7 +196,7 @@ class TestEdxJsonEncoder(unittest.TestCase):
         assert '2013-05-03T10:20:30' == self.encoder.default(datetime(2013, 5, 3, 10, 20, 30))
 
     def test_encode_utc_datetime(self):
-        assert '2013-05-03T10:20:30+00:00' == self.encoder.default(datetime(2013, 5, 3, 10, 20, 30, 0, pytz.UTC))
+        assert '2013-05-03T10:20:30+00:00' == self.encoder.default(datetime(2013, 5, 3, 10, 20, 30, 0, ZoneInfo("UTC")))
 
         assert '2013-05-03T10:20:30+04:00' == self.encoder.default(datetime(2013, 5, 3, 10, 20, 30, 0, self.offset_tz))
 

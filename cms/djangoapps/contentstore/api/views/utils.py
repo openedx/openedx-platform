@@ -13,6 +13,7 @@ from common.djangoapps.student.auth import has_course_author_access
 from openedx.core.djangoapps.util.forms import to_bool
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.cache_utils import request_cached
+from xmodule.library_content_block import LegacyLibraryContentBlock
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -119,7 +120,7 @@ def course_author_access_required(view):
     Usage::
         @course_author_access_required
         def my_view(request, course_key):
-            # Some functionality ...
+            # Some functionality...
     """
     def _wrapper_view(self, request, course_id, *args, **kwargs):
         """
@@ -135,3 +136,19 @@ def course_author_access_required(view):
             )
         return view(self, request, course_key, *args, **kwargs)
     return _wrapper_view
+
+
+def get_ready_to_migrate_legacy_library_content_blocks(course_key: CourseKey) -> list[LegacyLibraryContentBlock]:
+    """
+    Get the ready to migrate legacy library content blocks for a course.
+
+    Args:
+        course_key (CourseKey): The key of the course
+
+    Returns:
+        List[XBlock]: A list of XBlock objects that are marked as ready
+    """
+    store = modulestore()
+    blocks = store.get_items(course_key, qualifiers={'category': 'library_content'})
+    ready_to_migrate_blocks = [block for block in blocks if block.is_ready_to_migrate_to_v2]
+    return ready_to_migrate_blocks

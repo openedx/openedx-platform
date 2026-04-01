@@ -10,7 +10,7 @@ from openedx_events.content_authoring.data import LibraryBlockData, LibraryConta
 from openedx_events.content_authoring.signals import LIBRARY_BLOCK_UPDATED, LIBRARY_CONTAINER_UPDATED
 from opaque_keys.edx.keys import UsageKeyV2
 from opaque_keys.edx.locator import LibraryUsageLocatorV2, LibraryLocatorV2
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.models import ContentLibrary
@@ -24,7 +24,7 @@ class LibraryContextImpl(LearningContext):
     """
     Implements content libraries as a learning context.
 
-    This is the *new* content libraries based on Learning Core, not the old content
+    This is the *new* content libraries based on openedx_content, not the old content
     libraries based on modulestore.
     """
 
@@ -96,7 +96,7 @@ class LibraryContextImpl(LearningContext):
         if learning_package is None:
             return False
 
-        return authoring_api.component_exists_by_key(
+        return content_api.component_exists_by_key(
             learning_package.id,
             namespace='xblock.v1',
             type_name=usage_key.block_type,

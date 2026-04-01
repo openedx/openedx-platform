@@ -15,12 +15,12 @@ behavior to trigger the necessary data updates.
 
 import copy
 import logging
-import os
 import sys
 import textwrap
 import time
 
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.content.course_overviews.models import SimulateCoursePublishConfig
@@ -189,14 +189,14 @@ class Command(BaseCommand):
             options['delay']
         )
 
-        if os.environ.get('SERVICE_VARIANT', 'cms').startswith('lms'):
+        if settings.SERVICE_VARIANT == 'lms':
             if options['force_lms']:
                 log.info("Forcing simulate_publish to run in LMS process.")
             else:
                 log.fatal(  # lint-amnesty, pylint: disable=logging-not-lazy
                     "simulate_publish should be run as a CMS (Studio) " +
                     "command, not %s (override with --force-lms).",
-                    os.environ.get('SERVICE_VARIANT')
+                    settings.SERVICE_VARIANT
                 )
                 sys.exit(1)
 

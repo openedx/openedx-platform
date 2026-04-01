@@ -16,13 +16,12 @@ import ddt
 from ccx_keys.locator import CCXBlockUsageLocator
 from django.core.cache import InvalidCacheBackendError, caches
 from opaque_keys.edx.locator import BlockUsageLocator, CourseKey, CourseLocator, LocalId
-from xblock.fields import Reference, ReferenceList, ReferenceValueDict
+from xblock.fields import Date, Reference, ReferenceList, ReferenceValueDict, Timedelta
 
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin
 from openedx.core.lib import tempdir
 from openedx.core.lib.tests import attr
 from xmodule.course_block import CourseBlock
-from xmodule.fields import Date, Timedelta
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.exceptions import (

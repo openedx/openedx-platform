@@ -184,6 +184,28 @@ class UpdateDiscussionsSettingsFromCourseTestCase(ModuleStoreTestCase, Discussio
         assert present_units <= units_in_config
         assert not missing_units & units_in_config
 
+    @ddt.data(
+        # (tab_is_hidden, expected_enabled)
+        (True, False),   # import with hidden tab → disabled
+        (False, True),   # import with visible tab → enabled
+    )
+    @ddt.unpack
+    def test_config_data_enabled_from_discussion_tab(self, tab_is_hidden, expected_enabled):
+        """
+        update_discussions_settings_from_course should set config_data.enabled
+        based on the discussion tab's is_hidden state.
+        """
+        course = self.store.get_course(self.course.id)
+        for tab in course.tabs:
+            if getattr(tab, 'tab_id', None) == 'discussion':
+                tab['is_hidden'] = tab_is_hidden
+                break
+        self.store.update_item(course, self.user.id)
+
+        config_data = update_discussions_settings_from_course(self.course.id)
+
+        assert config_data.enabled is expected_enabled
+
 
 @ddt.ddt
 class MigrateUnitDiscussionStateFromXBlockTestCase(ModuleStoreTestCase, DiscussionConfigUpdateMixin):

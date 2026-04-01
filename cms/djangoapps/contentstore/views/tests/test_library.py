@@ -161,7 +161,7 @@ class UnitTestLibraries(CourseTestCase):
         self.assertEqual(get_response.status_code, 200)
         self.assertEqual(post_response.status_code, 403)
 
-    @mock.patch.dict('django.conf.settings.FEATURES', {'ENABLE_CONTENT_LIBRARIES': False})
+    @override_settings(ENABLE_CONTENT_LIBRARIES=False)
     def test_with_libraries_disabled(self):
         """
         The library URLs should return 404 if libraries are disabled.

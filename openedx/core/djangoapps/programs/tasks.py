@@ -19,7 +19,8 @@ from opaque_keys.edx.keys import CourseKey
 from requests.exceptions import HTTPError
 
 from common.djangoapps.course_modes.models import CourseMode
-from lms.djangoapps.certificates.models import GeneratedCertificate
+from lms.djangoapps.certificates.data import GeneratedCertificateData
+from lms.djangoapps.certificates.api import get_eligible_certificate
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 from openedx.core.djangoapps.credentials.api import is_credentials_enabled
 from openedx.core.djangoapps.credentials.utils import (
@@ -195,7 +196,7 @@ def revoke_program_certificate(client, username, program_uuid):
 def post_course_certificate(
     client: "Session",
     username: str,
-    certificate: GeneratedCertificate,
+    certificate: GeneratedCertificateData,
     date_override: Optional["datetime"] = None,
     org: Optional[str] = None,
 ):
@@ -517,12 +518,9 @@ def award_course_certificate(self, username, course_run_key):
         return
 
     # Get the cert for the course key and username if it's both passing and available in professional/verified
-    try:
-        certificate = GeneratedCertificate.eligible_certificates.get(
-            user=user.id,
-            course_id=course_key,
-        )
-    except GeneratedCertificate.DoesNotExist:
+    certificate = get_eligible_certificate(user=user, course_id=course_key)
+
+    if certificate is None:
         LOGGER.warning(
             f"Task award_course_certificate was called for user {user.id} in course run {course_key} but this learner "
             "has not earned a course certificate in this course run"

@@ -943,7 +943,7 @@ class CourseModesArchive(models.Model):
         app_label = "course_modes"
 
     # the course that this mode is attached to
-    course_id = CourseKeyField(max_length=255, db_index=True)
+    course_id = CourseKeyField(db_index=True)
 
     # the reference to this mode that can be used by Enrollments to generate
     # similar behavior for the same slug across courses

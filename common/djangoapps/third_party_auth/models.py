@@ -745,6 +745,14 @@ class SAMLProviderConfig(ProviderConfig):
             "immediately after authenticating with the third party instead of the login page."
         ),
     )
+    skip_registration_optional_checkboxes = models.BooleanField(
+        default=False,
+        help_text=_(
+            "If enabled, optional checkboxes (marketing emails opt-in, etc.) will not be rendered "
+            "on the registration form for users registering via this provider. When these checkboxes "
+            "are skipped, their values are inferred as False (opted out)."
+        ),
+    )
     other_settings = models.TextField(
         verbose_name="Advanced settings", blank=True,
         help_text=(

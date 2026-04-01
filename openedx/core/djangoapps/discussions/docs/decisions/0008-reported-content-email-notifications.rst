@@ -63,7 +63,7 @@ Emails will be sent out from edx@news.edx.org
 
 Changes to CourseDiscussionSettings Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. code-block:: json
+.. code-block::
 
     class CourseDiscussionSettings(models.Model):
         ...
@@ -74,7 +74,7 @@ Endpoint to toggle the notifications settings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 POST ``api/discussions/v0/course/{course_id}/settings``
 
-.. code-block:: json
+.. code-block::
 
     {
         context_key: "{course_id}",

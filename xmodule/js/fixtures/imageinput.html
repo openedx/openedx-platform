@@ -1,35 +1,30 @@
 <!-- ${id}     = 12345 -->
 <!-- ${width}  = 300   -->
 <!-- ${height} = 400   -->
-
 <div class="imageinput capa_inputtype" id="inputtype_12345">
-    <input
-        type="hidden"
-        class="imageinput"
-        src=""
-        name="input_12345"
-        id="input_12345"
-        value=""
-    />
-
+    <input type="hidden"
+           class="imageinput"
+           src=""
+           name="input_12345"
+           id="input_12345"
+           value="" />
     <div style="position:relative;">
-        <div
-            id="imageinput_12345"
-            style="width: 300px; height: 400px; position: relative; left: 0; top: 0; visibility: hidden;"
-        >
+        <div id="imageinput_12345"
+             style="width: 300px;
+                    height: 400px;
+                    position: relative;
+                    left: 0;
+                    top: 0;
+                    visibility: hidden">
             <!-- image will go here -->
         </div>
         <div id="answer_12345" data-width="100" data-height="100"></div>
     </div>
-
-
     <!-- status == 'unsubmitted' -->
-        <span
-            class="unanswered"
-            style="display: inline-block;"
-            id="status_12345"
-            aria-describedby="input_12345"
-        >
-            <span class="sr">Status: unanswered</span>
-        </span>
+    <span class="unanswered"
+          style="display: inline-block"
+          id="status_12345"
+          aria-describedby="input_12345">
+        <span class="sr">Status: unanswered</span>
+    </span>
 </div>

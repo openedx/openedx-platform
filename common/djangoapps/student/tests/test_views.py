@@ -8,9 +8,9 @@ import json
 import unittest
 from datetime import datetime, timedelta  # lint-amnesty, pylint: disable=unused-import
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
-import pytz
 from completion.test_utils import CompletionWaffleTestMixin, submit_completions_for_testing
 from django.conf import settings
 from django.test.utils import override_settings
@@ -948,7 +948,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                     course_id=course.id,
                     mode_slug='verified',
                     mode_display_name='Verified',
-                    expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=1),
+                    expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=1),
                     sku=sku
                 )
 

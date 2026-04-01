@@ -81,15 +81,7 @@ class CourseRunTeamSerializerMixin(serializers.Serializer):  # lint-amnesty, pyl
             )
 
 
-def image_is_jpeg_or_png(value):
-    content_type = value.content_type
-    if content_type not in list(IMAGE_TYPES.keys()):  # lint-amnesty, pylint: disable=consider-iterating-dictionary
-        raise serializers.ValidationError(
-            f'Only JPEG and PNG image types are supported. {content_type} is not valid')
-
-
 class CourseRunImageField(serializers.ImageField):  # lint-amnesty, pylint: disable=missing-class-docstring
-    default_validators = [image_is_jpeg_or_png]
 
     def get_attribute(self, instance):
         return course_image_url(instance)

@@ -147,6 +147,7 @@
       "openedx/core/djangoapps/xblock/",
       "openedx/core/djangoapps/xmodule_django/",
       "openedx/core/djangoapps/zendesk_proxy/",
+      "openedx/core/djangoapps/authz/",
       "openedx/core/djangolib/",
       "openedx/core/lib/",
       "openedx/core/tests/",
@@ -227,6 +228,7 @@
       "openedx/core/djangoapps/xblock/",
       "openedx/core/djangoapps/xmodule_django/",
       "openedx/core/djangoapps/zendesk_proxy/",
+      "openedx/core/djangoapps/authz/",
       "openedx/core/lib/",
       "openedx/tests/"
     ]

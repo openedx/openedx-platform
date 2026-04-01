@@ -1,5 +1,8 @@
 """
-Public permissions that are part of the content libraries API
+Public permissions that are part of the content libraries API.
+
+Deprecated. This module re-exports legacy content library permissions.
+See https://github.com/openedx/openedx-platform/issues/37409.
 """
 # pylint: disable=unused-import
 

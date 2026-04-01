@@ -6,11 +6,10 @@ Support for inheritance of fields down an XBlock hierarchy.
 import warnings
 from django.utils import timezone
 from xblock.core import XBlockMixin
-from xblock.fields import Boolean, Dict, Float, Integer, List, Scope, String
+from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String, Timedelta
 from xblock.runtime import KeyValueStore, KvsFieldData
 
 from xmodule.error_block import ErrorBlock
-from xmodule.fields import Date, Timedelta
 from xmodule.partitions.partitions import UserPartition
 
 from ..course_metadata_utils import DEFAULT_START_DATE

@@ -1,9 +1,7 @@
+# pylint: disable=too-many-lines
 """
 Tests of the Capa XModule
 """
-
-# pylint: disable=invalid-name
-
 
 import datetime
 import json
@@ -12,39 +10,39 @@ import random
 import textwrap
 import unittest
 from unittest.mock import DEFAULT, Mock, PropertyMock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
 import requests
 import webob
 from codejail.safe_exec import SafeExecException
-from django.conf import settings
 from django.test import override_settings
 from django.utils.encoding import smart_str
 from lxml import etree
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from pytz import UTC
 from webob.multidict import MultiDict
+from xblock.exceptions import NotFoundError
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 from xblock.scorable import Score
 
-import xmodule
 from lms.djangoapps.courseware.user_state_client import XBlockUserState
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.capa import responsetypes
-from xmodule.capa.correctmap import CorrectMap
-from xmodule.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
-from xmodule.capa.tests.test_util import use_unsafe_codejail
-from xmodule.capa.xqueue_interface import XQueueInterface
-from xmodule.capa_block import ComplexEncoder, ProblemBlock
+from xblocks_contrib.problem.capa import responsetypes
+from xblocks_contrib.problem.capa.correctmap import CorrectMap
+from xblocks_contrib.problem.capa.responsetypes import (
+    LoncapaProblemError,
+    ResponseError,
+    StudentInputError,
+)
+from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
+from xmodule.capa_block import ComplexEncoder, _BuiltInProblemBlock as ProblemBlock
 from xmodule.tests import DATA_DIR
 
 from ..capa_block import RANDOMIZATION, SHOWANSWER
 from . import get_test_system
-
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS = settings.FEATURES.copy()
-FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS["ENABLE_GRADING_METHOD_IN_PROBLEMS"] = True
 
 
 class CapaFactory:
@@ -70,6 +68,7 @@ class CapaFactory:
 
     @classmethod
     def next_num(cls):
+        """Increment and return a unique number for naming problems."""
         cls.num += 1
         return cls.num
 
@@ -85,14 +84,12 @@ class CapaFactory:
         """
         Return the key stored in the capa problem answer dict
         """
-        return "%s_%d_%d" % (
-            "-".join(["i4x", "edX", "capa_test", "problem", "SampleProblem%d" % cls.num]),
-            response_num,
-            input_num,
+        return (
+            f"{'-'.join(['i4x', 'edX', 'capa_test', 'problem', f'SampleProblem{cls.num}'])}_{response_num}_{input_num}"
         )
 
     @classmethod
-    def create(
+    def create(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         cls,
         attempts=None,
         problem_state=None,
@@ -206,12 +203,14 @@ if submission[0] == '':
 
 @ddt.ddt
 @skip_unless_lms
-class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+@pytest.mark.django_db
+class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+    """Tests for various problem types in XBlocks."""
 
     def setUp(self):
         super().setUp()
 
-        now = datetime.datetime.now(UTC)
+        now = datetime.datetime.now(ZoneInfo("UTC"))
         day_delta = datetime.timedelta(days=1)
         self.yesterday_str = str(now - day_delta)
         self.today_str = str(now)
@@ -221,6 +220,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         self.two_day_delta_str = "2 days"
 
     def test_import(self):
+        """Verify CapaFactory creates blocks with zero initial score and unique URLs."""
         block = CapaFactory.create()
         assert block.get_score().raw_earned == 0
 
@@ -282,11 +282,11 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         """
         xqueue_interface = XQueueInterface("http://example.com/xqueue", Mock())
         with patch.object(xqueue_interface.session, "post", side_effect=exception):
-            # pylint: disable = protected-access
-            response = xqueue_interface._http_post("http://some/fake/url", {})
+            response = xqueue_interface._http_post("http://some/fake/url", {})  # pylint: disable=protected-access
             assert response == result
 
     def test_showanswer_attempted(self):
+        """Check answer availability changes after attempting the problem."""
         problem = CapaFactory.create(showanswer="attempted")
         assert not problem.answer_available()
         problem.attempts = 1
@@ -351,6 +351,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert problem.answer_available() == answer_available_after_attempt
 
     def test_showanswer_closed(self):
+        """Check show answer visibility with showanswer='closed' and various conditions."""
 
         # can see after attempts used up, even with due date in the future
         used_all_attempts = CapaFactory.create(
@@ -695,6 +696,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert problem.correctness_available() == expected_result
 
     def test_closed(self):
+        """Verify problem closed status based on attempts and due date."""
 
         # Attempts < Max attempts --> NOT closed
         block = CapaFactory.create(max_attempts="1", attempts="0")
@@ -722,14 +724,15 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @patch.object(ProblemBlock, "course_end_date", new_callable=PropertyMock)
     def test_closed_for_archive(self, mock_course_end_date):
+        """Check closed status for archived and active courses with/without grace periods."""
 
         # Utility to create a datetime object in the past
         def past_datetime(days):
-            return datetime.datetime.now(UTC) - datetime.timedelta(days=days)
+            return datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=days)
 
         # Utility to create a datetime object in the future
         def future_datetime(days):
-            return datetime.datetime.now(UTC) + datetime.timedelta(days=days)
+            return datetime.datetime.now(ZoneInfo("UTC")) + datetime.timedelta(days=days)
 
         block = CapaFactory.create(max_attempts="1", attempts="0")
 
@@ -752,6 +755,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert not block.closed()
 
     def test_parse_get_params(self):
+        """Test parsing of GET parameters into response dictionaries with validation."""
 
         # Valid GET param dict
         # 'input_5' intentionally left unset,
@@ -770,9 +774,9 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
         # Expect that we get a dict with "input" stripped from key names
         # and that we get the same values back
-        for key in result.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+        for key in result:
             original_key = "input_" + key
-            assert original_key in valid_get_dict, "Output dict should have key %s" % original_key
+            assert original_key in valid_get_dict, f"Output dict should have key {original_key}"
             assert valid_get_dict[original_key] == result[key]
 
         # Valid GET param dict with list keys
@@ -801,14 +805,15 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             result = ProblemBlock.make_dict_of_responses(invalid_get_dict)
 
     def test_submit_problem_correct(self):
+        """Verify submitting a correct problem updates attempts, grading, and HTML content."""
 
         block = CapaFactory.create(attempts=1)
 
         # Simulate that all answers are marked correct, no matter
         # what the input is, by patching CorrectMap.is_correct()
         # Also simulate rendering the HTML
-        with patch("xmodule.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
-            with patch("xmodule.capa_block.ProblemBlock.get_problem_html") as mock_html:
+        with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
+            with patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html") as mock_html:
                 mock_is_correct.return_value = True
                 mock_html.return_value = "Test HTML"
 
@@ -827,16 +832,12 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         # and that this was considered attempt number 2 for grading purposes
         assert block.lcp.context["attempt"] == 2
 
-    @patch("xmodule.capa_block.ProblemBlock.get_score_with_grading_method")
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
-    def test_submit_problem_with_grading_method_disable(
-        self, mock_html: Mock, mock_is_correct: Mock, mock_get_score: Mock
-    ):
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
+    def test_submit_problem_with_grading_method_disable(self, mock_html: Mock, mock_is_correct: Mock):
         """
-        Test that the grading method is disabled by default. Then, the
-        `get_score_with_grading_method` method should not be called, and
-        always the last attempt as the final score.
+        Test that without a specific grading method, the score behaves as
+        standard (Last Attempt).
         """
         block = CapaFactory.create(attempts=0, max_attempts=3)
         mock_html.return_value = "Test HTML"
@@ -850,7 +851,6 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.attempts == 1
         assert block.lcp.context["attempt"] == 1
         assert block.score == Score(raw_earned=1, raw_possible=1)
-        mock_get_score.assert_not_called()
 
         # Second Attempt
         mock_is_correct.return_value = False
@@ -861,7 +861,6 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.attempts == 2
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
-        mock_get_score.assert_not_called()
 
         # Third Attempt
         mock_is_correct.return_value = True
@@ -872,11 +871,9 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.attempts == 3
         assert block.lcp.context["attempt"] == 3
         assert block.score == Score(raw_earned=1, raw_possible=1)
-        mock_get_score.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_with_grading_method_enable(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test that the grading method is enabled when submit a problem.
@@ -897,130 +894,114 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             assert block.score == Score(raw_earned=1, raw_possible=1)
             mock_get_score.assert_called()
 
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
-    def test_submit_problem_grading_method_disable_to_enable(self, mock_html: Mock, mock_is_correct: Mock):
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
+    def test_submit_problem_grading_method_always_enabled(self, mock_html: Mock, mock_is_correct: Mock):
         """
-        Test when the grading method is disabled and then enabled.
+        Test problem submission when grading method is always enabled by default.
 
-        When the grading method is disabled, the final score is always the last attempt.
-        When the grading method is enabled, the final score is calculated according to the grading method.
-        """
-        block = CapaFactory.create(attempts=0, max_attempts=4)
-        mock_html.return_value = "Test HTML"
-
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # First Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 1
-            assert block.lcp.context["attempt"] == 1
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-            # Second Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.50"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 2
-            assert block.lcp.context["attempt"] == 2
-            assert block.score == Score(raw_earned=0, raw_possible=1)
-
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            # Third Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.96"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 3
-            assert block.lcp.context["attempt"] == 3
-            assert block.score == Score(raw_earned=0, raw_possible=1)
-
-            # Fourth Attempt
-            block.grading_method = "highest_score"
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.99"}
-
-            block.submit_problem(get_request_dict)
-
-            assert block.attempts == 4
-            assert block.lcp.context["attempt"] == 4
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
-    def test_submit_problem_grading_method_enable_to_disable(self, mock_html: Mock, mock_is_correct: Mock):
-        """
-        Test when the grading method is enabled and then disabled.
-
-        When the grading method is enabled, the final score is calculated according to the grading method.
-        When the grading method is disabled, the final score is always the last attempt.
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
         """
         block = CapaFactory.create(attempts=0, max_attempts=4, grading_method="highest_score")
         mock_html.return_value = "Test HTML"
 
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            # First Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
+        # First Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 1
-            assert block.lcp.context["attempt"] == 1
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 1
+        assert block.lcp.context["attempt"] == 1
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-            # Second Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.50"}
+        # Second Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.50"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 2
-            assert block.lcp.context["attempt"] == 2
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 2
+        assert block.lcp.context["attempt"] == 2
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # Third Attempt
-            mock_is_correct.return_value = False
-            get_request_dict = {CapaFactory.input_key(): "3.96"}
+        # Third Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.96"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 3
-            assert block.lcp.context["attempt"] == 3
-            assert block.score == Score(raw_earned=0, raw_possible=1)
+        assert block.attempts == 3
+        assert block.lcp.context["attempt"] == 3
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-            # Fourth Attempt
-            mock_is_correct.return_value = True
-            get_request_dict = {CapaFactory.input_key(): "3.14"}
+        # Fourth Attempt
+        block.grading_method = "highest_score"
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.99"}
 
-            block.submit_problem(get_request_dict)
+        block.submit_problem(get_request_dict)
 
-            assert block.attempts == 4
-            assert block.lcp.context["attempt"] == 4
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        assert block.attempts == 4
+        assert block.lcp.context["attempt"] == 4
+        assert block.score == Score(raw_earned=1, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
+    def test_submit_problem_grading_method_always_enabled_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
+        """
+        Test problem submission when grading method is always enabled by default
+        with 'highest_score' grading method.
+
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
+        """
+        block = CapaFactory.create(attempts=0, max_attempts=4, grading_method="highest_score")
+        mock_html.return_value = "Test HTML"
+
+        # First Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 1
+        assert block.lcp.context["attempt"] == 1
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Second Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.50"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 2
+        assert block.lcp.context["attempt"] == 2
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Third Attempt
+        mock_is_correct.return_value = False
+        get_request_dict = {CapaFactory.input_key(): "3.96"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 3
+        assert block.lcp.context["attempt"] == 3
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Fourth Attempt
+        mock_is_correct.return_value = True
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
+
+        block.submit_problem(get_request_dict)
+
+        assert block.attempts == 4
+        assert block.lcp.context["attempt"] == 4
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_last_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `last_score` grading method.
@@ -1052,9 +1033,8 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_highest_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `highest_score` grading method.
@@ -1085,9 +1065,8 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=1, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_first_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `first_score` grading method.
@@ -1118,9 +1097,8 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 2
         assert block.score == Score(raw_earned=0, raw_possible=1)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa.correctmap.CorrectMap.is_correct")
-    @patch("xmodule.capa_block.ProblemBlock.get_problem_html")
+    @patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html")
     def test_submit_problem_correct_average_score(self, mock_html: Mock, mock_is_correct: Mock):
         """
         Test the `average_score` grading method.
@@ -1172,11 +1150,12 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.score == Score(raw_earned=0.25, raw_possible=1)
 
     def test_submit_problem_incorrect(self):
+        """Verify submitting an incorrect answer marks failure and increments attempts."""
 
         block = CapaFactory.create(attempts=0)
 
         # Simulate marking the input incorrect
-        with patch("xmodule.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
+        with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
             mock_is_correct.return_value = False
 
             # Check the problem
@@ -1192,13 +1171,14 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_submit_problem_closed(self):
+        """Ensure submitting a closed problem raises NotFoundError and does not increment attempts."""
         block = CapaFactory.create(attempts=3)
 
         # Problem closed -- cannot submit
         # Simulate that ProblemBlock.closed() always returns True
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
-            with pytest.raises(xmodule.exceptions.NotFoundError):
+            with pytest.raises(NotFoundError):
                 get_request_dict = {CapaFactory.input_key(): "3.14"}
                 block.submit_problem(get_request_dict)
 
@@ -1207,6 +1187,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @ddt.data(RANDOMIZATION.ALWAYS, "true")
     def test_submit_problem_resubmitted_with_randomize(self, rerandomize):
+        """Verify resubmission is blocked when rerandomization is enabled and problem is done."""
         # Randomize turned on
         block = CapaFactory.create(rerandomize=rerandomize, attempts=0)
 
@@ -1214,7 +1195,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         block.done = True
 
         # Expect that we cannot submit
-        with pytest.raises(xmodule.exceptions.NotFoundError):
+        with pytest.raises(NotFoundError):
             get_request_dict = {CapaFactory.input_key(): "3.14"}
             block.submit_problem(get_request_dict)
 
@@ -1223,6 +1204,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @ddt.data(RANDOMIZATION.NEVER, "false", RANDOMIZATION.PER_STUDENT)
     def test_submit_problem_resubmitted_no_randomize(self, rerandomize):
+        """Verify resubmission succeeds when rerandomization is disabled."""
         # Randomize turned off
         block = CapaFactory.create(rerandomize=rerandomize, attempts=0, done=True)
 
@@ -1237,15 +1219,18 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_submit_problem_queued(self):
+        """Ensure queued problems return a wait message and do not increment attempts."""
         block = CapaFactory.create(attempts=1)
 
         # Simulate that the problem is queued
         multipatch = patch.multiple(
-            "xmodule.capa.capa_problem.LoncapaProblem", is_queued=DEFAULT, get_recentmost_queuetime=DEFAULT
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem",
+            is_queued=DEFAULT,
+            get_recentmost_queuetime=DEFAULT,
         )
         with multipatch as values:
             values["is_queued"].return_value = True
-            values["get_recentmost_queuetime"].return_value = datetime.datetime.now(UTC)
+            values["get_recentmost_queuetime"].return_value = datetime.datetime.now(ZoneInfo("UTC"))
 
             get_request_dict = {CapaFactory.input_key(): "3.14"}
             result = block.submit_problem(get_request_dict)
@@ -1259,13 +1244,13 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
     @pytest.mark.django_db
     @patch.object(XQueueInterface, "_http_post")
     def test_submit_problem_with_files(self, mock_xqueue_post):
+        """Verify file-upload submissions are sent correctly to XQueue via submit_problem."""
         # Check a problem with uploaded files, using the submit_problem API.
-        # pylint: disable=protected-access
 
         # The files we'll be uploading.
         fnames = ["prog1.py", "prog2.py", "prog3.py"]
         fpaths = [os.path.join(DATA_DIR, "capa", fname) for fname in fnames]
-        fileobjs = [open(fpath) for fpath in fpaths]
+        fileobjs = [open(fpath, encoding="utf-8") for fpath in fpaths]  # pylint: disable=consider-using-with
         for fileobj in fileobjs:
             self.addCleanup(fileobj.close)
 
@@ -1282,24 +1267,42 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
         block.submit_problem(get_request_dict)
 
-        # pylint: disable=line-too-long
         # _http_post is called like this:
         #   _http_post(
         #       'http://example.com/xqueue/xqueue/submit/',
         #       {
-        #           'xqueue_header': '{"lms_key": "df34fb702620d7ae892866ba57572491", "lms_callback_url": "/", "queue_name": "BerkeleyX-cs188x"}',
-        #           'xqueue_body': '{"student_info": "{\\"anonymous_student_id\\": \\"student\\", \\"submission_time\\": \\"20131117183318\\"}", "grader_payload": "{\\"project\\": \\"p3\\"}", "student_response": ""}',
+        #           'xqueue_header':
+        #               '{"lms_key": "df34fb702620d7ae892866ba57572491", '
+        #               '"lms_callback_url": "/", '
+        #               '"queue_name": "BerkeleyX-cs188x"}',
+        #           'xqueue_body':
+        #               '{"student_info": "{\\"anonymous_student_id\\": '
+        #               '\\"student\\", \\"submission_time\\": '
+        #               '\\"20131117183318\\"}", '
+        #               '"grader_payload": "{\\"project\\": \\"p3\\"}", '
+        #               '"student_response": ""}',
         #       },
         #       files={
-        #           path(u'/home/ned/edx/edx-platform/common/test/data/uploads/asset.html'):
-        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/asset.html', mode 'r' at 0x49c5f60>,
-        #           path(u'/home/ned/edx/edx-platform/common/test/data/uploads/image.jpg'):
-        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/image.jpg', mode 'r' at 0x49c56f0>,
-        #           path(u'/home/ned/edx/edx-platform/common/test/data/uploads/textbook.pdf'):
-        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/textbook.pdf', mode 'r' at 0x49c5a50>,
+        #           path(
+        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'asset.html'
+        #           ):
+        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'asset.html', mode 'r' at 0x49c5f60>,
+        #           path(
+        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'image.jpg'
+        #           ):
+        #               <open file u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'image.jpg', mode 'r' at 0x49c56f0>,
+        #           path(
+        #               u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'textbook.pdf'
+        #           ):
+        #               <open file  u'/home/ned/edx/edx-platform/common/test/data/uploads/'
+        #               'textbook.pdf', mode 'r' at 0x49c5a50>,
         #       },
         #   )
-        # pylint: enable=line-too-long
 
         assert mock_xqueue_post.call_count == 1
         _, kwargs = mock_xqueue_post.call_args
@@ -1310,15 +1313,16 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
     @pytest.mark.django_db
     @patch.object(XQueueInterface, "_http_post")
     def test_submit_problem_with_files_as_xblock(self, mock_xqueue_post):
+        """Verify file-upload submissions work correctly via the XBlock handler API."""
         # Check a problem with uploaded files, using the XBlock API.
-        # pylint: disable=protected-access
 
         # The files we'll be uploading.
         fnames = ["prog1.py", "prog2.py", "prog3.py"]
         fpaths = [os.path.join(DATA_DIR, "capa", fname) for fname in fnames]
-        fileobjs = [open(fpath) for fpath in fpaths]
-        for fileobj in fileobjs:
-            self.addCleanup(fileobj.close)
+        fileobjs = []
+        for fpath in fpaths:
+            with open(fpath, encoding="utf-8") as f:
+                fileobjs.append(f.read())
 
         block = CapaFactoryWithFiles.create()
 
@@ -1341,6 +1345,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             assert fpath == fileobj.name
 
     def test_submit_problem_error(self):
+        """Ensure expected grading errors return messages without incrementing attempts."""
 
         # Try each exception that capa_block should handle
         exception_classes = [StudentInputError, LoncapaProblemError, ResponseError]
@@ -1349,7 +1354,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             block = CapaFactory.create(attempts=1, user_is_staff=False)
 
             # Simulate answering a problem that raises the exception
-            with patch("xmodule.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
+            with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
                 mock_grade.side_effect = exception_class("test error")
 
                 get_request_dict = {CapaFactory.input_key(): "3.14"}
@@ -1366,6 +1371,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             assert block.lcp.context["attempt"] == 2
 
     def test_submit_problem_error_with_codejail_exception(self):
+        """Verify codejail execution errors are sanitized and handled correctly."""
 
         # Try each exception that capa_block should handle
         exception_classes = [StudentInputError, LoncapaProblemError, ResponseError]
@@ -1375,7 +1381,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             block = CapaFactory.create(attempts=1, user_is_staff=False)
 
             # Simulate a codejail exception "Exception: Couldn't execute jailed code"
-            with patch("xmodule.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
+            with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
                 try:
                     raise ResponseError(
                         "Couldn't execute jailed code: stdout: '', "
@@ -1408,9 +1414,10 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         """
         # Create the block
         block = CapaFactory.create(attempts=1, user_is_staff=False)
+        block.runtime.is_author_mode = True
 
         # Simulate answering a problem that raises the exception
-        with patch("xmodule.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
+        with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
             error_msg = "Superterrible error happened: ☠"
             mock_grade.side_effect = Exception(error_msg)
 
@@ -1435,6 +1442,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         block.submit_problem(get_request_dict)
 
     def test_submit_problem_error_nonascii(self):
+        """Ensure non-ASCII error messages are preserved and handled correctly."""
 
         # Try each exception that capa_block should handle
         exception_classes = [StudentInputError, LoncapaProblemError, ResponseError]
@@ -1443,7 +1451,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             block = CapaFactory.create(attempts=1, user_is_staff=False)
 
             # Simulate answering a problem that raises the exception
-            with patch("xmodule.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
+            with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
                 mock_grade.side_effect = exception_class("ȧƈƈḗƞŧḗḓ ŧḗẋŧ ƒǿř ŧḗşŧīƞɠ")
 
                 get_request_dict = {CapaFactory.input_key(): "3.14"}
@@ -1460,6 +1468,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             assert block.lcp.context["attempt"] == 2
 
     def test_submit_problem_error_with_staff_user(self):
+        """Verify staff users receive full traceback information on errors."""
 
         # Try each exception that capa block should handle
         for exception_class in [StudentInputError, LoncapaProblemError, ResponseError]:
@@ -1467,7 +1476,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             block = CapaFactory.create(attempts=1, user_is_staff=True)
 
             # Simulate answering a problem that raises an exception
-            with patch("xmodule.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
+            with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers") as mock_grade:
                 mock_grade.side_effect = exception_class("test error")
 
                 get_request_dict = {CapaFactory.input_key(): "3.14"}
@@ -1494,10 +1503,11 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
     )
     @ddt.unpack
     def test_handle_ajax_show_correctness(self, show_correctness, is_correct, expected_score, expected_success):
+        """Verify AJAX submission respects show_correctness settings."""
         block = CapaFactory.create(show_correctness=show_correctness, due=self.tomorrow_str, correct=is_correct)
 
         # Simulate marking the input correct/incorrect
-        with patch("xmodule.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
+        with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
             mock_is_correct.return_value = is_correct
 
             # Check the problem
@@ -1514,12 +1524,13 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_reset_problem(self):
+        """Ensure resetting a completed problem regenerates state and HTML."""
         block = CapaFactory.create(done=True)
         block.new_lcp = Mock(wraps=block.new_lcp)
         block.choose_new_seed = Mock(wraps=block.choose_new_seed)
 
         # Stub out HTML rendering
-        with patch("xmodule.capa_block.ProblemBlock.get_problem_html") as mock_html:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.get_problem_html") as mock_html:
             mock_html.return_value = "<div>Test HTML</div>"
 
             # Reset the problem
@@ -1537,11 +1548,12 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         block.new_lcp.assert_called_once_with(None)
 
     def test_reset_problem_closed(self):
+        """Verify reset is blocked when the problem is closed."""
         # pre studio default
         block = CapaFactory.create(rerandomize=RANDOMIZATION.ALWAYS)
 
         # Simulate that the problem is closed
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
 
             # Try to reset the problem
@@ -1552,6 +1564,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert ("success" in result) and (not result["success"])
 
     def test_reset_problem_not_done(self):
+        """Verify reset is blocked when the problem is not yet completed."""
         # Simulate that the problem is NOT done
         block = CapaFactory.create(done=False)
 
@@ -1563,18 +1576,21 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert ("success" in result) and (not result["success"])
 
     def test_rescore_problem_correct(self):
+        """Ensure rescoring marks the problem correct without incrementing attempts."""
 
         block = CapaFactory.create(attempts=0, done=True)
 
         # Simulate that all answers are marked correct, no matter
         # what the input is, by patching LoncapaResponse.evaluate_answers()
-        with patch("xmodule.capa.responsetypes.LoncapaResponse.evaluate_answers") as mock_evaluate_answers:
+        with patch(
+            "xblocks_contrib.problem.capa.responsetypes.LoncapaResponse.evaluate_answers"
+        ) as mock_evaluate_answers:
             mock_evaluate_answers.return_value = CorrectMap(
                 answer_id=CapaFactory.answer_key(),
                 correctness="correct",
                 npoints=1,
             )
-            with patch("xmodule.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
+            with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
                 mock_is_correct.return_value = True
 
                 # Check the problem
@@ -1591,6 +1607,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_rescore_problem_additional_correct(self):
+        """Verify rescoring updates scores correctly when new correct answers are added."""
         # make sure it also works when new correct answer has been added
         block = CapaFactory.create(attempts=0)
         answer_id = CapaFactory.answer_key()
@@ -1614,10 +1631,10 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         # In case of rescore with only_if_higher=True it should update score of block
         # if previous score was lower
 
-        with patch("xmodule.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
+        with patch("xblocks_contrib.problem.capa.correctmap.CorrectMap.is_correct") as mock_is_correct:
             mock_is_correct.return_value = True
             block.set_score(block.score_from_lcp(block.lcp))
-            with patch("xmodule.capa.responsetypes.NumericalResponse.get_staff_ans") as get_staff_ans:
+            with patch("xblocks_contrib.problem.capa.responsetypes.NumericalResponse.get_staff_ans") as get_staff_ans:
                 get_staff_ans.return_value = 1 + 0j
                 block.rescore(only_if_higher=True)
 
@@ -1630,13 +1647,16 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_rescore_problem_incorrect(self):
+        """Ensure rescoring marks the problem incorrect without changing attempts."""
         # make sure it also works when attempts have been reset,
         # so add this to the test:
         block = CapaFactory.create(attempts=0, done=True)
 
         # Simulate that all answers are marked incorrect, no matter
         # what the input is, by patching LoncapaResponse.evaluate_answers()
-        with patch("xmodule.capa.responsetypes.LoncapaResponse.evaluate_answers") as mock_evaluate_answers:
+        with patch(
+            "xblocks_contrib.problem.capa.responsetypes.LoncapaResponse.evaluate_answers"
+        ) as mock_evaluate_answers:
             mock_evaluate_answers.return_value = CorrectMap(CapaFactory.answer_key(), "incorrect")
             block.rescore(only_if_higher=False)
 
@@ -1648,21 +1668,17 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         # and that this is treated as the first attempt for grading purposes
         assert block.lcp.context["attempt"] == 1
 
-    @patch("xmodule.capa_block.ProblemBlock.get_rescore_with_grading_method")
-    def test_rescore_problem_with_grading_method_disable(self, mock_get_rescore: Mock):
+    def test_rescore_problem_with_grading_method_disable(self):
         """
-        Test the rescore method with grading method disabled.
-        In this case, the rescore method should not call `get_rescore_with_grading_method` method.
+        Test the rescore method with grading method logic enabled by default.
         """
-        block = CapaFactory.create(attempts=0, done=True)
+        block = CapaFactory.create(attempts=0, done=True, grading_method="highest_score")
 
         block.rescore(only_if_higher=False)
 
         assert block.attempts == 0
         assert block.lcp.context["attempt"] == 1
-        mock_get_rescore.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_rescore_problem_with_grading_method_enable(self):
         """
         Test the rescore method with grading method enabled.
@@ -1680,73 +1696,13 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             assert block.lcp.context["attempt"] == 1
             mock_get_rescore.assert_called()
 
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
-    def test_rescore_problem_grading_method_disable_to_enable(self, mock_publish_grade: Mock):
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
+    def test_rescore_problem_grading_method_always_enabled(self, mock_publish_grade: Mock):
         """
-        Test the rescore method the grading method is disabled and then enabled.
+        Test the rescore method when grading method is always enabled by default.
 
-        When the grading method is disabled, the final score is always the last score.
-        When the grading method is enabled, the final score is the score based on the grading method.
-        """
-        block = CapaFactory.create(attempts=0, max_attempts=3)
-
-        get_request_dict = {CapaFactory.input_key(): "3.21"}
-        block.submit_problem(get_request_dict)
-
-        get_request_dict = {CapaFactory.input_key(): "3.45"}
-        block.submit_problem(get_request_dict)
-
-        get_request_dict = {CapaFactory.input_key(): "3.14"}
-        block.submit_problem(get_request_dict)
-
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            # Score is the last score
-            assert block.score == Score(raw_earned=1, raw_possible=1)
-
-            block.rescore(only_if_higher=False)
-
-            # Still Score is the last score
-            mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
-
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            with patch(
-                "xmodule.capa.capa_problem.LoncapaProblem.is_grading_method_enabled",
-                new_callable=PropertyMock,
-                return_value=True,
-            ):
-                # Change grading method to 'first_score'
-                block.grading_method = "first_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
-
-                # Change grading method to 'highest_score'
-                block.grading_method = "highest_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
-
-                # Change grading method to 'average_score'
-                block.grading_method = "average_score"
-                block.rescore(only_if_higher=False)
-
-                mock_publish_grade.assert_called_with(
-                    score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False
-                )
-
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
-    def test_rescore_problem_grading_method_enable_to_disable(self, mock_publish_grade: Mock):
-        """
-        Test the rescore method the grading method is enabled and then disabled.
-
-        When the grading method is enabled, the final score is the score based on the grading method.
-        When the grading method is disabled, the final score is always the last score.
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
         """
         block = CapaFactory.create(attempts=0, max_attempts=3)
 
@@ -1759,49 +1715,72 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         get_request_dict = {CapaFactory.input_key(): "3.14"}
         block.submit_problem(get_request_dict)
 
-        # Enabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=True
-        ):
-            with patch(
-                "xmodule.capa.capa_problem.LoncapaProblem.is_grading_method_enabled",
-                new_callable=PropertyMock,
-                return_value=True,
-            ):
-                # Grading method is 'last_score'
-                assert block.grading_method == "last_score"
-                assert block.score == Score(raw_earned=1, raw_possible=1)
+        # Score is calculated according to the grading method
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+        block.rescore(only_if_higher=False)
 
-                # Change grading method to 'first_score'
-                block.grading_method = "first_score"
-                block.rescore(only_if_higher=False)
+        # Still Score is the last score
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
+        # Rescore with different grading methods
+        block.grading_method = "first_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
 
-                # Change grading method to 'highest_score'
-                block.grading_method = "highest_score"
-                block.rescore(only_if_higher=False)
+        # Change grading method to 'highest_score'
+        block.grading_method = "highest_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
+        # Change grading method to 'average_score'
+        block.grading_method = "average_score"
+        block.rescore(only_if_higher=False)
 
-                # Change grading method to 'average_score'
-                block.grading_method = "average_score"
-                block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False)
 
-                mock_publish_grade.assert_called_with(
-                    score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False
-                )
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
+    def test_rescore_problem_grading_method_always_enabled_with_various_methods(self, mock_publish_grade: Mock):
+        """
+        Test the rescore method when grading method is always enabled by default
+        with different grading methods.
 
-        # Disabled grading method
-        with patch(
-            "xmodule.capa_block.ProblemBlock.is_grading_method_enabled", new_callable=PropertyMock, return_value=False
-        ):
-            block.rescore(only_if_higher=False)
-            # The score is the last score
-            assert block.score == Score(raw_earned=1, raw_possible=1)
+        The final score is calculated according to the grading method, as grading
+        is now always enabled.
+        """
+        block = CapaFactory.create(attempts=0, max_attempts=3)
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
-    @patch("xmodule.capa_block.ProblemBlock.publish_grade")
+        get_request_dict = {CapaFactory.input_key(): "3.21"}
+        block.submit_problem(get_request_dict)
+
+        get_request_dict = {CapaFactory.input_key(): "3.45"}
+        block.submit_problem(get_request_dict)
+
+        get_request_dict = {CapaFactory.input_key(): "3.14"}
+        block.submit_problem(get_request_dict)
+
+        # Grading method is 'last_score' by default
+        assert block.grading_method == "last_score"
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+        # Change grading method to 'first_score'
+        block.grading_method = "first_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0, raw_possible=1), only_if_higher=False)
+
+        # Change grading method to 'highest_score'
+        block.grading_method = "highest_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=1, raw_possible=1), only_if_higher=False)
+
+        # Change grading method to 'average_score'
+        block.grading_method = "average_score"
+        block.rescore(only_if_higher=False)
+        mock_publish_grade.assert_called_with(score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False)
+
+        block.rescore(only_if_higher=False)
+        assert block.score == Score(raw_earned=1, raw_possible=1)
+
+    @patch("xmodule.capa_block._BuiltInProblemBlock.publish_grade")
     def test_rescore_problem_update_grading_method(self, mock_publish_grade: Mock):
         """
         Test the rescore method when the grading method is updated.
@@ -1843,18 +1822,22 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         mock_publish_grade.assert_called_with(score=Score(raw_earned=0.33, raw_possible=1), only_if_higher=False)
 
     def test_rescore_problem_not_done(self):
+        """Ensure rescoring an unfinished problem raises NotFoundError."""
         # Simulate that the problem is NOT done
         block = CapaFactory.create(done=False)
 
         # Try to rescore the problem, and get exception
-        with pytest.raises(xmodule.exceptions.NotFoundError):
+        with pytest.raises(NotFoundError):
             block.rescore(only_if_higher=False)
 
     def test_rescore_problem_not_supported(self):
+        """Ensure rescoring raises NotImplementedError when unsupported by the problem."""
         block = CapaFactory.create(done=True)
 
         # Try to rescore the problem, and get exception
-        with patch("xmodule.capa.capa_problem.LoncapaProblem.supports_rescoring") as mock_supports_rescoring:
+        with patch(
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.supports_rescoring"
+        ) as mock_supports_rescoring:
             mock_supports_rescoring.return_value = False
             with pytest.raises(NotImplementedError):
                 block.rescore(only_if_higher=False)
@@ -1930,7 +1913,6 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             self.assertEqual(block.lcp.context["attempt"], 1)
             block.lcp.get_grade_from_current_answers.assert_not_called()
 
-    @override_settings(FEATURES=FEATURES_WITH_GRADING_METHOD_IN_PROBLEMS)
     def test_get_rescore_with_grading_method(self):
         """
         Test that the `get_rescore_with_grading_method` method returns the correct score.
@@ -1962,7 +1944,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         self.assertEqual(score, expected_score)
         self.assertEqual(block.score, expected_score)
 
-    @patch("xmodule.capa_block.ProblemBlock.score_from_lcp")
+    @patch("xmodule.capa_block._BuiltInProblemBlock.score_from_lcp")
     def test_get_score_with_grading_method_updates_score(self, mock_score_from_lcp: Mock):
         """
         Test that the `get_score_with_grading_method` method returns the correct score.
@@ -1997,7 +1979,9 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
                 current_score.raw_possible,
             )
 
-    def capa_factory_for_problem_xml(self, xml):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def capa_factory_for_problem_xml(self, xml):
+        """Return a custom CapaFactory configured with the given problem XML."""
+
         class CustomCapaFactory(CapaFactory):
             """
             A factory for creating a Capa problem with arbitrary xml.
@@ -2008,6 +1992,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         return CustomCapaFactory
 
     def test_codejail_error_upon_problem_creation(self):
+        """Verify codejail execution errors during problem creation raise LoncapaProblemError."""
         # Simulate a codejail safe_exec failure upon problem creation.
         # Create a problem with some script attached.
         xml_str = textwrap.dedent(
@@ -2021,7 +2006,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
         # When codejail safe_exec fails upon problem creation, a LoncapaProblemError should be raised.
         with pytest.raises(LoncapaProblemError):
-            with patch("xmodule.capa.capa_problem.safe_exec") as mock_safe_exec:
+            with patch("xblocks_contrib.problem.capa.capa_problem.safe_exec") as mock_safe_exec:
                 mock_safe_exec.side_effect = SafeExecException()
                 factory.create()
 
@@ -2036,7 +2021,9 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         block.submit_problem(get_request_dict)
 
         # Simulate answering a problem that raises the exception
-        with patch("xmodule.capa.capa_problem.LoncapaProblem.get_grade_from_current_answers") as mock_rescore:
+        with patch(
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.get_grade_from_current_answers"
+        ) as mock_rescore:
             mock_rescore.side_effect = exception_class("test error \u03a9")
             with pytest.raises(exception_class):
                 block.rescore(only_if_higher=False)
@@ -2047,15 +2034,19 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.lcp.context["attempt"] == 1
 
     def test_rescore_problem_student_input_error(self):
+        """Ensure StudentInputError during rescore is handled correctly."""
         self._rescore_problem_error_helper(StudentInputError)
 
     def test_rescore_problem_problem_error(self):
+        """Ensure LoncapaProblemError during rescore is handled correctly."""
         self._rescore_problem_error_helper(LoncapaProblemError)
 
     def test_rescore_problem_response_error(self):
+        """Ensure ResponseError during rescore is handled correctly."""
         self._rescore_problem_error_helper(ResponseError)
 
     def test_save_problem(self):
+        """Verify saving a problem persists answers and returns success."""
         block = CapaFactory.create(done=False)
 
         # Save the problem
@@ -2070,10 +2061,11 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert ("success" in result) and result["success"]
 
     def test_save_problem_closed(self):
+        """Ensure saving a closed problem fails."""
         block = CapaFactory.create(done=False)
 
         # Simulate that the problem is closed
-        with patch("xmodule.capa_block.ProblemBlock.closed") as mock_closed:
+        with patch("xmodule.capa_block._BuiltInProblemBlock.closed") as mock_closed:
             mock_closed.return_value = True
 
             # Try to save the problem
@@ -2085,6 +2077,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @ddt.data(RANDOMIZATION.ALWAYS, "true")
     def test_save_problem_submitted_with_randomize(self, rerandomize):
+        """Verify saving fails when problem is submitted and rerandomization is enabled."""
         # Capa XModule treats 'always' and 'true' equivalently
         block = CapaFactory.create(rerandomize=rerandomize, done=True)
 
@@ -2097,6 +2090,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @ddt.data(RANDOMIZATION.NEVER, "false", RANDOMIZATION.PER_STUDENT)
     def test_save_problem_submitted_no_randomize(self, rerandomize):
+        """Verify saving succeeds when problem is submitted without rerandomization."""
         # Capa XBlock treats 'false' and 'per_student' equivalently
         block = CapaFactory.create(rerandomize=rerandomize, done=True)
 
@@ -2108,14 +2102,17 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert ("success" in result) and result["success"]
 
     def test_submit_button_name(self):
+        """Verify the submit button label is correct."""
         block = CapaFactory.create(attempts=0)
         assert block.submit_button_name() == "Submit"
 
     def test_submit_button_submitting_name(self):
+        """Verify the submitting button label is correct."""
         block = CapaFactory.create(attempts=1, max_attempts=10)
         assert block.submit_button_submitting_name() == "Submitting"
 
     def test_should_enable_submit_button(self):
+        """Verify submit button enablement logic across deadlines, attempts, and states."""
 
         attempts = random.randint(1, 10)
 
@@ -2158,6 +2155,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.should_enable_submit_button()
 
     def test_should_show_reset_button(self):
+        """Verify reset button visibility logic across problem states and settings."""
 
         attempts = random.randint(1, 10)
 
@@ -2202,6 +2200,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.should_show_reset_button()
 
     def test_should_show_save_button(self):
+        """Verify save button visibility logic across attempts, deadlines, and randomization."""
 
         attempts = random.randint(1, 10)
 
@@ -2252,6 +2251,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.should_show_save_button()
 
     def test_should_show_save_button_force_save_button(self):
+        """Verify force_save_button overrides normal save button visibility rules."""
         # If we're after the deadline, do NOT show the save button
         # even though we're forcing a save
         block = CapaFactory.create(due=self.yesterday_str, force_save_button="true", done=True)
@@ -2272,6 +2272,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         assert block.should_show_save_button()
 
     def test_no_max_attempts(self):
+        """Ensure problems with empty max_attempts render without errors."""
         block = CapaFactory.create(max_attempts="")
         html = block.get_problem_html()
         assert html is not None
@@ -2279,6 +2280,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @patch("xmodule.capa_block.render_to_string")
     def test_get_problem_html(self, render_template):
+        """Verify problem HTML rendering uses correct template context and encapsulation."""
         render_template.return_value = "<div>Test Template HTML</div>"
         block = CapaFactory.create()
 
@@ -2293,7 +2295,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         block.should_show_save_button = Mock(return_value=show_save_button)
 
         # Patch the capa problem's HTML rendering
-        with patch("xmodule.capa.capa_problem.LoncapaProblem.get_html") as mock_html:
+        with patch("xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.get_html") as mock_html:
             mock_html.return_value = "<div>Test Problem HTML</div>"
 
             # Render the problem HTML
@@ -2340,6 +2342,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @patch("xmodule.capa_block.render_to_string")
     def test_demand_hint(self, render_template):
+        """Verify image-based demand hints render correctly without static URL issues."""
         # HTML generation is mocked out to be meaningless here, so instead we check
         # the context dict passed into HTML generation.
         render_template.return_value = "<div>Test Template HTML</div>"
@@ -2441,6 +2444,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
             )
 
     def test_input_state_consistency(self):
+        """Verify input_state keys remain consistent and isolated across block instances."""
         block1 = CapaFactory.create()
         block2 = CapaFactory.create()
 
@@ -2516,6 +2520,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         """
         render_template.return_value = "<div>Test Template HTML</div>"
         block = CapaFactory.create()
+        block.runtime.is_author_mode = True
 
         # Simulate throwing an exception when the capa problem
         # is asked to render itself as HTML
@@ -2536,6 +2541,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         "false", "true", RANDOMIZATION.NEVER, RANDOMIZATION.PER_STUDENT, RANDOMIZATION.ALWAYS, RANDOMIZATION.ONRESET
     )
     def test_random_seed_no_change(self, rerandomize):
+        """Verify problem seed remains stable when rerandomization does not apply."""
 
         # Run the test for each possible rerandomize value
 
@@ -2549,7 +2555,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
         # If we're not rerandomizing, the seed is always set
         # to the same value (1)
         if rerandomize == RANDOMIZATION.NEVER:
-            assert seed == 1, "Seed should always be 1 when rerandomize='%s'" % rerandomize
+            assert seed == 1, f"Seed should always be 1 when rerandomize='{rerandomize}'"
 
         # Check the problem
         get_request_dict = {CapaFactory.input_key(): "3.14"}
@@ -2663,6 +2669,7 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
     @ddt.data(RANDOMIZATION.ALWAYS, RANDOMIZATION.PER_STUDENT, "true", RANDOMIZATION.ONRESET)
     def test_random_seed_bins(self, rerandomize):
+        """Ensure generated random seeds fall within the expected numeric range."""
         # Assert that we are limiting the number of possible seeds.
         # Get a bunch of seeds, they should all be in 0-999.
         i = 200
@@ -2844,7 +2851,10 @@ class ProblemBlockTest(unittest.TestCase):  # lint-amnesty, pylint: disable=miss
 
 
 @ddt.ddt
-class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+@pytest.mark.django_db
+class ProblemBlockXMLTest(unittest.TestCase):
+    """Tests XML strings for various problem types in XBlocks."""
+
     sample_checkbox_problem_xml = textwrap.dedent(
         """
         <problem>
@@ -3240,6 +3250,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_response_types_ignores_non_response_tags(self):
+        """Ensure non-response XML tags are ignored when determining problem response types."""
         xml = textwrap.dedent(
             """
             <problem>
@@ -3266,6 +3277,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_response_types_multiple_tags(self):
+        """Verify indexing behavior when multiple response types are present in a single problem."""
         xml = textwrap.dedent(
             """
             <problem>
@@ -3307,6 +3319,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         )
 
     def test_solutions_not_indexed(self):
+        """Confirm that solutions, scripts, styles, answers, and hints are excluded from indexing."""
         xml = textwrap.dedent(
             """
             <problem>
@@ -3348,6 +3361,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_checkboxes(self):
+        """Verify correct indexing of checkbox-based problems and extracted content."""
         name = "Checkboxes"
         block = self._create_block(self.sample_checkbox_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3372,6 +3386,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_dropdown(self):
+        """Verify correct indexing of dropdown-based problems and extracted content."""
         name = "Dropdown"
         block = self._create_block(self.sample_dropdown_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3390,6 +3405,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_multiple_choice(self):
+        """Verify correct indexing of multiple-choice problems and extracted content."""
         name = "Multiple Choice"
         block = self._create_block(self.sample_multichoice_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3412,6 +3428,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_numerical_input(self):
+        """Verify correct indexing of numerical input problems and extracted content."""
         name = "Numerical Input"
         block = self._create_block(self.sample_numerical_input_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3437,6 +3454,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_text_input(self):
+        """Verify correct indexing of text input problems and extracted content."""
         name = "Text Input"
         block = self._create_block(self.sample_text_input_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3459,6 +3477,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_non_latin_problem(self):
+        """Ensure non-Latin characters are preserved correctly in indexed problem content."""
         sample_text_input_problem_xml = textwrap.dedent(
             """
             <problem>
@@ -3475,6 +3494,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         assert block_dict["content"]["capa_content"] == smart_str(capa_content)
 
     def test_indexing_checkboxes_with_hints_and_feedback(self):
+        """Verify indexing of checkbox problems containing hints and feedback."""
         name = "Checkboxes with Hints and Feedback"
         block = self._create_block(self.sample_checkboxes_with_hints_and_feedback_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3502,6 +3522,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_dropdown_with_hints_and_feedback(self):
+        """Verify indexing of dropdown problems containing hints and feedback."""
         name = "Dropdown with Hints and Feedback"
         block = self._create_block(self.sample_dropdown_with_hints_and_feedback_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3525,6 +3546,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_multiple_choice_with_hints_and_feedback(self):
+        """Verify indexing of multiple-choice problems containing hints and feedback."""
         name = "Multiple Choice with Hints and Feedback"
         block = self._create_block(self.sample_multichoice_with_hints_and_feedback_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3548,6 +3570,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_numerical_input_with_hints_and_feedback(self):
+        """Verify indexing of numerical input problems containing hints and feedback."""
         name = "Numerical Input with Hints and Feedback"
         block = self._create_block(self.sample_numerical_input_with_hints_and_feedback_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3569,6 +3592,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_text_input_with_hints_and_feedback(self):
+        """Verify indexing of text input problems containing hints and feedback."""
         name = "Text Input with Hints and Feedback"
         block = self._create_block(self.sample_text_input_with_hints_and_feedback_problem_xml, name=name)
         capa_content = textwrap.dedent(
@@ -3590,6 +3614,7 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
         }
 
     def test_indexing_problem_with_html_tags(self):
+        """Ensure HTML tags, comments, scripts, and styles are safely ignored during indexing."""
         sample_problem_xml = textwrap.dedent(
             """
             <problem>
@@ -3676,7 +3701,8 @@ class ProblemBlockXMLTest(unittest.TestCase):  # lint-amnesty, pylint: disable=m
             CapaFactory.create(xml=problem_xml)
 
 
-class ComplexEncoderTest(unittest.TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ComplexEncoderTest(unittest.TestCase):
+    """Tests JSON encoding of complex numbers."""
 
     def test_default(self):
         """
@@ -3690,7 +3716,8 @@ class ComplexEncoderTest(unittest.TestCase):  # lint-amnesty, pylint: disable=mi
 
 
 @skip_unless_lms
-@use_unsafe_codejail()
+@UseUnsafeCodejail()
+@pytest.mark.django_db
 class ProblemCheckTrackingTest(unittest.TestCase):
     """
     Ensure correct tracking information is included in events emitted during problem checks.
@@ -3698,9 +3725,10 @@ class ProblemCheckTrackingTest(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.maxDiff = None
+        self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_choice_answer_text(self):
+        """Verify tracked submission data for multiple choice, option, and checkbox responses."""
         xml = """\
             <problem display_name="Multiple Choice Questions">
               <optionresponse>
@@ -3772,7 +3800,9 @@ class ProblemCheckTrackingTest(unittest.TestCase):
             },
         }
 
-    def capa_factory_for_problem_xml(self, xml):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def capa_factory_for_problem_xml(self, xml):
+        """Create a custom CapaFactory for a given problem XML string."""
+
         class CustomCapaFactory(CapaFactory):
             """
             A factory for creating a Capa problem with arbitrary xml.
@@ -3782,9 +3812,8 @@ class ProblemCheckTrackingTest(unittest.TestCase):
 
         return CustomCapaFactory
 
-    def get_event_for_answers(
-        self, block, answer_input_dict
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_event_for_answers(self, block, answer_input_dict):
+        """Submit answers and return the emitted tracking event payload."""
         with patch.object(block.runtime, "publish") as mock_publish:
             block.submit_problem(answer_input_dict)
 
@@ -3796,6 +3825,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
             return event
 
     def test_numerical_textline(self):
+        """Verify tracking data for numerical textline responses."""
         factory = CapaFactory
         block = factory.create()
 
@@ -3815,21 +3845,20 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         }
 
     def test_multiple_inputs(self):
+        """Verify tracking data for multiple inputs within a single response group."""
         group_label = "Choose the correct color"
         input1_label = "What color is the sky?"
         input2_label = "What color are pine needles?"
         factory = self.capa_factory_for_problem_xml(
-            """\
+            f"""\
             <problem display_name="Multiple Inputs">
-              <optionresponse>
-                <label>{}</label>
-                <optioninput options="('yellow','blue','green')" correct="blue" label="{}"/>
-                <optioninput options="('yellow','blue','green')" correct="green" label="{}"/>
-              </optionresponse>
+            <optionresponse>
+                <label>{group_label}</label>
+                <optioninput options="('yellow','blue','green')" correct="blue" label="{input1_label}"/>
+                <optioninput options="('yellow','blue','green')" correct="green" label="{input2_label}"/>
+            </optionresponse>
             </problem>
-            """.format(
-                group_label, input1_label, input2_label
-            )
+            """
         )
         block = factory.create()
         answer_input_dict = {
@@ -3865,11 +3894,11 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         input1_label = "input 1 label"
         input2_label = "input 2 label"
         factory = self.capa_factory_for_problem_xml(
-            """\
+            f"""\
             <problem display_name="Woo Hoo">
                 <optionresponse>
-                   <label>{}</label>
-                   <optioninput label="{}">
+                   <label>{group_label}</label>
+                   <optioninput label="{input1_label}">
                        <option correct="True" label="Good Job">
                            apple
                            <optionhint>
@@ -3884,7 +3913,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
                        </option>
                    </optioninput>
 
-                   <optioninput label="{}">
+                   <optioninput label="{input2_label}">
                        <option correct="True">
                            apple
                            <optionhint>
@@ -3900,9 +3929,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
                    </optioninput>
                  </optionresponse>
             </problem>
-            """.format(
-                group_label, input1_label, input2_label
-            )
+            """
         )
         block = factory.create()
 
@@ -3934,6 +3961,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         }
 
     def test_rerandomized_inputs(self):
+        """Ensure variant seed is included in tracking data for rerandomized problems."""
         factory = CapaFactory
         block = factory.create(rerandomize=RANDOMIZATION.ALWAYS)
 
@@ -3955,11 +3983,13 @@ class ProblemCheckTrackingTest(unittest.TestCase):
     @pytest.mark.django_db
     @patch.object(XQueueInterface, "_http_post")
     def test_file_inputs(self, mock_xqueue_post):
+        """Verify tracking data for file submission and custom response inputs."""
         fnames = ["prog1.py", "prog2.py", "prog3.py"]
         fpaths = [os.path.join(DATA_DIR, "capa", fname) for fname in fnames]
-        fileobjs = [open(fpath) for fpath in fpaths]
-        for fileobj in fileobjs:
-            self.addCleanup(fileobj.close)
+        fileobjs = []
+        for fpath in fpaths:
+            with open(fpath, encoding="utf-8") as f:
+                fileobjs.append(f.read())
 
         factory = CapaFactoryWithFiles
         block = factory.create()
@@ -3976,7 +4006,7 @@ class ProblemCheckTrackingTest(unittest.TestCase):
         assert event["submission"] == {
             factory.answer_key(2): {
                 "question": "",
-                "answer": fpaths,
+                "answer": fileobjs,
                 "response_type": "coderesponse",
                 "input_type": "filesubmission",
                 "correct": False,
@@ -4029,12 +4059,13 @@ class ProblemBlockReportGenerationTest(unittest.TestCase):
     Ensure that Capa report generation works correctly
     """
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):
         self.find_question_label_patcher = patch(
-            "xmodule.capa.capa_problem.LoncapaProblem.find_question_label", lambda self, answer_id: answer_id
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.find_question_label",
+            lambda self, answer_id: answer_id,
         )
         self.find_answer_text_patcher = patch(
-            "xmodule.capa.capa_problem.LoncapaProblem.find_answer_text",
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.find_answer_text",
             lambda self, answer_id, current_answer: current_answer,
         )
         self.find_question_label_patcher.start()
@@ -4061,7 +4092,8 @@ class ProblemBlockReportGenerationTest(unittest.TestCase):
             scope=None,
         )
 
-    def _get_block(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_block(self):
+        """Create and return a mock ProblemBlock with default test data."""
         scope_ids = Mock(block_type="problem")
         block = ProblemBlock(get_test_system(), scope_ids=scope_ids)
         block.runtime = Mock()
@@ -4069,17 +4101,20 @@ class ProblemBlockReportGenerationTest(unittest.TestCase):
         return block
 
     def test_generate_report_data_not_implemented(self):
+        """Verify report generation is not supported for non-problem blocks."""
         scope_ids = Mock(block_type="noproblem")
         block = ProblemBlock(get_test_system(), scope_ids=scope_ids)
         with pytest.raises(NotImplementedError):
             next(block.generate_report_data(iter([])))
 
     def test_generate_report_data_limit_responses(self):
+        """Ensure report generation respects the response limit."""
         block = self._get_block()
         report_data = list(block.generate_report_data(self._mock_user_state_generator(), 2))
         assert 2 == len(report_data)
 
     def test_generate_report_data_dont_limit_responses(self):
+        """Verify all responses are included when no limit is provided."""
         block = self._get_block()
         user_count = 5
         response_count = 10
@@ -4094,16 +4129,18 @@ class ProblemBlockReportGenerationTest(unittest.TestCase):
         assert (user_count * response_count) == len(report_data)
 
     def test_generate_report_data_skip_dynamath(self):
+        """Ensure Dynamath responses are excluded from reports."""
         block = self._get_block()
         iterator = iter([self._user_state(suffix="_dynamath")])
         report_data = list(block.generate_report_data(iterator))
         assert 0 == len(report_data)
 
     def test_generate_report_data_report_loncapa_error(self):
+        """Verify LonCapa errors are captured and reported instead of aborting."""
         # Test to make sure reports continue despite loncappa errors, and write them into the report.
         block = self._get_block()
-        with patch("xmodule.capa_block.LoncapaProblem") as mock_LoncapaProblem:
-            mock_LoncapaProblem.side_effect = LoncapaProblemError
+        with patch("xmodule.capa_block.LoncapaProblem") as mock_loncapa_problem:
+            mock_loncapa_problem.side_effect = LoncapaProblemError
             report_data = list(
                 block.generate_report_data(
                     self._mock_user_state_generator(

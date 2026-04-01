@@ -7,11 +7,11 @@ import logging
 import re
 
 from django.conf import settings
+from xblock.fields import Date
 
 from openedx.core.djangolib.markup import HTML
 from openedx.core.lib.courses import course_image_url
 from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.fields import Date  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -77,6 +77,7 @@ class CourseDetails:
         self.self_paced = None
         self.learning_info = []
         self.instructor_info = []
+        self.has_changes = None
 
     @classmethod
     def fetch_about_attribute(cls, course_key, attribute):
@@ -127,6 +128,7 @@ class CourseDetails:
         course_details.video_thumbnail_image_asset_path = course_image_url(block, 'video_thumbnail_image')
         course_details.language = block.language
         course_details.self_paced = block.self_paced
+        course_details.has_changes = modulestore().has_changes(block)
         course_details.learning_info = block.learning_info
         course_details.instructor_info = block.instructor_info
         course_details.title = block.display_name

@@ -4,6 +4,7 @@
 import datetime
 from tempfile import mkdtemp
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.test import TestCase
@@ -11,12 +12,10 @@ from fs.osfs import OSFS
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from pytz import UTC
 from xblock.core import XBlock
-from xblock.fields import Integer, Scope, String
+from xblock.fields import Date, Integer, Scope, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
-from xmodule.fields import Date
 from xmodule.modulestore.inheritance import InheritanceMixin, compute_inherited_metadata
 from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
 from xmodule.tests import DATA_DIR
@@ -335,7 +334,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         assert child.due is None
 
         # Check that the child hasn't started yet
-        assert datetime.datetime.now(UTC) <= child.start
+        assert datetime.datetime.now(ZoneInfo("UTC")) <= child.start
 
     def override_metadata_check(self, block, child, course_due, child_due):
         """
@@ -429,7 +428,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
 
         def check_for_key(key, node, value):
             "recursive check for presence of key"
-            print(f"Checking {str(node.location)}")
+            print(f"Checking {str(node.usage_key)}")
             assert getattr(node, key) == value
             for c in node.get_children():
                 check_for_key(key, c, value)
@@ -443,8 +442,8 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         toy = self.get_course('toy')
         two_toys = self.get_course('two_toys')
 
-        assert toy.url_name == '2012_Fall'
-        assert two_toys.url_name == 'TT_2012_Fall'
+        assert toy.usage_key.block_id == '2012_Fall'
+        assert two_toys.usage_key.block_id == 'TT_2012_Fall'
 
         toy_ch = toy.get_children()[0]
         two_toys_ch = two_toys.get_children()[0]
@@ -514,7 +513,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         assert len(chapters) == 5
 
         ch2 = chapters[1]
-        assert ch2.url_name == 'secret:magic'
+        assert ch2.usage_key.block_id == 'secret:magic'
 
         print("Ch2 location: ", ch2.location)
 
@@ -568,8 +567,8 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         for i in (2, 3):
             video = sections[i]
             # Name should be 'video_{hash}'
-            print(f"video {i} url_name: {video.url_name}")
-            assert len(video.url_name) == (len('video_') + 12)
+            print(f"video {i} url_name: {video.usage_key.block_id}")
+            assert len(video.usage_key.block_id) == (len('video_') + 12)
 
     def test_poll_and_conditional_import(self):
         modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'])

@@ -95,7 +95,7 @@ class TestSimulatePublish(SharedModuleStoreTestCase):
             receivers=default_receivers,
             courses=None,
             delay=0,
-            force_lms=False,
+            force_lms=True,
             skip_ccx=False,
             args_from_database=False
         )
@@ -155,12 +155,12 @@ class TestSimulatePublish(SharedModuleStoreTestCase):
 
         # Add a config
         config = SimulateCoursePublishConfig.current()
-        config.arguments = '--delay 20 --dry-run'
+        config.arguments = '--delay 20 --dry-run --force-lms '
         config.enabled = True
         config.save()
 
         with LogCapture(LOGGER_NAME) as log:
-            call_command('simulate_publish')
+            call_command('simulate_publish', '--force-lms')
 
             log.check_present(
                 (

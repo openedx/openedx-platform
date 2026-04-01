@@ -361,8 +361,8 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     """
 
     ENABLED_CACHES = ['default']
-    TOTAL_QUERY_COUNT = 26
-    FULL_RESPONSE_FIELD_COUNT = 29
+    TOTAL_QUERY_COUNT = 25
+    FULL_RESPONSE_FIELD_COUNT = 28
 
     def setUp(self):
         super().setUp()
@@ -492,19 +492,19 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         ("client", "user"),
     )
     @ddt.unpack
-    def test_regsitration_activation_key(self, api_client, user):
+    def test_regsitration_activation_key_not_exposed(self, api_client, user):
         """
-        Test that registration activation key has a value.
+        Test that activation_key is NOT returned in the account API response.
 
-        UserFactory does not auto-generate registration object for the test users.
-        It is created only for users that signup via email/API.  Therefore, activation key has to be tested manually.
+        The activation_key is a secret used for email verification and must not be
+        exposed via the API, as doing so allows bypassing email verification.
         """
         self.create_user_registration(self.user)
 
         client = self.login_client(api_client, user)
         response = self.send_get(client)
 
-        assert response.data["activation_key"] is not None
+        assert "activation_key" not in response.data
 
     def test_successful_get_account_by_email(self):
         """
@@ -815,12 +815,12 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
             assert data['time_zone'] is None
 
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
-        verify_get_own_information(self._get_num_queries(24))
+        verify_get_own_information(self._get_num_queries(23))
 
         # Now make sure that the user can get the same information, even if not active
         self.user.is_active = False
         self.user.save()
-        verify_get_own_information(self._get_num_queries(16))
+        verify_get_own_information(self._get_num_queries(15))
 
     def test_get_account_empty_string(self):
         """
@@ -835,7 +835,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         legacy_profile.save()
 
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
-        with self.assertNumQueries(self._get_num_queries(24), table_ignorelist=WAFFLE_TABLES):
+        with self.assertNumQueries(self._get_num_queries(23), table_ignorelist=WAFFLE_TABLES):
             response = self.send_get(self.client)
         for empty_field in ("level_of_education", "gender", "country", "state", "bio",):
             assert response.data[empty_field] is None

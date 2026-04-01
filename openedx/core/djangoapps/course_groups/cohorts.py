@@ -319,7 +319,7 @@ def migrate_cohort_settings(course):
     return cohort_settings
 
 
-def get_course_cohorts(course=None, course_id=None, assignment_type=None):
+def get_course_cohorts(course=None, course_id=None, assignment_type=None, ordering='asc'):
     """
     Get a list of all the cohorts in the given course. This will include auto cohorts,
     regardless of whether or not the auto cohorts include any users.
@@ -327,6 +327,8 @@ def get_course_cohorts(course=None, course_id=None, assignment_type=None):
     Arguments:
         course: the course for which cohorts should be returned
         assignment_type: cohort assignment type
+        ordering: sort direction for results by name. Use 'desc' for descending order.
+            Any other value (including the default 'asc') results in ascending order.
 
     Returns:
         A list of CourseUserGroup objects. Empty if there are no cohorts. Does
@@ -343,6 +345,11 @@ def get_course_cohorts(course=None, course_id=None, assignment_type=None):
         group_type=CourseUserGroup.COHORT
     )
     query_set = query_set.filter(cohort__assignment_type=assignment_type) if assignment_type else query_set
+    ordering = ordering.lower()
+    if ordering not in ('asc', 'desc'):
+        raise ValueError(f"Invalid ordering value '{ordering}'. Must be 'asc' or 'desc'.")
+    sort_field = '-name' if ordering == 'desc' else 'name'
+    query_set = query_set.order_by(sort_field)
     return list(query_set)
 
 

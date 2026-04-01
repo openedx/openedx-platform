@@ -1,0 +1,28 @@
+{% load i18n %}
+<table
+    border="0"
+    cellpadding="0"
+    cellspacing="0"
+    style="background: #00262b; color: white; width: 100%; padding: 2rem;"
+>
+    <tbody>
+        <tr align="right">
+            <td>
+                <a href="{{unsubscribe_url}}" rel="noopener noreferrer" target="_blank" style="color: white; text-decoration: none; font-size: 12px; line-height: 10px">
+                    {% trans "Unsubscribe" as tmsg %}{{ tmsg | force_escape }}
+                </a>
+            </td>
+        </tr>
+        <tr align="center">
+            <td>
+                <img src="{{ logo_notification_cadence_url }}" style="width: 64px" height="auto" alt="logo_url" />
+            </td>
+        </tr>
+        <tr style="height: 20px"></tr>
+        <tr align="center">
+            <td style="font-family: Inter, Arial, Verdana, sans-serif; font-size: 32px; font-style: normal; font-weight: 700; line-height: 36px">
+                    {% trans "Recent activity" as tmsg %}{{ tmsg | force_escape }}
+            </td>
+        </tr>
+    </tbody>
+</table>

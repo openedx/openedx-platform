@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+"""Utilities for managing course code libraries and sandbox execution."""
 
 import re
 
@@ -51,8 +51,8 @@ def get_python_lib_zip(contentstore, context_key: LearningContextKey):
     zip_lib = contentstore().find(asset_key, throw_on_not_found=False)
     if zip_lib is not None:
         return zip_lib.data
-    else:
-        return None
+
+    return None
 
 
 class SandboxService:

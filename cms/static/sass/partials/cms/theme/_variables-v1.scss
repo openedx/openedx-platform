@@ -305,12 +305,14 @@ $state-danger-border: darken($state-danger-bg, 5%) !default;
 
 $text-dark-black-blue: #2c3e50;
 
-$primary: #0a3055 !default;
+// The LMS legacy SCSS rules expect the primary color in a var called
+// 'primary-base', not 'primary'. Due to bootstrap variable name conflict overlaps.
+$primary-base: #0a3055 !default;
 $btn-border-radius: 6px !default;
 $input-border-radius: 6px !default;
 $text-color: #454545 !default;
 $light-background-color: #e1dddb !default;
-$border-color: #707070 !default;
+$border-color-base: #707070 !default;
 $base-font-size: 18px !default;
 $dark: #212529;
 

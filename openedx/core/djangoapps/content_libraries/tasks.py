@@ -4,11 +4,11 @@ Celery tasks for Content Libraries.
 Architecture note:
 
     Several functions in this file manage the copying/updating of blocks in modulestore
-    and learning core. These operations should only be performed within the context of CMS.
+    and openedx_content. These operations should only be performed within the context of CMS.
     However, due to existing edx-platform code structure, we've had to define the functions
     in shared source tree (openedx/) and the tasks are registered in both LMS and CMS.
 
-    To ensure that we're not accidentally importing things from learning core in the LMS context,
+    To ensure that we're not accidentally importing things from openedx_content in the LMS context,
     we use ensure_cms throughout this module.
 
     A longer-term solution to this issue would be to move the content_libraries app to cms:
@@ -57,9 +57,9 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_PUBLISHED,
     LIBRARY_CONTAINER_UPDATED
 )
-from openedx_learning.api import authoring as authoring_api
-from openedx_learning.api.authoring import create_zip_file as create_lib_zip_file
-from openedx_learning.api.authoring_models import DraftChangeLog, PublishLog
+from openedx_content import api as content_api
+from openedx_content.api import create_zip_file as create_lib_zip_file
+from openedx_content.models_api import DraftChangeLog, PublishLog
 from path import Path
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
@@ -104,7 +104,9 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
     """
     publish_log = PublishLog.objects.get(pk=publish_log_pk)
     library_key = LibraryLocatorV2.from_string(library_key_str)
-    affected_entities = publish_log.records.select_related("entity", "entity__container", "entity__component").all()
+    affected_entities = publish_log.records.select_related(
+        "entity", "entity__container", "entity__container__container_type", "entity__component",
+    ).all()
     affected_containers: set[LibraryContainerLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):
@@ -122,9 +124,13 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
             # Publishing a container will auto-publish its children, but publishing a single component or all changes
             # in the library will NOT usually include any parent containers. But we do need to notify listeners that the
             # parent container(s) have changed, e.g. so the search index can update the "has_unpublished_changes"
-            for parent_container in api.get_containers_contains_item(usage_key):
-                affected_containers.add(parent_container.container_key)
-                # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    affected_containers.add(parent_container.container_key)
+                    # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
+            except api.ContentLibraryBlockNotFound:
+                # The component has been deleted.
+                pass
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
             affected_containers.add(container_key)
@@ -183,7 +189,7 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
     try:
         draft_change_log = DraftChangeLog.objects.get(id=draft_change_log_id)
     except DraftChangeLog.DoesNotExist:
-        # When a revert operation is a no-op, Learning Core deletes the empty
+        # When a revert operation is a no-op, openedx_content deletes the empty
         # DraftChangeLog, so we'll assume that's what happened here.
         log.info(f"Library revert in {library_key_str} did not result in any changes.")
         return
@@ -224,8 +230,12 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
             # If any containers contain this component, their child list / component count may need to be updated
             # e.g. if this was a newly created component in the container and is now deleted, or this was deleted and
             # is now restored.
-            for parent_container in api.get_containers_contains_item(usage_key):
-                updated_container_keys.add(parent_container.container_key)
+            # TODO: we should be able to rewrite this to use the "side effects" functionality of the publishing API.
+            try:
+                for parent_container in api.get_containers_contains_item(usage_key):
+                    updated_container_keys.add(parent_container.container_key)
+            except api.ContentLibraryBlockNotFound:
+                pass  # The item 'usage_key' has been deleted. But shouldn't we still handle that?
 
             # TODO: do we also need to send CONTENT_OBJECT_ASSOCIATIONS_CHANGED for this component, or is
             # LIBRARY_BLOCK_UPDATED sufficient?
@@ -244,7 +254,7 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
             )
         # If any collections contain this entity, their item count may need to be updated, e.g. if this was a
         # newly created component in the collection and is now deleted, or this was deleted and is now re-added.
-        for parent_collection in authoring_api.get_entity_collections(
+        for parent_collection in content_api.get_entity_collections(
             record.entity.learning_package_id, record.entity.key,
         ):
             collection_key = api.library_collection_locator(
@@ -640,7 +650,7 @@ class LibraryRestoreTask(UserTask):
 
             TASK_LOGGER.info('Restoring learning package from temporary file %s', tmp_file.name)
 
-            result = authoring_api.load_learning_package(tmp_file.name, user=user)
+            result = content_api.load_learning_package(tmp_file.name, user=user)
 
             # If there was an error during the load, fail the task with the error log
             if result.get("status") == "error":

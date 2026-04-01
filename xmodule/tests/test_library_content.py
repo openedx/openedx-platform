@@ -736,9 +736,9 @@ class TestLibraryContentAnalytics(LegacyLibraryContentTest):
 )
 @patch('xmodule.html_block.HtmlBlock.author_view', dummy_render, create=True)
 @patch('xmodule.x_module.ModuleStoreRuntime.applicable_aside_types', lambda self, block: [])
-class TestMigratedLibraryContentRender(LegacyLibraryContentTest):
+class TestLegacyLibraryContentBlockMigration(LegacyLibraryContentTest):
     """
-    Rendering unit tests for LegacyLibraryContentBlock
+    Unit tests for LegacyLibraryContentBlock
     """
 
     def setUp(self):
@@ -747,16 +747,14 @@ class TestMigratedLibraryContentRender(LegacyLibraryContentTest):
         super().setUp()
         user = UserFactory()
         self._sync_lc_block_from_library()
-        self.organization = OrganizationFactory()
-        self.lib_key_v2 = LibraryLocatorV2.from_string(
-            f"lib:{self.organization.short_name}:test-key"
-        )
+        self.organization = OrganizationFactory(short_name="myorg")
+        self.lib_key_v2 = LibraryLocatorV2.from_string("lib:myorg:mylib")
         lib_api.create_library(
             org=self.organization,
-            slug=self.lib_key_v2.slug,
-            title="Test Library",
+            slug="mylib",
+            title="My Test V2 Library",
         )
-        self.library_v2 = lib_api.ContentLibrary.objects.get(slug=self.lib_key_v2.slug)
+        self.library_v2 = lib_api.ContentLibrary.objects.get(slug="mylib")
         api.start_migration_to_library(
             user=user,
             source_key=self.library.location.library_key,
@@ -769,6 +767,43 @@ class TestMigratedLibraryContentRender(LegacyLibraryContentTest):
         )
         # Migrate block
         self.lc_block.upgrade_to_v2_library(None, None)
+
+    def test_migration_of_fields(self):
+        """
+        Test that the LC block migration correctly updates the metadata of the LC block and its children.
+
+        This tests only the simplest state: The source lib has been migrated with forwarding, exactly once,
+        and the LC block has also been migrated.
+
+        TODO(https://github.com/openedx/edx-platform/issues/37837):
+        It would be good to also test more cases, including:
+        * When migration occurs which is non-forwarding, it does *not* affect the childen of this block.
+        * When the library migration HAS happend but the LC block migration HASN'T YET, then the fields of
+          the block and its children will be unchanged, but the user will be prompted to upgrade.
+        * When some or all of the blocks already exist in the target library before the migration, then
+          the migration target versions will NOT all be 1, and the upstream_versions should reflect that.
+        * When the target library blocks have been edited and published AFTER the legacy library migration
+          but BEFORE the LC block migration, then executing the LC block migration will set upstream_version
+          based on the migration target versions, NOT the latest versions.
+        """
+        assert self.lc_block.is_migrated_to_v2 is True
+        children = self.lc_block.get_children()
+        assert len(children) == len(self.lib_blocks)
+        # The children's legacy library blocks have been migrated to a V2 library.
+        # We expect that each child's `upstream` has been updated to point at
+        # the target of each library block's migration.
+        assert children[0].upstream == "lb:myorg:mylib:html:html_1"
+        assert children[1].upstream == "lb:myorg:mylib:html:html_2"
+        assert children[2].upstream == "lb:myorg:mylib:html:html_3"
+        assert children[3].upstream == "lb:myorg:mylib:html:html_4"
+        # We also expect that each child's `upstream_version` has been set to the
+        # version of the migrated library block at the time of its migration, which
+        # we are assuming is `1` (i.e., the first version, as the blocks did not
+        # previously exist in the target library).
+        assert children[0].upstream_version == 1
+        assert children[1].upstream_version == 1
+        assert children[2].upstream_version == 1
+        assert children[3].upstream_version == 1
 
     def test_preview_view(self):
         """ Test preview view rendering """

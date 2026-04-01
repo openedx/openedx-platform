@@ -308,6 +308,14 @@
         bottom: 30px;
       }
     }
+
+    .fullscreen-button {
+      height: 44px;
+      width: 44px;
+      position: absolute;
+      right: 30px;
+      z-index: 10;
+    }
   }
 
 
@@ -387,6 +395,48 @@
         overflow-y: auto;
         overflow-x: hidden;
         padding: 0;
+      }
+    }
+  }
+
+  // fullscreen modals - component editors
+  .modal-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+
+
+    // Set the components to flex so that they can grow
+    div,
+    form {
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+
+      // Set the header to not grow
+      header,
+      &.modal-header {
+        flex-grow: 0;
+      }
+
+    }
+
+    ul {
+      flex-grow: 1;
+
+      // Reset the divs inside the ul to preserve previous styling
+      div,
+      form {
+        display: unset;
+        flex-direction: unset;
+        flex-grow: unset;
+      }
+    }
+
+    &.modal-editor {
+      .modal-content {
+        padding: 0px;
       }
     }
   }

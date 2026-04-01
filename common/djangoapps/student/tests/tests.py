@@ -6,9 +6,9 @@ import logging
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import ddt
-import pytz
 from config_models.models import cache
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -81,7 +81,7 @@ class CourseEndingTest(ModuleStoreTestCase):
         course = CourseOverviewFactory.create(
             end_of_course_survey_url=survey_url,
             certificates_display_behavior=CertificatesDisplayBehaviors.END,
-            end=datetime.now(pytz.UTC) - timedelta(days=2)
+            end=datetime.now(ZoneInfo("UTC")) - timedelta(days=2)
         )
         cert = GeneratedCertificateFactory.create(
             user=user,
@@ -287,7 +287,7 @@ class CourseEndingTest(ModuleStoreTestCase):
         course = CourseOverviewFactory.create(
             end_of_course_survey_url=survey_url,
             certificates_display_behavior=CertificatesDisplayBehaviors.END,
-            end=datetime.now(pytz.UTC) - timedelta(days=2),
+            end=datetime.now(ZoneInfo("UTC")) - timedelta(days=2),
         )
         enrollment = CourseEnrollmentFactory(user=user, course_id=course.id, mode=CourseMode.VERIFIED)
 
@@ -314,7 +314,7 @@ class CourseEndingTest(ModuleStoreTestCase):
         course = CourseOverviewFactory.create(
             end_of_course_survey_url=survey_url,
             certificates_display_behavior=CertificatesDisplayBehaviors.END,
-            end=datetime.now(pytz.UTC) - timedelta(days=2),
+            end=datetime.now(ZoneInfo("UTC")) - timedelta(days=2),
         )
         cert_status = {'status': 'generating', 'mode': 'honor', 'uuid': None}
         enrollment = CourseEnrollmentFactory(user=user, course_id=course.id, mode=CourseMode.VERIFIED)
@@ -412,14 +412,14 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             course_id=self.course.id,
             mode_slug='verified',
             mode_display_name='Verified',
-            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=1)
         )
         enrollment = CourseEnrollment.enroll(self.user, self.course.id)
         course_mode_info = complete_course_mode_info(self.course.id, enrollment)
         assert course_mode_info['show_upsell']
         assert course_mode_info['days_for_upsell'] == 1
 
-        verified_mode.expiration_datetime = datetime.now(pytz.UTC) + timedelta(days=-1)
+        verified_mode.expiration_datetime = datetime.now(ZoneInfo("UTC")) + timedelta(days=-1)
         verified_mode.save()
         course_mode_info = complete_course_mode_info(self.course.id, enrollment)
         assert not course_mode_info['show_upsell']
@@ -434,13 +434,13 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             course_id=self.course.id,
             mode_slug='verified',
             mode_display_name='verified',
-            expiration_datetime=datetime.now(pytz.UTC) - timedelta(days=1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
         )
 
         CourseEnrollment.enroll(self.user, self.course.id, mode='honor')
 
-        self.course.start = datetime.now(pytz.UTC) - timedelta(days=2)
-        self.course.end = datetime.now(pytz.UTC) - timedelta(days=1)
+        self.course.start = datetime.now(ZoneInfo("UTC")) - timedelta(days=2)
+        self.course.end = datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
         self.course.display_name = "Omega"
         self.course = self.update_course(self.course, self.user.id)
 
@@ -482,12 +482,12 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             course_id=self.course.id,
             mode_slug='verified',
             mode_display_name='verified',
-            expiration_datetime=datetime.now(pytz.UTC) - timedelta(days=1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
         )
         CourseEnrollment.enroll(self.user, self.course.id, mode='honor')
-        self.course.certificate_available_date = datetime.now(pytz.UTC) - timedelta(days=1)
-        self.course.start = datetime.now(pytz.UTC) - timedelta(days=2)
-        self.course.end = datetime.now(pytz.UTC) - timedelta(days=1)
+        self.course.certificate_available_date = datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
+        self.course.start = datetime.now(ZoneInfo("UTC")) - timedelta(days=2)
+        self.course.end = datetime.now(ZoneInfo("UTC")) - timedelta(days=1)
         self.course.display_name = 'Omega'
         self.course.course_organization = 'Omega Org'
         self.course = self.update_course(self.course, self.user.id)
@@ -593,7 +593,7 @@ class DashboardTest(ModuleStoreTestCase, TestVerificationBase):
             course_id=self.course.id,
             mode_slug='verified',
             mode_display_name='Verified',
-            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=1)
+            expiration_datetime=datetime.now(ZoneInfo("UTC")) + timedelta(days=1)
         )
         enrollment = CourseEnrollment.enroll(self.user, self.course.id, mode=enrollment_mode)
         return complete_course_mode_info(self.course.id, enrollment)

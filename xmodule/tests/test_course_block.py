@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime, timedelta
 import sys
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from dateutil import parser
@@ -14,7 +15,6 @@ from django.test import override_settings
 from fs.memoryfs import MemoryFS
 from opaque_keys.edx.keys import CourseKey
 import pytest
-from pytz import utc
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from openedx.core.lib.teams_config import TeamsConfig, DEFAULT_COURSE_RUN_MAX_TEAM_SIZE
@@ -27,9 +27,9 @@ from xmodule.modulestore.exceptions import InvalidProctoringProvider
 ORG = 'test_org'
 COURSE = 'test_course'
 
-NOW = datetime.strptime('2013-01-01T01:00:00', '%Y-%m-%dT%H:%M:00').replace(tzinfo=utc)
+NOW = datetime.strptime('2013-01-01T01:00:00', '%Y-%m-%dT%H:%M:00').replace(tzinfo=ZoneInfo("UTC"))
 
-_TODAY = datetime.now(utc)
+_TODAY = datetime.now(ZoneInfo("UTC"))
 _LAST_WEEK = _TODAY - timedelta(days=7)
 _NEXT_WEEK = _TODAY + timedelta(days=7)
 
@@ -42,9 +42,7 @@ class CourseFieldsTestCase(unittest.TestCase):  # lint-amnesty, pylint: disable=
 
     @ddt.data(True, False)
     def test_default_enrollment_start_date(self, should_have_default_enroll_start):
-        features = settings.FEATURES.copy()
-        features['CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE'] = should_have_default_enroll_start
-        with override_settings(FEATURES=features):
+        with override_settings(CREATE_COURSE_WITH_DEFAULT_ENROLLMENT_START_DATE=should_have_default_enroll_start):
             # reimport, so settings override could take effect
             del sys.modules['xmodule.course_block']
             import xmodule.course_block  # lint-amnesty, pylint: disable=redefined-outer-name, reimported

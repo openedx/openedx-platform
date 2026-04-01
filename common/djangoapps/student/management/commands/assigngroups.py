@@ -5,10 +5,10 @@ import json
 import random
 import sys
 from textwrap import dedent
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand
-from pytz import UTC
 
 from common.djangoapps.student.models import UserTestGroup
 
@@ -75,7 +75,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
             utg = UserTestGroup()
             utg.name = group
             utg.description = json.dumps({"description": options['description']},  # lint-amnesty, pylint: disable=too-many-function-args
-                                         {"time": datetime.datetime.now(UTC).isoformat()})
+                                         {"time": datetime.datetime.now(ZoneInfo("UTC")).isoformat()})
             group_objects[group] = utg
             group_objects[group].save()
 

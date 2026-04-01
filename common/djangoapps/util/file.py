@@ -5,6 +5,7 @@ Utility methods related to file handling.
 
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -12,7 +13,6 @@ from django.core.files.storage import DefaultStorage
 from django.utils.text import get_valid_filename
 from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
-from pytz import UTC
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
@@ -145,7 +145,7 @@ def course_and_time_based_filename_generator(course_id, base_name):
     return "{course_prefix}_{base_name}_{timestamp_str}".format(
         course_prefix=course_filename_prefix_generator(course_id),
         base_name=get_valid_filename(base_name),
-        timestamp_str=datetime.now(UTC).strftime("%Y-%m-%d-%H%M%S")
+        timestamp_str=datetime.now(ZoneInfo("UTC")).strftime("%Y-%m-%d-%H%M%S")
     )
 
 

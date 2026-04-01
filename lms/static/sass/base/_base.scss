@@ -6,7 +6,7 @@
 // }
 
 html {
-  font-family: $font-family-sans-serif;
+  font-family: var(--font-family-sans-serif);
   font-style: normal;
   line-height: 1em;
   background: theme-color("inverse");
@@ -14,11 +14,11 @@ html {
 }
 
 body {
-  font-family: $font-family-sans-serif;
+  font-family: var(--font-family-sans-serif);
   font-style: normal;
-  font-size: $font-size-base;
+  font-size: var(--font-size-base);
   line-height: 1em;
-  background: $body-bg;
+  background: var(--body-bg);
 
 }
 
@@ -33,29 +33,29 @@ h3,
 h4,
 h5,
 h6 {
-  color: $body-color;
-  font: normal 1.2em/1.2em $serif;
+  color: var(--body-color);
+  font: normal 1.2em/1.2em var(--serif);
   margin: 0;
 }
 
 h1 {
-  color: $body-color;
-  font: normal 2em/1.4em $font-family-sans-serif;
-  margin-bottom: ($baseline*1.5);
+  color: var(--body-color);
+  font: normal 2em/1.4em var(--font-family-sans-serif);
+  margin-bottom: calc(var(--baseline) * 1.5);
   text-align: center;
 }
 
 h2 {
-  color: $lighter-base-font-color;
-  font: normal 1.2em/1.2em $serif;
-  margin-bottom: ($baseline*0.75);
+  color: var(--lighter-base-font-color);
+  font: normal 1.2em/1.2em var(--serif);
+  margin-bottom: calc(var(--baseline) * 0.75);
   -webkit-font-smoothing: antialiased;
 }
 
 p + h2,
 ul + h2,
 ol + h2 {
-  margin-top: ($baseline*2);
+  margin-top: calc(var(--baseline) * 2);
 }
 
 p {
@@ -78,20 +78,20 @@ span {
 }
 
 .text-dark-grey {
-  color: $dark-gray1;
+  color: var(--dark-gray1);
   font-size: 24px;
 }
 
 p + p,
 ul + p,
 ol + p {
-  margin-top: $baseline;
+  margin-top: var(--baseline);
 }
 
 p {
   a:not(.btn),
   a:visited:not(.btn) {
-    color: $link-color;
+    color: var(--link-color);
     font: inherit;
     font-weight: inherit;
     text-decoration: none;
@@ -108,7 +108,7 @@ p {
 
 a:not(.btn),
 a:visited:not(.btn) {
-  color: $link-color;
+  color: var(--link-color);
   font: inherit;
   text-decoration: none;
 
@@ -131,12 +131,12 @@ a:visited:not(.btn) {
 }
 
 .content-wrapper {
-  margin: $baseline auto 0 auto;
-  max-width: map-get($container-max-widths, xl);
-  padding: 0 0 $baseline/2;
+  margin: var(--baseline) auto 0 auto;
+  max-width: var(--container-max-widths-xl);
+  padding: 0 0 calc(var(--baseline) / 2);
 
   @include media-breakpoint-up(md) {
-    padding: 0 $baseline $baseline/2;
+    padding: 0 var(--baseline) calc(var(--baseline) / 2);
   }
 
   @media print {
@@ -151,7 +151,7 @@ a:visited:not(.btn) {
 
   @include media-breakpoint-up(md) {
     margin: 0 auto;
-    padding: ($baseline*2) 0;
+    padding: calc(var(--baseline) * 2) 0;
     max-width: grid-width(12);
     min-width: 760px;
     width: flex-grid(12);
@@ -171,8 +171,8 @@ span.edx {
   @include clearfix();
 
   margin: 0 auto;
-  max-width: map-get($container-max-widths, xl);
-  padding: ($baseline*3) 0 ($baseline*6);
+  max-width: var(--container-max-widths-xl);
+  padding: calc(var(--baseline) * 3) 0 calc(var(--baseline) * 6);
   width: flex-grid(12);
 
   .inner-wrapper {
@@ -185,29 +185,29 @@ span.edx {
     list-style: disc;
 
     li {
-      color: $body-color;
-      font: normal 1em/1.4em $serif;
+      color: var(--body-color);
+      font: normal 1em/1.4em var(--serif);
       margin: 0;
     }
   }
 
   h1 {
-    margin-bottom: ($baseline*1.5);
+    margin-bottom: calc(var(--baseline) * 1.5);
   }
 
   h1 + hr {
-    margin-bottom: ($baseline*3);
+    margin-bottom: calc(var(--baseline) * 3);
   }
 
   p + h2,
   ul + h2,
   ol + h2 {
-    margin-top: ($baseline*2);
+    margin-top: calc(var(--baseline) * 2);
   }
 
   ul + p,
   ol + p {
-    margin-top: $baseline;
+    margin-top: var(--baseline);
   }
 }
 
@@ -227,13 +227,13 @@ mark {
 
 .ie-banner {
   display: none;
-  max-width: map-get($container-max-widths, xl);
+  max-width: var(--container-max-widths-xl);
   min-width: 720px;
   margin: auto;
   border-radius: 0 0 3px 3px;
   background: #f4f4e0;
   color: #3c3c3c;
-  padding: ($baseline/4) $baseline 8px;
+  padding: calc(var(--baseline) / 4) var(--baseline) 8px;
   font-size: 13px;
   text-align: center;
 
@@ -274,19 +274,19 @@ mark {
   display: inline-block;
   position: absolute;
   left: 0;
-  top: -($baseline*30);
+  top: calc(-1 * var(--baseline) * 30);
   overflow: hidden;
-  background: $white;
-  border-bottom: 1px solid $border-color-4;
-  padding: ($baseline*0.75) 0;
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color-4);
+  padding: calc(var(--baseline) * 0.75) 0;
 
   &:focus,
   &:active {
     @include left(45%);
-    @include margin-left(-1 * $baseline * 1.5);
+    @include margin-left(calc( -1 * var(--baseline) * 1.5));
 
     position: absolute;
-    top: $baseline/4;
+    top: calc(var(--baseline) / 4);
     width: 10%;
     height: auto;
     background-color: black;

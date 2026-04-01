@@ -1,5 +1,5 @@
 """
-Tests for Imports from Courses to Learning-Core-based Content Libraries
+Tests for Imports from Courses to openedx_content-based Content Libraries
 """
 import ddt
 from opaque_keys.edx.locator import LibraryContainerLocator

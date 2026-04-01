@@ -13,6 +13,7 @@ from subprocess import check_call
 
 import django
 import git
+from django.db.models.query import QuerySet
 
 from path import Path
 
@@ -126,7 +127,13 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    ".venv",
+    "references/docs/.venv",
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
@@ -369,10 +376,18 @@ def on_init(app):  # lint-amnesty, pylint: disable=redefined-outer-name, unused-
                     exclude.append(os.path.join(dirpath, name))
         if exclude:
             args.extend(exclude)
+
         check_call(args)
+
+
+def skip_querysets(app, what, name, obj, skip, options):
+    # If the object is a Django QuerySet, skip it
+    if isinstance(obj, QuerySet):
+        return True
+    return skip
 
 
 def setup(app):  # lint-amnesty, pylint: disable=redefined-outer-name
     """Sphinx extension: run sphinx-apidoc."""
-    event = 'builder-inited'
-    app.connect(event, on_init)
+    app.connect('builder-inited', on_init)
+    app.connect('autodoc-skip-member', skip_querysets)

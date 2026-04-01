@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework.fields import Field as SerializerField
 from xblock.fields import (
     Boolean,
+    Date,
     DateTime,
     Dict,
     Field as XBlockField,
@@ -15,7 +16,6 @@ from xblock.fields import (
     String,
 )
 from xmodule.course_block import CourseFields, EmailString
-from xmodule.fields import Date
 
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 

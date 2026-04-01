@@ -4,6 +4,12 @@ Certificates Data
 This provides Data models to represent Certificates data.
 """
 
+from dataclasses import dataclass
+from opaque_keys.edx.keys import CourseKey
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 class CertificateStatuses:
     """
@@ -81,3 +87,51 @@ class CertificateStatuses:
             bool: True if the status is refundable.
         """
         return status not in cls.NON_REFUNDABLE_STATUSES
+
+
+@dataclass
+class GeneratedCertificateData:
+    """
+    A data representation of a generated course certificate.
+
+    This class encapsulates the essential fields related to a user's generated
+    certificate, including course information, user identity, certificate status,
+    grade, and download metadata.
+
+    Attributes:
+        user (User): The user who earned the certificate.
+        course_id (CourseKey): Identifier for the course associated with the certificate.
+        verify_uuid (str): UUID used to verify the certificate.
+        grade (str): The grade achieved in the course.
+        key (str): Internal key identifier for the certificate.
+        distinction (bool): Whether the certificate was issued with distinction.
+        status (str): Current status of the certificate (e.g., 'downloadable', 'unavailable').
+        mode (str): Enrollment mode at the time of certificate issuance (e.g., 'honor', 'verified').
+        name (str): Full name as it appears on the certificate.
+        created_date (str): Timestamp for when the certificate was created.
+        modified_date (str): Timestamp for when the certificate was last modified.
+        download_uuid (str): UUID used for generating the download URL.
+        download_url (str): Direct URL to download the certificate.
+        error_reason (str): Reason for any certificate generation failure, if applicable.
+
+    Methods:
+        validate_mode(): Validates that the mode is within the supported set of enrollment modes.
+    """
+    user: User
+    course_id: CourseKey
+    verify_uuid: str = ""
+    grade: str = ""
+    key: str = ""
+    distinction: bool = False
+    status: str = "unavailable"
+    mode: str = "honor"
+    name: str = ""
+    created_date: str = None
+    modified_date: str = None
+    download_uuid: str = ""
+    download_url: str = ""
+    error_reason: str = ""
+
+    def validate_mode(self):
+        if self.mode not in self.MODES:
+            raise ValueError(f"Invalid mode: {self.mode}")

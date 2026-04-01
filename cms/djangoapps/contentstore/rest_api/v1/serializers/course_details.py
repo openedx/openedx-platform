@@ -53,6 +53,7 @@ class CourseDetailsSerializer(serializers.Serializer):
     pre_requisite_courses = serializers.ListField(child=CourseKeyField())
     run = serializers.CharField()
     self_paced = serializers.BooleanField()
+    has_changes = serializers.BooleanField()
     short_description = serializers.CharField(allow_blank=True)
     start_date = serializers.DateTimeField()
     subtitle = serializers.CharField(allow_blank=True)

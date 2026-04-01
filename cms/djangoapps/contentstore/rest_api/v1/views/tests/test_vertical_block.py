@@ -323,7 +323,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
                     "version_declined": None,
                     "error_message": None,
                     "ready_to_sync": True,
-                    "has_top_level_parent": False,
+                    "top_level_parent_key": None,
                     "downstream_customized": [],
                 },
                 "user_partition_info": expected_user_partition_info,

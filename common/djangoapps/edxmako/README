@@ -19,5 +19,5 @@ Mako: http://www.makotemplates.org/
 How to install?
 ================================================================================
 
- $ sudo python setup.py install
+ $ pip install .
 

@@ -16,7 +16,7 @@ class ContentLibrariesConfig(AppConfig):
     """
 
     name = 'openedx.core.djangoapps.content_libraries'
-    verbose_name = 'Content Libraries (Learning-Core-based)'
+    verbose_name = 'Content Libraries'
     # This is designed as a plugin for now so that
     # the whole thing is self-contained and can easily be enabled/disabled
     plugin_app = {

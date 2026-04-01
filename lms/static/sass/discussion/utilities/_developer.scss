@@ -23,8 +23,8 @@
   .search-alert {
     @include transition(none);
 
-    padding: ($baseline/2) 11px ($baseline/2) 18px;
-    background-color: $black;
+    padding: calc(var(--baseline) / 2) 11px calc(var(--baseline) / 2) 18px;
+    background-color: var(--black);
   }
 
   .search-alert-content,
@@ -39,8 +39,8 @@
 
     // alert copy
     .message {
-      font-size: $forum-small-font-size;
-      color: $white;
+      font-size: var(--forum-small-font-size);
+      color: var(--white);
 
       em {
         @extend %t-weight5;
@@ -68,14 +68,14 @@
 
       @extend %t-weight5;
 
-      padding: ($baseline/4) ($baseline/2);
-      color: $white;
-      font-size: $forum-base-font-size;
+      padding: calc(var(--baseline) / 4) calc(var(--baseline) / 2);
+      color: var(--white);
+      font-size: var(--forum-base-font-size);
 
       // reseting poorly globally scoped hover/focus state for this control
       &:hover,
       &:focus {
-        color: $white;
+        color: var(--white);
         text-decoration: none;
       }
     }

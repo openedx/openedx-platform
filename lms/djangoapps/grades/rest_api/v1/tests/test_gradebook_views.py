@@ -35,7 +35,10 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from common.djangoapps.student.tests.factories import InstructorFactory
 from common.djangoapps.student.tests.factories import StaffFactory
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import GeneratedCertificate
+from lms.djangoapps.certificates.api import (
+    get_certificate_for_user_id,
+    create_or_update_eligible_certificate_for_user
+)
 from lms.djangoapps.grades.config.waffle import BULK_MANAGEMENT, WRITABLE_GRADEBOOK
 from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.course_data import CourseData
@@ -1819,11 +1822,12 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
         Test that when we update a user's grade to failing, their certificate is marked notpassing
         """
         with override_waffle_flag(self.waffle_flag, active=True):
-            GeneratedCertificate.eligible_certificates.create(
-                user=self.student,
-                course_id=self.course.id,
-                status=CertificateStatuses.downloadable,
-            )
+            cert_args = {
+                "user": self.student,
+                "course_id": self.course.id,
+                "status": CertificateStatuses.downloadable,
+            }
+            create_or_update_eligible_certificate_for_user(**cert_args)
             self.login_staff()
             post_data = [
                 {
@@ -1853,7 +1857,7 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
                 content_type='application/json',
             )
             assert status.HTTP_202_ACCEPTED == resp.status_code
-            cert = GeneratedCertificate.certificate_for_student(self.student, self.course.id)
+            cert = get_certificate_for_user_id(self.student, self.course.id)
             assert cert.status == CertificateStatuses.notpassing
 
 

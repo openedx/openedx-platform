@@ -6,6 +6,7 @@ Serializers to be used in APIs.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework import serializers
+from user_tasks.serializers import StatusSerializer
 
 
 class CollapsedReferenceSerializer(serializers.HyperlinkedModelSerializer):
@@ -70,3 +71,13 @@ class UsageKeyField(serializers.Field):
             return UsageKey.from_string(data)
         except InvalidKeyError as err:
             raise serializers.ValidationError("Invalid usage key") from err
+
+
+class StatusSerializerWithUuid(StatusSerializer):
+    """
+    Serializer for the user task status, including uuid.
+    """
+
+    class Meta:
+        model = StatusSerializer.Meta.model
+        fields = [*StatusSerializer.Meta.fields, 'uuid']

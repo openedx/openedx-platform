@@ -22,11 +22,10 @@ from xblock.field_data import DictFieldData, FieldData, SplitFieldData
 from xblock.fields import Scope, ScopeIds
 from xblock.runtime import IdReader, KvsFieldData, MemoryIdManager, Runtime
 
-from openedx.core.djangoapps.video_config.services import VideoConfigService
 from xmodule.errortracker import make_error_tracker
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.django import XBlockI18nService
-from xmodule.services import EventPublishingService, RebindUserService
+from xmodule.services import EventPublishingService, RebindUserService, XQueueService
 from xmodule.util.sandboxing import SandboxService
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace.services import ReplaceURLService
@@ -86,6 +85,9 @@ class XBlockRuntime(RuntimeShim, Runtime):
     The main reason we cannot make the runtime a long-lived singleton is that
     the XBlock runtime API requires 'user_id' to be a property of the runtime,
     not an argument passed in when loading particular blocks.
+
+    TODO: This should probably be merged with OpenedXContentRuntime, its one and
+          only child class. See https://github.com/openedx/openedx-platform/issues/38021
     """
 
     # ** Do not add any XModule compatibility code to this class **
@@ -229,6 +231,8 @@ class XBlockRuntime(RuntimeShim, Runtime):
         Submit a grade for the block.
         """
         if self.user and not self.user.is_anonymous:
+            # TODO: we shouldn't be using an LMS API here.
+            # https://github.com/openedx/edx-platform/issues/37660
             grades_signals.SCORE_PUBLISHED.send(
                 sender=None,
                 block=block,
@@ -258,14 +262,14 @@ class XBlockRuntime(RuntimeShim, Runtime):
 
     def parse_xml_file(self, fileobj):
         # Deny access to the inherited method
-        raise NotImplementedError("XML Serialization is only supported with LearningCoreXBlockRuntime")
+        raise NotImplementedError("XML Serialization is only supported with OpenedXContentRuntime")
 
     def add_node_as_child(self, block, node):
         """
         Called by XBlock.parse_xml to treat a child node as a child block.
         """
         # Deny access to the inherited method
-        raise NotImplementedError("XML Serialization is only supported with LearningCoreXBlockRuntime")
+        raise NotImplementedError("XML Serialization is only supported with OpenedXContentRuntime")
 
     def service(self, block: XBlock, service_name: str):
         """
@@ -300,7 +304,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
 
             return DjangoXBlockUserService(
                 self.user,
-                # The value should be updated to whether the user is staff in the context when Learning Core runtime
+                # The value should be updated to whether the user is staff in the context when openedx_content runtime
                 # adds support for courses.
                 user_is_staff=self.user.is_staff,  # type: ignore
                 anonymous_user_id=self.anonymous_student_id,
@@ -343,7 +347,14 @@ class XBlockRuntime(RuntimeShim, Runtime):
         elif service_name == 'error_tracker':
             return make_error_tracker()
         elif service_name == 'video_config':
+            # Import here to avoid circular dependency
+            from openedx.core.djangoapps.video_config.services import VideoConfigService
             return VideoConfigService()
+        elif service_name == 'discussion_config_service':
+            from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+            return DiscussionConfigService()
+        elif service_name == 'xqueue':
+            return XQueueService(block)
 
         # Otherwise, fall back to the base implementation which loads services
         # defined in the constructor:

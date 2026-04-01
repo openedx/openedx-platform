@@ -26,7 +26,9 @@ def test_get_root_module_name():
     Ensure the module name function works with different xblocks.
     """
     assert get_root_module_name(LtiConsumerXBlock) == 'lti_consumer'
-    assert get_root_module_name(VideoBlock) == 'xmodule'
+
+    expected_root_module = 'xblocks_contrib' if settings.USE_EXTRACTED_VIDEO_BLOCK else 'xmodule'
+    assert get_root_module_name(VideoBlock) == expected_root_module
     assert get_root_module_name(DoneXBlock) == 'done'
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from rest_framework import serializers, fields
 
-from openedx_tagging.core.tagging.rest_api.v1.serializers import (
+from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     TaxonomyListQueryParamsSerializer,
     TaxonomySerializer,
@@ -104,6 +104,11 @@ class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
     This override `get_can_delete_objecttag` to avoid delete
     object tags if is copied.
     """
+
+    is_copied = serializers.BooleanField(read_only=True)
+
+    class Meta(ObjectTagMinimalSerializer.Meta):
+        fields = ObjectTagMinimalSerializer.Meta.fields + ["is_copied"]
 
     def get_can_delete_objecttag(self, instance):
         """

@@ -6,6 +6,7 @@ Dashboard view and supporting methods
 import datetime
 import logging
 from collections import defaultdict
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib import messages
@@ -20,7 +21,6 @@ from edx_django_utils.plugins import get_plugins_view_context
 from edx_toggles.toggles import WaffleFlag
 from opaque_keys.edx.keys import CourseKey
 from openedx_filters.learning.filters import DashboardRenderStarted
-from pytz import UTC
 
 from edx_django_utils.plugins import pluggable_override
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
@@ -108,7 +108,7 @@ def _get_recently_enrolled_courses(course_enrollments):
         list[CourseEnrollment]: A list of recent course enrollments.
     """
     seconds = DashboardConfiguration.current().recent_enrollment_time_delta
-    time_delta = (datetime.datetime.now(UTC) - datetime.timedelta(seconds=seconds))
+    time_delta = (datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(seconds=seconds))
     return [
         enrollment for enrollment in course_enrollments
         # If the enrollment has no created date, we are explicitly excluding the course
@@ -270,7 +270,7 @@ def complete_course_mode_info(course_id, enrollment, modes=None):
         mode_info['verified_bulk_sku'] = modes['verified'].bulk_sku
         # if there is an expiration date, find out how long from now it is
         if modes['verified'].expiration_datetime:
-            today = datetime.datetime.now(UTC).date()
+            today = datetime.datetime.now(ZoneInfo("UTC")).date()
             mode_info['days_for_upsell'] = (modes['verified'].expiration_datetime.date() - today).days
             mode_info['expiration_datetime'] = modes['verified'].expiration_datetime.date()
 
@@ -527,8 +527,12 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
 
     """
     user = request.user
+    account_microfrontend_url = configuration_helpers.get_value(
+        'ACCOUNT_MICROFRONTEND_URL',
+        settings.ACCOUNT_MICROFRONTEND_URL,
+    )
     if not UserProfile.objects.filter(user=user).exists():
-        return redirect(settings.ACCOUNT_MICROFRONTEND_URL)
+        return redirect(account_microfrontend_url)
 
     if learner_home_mfe_enabled():
         return redirect(settings.LEARNER_HOME_MICROFRONTEND_URL)
@@ -633,7 +637,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
                         "Go to {link_start}your Account Settings{link_end}.")
                 ).format(
                     link_start=HTML("<a href='{account_setting_page}'>").format(
-                        account_setting_page=settings.ACCOUNT_MICROFRONTEND_URL,
+                        account_setting_page=account_microfrontend_url,
                     ),
                     link_end=HTML("</a>")
                 )
@@ -902,7 +906,10 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     except DashboardRenderStarted.RenderInvalidDashboard as exc:
         response = render_to_response(exc.dashboard_template, exc.template_context)
     except DashboardRenderStarted.RedirectToPage as exc:
-        response = HttpResponseRedirect(exc.redirect_to or settings.ACCOUNT_MICROFRONTEND_URL)
+        response = HttpResponseRedirect(
+            exc.redirect_to or
+            account_microfrontend_url
+        )
     except DashboardRenderStarted.RenderCustomResponse as exc:
         response = exc.response
     else:

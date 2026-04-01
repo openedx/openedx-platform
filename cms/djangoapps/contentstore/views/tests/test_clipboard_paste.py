@@ -13,7 +13,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_UPDATED,
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
-from openedx_tagging.core.tagging.models import Tag
+from openedx_tagging.models import Tag
 from organizations.models import Organization
 from xmodule.modulestore.django import contentstore, modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course, ImmediateOnCommitMixin

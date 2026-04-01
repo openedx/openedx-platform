@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from crum import set_current_request
 from django.conf import settings
+from django.test import override_settings
 
 from common.djangoapps.util.milestones_helpers import add_prerequisite_course, fulfill_course_milestone
 from lms.djangoapps.courseware.access_response import MilestoneAccessError
@@ -56,7 +57,8 @@ class MobileAPIMilestonesMixin:
         self.init_course_access()
         self.api_response()
 
-    @patch.dict(settings.FEATURES, {'ENTRANCE_EXAMS': True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(ENTRANCE_EXAMS=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_unpassed_entrance_exam(self):
         """
         Tests the case where the user has not passed the entrance exam
@@ -65,7 +67,8 @@ class MobileAPIMilestonesMixin:
         self.init_course_access()
         self._verify_unfulfilled_milestone_response()
 
-    @patch.dict(settings.FEATURES, {'ENTRANCE_EXAMS': True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(ENTRANCE_EXAMS=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_unpassed_entrance_exam_for_staff(self):
         self._add_entrance_exam()
         self.user.is_staff = True
@@ -73,7 +76,8 @@ class MobileAPIMilestonesMixin:
         self.init_course_access()
         self.api_response()
 
-    @patch.dict(settings.FEATURES, {'ENTRANCE_EXAMS': True, 'ENABLE_MKTG_SITE': True})
+    @override_settings(ENTRANCE_EXAMS=True)
+    @patch.dict(settings.FEATURES, {'ENABLE_MKTG_SITE': True})
     def test_passed_entrance_exam(self):
         """
         Tests access when user has passed the entrance exam

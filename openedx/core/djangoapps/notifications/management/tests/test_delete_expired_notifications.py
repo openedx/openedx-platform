@@ -9,7 +9,7 @@ from django.core.management import call_command
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
-class GenerateCourseNotificationPreferencesTests(ModuleStoreTestCase):
+class TestDeleteExpiredNotification(ModuleStoreTestCase):
     """
     Tests for delete_expired_notifications management command.
     """

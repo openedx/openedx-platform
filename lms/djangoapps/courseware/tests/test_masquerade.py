@@ -16,7 +16,7 @@ from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
 
-from xmodule.capa.tests.response_xml_factory import OptionResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
 from lms.djangoapps.courseware.masquerade import (
     MASQUERADE_SETTINGS_KEY,
     CourseMasquerade,

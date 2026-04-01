@@ -2,9 +2,9 @@
 
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.test import TestCase
-from pytz import UTC
 
 from common.djangoapps.track.utils import DateTimeJSONEncoder
 
@@ -12,7 +12,7 @@ from common.djangoapps.track.utils import DateTimeJSONEncoder
 class TestDateTimeJSONEncoder(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
     def test_datetime_encoding(self):
         a_naive_datetime = datetime(2012, 5, 1, 7, 27, 10, 20000)
-        a_tz_datetime = datetime(2012, 5, 1, 7, 27, 10, 20000, tzinfo=UTC)
+        a_tz_datetime = datetime(2012, 5, 1, 7, 27, 10, 20000, tzinfo=ZoneInfo("UTC"))
         a_date = a_naive_datetime.date()
         an_iso_datetime = '2012-05-01T07:27:10.020000+00:00'
         an_iso_date = '2012-05-01'

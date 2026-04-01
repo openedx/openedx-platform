@@ -1,7 +1,7 @@
 """
 Togglable settings for Teams behavior
 """
-from edx_toggles.toggles import SettingDictToggle
+from edx_toggles.toggles import SettingToggle
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
@@ -9,8 +9,8 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 WAFFLE_NAMESPACE = "openresponseassessment"
 TEAM_SUBMISSIONS_FLAG = "team_submissions"
 
-# .. toggle_name: FEATURES['ENABLE_ORA_TEAM_SUBMISSIONS']
-# .. toggle_implementation: SettingDictToggle
+# .. toggle_name: ENABLE_ORA_TEAM_SUBMISSIONS
+# .. toggle_implementation: SettingToggle
 # .. toggle_default: False
 # .. toggle_description: Set to True to enable team-based ORA submissions.
 # .. toggle_use_cases: temporary
@@ -20,8 +20,8 @@ TEAM_SUBMISSIONS_FLAG = "team_submissions"
 # .. toggle_warning: This temporary feature toggle does not have a target removal date. This can be overridden by a
 #      course waffle flags or a waffle switch with identical name.
 # TODO: this should be moved to edx/edx-ora2
-TEAM_SUBMISSIONS_FEATURE = SettingDictToggle(
-    "FEATURES", "ENABLE_ORA_TEAM_SUBMISSIONS", default=False, module_name=__name__
+TEAM_SUBMISSIONS_FEATURE = SettingToggle(
+    "ENABLE_ORA_TEAM_SUBMISSIONS", default=False, module_name=__name__
 )
 
 

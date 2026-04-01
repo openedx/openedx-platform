@@ -12,11 +12,11 @@ on:
 jobs:
   call-upgrade-python-requirements-workflow:
     # Don't run the weekly upgrade job on forks -- it will send a weekly failure email.
-    if: github.repository == 'openedx/edx-platform' || github.event_name != 'schedule'
+    if: github.repository == 'openedx/openedx-platform' || github.event_name != 'schedule'
     uses: openedx/.github/.github/workflows/upgrade-python-requirements.yml@master
     with:
       branch: ${{ github.event.inputs.branch }}
-      team_reviewers: "wg-maintenance-edx-platform"
+      team_reviewers: "wg-maintenance-openedx-platform"
       email_address: orbi-bom@edx.org
       send_success_notification: false
     secrets:

@@ -4,77 +4,77 @@
 @mixin discussion-button() {
   display: block;
   border: 1px solid;
-  border-radius: $forum-border-radius;
+  border-radius: var(--forum-border-radius);
   height: 35px;
   background-image: none;
-  color: $white;
+  color: var(--white);
   line-height: 35px;
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
   white-space: nowrap;  // Prevent word-break in Arabic in Google Chrome
   text-shadow: none;
-  padding: 0 ($baseline*0.75);
+  padding: 0 calc(var(--baseline) * 0.75);
 }
 
 @mixin white-button {
   @include discussion-button();
 
   border-color: #aaa;
-  background-color: $white;
+  background-color: var(--white);
   color: theme-color("gray-dark");
 
   &:hover,
   &:focus {
-    background-color: $white;
+    background-color: var(--white);
   }
 }
 
 @mixin discussion-wmd-input {
-  @include border-radius($forum-border-radius, $forum-border-radius, 0, 0);
+  @include border-radius(var(--forum-border-radius), var(--forum-border-radius), 0, 0);
 
   box-sizing: border-box;
   margin-top: 0;
-  border: 1px solid $forum-color-border;
-  padding: ($baseline/2);
+  border: 1px solid var(--forum-color-border);
+  padding: calc(var(--baseline) / 2);
   width: 100%;
   height: 125px;
-  background: $forum-color-background;
-  font-size: $forum-base-font-size;
-  font-family: $font-family-sans-serif;
+  background: var(--forum-color-background);
+  font-size: var(--forum-base-font-size);
+  font-family: var(--font-family-sans-serif);
   line-height: 1.6;
 }
 
 @mixin discussion-wmd-preview-container {
-  @include border-radius(0, 0, $forum-border-radius, $forum-border-radius);
+  @include border-radius(0, 0, var(--forum-border-radius), var(--forum-border-radius));
 
   box-sizing: border-box;
-  border: 1px solid $forum-color-border;
+  border: 1px solid var(--forum-color-border);
   width: 100%;
-  background: $forum-color-background-light;
+  background: var(--forum-color-background-light);
 }
 
 @mixin discussion-new-post-wmd-preview-container {
   @include discussion-wmd-preview-container;
 
-  border-color: $forum-color-border;
+  border-color: var(--forum-color-border);
 }
 
 @mixin discussion-wmd-preview-label {
-  @include padding-left($baseline/4);
+  @include padding-left(calc(var(--baseline) / 4));
 
   padding-top: 3px;
   width: 100%;
-  color: $forum-color-editor-preview-label;
-  font-size: $forum-small-font-size;
+  color: var(--forum-color-editor-preview-label);
+  font-size: var(--forum-small-font-size);
 }
 
 @mixin discussion-wmd-preview {
-  padding: ($baseline/2) $baseline;
+  padding: calc(var(--baseline) / 2) var(--baseline);
   width: auto;
-  background-color: $forum-color-background-light;
+  background-color: var(--forum-color-background-light);
 
   ol,
   ul { // Fix up the RTL-only _reset.scss, but only in specific places
-    @include padding-left($baseline*2);
+    @include padding-left(calc(var(--baseline) * 2));
     @include padding-right(0);
   }
 

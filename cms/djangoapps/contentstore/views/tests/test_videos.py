@@ -43,12 +43,10 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..videos import (
-    ENABLE_VIDEO_UPLOAD_PAGINATION,
     KEY_EXPIRATION_IN_SECONDS,
     VIDEO_IMAGE_UPLOAD_ENABLED,
 )
 from cms.djangoapps.contentstore.video_storage_handlers import (
-    _get_default_video_image_url,
     TranscriptProvider,
     StatusDisplayStrings,
     convert_video_status,
@@ -478,24 +476,14 @@ class VideosHandlerTestCase(
             if response_video['edx_video_id'] == self.previous_uploads[0]['edx_video_id']:
                 self.assertEqual(response_video.get('transcripts', []), expected_transcripts)
 
-    def test_get_html(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertRegex(response["Content-Type"], "^text/html(;.*)?$")
-        self.assertContains(response, _get_default_video_image_url())
-        # Crude check for presence of data in returned HTML
-        for video in self.previous_uploads:
-            self.assertContains(response, video["edx_video_id"])
-        self.assertNotContains(response, 'video_upload_pagination')
-
-    @override_waffle_flag(ENABLE_VIDEO_UPLOAD_PAGINATION, active=True)
-    def test_get_html_paginated(self):
+    def test_get_redirects_to_video_uploads_url(self):
         """
-        Tests that response is paginated.
+        Test that GET requests redirect to the MFE video uploads page.
         """
+        from cms.djangoapps.contentstore.utils import get_video_uploads_url
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'video_upload_pagination')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, get_video_uploads_url(self.course.id))
 
     @override_settings(AWS_ACCESS_KEY_ID="test_key_id", AWS_SECRET_ACCESS_KEY="test_secret")
     @patch("cms.djangoapps.contentstore.video_storage_handlers.boto3.resource")
@@ -868,23 +856,6 @@ class VideosHandlerTestCase(
         self.assertEqual(response.status_code, 204)
 
         self.assert_video_status(url, edx_video_id, expected_video_status_text)
-
-    @ddt.data(True, False)
-    @patch('openedx.core.djangoapps.video_config.models.VideoTranscriptEnabledFlag.feature_enabled')
-    def test_video_index_transcript_feature_enablement(self, is_video_transcript_enabled, video_transcript_feature):
-        """
-        Test that when video transcript is enabled/disabled, correct response is rendered.
-        """
-        video_transcript_feature.return_value = is_video_transcript_enabled
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-
-        # Verify that course video button is present in the response if videos transcript feature is enabled.
-        button_html = '<button class="button course-video-settings-button">'
-        if is_video_transcript_enabled:
-            self.assertContains(response, button_html)
-        else:
-            self.assertNotContains(response, button_html)
 
 
 @ddt.ddt

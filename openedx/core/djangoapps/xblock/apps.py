@@ -18,7 +18,7 @@ class XBlockAppConfig(AppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content.
         """
         raise NotImplementedError
@@ -45,7 +45,7 @@ class LmsXBlockAppConfig(XBlockAppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content in the LMS
         """
         return dict(
@@ -68,7 +68,7 @@ class StudioXBlockAppConfig(XBlockAppConfig):
 
     def get_runtime_params(self):
         """
-        Get the LearningCoreXBlockRuntime parameters appropriate for viewing and/or
+        Get the OpenedXContentRuntime parameters appropriate for viewing and/or
         editing XBlock content in Studio
         """
         return dict(

@@ -1,0 +1,26 @@
+{% load i18n %}
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap'" rel="stylesheet" type="text/css">
+</head>
+
+<div style="margin:0; padding:0; min-width: 100%; background-color:#C9C9C9; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-smooth: never;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="line-height:1.5; max-width:600px; font-family:Inter, Arial, Verdana, sans-serif">
+        <tbody style="background-color:#f5f5f5">
+            <tr>
+                <td>
+                    {% include 'notifications/batched_email_header.html' %}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:1.5rem; background-color:white">
+                    {% include 'notifications/digest_content.html' %}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 1.5rem; background-color: #F2F0EF">
+                    {% include 'notifications/digest_footer.html' %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>

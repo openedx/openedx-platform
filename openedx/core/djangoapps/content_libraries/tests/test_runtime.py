@@ -1,5 +1,5 @@
 """
-Test the Learning-Core-based XBlock runtime and content libraries together.
+Test the openedx_content-based XBlock runtime and content libraries together.
 """
 import json
 
@@ -64,7 +64,7 @@ class ContentLibraryContentTestMixin:
 @skip_unless_cms
 class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
     """
-    Basic test of the Learning-Core-based XBlock serialization-deserialization, using XBlocks in a content library.
+    Basic test of the openedx_content-based XBlock serialization-deserialization, using XBlocks in a content library.
     """
 
     def test_html_round_trip(self):
@@ -116,7 +116,7 @@ class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
             f'<html url_name="roundtrip" display_name="Round Trip Test HTML Block"><![CDATA[{block_content}]]></html>\n'
         )
 
-        # Save the block to LC, and re-load it.
+        # Save the block to openedx_content, and re-load it.
         library_api.set_library_block_olx(usage_key, olx_1)
         library_api.publish_changes(self.library.key)
         block_saved_1 = xblock_api.load_block(usage_key, self.staff_user)
@@ -131,7 +131,7 @@ class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
         ).olx_str
         assert olx_2 == canonical_olx
 
-        # Now, save that OLX back to LC, and re-load it again.
+        # Now, save that OLX back to openedx_content, and re-load it again.
         library_api.set_library_block_olx(usage_key, olx_2)
         library_api.publish_changes(self.library.key)
         block_saved_2 = xblock_api.load_block(usage_key, self.staff_user)
@@ -149,7 +149,7 @@ class ContentLibraryOlxTests(ContentLibraryContentTestMixin, TestCase):
 
 class ContentLibraryRuntimeTests(ContentLibraryContentTestMixin, TestCase):
     """
-    Basic tests of the Learning-Core-based XBlock runtime using XBlocks in a
+    Basic tests of the openedx_content-based XBlock runtime using XBlocks in a
     content library.
     """
     def test_dndv2_sets_translator(self):
@@ -180,7 +180,7 @@ class ContentLibraryRuntimeTests(ContentLibraryContentTestMixin, TestCase):
         <problem display_name="New Multi Choice Question" max_attempts="5">
             <multiplechoiceresponse>
                 <p>This is a normal capa problem. It has "maximum attempts" set to **5**.</p>
-                <label>Learning Core is designed to store.</label>
+                <label>openedx_content is designed to store.</label>
                 <choicegroup type="MultipleChoice">
                     <choice correct="false">XBlock metadata only</choice>
                     <choice correct="true">XBlock data/metadata and associated static asset files</choice>
@@ -471,7 +471,7 @@ class ContentLibraryXBlockUserStateTest(ContentLibraryContentTestMixin, TestCase
         <problem display_name="New Multi Choice Question" max_attempts="5">
             <multiplechoiceresponse>
                 <p>This is a normal capa problem. It has "maximum attempts" set to **5**.</p>
-                <label>Learning Core is designed to store.</label>
+                <label>openedx_content is designed to store.</label>
                 <choicegroup type="MultipleChoice">
                     <choice correct="false">XBlock metadata only</choice>
                     <choice correct="true">XBlock data/metadata and associated static asset files</choice>
@@ -543,7 +543,7 @@ class ContentLibraryXBlockUserStateTest(ContentLibraryContentTestMixin, TestCase
         <problem display_name="New Multi Choice Question" max_attempts="5">
             <multiplechoiceresponse>
                 <p>This is a normal capa problem. It has "maximum attempts" set to **5**.</p>
-                <label>Learning Core is designed to store.</label>
+                <label>openedx_content is designed to store.</label>
                 <choicegroup type="MultipleChoice">
                     <choice correct="false">XBlock metadata only</choice>
                     <choice correct="true">XBlock data/metadata and associated static asset files</choice>

@@ -8,7 +8,7 @@ from unittest.mock import patch
 from django.test import override_settings, LiveServerTestCase
 from django.http import HttpRequest
 from edx_toggles.toggles.testutils import override_waffle_flag
-from openedx_tagging.core.tagging.models import Tag, Taxonomy, ObjectTag
+from openedx_tagging.models import Tag, Taxonomy, ObjectTag
 from organizations.models import Organization
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -41,9 +41,9 @@ class LanguageTaxonomyTestMixin:
         running migrations. So data created by our migrations is not present.
         In particular, the Language Taxonomy is not present. So this mixin will
         create the taxonomy, simulating the effect of the following migrations:
-            1. openedx_tagging.core.tagging.migrations.0012_language_taxonomy
+            1. openedx_tagging.migrations.0012_language_taxonomy
             2. content_tagging.migrations.0007_system_defined_org_2
-            3. openedx_tagging.core.tagging.migrations.0015_taxonomy_export_id
+            3. openedx_tagging.migrations.0015_taxonomy_export_id
         """
         super().setUp()
         Taxonomy.objects.get_or_create(id=-1, defaults={
@@ -54,7 +54,7 @@ class LanguageTaxonomyTestMixin:
             "allow_free_text": False,
             "visible_to_authors": True,
             "export_id": "-1_languages",
-            "_taxonomy_class": "openedx_tagging.core.tagging.models.system_defined.LanguageTaxonomy",
+            "_taxonomy_class": "openedx_tagging.models.system_defined.LanguageTaxonomy",
         })
         TaxonomyOrg.objects.get_or_create(taxonomy_id=-1, defaults={"org": None})
 

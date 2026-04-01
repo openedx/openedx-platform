@@ -1,6 +1,6 @@
 .forum-search {
   display: flex;
-  margin-top: $baseline;
+  margin-top: var(--baseline);
   position: relative;
 
   .search-input {
@@ -12,7 +12,7 @@
   }
 
   @include media-breakpoint-up(sm) {
-    @include margin-left($baseline);
+    @include margin-left(var(--baseline));
 
     margin-top: 0;
   }

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 from urllib.parse import urljoin
 from django.conf import settings
 from django.http import HttpResponse
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.auth.jwt.decoder import jwt_decode_handler
 from edx_rest_framework_extensions.auth.jwt.middleware import JwtAuthCookieMiddleware
@@ -154,3 +154,41 @@ class CookieTests(TestCase):
         self._assert_cookies_present(response, cookies_api.JWT_COOKIE_NAMES)
         self._assert_consistent_expires(response, num_of_unique_expires=1)
         self._assert_recreate_jwt_from_cookies(response, can_recreate=True)
+
+    @skip_unless_lms
+    def test_user_info_cookie_account_settings_uses_site_config_value(self):
+        """
+        When site config overrides ACCOUNT_MICROFRONTEND_URL, the user info cookie
+        should use that exact value for 'account_settings'.
+        """
+        siteconf_url = "https://accounts.siteconf.example"
+
+        with patch(
+            "openedx.core.djangoapps.user_authn.cookies.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            data = cookies_api._get_user_info_cookie_data(self.request, self.user)  # pylint: disable=protected-access
+
+        assert data["header_urls"]["account_settings"] == siteconf_url
+
+    @skip_unless_lms
+    def test_user_info_cookie_account_settings_falls_back_to_settings(self):
+        """
+        If site config does not override, the user info cookie should fall back to
+        settings.ACCOUNT_MICROFRONTEND_URL for 'account_settings'.
+        """
+        fallback = "https://accounts.settings.example"
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback):
+            with patch(
+                "openedx.core.djangoapps.user_authn.cookies.configuration_helpers.get_value",
+                # Simulate "no override": return the provided default
+                side_effect=lambda key, default=None, *a, **k: default,
+            ):
+                data = cookies_api._get_user_info_cookie_data(  # pylint: disable=protected-access
+                    self.request,
+                    self.user,
+                )
+
+        assert data["header_urls"]["account_settings"] == fallback

@@ -5,12 +5,12 @@ Tests for util.date_utils
 import unittest
 from datetime import datetime, timedelta, tzinfo
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import crum
 import ddt
 import pytest
 from markupsafe import Markup
-from pytz import utc
 
 from django.test.client import RequestFactory
 
@@ -21,7 +21,7 @@ from common.djangoapps.util.date_utils import (
 
 def test_get_default_time_display():
     assert get_default_time_display(None) == ""
-    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=utc)
+    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
     assert get_default_time_display(test_time) == "Mar 12, 1992 at 15:03 UTC"
 
 
@@ -32,12 +32,12 @@ def test_get_dflt_time_disp_notz():
 
 def test_get_time_disp_ret_empty():
     assert get_time_display(None) == ""
-    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=utc)
+    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
     assert get_time_display(test_time, "") == ""
 
 
 def test_get_time_display():
-    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=utc)
+    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
     assert get_time_display(test_time, 'dummy text') == "dummy text"
     assert get_time_display(test_time, '%b %d %Y') == "Mar 12 1992"
     assert get_time_display(test_time, '%b %d %Y %Z') == "Mar 12 1992 UTC"
@@ -45,15 +45,15 @@ def test_get_time_display():
 
 
 def test_get_time_pass_through():
-    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=utc)
+    test_time = datetime(1992, 3, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
     assert get_time_display(test_time) == "Mar 12, 1992 at 15:03 UTC"
     assert get_time_display(test_time, None) == "Mar 12, 1992 at 15:03 UTC"
     assert get_time_display(test_time, "%") == "Mar 12, 1992 at 15:03 UTC"
 
 
 def test_get_time_display_coerce():
-    test_time_standard = datetime(1992, 1, 12, 15, 3, 30, tzinfo=utc)
-    test_time_daylight = datetime(1992, 7, 12, 15, 3, 30, tzinfo=utc)
+    test_time_standard = datetime(1992, 1, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
+    test_time_daylight = datetime(1992, 7, 12, 15, 3, 30, tzinfo=ZoneInfo("UTC"))
     assert get_time_display(test_time_standard, None, coerce_tz="US/Pacific") == "Jan 12, 1992 at 07:03 PST"
     assert get_time_display(test_time_standard, None, coerce_tz="NONEXISTENTTZ") == "Jan 12, 1992 at 15:03 UTC"
     assert get_time_display(test_time_standard, '%b %d %H:%M', coerce_tz="US/Pacific") == "Jan 12 07:03"

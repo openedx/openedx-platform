@@ -12,6 +12,7 @@ import ddt
 from django.conf import settings
 from django.core.management import call_command
 from django.test import TestCase
+from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffle-import
@@ -234,6 +235,45 @@ class TestGoalReminderEmailCommand(TestCase):
         goal.user.save()
         send_ace_message(goal, str(uuid.uuid4()))
         assert mock_ace.called is value
+
+    def test_goals_unsubscribe_url_uses_site_config(self):
+        """Test goals unsubscribe URL uses site-configured MFE base."""
+        goal = self.make_valid_goal()
+        with mock.patch('lms.djangoapps.course_goals.management.commands.goal_reminder_email.ace.send') as mock_ace:
+            with mock.patch(
+                'lms.djangoapps.course_goals.management.commands.goal_reminder_email.configuration_helpers.get_value',
+                return_value='https://learning.siteconf',
+            ) as mock_get_value:
+                assert send_ace_message(goal, str(uuid.uuid4())) is True
+
+        assert mock_ace.call_count == 1
+        msg = mock_ace.call_args[0][0]
+        assert msg.context[
+            'goals_unsubscribe_url'
+        ] == f'https://learning.siteconf/goal-unsubscribe/{goal.unsubscribe_token}'
+        mock_get_value.assert_any_call('LEARNING_MICROFRONTEND_URL', settings.LEARNING_MICROFRONTEND_URL)
+
+    def test_goals_unsubscribe_url_falls_back_to_settings(self):
+        """Test goals unsubscribe URL falls back to settings when site config is absent."""
+        default_url = 'https://learning.default'
+        goal = self.make_valid_goal()
+        with override_settings(LEARNING_MICROFRONTEND_URL=default_url):
+            with mock.patch(
+                'lms.djangoapps.course_goals.management.commands.goal_reminder_email.ace.send',
+            ) as mock_ace:
+                with mock.patch(
+                    (
+                        'lms.djangoapps.course_goals.management.commands.'
+                        'goal_reminder_email.configuration_helpers.get_value'
+                    ),
+                    side_effect=lambda k, d: d,
+                ) as mock_get_value:
+                    assert send_ace_message(goal, str(uuid.uuid4())) is True
+
+        assert mock_ace.call_count == 1
+        msg = mock_ace.call_args[0][0]
+        assert msg.context['goals_unsubscribe_url'] == f'{default_url}/goal-unsubscribe/{goal.unsubscribe_token}'
+        mock_get_value.assert_any_call('LEARNING_MICROFRONTEND_URL', default_url)
 
 
 class TestGoalReminderEmailSES(TestCase):

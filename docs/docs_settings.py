@@ -18,6 +18,7 @@ from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
     VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,
     UPDATE_SEARCH_INDEX_JOB_QUEUE,
     FRONTEND_REGISTER_URL,
+    ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,
 )
 
 # Turn on all the boolean feature flags, so that conditionally included

@@ -16,6 +16,7 @@ Examples of html5 videos for manual testing:
 import copy
 import json
 import logging
+import warnings
 from collections import OrderedDict, defaultdict
 from operator import itemgetter
 
@@ -38,18 +39,17 @@ from openedx.core.lib.license import LicenseMixin
 from xmodule.contentstore.content import StaticContent
 from xmodule.editing_block import EditingMixin
 from xmodule.exceptions import NotFoundError
-from xmodule.modulestore.inheritance import InheritanceKeyValueStore, own_metadata
+from xmodule.modulestore.inheritance import InheritanceKeyValueStore
 from xmodule.raw_block import EmptyDataRawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.video_block import manage_video_subtitles_save
 from xmodule.x_module import (
     PUBLIC_VIEW, STUDENT_VIEW,
-    ResourceTemplates, shim_xmodule_js,
+    ResourceTemplates,
     XModuleMixin, XModuleToXBlockMixin,
 )
 from xmodule.xml_block import XmlMixin, deserialize_field, is_pointer_tag, name_to_pathname
-from .bumper_utils import bumperize
+from xblocks_contrib.video.bumper_utils import bumperize
 from openedx.core.djangoapps.video_config.transcripts_utils import (
     Transcript,
     VideoTranscriptsMixin,
@@ -58,7 +58,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (
     get_html5_ids,
     subs_filename
 )
-from .video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 from .video_utils import create_youtube_string, format_xml_exception_message, get_poster, rewrite_video_url
 from .video_xfields import VideoFields
 
@@ -106,8 +106,8 @@ EXPORT_IMPORT_COURSE_DIR = 'course'
 EXPORT_IMPORT_STATIC_DIR = 'static'
 
 
-@XBlock.wants('settings', 'completion', 'i18n', 'request_cache', 'video_config')
-@XBlock.needs('mako', 'user')
+@XBlock.wants('settings', 'completion', 'request_cache', 'video_config')
+@XBlock.needs('mako', 'user', 'i18n')
 class _BuiltInVideoBlock(
         VideoFields, VideoTranscriptsMixin, VideoStudioViewHandlers, VideoStudentViewHandlers,
         EmptyDataRawMixin, XmlMixin, EditingMixin, XModuleToXBlockMixin,
@@ -122,6 +122,10 @@ class _BuiltInVideoBlock(
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.webm"/>
             <source src=".../mit-3091x/M-3091X-FA12-L21-3_100.ogv"/>
         </video>
+
+    .. deprecated:: 2026-03
+       This built-in video block is deprecated. Please use the extracted ``VideoBlock``
+       from ``xblocks_contrib.video`` instead.
     """
     is_extracted = False
     has_custom_completion = True
@@ -254,18 +258,6 @@ class _BuiltInVideoBlock(
         """
         return self.student_view(context)
 
-    def studio_view(self, _context):
-        """
-        Return the studio view.
-        """
-        fragment = Fragment(
-            self.runtime.service(self, 'mako').render_cms_template(self.mako_template, self.get_context())
-        )
-        add_css_to_fragment(fragment, 'VideoBlockEditor.css')
-        add_webpack_js_to_fragment(fragment, 'VideoBlockEditor')
-        shim_xmodule_js(fragment, 'TabsEditingDescriptor')
-        return fragment
-
     def public_view(self, context):
         """
         Returns a fragment that contains the html for the public view
@@ -278,7 +270,7 @@ class _BuiltInVideoBlock(
 
         fragment = Fragment(self.get_html(view=PUBLIC_VIEW, context=context))
         add_css_to_fragment(fragment, 'VideoBlockDisplay.css')
-        add_webpack_js_to_fragment(fragment, 'VideoBlockMain')
+        add_webpack_js_to_fragment(fragment, 'VideoBlockDisplay')
         fragment.initialize_js('Video')
         return fragment
 
@@ -573,49 +565,16 @@ class _BuiltInVideoBlock(
         That means that html5_sources are always in list of fields that were changed (`metadata` param in save_item).
         This should be fixed too.
         """
-        metadata_was_changed_by_user = old_metadata != own_metadata(self)
+        video_config_service = self.runtime.service(self, 'video_config')
+        if video_config_service:
+            video_config_service.handle_editor_saved(self, user.id, old_metadata)
 
-        # There is an edge case when old_metadata and own_metadata are same and we are importing transcript from youtube
-        # then there is a syncing issue where html5_subs are not syncing with youtube sub, We can make sync better by
-        # checking if transcript is present for the video and if any html5_ids transcript is not present then trigger
-        # the manage_video_subtitles_save to create the missing transcript with particular html5_id.
-        if not metadata_was_changed_by_user and self.sub and hasattr(self, 'html5_sources'):
-            html5_ids = get_html5_ids(self.html5_sources)
-            for subs_id in html5_ids:
-                try:
-                    Transcript.asset(self.location, subs_id)
-                except NotFoundError:
-                    # If a transcript does not not exist with particular html5_id then there is no need to check other
-                    # html5_ids because we have to create a new transcript with this missing html5_id by turning on
-                    # metadata_was_changed_by_user flag.
-                    metadata_was_changed_by_user = True
-                    break
-
-        if metadata_was_changed_by_user:
-            self.edx_video_id = self.edx_video_id and self.edx_video_id.strip()
-
-            # We want to override `youtube_id_1_0` with val youtube profile in the first place when someone adds/edits
-            # an `edx_video_id` or its underlying YT val profile. Without this, override will only happen when a user
-            # saves the video second time. This is because of the syncing of basic and advanced video settings which
-            # also syncs val youtube id from basic tab's `Video Url` to advanced tab's `Youtube ID`.
-            if self.edx_video_id and edxval_api:
-                val_youtube_id = edxval_api.get_url_for_profile(self.edx_video_id, 'youtube')
-                if val_youtube_id and self.youtube_id_1_0 != val_youtube_id:
-                    self.youtube_id_1_0 = val_youtube_id
-
-            manage_video_subtitles_save(
-                self,
-                user,
-                old_metadata if old_metadata else None,
-                generate_translation=True
-            )
-
-    def save_with_metadata(self, user):
+    def save_with_metadata(self, user_id):
         """
         Save block with updated metadata to database."
         """
         self.save()
-        self.runtime.modulestore.update_item(self, user.id)
+        self.runtime.modulestore.update_item(self, user_id)
 
     @property
     def editable_metadata_fields(self):
@@ -1204,7 +1163,14 @@ class _BuiltInVideoBlock(
                     "file_size": 0,  # File size is not relevant for external link
                 }
 
-        available_translations = self.available_translations(self.get_transcripts_info())
+        video_config_service = self.runtime.service(self, 'video_config')
+        if video_config_service:
+            available_translations = video_config_service.available_translations(
+                self,
+                self.get_transcripts_info()
+            )
+        else:
+            available_translations = []
         transcripts = {
             lang: self.runtime.handler_url(self, 'transcript', 'download', query="lang=" + lang, thirdparty=True)
             for lang in available_translations
@@ -1235,3 +1201,14 @@ VideoBlock = (
     else _BuiltInVideoBlock
 )
 VideoBlock.__name__ = "VideoBlock"
+
+if not settings.USE_EXTRACTED_VIDEO_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.video_block` VideoBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_VIDEO_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.video.VideoBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_VIDEO_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

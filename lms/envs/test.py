@@ -53,7 +53,8 @@ ENABLE_BULK_USER_RETIREMENT = True
 
 COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"
 
-WEBPACK_LOADER['DEFAULT']['STATS_FILE'] = STATIC_ROOT / "webpack-stats.json"
+COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]
+
 WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'
 
 STATUS_MESSAGE_PATH = TEST_ROOT / "status_message.json"

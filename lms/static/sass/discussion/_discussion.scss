@@ -17,9 +17,9 @@
 
   .bottom-post-status {
     padding: 30px;
-    font-size: $forum-x-large-font-size;
+    font-size: var(--forum-x-large-font-size);
     font-weight: 700;
-    color: $forum-color-copy-light;
+    color: var(--forum-color-copy-light);
     text-align: center;
   }
 
@@ -34,7 +34,7 @@
 
   .main-article.new {
     display: none;
-    padding: ($baseline*2.5);
+    padding: calc(var(--baseline) * 2.5);
   }
 
   .discussion-reply-new {
@@ -42,13 +42,13 @@
     @include transition(opacity 0.2s linear 0s);
 
     h4 {
-      font-size: $forum-large-font-size;
+      font-size: var(--forum-large-font-size);
       font-weight: 700;
     }
   }
 
   .reply-post-control {
-    margin-top: $baseline;
+    margin-top: var(--baseline);
   }
 }
 
@@ -60,17 +60,17 @@
 
   display: block;
   position: relative;
-  border-radius: $forum-border-radius;
+  border-radius: var(--forum-border-radius);
 
   header {
     .anonymous {
-      font-size: $forum-base-font-size;
+      font-size: var(--forum-base-font-size);
     }
   }
 
   .inline-discussion-topic {
     width: flex-grid(12);
-    font-size: $forum-small-font-size;
+    font-size: var(--forum-small-font-size);
 
     .inline-discussion-topic-title {
       font-weight: bold;
@@ -81,19 +81,19 @@
     @include float(left);
 
     width: flex-grid(7);
-    margin-bottom: ($baseline * 0.75);
+    margin-bottom: calc(var(--baseline) * 0.75);
   }
 
   .add_post_btn_container {
     @include text-align(right);
 
     width: flex-grid(12);
-    height: (2 * $baseline);
+    height: calc(2 * var(--baseline));
   }
 
   div.add-response.post-extended-content {
-    margin-top: $baseline;
-    margin-bottom: $baseline;
+    margin-top: var(--baseline);
+    margin-bottom: var(--baseline);
   }
 }
 
@@ -102,7 +102,7 @@
 
   position: relative;
   top: 3px;
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
   text-align: center;
 
   &.shown {
@@ -117,11 +117,11 @@ section.discussion {
 
 .new-post-article {
   .forum-new-post-form {
-    padding: $baseline;
+    padding: var(--baseline);
   }
 
   .inner-wrapper {
-    max-width: map-get($container-max-widths, xl);
+    max-width: var(--container-max-widths-xl);
     min-width: 760px;
     margin: auto;
   }
@@ -138,14 +138,14 @@ section.discussion {
 
 // post pagination
 section.discussion-pagination {
-  margin-top: ($baseline*1.5);
+  margin-top: calc(var(--baseline) * 1.5);
 
   nav.discussion-paginator {
     @include float(right);
 
     ol {
       li {
-        @include padding-right($baseline/2);
+        @include padding-right(calc(var(--baseline) / 2));
 
         list-style: none;
         display: inline-block;
@@ -153,10 +153,10 @@ section.discussion-pagination {
         &.current-page span {
           display: inline-block;
           height: 35px;
-          padding: 0 ($baseline*0.75);
-          border: 1px solid $forum-color-border;
-          border-radius: $forum-border-radius;
-          font-size: $forum-base-font-size;
+          padding: 0 calc(var(--baseline) * 0.75);
+          border: 1px solid var(--forum-color-border);
+          border-radius: var(--forum-border-radius);
+          font-size: var(--forum-base-font-size);
           font-weight: 700;
           line-height: 32px;
           color: theme-color("gray-dark");

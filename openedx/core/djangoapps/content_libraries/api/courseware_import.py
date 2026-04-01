@@ -24,7 +24,7 @@ from opaque_keys.edx.locator import (
 from opaque_keys.edx.keys import UsageKey
 from edx_rest_api_client.client import OAuthAPIClient
 
-from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_learning_core
+from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 from xmodule.modulestore.django import modulestore
 
 from .. import tasks
@@ -209,7 +209,7 @@ class EdxModulestoreImportClient(BaseEdxImportClient):
         Get block OLX by serializing it from modulestore directly.
         """
         block = self.modulestore.get_item(block_key)
-        data = serialize_modulestore_block_for_learning_core(block)
+        data = serialize_modulestore_block_for_openedx_content(block)
         return {'olx': data.olx_str,
                 'static_files': {s.name: s for s in data.static_files}}
 

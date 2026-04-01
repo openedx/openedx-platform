@@ -1,44 +1,45 @@
-<%page expression_filter="h"/>
+{% load i18n %}
 
-<%include file="_underscore_templates.html" />
-<%include file="_thread_list_template.html" />
+{% include "discussion/_underscore_templates.html" %}
+{% include "discussion/_thread_list_template.html" %}
 
-<%!
-from django.utils.translation import gettext as _
-from json import dumps as json_dumps
-from openedx.core.djangolib.js_utils import js_escaped_string
-%>
-
-<div class="discussion-module" data-discussion-id="${discussion_id}"
-    data-user-create-comment="${json_dumps(can_create_comment)}"
-    data-user-create-subcomment="${json_dumps(can_create_subcomment)}"
-    data-read-only="${'false' if can_create_thread else 'true'}">
-    % if not user.is_authenticated:
+<div class="discussion-module" data-discussion-id="{{ discussion_id }}"
+    data-user-create-comment="{{ can_create_comment|yesno:"true,false" }}"
+    data-user-create-subcomment="{{ can_create_subcomment|yesno:"true,false" }}"
+    data-read-only="{% if can_create_thread %}false{% else %}true{% endif %}">
+    {% if not user.is_authenticated %}
         <div class="page-banner">
             <div class="alert alert-warning" role="alert">
-                <span class="icon icon-alert fa fa fa-warning" aria-hidden="true"></span>
-                <div class="message-content">${login_msg}</div>
+                <span class="icon icon-alert fa fa-warning" aria-hidden="true"></span>
+                <div class="message-content">{{ login_msg }}</div>
             </div>
         </div>
         <br>
-    % endif
+    {% endif %}
+
     <div class="discussion-module-header">
-        <h3 class="hd hd-3 discussion-module-title">${_(display_name)}</h3>
-        <div class="inline-discussion-topic"><span class="inline-discussion-topic-title">${_("Topic:")}</span> ${discussion_category}
-              % if discussion_target:
-                    / ${discussion_target}
-              %endif
-           </div>
+        <h3 class="hd hd-3 discussion-module-title">
+            {% filter force_escape %}
+                {% blocktrans with title=display_name %}{{ title }}{% endblocktrans %}
+            {% endfilter %}
+        </h3>
+        <div class="inline-discussion-topic">
+            <span class="inline-discussion-topic-title">{% trans "Topic:" as tmsg %} {{tmsg|force_escape}}</span> 
+            {{ discussion_category }}
+            {% if discussion_target %}
+                / {{ discussion_target }}
+            {% endif %}
+        </div>
     </div>
     <button class="discussion-show btn"
-        data-discussion-id="${discussion_id}"
-        ${"disabled=disabled" if not user.is_authenticated else ""}>
-        <span class="button-text">${_("Show Discussion")}</span>
+        data-discussion-id="{{ discussion_id }}"
+        {% if not user.is_authenticated %}disabled="disabled"{% endif %}>
+        <span class="button-text">{% trans "Show Discussion" as tmsg %} {{tmsg|force_escape}}</span>
     </button>
 
 </div>
 <script type="text/javascript">
-var $$course_id = "${course_id | n, js_escaped_string}";
+var $$course_id = "{{ course_id|escapejs }}";
 
 function DiscussionInlineBlock(runtime, element) {
     'use strict';

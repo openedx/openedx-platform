@@ -3,16 +3,16 @@
 
 .discussion {
   .post-label {
-    @include margin($baseline/4, $baseline/2, 0, 0);
+    @include margin(calc(var(--baseline)/4), calc(var(--baseline)/2), 0, 0);
 
     @extend %t-light;
 
-    font-size: $forum-small-font-size;
+    font-size: var(--forum-small-font-size);
     display: inline;
     white-space: nowrap;
 
     .icon {
-      @include margin-right($baseline/5);
+      @include margin-right(calc(var(--baseline) / 5));
     }
 
     &.is-hidden {
@@ -20,34 +20,34 @@
     }
 
     &.post-label-pinned {
-      color: $forum-color-pinned;
+      color: var(--forum-color-pinned);
     }
 
     &.post-label-following {
-      color: $forum-color-following;
+      color: var(--forum-color-following);
     }
 
     &.post-label-reported {
-      color: $forum-color-reported;
+      color: var(--forum-color-reported);
     }
 
     &.post-label-closed {
-      color: $forum-color-closed;
+      color: var(--forum-color-closed);
     }
 
     &.post-label-by-staff {
-      color: $forum-color-staff;
+      color: var(--forum-color-staff);
     }
 
     &.post-label-by-community-ta {
-      color: $forum-color-community-ta;
+      color: var(--forum-color-community-ta);
     }
   }
 
   .user-label-staff,
   .user-label-community-ta {
-    color: $forum-color-copy-light;
-    font-size: $forum-small-font-size;
+    color: var(--forum-color-copy-light);
+    font-size: var(--forum-small-font-size);
     white-space: nowrap;
   }
 }

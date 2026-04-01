@@ -14,6 +14,8 @@ from django.dispatch import receiver
 from django.utils.translation import gettext_noop
 from jsonfield.fields import JSONField
 from opaque_keys.edx.django.models import CourseKeyField
+from edx_django_utils.cache import DEFAULT_REQUEST_CACHE
+from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.xmodule_django.models import NoneToEmptyManager
 from openedx.core.lib.cache_utils import request_cached
@@ -191,6 +193,37 @@ def all_permissions_for_user_in_course(user, course_id):
             permission_names.add(permission)
 
     return permission_names
+
+
+def has_permission(user, permission, course_id=None):
+    """
+    This function resolves all discussion-related permissions for the given
+    user and course, caches them for the duration of the request, and verifies
+    whether the requested permission is present.
+
+    Args:
+        user (User): Django user whose permissions are being checked.
+        permission (str): Discussion permission identifier
+            (e.g., "create_comment", "create_thread").
+        course_id (CourseKey): Course context in which to evaluate
+            the permission
+
+    Returns:
+        bool: True if the user has the specified permission in the given
+        course context; False otherwise.
+    """
+    assert isinstance(course_id, (type(None), CourseKey))
+    request_cache_dict = DEFAULT_REQUEST_CACHE.data
+    cache_key = "django_comment_client.permissions.has_permission.all_permissions.{}.{}".format(
+        user.id, course_id
+    )
+    if cache_key in request_cache_dict:
+        all_permissions = request_cache_dict[cache_key]
+    else:
+        all_permissions = all_permissions_for_user_in_course(user, course_id)
+        request_cache_dict[cache_key] = all_permissions
+
+    return permission in all_permissions
 
 
 class ForumsConfig(ConfigurationModel):

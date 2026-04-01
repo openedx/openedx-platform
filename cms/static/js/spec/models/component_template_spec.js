@@ -4,41 +4,9 @@ define(['js/models/component_template'],
             var mockTemplateJSON = {
                 templates: [
                     {
-                        category: 'problem',
-                        boilerplate_name: 'formularesponse.yaml',
-                        display_name: 'Math Expression Input'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: null,
-                        display_name: 'Blank Advanced Problem'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'checkboxes.yaml',
-                        display_name: 'Checkboxes'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'multiple_choice.yaml',
-                        display_name: 'Multiple Choice'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'drag_and_drop.yaml',
-                        display_name: 'Drag and Drop'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'problem_with_hint.yaml',
-                        display_name: 'Problem with Adaptive Hint'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'imageresponse.yaml',
-                        display_name: 'Image Mapped Input'
-                    }, {
                         category: 'openassessment',
                         boilerplate_name: null,
                         display_name: 'Peer Assessment'
-                    }, {
-                        category: 'problem',
-                        boilerplate_name: 'an_easy_problem.yaml',
-                        display_name: 'An Easy Problem'
                     }, {
                         category: 'word_cloud',
                         boilerplate_name: null,
@@ -69,7 +37,7 @@ define(['js/models/component_template'],
                     } else {
                         // If the first template is blank, make sure that it has the correct category
                         if (!template.boilerplate_name) {
-                            expect(template.category).toBe('problem');
+                            expect(template.category).toBe('openassessment');
                         }
                         lastTemplate = template;
                     }

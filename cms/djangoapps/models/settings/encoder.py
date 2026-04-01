@@ -8,9 +8,9 @@ import json
 from json.encoder import JSONEncoder
 
 from opaque_keys.edx.locations import Location
+from xblock.fields import Date
 
 from openedx.core.djangoapps.models.course_details import CourseDetails
-from xmodule.fields import Date  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .course_grading import CourseGradingModel
 

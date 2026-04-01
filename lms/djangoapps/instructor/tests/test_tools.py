@@ -17,7 +17,7 @@ from edx_when.api import get_dates_for_course, set_dates_for_course
 from edx_when.field_data import DateLookupFieldData
 from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
-from xmodule.fields import Date
+from xblock.fields import Date
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase, SharedModuleStoreTestCase,
 )

@@ -2,8 +2,8 @@
 
 # Core
 common/djangoapps/student/
-common/djangoapps/student/models/__init__.py                        @openedx/committers-edx-platform-2u-tnl
-common/djangoapps/student/models/course_enrollment.py               @openedx/committers-edx-platform-2u-tnl
+common/djangoapps/student/models/__init__.py                        @openedx/committers-openedx-platform-2u-tnl
+common/djangoapps/student/models/course_enrollment.py               @openedx/committers-openedx-platform-2u-tnl
 common/djangoapps/third_party_auth/
 lms/djangoapps/course_api/blocks
 lms/djangoapps/courseware/
@@ -11,15 +11,15 @@ lms/djangoapps/grades/
 lms/djangoapps/instructor/
 lms/djangoapps/instructor_task/
 lms/djangoapps/mobile_api/
-openedx/core/djangoapps/commerce/                                   @openedx/committers-edx-platform-2u-infinity
-openedx/core/djangoapps/credentials                                 @openedx/committers-edx-platform-2u-aperture
-openedx/core/djangoapps/credit                                      @openedx/committers-edx-platform-2u-aperture
-openedx/core/djangoapps/enrollments/                                @openedx/committers-edx-platform-2u-aperture
+openedx/core/djangoapps/commerce/                                   @openedx/committers-openedx-platform-2u-infinity
+openedx/core/djangoapps/credentials                                 @openedx/committers-openedx-platform-2u-aperture
+openedx/core/djangoapps/credit                                      @openedx/committers-openedx-platform-2u-aperture
+openedx/core/djangoapps/enrollments/                                @openedx/committers-openedx-platform-2u-aperture
 openedx/core/djangoapps/heartbeat/
 openedx/core/djangoapps/oauth_dispatch
-openedx/core/djangoapps/user_api/                                   @openedx/committers-edx-platform-2u-aperture
-openedx/core/djangoapps/user_authn/                                 @openedx/committers-edx-platform-2u-infinity
-openedx/core/djangoapps/verified_track_content/                     @openedx/committers-edx-platform-2u-infinity
+openedx/core/djangoapps/user_api/                                   @openedx/committers-openedx-platform-2u-aperture
+openedx/core/djangoapps/user_authn/                                 @openedx/committers-openedx-platform-2u-infinity
+openedx/core/djangoapps/verified_track_content/                     @openedx/committers-openedx-platform-2u-infinity
 openedx/features/course_experience/
 # The Aximprovements team is working on extracting all built-in XBlocks
 # to the external repository (xblocks-contrib). They need to be notified
@@ -35,21 +35,21 @@ lms/djangoapps/edxnotes
 common/djangoapps/track/
 
 # Credentials
-lms/djangoapps/certificates/                                        @openedx/committers-edx-platform-2u-aperture
+lms/djangoapps/certificates/                                        @openedx/committers-openedx-platform-2u-aperture
 
 # Discovery
-common/djangoapps/course_modes/                                     @openedx/committers-edx-platform-2u-aperture
+common/djangoapps/course_modes/                                     @openedx/committers-openedx-platform-2u-aperture
 common/djangoapps/enrollment/
-common/djangoapps/entitlements/                                     @openedx/committers-edx-platform-2u-aperture
-lms/djangoapps/branding/                                            @openedx/committers-edx-platform-2u-aperture
-lms/djangoapps/commerce/                                            @openedx/committers-edx-platform-2u-infinity
-lms/djangoapps/experiments/                                         @openedx/committers-edx-platform-2u-infinity
-lms/djangoapps/gating/                                              @openedx/committers-edx-platform-2u-infinity
-lms/djangoapps/learner_dashboard/                                   @openedx/committers-edx-platform-2u-aperture
-lms/djangoapps/learner_home/                                        @openedx/committers-edx-platform-2u-aperture
-openedx/features/content_type_gating/                               @openedx/committers-edx-platform-2u-infinity
+common/djangoapps/entitlements/                                     @openedx/committers-openedx-platform-2u-aperture
+lms/djangoapps/branding/                                            @openedx/committers-openedx-platform-2u-aperture
+lms/djangoapps/commerce/                                            @openedx/committers-openedx-platform-2u-infinity
+lms/djangoapps/experiments/                                         @openedx/committers-openedx-platform-2u-infinity
+lms/djangoapps/gating/                                              @openedx/committers-openedx-platform-2u-infinity
+lms/djangoapps/learner_dashboard/                                   @openedx/committers-openedx-platform-2u-aperture
+lms/djangoapps/learner_home/                                        @openedx/committers-openedx-platform-2u-aperture
+openedx/features/content_type_gating/                               @openedx/committers-openedx-platform-2u-infinity
 openedx/features/course_duration_limits/
-openedx/features/discounts/                                         @openedx/committers-edx-platform-2u-infinity
+openedx/features/discounts/                                         @openedx/committers-openedx-platform-2u-infinity
 
 # Ping Axim On-call if someone uses the QuickStart
 # https://docs.openedx.org/en/latest/developers/quickstarts/first_openedx_pr.html

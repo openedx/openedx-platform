@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+"""Utility for converting XML nodes to their inner string representation."""
 
 from lxml import etree
 

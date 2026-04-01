@@ -15,9 +15,9 @@ from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.django.models import ContainerKeyField, CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryContainerLocator
-from openedx_learning.api.authoring import get_published_version
-from openedx_learning.api.authoring_models import Component, Container
-from openedx_learning.lib.fields import (
+from openedx_content.api import get_published_version
+from openedx_content.models_api import Component, Container
+from openedx_django_lib.fields import (
     immutable_uuid_field,
     key_field,
     manual_date_time_field,
@@ -97,9 +97,9 @@ class EntityLinkBase(models.Model):
     )
     # A downstream entity can only link to single upstream entity
     # whereas an entity can be upstream for multiple downstream entities.
-    downstream_usage_key = UsageKeyField(max_length=255, unique=True)
+    downstream_usage_key = UsageKeyField(unique=True)
     # Search by course/downstream key
-    downstream_context_key = CourseKeyField(max_length=255, db_index=True)
+    downstream_context_key = CourseKeyField(db_index=True)
     # This is present if the creation of this link is a consequence of
     # importing a container that has one or more levels of children.
     # This represents the parent (container) in the top level
@@ -152,7 +152,6 @@ class ComponentLink(EntityLinkBase):
         blank=True,
     )
     upstream_usage_key = UsageKeyField(
-        max_length=255,
         help_text=_(
             "Upstream block usage key, this value cannot be null"
             " and useful to track upstream library blocks that do not exist yet"
@@ -324,7 +323,6 @@ class ContainerLink(EntityLinkBase):
         blank=True,
     )
     upstream_container_key = ContainerKeyField(
-        max_length=255,
         help_text=_(
             "Upstream block key (e.g. lct:...), this value cannot be null "
             "and is useful to track upstream library blocks that do not exist yet "
@@ -564,7 +562,6 @@ class LearningContextLinksStatus(models.Model):
     course or a learning context.
     """
     context_key = CourseKeyField(
-        max_length=255,
         # Single entry for a learning context or course
         unique=True,
         help_text=_("Linking status for course context key"),

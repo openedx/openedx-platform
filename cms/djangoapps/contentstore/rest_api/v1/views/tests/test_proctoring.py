@@ -13,6 +13,7 @@ from rest_framework.test import APITestCase
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from xmodule.modulestore.django import (
     modulestore,
@@ -453,3 +454,39 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
             self.assertEqual(
                 response.status_code, 403 if disable_advanced_settings else 200
             )
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_user_allowed(self, mock_is_user_allowed, mock_flag):
+        """User with authz permission can access proctoring errors."""
+        mock_is_user_allowed.return_value = True
+        response = self.non_staff_client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        mock_is_user_allowed.assert_called_once()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_user_not_allowed(self, mock_is_user_allowed, mock_flag):
+        """User without authz permission cannot access proctoring errors."""
+        mock_is_user_allowed.return_value = False
+        response = self.non_staff_client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+        mock_is_user_allowed.assert_called_once()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_with_disable_advanced_settings_staff_allowed(self, mock_is_user_allowed, mock_flag):
+        """Staff user can access when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
+        with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)
+            mock_is_user_allowed.assert_not_called()
+
+    @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
+    @patch('common.djangoapps.student.auth.authz_api.is_user_allowed')
+    def test_authz_with_disable_advanced_settings_non_staff_denied(self, mock_is_user_allowed, mock_flag):
+        """Non-staff user is denied when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
+        with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
+            response = self.non_staff_client.get(self.url)
+            self.assertEqual(response.status_code, 403)
+            mock_is_user_allowed.assert_not_called()

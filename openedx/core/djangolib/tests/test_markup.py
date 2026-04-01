@@ -26,11 +26,13 @@ class FormatHtmlTest(unittest.TestCase):
         ("<a>нтмℓ-єѕ¢αρє∂</a>", "&lt;a&gt;нтмℓ-єѕ¢αρє∂&lt;/a&gt;"),
     )
     def test_simple(self, before_after):
+        """Verify that plain text is safely HTML-escaped."""
         (before, after) = before_after
         assert str(Text(_(before))) == after  # pylint: disable=translation-of-non-string
         assert str(Text(before)) == after
 
     def test_formatting(self):
+        """Ensure Text.format correctly mixes escaped text with raw HTML."""
         # The whole point of this function is to make sure this works:
         out = Text(_("Point & click {start}here{end}!")).format(
             start=HTML("<a href='http://edx.org'>"),
@@ -39,6 +41,7 @@ class FormatHtmlTest(unittest.TestCase):
         assert str(out) == "Point &amp; click <a href='http://edx.org'>here</a>!"
 
     def test_nested_formatting(self):
+        """Validate nested formatting where HTML contains formatted text."""
         # Sometimes, you have plain text, with html inserted, and the html has
         # plain text inserted.  It gets twisty...
         out = Text(_("Send {start}email{end}")).format(
@@ -48,6 +51,7 @@ class FormatHtmlTest(unittest.TestCase):
         assert str(out) == "Send <a href='mailto:A&amp;B'>email</a>"
 
     def test_mako(self):
+        """Confirm Mako templates format Text/HTML objects with expected filters."""
         # The default_filters used here have to match the ones in edxmako.
         template = Template(
             """
@@ -64,6 +68,7 @@ class FormatHtmlTest(unittest.TestCase):
         assert out.strip() == "A &amp; B & C"
 
     def test_ungettext(self):
+        """Check that ngettext output is properly formatted and HTML-escaped."""
         for i in [1, 2]:
             out = Text(ngettext("1 & {}", "2 & {}", i)).format(HTML("<>"))
             assert out == f"{i} &amp; <>"

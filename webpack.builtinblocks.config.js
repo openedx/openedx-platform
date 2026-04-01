@@ -65,10 +65,6 @@ module.exports = {
             './xmodule/js/src/capa/imageinput.js',
             './xmodule/js/src/capa/schematic.js'
         ],
-        ProblemBlockEditor: [
-            './xmodule/js/src/xmodule.js',
-            './xmodule/js/src/problem/edit.js'
-        ],
         SequenceBlockDisplay: [
             './xmodule/js/src/xmodule.js',
             './xmodule/js/src/sequence/display.js'

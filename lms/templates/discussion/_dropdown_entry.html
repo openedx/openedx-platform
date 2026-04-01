@@ -1,0 +1,14 @@
+<li class="forum-nav-browse-menu-item"
+    data-discussion-id='{{ entry.id|force_escape }}'
+    id='{{ entry.id|force_escape }}'
+    data-divided="{{ entry.is_divided|yesno:'true,false' }}"
+    role="option">
+    {% if entry_name %}
+        <span class="forum-nav-browse-title">
+            {% if topic_list %}
+                <span class="sr">{{ topic_list|force_escape }}, </span>
+            {% endif %}
+            {{ entry_name|force_escape }}
+        </span>
+    {% endif %}
+</li>

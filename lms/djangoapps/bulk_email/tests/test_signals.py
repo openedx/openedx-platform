@@ -10,9 +10,11 @@ from django.core import mail
 from django.core.management import call_command
 from django.urls import reverse
 
+from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, Optout
 from lms.djangoapps.bulk_email.signals import force_optout_all
+from opaque_keys.edx.keys import CourseKey
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -85,3 +87,41 @@ class TestOptoutCourseEmailsBySignal(ModuleStoreTestCase):
         assert len(mail.outbox) == 1
         assert len(mail.outbox[0].to) == 1
         assert mail.outbox[0].to[0] == self.instructor.email
+
+    @patch('lms.djangoapps.bulk_email.signals.log.warning')
+    def test_optout_handles_missing_course_overview(self, mock_log_warning):
+        """
+        Test that force_optout_all gracefully handles CourseEnrollments
+        with missing CourseOverview records
+        """
+        # Create a course key for a course that doesn't exist in CourseOverview
+        nonexistent_course_key = CourseKey.from_string('course-v1:TestX+Missing+2023')
+
+        # Create an enrollment with a course_id that doesn't have a CourseOverview
+        CourseEnrollment.objects.create(
+            user=self.student,
+            course_id=nonexistent_course_key,
+            mode='honor'
+        )
+
+        # Verify the orphaned enrollment exists
+        assert CourseEnrollment.objects.filter(
+            user=self.student,
+            course_id=nonexistent_course_key
+        ).exists()
+
+        force_optout_all(sender=self.__class__, user=self.student)
+
+        # Verify that a warning was logged for the missing CourseOverview
+        mock_log_warning.assert_called()
+        call_args = mock_log_warning.call_args[0][0]
+        assert "CourseOverview not found for enrollment" in call_args
+        assert f"user: {self.student.id}" in call_args
+        assert "skipping optout creation" in call_args
+
+        # Verify that optouts were created for valid courses only
+        valid_course_optouts = Optout.objects.filter(user=self.student, course_id=self.course.id)
+        missing_course_optouts = Optout.objects.filter(user=self.student, course_id=nonexistent_course_key)
+
+        assert valid_course_optouts.count() == 1
+        assert missing_course_optouts.count() == 0

@@ -1757,6 +1757,73 @@ class TestPhotoVerificationResultsCallback(ModuleStoreTestCase, TestVerification
         )
         self.assertContains(response, 'Result Unknown not understood', status_code=400)
 
+    @patch("lms.djangoapps.verify_student.views.send_verification_status_email.delay")
+    def test_failed_status_reverify_url_uses_site_config_value(self, mock_delay):
+        """
+        When site config defines ACCOUNT_MICROFRONTEND_URL (with a trailing slash),
+        the reverify_url in the denial email context should use it and strip the slash.
+        """
+        siteconf_url = "https://accounts.siteconf.example/"
+        access_key = settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_ACCESS_KEY"]
+
+        with patch(
+            "lms.djangoapps.verify_student.views.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k:
+                siteconf_url if key == "ACCOUNT_MICROFRONTEND_URL" else default,
+        ):
+            data = {
+                "EdX-ID": self.receipt_id,
+                "Result": "FAIL",
+                "Reason": [{"photoIdReasons": ["Not provided"]}],
+                "MessageType": "Your photo doesn't meet standards.",
+            }
+            json_data = json.dumps(data)
+            response = self.client.post(
+                reverse("verify_student_results_callback"),
+                data=json_data,
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"test {access_key}:testing",
+                HTTP_DATE="testdate",
+            )
+
+        assert response.status_code == 200
+        assert mock_delay.called
+        context = mock_delay.call_args[0][0]
+        assert context["email_vars"]["reverify_url"] == "https://accounts.siteconf.example/id-verification"
+
+    @patch("lms.djangoapps.verify_student.views.send_verification_status_email.delay")
+    def test_failed_status_reverify_url_falls_back_to_settings(self, mock_delay):
+        """
+        If site config doesn't override, reverify_url should come from
+        settings.ACCOUNT_MICROFRONTEND_URL (with trailing slash stripped).
+        """
+        fallback = "https://accounts.settings.example/"
+        access_key = settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_ACCESS_KEY"]
+
+        with override_settings(ACCOUNT_MICROFRONTEND_URL=fallback), patch(
+            "lms.djangoapps.verify_student.views.configuration_helpers.get_value",
+            side_effect=lambda key, default=None, *a, **k: default,
+        ):
+            data = {
+                "EdX-ID": self.receipt_id,
+                "Result": "FAIL",
+                "Reason": [{"photoIdReasons": ["Not provided"]}],
+                "MessageType": "Your photo doesn't meet standards.",
+            }
+            json_data = json.dumps(data)
+            response = self.client.post(
+                reverse("verify_student_results_callback"),
+                data=json_data,
+                content_type="application/json",
+                HTTP_AUTHORIZATION=f"test {access_key}:testing",
+                HTTP_DATE="testdate",
+            )
+
+        assert response.status_code == 200
+        assert mock_delay.called
+        context = mock_delay.call_args[0][0]
+        assert context["email_vars"]["reverify_url"] == "https://accounts.settings.example/id-verification"
+
 
 class TestReverifyView(TestVerificationBase):
     """

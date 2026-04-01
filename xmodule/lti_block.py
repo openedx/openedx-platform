@@ -59,9 +59,11 @@ import datetime
 import hashlib
 import logging
 import textwrap
+import warnings
 from unittest import mock
 from urllib import parse
 from xml.sax.saxutils import escape
+from zoneinfo import ZoneInfo
 
 import nh3
 import oauthlib.oauth1
@@ -69,7 +71,6 @@ from django.conf import settings
 from lxml import etree
 from oauthlib.oauth1.rfc5849 import signature
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import List, Scope, String, XBlock
@@ -289,6 +290,10 @@ class _BuiltInLTIBlock(
     THIS MODULE IS DEPRECATED IN FAVOR OF https://github.com/openedx/xblock-lti-consumer
 
     Module provides LTI integration to course.
+
+    .. deprecated:: 2026-03
+       This built-in LTI block is deprecated. Please use the extracted ``LTIBlock``
+       from ``xblocks_contrib.lti`` instead.
 
     Except usual Xmodule structure it proceeds with OAuth signing.
     How it works::
@@ -989,11 +994,31 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
             close_date = due_date + self.graceperiod  # pylint: disable=no-member
         else:
             close_date = due_date
-        return close_date is not None and datetime.datetime.now(UTC) > close_date
+        return close_date is not None and datetime.datetime.now(ZoneInfo("UTC")) > close_date
 
 
-LTIBlock = (
-    _ExtractedLTIBlock if settings.USE_EXTRACTED_LTI_BLOCK
-    else _BuiltInLTIBlock
-)
+LTIBlock = None
+
+
+def reset_class():
+    """Reset class as per django settings flag"""
+    global LTIBlock
+    LTIBlock = (
+        _ExtractedLTIBlock if settings.USE_EXTRACTED_LTI_BLOCK
+        else _BuiltInLTIBlock
+    )
+    return LTIBlock
+
+reset_class()
 LTIBlock.__name__ = "LTIBlock"
+
+if not settings.USE_EXTRACTED_LTI_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.lti_block` LTIBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_LTI_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.lti.LTIBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_LTI_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

@@ -22,7 +22,8 @@ class RestrictedElement(_etree.ElementBase):
     __slots__ = ()
     blacklist = (_etree._Entity, _etree._ProcessingInstruction, _etree._Comment)  # pylint: disable=protected-access
 
-    def _filter(self, iterator):  # pylint: disable=missing-function-docstring
+    def _filter(self, iterator):
+        """Yield only elements not in the blacklist from the given iterator."""
         blacklist = self.blacklist
         for child in iterator:
             if isinstance(child, blacklist):
@@ -30,37 +31,37 @@ class RestrictedElement(_etree.ElementBase):
             yield child
 
     def __iter__(self):
-        iterator = super(RestrictedElement, self).__iter__()  # pylint: disable=super-with-arguments
+        iterator = super().__iter__()
         return self._filter(iterator)
 
     def iterchildren(self, tag=None, reversed=False):  # pylint: disable=redefined-builtin
-        iterator = super(RestrictedElement, self).iterchildren(  # pylint: disable=super-with-arguments
-            tag=tag, reversed=reversed
-        )
+        """Iterate over child elements while excluding blacklisted nodes."""
+        iterator = super().iterchildren(tag=tag, reversed=reversed)
         return self._filter(iterator)
 
     def iter(self, tag=None, *tags):  # pylint: disable=keyword-arg-before-vararg
-        iterator = super(RestrictedElement, self).iter(tag=tag, *tags)  # pylint: disable=super-with-arguments
+        """Iterate over the element tree excluding blacklisted nodes."""
+        iterator = super().iter(tag=tag, *tags)
         return self._filter(iterator)
 
     def iterdescendants(self, tag=None, *tags):  # pylint: disable=keyword-arg-before-vararg
-        iterator = super(RestrictedElement, self).iterdescendants(  # pylint: disable=super-with-arguments
-            tag=tag, *tags
-        )
+        """Iterate over descendants while filtering out blacklisted nodes."""
+        iterator = super().iterdescendants(tag=tag, *tags)
         return self._filter(iterator)
 
     def itersiblings(self, tag=None, preceding=False):
-        iterator = super(RestrictedElement, self).itersiblings(  # pylint: disable=super-with-arguments
-            tag=tag, preceding=preceding
-        )
+        """Iterate over siblings excluding blacklisted node types."""
+        iterator = super().itersiblings(tag=tag, preceding=preceding)
         return self._filter(iterator)
 
     def getchildren(self):
-        iterator = super(RestrictedElement, self).__iter__()  # pylint: disable=super-with-arguments
+        """Return a list of non-blacklisted child elements."""
+        iterator = super().__iter__()
         return list(self._filter(iterator))
 
     def getiterator(self, tag=None):
-        iterator = super(RestrictedElement, self).getiterator(tag)  # pylint: disable=super-with-arguments
+        """Iterate over the tree with blacklisted nodes filtered out."""
+        iterator = super().getiterator(tag)
         return self._filter(iterator)
 
 
@@ -73,7 +74,8 @@ class GlobalParserTLS(threading.local):
 
     element_class = RestrictedElement
 
-    def createDefaultParser(self):  # pylint: disable=missing-function-docstring
+    def create_default_parser(self):
+        """Create a secure XMLParser using the restricted element class."""
         parser = _etree.XMLParser(**self.parser_config)
         element_class = self.element_class
         if self.element_class is not None:
@@ -81,19 +83,21 @@ class GlobalParserTLS(threading.local):
             parser.set_element_class_lookup(lookup)
         return parser
 
-    def setDefaultParser(self, parser):
+    def set_default_parser(self, parser):
+        """Store a thread-local default XML parser instance."""
         self._default_parser = parser  # pylint: disable=attribute-defined-outside-init
 
-    def getDefaultParser(self):  # pylint: disable=missing-function-docstring
+    def get_default_parser(self):
+        """Return the thread-local default parser, creating it if missing."""
         parser = getattr(self, "_default_parser", None)
         if parser is None:
-            parser = self.createDefaultParser()
-            self.setDefaultParser(parser)
+            parser = self.create_default_parser()
+            self.set_default_parser(parser)
         return parser
 
 
 _parser_tls = GlobalParserTLS()
-getDefaultParser = _parser_tls.getDefaultParser
+get_default_parser = _parser_tls.get_default_parser
 
 
 def check_docinfo(elementtree, forbid_dtd=False, forbid_entities=True):
@@ -107,9 +111,7 @@ def check_docinfo(elementtree, forbid_dtd=False, forbid_entities=True):
             raise DTDForbidden(docinfo.doctype, docinfo.system_url, docinfo.public_id)
         if forbid_entities and not LXML3:
             # lxml < 3 has no iterentities()
-            raise NotSupportedError(
-                "Unable to check for entity declarations in lxml 2.x"
-            )  # pylint: disable=implicit-str-concat
+            raise NotSupportedError("Unable to check for entity declarations in lxml 2.x")
 
     if forbid_entities:
         for dtd in docinfo.internalDTD, docinfo.externalDTD:
@@ -119,29 +121,28 @@ def check_docinfo(elementtree, forbid_dtd=False, forbid_entities=True):
                 raise EntitiesForbidden(entity.name, entity.content, None, None, None, None)
 
 
-def parse(
-    source, parser=None, base_url=None, forbid_dtd=False, forbid_entities=True
-):  # pylint: disable=missing-function-docstring
+def parse(source, parser=None, base_url=None, forbid_dtd=False, forbid_entities=True):
+    """Securely parse XML from a source and enforce DTD/entity restrictions."""
     if parser is None:
-        parser = getDefaultParser()
+        parser = get_default_parser()
     elementtree = _etree.parse(source, parser, base_url=base_url)
     check_docinfo(elementtree, forbid_dtd, forbid_entities)
     return elementtree
 
 
-def fromstring(
-    text, parser=None, base_url=None, forbid_dtd=False, forbid_entities=True
-):  # pylint: disable=missing-function-docstring
+def fromstring(text, parser=None, base_url=None, forbid_dtd=False, forbid_entities=True):
+    """Securely parse XML from a string and validate docinfo."""
     if parser is None:
-        parser = getDefaultParser()
+        parser = get_default_parser()
     rootelement = _etree.fromstring(text, parser, base_url=base_url)
     elementtree = rootelement.getroottree()
     check_docinfo(elementtree, forbid_dtd, forbid_entities)
     return rootelement
 
 
-XML = fromstring
+XML = fromstring  # pylint: disable=invalid-name
 
 
 def iterparse(*args, **kwargs):
+    """Disabled XML iterparse function that always raises NotSupportedError."""
     raise NotSupportedError("iterparse not available")

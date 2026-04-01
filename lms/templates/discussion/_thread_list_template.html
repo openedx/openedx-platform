@@ -1,47 +1,51 @@
-<%page expression_filter="h"/>
-<%! from django.utils.translation import gettext as _ %>
+{% load i18n %}
+
 <script type="text/template" id="thread-list-template">
     <div class="forum-nav-thread-list-wrapper" id="sort-filter-wrapper" tabindex="-1">
         <div class="forum-nav-refine-bar">
             <label class="forum-nav-filter-main">
-                ## Translators: This labels a filter menu in forum navigation
-                <span class="sr">${_("Filter:")}</span>
+                {# Translators: This labels a filter menu in forum navigation #}
+                <span class="sr">{% trans "Filter:" as tmsg %} {{tmsg|force_escape}}</span>
                 <select class="forum-nav-filter-main-control">
-                    ## Translators: This is a menu option for showing all forum threads unfiltered
-                    <option value="all">${_("Show all posts")}</option>
-                    ## Translators: This is a menu option for showing only unread forum threads
-                    <option value="unread">${_("Unread posts")}</option>
-                    ## Translators: This is a menu option for showing only unanswered forum
-                    ## question threads
-                    <option value="unanswered">${_("Unanswered posts")}</option>
-                    %if flag_moderator:
-                        ## Translators: This is a menu option for showing only forum threads flagged
-                        ## for abuse
-                        <option value="flagged">${_("Flagged")}</option>
-                    %endif
+                    {# Translators: This is a menu option for showing all forum threads unfiltered #}
+                    <option value="all">{% trans "Show all posts" as tmsg %} {{tmsg|force_escape}}</option>
+                    {# Translators: This is a menu option for showing only unread forum threads #}
+                    <option value="unread">{% trans "Unread posts" as tmsg %} {{tmsg|force_escape}}</option>
+                    {# Translators: This is a menu option for showing only unanswered forum #}
+                    {# question threads #}
+                    <option value="unanswered">{% trans "Unanswered posts" as tmsg %} {{tmsg|force_escape}}</option>
+                    {% if flag_moderator %}
+                        {# Translators: This is a menu option for showing only forum threads flagged #}
+                        {# for abuse #}
+                        <option value="flagged">{% trans "Flagged" as tmsg %} {{tmsg|force_escape}}</option>
+                    {% endif %}
                 </select>
-            ## xss-lint: disable=python-parse-error,python-wrap-html
-            </label>${"<% if (isDiscussionDivisionEnabled && isPrivilegedUser) { %>" | n, decode.utf8}<label class="forum-nav-filter-cohort">
-                ## Translators: This labels a group menu in forum navigation
-                <span class="sr">${_("Group:")}</span>
-                <select class="forum-nav-filter-cohort-control">
-                    <option value="">${_("in all groups")}</option>
-                        ## groups is not iterable sometimes because inline discussions xmodule doesn't pass it
-                        %for group in (groups or []):
-                            <option value="${group['id']}">${group['name']}</option>
-                        %endfor
-                </select>
-            ## xss-lint: disable=python-parse-error,python-wrap-html
-            </label>${"<% } %>" | n, decode.utf8}<label class="forum-nav-sort">
-                ## Translators: This labels a sort menu in forum navigation
-                <span class="sr">${_("Sort:")}</span>
+            </label>
+            {% if isDiscussionDivisionEnabled and isPrivilegedUser %}
+                <label class="forum-nav-filter-cohort">
+                    {# Translators: This labels a group menu in forum navigation #}
+                    <span class="sr">{% trans "Group:" as tmsg %} {{tmsg|force_escape}}</span>
+                    <select class="forum-nav-filter-cohort-control">
+                        <option value="">{% trans "in all groups" as tmsg %} {{tmsg|force_escape}}</option>
+                        {% if groups %}
+                            {% for group in groups %}
+                                <option value="{{ group.id|force_escape }}">{{ group.name|force_escape }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </label>
+            {% endif %}
+
+            <label class="forum-nav-sort">
+                {# Translators: This labels a sort menu in forum navigation #}
+                <span class="sr">{% trans "Sort:" as tmsg %} {{tmsg|force_escape}}</span>
                 <select class="forum-nav-sort-control">
-                    ## Translators: This is a menu option for sorting forum threads
-                    <option value="activity">${_("by recent activity")}</option>
-                    ## Translators: This is a menu option for sorting forum threads
-                    <option value="comments">${_("by most activity")}</option>
-                    ## Translators: This is a menu option for sorting forum threads
-                    <option value="votes">${_("by most votes")}</option>
+                    {# Translators: This is a menu option for sorting forum threads #}
+                    <option value="activity">{% trans "by recent activity" as tmsg %} {{tmsg|force_escape}}</option>
+                    {# Translators: This is a menu option for sorting forum threads #}
+                    <option value="comments">{% trans "by most activity" as tmsg %} {{tmsg|force_escape}}</option>
+                    {# Translators: This is a menu option for sorting forum threads #}
+                    <option value="votes">{% trans "by most votes" as tmsg %} {{tmsg|force_escape}}</option>
                 </select>
             </label>
         </div>

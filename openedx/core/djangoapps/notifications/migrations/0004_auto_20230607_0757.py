@@ -2,11 +2,9 @@
 
 from django.conf import settings
 from django.db import migrations, models
-import django.db.models.deletion
 import django.utils.timezone
 import model_utils.fields
 import opaque_keys.edx.django.models
-import openedx.core.djangoapps.notifications.models
 
 
 class Migration(migrations.Migration):
@@ -24,8 +22,8 @@ class Migration(migrations.Migration):
                 ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),
                 ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
                 ('course_id', opaque_keys.edx.django.models.CourseKeyField(max_length=255)),
-                ('notification_preference_config', models.JSONField(default=openedx.core.djangoapps.notifications.models.get_course_notification_preference_config)),
-                ('config_version', models.IntegerField(default=openedx.core.djangoapps.notifications.models.get_course_notification_preference_config_version)),
+                ('notification_preference_config', models.JSONField(default={})),
+                ('config_version', models.IntegerField(default=0)),
                 ('is_active', models.BooleanField(default=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notification_preferences', to=settings.AUTH_USER_MODEL)),
             ],

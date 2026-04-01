@@ -28,8 +28,7 @@ from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
 from common.djangoapps.course_modes.models import CourseMode, get_course_prices
 from common.djangoapps.util.views import expose_header
 from lms.djangoapps.edxnotes.helpers import is_feature_enabled
-from lms.djangoapps.certificates.api import get_certificate_url
-from lms.djangoapps.certificates.models import GeneratedCertificate
+from lms.djangoapps.certificates.api import get_certificate_url, get_eligible_certificate
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.course_api.api import course_detail
 from lms.djangoapps.course_goals.models import UserActivity
@@ -279,12 +278,12 @@ class CoursewareMeta:
 
         linkedin_config = LinkedInAddToProfileConfiguration.current()
         if linkedin_config.is_enabled():
-            try:
-                user_certificate = GeneratedCertificate.eligible_certificates.get(
-                    user=self.effective_user, course_id=self.course_key
-                )
-            except GeneratedCertificate.DoesNotExist:
+
+            user_certificate = get_eligible_certificate(user=self.effective_user, course_id=self.course_key)
+
+            if user_certificate is None:
                 return
+
             cert_url = self.request.build_absolute_uri(
                 get_certificate_url(course_id=self.course_key, uuid=user_certificate.verify_uuid)
             )

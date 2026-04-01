@@ -39,12 +39,6 @@ from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.bulk_email.models_api import is_bulk_email_disabled_for_course
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import (
-    CertificateGenerationConfiguration,
-    CertificateGenerationHistory,
-    CertificateInvalidation,
-    GeneratedCertificate
-)
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.block_render import get_block_by_usage_id
 from lms.djangoapps.courseware.courses import get_studio_url
@@ -213,7 +207,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
     # This is used to generate example certificates
     # and enable self-generated certificates for a course.
     # Note: This is hidden for all CCXs
-    certs_enabled = CertificateGenerationConfiguration.current().enabled and not hasattr(course_key, 'ccx')
+    certs_enabled = certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
     certs_instructor_enabled = settings.FEATURES.get('ENABLE_CERTIFICATES_INSTRUCTOR_MANAGE', False)
 
     if certs_enabled and (access['admin'] or (access['instructor'] and certs_instructor_enabled)):
@@ -250,7 +244,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
         kwargs={'course_id': str(course_key)}
     )
 
-    certificate_invalidations = CertificateInvalidation.get_certificate_invalidations(course_key)
+    certificate_invalidations = certs_api.get_cert_invalidations_for_course(course_key)
 
     context = {
         'course': course,
@@ -375,7 +369,7 @@ def _section_certificates(course):
     instructor_generation_enabled = settings.FEATURES.get('CERTIFICATES_INSTRUCTOR_GENERATION', False)
     certificate_statuses_with_count = {
         certificate['status']: certificate['count']
-        for certificate in GeneratedCertificate.get_unique_statuses(course_key=course.id)
+        for certificate in certs_api.get_unique_certificate_statuses(course.id)
     }
 
     return {
@@ -391,7 +385,7 @@ def _section_certificates(course):
         'certificate_statuses_with_count': certificate_statuses_with_count,
         'status': CertificateStatuses,
         'certificate_generation_history':
-            CertificateGenerationHistory.objects.filter(course_id=course.id).order_by("-created"),
+            certs_api.get_cert_history_for_course_id(course_id=course.id).order_by("-created"),
         'urls': {
             'enable_certificate_generation': reverse(
                 'certificate_task',

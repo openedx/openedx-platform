@@ -11,7 +11,7 @@ Implementation tracked by: https://github.com/openedx/edx-platform/issues/36215
 Context
 *******
 
-OEP-45 declares that sites will configure each IDA's (indepently-deployable
+OEP-45 declares that sites will configure each IDA's (independently-deployable
 application's) Django settings with an ``<APPNAME>_CFG`` YAML file, parsed and
 loaded by a single upstream-provided ``DJANGO_SETTINGS_MODULE``. This contrasts
 with the Django convention, which is that sites override Django settings using
@@ -133,7 +133,7 @@ cited as a chief area of pain for Open edX developers and operators.
 Discussions in the Named Release Planning and Build-Test-Release Working Groups
 frequently are encumbered with confusion and uncertainty of what the default
 settings are in edx-platform, how they differ from Tutor's default settings,
-what settings can be overriden, and how to do so. Only a minority of developers
+what settings can be overridden, and how to do so. Only a minority of developers
 and operators fully understand the configuration logic described above
 end-to-end; even for those that do, following this override chain for any given
 Django setting is time-consuming and error-prone. CAT-1 bugs and high-severity
@@ -170,7 +170,7 @@ that we are landing on a solid settings structure for edx-platform, we'll
 propose an OEP-45 update to generalize the structure to all deployable Open edX
 Django applications.
 
-Finally, based on what we learn throughout this process, our OEP-45 propsal
+Finally, based on what we learn throughout this process, our OEP-45 proposal
 will either recommend to:
 
 1. Drop support for the ``<APPNAME>_CFG`` YAML files, or
@@ -181,7 +181,7 @@ will either recommend to:
 
 At the time, we do not have enough information whether option 1 or 2 would be
 more beneficial overall to the community.
-`The discussion on this sub-decisision will continue on this GitHub issue <https://github.com/openedx/open-edx-proposals/issues/684>`_.
+`The discussion on this sub-decision will continue on this GitHub issue <https://github.com/openedx/open-edx-proposals/issues/684>`_.
 
 Target settings structure for edx-platform
 ==========================================
@@ -304,7 +304,7 @@ These steps are non-breaking unless noted.
      providers that use these settings modules, as they will either need to
      maintain local copies of these modules, or "rebase" their internal
      settings modules onto (cms,lms)/envs/common.py. Update operator
-     documenation as needed.
+     documentation as needed.
 
   2. Update OEP-45 to clarify that YAML configuration is
      optional. Operators can opt out of YAML by deriving directly from
@@ -332,7 +332,7 @@ Here is an alternate structure that would de-dupe any shared LMS/CMS dev & test
 logic by creating more shared modules within openedx/envs folder. Although
 DRYer, this structure would increase the total number of edx-platform files and
 potentially encourage more LMS-CMS coupling. So, we will not pursue this
-structure, but will keep it in mind as an alternative if we enounter
+structure, but will keep it in mind as an alternative if we encounter
 difficulties with the plan laid out in this ADR.
 
 * ``openedx/envs/common.py``

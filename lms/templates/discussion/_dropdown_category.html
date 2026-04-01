@@ -1,0 +1,12 @@
+<li class="forum-nav-browse-menu-item"
+    id='{{ category_name|force_escape }}'
+    role="option">
+    <span class="forum-nav-browse-title">{{ category_name|force_escape }}</span>
+    <ul class="forum-nav-browse-submenu" role="presentation">
+        {% if topic_list %}
+            {% with new_topic_list=topic_list|add:", "|add:category_name %}
+                {% include "discussion/_dropdown_items.html" with category_map=category topic_list=new_topic_list %}
+            {% endwith %}
+        {% endif %}
+    </ul>
+</li>

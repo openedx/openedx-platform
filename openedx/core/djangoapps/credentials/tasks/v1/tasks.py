@@ -16,9 +16,11 @@ from MySQLdb import OperationalError
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
-from lms.djangoapps.certificates.api import get_recently_modified_certificates
+from lms.djangoapps.certificates.api import (
+    get_generated_certificate,
+    get_recently_modified_certificates
+)
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.grades.api import CourseGradeFactory, get_recently_modified_grades
 from openedx.core.djangoapps.catalog.utils import get_programs
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -352,15 +354,14 @@ def send_grade_if_interesting(
 
     # If we don't have mode and/or status, retrieve them from the learner's certificate record
     if mode is None or status is None:
-        try:
-            cert = GeneratedCertificate.objects.get(user=user, course_id=course_run_key)  # pylint: disable=no-member
-            mode = cert.mode
-            status = cert.status
-        except GeneratedCertificate.DoesNotExist:
-            # we only care about grades for which there is a certificate record
+        cert = get_generated_certificate(user=user, course_id=course_run_key)
+        if cert is None:
             if verbose:
                 logger.warning(f"{warning_base} no certificate record in the specified course run")
             return
+
+        mode = cert.mode
+        status = cert.status
 
     # Don't worry about the certificate record being in a passing or awarded status. Having a certificate record in any
     # status is good enough to record a verified attempt at a course. The Credentials IDA keeps track of how many times

@@ -8,7 +8,7 @@ from unittest.mock import patch
 from crum import set_current_request
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
-from xmodule.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
+from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin

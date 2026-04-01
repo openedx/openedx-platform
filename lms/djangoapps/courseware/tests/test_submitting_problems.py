@@ -22,14 +22,14 @@ from django.urls import reverse
 from django.utils.timezone import now
 from submissions import api as submissions_api
 
-from xmodule.capa.tests.response_xml_factory import (
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
     CodeResponseXMLFactory,
     CustomResponseXMLFactory,
     OptionResponseXMLFactory,
     SchematicResponseXMLFactory
 )
-from xmodule.capa.tests.test_util import use_unsafe_codejail
-from xmodule.capa.xqueue_interface import XQueueInterface
+from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 from common.djangoapps.course_modes.models import CourseMode
 from lms.djangoapps.courseware.models import BaseStudentModuleHistory, StudentModule
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
@@ -811,7 +811,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         self.assertEqual(list(kwargs['files'].keys()), filenames.split())
 
 
-@use_unsafe_codejail()
+@UseUnsafeCodejail()
 class TestPythonGradedResponse(TestSubmittingProblems):
     """
     Check that we can submit a schematic and custom response, and it answers properly.
@@ -924,7 +924,6 @@ class TestPythonGradedResponse(TestSubmittingProblems):
         BlockFactory.create(
             parent_location=self.section.location,
             category='problem',
-            boilerplate='circuitschematic.yaml',
             display_name=name,
             data=xmldata
         )
@@ -948,7 +947,6 @@ class TestPythonGradedResponse(TestSubmittingProblems):
         BlockFactory.create(
             parent_location=self.section.location,
             category='problem',
-            boilerplate='customgrader.yaml',
             data=cfn_problem_xml,
             display_name=name
         )
@@ -972,7 +970,6 @@ class TestPythonGradedResponse(TestSubmittingProblems):
         BlockFactory.create(
             parent_location=self.section.location,
             category='problem',
-            boilerplate='customgrader.yaml',
             data=computed_xml,
             display_name=name
         )

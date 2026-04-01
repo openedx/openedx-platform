@@ -14,7 +14,7 @@
     .actions-item {
       box-sizing: border-box;
       display: block;
-      margin: ($baseline/4) 0;
+      margin: calc(var(--baseline) / 4) 0;
 
       &.is-hidden {
         display: none;
@@ -36,7 +36,7 @@
             border-color: transparent;
 
             .action-label {
-              color: $forum-color-active-text;
+              color: var(--forum-color-active-text);
             }
           }
         }
@@ -61,7 +61,7 @@
     position: absolute;
     top: 100%;
     pointer-events: none;
-    min-width: $actions-dropdown-width;
+    min-width: var(--actions-dropdown-width);
 
     &.is-expanded {
       display: block;
@@ -70,14 +70,14 @@
 
     .actions-dropdown-list {
       box-sizing: border-box;
-      box-shadow: 0 1px 1px $shadow-l1;
+      box-shadow: 0 1px 1px var(--shadow-l1);
       position: relative;
       width: 100%;
-      border-radius: $forum-border-radius;
-      margin: ($baseline/4) 0 0 0;
-      border: 1px solid $forum-color-border;
-      padding: ($baseline/2) ($baseline*0.75);
-      background: $forum-color-background;
+      border-radius: var(--forum-border-radius);
+      margin: calc(var(--baseline) / 4) 0 0 0;
+      border: 1px solid var(--forum-color-border);
+      padding: calc(var(--baseline) / 2) calc(var(--baseline) * 0.75);
+      background: var(--forum-color-background);
 
       // ui triangle/nub
       &::after,
@@ -97,13 +97,13 @@
         @include margin-right(1px);
 
         border-color: transparent;
-        border-bottom-color: $white;
+        border-bottom-color: var(--white);
         border-width: 6px;
       }
 
       &::before {
         border-color: transparent;
-        border-bottom-color: $forum-color-border;
+        border-bottom-color: var(--forum-color-border);
         border-width: 7px;
       }
     }
@@ -127,16 +127,16 @@
     box-sizing: border-box;
     display: inline-block;
     border: 1px solid transparent;
-    border-radius: $forum-border-radius;
+    border-radius: var(--forum-border-radius);
     color: theme-color("secondary");
 
     .action-icon {
       display: inline-block;
-      font-size: $forum-small-font-size;
-      height: $baseline;
-      width: $baseline;
-      border: 1px solid $forum-color-border;
-      border-radius: $forum-border-radius;
+      font-size: var(--forum-small-font-size);
+      height: var(--baseline);
+      width: var(--baseline);
+      border: 1px solid var(--forum-color-border);
+      border-radius: var(--forum-border-radius);
       text-align: center;
       color: theme-color("secondary");
 
@@ -162,7 +162,7 @@
       }
 
       .action-icon {
-        @include border-radius(0, $forum-border-radius, $forum-border-radius, 0);
+        @include border-radius(0, var(--forum-border-radius), var(--forum-border-radius), 0);
       }
     }
 
@@ -176,15 +176,15 @@
       &:hover,
       &:focus {
         .action-icon {
-          background-color: $forum-color-following;
+          background-color: var(--forum-color-following);
           border: 1px solid theme-color("primary");
-          color: $white;
+          color: var(--white);
         }
       }
 
       &:hover,
       &:focus {
-        border-color: $forum-color-following;
+        border-color: var(--forum-color-following);
       }
     }
 
@@ -197,18 +197,18 @@
       &:hover,
       &:focus {
         .action-icon {
-          background-color: $green;
-          border: 1px solid $green;
-          color: $white;
+          background-color: var(--green);
+          border: 1px solid var(--green);
+          color: var(--white);
         }
       }
 
       &:hover,
       &:focus {
-        border-color: $green;
+        border-color: var(--green);
 
         .action-label {
-          color: $green;
+          color: var(--green);
         }
       }
     }
@@ -220,14 +220,14 @@
         .action-icon {
           background-color: theme-color("primary");
           border: 1px solid theme-color("primary");
-          color: $white;
+          color: var(--white);
         }
       }
 
       &:hover,
       &:focus {
         border-color: theme-color("primary");
-        background-color: $forum-color-background;
+        background-color: var(--forum-color-background);
 
         .action-label {
           color: theme-color("primary");
@@ -240,19 +240,19 @@
       &:hover,
       &:focus {
         .action-icon {
-          border: 1px solid $green;
-          background-color: $green;
-          color: $white;
+          border: 1px solid var(--green);
+          background-color: var(--green);
+          color: var(--white);
         }
       }
 
       &:hover,
       &:focus {
-        border-color: $green;
-        background-color: $forum-color-background;
+        border-color: var(--green);
+        background-color: var(--forum-color-background);
 
         .action-label {
-          color: $green;
+          color: var(--green);
         }
       }
     }
@@ -264,7 +264,7 @@
       &:hover,
       &:focus {
         border-color: theme-color("dark");
-        background-color: $forum-color-background;
+        background-color: var(--forum-color-background);
 
         .action-icon {
           border: 1px solid theme-color("dark");
@@ -274,7 +274,7 @@
 
         .action-label {
           opacity: 1;
-          color: $black;
+          color: var(--black);
         }
       }
     }
@@ -292,20 +292,20 @@
 
       display: block;
       width: 100%;
-      padding: ($baseline/10) 0;
+      padding: calc(var(--baseline) / 10) 0;
       white-space: nowrap;
       color: theme-color("secondary");
 
       &:hover,
       &:focus {
-        color: $link-color;
+        color: var(--link-color);
       }
 
       .action-icon {
-        @include margin-left($baseline/4);
+        @include margin-left(calc(var(--baseline) / 4));
 
         display: inline-block;
-        width: ($baseline/2);
+        width: calc(var(--baseline) / 2);
         color: inherit;
       }
 
@@ -318,18 +318,18 @@
       &.is-checked {
         // CASE: pin action
         &.action-pin {
-          color: $pink;
+          color: var(--pink);
         }
 
         // CASE: report action
         &.action-report {
-          color: $pink;
+          color: var(--pink);
         }
 
         // CASE: hover for any action
         &:hover,
         &:focus {
-          color: $link-color;
+          color: var(--link-color);
         }
       }
     }

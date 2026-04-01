@@ -292,6 +292,9 @@ CREDENTIALS_PUBLIC_SERVICE_URL = 'http://localhost:18150'
 ########################## ORA MFE APP ##############################
 ORA_MICROFRONTEND_URL = 'http://localhost:1992'
 
+########################## LEARNER HOME APP ##############################
+LEARNER_HOME_MICROFRONTEND_URL = 'http://localhost:1996'
+
 ############################ AI_TRANSLATIONS ##################################
 AI_TRANSLATIONS_API_URL = 'http://localhost:18760/api/v1'
 
@@ -341,9 +344,11 @@ SPECTACULAR_SETTINGS = {
     access token endpoint: `{LMS_ROOT_URL}/oauth2/access_token`.
     Please see separately provided documentation.
     \n - How to test: You must be logged in as course author for whatever course you want to test with.
-    You can use the [Swagger UI](https://{CMS_BASE}/authoring-api/ui/) to "Try out" the API with your test course. To do this, you must select the "Local" server.
+    You can use the [Swagger UI](https://{CMS_BASE}/authoring-api/ui/) to "Try out" the API
+    with your test course. To do this, you must select the "Local" server.
     \n - Public vs. Local servers: The "Public" server is where you can reach the API externally. The "Local" server is
-    for development with a local edx-platform version,  and for use via the [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
+    for development with a local edx-platform version,  and for use via the
+    [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
     \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)''',
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,

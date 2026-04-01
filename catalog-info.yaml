@@ -4,7 +4,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: 'edx-platform'
+  name: 'openedx-platform'
   description: "The monolith at the center of the Open edX platform"
   links:
     - url: "https://docs.openedx.org"
@@ -13,6 +13,6 @@ metadata:
   annotations:
     openedx.org/release: "master"
 spec:
-  owner: group:wg-maintenance-edx-platform
+  owner: group:wg-maintenance-openedx-platform
   type: 'service'
   lifecycle: 'production'

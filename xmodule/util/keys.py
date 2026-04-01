@@ -6,7 +6,7 @@ Consider moving these into opaque-keys if they generalize well.
 import hashlib
 from typing import NamedTuple, Self
 
-from opaque_keys.edx.keys import UsageKey
+from opaque_keys.edx.keys import CourseKey, UsageKey
 
 
 class BlockKey(NamedTuple):
@@ -39,6 +39,12 @@ class BlockKey(NamedTuple):
         if len(parts) != 2 or not parts[0] or not parts[1]:
             raise ValueError(f"Invalid string format for BlockKey: {s}")
         return cls(parts[0], parts[1])
+
+    def to_usage_key(self, course_key: CourseKey) -> UsageKey:
+        """
+        Converts this BlockKey into a UsageKey.
+        """
+        return course_key.make_usage_key(self.type, self.id)
 
 
 def derive_key(source: UsageKey, dest_parent: BlockKey) -> BlockKey:

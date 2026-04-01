@@ -49,7 +49,8 @@ from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import
 from xmodule.tests.test_import import DummyModuleStoreRuntime
 from xmodule.tests.test_video import VideoBlockTestBase
-from xmodule.video_block import VideoBlock, bumper_utils, video_utils
+from xmodule.video_block import VideoBlock, video_utils
+from xblocks_contrib.video import bumper_utils
 from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, save_to_store, subs_filename
 from xmodule.video_block.video_block import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
 from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
@@ -930,7 +931,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     # pylint: disable=invalid-name
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xmodule.video_block.video_block.rewrite_video_url')
+    @patch(f'{VideoBlock.__module__}.rewrite_video_url')
     def test_get_html_cdn_source(self, mocked_get_video, mock_render_django_template):
         """
         Test if sources got from CDN
@@ -1541,7 +1542,9 @@ class TestEditorSavedMethod(BaseTestVideoXBlock):
         assert isinstance(Transcript.get_asset(item.location, self.file_name), StaticContent)
         assert isinstance(Transcript.get_asset(item.location, 'subs_video.srt.sjson'), StaticContent)
         old_metadata = own_metadata(item)
-        with patch('xmodule.video_block.video_block.manage_video_subtitles_save') as manage_video_subtitles_save:
+        with patch(
+            'openedx.core.djangoapps.video_config.services.manage_video_subtitles_save'
+        ) as manage_video_subtitles_save:
             item.editor_saved(self.user, old_metadata, None)
             assert not manage_video_subtitles_save.called
 
@@ -2321,7 +2324,7 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
     # Use temporary FEATURES in this test without affecting the original
     FEATURES = dict(settings.FEATURES)
 
-    @patch('xmodule.video_block.bumper_utils.get_bumper_settings')
+    @patch('xblocks_contrib.video.bumper_utils.get_bumper_settings')
     def test_is_bumper_enabled(self, get_bumper_settings):
         """
         Check that bumper is (not)shown if ENABLE_VIDEO_BUMPER is (False)True
@@ -2346,8 +2349,8 @@ class TestVideoWithBumper(TestVideo):  # pylint: disable=test-inherits-tests
             assert not bumper_utils.is_bumper_enabled(self.block)
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    @patch('xmodule.video_block.bumper_utils.is_bumper_enabled')
-    @patch('xmodule.video_block.bumper_utils.get_bumper_settings')
+    @patch('xblocks_contrib.video.bumper_utils.is_bumper_enabled')
+    @patch('xblocks_contrib.video.bumper_utils.get_bumper_settings')
     @patch('edxval.api.get_urls_for_profiles')
     def test_bumper_metadata(
         self, get_url_for_profiles, get_bumper_settings, is_bumper_enabled, mock_render_django_template

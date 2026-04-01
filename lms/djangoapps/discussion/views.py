@@ -28,6 +28,7 @@ from xmodule.modulestore.django import modulestore
 
 import lms.djangoapps.discussion.django_comment_client.utils as utils
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.util.json_request import JsonResponse, expect_json
@@ -37,7 +38,6 @@ from lms.djangoapps.courseware.views.views import CourseTabView
 from lms.djangoapps.discussion.config.settings import is_forum_daily_digest_enabled
 from lms.djangoapps.discussion.django_comment_client.base.views import track_thread_viewed_event
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY
-from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
 from lms.djangoapps.discussion.django_comment_client.utils import (
     add_courseware_context,
     course_discussion_division_enabled,
@@ -560,7 +560,8 @@ def _create_discussion_board_context(request, base_context, thread=None):
         'is_commentable_divided': is_commentable_divided(course_key, discussion_id, course_discussion_settings),
         # If the default topic id is None the front-end code will look for a topic that contains "General"
         'discussion_default_topic_id': _get_discussion_default_topic_id(course),
-        'enable_daily_digest': is_forum_daily_digest_enabled()
+        'enable_daily_digest': is_forum_daily_digest_enabled(),
+        'PLATFORM_NAME': settings.PLATFORM_NAME
     })
     context.update(
         get_experiment_user_metadata_context(

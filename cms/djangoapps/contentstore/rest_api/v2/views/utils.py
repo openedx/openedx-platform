@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework import permissions
 from cms.djangoapps.contentstore.rest_api.v2.serializers.utils import NumericalInputValidationRequestSerializer
-from xmodule.capa.inputtypes import preview_numeric_input
+from xblocks_contrib.problem.capa.inputtypes import preview_numeric_input
 
 
 class NumericalInputValidationView(GenericAPIView):

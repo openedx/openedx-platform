@@ -5,13 +5,15 @@ These serializers handle data validation and business logic for instructor dashb
 Following REST best practices, serializers encapsulate most of the data processing logic.
 """
 
+import logging
+
 from django.conf import settings
-from django.db.models import Count
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
 from rest_framework import serializers
 
+from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
@@ -32,6 +34,8 @@ from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMI
 from xmodule.modulestore.django import modulestore
 
 from .tools import get_student_from_identifier, parse_datetime, DashboardError
+
+log = logging.getLogger(__name__)
 
 
 class CourseInformationSerializerV2(serializers.Serializer):
@@ -54,6 +58,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
     has_started = serializers.SerializerMethodField(help_text="Whether the course has started based on current time")
     has_ended = serializers.SerializerMethodField(help_text="Whether the course has ended based on current time")
     total_enrollment = serializers.SerializerMethodField(help_text="Total number of enrollments across all modes")
+    learner_count = serializers.SerializerMethodField(
+        help_text="Number of enrolled learners (excludes staff and admins)"
+    )
+    staff_count = serializers.SerializerMethodField(help_text="Number of enrolled staff and admins")
     enrollment_counts = serializers.SerializerMethodField(help_text="Enrollment count breakdown by mode")
     num_sections = serializers.SerializerMethodField(help_text="Number of sections/chapters in the course")
     grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
@@ -68,12 +76,37 @@ class CourseInformationSerializerV2(serializers.Serializer):
         help_text="Message about analytics dashboard availability"
     )
 
+    @staticmethod
+    def _build_tab_url(setting_name, *path_parts):
+        """
+        Build a tab URL from a Django setting and path parts.
+
+        Retrieves the base URL from `setting_name`, strips any trailing slash,
+        then joins the provided path parts (stripping their leading/trailing
+        slashes) with `/` separators — behaving like ``os.path.join`` for URLs.
+
+        Logs a warning and falls back to a relative URL if the setting is unset.
+
+        Example:
+
+            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', course_key, 'grading')
+            # => 'http://localhost:2003/instructor/course-v1:.../grading'
+
+            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email')
+            # => 'http://localhost:1984/communications/courses/course-v1:.../bulk_email'
+        """
+        base_url = getattr(settings, setting_name, None)
+        if base_url is None:
+            log.warning('%s is not configured.', setting_name)
+            base_url = ''
+        parts = [base_url.rstrip('/')] + [str(part).strip('/') for part in path_parts]
+        return '/'.join(parts)
+
     def get_tabs(self, data):
         """Get serialized course tabs."""
         request = data['request']
         course = data['course']
         course_key = course.id
-        mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
 
         access = {
             'admin': request.user.is_staff,
@@ -98,31 +131,56 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 {
                     'tab_id': 'course_info',
                     'title': _('Course Info'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/course_info',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'course_info'
+                    ),
                     'sort_order': 10,
                 },
                 {
                     'tab_id': 'enrollments',
                     'title': _('Enrollments'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/enrollments',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'enrollments'
+                    ),
                     'sort_order': 20,
                 },
                 {
-                    "tab_id": "course_team",
-                    "title": "Course Team",
-                    "url": f'{mfe_base_url}/instructor/{str(course_key)}/course_team',
+                    'tab_id': 'course_team',
+                    'title': _('Course Team'),
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'course_team'
+                    ),
                     'sort_order': 30,
                 },
                 {
                     'tab_id': 'grading',
                     'title': _('Grading'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/grading',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'grading'
+                    ),
                     'sort_order': 40,
                 },
                 {
                     'tab_id': 'cohorts',
                     'title': _('Cohorts'),
-                    'url': f'{mfe_base_url}/instructor/{str(course_key)}/cohorts',
+                    'url': self._build_tab_url(
+                        'INSTRUCTOR_MICROFRONTEND_URL',
+                        'instructor',
+                        course_key,
+                        'cohorts'
+                    ),
                     'sort_order': 90,
                 },
             ])
@@ -131,7 +189,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'bulk_email',
                 'title': _('Bulk Email'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/bulk_email',
+                'url': self._build_tab_url(
+                    'COMMUNICATIONS_MICROFRONTEND_URL',
+                    'courses',
+                    course_key,
+                    'bulk_email'
+                ),
                 'sort_order': 100,
             })
 
@@ -139,7 +202,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'date_extensions',
                 'title': _('Date Extensions'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/date_extensions',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'date_extensions'
+                ),
                 'sort_order': 50,
             })
 
@@ -147,7 +215,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'data_downloads',
                 'title': _('Data Downloads'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/data_downloads',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'data_downloads'
+                ),
                 'sort_order': 60,
             })
 
@@ -162,7 +235,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'open_responses',
                 'title': _('Open Responses'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/open_responses',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'open_responses'
+                ),
                 'sort_order': 70,
             })
 
@@ -174,7 +252,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'certificates',
                 'title': _('Certificates'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/certificates',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'certificates'
+                ),
                 'sort_order': 80,
             })
 
@@ -191,7 +274,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
             tabs.append({
                 'tab_id': 'special_exams',
                 'title': _('Special Exams'),
-                'url': f'{mfe_base_url}/instructor/{str(course_key)}/special_exams',
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    'instructor',
+                    course_key,
+                    'special_exams'
+                ),
                 'sort_order': 110,
             })
 
@@ -266,25 +354,24 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_total_enrollment(self, data):
         """Get total enrollment count."""
-        total_enrollments = CourseEnrollment.objects.filter(
-            course_id=data['course'].id,
-            is_active=True
-        ).count()
-        return total_enrollments
+        return self.get_enrollment_counts(data)['total']
+
+    def get_learner_count(self, data):
+        """Get enrollment count excluding staff and admins."""
+        return CourseEnrollment.objects.num_enrolled_in_exclude_admins(data['course'].id)
+
+    def get_staff_count(self, data):
+        """Get enrollment count for staff and admins only."""
+        return self.get_total_enrollment(data) - self.get_learner_count(data)
 
     def get_enrollment_counts(self, data):
-        """Get enrollment counts by mode."""
-        course = data['course']
-        total_enrollments = self.get_total_enrollment(data)
-        enrollments_by_mode = CourseEnrollment.objects.filter(
-            course_id=course.id,
-            is_active=True
-        ).values('mode').annotate(count=Count('mode'))
-
-        by_mode = {item['mode']: item['count'] for item in enrollments_by_mode}
-        by_mode['total'] = total_enrollments
-
-        return by_mode
+        """Get enrollment counts for all configured course modes."""
+        course_id = data['course'].id
+        counts = CourseEnrollment.objects.enrollment_counts(course_id)
+        configured_modes = CourseMode.modes_for_course(course_id)
+        result = {mode.slug: counts[mode.slug] for mode in configured_modes}
+        result['total'] = counts['total']
+        return result
 
     def get_num_sections(self, data):
         """Get number of sections in the course."""
@@ -416,3 +503,63 @@ class BlockDueDateSerializerV2(serializers.Serializer):
             raise serializers.ValidationError(
                 _('The extension due date and time format is incorrect')
             ) from exc
+
+
+class UnitExtensionSerializer(serializers.Serializer):
+    """
+    Serializer for unit extension data.
+
+    This serializer formats the data returned by get_overrides_for_course
+    for the paginated list API endpoint.
+    """
+    username = serializers.CharField(
+        help_text="Username of the learner who has the extension"
+    )
+    full_name = serializers.CharField(
+        help_text="Full name of the learner"
+    )
+    email = serializers.EmailField(
+        help_text="Email address of the learner"
+    )
+    unit_title = serializers.CharField(
+        help_text="Display name or URL of the unit"
+    )
+    unit_location = serializers.CharField(
+        help_text="Block location/ID of the unit"
+    )
+    extended_due_date = serializers.DateTimeField(
+        help_text="The extended due date for the learner"
+    )
+
+
+class ORASerializer(serializers.Serializer):
+    """Serializer for Open Response Assessments (ORAs) in a course."""
+
+    block_id = serializers.CharField(source="id")
+    unit_name = serializers.CharField(source="parent_name")
+    display_name = serializers.CharField(source="name")
+
+    # Metrics fields
+    total_responses = serializers.IntegerField(source="total")
+    training = serializers.IntegerField()
+    peer = serializers.IntegerField()
+    self = serializers.IntegerField()
+    waiting = serializers.IntegerField()
+    staff = serializers.IntegerField()
+    final_grade_received = serializers.IntegerField(source="done")
+    staff_ora_grading_url = serializers.URLField(allow_null=True)
+
+
+class ORASummarySerializer(serializers.Serializer):
+    """
+    Aggregated ORA statistics for a course
+    """
+    total_units = serializers.IntegerField()
+    total_assessments = serializers.IntegerField()
+    total_responses = serializers.IntegerField()
+    training = serializers.IntegerField()
+    peer = serializers.IntegerField()
+    self = serializers.IntegerField()
+    waiting = serializers.IntegerField()
+    staff = serializers.IntegerField()
+    final_grade_received = serializers.IntegerField()

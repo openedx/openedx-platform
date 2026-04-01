@@ -231,6 +231,16 @@ class TestUserTaskStopped(APITestCase):
 
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_email_not_sent_with_legacy_libary_content_ref_update(self):
+        """
+        Check the signal receiver and email sending.
+        """
+        end_of_task_status = self.status
+        end_of_task_status.name = "Updating legacy library content blocks references of course-v1:UNIX+UN1+2025_T4"
+        user_task_stopped.send(sender=UserTaskStatus, status=end_of_task_status)
+
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_email_sent_with_olx_validations_with_config_enabled(self):
         """
         Tests that email is sent with olx validation errors.

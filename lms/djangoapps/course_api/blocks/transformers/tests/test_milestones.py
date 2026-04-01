@@ -16,9 +16,13 @@ from lms.djangoapps.gating import api as lms_gating_api
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.core.lib.gating import api as gating_api
 
 from ..milestones import MilestonesAndSpecialExamsTransformer
+
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
 @ddt.ddt
@@ -171,7 +175,7 @@ class MilestonesTransformerTestCase(CourseStructureTestCase, MilestonesTestCaseM
         # get data back.  This would happen as a part of publishing in a production system.
         bs_api.update_course_in_cache(self.course.id)
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(6, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             self.get_blocks_and_check_against_expected(self.user, expected_blocks_before_completion)
 
         # clear the request cache to simulate a new request
@@ -184,7 +188,7 @@ class MilestonesTransformerTestCase(CourseStructureTestCase, MilestonesTestCaseM
             self.user,
         )
 
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(4, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             self.get_blocks_and_check_against_expected(self.user, self.ALL_BLOCKS_EXCEPT_SPECIAL)
 
     def test_staff_access(self):

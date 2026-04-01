@@ -89,7 +89,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         """
         Collect all blocks from a course that are "importable" and write them to the
-        a learning core library.
+        a openedx_content library.
         """
 
         # Search for the library.

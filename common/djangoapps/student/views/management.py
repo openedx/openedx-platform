@@ -9,6 +9,7 @@ import urllib.parse
 import uuid
 from collections import namedtuple
 import re
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib import messages
@@ -35,7 +36,6 @@ from eventtracking import tracker
 # Note that this lives in LMS, so this dependency should be refactored.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from pytz import UTC
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 
@@ -539,7 +539,7 @@ def disable_account_ajax(request):
             context['message'] = _("Unexpected account status")
             return JsonResponse(context, status=400)
         user_account.changed_by = request.user
-        user_account.standing_last_changed_at = datetime.datetime.now(UTC)
+        user_account.standing_last_changed_at = datetime.datetime.now(ZoneInfo("UTC"))
         user_account.save()
 
     return JsonResponse(context)
@@ -921,7 +921,7 @@ def confirm_email_change(request, key):
         meta = u_prof.get_meta()
         if 'old_emails' not in meta:
             meta['old_emails'] = []
-        meta['old_emails'].append([user.email, datetime.datetime.now(UTC).isoformat()])
+        meta['old_emails'].append([user.email, datetime.datetime.now(ZoneInfo("UTC")).isoformat()])
         u_prof.set_meta(meta)
         u_prof.save()
         # Send it to the old email...

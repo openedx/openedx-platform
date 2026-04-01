@@ -58,7 +58,7 @@
 
 // copy
 %t-copy {
-  font-family: $font-family-sans-serif;
+  font-family: var(--font-family-sans-serif);
 }
 
 %t-copy-sub1 {
@@ -66,7 +66,7 @@
 
   @include line-height(14);
 
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
 }
 
 %t-copy-sub2 {
@@ -74,7 +74,7 @@
 
   @include line-height(12);
 
-  font-size: $forum-small-font-size;
+  font-size: var(--forum-small-font-size);
 }
 
 // extends - UI - removes list styling/spacing when using uls, ols for navigation and less content-centric cases

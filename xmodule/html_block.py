@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import textwrap
+import warnings
 from datetime import datetime
 
 from django.conf import settings
@@ -16,6 +17,7 @@ from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, List, Scope, String
 from xblocks_contrib.html import HtmlBlock as _ExtractedHtmlBlock
+from xblocks_contrib.html import HtmlBlockMixin as _ExtractedHtmlBlockMixin
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID
 from xmodule.contentstore.content import StaticContent
@@ -43,13 +45,17 @@ _ = lambda text: text
 @XBlock.needs("i18n")
 @XBlock.needs("mako")
 @XBlock.needs("user")
-class HtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     XmlMixin, EditingMixin,
-    XModuleToXBlockMixin, ResourceTemplates, XModuleMixin,
+    XModuleToXBlockMixin, XModuleMixin,
 ):
     """
     The HTML XBlock mixin.
     This provides the base class for all Html-ish blocks (including the HTML XBlock).
+
+    .. deprecated:: 2026-03
+       This built-in HTML block mixin is deprecated. Please use the extracted ``HtmlBlockMixin``
+       from ``xblocks_contrib.html`` instead.
     """
 
     display_name = String(
@@ -296,7 +302,7 @@ class HtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
         """
-        Parse XML in the new learning-core-based runtime. Since it doesn't yet
+        Parse XML in the new openedx_content-based runtime. Since it doesn't yet
         support loading separate .html files, the HTML data is assumed to be in
         a CDATA child or otherwise just inline in the OLX.
         """
@@ -370,12 +376,31 @@ class HtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
 
 
 @edxnotes
-class _BuiltInHtmlBlock(HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+class _BuiltInHtmlBlock(_BuiltinHtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
     """
     This is the actual HTML XBlock.
     Nothing extra is required; this is just a wrapper to include edxnotes support.
+
+    .. deprecated:: 2026-03
+       This built-in HTML block is deprecated. Please use the extracted ``HtmlBlock``
+       from ``xblocks_contrib.html`` instead.
     """
     is_extracted = False
+
+
+HtmlBlockMixin = None
+
+
+def reset_Mixin():
+    """Reset Mixin as per django settings flag"""
+    global HtmlBlockMixin
+    HtmlBlockMixin = (
+        _ExtractedHtmlBlockMixin if settings.USE_EXTRACTED_HTML_BLOCK
+        else _BuiltinHtmlBlockMixin
+    )
+    return HtmlBlockMixin
+
+reset_Mixin()
 
 
 class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
@@ -392,7 +417,9 @@ class AboutFields:  # lint-amnesty, pylint: disable=missing-class-docstring
 
 
 @XBlock.tag("detached")
-class AboutBlock(AboutFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
+# ResourceTemplates is required on the LMS side to load template resources for this AboutBlock.
+# On the CMS side, it is already included via XBLOCK_MIXINS.
+class AboutBlock(AboutFields, ResourceTemplates, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlocks but we need to overload where the templates are located
     in order to be able to create new ones
@@ -453,6 +480,7 @@ class CourseInfoFields:
 
 @XBlock.tag("detached")
 @XBlock.needs('replace_urls')
+@XBlock.needs('mako')
 class CourseInfoBlock(CourseInfoFields, HtmlBlockMixin):  # lint-amnesty, pylint: disable=abstract-method
     """
     These pieces of course content are treated as HtmlBlock but we need to overload where the templates are located
@@ -523,3 +551,14 @@ def reset_class():
 
 reset_class()
 HtmlBlock.__name__ = "HtmlBlock"
+
+if not settings.USE_EXTRACTED_HTML_BLOCK:
+    warnings.warn(
+        "The built-in `xmodule.html_block` HtmlBlock implementation is deprecated. "
+        "To fix this warning, enable `USE_EXTRACTED_HTML_BLOCK` (set it to True) to use "
+        "`xblocks_contrib.html.HtmlBlock` instead. "
+        "Support for the built-in implementation, and the `USE_EXTRACTED_HTML_BLOCK` setting, "
+        "will be removed in Willow.",
+        DeprecationWarning,
+        stacklevel=2,
+    )

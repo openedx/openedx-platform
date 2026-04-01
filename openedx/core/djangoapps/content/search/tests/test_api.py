@@ -9,13 +9,14 @@ from datetime import datetime, timezone
 from unittest.mock import MagicMock, Mock, call, patch
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
+from openedx_content import models_api as content_models
 
 import ddt
 import pytest
 from django.test import override_settings
 from freezegun import freeze_time
 from meilisearch.errors import MeilisearchApiError
-from openedx_learning.api import authoring as authoring_api
+from openedx_content import api as content_api
 from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -189,9 +190,9 @@ class TestSearchApi(ModuleStoreTestCase):
         tagging_api.add_tag_to_taxonomy(self.taxonomyB, "four")
 
         # Create a collection:
-        self.learning_package = authoring_api.get_learning_package_by_key(self.library.key)
+        self.learning_package = content_api.get_learning_package_by_key(self.library.key)
         with freeze_time(self.created_date):
-            self.collection = authoring_api.create_collection(
+            self.collection = content_api.create_collection(
                 learning_package_id=self.learning_package.id,
                 key="MYCOL",
                 title="my_collection",
@@ -224,7 +225,7 @@ class TestSearchApi(ModuleStoreTestCase):
         with freeze_time(self.created_date):
             self.unit = library_api.create_container(
                 library_key=self.library.key,
-                container_type=library_api.ContainerType.Unit,
+                container_cls=content_models.Unit,
                 slug="unit-1",
                 title="Unit 1",
                 user_id=None,
@@ -232,7 +233,7 @@ class TestSearchApi(ModuleStoreTestCase):
             self.unit_key = "lct:org1:lib:unit:unit-1"
             self.subsection = library_api.create_container(
                 self.library.key,
-                container_type=library_api.ContainerType.Subsection,
+                container_cls=content_models.Subsection,
                 slug="subsection-1",
                 title="Subsection 1",
                 user_id=None,
@@ -245,7 +246,7 @@ class TestSearchApi(ModuleStoreTestCase):
             self.subsection_key = "lct:org1:lib:subsection:subsection-1"
             self.section = library_api.create_container(
                 self.library.key,
-                container_type=library_api.ContainerType.Section,
+                container_cls=content_models.Section,
                 slug="section-1",
                 title="Section 1",
                 user_id=None,
@@ -326,6 +327,10 @@ class TestSearchApi(ModuleStoreTestCase):
             "breadcrumbs": [{"display_name": "Library"}],
             # "published" is not set since we haven't published it yet
         }
+
+    def tearDown(self):
+        content_models.Container.reset_cache()
+        return super().tearDown()
 
     @override_settings(MEILISEARCH_ENABLED=False)
     def test_reindex_meilisearch_disabled(self, mock_meilisearch) -> None:
@@ -926,7 +931,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Soft-delete the collection
-        authoring_api.delete_collection(
+        content_api.delete_collection(
             self.collection.learning_package_id,
             self.collection.key,
         )
@@ -961,7 +966,7 @@ class TestSearchApi(ModuleStoreTestCase):
         # Restore the collection
         restored_date = datetime(2023, 8, 9, 10, 11, 12, tzinfo=timezone.utc)
         with freeze_time(restored_date):
-            authoring_api.restore_collection(
+            content_api.restore_collection(
                 self.collection.learning_package_id,
                 self.collection.key,
             )
@@ -983,7 +988,7 @@ class TestSearchApi(ModuleStoreTestCase):
         mock_meilisearch.return_value.index.reset_mock()
 
         # Hard-delete the collection
-        authoring_api.delete_collection(
+        content_api.delete_collection(
             self.collection.learning_package_id,
             self.collection.key,
             hard_delete=True,
@@ -1232,4 +1237,69 @@ class TestSearchApi(ModuleStoreTestCase):
                 call([new_section_dict]),
             ],
             any_order=True,
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_fetch_block_types(self, mock_meilisearch):
+        from openedx.core.djangoapps.content.search.api import fetch_block_types
+
+        mock_index = mock_meilisearch.return_value.get_index.return_value
+        fetch_block_types('context_key = test')
+
+        mock_index.search.assert_called_once_with(
+            "",
+            {
+                "facets": ["block_type"],
+                "filter": ['context_key = test'],
+                "limit": 0,
+            }
+        )
+
+    @override_settings(MEILISEARCH_ENABLED=True)
+    def test_get_all_blocks_from_context(self, mock_meilisearch):
+        from openedx.core.djangoapps.content.search.api import get_all_blocks_from_context
+
+        mock_index = mock_meilisearch.return_value.get_index.return_value
+        expected_result = [
+            {"usage_key": "block-v1:test+type@html+block@1"},
+            {"usage_key": "block-v1:test+type@video+block@2"},
+        ]
+
+        # Simulate two pages: one with results and one empty (while loop ends)
+        mock_index.search.side_effect = [
+            {
+                "hits": expected_result,
+                "estimatedTotalHits": 1200,
+            },
+            {
+                "hits": [],
+                "estimatedTotalHits": 1200,
+            },
+        ]
+
+        result = list(get_all_blocks_from_context(
+            context_key="course-v1:TestOrg+TestCourse+TestRun",
+            extra_attributes_to_retrieve=["display_name"],
+        ))
+
+        assert result == expected_result
+        assert mock_index.search.call_count == 2
+        mock_index.search.assert_any_call(
+            "",
+            {
+                "filter": ['context_key = "course-v1:TestOrg+TestCourse+TestRun"'],
+                "limit": 1000,
+                "offset": 0,
+                "attributesToRetrieve": ["usage_key", "display_name"],
+            }
+        )
+
+        mock_index.search.assert_any_call(
+            "",
+            {
+                "filter": ['context_key = "course-v1:TestOrg+TestCourse+TestRun"'],
+                "limit": 1000,
+                "offset": 1000,
+                "attributesToRetrieve": ["usage_key", "display_name"],
+            }
         )

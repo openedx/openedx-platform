@@ -7,7 +7,7 @@ sphinx-book-theme         # Common theme for all Open edX projects
 gitpython                 # fetch git repo information
 Sphinx                    # Documentation builder
 sphinx-design             # provides various responsive web-components
-sphinxcontrib-openapi[markdown] # Be able to render openapi schema in a sphinx project
+sphinxcontrib-openapi     # Be able to render openapi schema in a sphinx project
 sphinxext-rediraffe       # Quickly and easily redirect when we move pages around.
 sphinx-reredirects        # Redirect from a sphinx project out to other places on the web including other sphinx projects
 sphinx-autoapi

@@ -34,6 +34,7 @@ locations.
     references/index
     concepts/index
     extensions/tinymce_plugins
+    decisions/index
 
 .. grid:: 1 2 2 2
    :gutter: 3

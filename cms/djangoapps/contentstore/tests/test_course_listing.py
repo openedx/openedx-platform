@@ -35,12 +35,15 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 TOTAL_COURSES_COUNT = 10
 USER_COURSES_COUNT = 1
+
+QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
 
 @ddt.ddt
@@ -303,10 +306,10 @@ class TestCourseListing(ModuleStoreTestCase):
         courses_list, __ = _accessible_courses_list_from_groups(self.request)
         self.assertEqual(len(courses_list), USER_COURSES_COUNT)
 
-        with self.assertNumQueries(1, table_ignorelist=WAFFLE_TABLES):
+        with self.assertNumQueries(2, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             _accessible_courses_list_from_groups(self.request)
 
-        with self.assertNumQueries(2, table_ignorelist=WAFFLE_TABLES):
+        with self.assertNumQueries(2, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             _accessible_courses_iter_for_tests(self.request)
 
     def test_course_listing_errored_deleted_courses(self):

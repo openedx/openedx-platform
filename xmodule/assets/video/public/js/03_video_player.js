@@ -2,7 +2,7 @@
 import HTML5Video from './02_html5_video.js';
 import HTML5HLSVideo from './02_html5_hls_video.js';
 import Resizer from './00_resizer.js';
-import HLS from 'hls';
+import Hls from 'hls.js';
 import _ from 'underscore';
 import * as Time from './utils/time.js';
 
@@ -158,7 +158,7 @@ function _initialize(state) {
 
     // Browser can play HLS videos if either `Media Source Extensions`
     // feature is supported or browser is safari (native HLS support)
-    state.canPlayHLS = state.HLSVideoSources.length > 0 && (HLS.isSupported() || state.browserIsSafari);
+    state.canPlayHLS = state.HLSVideoSources.length > 0 && (Hls.isSupported() || state.browserIsSafari);
     state.HLSOnlySources = state.config.sources.length > 0
                    && state.config.sources.length === state.HLSVideoSources.length;
 

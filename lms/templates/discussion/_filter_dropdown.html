@@ -1,71 +1,36 @@
-<%page expression_filter="h"/>
-<%!
-from django.utils.translation import gettext as _
-from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY
-from openedx.core.djangolib.markup import HTML
-%>
+{% load i18n %}
 
-<%def name="render_dropdown(map, topic_list)">
-    % for child, c_type in map["children"]:
-        % if child in map["entries"] and c_type == TYPE_ENTRY:
-            ${HTML(render_entry(map["entries"], child, topic_list))}
-        %else:
-            ${HTML(render_category(map["subcategories"], child, topic_list))}
-        %endif
-    %endfor
-</%def>
+<div class="forum-nav-browse-menu-wrapper"
+     style="display: none"
+     aria-label="{% trans 'Discussion topics list' as tmsg %} {{tmsg|force_escape}}">
 
-<%def name="render_entry(entries, entry, topic_list)">
-    <li
-        class="forum-nav-browse-menu-item"
-        data-discussion-id='${entries[entry]["id"]}'
-        id='${entries[entry]["id"]}'
-        data-divided="${str(entries[entry]['is_divided']).lower()}"
-        role="option"
-    >
-    %if entry:
-        <span class="forum-nav-browse-title">
-        %if topic_list:
-            <span class="sr">
-                ${', '.join(topic_list)},  
-            </span>
-        %endif
-        ${entry}
-        </span>
-    %endif
-    </li>
-</%def>
-
-<%def name="render_category(categories, category, topic_list)">
-    <li class="forum-nav-browse-menu-item"
-        id='${category | n, decode.utf8}'
-        role="option"
-    >
-        <span class="forum-nav-browse-title">${category}</span>
-        <ul class="forum-nav-browse-submenu" role="presentation">
-            <% topic_list.append(category) %>
-            ${HTML(render_dropdown(categories[category], topic_list))}
-            <% topic_list.remove(category) %>
-        </ul>
-    </li>
-</%def>
-
-<div class="forum-nav-browse-menu-wrapper" style="display: none" aria-label="${_("Discussion topics list")}">
     <form class="forum-nav-browse-filter" autocomplete="off">
-        <label for="forum-nav-browse-filter-input" aria-label='${_("Filter Topics")}' class="field-label">
-            <span class="field-label-text">${_("Filter Topics")}</span>
-            <input type="text" id="forum-nav-browse-filter-input" role="combobox" aria-expanded="true" aria-owns="discussion_topics_listbox" aria-autocomplete="list" class="forum-nav-browse-filter-input" placeholder="${_("filter topics")}">
+        <label for="forum-nav-browse-filter-input"
+               aria-label="{% trans 'Filter Topics' as tmsg %} {{tmsg|force_escape}}"
+               class="field-label">
+
+            <span class="field-label-text">{% trans "Filter Topics" as tmsg %} {{tmsg|force_escape}}</span>
+
+            <input type="text"
+                   id="forum-nav-browse-filter-input"
+                   role="combobox"
+                   aria-expanded="true"
+                   aria-owns="discussion_topics_listbox"
+                   aria-autocomplete="list"
+                   class="forum-nav-browse-filter-input"
+                   placeholder="{% trans 'filter topics' as tmsg %} {{tmsg|force_escape}}">
+
             <span class="icon fa fa-filter" aria-hidden="true"></span>
         </label>
     </form>
     <ul class="forum-nav-browse-menu" role="listbox" id="discussion_topics_listbox">
         <li class="forum-nav-browse-menu-item forum-nav-browse-menu-all" role="option" id="all_discussions">
-            <span class="forum-nav-browse-title">${_("All Discussions")}</span>
+            <span class="forum-nav-browse-title">{% trans "All Discussions" as tmsg %} {{tmsg|force_escape}}</span>
         </li>
         <li class="forum-nav-browse-menu-item forum-nav-browse-menu-following" role="option" id="posts_following">
             <span class="icon fa fa-star" aria-hidden="true"></span>
-            <span class="forum-nav-browse-title">${_("Posts I'm Following")}</span>
+            <span class="forum-nav-browse-title">{% trans "Posts I'm Following" as tmsg %} {{tmsg|force_escape}}</span>
         </li>
-        ${HTML(render_dropdown(category_map, []))}
+        {% include "discussion/_dropdown_items.html" with map=category_map topic_list="" %}
     </ul>
 </div>

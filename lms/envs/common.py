@@ -40,7 +40,6 @@ Conventions
 # and throws spurious errors. Therefore, we disable invalid-name checking.
 # pylint: disable=invalid-name
 
-import importlib.util
 import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
@@ -61,11 +60,11 @@ from enterprise.constants import (
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
 )
+from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
 
 from openedx.core.lib.derived import Derived
 from openedx.envs.common import *  # pylint: disable=wildcard-import
 
-from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
 # A proxy for feature flags stored in the settings namespace
@@ -98,15 +97,6 @@ DISPLAY_HISTOGRAMS_TO_STAFF = False  # For large courses this slows down coursew
 
 REROUTE_ACTIVATION_EMAIL = False  # nonempty string = address for all activation emails
 
-# .. toggle_name: settings.ENABLE_DISCUSSION_HOME_PANEL
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: Hides or displays a welcome panel under the Discussion tab, which includes a subscription
-#   on/off setting for discussion digest emails.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2013-07-30
-# .. toggle_warning: This should remain off in production until digest notifications are online.
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/520
 ENABLE_DISCUSSION_HOME_PANEL = False
 
 # .. toggle_name: settings.ENABLE_DISCUSSION_EMAIL_DIGEST
@@ -290,19 +280,6 @@ ENABLED_PAYMENT_REPORTS = [
     "certificate_status"
 ]
 
-# Turn off account locking if failed login attempts exceeds a limit
-# .. toggle_name: settings.ENABLE_MAX_FAILED_LOGIN_ATTEMPTS
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: This feature will keep track of the number of failed login attempts on a given user's
-#   email. If the number of consecutive failed login attempts - without a successful login at some point - reaches
-#   a configurable threshold (default 6), then the account will be locked for a configurable amount of seconds
-#   (30 minutes) which will prevent additional login attempts until this time period has passed. If a user
-#   successfully logs in, all the counter which tracks the number of failed attempts will be reset back to 0. If
-#   set to False then account locking will be disabled for failed login attempts.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2014-01-30
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/2331
 ENABLE_MAX_FAILED_LOGIN_ATTEMPTS = True
 
 # Hide any Personally Identifiable Information from application logs
@@ -323,6 +300,69 @@ ALLOW_WIKI_ROOT_ACCESS = True
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2014-09-15
 ENABLE_THIRD_PARTY_AUTH = False
+
+# Third-party auth settings for python-social-auth
+# These are defined unconditionally; they only take effect when
+# AUTHENTICATION_BACKENDS includes social auth backends.
+
+# Where to send the user if there's an error during social authentication
+SOCIAL_AUTH_LOGIN_ERROR_URL = '/'
+# Where to send the user once social authentication is successful
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/dashboard'
+# Disable sanitizing of redirect urls in social-auth since the platform
+# already does its own sanitization via the LOGIN_REDIRECT_WHITELIST setting.
+SOCIAL_AUTH_SANITIZE_REDIRECTS = False
+# Adding extra key value pair in the url query string for microsoft as per request
+SOCIAL_AUTH_AZUREAD_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'msafed': 0}
+# Required so that we can use unmodified PSA OAuth2 backends:
+SOCIAL_AUTH_STRATEGY = 'common.djangoapps.third_party_auth.strategy.ConfigurationModelStrategy'
+# We let the user specify their email address during signup.
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email']
+# Disable exceptions by default for prod so you get redirect behavior
+# instead of a Django error page.
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False
+# Clean username to make sure username is compatible with our system requirements
+SOCIAL_AUTH_CLEAN_USERNAME_FUNCTION = 'common.djangoapps.third_party_auth.models.clean_username'
+# Allow users to login using social auth even if their account is not verified yet
+SOCIAL_AUTH_INACTIVE_USER_LOGIN = True
+SOCIAL_AUTH_INACTIVE_USER_URL = '/auth/inactive'
+SOCIAL_AUTH_UUID_LENGTH = 10
+# Whitelisted URL query parameters retained in the pipeline session.
+FIELDS_STORED_IN_SESSION = ['auth_entry', 'next']
+
+# Computed setting: disable clean usernames check when unicode usernames are enabled
+SOCIAL_AUTH_CLEAN_USERNAMES = Derived(
+    lambda settings: not settings.ENABLE_UNICODE_USERNAME
+)
+
+# Social auth pipeline for third-party authentication.
+# Operators can override SOCIAL_AUTH_PIPELINE directly in their settings
+# to customize the pipeline.
+# Note: The enterprise step (handle_enterprise_logistration) is inserted dynamically
+# during app initialization by third_party_auth's AppConfig.ready() if enterprise
+# is enabled. It cannot be included statically because it requires runtime checks.
+SOCIAL_AUTH_PIPELINE = [
+    'common.djangoapps.third_party_auth.pipeline.parse_query_params',
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_login_api',
+    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_saml',
+    'common.djangoapps.third_party_auth.pipeline.associate_by_email_if_oauth',
+    'common.djangoapps.third_party_auth.pipeline.get_username',
+    'common.djangoapps.third_party_auth.pipeline.set_pipeline_timeout',
+    'common.djangoapps.third_party_auth.pipeline.ensure_user_information',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+    'common.djangoapps.third_party_auth.pipeline.user_details_force_sync',
+    'common.djangoapps.third_party_auth.pipeline.set_id_verification_status',
+    'common.djangoapps.third_party_auth.pipeline.set_logged_in_cookies',
+    'common.djangoapps.third_party_auth.pipeline.login_analytics',
+    'common.djangoapps.third_party_auth.pipeline.ensure_redirect_url_is_safe',
+]
 
 # Prevent concurrent logins per user
 PREVENT_CONCURRENT_LOGINS = True
@@ -735,28 +775,16 @@ GRADEBOOK_FREEZE_DAYS = 30
 RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 
 ############################# SET PATH INFORMATION #############################
+
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
-REPO_ROOT = PROJECT_ROOT.dirname()
-COMMON_ROOT = REPO_ROOT / "common"
-OPENEDX_ROOT = REPO_ROOT / "openedx"
-XMODULE_ROOT = REPO_ROOT / "xmodule"
-ENV_ROOT = REPO_ROOT.dirname()  # virtualenv dir /edx-platform is in
-COURSES_ROOT = ENV_ROOT / "data"
 NODE_MODULES_ROOT = REPO_ROOT / "node_modules"
 
-DATA_DIR = COURSES_ROOT
-
-# For geolocation ip database
-GEOIP_PATH = REPO_ROOT / "common/static/data/geoip/GeoLite2-Country.mmdb"
 # Where to look for a status message
 STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"
 
 ############################ Global Database Configuration #####################
 
-DATABASE_ROUTERS = [
-    'openedx.core.lib.django_courseware_routers.StudentModuleHistoryExtendedRouter',
-    'edx_django_utils.db.read_replica.ReadReplicaRouter',
-]
+DATABASE_ROUTERS.append('edx_django_utils.db.read_replica.ReadReplicaRouter')
 
 ################################## DJANGO OAUTH TOOLKIT #######################################
 
@@ -812,27 +840,11 @@ TPA_PROVIDER_SUSTAINED_THROTTLE = '50/hr'
 TPA_AUTOMATIC_LOGOUT_ENABLED = False
 
 ################################## TEMPLATE CONFIGURATION #####################################
-# Mako templating
-import tempfile  # pylint: disable=wrong-import-position,wrong-import-order
-MAKO_MODULE_DIR = os.path.join(tempfile.gettempdir(), 'mako_lms')
-MAKO_TEMPLATE_DIRS_BASE = [
-    PROJECT_ROOT / 'templates',
-    COMMON_ROOT / 'templates',
-    XMODULE_ROOT / 'capa' / 'templates',
-    COMMON_ROOT / 'djangoapps' / 'pipeline_mako' / 'templates',
-    OPENEDX_ROOT / 'core' / 'djangoapps' / 'cors_csrf' / 'templates',
-    OPENEDX_ROOT / 'core' / 'djangoapps' / 'dark_lang' / 'templates',
-    OPENEDX_ROOT / 'core' / 'lib' / 'license' / 'templates',
-    OPENEDX_ROOT / 'features' / 'course_experience' / 'templates',
-]
 
-CONTEXT_PROCESSORS = [
-    'django.template.context_processors.request',
-    'django.template.context_processors.static',
-    'django.template.context_processors.i18n',
-    'django.contrib.auth.context_processors.auth',  # this is required for admin
-    'django.template.context_processors.csrf',
+MAKO_TEMPLATE_DIRS_BASE = lms_mako_template_dirs_base
 
+CONTEXT_PROCESSORS.remove('django.contrib.messages.context_processors.messages')
+CONTEXT_PROCESSORS[5:5] = [
     # Added for django-wiki
     'django.template.context_processors.media',
     'django.template.context_processors.tz',
@@ -844,72 +856,22 @@ CONTEXT_PROCESSORS = [
 
     # Timezone processor (sends language and time_zone preference)
     'lms.djangoapps.courseware.context_processor.user_timezone_locale_prefs',
-
-    # Online contextual help
-    'help_tokens.context_processor',
-    'openedx.core.djangoapps.site_configuration.context_processors.configuration_context',
-
+]
+CONTEXT_PROCESSORS += [
     # Mobile App processor (Detects if request is from the mobile app)
     'lms.djangoapps.mobile_api.context_processor.is_from_mobile_app',
 
     # Context processor necessary for the survey report message appear on the admin site
     'openedx.features.survey_report.context_processors.admin_extra_context',
+
+    # Third-party auth context processors for social_django
+    'social_django.context_processors.backends',
+    'social_django.context_processors.login_redirect',
 ]
 
-# Django templating
-TEMPLATES = [
-    {
-        'NAME': 'django',
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Don't look for template source files inside installed applications.
-        'APP_DIRS': False,
-        # Instead, look for template source files in these dirs.
-        'DIRS': [
-            PROJECT_ROOT / "templates",
-            COMMON_ROOT / 'templates',
-            XMODULE_ROOT / 'capa' / 'templates',
-            COMMON_ROOT / 'djangoapps' / 'pipeline_mako' / 'templates',
-            COMMON_ROOT / 'static',  # required to statically include common Underscore templates
-        ],
-        # Options specific to this backend.
-        'OPTIONS': {
-            'loaders': [
-                # We have to use mako-aware template loaders to be able to include
-                # mako templates inside django templates (such as main_django.html).
-                'openedx.core.djangoapps.theming.template_loaders.ThemeTemplateLoader',
-                'common.djangoapps.edxmako.makoloader.MakoFilesystemLoader',
-                'common.djangoapps.edxmako.makoloader.MakoAppDirectoriesLoader',
-            ],
-            'context_processors': CONTEXT_PROCESSORS,
-            # Change 'debug' in your environment settings files - not here.
-            'debug': False
-        }
-    },
-    {
-        'NAME': 'mako',
-        'BACKEND': 'common.djangoapps.edxmako.backend.Mako',
-        # Don't look for template source files inside installed applications.
-        'APP_DIRS': False,
-        # Instead, look for template source files in these dirs.
-        'DIRS': Derived(make_mako_template_dirs),
-        # Options specific to this backend.
-        'OPTIONS': {
-            'context_processors': CONTEXT_PROCESSORS,
-            # Change 'debug' in your environment settings files - not here.
-            'debug': False,
-        }
-    },
-]
-DEFAULT_TEMPLATE_ENGINE = TEMPLATES[0]
-DEFAULT_TEMPLATE_ENGINE_DIRS = DEFAULT_TEMPLATE_ENGINE['DIRS'][:]
+DEFAULT_TEMPLATE_ENGINE_DIRS = Derived(lambda settings: settings.TEMPLATES[0]['DIRS'][:])
 
 ###############################################################################################
-
-AUTHENTICATION_BACKENDS = [
-    'rules.permissions.ObjectPermissionBackend',
-    'django.contrib.auth.backends.AllowAllUsersModelBackend',
-    'bridgekeeper.backends.RulePermissionBackend',
-]
 
 STUDENT_FILEUPLOAD_MAX_SIZE = 4 * 1000 * 1000  # 4 MB
 MAX_FILEUPLOADS_PER_INPUT = 20
@@ -936,11 +898,6 @@ ALTERNATE_WORKER_QUEUES = 'cms'
 
 DATA_DIR = '/edx/var/edxapp/data'
 
-# .. setting_name: MAINTENANCE_BANNER_TEXT
-# .. setting_default: None
-# .. setting_description: Specifies the text that is rendered on the maintenance banner.
-# .. setting_warning: Depends on the `open_edx_util.display_maintenance_warning` waffle switch.
-#   The banner is only rendered when the switch is activated.
 MAINTENANCE_BANNER_TEXT = None
 
 # Set certificate issued date format. It supports all formats supported by
@@ -951,15 +908,6 @@ CERTIFICATE_DATE_FORMAT = "%B %-d, %Y"
 
 ENABLE_MULTICOURSE = False  # set to False to disable multicourse display (see lib.util.views.edXhome)
 
-# .. toggle_name: WIKI_ENABLED
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: True
-# .. toggle_description: This setting allows us to have a collaborative tool to contribute or
-#   modify content of course related materials.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2012-07-13
-WIKI_ENABLED = True
-
 ###
 
 # IP addresses that are allowed to reload the course, etc.
@@ -969,66 +917,9 @@ LMS_MIGRATION_ALLOWED_IPS = []
 ############################## EVENT TRACKING #################################
 LMS_SEGMENT_KEY = None
 
-# FIXME: Should we be doing this truncation?
-TRACK_MAX_EVENT = 50000
-
 DEBUG_TRACK_LOG = False
 
-TRACKING_BACKENDS = {
-    'logger': {
-        'ENGINE': 'common.djangoapps.track.backends.logger.LoggerBackend',
-        'OPTIONS': {
-            'name': 'tracking'
-        }
-    }
-}
-
-# We're already logging events, and we don't want to capture user
-# names/passwords.  Heartbeat events are likely not interesting.
-TRACKING_IGNORE_URL_PATTERNS = [r'^/event', r'^/login', r'^/heartbeat', r'^/segmentio/event', r'^/performance']
-
-EVENT_TRACKING_ENABLED = True
-EVENT_TRACKING_BACKENDS = {
-    'tracking_logs': {
-        'ENGINE': 'eventtracking.backends.routing.RoutingBackend',
-        'OPTIONS': {
-            'backends': {
-                'logger': {
-                    'ENGINE': 'eventtracking.backends.logger.LoggerBackend',
-                    'OPTIONS': {
-                        'name': 'tracking',
-                        'max_event_size': TRACK_MAX_EVENT,
-                    }
-                }
-            },
-            'processors': [
-                {'ENGINE': 'common.djangoapps.track.shim.LegacyFieldMappingProcessor'},
-                {'ENGINE': 'common.djangoapps.track.shim.PrefixedEventProcessor'}
-            ]
-        }
-    },
-    'segmentio': {
-        'ENGINE': 'eventtracking.backends.routing.RoutingBackend',
-        'OPTIONS': {
-            'backends': {
-                'segment': {'ENGINE': 'eventtracking.backends.segment.SegmentBackend'}
-            },
-            'processors': [
-                {
-                    'ENGINE': 'eventtracking.processors.whitelist.NameWhitelistProcessor',
-                    'OPTIONS': {
-                        'whitelist': []
-                    }
-                },
-                {
-                    'ENGINE': 'common.djangoapps.track.shim.GoogleAnalyticsProcessor'
-                }
-            ]
-        }
-    }
-}
-EVENT_TRACKING_PROCESSORS = []
-EVENT_TRACKING_SEGMENTIO_EMIT_WHITELIST = []
+TRACKING_IGNORE_URL_PATTERNS += [r'^/segmentio/event', r'^/performance']
 
 TRACKING_SEGMENTIO_WEBHOOK_SECRET = None
 TRACKING_SEGMENTIO_ALLOWED_TYPES = ['track']
@@ -1039,7 +930,6 @@ TRACKING_SEGMENTIO_SOURCE_MAP = {
 }
 
 ######################## GOOGLE ANALYTICS ###########################
-GOOGLE_ANALYTICS_ACCOUNT = None
 GOOGLE_SITE_VERIFICATION_ID = None
 GOOGLE_ANALYTICS_LINKEDIN = None
 GOOGLE_ANALYTICS_TRACKING_ID = None
@@ -1054,98 +944,12 @@ HOTJAR_SITE_ID = 00000
 ######################## subdomain specific settings ###########################
 COURSE_LISTINGS = {}
 
-############# XBlock Configuration ##########
-
-# Import after sys.path fixup
-from xmodule.modulestore.edit_info import EditInfoMixin  # lint-amnesty, pylint: disable=wrong-import-order, wrong-import-position
-from xmodule.modulestore.inheritance import InheritanceMixin  # lint-amnesty, pylint: disable=wrong-import-order, wrong-import-position
-from xmodule.x_module import XModuleMixin  # lint-amnesty, pylint: disable=wrong-import-order, wrong-import-position
-
-# These are the Mixins that will be added to every Blocklike upon instantiation.
-# DO NOT EXPAND THIS LIST!! We want it eventually to be EMPTY. Why? Because dynamically adding functions/behaviors to
-# objects at runtime is confusing for both developers and static tooling (pylint/mypy). Instead...
-#  - to add special Blocklike behaviors just for your site: override `XBLOCK_EXTRA_MIXINS` with your own XBlockMixins.
-#  - to add new functionality to all Blocklikes: add it to the base Blocklike class in the core openedx/XBlock repo.
-XBLOCK_MIXINS = (
-    # TODO: For each of these, either
-    #  (a) merge their functionality into the base Blocklike class, or
-    #  (b) refactor their functionality out of the Blocklike objects and into the edx-platform block runtimes.
-    LmsBlockMixin,
-    InheritanceMixin,
-    XModuleMixin,
-    EditInfoMixin,
-)
-
 ############# ModuleStore Configuration ##########
 
+CONTENTSTORE['DOC_STORE_CONFIG']['password'] = 'password'
+CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'SECONDARY_PREFERRED'
+
 MODULESTORE_BRANCH = 'published-only'
-
-DOC_STORE_CONFIG = {
-    'db': 'edxapp',
-    'host': 'localhost',
-    'replicaSet': '',
-    'password': 'password',
-    'port': 27017,
-    'user': 'edxapp',
-    'collection': 'modulestore',
-    'ssl': False,
-    # https://api.mongodb.com/python/2.9.1/api/pymongo/mongo_client.html#module-pymongo.mongo_client
-    # default is never timeout while the connection is open,
-    #this means it needs to explicitly close raising pymongo.errors.NetworkTimeout
-    'socketTimeoutMS': 6000,
-    'connectTimeoutMS': 2000,  # default is 20000, I believe raises pymongo.errors.ConnectionFailure
-    # Not setting waitQueueTimeoutMS and waitQueueMultiple since pymongo defaults to nobody being allowed to wait
-    'auth_source': None,
-    'read_preference': 'SECONDARY_PREFERRED'
-}
-
-CONTENTSTORE = {
-    'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
-    # connection strings are duplicated temporarily for
-    # backward compatibility
-    'OPTIONS': {
-        'db': 'edxapp',
-        'host': 'localhost',
-        'password': 'password',
-        'port': 27017,
-        'user': 'edxapp',
-        'ssl': False,
-        'auth_source': None
-    },
-    'ADDITIONAL_OPTIONS': {},
-    'DOC_STORE_CONFIG': DOC_STORE_CONFIG
-}
-
-MODULESTORE = {
-    'default': {
-        'ENGINE': 'xmodule.modulestore.mixed.MixedModuleStore',
-        'OPTIONS': {
-            'mappings': {},
-            'stores': [
-                {
-                    'NAME': 'split',
-                    'ENGINE': 'xmodule.modulestore.split_mongo.split_draft.DraftVersioningModuleStore',
-                    'DOC_STORE_CONFIG': DOC_STORE_CONFIG,
-                    'OPTIONS': {
-                        'default_class': 'xmodule.hidden_block.HiddenBlock',
-                        'fs_root': Derived(lambda settings: settings.DATA_DIR),
-                        'render_template': 'common.djangoapps.edxmako.shortcuts.render_to_string',
-                    }
-                },
-                {
-                    'NAME': 'draft',
-                    'ENGINE': 'xmodule.modulestore.mongo.DraftMongoModuleStore',
-                    'DOC_STORE_CONFIG': DOC_STORE_CONFIG,
-                    'OPTIONS': {
-                        'default_class': 'xmodule.hidden_block.HiddenBlock',
-                        'fs_root': Derived(lambda settings: settings.DATA_DIR),
-                        'render_template': 'common.djangoapps.edxmako.shortcuts.render_to_string',
-                    }
-                }
-            ]
-        }
-    }
-}
 
 HOSTNAME_MODULESTORE_DEFAULT_MAPPINGS = {}
 MONGODB_LOG = {}
@@ -1200,9 +1004,6 @@ CMS_BASE = 'studio.edx.org'
 STUDIO_NAME = 'Studio'
 STUDIO_SHORT_NAME = 'Studio'
 
-# Site info
-ROOT_URLCONF = 'lms.urls'
-# NOTE: Please set ALLOWED_HOSTS to some sane value, as we do not allow the default '*'
 # Platform Email
 EMAIL_FILE_PATH = Derived(lambda settings: path(settings.DATA_DIR) / "emails" / "lms")
 DEFAULT_FROM_EMAIL = 'registration@example.com'
@@ -1225,17 +1026,7 @@ ACTIVATION_EMAIL_FROM_ADDRESS = ''
 STATIC_URL = '/static/'
 STATIC_ROOT = os.environ.get('STATIC_ROOT_LMS', ENV_ROOT / "staticfiles")
 
-STATICFILES_DIRS = [
-    COMMON_ROOT / "static",
-    PROJECT_ROOT / "static",
-    NODE_MODULES_ROOT / "@edx",
-    # Temporarily adding the following static path as we are migrating the built-in blocks' Sass to vanilla CSS.
-    # Once all of the built-in blocks are extracted from edx-platform, we can remove this static path.
-    # Relevant ticket: https://github.com/openedx/edx-platform/issues/35300
-    XMODULE_ROOT / "static",
-]
-
-STATICI18N_ROOT = PROJECT_ROOT / "static"
+STATICFILES_DIRS.insert(2, NODE_MODULES_ROOT / "@edx")
 
 # Guidelines for translators
 TRANSLATORS_GUIDE = 'https://docs.openedx.org/en/latest/translators/index.html'
@@ -1488,33 +1279,16 @@ MIDDLEWARE = [
     # Handles automatically storing user ids in django-simple-history tables when possible.
     'simple_history.middleware.HistoryRequestMiddleware',
 
+    # Third-party auth exception handling for social auth redirects
+    'common.djangoapps.third_party_auth.middleware.ExceptionMiddleware',
+
     # This must be last
     'openedx.core.djangoapps.site_configuration.middleware.SessionCookieDomainOverrideMiddleware',
 ]
 
 ############################### PIPELINE #######################################
 
-PIPELINE = {
-    'PIPELINE_ENABLED': True,
-    'CSS_COMPRESSOR': None,
-    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
-    # Don't wrap JavaScript as there is code that depends upon updating the global namespace
-    'DISABLE_WRAPPER': True,
-    # Specify the UglifyJS binary to use
-    'UGLIFYJS_BINARY': 'node_modules/.bin/uglifyjs',
-}
-
-STATICFILES_STORAGE_KWARGS = {}
-
-# List of finder classes that know how to find static files in various locations.
-# Note: the pipeline finder is included to be able to discover optimized files
-STATICFILES_FINDERS = [
-    'openedx.core.djangoapps.theming.finders.ThemeFilesFinder',
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'openedx.core.lib.xblock_pipeline.finder.XBlockPipelineFinder',
-    'pipeline.finders.PipelineFinder',
-]
+PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
 
 from openedx.core.lib.rooted_paths import rooted_glob  # pylint: disable=wrong-import-position
 
@@ -1871,36 +1645,7 @@ PIPELINE['JAVASCRIPT'] = {
     }
 }
 
-
-STATICFILES_IGNORE_PATTERNS = (
-    "*.py",
-    "*.pyc",
-
-    # It would be nice if we could do, for example, "**/*.scss",
-    # but these strings get passed down to the `fnmatch` module,
-    # which doesn't support that. :(
-    # http://docs.python.org/2/library/fnmatch.html
-    "sass/*.scss",
-    "sass/*/*.scss",
-    "sass/*/*/*.scss",
-    "sass/*/*/*/*.scss",
-
-    # Ignore tests
-    "spec",
-    "spec_helpers",
-
-    # Symlinks used by js-test-tool
-    "xmodule_js",
-)
-
-
 ################################# DJANGO-REQUIRE ###############################
-
-# The name of a build profile to use for your project, relative to REQUIRE_BASE_URL.
-# A sensible value would be 'app.build.js'. Leave blank to use the built-in default build profile.
-# Set to False to disable running the default profile (e.g. if only using it to build Standalone
-# Modules)
-REQUIRE_BUILD_PROFILE = "lms/js/build.js"
 
 # The name of the require.js script used by your project, relative to REQUIRE_BASE_URL.
 REQUIRE_JS = "common/js/vendor/require.js"
@@ -1934,18 +1679,9 @@ REQUIRE_JS_PATH_OVERRIDES = {
     'hls': 'common/js/vendor/hls.js'
 }
 
-########################## DJANGO WEBPACK LOADER ##############################
+############################ SERVICE_VARIANT ##################################
 
-WEBPACK_LOADER = {
-    'DEFAULT': {
-        'BUNDLE_DIR_NAME': 'bundles/',
-        'STATS_FILE': os.path.join(STATIC_ROOT, 'webpack-stats.json'),
-    },
-    'WORKERS': {
-        'BUNDLE_DIR_NAME': 'bundles/',
-        'STATS_FILE': os.path.join(STATIC_ROOT, 'webpack-worker-stats.json')
-    }
-}
+SERVICE_VARIANT = 'lms'
 
 ################################# CELERY ######################################
 
@@ -1961,28 +1697,10 @@ CELERY_IMPORTS = [
 #    These packages are added in addition to those added by CELERY_IMPORTS.
 CELERY_EXTRA_IMPORTS = []
 
-# SERVICE_VARIANT specifies name of the variant used, which decides what JSON
-# configuration files are read during startup.
-SERVICE_VARIANT = os.environ.get('SERVICE_VARIANT', "lms")
-
-# CONFIG_PREFIX specifies the prefix of the JSON configuration files,
-# based on the service variant. If no variant is use, don't use a
-# prefix.
-CONFIG_PREFIX = SERVICE_VARIANT + "." if SERVICE_VARIANT else ""
-
-# Queues configuration
-
 # Name the exchange and queues w.r.t the SERVICE_VARIANT
-QUEUE_VARIANT = CONFIG_PREFIX.lower()
-
-CELERY_DEFAULT_EXCHANGE = f'edx.{QUEUE_VARIANT}core'
-
-HIGH_PRIORITY_QUEUE = f'edx.{QUEUE_VARIANT}core.high'
-DEFAULT_PRIORITY_QUEUE = f'edx.{QUEUE_VARIANT}core.default'
-HIGH_MEM_QUEUE = f'edx.{QUEUE_VARIANT}core.high_mem'
-
-CELERY_DEFAULT_QUEUE = DEFAULT_PRIORITY_QUEUE
-CELERY_DEFAULT_ROUTING_KEY = DEFAULT_PRIORITY_QUEUE
+HIGH_PRIORITY_QUEUE = f'edx.{SERVICE_VARIANT}.core.high'
+DEFAULT_PRIORITY_QUEUE = f'edx.{SERVICE_VARIANT}.core.default'
+HIGH_MEM_QUEUE = f'edx.{SERVICE_VARIANT}.core.high_mem'
 
 CELERY_QUEUES = {
     HIGH_PRIORITY_QUEUE: {},
@@ -1997,10 +1715,6 @@ CELERYBEAT_SCHEDULE = {}  # For scheduling tasks, entries can be added to this d
 CELERYD_HIJACK_ROOT_LOGGER = False
 
 BROKER_USE_SSL = False
-
-############################## HEARTBEAT ######################################
-
-HEARTBEAT_CELERY_ROUTING_KEY = HIGH_PRIORITY_QUEUE
 
 ################################ Bulk Email ###################################
 
@@ -2136,7 +1850,7 @@ INSTALLED_APPS = [
     # User tours
     'lms.djangoapps.user_tours',
 
-    # New (Learning-Core-based) XBlock runtime
+    # New XBlock runtime, based on openedx_content
     'openedx.core.djangoapps.xblock.apps.LmsXBlockAppConfig',
 
     # Student support tools
@@ -2306,7 +2020,7 @@ INSTALLED_APPS = [
     'lms.djangoapps.course_goals.apps.CourseGoalsConfig',
 
     # Tagging
-    'openedx_tagging.core.tagging.apps.TaggingConfig',
+    'openedx_tagging',
     'openedx.core.djangoapps.content_tagging',
 
     # Features
@@ -2374,17 +2088,36 @@ INSTALLED_APPS = [
     # Notifications
     'openedx.core.djangoapps.notifications',
 
+    # Authz
+    'openedx.core.djangoapps.authz',
+
     'openedx_events',
 
-    # Learning Core Apps, used by v2 content libraries (content_libraries app)
-    "openedx_learning.apps.authoring.collections",
-    "openedx_learning.apps.authoring.components",
-    "openedx_learning.apps.authoring.contents",
-    "openedx_learning.apps.authoring.publishing",
-    "openedx_learning.apps.authoring.units",
-    "openedx_learning.apps.authoring.subsections",
-    "openedx_learning.apps.authoring.sections",
+    # Core models to represent courses
+    "openedx_catalog",
+
+    # Core apps that power libraries
+    "openedx_content",
+    *openedx_content_backcompat_apps_to_install(),
 ]
+
+# Add LMS specific optional apps
+OPTIONAL_APPS += [
+    # Channel Integrations Apps
+    ('channel_integrations.integrated_channel', None),
+    ('channel_integrations.degreed2', None),
+    ('channel_integrations.sap_success_factors', None),
+    ('channel_integrations.cornerstone', None),
+    ('channel_integrations.xapi', None),
+    ('channel_integrations.blackboard', None),
+    ('channel_integrations.canvas', None),
+    ('channel_integrations.moodle', None),
+
+    # Required by the Enterprise App
+    ('django_object_actions', None),  # https://github.com/crccheck/django-object-actions
+]
+
+add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)
 
 ######################### Django Rest Framework ########################
 
@@ -2395,7 +2128,7 @@ SWAGGER_SETTINGS = {
 
 ######################### MARKETING SITE ###############################
 
-MKTG_URL_LINK_MAP = {
+MKTG_URL_LINK_MAP.update({
     'ABOUT': 'about',
     'CONTACT': 'contact',
     'FAQ': 'help',
@@ -2412,15 +2145,11 @@ MKTG_URL_LINK_MAP = {
 
     # Verified Certificates
     'WHAT_IS_VERIFIED_CERT': 'verified-certificate',
-}
+})
 
 STATIC_TEMPLATE_VIEW_DEFAULT_FILE_EXTENSION = 'html'
 
 SEND_ACTIVATION_EMAIL_URL = ''
-ACTIVATION_EMAIL_SUPPORT_LINK = Derived(lambda settings: settings.SUPPORT_SITE_LINK)
-ID_VERIFICATION_SUPPORT_LINK = Derived(lambda settings: settings.SUPPORT_SITE_LINK)
-LOGIN_ISSUE_SUPPORT_LINK = Derived(lambda settings: settings.SUPPORT_SITE_LINK)
-PASSWORD_RESET_SUPPORT_LINK = Derived(lambda settings: settings.SUPPORT_SITE_LINK)
 
 # .. setting_name: SECURITY_PAGE_URL
 # .. setting_default: None
@@ -2434,19 +2163,13 @@ ENTITLEMENT_EXPIRED_ALERT_PERIOD = 90
 
 ############################# SOCIAL MEDIA SHARING #############################
 # Social Media Sharing on Student Dashboard
-SOCIAL_SHARING_SETTINGS = {
-    # Note: Ensure 'CUSTOM_COURSE_URLS' has a matching value in cms/envs/common.py
-    'CUSTOM_COURSE_URLS': False,
-    'DASHBOARD_FACEBOOK': False,
+SOCIAL_SHARING_SETTINGS.update({
     'FACEBOOK_BRAND': None,
-    'CERTIFICATE_FACEBOOK': False,
     'CERTIFICATE_FACEBOOK_TEXT': None,
-    'CERTIFICATE_TWITTER': False,
+    'TWITTER_BRAND': None,
     'CERTIFICATE_TWITTER_TEXT': None,
-    'DASHBOARD_TWITTER': False,
     'DASHBOARD_TWITTER_TEXT': None,
-    'TWITTER_BRAND': None
-}
+})
 
 ################# Social Media Footer Links #######################
 # The names list controls the order of social media
@@ -2575,30 +2298,6 @@ XDOMAIN_PROXY_CACHE_TIMEOUT = 60 * 15
 
 ###################### Registration ##################################
 
-# .. setting_name: REGISTRATION_EXTRA_FIELDS
-# .. setting_default: {'confirm_email': 'hidden', 'level_of_education': 'optional', 'gender': 'optional',
-#   'year_of_birth': 'optional', 'mailing_address': 'optional', 'goals': 'optional', 'honor_code': 'required',
-#   'terms_of_service': 'hidden', 'city': 'hidden', 'country': 'hidden'}
-# .. setting_description: The signup form may contain extra fields that are presented to every user. For every field, we
-#   can specifiy whether it should be "required": to display the field, and make it mandatory; "optional": to display
-#   the optional field as part of a toggled input field list; "optional-exposed": to display the optional fields among
-#   the required fields, and make it non-mandatory; "hidden": to not display the field.
-#   When the terms of service are not visible and agreement to the honor code is required (the default), the signup page
-#   includes a paragraph that links to the honor code page (defined my MKTG_URLS["HONOR"]). This page might not be
-#   available for all Open edX platforms. In such cases, the "honor_code" registration field should be "hidden".
-REGISTRATION_EXTRA_FIELDS = {
-    'confirm_email': 'hidden',
-    'level_of_education': 'optional',
-    'gender': 'optional',
-    'year_of_birth': 'optional',
-    'mailing_address': 'optional',
-    'goals': 'optional',
-    'honor_code': 'required',
-    'terms_of_service': 'hidden',
-    'city': 'hidden',
-    'country': 'hidden',
-}
-
 REGISTRATION_FIELD_ORDER = [
     "name",
     "first_name",
@@ -2634,8 +2333,6 @@ CERT_NAME_LONG = "Certificate of Achievement"
 # the ones that contain information other than grades.
 GRADES_DOWNLOAD_ROUTING_KEY = Derived(lambda settings: settings.HIGH_MEM_QUEUE)
 
-RECALCULATE_GRADES_ROUTING_KEY = 'edx.lms.core.default'
-
 ############################ ORA 2 ############################################
 ORA_WORKFLOW_UPDATE_ROUTING_KEY = "edx.lms.core.ora_workflow_update"
 
@@ -2654,69 +2351,6 @@ ORA_STAFF_LEASE_EXPIRATION_HOURS = 8
 
 ##### LMS DEADLINE DISPLAY TIME_ZONE #######
 TIME_ZONE_DISPLAYED_FOR_DEADLINES = 'UTC'
-
-########################## VIDEO TRANSCRIPTS STORAGE ############################
-
-### Apps only installed in some instances
-# The order of INSTALLED_APPS matters, so this tuple is the app name and the item in INSTALLED_APPS
-# that this app should be inserted *before*. A None here means it should be appended to the list.
-OPTIONAL_APPS = [
-    ('problem_builder', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('edx_sga', None),
-
-    # edx-ora2
-    ('submissions', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment.assessment', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment.fileupload', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment.staffgrader', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment.workflow', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-    ('openassessment.xblock', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-
-    # edxval
-    ('edxval', 'openedx.core.djangoapps.content.course_overviews.apps.CourseOverviewsConfig'),
-
-    # Enterprise Apps (http://github.com/openedx/edx-enterprise)
-    ('enterprise', None),
-    ('consent', None),
-    ('integrated_channels.integrated_channel', None),
-    ('integrated_channels.degreed', None),
-    ('integrated_channels.degreed2', None),
-    ('integrated_channels.sap_success_factors', None),
-    ('integrated_channels.cornerstone', None),
-    ('integrated_channels.xapi', None),
-    ('integrated_channels.blackboard', None),
-    ('integrated_channels.canvas', None),
-    ('integrated_channels.moodle', None),
-
-    # Channel Integrations Apps
-    ('channel_integrations.integrated_channel', None),
-    ('channel_integrations.degreed2', None),
-    ('channel_integrations.sap_success_factors', None),
-    ('channel_integrations.cornerstone', None),
-    ('channel_integrations.xapi', None),
-    ('channel_integrations.blackboard', None),
-    ('channel_integrations.canvas', None),
-    ('channel_integrations.moodle', None),
-
-    # Required by the Enterprise App
-    ('django_object_actions', None),  # https://github.com/crccheck/django-object-actions
-]
-
-for app_name, insert_before in OPTIONAL_APPS:
-    # First attempt to only find the module rather than actually importing it,
-    # to avoid circular references - only try to import if it can't be found
-    # by find_spec, which doesn't work with import hooks
-    if importlib.util.find_spec(app_name) is None:
-        try:
-            __import__(app_name)
-        except ImportError:
-            continue
-
-    try:
-        INSTALLED_APPS.insert(INSTALLED_APPS.index(insert_before), app_name)
-    except (IndexError, ValueError):
-        INSTALLED_APPS.append(app_name)
 
 ### Analytics API
 ANALYTICS_API_KEY = ""
@@ -2839,7 +2473,6 @@ ACCOUNT_VISIBILITY_CONFIGURATION["admin_fields"] = (
         "secondary_email_enabled",
         "year_of_birth",
         "phone_number",
-        "activation_key",
         "pending_name_change",
     ]
 )
@@ -2966,13 +2599,8 @@ NOTIFICATION_EMAIL_EDX_LOGO = "templates/credit_notifications/edx-logo-header.pn
 
 ################################ Settings for JWTs ################################
 
-EDX_DRF_EXTENSIONS = {
-    # Set this value to an empty dict in order to prevent automatically updating
-    # user data from values in (possibly stale) JWTs.
-    'JWT_PAYLOAD_USER_ATTRIBUTE_MAPPING': {},
-    # Allows JWT authentication to find the LMS user id for verification
-    'VERIFY_LMS_USER_ID_PROPERTY_NAME': 'id',
-}
+# Allows JWT authentication to find the LMS user id for verification
+EDX_DRF_EXTENSIONS['VERIFY_LMS_USER_ID_PROPERTY_NAME'] = 'id'
 
 ################################ Settings for rss_proxy ################################
 
@@ -3029,10 +2657,6 @@ CREDENTIALS_COURSE_COMPLETION_STATE = 'awarded'
 
 # Queue to use for award program certificates
 PROGRAM_CERTIFICATES_ROUTING_KEY = Derived(lambda settings: settings.DEFAULT_PRIORITY_QUEUE)
-
-############## Settings for LMS Context Sensitive Help ##############
-
-HELP_TOKENS_INI_FILE = REPO_ROOT / "lms" / "envs" / "help_tokens.ini"
 
 ############## OPEN EDX ENTERPRISE SERVICE CONFIGURATION ######################
 # The Open edX Enterprise service is currently hosted via the LMS container/process.
@@ -3145,9 +2769,6 @@ SYSTEM_TO_FEATURE_ROLE_MAPPING = {
 
 DATA_CONSENT_SHARE_CACHE_TIMEOUT = 8 * 60 * 60  # 8 hours
 
-TRANSCRIPT_LANG_CACHE_TIMEOUT = 60 * 60 * 24  # 24 hours
-
-
 ############## Settings for the Discovery App ######################
 
 COURSES_API_CACHE_TIMEOUT = 3600  # Value is in seconds
@@ -3223,6 +2844,10 @@ CATALOG_MICROFRONTEND_URL = None
 # .. setting_default: None
 # .. setting_description: Base URL of the micro-frontend-based instructor app.
 INSTRUCTOR_MICROFRONTEND_URL = None
+# .. setting_name: COMMUNICATIONS_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based communications app.
+COMMUNICATIONS_MICROFRONTEND_URL = None
 # .. setting_name: DISCUSSION_SPAM_URLS
 # .. setting_default: []
 # .. setting_description: Urls to filter from discussion content to avoid spam
@@ -3317,9 +2942,6 @@ ENFORCE_SESSION_EMAIL_MATCH = False
 from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings
 ACE_ROUTING_KEY = ace_common_settings.ACE_ROUTING_KEY
 
-############### Settings swift #####################################
-SWIFT_USE_TEMP_URLS = None
-
 ############### Settings for facebook ##############################
 FACEBOOK_APP_ID = None
 FACEBOOK_APP_SECRET = None
@@ -3335,13 +2957,6 @@ from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: dis
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
-
-############### Settings for video pipeline ##################
-VIDEO_UPLOAD_PIPELINE = {
-    'VEM_S3_BUCKET': '',
-    'BUCKET': '',
-    'ROOT_PATH': '',
-}
 
 PROCTORED_EXAM_VIEWABLE_PAST_DUE = False
 
@@ -3482,10 +3097,6 @@ ENTERPRISE_MANUAL_REPORTING_CUSTOMER_UUIDS = []
 
 AVAILABLE_DISCUSSION_TOURS = []
 
-############## NOTIFICATIONS ##############
-NOTIFICATION_TYPE_ICONS = {}
-DEFAULT_NOTIFICATION_ICON_URL = ""
-
 ############## SELF PACED EMAIL ##############
 SELF_PACED_BANNER_URL = ""
 SELF_PACED_CLOUD_URL = ""
@@ -3503,23 +3114,12 @@ GOAL_REMINDER_PROFILE_URL = ""
 DISABLED_ORGS_FOR_PROGRAM_NUDGE = []
 
 
+#### Event bus producing ####
+
 def _should_send_certificate_events(settings):
     return settings.SEND_LEARNING_CERTIFICATE_LIFECYCLE_EVENTS_TO_BUS
 
-
-#### Event bus producing ####
-
-# .. setting_name: EVENT_BUS_PRODUCER_CONFIG
-# .. setting_default: all events disabled
-# .. setting_description: Dictionary of event_types mapped to dictionaries of topic to topic-related configuration.
-#    Each topic configuration dictionary contains
-#    * `enabled`: a toggle denoting whether the event will be published to the topic. These should be annotated
-#       according to
-#       https://docs.openedx.org/projects/edx-toggles/en/latest/how_to/documenting_new_feature_toggles.html
-#    * `event_key_field` which is a period-delimited string path to event data field to use as event key.
-#    Note: The topic names should not include environment prefix as it will be dynamically added based on
-#    EVENT_BUS_TOPIC_PREFIX setting.
-EVENT_BUS_PRODUCER_CONFIG = {
+EVENT_BUS_PRODUCER_CONFIG.update({
     'org.openedx.learning.certificate.created.v1': {
         'learning-certificate-lifecycle':
             {'event_key_field': 'certificate.course.course_key', 'enabled': Derived(_should_send_certificate_events)},
@@ -3570,40 +3170,13 @@ EVENT_BUS_PRODUCER_CONFIG = {
         'learner-credit-course-enrollment-lifecycle':
             {'event_key_field': 'learner_credit_course_enrollment.uuid', 'enabled': False},
     },
-    # CMS events. These have to be copied over here because cms.common adds some derived entries as well,
-    # and the derivation fails if the keys are missing. If we ever fully decouple the lms and cms settings,
-    # we can remove these.
-    'org.openedx.content_authoring.xblock.published.v1': {
-        'course-authoring-xblock-lifecycle':
-            {'event_key_field': 'xblock_info.usage_key', 'enabled': False},
-    },
-    'org.openedx.content_authoring.xblock.deleted.v1': {
-        'course-authoring-xblock-lifecycle':
-            {'event_key_field': 'xblock_info.usage_key', 'enabled': False},
-    },
-    'org.openedx.content_authoring.xblock.duplicated.v1': {
-        'course-authoring-xblock-lifecycle':
-            {'event_key_field': 'xblock_info.usage_key', 'enabled': False},
-    },
-    "org.openedx.learning.course.passing.status.updated.v1": {
-        "learning-badges-lifecycle": {
-            "event_key_field": "course_passing_status.course.course_key",
-            "enabled": Derived(should_send_learning_badge_events),
-        },
-    },
-    "org.openedx.learning.ccx.course.passing.status.updated.v1": {
-        "learning-badges-lifecycle": {
-            "event_key_field": "course_passing_status.course.ccx_course_key",
-            "enabled": Derived(should_send_learning_badge_events),
-        },
-    },
     "org.openedx.learning.external_grader.score.submitted.v1": {
         "learning-external-grader-score-lifecycle": {
             "event_key_field": "score.submission_id",
             "enabled": False
         },
     },
-}
+})
 
 #### Survey Report ####
 # .. toggle_name: SURVEY_REPORT_ENABLE

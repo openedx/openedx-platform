@@ -6,13 +6,12 @@ Tests for course_metadata_utils.
 from collections import namedtuple
 from datetime import datetime, timedelta
 from unittest import TestCase
+from zoneinfo import ZoneInfo
 
-from pytz import utc
 import pytest
 from xmodule.block_metadata_utils import (
     display_name_with_default,
     display_name_with_default_escaped,
-    url_name_for_block
 )
 from xmodule.course_metadata_utils import (
     DEFAULT_START_DATE,
@@ -29,7 +28,7 @@ from xmodule.modulestore.tests.utils import (
     VersioningModulestoreBuilder
 )
 
-_TODAY = datetime.now(utc)
+_TODAY = datetime.now(ZoneInfo("UTC"))
 _LAST_WEEK = _TODAY - timedelta(days=7)
 _NEXT_WEEK = _TODAY + timedelta(days=7)
 
@@ -111,7 +110,7 @@ class CourseMetadataUtilsTestCase(TestCase):
             """Dummy implementation of gettext, so we don't need Django."""
             return text
 
-        test_datetime = datetime(1945, 2, 6, 4, 20, 00, tzinfo=utc)
+        test_datetime = datetime(1945, 2, 6, 4, 20, 00, tzinfo=ZoneInfo("UTC"))
         advertised_start_parsable = "2038-01-19 03:14:07"
 
         FunctionTest = namedtuple('FunctionTest', 'function scenarios')
@@ -124,9 +123,6 @@ class CourseMetadataUtilsTestCase(TestCase):
                     (self.html_course.id, '~'),
                     "course_MNXXK4TTMUWXMMJ2KVXGS5TFOJZWS5DZLAVUGUZNGIYDGK2ZGIYDSNQ~"
                 ),
-            ]),
-            FunctionTest(url_name_for_block, [
-                TestScenario((self.html_course,), self.html_course.location.block_id),
             ]),
             FunctionTest(display_name_with_default_escaped, [
                 # Test course with a display name that contains characters that need escaping.

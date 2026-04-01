@@ -1,4 +1,5 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+"""Utilities for XML parsing and XBlock/XModuleDescriptor serialization."""
+
 import copy
 import datetime
 import json
@@ -61,9 +62,11 @@ def serialize_field(value):
     """
     if isinstance(value, str):
         return value
-    elif isinstance(value, datetime.datetime):
+
+    if isinstance(value, datetime.datetime):
         if value.tzinfo is not None and value.utcoffset() is None:
             return value.isoformat() + "Z"
+
         return value.isoformat()
 
     return json.dumps(value, cls=EdxJSONEncoder)
@@ -170,7 +173,7 @@ class XmlMixin:
 
         xml_object: An etree Element
         """
-        raise NotImplementedError("%s does not implement definition_from_xml" % cls.__name__)
+        raise NotImplementedError(f"{cls.__name__} does not implement definition_from_xml")
 
     @classmethod
     def clean_metadata_from_xml(cls, xml_object, excluded_fields=()):
@@ -197,7 +200,7 @@ class XmlMixin:
         return etree.parse(file_object, parser=EDX_XML_PARSER).getroot()
 
     @classmethod
-    def load_file(cls, filepath, fs, def_id):  # pylint: disable=invalid-name
+    def load_file(cls, filepath, fs, def_id):
         """
         Open the specified file in fs, and call cls.file_to_xml on it,
         returning the lxml object.
@@ -207,9 +210,11 @@ class XmlMixin:
         try:
             with fs.open(filepath) as xml_file:
                 return cls.file_to_xml(xml_file)
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as err:
             # Add info about where we are, but keep the traceback
-            raise Exception(f"Unable to load file contents at path {filepath} for item {def_id}: {err}") from err
+            raise Exception(  # pylint: disable=broad-exception-raised
+                f"Unable to load file contents at path {filepath} for item {def_id}: {err}"
+            ) from err
 
     @classmethod
     def load_definition(cls, xml_object, system, def_id, id_generator):
@@ -301,7 +306,7 @@ class XmlMixin:
                 metadata[attr] = value
 
     @classmethod
-    def parse_xml(cls, node, runtime, keys):  # pylint: disable=too-many-statements
+    def parse_xml(cls, node, runtime, keys):  # pylint: disable=too-many-locals,too-many-branches
         """
         Use `node` to construct a new block.
 
@@ -316,7 +321,10 @@ class XmlMixin:
         Returns (XBlock): The newly parsed XBlock
 
         """
-        from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime  # done here to avoid circular import
+
+        from xmodule.modulestore.xml import (  # pylint: disable=import-outside-toplevel
+            XMLImportingModuleStoreRuntime,
+        )
 
         if keys is None:
             # Passing keys=None is against the XBlock API but some platform tests do it.
@@ -357,7 +365,7 @@ class XmlMixin:
             metadata["definition_metadata_raw"] = dmdata
             try:
                 metadata.update(json.loads(dmdata))
-            except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as err:  # pylint: disable=broad-exception-caught
                 log.debug("Error in loading metadata %r", dmdata, exc_info=True)
                 metadata["definition_metadata_err"] = str(err)
 
@@ -414,7 +422,7 @@ class XmlMixin:
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
         """
-        This XML lives within Learning Core and the new runtime doesn't need this
+        This XML lives within openedx-core and the new runtime doesn't need this
         legacy XModule code. Use the "normal" XBlock parsing code.
         """
         try:
@@ -481,9 +489,10 @@ class XmlMixin:
                 val = serialize_field(self.fields[attr].to_json(getattr(self, attr)))
                 try:
                     xml_object.set(attr, val)
-                except Exception:  # lint-amnesty, pylint: disable=broad-except
+                except Exception:  # pylint: disable=broad-exception-caught
                     logging.exception(
-                        "Failed to serialize metadata attribute %s with value %s in module %s. This could mean data loss!!!",  # lint-amnesty, pylint: disable=line-too-long
+                        "Failed to serialize metadata attribute %s with value %s in module %s."
+                        " This could mean data loss!!!",
                         attr,
                         val,
                         self.url_name,
@@ -527,7 +536,7 @@ class XmlMixin:
         """
         Return a new etree Element object created from this modules definition.
         """
-        raise NotImplementedError("%s does not implement definition_to_xml" % self.__class__.__name__)
+        raise NotImplementedError(f"{self.__class__.__name__} does not implement definition_to_xml")
 
     @property
     def non_editable_metadata_fields(self):

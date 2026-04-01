@@ -34,7 +34,10 @@ var options = {
         {pattern: 'discussion/js/**/!(*spec).js'},
         {pattern: 'js/**/!(*spec|djangojs).js'},
         {pattern: 'learner_profile/**/!(*spec).js'},
-        {pattern: 'lms/js/**/!(*spec).js'},
+        // Split lms/js/ to exclude spec/main*.js test entry points (handled by runFiles)
+        {pattern: 'lms/js/!(*spec).js'},  // Direct children of lms/js/
+        {pattern: 'lms/js/!(spec)/**/!(*spec).js'},  // Subdirs of lms/js/ except spec/
+        {pattern: 'lms/js/spec/**/!(*spec|main*).js'},  // spec/ subdir, excluding main* files
         {pattern: 'support/js/**/!(*spec).js'},
         {pattern: 'teams/js/**/!(*spec).js'},
         {pattern: 'completion/js/**/!(*spec).js'}

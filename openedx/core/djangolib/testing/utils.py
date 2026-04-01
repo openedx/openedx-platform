@@ -25,6 +25,13 @@ from edx_django_utils.cache import RequestCache
 
 from openedx.core.lib import ensure_cms, ensure_lms
 
+# Used to ignore queries against authz tables when using assertNumQueries in FilteredQueryCountMixin
+AUTHZ_TABLES = [
+    "casbin_rule",
+    "openedx_authz_policycachecontrol",
+    "django_migrations",
+]
+
 
 class CacheIsolationMixin:
     """
@@ -182,9 +189,9 @@ class _AssertNumQueriesContext(CaptureQueriesContext):
             if self.table_ignorelist:
                 for table in self.table_ignorelist:
                     # SQL contains the following format for columns:
-                    # "table_name"."column_name".  The regex ensures there is no
-                    # "." before the name to avoid matching columns.
-                    if re.search(fr'[^.]"{table}"', query['sql']):
+                    # "table_name"."column_name" or table_name.column_name.
+                    # The regex ensures there is no "." before the name to avoid matching columns.
+                    if re.search(fr'[^."]"?{table}"?', query['sql']):
                         return False
             return True
 

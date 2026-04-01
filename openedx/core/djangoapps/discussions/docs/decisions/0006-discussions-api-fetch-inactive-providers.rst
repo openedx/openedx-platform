@@ -88,7 +88,7 @@ return the following pieces of information:
 
 **Sample response:**
 
-.. code-block:: json
+.. code-block::
 
     {
         "active": "legacy",
@@ -137,7 +137,7 @@ Changing settings for an inactive provider is out of scope here.
 
 **Sample response:**
 
-.. code-block:: json
+.. code-block::
 
     {
       "enabled": true,

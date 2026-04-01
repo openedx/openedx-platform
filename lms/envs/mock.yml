@@ -382,7 +382,6 @@ STORAGES:
     staticfiles:
       BACKEND: openedx.core.storage.ProductionStorage
 DEFAULT_FROM_EMAIL: sandbox-notifications@example.com
-DEFAULT_HASHING_ALGORITHM: sha256
 DEFAULT_MOBILE_AVAILABLE: true
 DEFAULT_NOTIFICATION_ICON_URL: https://notifications-static.localhost/icons/post_outline.png
 DEFAULT_SITE_THEME: localhost

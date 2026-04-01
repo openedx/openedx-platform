@@ -27,6 +27,7 @@ from milestones import api as milestones_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import BlockUsageLocator, LibraryContainerLocator, LibraryLocator
+from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.learning.data import CourseNotificationData
@@ -50,7 +51,6 @@ from cms.djangoapps.contentstore.toggles import (
     use_new_import_page,
     use_new_schedule_details_page,
     use_new_unit_page,
-    use_new_video_uploads_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -424,11 +424,10 @@ def get_video_uploads_url(course_locator) -> str:
     Gets course authoring microfrontend URL for files and uploads page view.
     """
     video_uploads_url = None
-    if use_new_video_uploads_page(course_locator):
-        mfe_base_url = get_course_authoring_url(course_locator)
-        course_mfe_url = f'{mfe_base_url}/course/{course_locator}/videos/'
-        if mfe_base_url:
-            video_uploads_url = course_mfe_url
+    mfe_base_url = get_course_authoring_url(course_locator)
+    course_mfe_url = f'{mfe_base_url}/course/{course_locator}/videos/'
+    if mfe_base_url:
+        video_uploads_url = course_mfe_url
     return video_uploads_url
 
 
@@ -1314,7 +1313,8 @@ def load_services_for_studio(runtime, user):
         "settings": SettingsService(),
         "lti-configuration": ConfigurationService(CourseAllowPIISharingInLTIFlag),
         "teams_configuration": TeamsConfigurationService(),
-        "library_tools": LegacyLibraryToolsService(modulestore(), user.id)
+        "library_tools": LegacyLibraryToolsService(modulestore(), user.id),
+        "video_config": VideoConfigService(),
     }
 
     runtime._services.update(services)  # lint-amnesty, pylint: disable=protected-access

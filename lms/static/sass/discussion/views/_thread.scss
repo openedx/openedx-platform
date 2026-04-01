@@ -11,7 +11,7 @@
 
 // post layout
 .discussion-post {
-  padding: 0 ($baseline/2);
+  padding: 0 calc(var(--baseline) / 2);
 
   .post-header-actions {
     @include float(right);
@@ -24,8 +24,8 @@
     @extend %t-copy-sub2;
     @extend %t-light;
 
-    margin: ($baseline/5) 0;
-    color: $forum-color-copy-light;
+    margin: calc(var(--baseline) / 5) 0;
+    color: var(--forum-color-copy-light);
 
     .username {
       @extend %t-strong;
@@ -42,20 +42,20 @@
 
 .thread-title {
   display: block;
-  margin-bottom: $baseline;
-  font-size: $forum-x-large-font-size;
+  margin-bottom: var(--baseline);
+  font-size: var(--forum-x-large-font-size);
   color: theme-color("gray-dark");
   font-weight: 600;
 }
 
 .thread-responses-wrapper,
 .post-extended-content {
-  padding: 0 ($baseline/2);
+  padding: 0 calc(var(--baseline) / 2);
 }
 
 // response layout
 .discussion-response {
-  min-height: ($baseline*5);
+  min-height: calc(var(--baseline) * 5);
 
   .response-header-content {
     display: inline-block;
@@ -65,10 +65,10 @@
 
   .response-header-actions {
     @include float(right);
-    @include right($baseline);
+    @include right(var(--baseline));
 
     position: absolute;
-    top: ($baseline/2);
+    top: calc(var(--baseline) / 2);
   }
 
   // response body
@@ -82,20 +82,20 @@
   .response-body {
     @extend %t-copy-sub2;
 
-    @include padding(($baseline / 2), ($baseline * 1.5), 0, 0);
+    @include padding(calc(var(--baseline) / 2), calc(var(--baseline) * 1.5), 0, 0);
 
     display: inline-block;
-    margin-top: ($baseline/2);
+    margin-top: calc(var(--baseline) / 2);
     width: flex-grid(10, 12);
 
     p + p {
-      margin-top: ($baseline/2);
+      margin-top: calc(var(--baseline) / 2);
     }
   }
 
   .comment-actions-list {
     @include float(right);
-    @include right($baseline / 2);
+    @include right(calc(var(--baseline) / 2));
 
     position: absolute;
     top: 0;
@@ -105,7 +105,7 @@
 // +thread - wrapper styling
 .thread-wrapper {
   .response-btn-count-wrapper {
-    margin: $baseline 0;
+    margin: var(--baseline) 0;
   }
 }
 
@@ -117,7 +117,7 @@
 
   // thread - images
   .author-image {
-    @include margin-right($baseline/2);
+    @include margin-right(calc(var(--baseline) / 2));
 
     display: inline-block;
     vertical-align: top;
@@ -129,33 +129,33 @@
 
     // CASE: post image
     &.level-post {
-      height: $post-image-dimension;
-      width: $post-image-dimension;
+      height: var(--post-image-dimension);
+      width: var(--post-image-dimension);
     }
 
     // CASE: response image
     &.level-response {
-      height: $response-image-dimension;
-      width: $response-image-dimension;
+      height: var(--response-image-dimension);
+      width: var(--response-image-dimension);
     }
 
     // CASE: comment image
     &.level-comment {
-      height: $comment-image-dimension;
-      width: $comment-image-dimension;
+      height: var(--comment-image-dimension);
+      width: var(--comment-image-dimension);
     }
 
     img {
-      border-radius: $forum-border-radius;
+      border-radius: var(--forum-border-radius);
     }
   }
 }
 
 .discussion-response .response-body {
-  @include padding(($baseline / 2), ($baseline * 1.5), 0, 0); //ensures content doesn't overlap on post or response actions.
+  @include padding(calc(var(--baseline) / 2), calc(var(--baseline) * 1.5), 0, 0); //ensures content doesn't overlap on post or response actions.
 
   margin-bottom: 0.2em;
-  font-size: $forum-base-font-size;
+  font-size: var(--forum-base-font-size);
 }
 
 // +post - individual element styling
@@ -163,12 +163,12 @@
   @include clearfix();
 
   .post-header-content {
-    max-width: calc(100% - #{$actions-dropdown-offset});
+    max-width: calc(100% - #{var(--actions-dropdown-offset)});
 
     // post title
     .post-title {
-      font-size: $forum-x-large-font-size;
-      margin-bottom: ($baseline/4);
+      font-size: var(--forum-x-large-font-size);
+      margin-bottom: calc(var(--baseline) / 4);
     }
   }
 
@@ -176,8 +176,8 @@
   .post-body {
     @extend %t-copy-sub1;
 
-    padding: ($baseline/2) 0;
-    max-width: calc(100% - #{$actions-dropdown-offset});
+    padding: calc(var(--baseline) / 2) 0;
+    max-width: calc(100% - #{var(--actions-dropdown-offset)});
   }
 
   // post context
@@ -185,7 +185,7 @@
     @extend %t-copy-sub2;
     @extend %t-light;
 
-    color: $forum-color-copy-light;
+    color: var(--forum-color-copy-light);
 
     // CASE: no courseware context or cohort visibility rules
     &:empty {
@@ -197,7 +197,7 @@
 // Styling for discussion threads
 .discussion-thread {
   padding: 0;
-  margin-bottom: $baseline;
+  margin-bottom: var(--baseline);
 
   @include transition(all 0.25s linear 0s);
 
@@ -208,26 +208,26 @@
   .discussion-article {
     @include transition(all 0.2s linear 0s);
 
-    border: 1px solid $forum-color-border;
-    border-radius: $forum-border-radius;
+    border: 1px solid var(--forum-color-border);
+    border-radius: var(--forum-border-radius);
     min-height: 0;
-    background: $forum-color-background;
-    box-shadow: 0 1px 0 $shadow;
+    background: var(--forum-color-background);
+    box-shadow: 0 1px 0 var(--shadow);
 
     @include transition(all 0.2s linear 0s);
 
     .thread-wrapper {
-      @include border-radius($forum-border-radius, $forum-border-radius, 0, 0);
+      @include border-radius(var(--forum-border-radius), var(--forum-border-radius), 0, 0);
 
       position: relative;
       overflow-x: hidden;
       overflow-y: auto;
       max-height: 600px;
-      background-color: $forum-color-background;
+      background-color: var(--forum-color-background);
 
       .discussion-post {
         .inline-comment-count {
-          @include margin-right($baseline/2);
+          @include margin-right(calc(var(--baseline) / 2));
 
           @extend %ui-depth2;
 
@@ -238,8 +238,8 @@
           height: 27px;
           margin-top: 6px;
           padding: 0 8px;
-          border-radius: $forum-border-radius;
-          font-size: $forum-small-font-size;
+          border-radius: var(--forum-border-radius);
+          font-size: var(--forum-small-font-size);
           font-weight: 400;
           line-height: 25px;
           color: #888;
@@ -249,13 +249,13 @@
       .responses {
         header {
           padding-bottom: 0;
-          margin-bottom: ($baseline*0.75);
+          margin-bottom: calc(var(--baseline) * 0.75);
 
           .posted-by {
-            @include margin-right($baseline/4);
+            @include margin-right(calc(var(--baseline) / 4));
             @include float(left);
 
-            font-size: $forum-large-font-size;
+            font-size: var(--forum-large-font-size);
           }
         }
       }
@@ -273,27 +273,27 @@
     }
 
     .post-tools {
-      box-shadow: 0 1px 1px $shadow inset;
-      background: $white;
+      box-shadow: 0 1px 1px var(--shadow) inset;
+      background: var(--white);
 
       &:hover {
-        background: $forum-color-hover-thread;
+        background: var(--forum-color-hover-thread);
 
         .icon {
-          color: $link-hover;
+          color: var(--link-hover);
         }
       }
 
       .btn-link {
         display: block;
-        padding: ($baseline*0.25) $baseline;
-        font-size: $forum-small-font-size;
+        padding: calc(var(--baseline) * 0.25) var(--baseline);
+        font-size: var(--forum-small-font-size);
         line-height: 30px;
 
         .icon {
-          @include margin-right($baseline*0.25);
+          @include margin-right(calc(var(--baseline) * 0.25));
 
-          color: $link-color;
+          color: var(--link-color);
         }
       }
     }

@@ -18,8 +18,7 @@ from opaque_keys.edx.locator import (
     LibraryLocatorV2,
     LibraryUsageLocatorV2,
 )
-
-from openedx.core.djangoapps.content_libraries.api import ContainerType
+from openedx_content import models_api as content_models
 
 
 class CompositionLevel(Enum):
@@ -32,9 +31,9 @@ class CompositionLevel(Enum):
     Component = 'component'
 
     # Container types currently supported by Content Libraries
-    Unit = ContainerType.Unit.value
-    Subsection = ContainerType.Subsection.value
-    Section = ContainerType.Section.value
+    Unit = content_models.Unit.type_code  # "unit"
+    Subsection = content_models.Subsection.type_code  # "subsection"
+    Section = content_models.Section.type_code  # "section"
 
     @property
     def is_container(self) -> bool:
@@ -92,7 +91,7 @@ SourceContextKey: t.TypeAlias = CourseLocator | LibraryLocator
 @dataclass(frozen=True)
 class ModulestoreMigration:
     """
-    Metadata on a migration of a course or legacy library to a v2 library in learning core.
+    Metadata on a migration of a course or legacy library to a v2 library in openedx_content.
     """
     pk: int
     source_key: SourceContextKey
@@ -107,7 +106,7 @@ class ModulestoreMigration:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationResult:
     """
-    Base class for a modulestore block that was part of an attempted migration to learning core.
+    Base class for a modulestore block that was part of an attempted migration to openedx_content.
     """
     source_key: UsageKey
     is_failed: t.ClassVar[bool]
@@ -116,7 +115,7 @@ class ModulestoreBlockMigrationResult:
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which has been successfully migrated into an LC entity
+    Info on a modulestore block which has been successfully migrated to an openedx_content entity
     """
     target_entity_pk: int
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
@@ -128,7 +127,7 @@ class ModulestoreBlockMigrationSuccess(ModulestoreBlockMigrationResult):
 @dataclass(frozen=True)
 class ModulestoreBlockMigrationFailure(ModulestoreBlockMigrationResult):
     """
-    Info on a modulestore block which failed to be migrated into LC
+    Info on a modulestore block which failed to be migrated into openedx_content
     """
     unsupported_reason: str
     is_failed: t.ClassVar[bool] = True

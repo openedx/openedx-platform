@@ -13,6 +13,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from uuid import uuid4
 from unittest.mock import Mock, call, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from openedx_events.content_authoring.data import CourseData, XBlockData
@@ -32,7 +33,6 @@ import pytest
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator  # pylint: disable=unused-import
-from pytz import UTC
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
 from xblock.fields import Scope, ScopeIds, String
@@ -2043,7 +2043,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
             'problem'
         )
         assert self.user_id == block.edited_by
-        assert datetime.datetime.now(UTC) > block.edited_on
+        assert datetime.datetime.now(ZoneInfo("UTC")) > block.edited_on
 
     @ddt.data(ModuleStoreEnum.Type.split)
     def test_create_item_populates_subtree_edited_info(self, default_ms):
@@ -2054,7 +2054,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
             'problem'
         )
         assert self.user_id == block.subtree_edited_by
-        assert datetime.datetime.now(UTC) > block.subtree_edited_on
+        assert datetime.datetime.now(ZoneInfo("UTC")) > block.subtree_edited_on
 
     # Split: wildcard search of draft (find) and split (mysql)
     @ddt.data((ModuleStoreEnum.Type.split, 1, 1, 0))
@@ -2202,7 +2202,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
                 block_id='test_html_no_change'
             )
 
-        after_create = datetime.datetime.now(UTC)
+        after_create = datetime.datetime.now(ZoneInfo("UTC"))
         # Verify that all nodes were last edited in the past by create_user
         for block in [component, child, sibling]:
             check_node(block.location, None, after_create, self.user_id, None, after_create, self.user_id)
@@ -2213,7 +2213,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         editing_user = self.user_id - 2
         with self.store.bulk_operations(test_course.id):  # TNL-764 bulk ops disabled ancestor updates
             component = self.store.update_item(component, editing_user)
-        after_edit = datetime.datetime.now(UTC)
+        after_edit = datetime.datetime.now(ZoneInfo("UTC"))
         check_node(component.location, after_create, after_edit, editing_user, after_create, after_edit, editing_user)
         # but child didn't change
         check_node(child.location, None, after_create, self.user_id, None, after_create, self.user_id)
@@ -2223,7 +2223,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         child.display_name = 'Changed Display Name'
         self.store.update_item(child, user_id=editing_user)
 
-        after_edit = datetime.datetime.now(UTC)
+        after_edit = datetime.datetime.now(ZoneInfo("UTC"))
 
         # Verify that child was last edited between after_create and after_edit by edit_user
         check_node(child.location, after_create, after_edit, editing_user, after_create, after_edit, editing_user)
@@ -2283,7 +2283,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         )
 
         # Store the current time, then publish
-        old_time = datetime.datetime.now(UTC)
+        old_time = datetime.datetime.now(ZoneInfo("UTC"))
         self.store.publish(component.location, publish_user)
         updated_component = self.store.get_item(component.location)
 

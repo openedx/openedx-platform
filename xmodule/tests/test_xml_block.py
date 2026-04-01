@@ -1,18 +1,16 @@
-# disable missing docstring
-# pylint: disable=missing-docstring
-
+"""Unit tests for XBlock field serialization, deserialization, and XML attributes."""
 
 import unittest
 from unittest.mock import Mock
 
 import dateutil.parser
+from lxml import etree
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from xblock.field_data import DictFieldData
-from xblock.fields import Any, Boolean, Dict, Float, Integer, List, Scope, String
+from xblock.fields import Any, Boolean, Date, Dict, Float, Integer, List, RelativeTime, Scope, String, Timedelta
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from xmodule.course_block import CourseBlock
-from xmodule.fields import Date, RelativeTime, Timedelta
 from xmodule.modulestore.inheritance import InheritanceKeyValueStore, InheritanceMixin, InheritingFieldData
 from xmodule.modulestore.split_mongo.split_mongo_kvs import SplitMongoKVS
 from xmodule.seq_block import SequenceBlock
@@ -23,12 +21,17 @@ from xmodule.x_module import XModuleMixin
 from xmodule.xml_block import XmlMixin, deserialize_field, serialize_field
 
 
-class CrazyJsonString(String):
+class CrazyJsonString(String):  # pylint: disable=too-few-public-methods
+    """String field that appends ' JSON' when serialized."""
+
     def to_json(self, value):
+        """Return the string value appended with ' JSON'."""
         return value + " JSON"
 
 
-class TestFields:
+class TestFields:  # pylint: disable=too-few-public-methods
+    """XBlock fields for testing editable and inherited behavior."""
+
     # Will be returned by editable_metadata_fields.
     max_attempts = Integer(scope=Scope.settings, default=1000, values={"min": 1, "max": 10})
     # Will not be returned by editable_metadata_fields because filtered out by non_editable_metadata_fields.
@@ -61,13 +64,20 @@ class InheritingFieldDataTest(unittest.TestCase):
     Tests of InheritingFieldData.
     """
 
-    class TestableInheritingXBlock(XmlMixin):  # lint-amnesty, pylint: disable=abstract-method
+    class TestableInheritingXBlock(XmlMixin):
         """
         An XBlock we can use in these tests.
         """
 
         inherited = String(scope=Scope.settings, default="the default")
         not_inherited = String(scope=Scope.settings, default="nothing")
+
+        @classmethod
+        def definition_from_xml(cls, xml_object, system):
+            return {}, []
+
+        def definition_to_xml(self, resource_fs):
+            return etree.Element("test_block")
 
     def setUp(self):
         super().setUp()
@@ -179,8 +189,8 @@ class InheritingFieldDataTest(unittest.TestCase):
         parent_block = self.get_block_using_split_kvs(
             block_type="library_content",
             block_id="parent",
-            fields=dict(inherited="changed!"),
-            defaults=dict(inherited="parent's default"),
+            fields={"inherited": "changed!"},
+            defaults={"inherited": "parent's default"},
         )
         assert parent_block.inherited == "changed!"
 
@@ -201,8 +211,8 @@ class InheritingFieldDataTest(unittest.TestCase):
         parent_block = self.get_block_using_split_kvs(
             block_type="library_content",
             block_id="parent",
-            fields=dict(inherited="changed!"),
-            defaults=dict(inherited="parent's default"),
+            fields={"inherited": "changed!"},
+            defaults={"inherited": "parent's default"},
         )
         assert parent_block.inherited == "changed!"
 
@@ -210,19 +220,29 @@ class InheritingFieldDataTest(unittest.TestCase):
             block_type="library_content",
             block_id="parent",
             fields={},
-            defaults=dict(inherited="child's default"),
+            defaults={"inherited": "child's default"},
         )
         child.parent = parent_block.location
         assert child.inherited == "child's default"
 
 
 class EditableMetadataFieldsTest(unittest.TestCase):
-    class TestableXmlXBlock(XmlMixin, XModuleMixin):  # lint-amnesty, pylint: disable=abstract-method
+    """Tests editable metadata fields and their serialization."""
+
+    class TestableXmlXBlock(XmlMixin, XModuleMixin):
         """
         This is subclassing `XModuleMixin` to use metadata fields in the unmixed class.
         """
 
+        @classmethod
+        def definition_from_xml(cls, xml_object, system):
+            return {}, []
+
+        def definition_to_xml(self, resource_fs):
+            return etree.Element("test_block")
+
     def test_display_name_field(self):
+        """Test filtering and values of display_name editable metadata field."""
         editable_fields = self.get_xml_editable_fields(DictFieldData({}))
         # Tests that the xblock fields (currently tags and name) get filtered out.
         # Also tests that xml_attributes is filtered out of XmlMixin.
@@ -237,6 +257,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         )
 
     def test_override_default(self):
+        """Test explicitly set values override defaults for editable fields."""
         # Tests that explicitly_set is correct when a value overrides the default (not inheritable).
         editable_fields = self.get_xml_editable_fields(DictFieldData({"display_name": "foo"}))
         self.assert_field_values(
@@ -249,6 +270,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         )
 
     def test_integer_field(self):
+        """Test serialization and options of Integer metadata fields."""
         block = self.get_block(DictFieldData({"max_attempts": "7"}))
         editable_fields = block.editable_metadata_fields
         assert 8 == len(editable_fields)
@@ -284,6 +306,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         )
 
     def test_inherited_field(self):
+        """Test inheritance behavior of editable metadata fields."""
         kvs = InheritanceKeyValueStore(initial_values={}, inherited_settings={"showanswer": "inherited"})
         model_data = KvsFieldData(kvs)
         block = self.get_block(model_data)
@@ -314,6 +337,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         )
 
     def test_type_and_options(self):
+        """Test type and options representation of various editable metadata fields."""
         # test_display_name_field verifies that a String field is of type "Generic".
         # test_integer_field verifies that a Integer field is of type "Integer".
 
@@ -381,6 +405,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
 
     # Start of helper methods
     def get_xml_editable_fields(self, field_data):
+        """Return editable fields from a test XML XBlock with given field data."""
         runtime = get_test_descriptor_system()
         return runtime.construct_xblock_from_class(
             self.TestableXmlXBlock,
@@ -389,7 +414,11 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         ).editable_metadata_fields
 
     def get_block(self, field_data):
-        class TestModuleBlock(TestFields, self.TestableXmlXBlock):  # lint-amnesty, pylint: disable=abstract-method
+        """Construct a test XBlock combining test fields and XML behavior."""
+
+        class TestModuleBlock(TestFields, self.TestableXmlXBlock):  # pylint: disable=too-many-ancestors
+            """Test XBlock class combining test fields and XML behavior, overriding non-editable fields."""
+
             @property
             def non_editable_metadata_fields(self):
                 non_editable_fields = super().non_editable_metadata_fields
@@ -399,7 +428,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         system = get_test_descriptor_system(render_template=Mock())
         return system.construct_xblock_from_class(TestModuleBlock, field_data=field_data, scope_ids=Mock())
 
-    def assert_field_values(  # lint-amnesty, pylint: disable=dangerous-default-value
+    def assert_field_values(  # pylint: disable=dangerous-default-value,too-many-arguments,too-many-positional-arguments
         self,
         editable_fields,
         name,
@@ -407,9 +436,10 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         explicitly_set,
         value,
         default_value,
-        type="Generic",
+        type="Generic",  # pylint: disable=redefined-builtin
         options=[],
-    ):  # lint-amnesty, pylint: disable=redefined-builtin
+    ):
+        """Assert correctness of field values, type, options, and explicitness."""
         test_field = editable_fields[name]
 
         assert field.name == test_field["field_name"]
@@ -429,6 +459,7 @@ class TestSerialize(unittest.TestCase):
     """Tests the serialize, method, which is not dependent on type."""
 
     def test_serialize(self):
+        """Test serialization of various field types to JSON-compatible strings."""
         assert serialize_field(None) == "null"
         assert serialize_field(-2) == "-2"
         assert serialize_field("2") == "2"
@@ -439,11 +470,7 @@ class TestSerialize(unittest.TestCase):
         assert serialize_field("fAlse") == "fAlse"
         assert serialize_field("hat box") == "hat box"
         serialized_dict = serialize_field({"bar": "hat", "frog": "green"})
-        assert (
-            serialized_dict  # lint-amnesty, pylint: disable=consider-using-in, line-too-long
-            == '{"bar": "hat", "frog": "green"}'
-            or serialized_dict == '{"frog": "green", "bar": "hat"}'
-        )
+        assert serialized_dict in ('{"bar": "hat", "frog": "green"}', '{"frog": "green", "bar": "hat"}')
         assert serialize_field([3.5, 5.6]) == "[3.5, 5.6]"
         assert serialize_field(["foo", "bar"]) == '["foo", "bar"]'
         assert serialize_field("2012-12-31T23:59:59Z") == "2012-12-31T23:59:59Z"
@@ -452,25 +479,26 @@ class TestSerialize(unittest.TestCase):
 
 
 class TestDeserialize(unittest.TestCase):
+    """Base class for testing deserialization of field values."""
 
-    def assertDeserializeEqual(self, expected, arg):
+    def assert_deserialize_equal(self, expected, arg):
         """
         Asserts the result of deserialize_field.
         """
-        assert deserialize_field(self.field_type(), arg) == expected  # lint-amnesty, pylint: disable=no-member
+        assert deserialize_field(self.field_type(), arg) == expected  # pylint: disable=no-member
 
-    def assertDeserializeNonString(self):
+    def assert_deserialize_non_string(self):
         """
         Asserts input value is returned for None or something that is not a string.
         For all types, 'null' is also always returned as None.
         """
-        self.assertDeserializeEqual(None, None)
-        self.assertDeserializeEqual(3.14, 3.14)
-        self.assertDeserializeEqual(True, True)
-        self.assertDeserializeEqual([10], [10])
-        self.assertDeserializeEqual({}, {})
-        self.assertDeserializeEqual([], [])
-        self.assertDeserializeEqual(None, "null")
+        self.assert_deserialize_equal(None, None)
+        self.assert_deserialize_equal(3.14, 3.14)
+        self.assert_deserialize_equal(True, True)
+        self.assert_deserialize_equal([10], [10])
+        self.assert_deserialize_equal({}, {})
+        self.assert_deserialize_equal([], [])
+        self.assert_deserialize_equal(None, "null")
 
 
 class TestDeserializeInteger(TestDeserialize):
@@ -479,23 +507,25 @@ class TestDeserializeInteger(TestDeserialize):
     field_type = Integer
 
     def test_deserialize(self):
-        self.assertDeserializeEqual(-2, "-2")
-        self.assertDeserializeEqual("450", '"450"')
+        """Test deserialization of Integer field values."""
+        self.assert_deserialize_equal(-2, "-2")
+        self.assert_deserialize_equal("450", '"450"')
 
         # False can be parsed as a int (converts to 0)
-        self.assertDeserializeEqual(False, "false")
+        self.assert_deserialize_equal(False, "false")
         # True can be parsed as a int (converts to 1)
-        self.assertDeserializeEqual(True, "true")
+        self.assert_deserialize_equal(True, "true")
         # 2.78 can be converted to int, so the string will be deserialized
-        self.assertDeserializeEqual(-2.78, "-2.78")
+        self.assert_deserialize_equal(-2.78, "-2.78")
 
     def test_deserialize_unsupported_types(self):
-        self.assertDeserializeEqual("[3]", "[3]")
+        """Test deserialization handles unsupported Integer inputs gracefully."""
+        self.assert_deserialize_equal("[3]", "[3]")
         # '2.78' cannot be converted to int, so input value is returned
-        self.assertDeserializeEqual('"-2.78"', '"-2.78"')
+        self.assert_deserialize_equal('"-2.78"', '"-2.78"')
         # 'false' cannot be converted to int, so input value is returned
-        self.assertDeserializeEqual('"false"', '"false"')
-        self.assertDeserializeNonString()
+        self.assert_deserialize_equal('"false"', '"false"')
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeFloat(TestDeserialize):
@@ -504,21 +534,23 @@ class TestDeserializeFloat(TestDeserialize):
     field_type = Float
 
     def test_deserialize(self):
-        self.assertDeserializeEqual(-2, "-2")
-        self.assertDeserializeEqual("450", '"450"')
-        self.assertDeserializeEqual(-2.78, "-2.78")
-        self.assertDeserializeEqual("0.45", '"0.45"')
+        """Test deserialization of Float field values."""
+        self.assert_deserialize_equal(-2, "-2")
+        self.assert_deserialize_equal("450", '"450"')
+        self.assert_deserialize_equal(-2.78, "-2.78")
+        self.assert_deserialize_equal("0.45", '"0.45"')
 
         # False can be parsed as a float (converts to 0)
-        self.assertDeserializeEqual(False, "false")
+        self.assert_deserialize_equal(False, "false")
         # True can be parsed as a float (converts to 1)
-        self.assertDeserializeEqual(True, "true")
+        self.assert_deserialize_equal(True, "true")
 
     def test_deserialize_unsupported_types(self):
-        self.assertDeserializeEqual("[3]", "[3]")
+        """Test deserialization handles unsupported Float inputs gracefully."""
+        self.assert_deserialize_equal("[3]", "[3]")
         # 'false' cannot be converted to float, so input value is returned
-        self.assertDeserializeEqual('"false"', '"false"')
-        self.assertDeserializeNonString()
+        self.assert_deserialize_equal('"false"', '"false"')
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeBoolean(TestDeserialize):
@@ -527,23 +559,24 @@ class TestDeserializeBoolean(TestDeserialize):
     field_type = Boolean
 
     def test_deserialize(self):
+        """Test deserialization of Boolean field values."""
         # json.loads converts the value to Python bool
-        self.assertDeserializeEqual(False, "false")
-        self.assertDeserializeEqual(True, "true")
+        self.assert_deserialize_equal(False, "false")
+        self.assert_deserialize_equal(True, "true")
 
         # json.loads fails, string value is returned.
-        self.assertDeserializeEqual("False", "False")
-        self.assertDeserializeEqual("True", "True")
+        self.assert_deserialize_equal("False", "False")
+        self.assert_deserialize_equal("True", "True")
 
         # json.loads deserializes as a string
-        self.assertDeserializeEqual("false", '"false"')
-        self.assertDeserializeEqual("fAlse", '"fAlse"')
-        self.assertDeserializeEqual("TruE", '"TruE"')
+        self.assert_deserialize_equal("false", '"false"')
+        self.assert_deserialize_equal("fAlse", '"fAlse"')
+        self.assert_deserialize_equal("TruE", '"TruE"')
 
         # 2.78 can be converted to a bool, so the string will be deserialized
-        self.assertDeserializeEqual(-2.78, "-2.78")
+        self.assert_deserialize_equal(-2.78, "-2.78")
 
-        self.assertDeserializeNonString()
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeString(TestDeserialize):
@@ -552,16 +585,18 @@ class TestDeserializeString(TestDeserialize):
     field_type = String
 
     def test_deserialize(self):
-        self.assertDeserializeEqual("hAlf", '"hAlf"')
-        self.assertDeserializeEqual("false", '"false"')
-        self.assertDeserializeEqual("single quote", "single quote")
+        """Test deserialization of String field values."""
+        self.assert_deserialize_equal("hAlf", '"hAlf"')
+        self.assert_deserialize_equal("false", '"false"')
+        self.assert_deserialize_equal("single quote", "single quote")
 
     def test_deserialize_unsupported_types(self):
-        self.assertDeserializeEqual("3.4", "3.4")
-        self.assertDeserializeEqual("false", "false")
-        self.assertDeserializeEqual("2", "2")
-        self.assertDeserializeEqual("[3]", "[3]")
-        self.assertDeserializeNonString()
+        """Test deserialization handles unsupported String inputs gracefully."""
+        self.assert_deserialize_equal("3.4", "3.4")
+        self.assert_deserialize_equal("false", "false")
+        self.assert_deserialize_equal("2", "2")
+        self.assert_deserialize_equal("[3]", "[3]")
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeAny(TestDeserialize):
@@ -570,14 +605,15 @@ class TestDeserializeAny(TestDeserialize):
     field_type = Any
 
     def test_deserialize(self):
-        self.assertDeserializeEqual("hAlf", '"hAlf"')
-        self.assertDeserializeEqual("false", '"false"')
-        self.assertDeserializeEqual({"bar": "hat", "frog": "green"}, '{"bar": "hat", "frog": "green"}')
-        self.assertDeserializeEqual([3.5, 5.6], "[3.5, 5.6]")
-        self.assertDeserializeEqual("[", "[")
-        self.assertDeserializeEqual(False, "false")
-        self.assertDeserializeEqual(3.4, "3.4")
-        self.assertDeserializeNonString()
+        """Test deserialization of Any-type field values."""
+        self.assert_deserialize_equal("hAlf", '"hAlf"')
+        self.assert_deserialize_equal("false", '"false"')
+        self.assert_deserialize_equal({"bar": "hat", "frog": "green"}, '{"bar": "hat", "frog": "green"}')
+        self.assert_deserialize_equal([3.5, 5.6], "[3.5, 5.6]")
+        self.assert_deserialize_equal("[", "[")
+        self.assert_deserialize_equal(False, "false")
+        self.assert_deserialize_equal(3.4, "3.4")
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeList(TestDeserialize):
@@ -586,26 +622,29 @@ class TestDeserializeList(TestDeserialize):
     field_type = List
 
     def test_deserialize(self):
-        self.assertDeserializeEqual(["foo", "bar"], '["foo", "bar"]')
-        self.assertDeserializeEqual([3.5, 5.6], "[3.5, 5.6]")
-        self.assertDeserializeEqual([], "[]")
+        """Test deserialization of List field values."""
+        self.assert_deserialize_equal(["foo", "bar"], '["foo", "bar"]')
+        self.assert_deserialize_equal([3.5, 5.6], "[3.5, 5.6]")
+        self.assert_deserialize_equal([], "[]")
 
     def test_deserialize_unsupported_types(self):
-        self.assertDeserializeEqual("3.4", "3.4")
-        self.assertDeserializeEqual("false", "false")
-        self.assertDeserializeEqual("2", "2")
-        self.assertDeserializeNonString()
+        """Test deserialization handles unsupported List inputs gracefully."""
+        self.assert_deserialize_equal("3.4", "3.4")
+        self.assert_deserialize_equal("false", "false")
+        self.assert_deserialize_equal("2", "2")
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeDate(TestDeserialize):
-    """Tests deserialize as related to Date type."""
+    """Test deserialization of Date field values."""
 
     field_type = Date
 
     def test_deserialize(self):
-        self.assertDeserializeEqual("2012-12-31T23:59:59Z", "2012-12-31T23:59:59Z")
-        self.assertDeserializeEqual("2012-12-31T23:59:59Z", '"2012-12-31T23:59:59Z"')
-        self.assertDeserializeNonString()
+        """Test deserialization of Timedelta field values."""
+        self.assert_deserialize_equal("2012-12-31T23:59:59Z", "2012-12-31T23:59:59Z")
+        self.assert_deserialize_equal("2012-12-31T23:59:59Z", '"2012-12-31T23:59:59Z"')
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeTimedelta(TestDeserialize):
@@ -614,9 +653,10 @@ class TestDeserializeTimedelta(TestDeserialize):
     field_type = Timedelta
 
     def test_deserialize(self):
-        self.assertDeserializeEqual("1 day 12 hours 59 minutes 59 seconds", "1 day 12 hours 59 minutes 59 seconds")
-        self.assertDeserializeEqual("1 day 12 hours 59 minutes 59 seconds", '"1 day 12 hours 59 minutes 59 seconds"')
-        self.assertDeserializeNonString()
+        """Test deserialization of RelativeTime field values."""
+        self.assert_deserialize_equal("1 day 12 hours 59 minutes 59 seconds", "1 day 12 hours 59 minutes 59 seconds")
+        self.assert_deserialize_equal("1 day 12 hours 59 minutes 59 seconds", '"1 day 12 hours 59 minutes 59 seconds"')
+        self.assert_deserialize_non_string()
 
 
 class TestDeserializeRelativeTime(TestDeserialize):
@@ -628,8 +668,8 @@ class TestDeserializeRelativeTime(TestDeserialize):
         """
         There is no check for
 
-        self.assertDeserializeEqual('10:20:30', '10:20:30')
-        self.assertDeserializeNonString()
+        self.assert_deserialize_equal('10:20:30', '10:20:30')
+        self.assert_deserialize_non_string()
 
         because these two tests work only because json.loads fires exception,
         and xml_module.deserialized_field catches it and returns same value,
@@ -638,24 +678,28 @@ class TestDeserializeRelativeTime(TestDeserialize):
         """
 
         # test that from_json produces no exceptions
-        self.assertDeserializeEqual("10:20:30", '"10:20:30"')
+        self.assert_deserialize_equal("10:20:30", '"10:20:30"')
 
 
 class TestXmlAttributes(XModuleXmlImportTest):
+    """Tests XML import/export of XBlock attributes, including known, unknown, and inheritable attributes."""
 
     def test_unknown_attribute(self):
+        """Test processing and retention of unknown XML attributes."""
         assert not hasattr(CourseBlock, "unknown_attr")
         course = self.process_xml(CourseFactory.build(unknown_attr="value"))
         assert not hasattr(course, "unknown_attr")
         assert course.xml_attributes["unknown_attr"] == "value"
 
     def test_known_attribute(self):
+        """Test that known XML attributes are correctly assigned to XBlock fields."""
         assert hasattr(CourseBlock, "show_calculator")
         course = self.process_xml(CourseFactory.build(show_calculator="true"))
         assert course.show_calculator
         assert "show_calculator" not in course.xml_attributes
 
     def test_rerandomize_in_policy(self):
+        """Test that rerandomize attribute from policy is correctly processed."""
         # Rerandomize isn't a basic attribute of Sequence
         assert not hasattr(SequenceBlock, "rerandomize")
 
@@ -672,6 +716,7 @@ class TestXmlAttributes(XModuleXmlImportTest):
         assert "rerandomize" not in seq.xml_attributes
 
     def test_attempts_in_policy(self):
+        """Test that attempts attribute from policy is correctly handled in XML import."""
         # attempts isn't a basic attribute of Sequence
         assert not hasattr(SequenceBlock, "attempts")
 
@@ -690,6 +735,7 @@ class TestXmlAttributes(XModuleXmlImportTest):
         assert "attempts" in seq.xml_attributes
 
     def check_inheritable_attribute(self, attribute, value):
+        """Check that an inheritable attribute is correctly processed and excluded from XML attributes."""
         # `attribute` isn't a basic attribute of Sequence
         assert not hasattr(SequenceBlock, attribute)
 
@@ -716,6 +762,7 @@ class TestXmlAttributes(XModuleXmlImportTest):
         assert attribute not in seq.xml_attributes
 
     def test_inheritable_attributes(self):
+        """Check multiple inheritable attributes are processed correctly from XML."""
         self.check_inheritable_attribute("days_early_for_beta", 2)
         self.check_inheritable_attribute("max_attempts", 5)
         self.check_inheritable_attribute("visible_to_staff_only", True)

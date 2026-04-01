@@ -3,12 +3,12 @@ Tests for the recently enrolled messaging within the Dashboard.
 """
 
 import datetime
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.urls import reverse
 from django.utils.timezone import now
 from opaque_keys.edx import locator
-from pytz import UTC
 
 from common.test.utils import XssTestMixin
 from common.djangoapps.student.models import CourseEnrollment, DashboardConfiguration
@@ -40,7 +40,7 @@ class TestRecentEnrollments(ModuleStoreTestCase, XssTestMixin):
         # Old Course
         old_course_location = locator.CourseLocator('Org0', 'Course0', 'Run0')
         __, enrollment = self._create_course_and_enrollment(old_course_location)
-        enrollment.created = datetime.datetime(1900, 12, 31, 0, 0, 0, 0, tzinfo=UTC)
+        enrollment.created = datetime.datetime(1900, 12, 31, 0, 0, 0, 0, tzinfo=ZoneInfo("UTC"))
         enrollment.save()
 
         # New Course

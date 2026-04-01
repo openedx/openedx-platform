@@ -13,14 +13,17 @@ from urllib.parse import parse_qs, urlparse
 import ddt
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
-from openedx_tagging.core.tagging.models import Tag, Taxonomy
-from openedx_tagging.core.tagging.models.system_defined import SystemDefinedTaxonomy
-from openedx_tagging.core.tagging.rest_api.v1.serializers import TaxonomySerializer
+from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_tagging.models import Tag, Taxonomy
+from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
+from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
+
 
 from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import (
@@ -31,7 +34,10 @@ from common.djangoapps.student.roles import (
     OrgLibraryUserRole,
     OrgStaffRole
 )
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 from openedx.core.djangoapps.content_libraries.api import AccessLevel, create_library, set_library_user_permissions
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
@@ -514,12 +520,12 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
 
     @ddt.data(
         ('staff', 11),
-        ("content_creatorA", 22),
-        ("library_staffA", 22),
-        ("library_userA", 22),
-        ("instructorA", 22),
-        ("course_instructorA", 22),
-        ("course_staffA", 22),
+        ("content_creatorA", 23),
+        ("library_staffA", 23),
+        ("library_userA", 23),
+        ("instructorA", 23),
+        ("course_instructorA", 23),
+        ("course_staffA", 23),
     )
     @ddt.unpack
     def test_list_taxonomy_query_count(self, user_attr: str, expected_queries: int):
@@ -1880,8 +1886,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'taxonomy_id': taxonomy.pk,
             'can_tag_object': True,
             'tags': [
-                {'value': 'Tag 1', 'lineage': ['Tag 1'], 'can_delete_objecttag': True},
-                {'value': 'Tag 2', 'lineage': ['Tag 2'], 'can_delete_objecttag': True},
+                {
+                    'value': 'Tag 1',
+                    'lineage': ['Tag 1'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
+                {
+                    'value': 'Tag 2',
+                    'lineage': ['Tag 2'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
             ],
         }]
 
@@ -1913,8 +1929,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             'can_tag_object': True,
             'export_id': self.t1.export_id,
             'tags': [
-                {'value': 'android', 'lineage': ['ALPHABET', 'android'], 'can_delete_objecttag': False},
-                {'value': 'anvil', 'lineage': ['ALPHABET', 'anvil'], 'can_delete_objecttag': True}
+                {
+                    'value': 'android',
+                    'lineage': ['ALPHABET', 'android'],
+                    'can_delete_objecttag': False,
+                    'is_copied': True,
+                },
+                {
+                    'value': 'anvil',
+                    'lineage': ['ALPHABET', 'anvil'],
+                    'can_delete_objecttag': True,
+                    'is_copied': False,
+                },
             ]
         }]
 
@@ -1927,16 +1953,16 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         ('staff', 'courseA', 8),
         ('staff', 'libraryA', 8),
         ('staff', 'collection_key', 8),
-        ("content_creatorA", 'courseA', 17, False),
-        ("content_creatorA", 'libraryA', 17, False),
-        ("content_creatorA", 'collection_key', 17, False),
-        ("library_staffA", 'libraryA', 17, False),  # Library users can only view objecttags, not change them?
-        ("library_staffA", 'collection_key', 17, False),
-        ("library_userA", 'libraryA', 17, False),
-        ("library_userA", 'collection_key', 17, False),
-        ("instructorA", 'courseA', 17),
-        ("course_instructorA", 'courseA', 17),
-        ("course_staffA", 'courseA', 17),
+        ("content_creatorA", 'courseA', 18, False),
+        ("content_creatorA", 'libraryA', 18, False),
+        ("content_creatorA", 'collection_key', 18, False),
+        ("library_staffA", 'libraryA', 18, False),  # Library users can only view objecttags, not change them?
+        ("library_staffA", 'collection_key', 18, False),
+        ("library_userA", 'libraryA', 18, False),
+        ("library_userA", 'collection_key', 18, False),
+        ("instructorA", 'courseA', 18),
+        ("course_instructorA", 'courseA', 18),
+        ("course_staffA", 'courseA', 18),
     )
     @ddt.unpack
     def test_object_tags_query_count(
@@ -1952,8 +1978,18 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         object_id = str(object_key)
         tagging_api.tag_object(object_id=object_id, taxonomy=self.t1, tags=["anvil", "android"])
         expected_tags = [
-            {"value": "android", "lineage": ["ALPHABET", "android"], "can_delete_objecttag": expected_perm},
-            {"value": "anvil", "lineage": ["ALPHABET", "anvil"], "can_delete_objecttag": expected_perm},
+            {
+                "value": "android",
+                "lineage": ["ALPHABET", "android"],
+                "can_delete_objecttag": expected_perm,
+                "is_copied": False,
+            },
+            {
+                "value": "anvil",
+                "lineage": ["ALPHABET", "anvil"],
+                "can_delete_objecttag": expected_perm,
+                "is_copied": False,
+            },
         ]
         url = OBJECT_TAGS_URL.format(object_id=object_id)
         user = getattr(self, user_attr)
@@ -2021,6 +2057,55 @@ class TestContentObjectChildrenExportView(TaggedCourseMixin, APITestCase):  # ty
         response = self.client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
+@skip_unless_cms
+class TestContentObjectChildrenExportViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestCase, APITestCase):
+    """
+    Tests Tags Export in Course authorization using openedx-authz.
+    """
+
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.password = 'test'
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+        cls.staff = StaffFactory(course_key=cls.course_key, password=cls.password)
+
+    def get_url(self, course_key):
+        return reverse('content_tagging:taxonomy-object-tag-export', kwargs={'context_id': course_key})
+
+    def test_authorized_user_can_access(self):
+        """User with COURSE_STAFF role can access."""
+        resp = self.authorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_unauthorized_user_cannot_access(self):
+        """User without role cannot access."""
+        resp = self.unauthorized_client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_role_scoped_to_course(self):
+        """Authorization should only apply to the assigned course."""
+        other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
+
+        resp = self.authorized_client.get(self.get_url(other_course.id))
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_staff_user_allowed_via_legacy(self):
+        """Staff users should still pass through legacy fallback."""
+        self.client.force_authenticate(user=self.staff)
+        resp = self.client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+
+    def test_superuser_allowed(self):
+        """Superusers should always be allowed."""
+        superuser = UserFactory(is_superuser=True)
+        client = APIClient()
+        client.force_authenticate(user=superuser)
+        resp = client.get(self.get_url(self.course_key))
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
 
 @skip_unless_cms
 @ddt.ddt

@@ -30,8 +30,8 @@ class SplitTestTransformer(FilteringTransformerMixin, BlockStructureTransformer)
     @classmethod
     def name(cls):
         """
-        Unique identifier for the transformer's class;
-        same identifier used in setup.py.
+        Unique identifier for the transformer's class.
+        This must match the entry point name in the package configuration.
         """
         return "split_test"
 

@@ -1,35 +1,30 @@
 <!-- ${id}     = 12345 -->
 <!-- ${width}  = 300   -->
 <!-- ${height} = 400   -->
-
 <div class="imageinput capa_inputtype" id="inputtype_<%-id%>">
-    <input
-        type="hidden"
-        class="imageinput"
-        src=""
-        name="input_<%-id%>"
-        id="input_<%-id%>"
-        value=""
-    />
-
-    <div style="position:relative;">
-        <div
-            id="imageinput_<%-id%>"
-            style="width: <%-width%>px; height: <%-height%>px; position: relative; left: 0; top: 0; visibility: hidden;"
-        >
-            <!-- image will go here -->
+    <input type="hidden"
+           class="imageinput"
+           src=""
+           name="input_<%-id%>"
+           id="input_<%-id%>"
+           value="" />
+        <div style="position:relative;">
+            <div id="imageinput_<%-id%>"
+                 style="width: <%-width%>px;
+                        height: <%-height%>px;
+                        position: relative;
+                        left: 0;
+                        top: 0;
+                        visibility: hidden">
+                <!-- image will go here -->
+            </div>
+            <div id="answer_<%-id%>" data-width="100" data-height="100"></div>
         </div>
-        <div id="answer_<%-id%>" data-width="100" data-height="100"></div>
-    </div>
-
-
-    <!-- status == 'unsubmitted' -->
-        <span
-            class="unanswered"
-            style="display: inline-block;"
-            id="status_<%-id%>"
-            aria-describedby="input_<%-id%>"
-        >
+        <!-- status == 'unsubmitted' -->
+        <span class="unanswered"
+              style="display: inline-block"
+              id="status_<%-id%>"
+              aria-describedby="input_<%-id%>">
             <span class="sr">Status: unanswered</span>
         </span>
-</div>
+    </div>

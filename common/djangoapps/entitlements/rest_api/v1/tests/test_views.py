@@ -6,12 +6,12 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.urls import reverse
 from django.utils.timezone import now
 from opaque_keys.edx.locator import CourseKey
-from pytz import UTC
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -1023,7 +1023,7 @@ class EntitlementEnrollmentViewSetTest(ModuleStoreTestCase):
         mock_get_course_runs.return_value = self.return_values
 
         # Setup enrollment period to be in the past
-        utc_now = datetime.now(UTC)
+        utc_now = datetime.now(ZoneInfo("UTC"))
         self.course.start = utc_now - timedelta(days=15)
         self.course.end = utc_now - timedelta(days=1)
         self.course = self.update_course(self.course, self.user.id)
