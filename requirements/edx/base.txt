@@ -571,7 +571,7 @@ enmerkar==0.7.1
     # via enmerkar-underscore
 enmerkar-underscore==2.4.0
     # via -r requirements/edx/kernel.in
-enterprise-integrated-channels==0.1.54
+enterprise-integrated-channels==0.1.55
     # via -r requirements/edx/bundled.in
 event-tracking==3.3.0
     # via
@@ -1299,7 +1299,7 @@ xblock-utils==4.0.0
     # via
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.15.1
+xblocks-contrib==0.15.2
     # via -r requirements/edx/bundled.in
 xmlsec==1.3.14
     # via

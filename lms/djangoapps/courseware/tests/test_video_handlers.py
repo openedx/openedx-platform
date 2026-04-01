@@ -798,7 +798,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         if sub:
             assert ('Location', f'/static/dummy/static/subs_{sub}.srt.sjson') in response.headerlist
 
-    @patch('xmodule.video_block.VideoBlock.course_id', return_value='not_a_course_locator')
+    @patch('xmodule.video_block.VideoBlock.context_key', return_value='not_a_course_locator')
     def test_translation_static_non_course(self, __):
         """
         Test that get_static_transcript short-circuits in the case of a non-CourseLocator.
@@ -806,7 +806,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         """
         self._set_static_asset_path()
 
-        # When course_id is not mocked out, these values would result in 307, as tested above.
+        # When context_key is not mocked out, these values would result in 307, as tested above.
         request = _create_djangowebobrequest_object_for_url('/translation/en?videoId=12345')
         response = self.block.transcript(request=request, dispatch='translation/en')
         assert response.status == '404 Not Found'

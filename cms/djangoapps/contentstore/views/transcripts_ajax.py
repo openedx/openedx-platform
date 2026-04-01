@@ -191,7 +191,7 @@ def validate_video_block(request, locator):
     error, item = None, None
     try:
         item = _get_item(request, {'locator': locator})
-        if item.category != 'video':
+        if item.usage_key.block_type != 'video':
             error = _('Transcripts are supported only for "video" blocks.')
 
     except (InvalidKeyError, ItemNotFoundError):
@@ -523,7 +523,7 @@ def _validate_transcripts_data(request):
     except (InvalidKeyError, ItemNotFoundError):
         raise TranscriptsRequestValidationException(_("Can't find item by locator."))  # lint-amnesty, pylint: disable=raise-missing-from
 
-    if item.category != 'video':
+    if item.usage_key.block_type != 'video':
         raise TranscriptsRequestValidationException(_('Transcripts are supported only for "video" blocks.'))
 
     # parse data form request.GET.['data']['video'] to useful format

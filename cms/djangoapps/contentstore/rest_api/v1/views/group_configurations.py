@@ -5,12 +5,14 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from openedx_authz.constants.permissions import COURSES_MANAGE_GROUP_CONFIGURATIONS
 
 from cms.djangoapps.contentstore.utils import get_group_configurations_context
 from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     CourseGroupConfigurationsSerializer,
 )
-from common.djangoapps.student.auth import has_studio_read_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from openedx.core.lib.api.view_utils import (
     DeveloperErrorViewMixin,
     verify_course_exists,
@@ -39,7 +41,11 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
         },
     )
     @verify_course_exists()
-    def get(self, request: Request, course_id: str):
+    @authz_permission_required(
+        authz_permission=COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+        legacy_permission=LegacyAuthoringPermission.READ
+    )
+    def get(self, request: Request, course_key: CourseKey):
         """
         Get an object containing course's settings group configurations.
 
@@ -139,11 +145,7 @@ class CourseGroupConfigurationsView(DeveloperErrorViewMixin, APIView):
         }
         ```
         """
-        course_key = CourseKey.from_string(course_id)
         store = modulestore()
-
-        if not has_studio_read_access(request.user, course_key):
-            self.permission_denied(request)
 
         with store.bulk_operations(course_key):
             course = modulestore().get_course(course_key)
