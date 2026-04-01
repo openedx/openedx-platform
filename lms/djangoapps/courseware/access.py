@@ -21,6 +21,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from xblock.core import XBlock
 
 from lms.djangoapps.courseware.access_response import (
+    CatalogVisibilityError,
     IncorrectPartitionGroupError,
     MilestoneAccessError,
     MobileAvailabilityError,
@@ -417,6 +418,8 @@ def _has_access_course(user, action, courselike):
             return ACCESS_GRANTED
         if _has_staff_access_to_block(user, courselike, courselike.id):
             return ACCESS_GRANTED
+        # Return the typed CatalogVisibilityError so downstream handlers
+        # can provide a meaningful error message instead of a generic 404.
         return catalog_response
 
     @function_trace('can_see_about_page')
@@ -884,8 +887,9 @@ def _has_catalog_visibility(course, visibility_type):
     """
     Returns whether the given course has the given visibility type
     """
-    from lms.djangoapps.courseware.access_response import CatalogVisibilityError
-    return ACCESS_GRANTED if course.catalog_visibility == visibility_type else CatalogVisibilityError()
+    if course.catalog_visibility == visibility_type:
+        return ACCESS_GRANTED
+    return CatalogVisibilityError()
 
 
 def _is_block_mobile_available(block):
