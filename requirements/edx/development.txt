@@ -1206,7 +1206,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock @ git+https://github.com/open-craft/xblock-lti-consumer@navin/fal-4318/split-config
+lti-consumer-xblock @ git+https://github.com/open-craft/xblock-lti-consumer.git@rpenido/FAL-4322/new-editor-design
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1412,6 +1412,7 @@ openedx-events==11.1.0
     #   edx-event-bus-redis
     #   event-tracking
     #   lti-consumer-xblock
+    #   openedx-core
     #   ora2
 openedx-filters==3.1.0
     # via
