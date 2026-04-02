@@ -66,12 +66,18 @@ v2_api_urls = [
         api_v2.ORASummaryView.as_view(),
         name='ora_summary'
     ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/enrollments$',
+        api_v2.CourseEnrollmentsView.as_view(),
+        name='course_enrollments'
+    ),
 ]
 
 urlpatterns = [
     path('students_update_enrollment', api.StudentsUpdateEnrollmentView.as_view(), name='students_update_enrollment'),
     path('register_and_enroll_students', api.RegisterAndEnrollStudents.as_view(), name='register_and_enroll_students'),
     path('list_course_role_members', api.ListCourseRoleMembersView.as_view(), name='list_course_role_members'),
+    path('list_course_enrollments', api.ListCourseEnrollmentsView.as_view(), name='list_course_enrollments'),
     path('modify_access', api.ModifyAccess.as_view(), name='modify_access'),
     path('bulk_beta_modify_access', api.BulkBetaModifyAccess.as_view(), name='bulk_beta_modify_access'),
     path('get_problem_responses', api.GetProblemResponses.as_view(), name='get_problem_responses'),

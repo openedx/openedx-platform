@@ -2425,7 +2425,10 @@ class TestInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTe
                     'first_name': self.other_staff.first_name,
                     'last_name': self.other_staff.last_name,
                 }
-            ]
+            ],
+            'count': 1,
+            'num_pages': 1,
+            'current_page': 1,
         }
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json == expected
@@ -2440,7 +2443,10 @@ class TestInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTe
         # check response content
         expected = {
             'course_id': str(self.course.id),
-            'beta': []
+            'beta': [],
+            'count': 0,
+            'num_pages': 1,
+            'current_page': 1,
         }
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json == expected

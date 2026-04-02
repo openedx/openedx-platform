@@ -58,7 +58,11 @@ from common.djangoapps.student.auth import (
 )
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import user_has_course_permission
-from openedx_authz.constants.permissions import COURSES_MANAGE_COURSE_UPDATES, COURSES_VIEW_COURSE_UPDATES
+from openedx_authz.constants.permissions import (
+    COURSES_MANAGE_COURSE_UPDATES,
+    COURSES_VIEW_COURSE_UPDATES,
+    COURSES_MANAGE_GROUP_CONFIGURATIONS,
+)
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseStaffRole,
@@ -150,15 +154,36 @@ class AccessListFallback(Exception):
     pass  # lint-amnesty, pylint: disable=unnecessary-pass
 
 
-def get_course_and_check_access(course_key, user, depth=0):
+def _get_course_block(course_key, depth=0):
     """
     Function used to calculate and return the locator and course block
     for the view functions in this file.
     """
-    if not has_studio_read_access(user, course_key):
-        raise PermissionDenied()
     course_block = modulestore().get_course(course_key, depth=depth)
     return course_block
+
+def get_course_and_check_access(course_key, user, depth=0):
+    """
+    Function used to validate permission and return a course block
+    for the view functions in this file.
+    """
+    if not has_studio_read_access(user, course_key):
+        raise PermissionDenied()
+    return _get_course_block(course_key, depth)
+
+def get_course_and_check_manage_group_configurations_access(course_key, user, depth=0):
+    """
+    Function used to validate permission and return a course block
+    for the view functions for group configurations in this file.
+    """
+    if not user_has_course_permission(
+        user=user,
+        authz_permission=COURSES_MANAGE_GROUP_CONFIGURATIONS.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.READ
+    ):
+        raise PermissionDenied()
+    return _get_course_block(course_key, depth)
 
 
 def reindex_course_and_check_access(course_key, user):
@@ -1628,7 +1653,7 @@ def group_configurations_list_handler(request, course_key_string):
     course_key = CourseKey.from_string(course_key_string)
     store = modulestore()
     with store.bulk_operations(course_key):
-        course = get_course_and_check_access(course_key, request.user)
+        course = get_course_and_check_manage_group_configurations_access(course_key, request.user)
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', 'text/html'):
             if use_new_group_configurations_page(course_key):
@@ -1671,7 +1696,7 @@ def group_configurations_detail_handler(request, course_key_string, group_config
     course_key = CourseKey.from_string(course_key_string)
     store = modulestore()
     with store.bulk_operations(course_key):
-        course = get_course_and_check_access(course_key, request.user)
+        course = get_course_and_check_manage_group_configurations_access(course_key, request.user)
         matching_id = [p for p in course.user_partitions
                        if str(p.id) == str(group_configuration_id)]
         if matching_id:

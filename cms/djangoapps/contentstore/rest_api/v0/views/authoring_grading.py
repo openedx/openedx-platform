@@ -2,12 +2,14 @@
 
 import edx_api_doc_tools as apidocs
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
-from common.djangoapps.student.auth import has_studio_read_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from ..serializers import CourseGradingModelSerializer
@@ -31,7 +33,10 @@ class AuthoringGradingView(DeveloperErrorViewMixin, APIView):
         },
     )
     @verify_course_exists()
-    def post(self, request: Request, course_id: str):
+    # Please note: previous legacy permisison was checking for has_studio_read_access
+    # So we are using LegacyAuthoringPermission.READ to keep compatibility
+    @authz_permission_required(COURSES_EDIT_GRADING_SETTINGS.identifier, LegacyAuthoringPermission.READ)
+    def post(self, request: Request, course_key: CourseKey):
         """
         Update a course's grading.
 
@@ -75,11 +80,6 @@ class AuthoringGradingView(DeveloperErrorViewMixin, APIView):
 
         If the request is successful, an HTTP 200 "OK" response is returned,
         """
-        course_key = CourseKey.from_string(course_id)
-
-        if not has_studio_read_access(request.user, course_key):
-            self.permission_denied(request)
-
         if 'minimum_grade_credit' in request.data:
             update_credit_course_requirements.delay(str(course_key))
 

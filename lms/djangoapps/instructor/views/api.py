@@ -22,6 +22,7 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.http import QueryDict, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -103,6 +104,7 @@ from lms.djangoapps.instructor.views.serializer import (
     BlockDueDateSerializer,
     CertificateSerializer,
     CertificateStatusesSerializer,
+    EnrollmentListSerializer,
     ForumRoleNameSerializer,
     ListInstructorTaskInputSerializer,
     ModifyAccessSerializer,
@@ -1050,6 +1052,11 @@ class ListCourseRoleMembersView(APIView):
 
     rolename is one of ['instructor', 'staff', 'beta', 'ccx_coach']
 
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
     Returns JSON of the form {
         "course_id": "some/course/id",
         "staff": [
@@ -1059,7 +1066,10 @@ class ListCourseRoleMembersView(APIView):
                 "first_name": "Joe",
                 "last_name": "Shmoe",
             }
-        ]
+        ],
+        "count": 10,
+        "num_pages": 1,
+        "current_page": 1
     }
     """
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
@@ -1087,13 +1097,130 @@ class ListCourseRoleMembersView(APIView):
         role_serializer = RoleNameSerializer(data=request.data)
         role_serializer.is_valid(raise_exception=True)
         rolename = role_serializer.data['rolename']
+        search = role_serializer.data.get('search', '').strip()
+        page = role_serializer.data.get('page', 1)
+        page_size = role_serializer.data.get('page_size', 20)
 
         users = list_with_level(course.id, rolename)
-        serializer = UserSerializer(users, many=True)
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            users = [
+                user for user in users
+                if search_lower in user.username.lower()
+                or search_lower in user.email.lower()
+                or search_lower in (user.first_name or '').lower()
+                or search_lower in (user.last_name or '').lower()
+            ]
+
+        # Calculate pagination
+        total_count = len(users)
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_users = users[start_idx:end_idx]
+
+        serializer = UserSerializer(paginated_users, many=True)
 
         response_payload = {
             'course_id': str(course_id),
             rolename: serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
+        }
+
+        return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class ListCourseEnrollmentsView(APIView):
+    """
+    View to list all enrollments (learners/students) for a specific course.
+    Requires the user to have instructor access.
+
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
+    Returns JSON of the form {
+        "course_id": "some/course/id",
+        "enrollments": [
+            {
+                "username": "student1",
+                "email": "student1@example.org",
+                "first_name": "Jane",
+                "last_name": "Doe",
+            }
+        ],
+        "count": 100,
+        "num_pages": 5,
+        "current_page": 1
+    }
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request, course_id):
+        """
+        Handles POST request to list course enrollments.
+
+        Args:
+            request (HttpRequest): The request object containing user data.
+            course_id (str): The ID of the course to list enrollments for.
+
+        Returns:
+            Response: A Response object containing the list of enrollments or an error message.
+
+        Raises:
+            Http404: If the course does not exist.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Verify the user has staff-level access to the course; raises Http404 if not.
+        get_course_with_access(
+            request.user, 'staff', course_key, depth=None
+        )
+
+        enrollment_serializer = EnrollmentListSerializer(data=request.data)
+        enrollment_serializer.is_valid(raise_exception=True)
+        search = enrollment_serializer.data.get('search', '').strip()
+        page = enrollment_serializer.data.get('page', 1)
+        page_size = enrollment_serializer.data.get('page_size', 20)
+
+        # Get all active enrollments for the course
+        enrollments = CourseEnrollment.objects.filter(
+            course_id=course_key,
+            is_active=True
+        ).select_related('user').order_by('user__username')
+
+        # Apply search filter
+        if search:
+            enrollments = enrollments.filter(
+                Q(user__username__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search)
+            )
+
+        # Calculate pagination
+        total_count = enrollments.count()
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_enrollments = enrollments[start_idx:end_idx]
+
+        # Extract user data from enrollments
+        users = [enr.user for enr in paginated_enrollments]
+        serializer = UserSerializer(users, many=True)
+
+        response_payload = {
+            'course_id': str(course_key),
+            'enrollments': serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
@@ -2176,7 +2303,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
 
         elif all_students:
@@ -2188,7 +2315,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
         else:
             return HttpResponseBadRequest()
