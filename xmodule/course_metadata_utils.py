@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo
 
 import dateutil.parser
 
-DEFAULT_START_DATE = datetime(2030, 1, 1, tzinfo=ZoneInfo("UTC"))
+DEFAULT_START_DATE = datetime(2040, 1, 1, tzinfo=ZoneInfo("UTC"))
 
 """
 Default grading policy for a course run.
