@@ -33,9 +33,9 @@ class _PollBlockTestBase(TestCase):
         super().setUp()
         course_key = CourseKey.from_string('org/course/run')
         self.system = get_test_system(course_key)
-        usage_key = course_key.make_usage_key(self.poll_block_class.category, 'test_loc')
+        usage_key = course_key.make_usage_key('poll_question', 'test_loc')
         # ScopeIds has 4 fields: user_id, block_type, def_id, usage_id
-        self.scope_ids = ScopeIds(1, self.poll_block_class.category, usage_key, usage_key)
+        self.scope_ids = ScopeIds(1, 'poll_question', usage_key, usage_key)
         self.xblock = self.poll_block_class(
             self.system, DictFieldData(self.raw_field_data), self.scope_ids
         )
@@ -68,7 +68,7 @@ class _PollBlockTestBase(TestCase):
         unescaped characters.
         """
         module_system = DummyModuleStoreRuntime(load_error_blocks=True)
-        module_system.id_generator.target_course_id = self.xblock.course_id
+        module_system.id_generator.target_course_id = self.xblock.context_key
         sample_poll_xml = '''
         <poll_question display_name="Poll Question">
             <p>How old are you?</p>
