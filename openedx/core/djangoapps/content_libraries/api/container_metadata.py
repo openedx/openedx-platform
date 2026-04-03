@@ -18,7 +18,7 @@ from openedx_content.models_api import (
     PublishableEntityMixin,
     Section,
     Subsection,
-    Unit
+    Unit,
 )
 
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts

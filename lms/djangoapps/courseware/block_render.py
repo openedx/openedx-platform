@@ -57,7 +57,7 @@ from lms.djangoapps.courseware.masquerade import (
     MasqueradingKeyValueStore,
     filter_displayed_blocks,
     is_masquerading_as_specific_student,
-    setup_masquerade
+    setup_masquerade,
 )
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from lms.djangoapps.courseware.services import UserStateService
@@ -81,9 +81,14 @@ from openedx.core.lib.gating.services import GatingService
 from openedx.core.lib.license import wrap_with_license
 from openedx.core.lib.url_utils import quote_slashes, unquote_slashes
 from openedx.core.lib.xblock_services.call_to_action import CallToActionService
-from openedx.core.lib.xblock_utils import add_staff_markup, get_aside_from_xblock, hash_resource, is_xblock_aside
+from openedx.core.lib.xblock_utils import (
+    add_staff_markup,
+    get_aside_from_xblock,
+    hash_resource,
+    is_xblock_aside,
+    wrap_xblock,
+)
 from openedx.core.lib.xblock_utils import request_token as xblock_request_token
-from openedx.core.lib.xblock_utils import wrap_xblock
 from openedx.features.content_type_gating.services import ContentTypeGatingService
 from openedx.features.course_duration_limits.access import course_expiration_wrapper
 from openedx.features.discounts.utils import offer_banner_wrapper
@@ -98,7 +103,7 @@ from xmodule.services import (
     RebindUserService,
     SettingsService,
     TeamsConfigurationService,
-    XQueueService
+    XQueueService,
 )
 from xmodule.util.sandboxing import SandboxService
 

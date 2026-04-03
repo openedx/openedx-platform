@@ -21,7 +21,7 @@ from openedx.core.djangoapps.content_libraries.tests.base import (
     URL_BLOCK_FIELDS_URL,
     URL_BLOCK_GET_HANDLER_URL,
     URL_BLOCK_METADATA_URL,
-    URL_BLOCK_RENDER_VIEW
+    URL_BLOCK_RENDER_VIEW,
 )
 from openedx.core.djangoapps.content_libraries.tests.user_state_block import UserStateTestBlock
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig

@@ -19,7 +19,7 @@ from .accounts.views import (
     DeactivateLogoutView,
     LMSAccountRetirementView,
     NameChangeView,
-    UsernameReplacementView
+    UsernameReplacementView,
 )
 from .models import UserPreference
 from .preferences.views import PreferencesDetailView, PreferencesView

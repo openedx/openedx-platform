@@ -100,7 +100,7 @@ from xblock.core import XBlock
 from cms.djangoapps.contentstore.models import ComponentLink, ContainerLink, EntityLinkBase
 from cms.djangoapps.contentstore.rest_api.v2.serializers import (
     PublishableEntityLinkSerializer,
-    PublishableEntityLinksSummarySerializer
+    PublishableEntityLinksSummarySerializer,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import sync_library_content
 from cms.lib.xblock.upstream_sync import (
@@ -110,7 +110,7 @@ from cms.lib.xblock.upstream_sync import (
     UpstreamLink,
     UpstreamLinkException,
     decline_sync,
-    sever_upstream_link
+    sever_upstream_link,
 )
 from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block
 from cms.lib.xblock.upstream_sync_container import fetch_customizable_fields_from_container

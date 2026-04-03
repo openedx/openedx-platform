@@ -18,7 +18,7 @@ from openedx.core.djangoapps.commerce.utils import (
     DeprecatedRestApiClient,
     get_ecommerce_api_base_url,
     get_ecommerce_api_client,
-    user_agent
+    user_agent,
 )
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 

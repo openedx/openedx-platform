@@ -10,7 +10,7 @@ from openedx.core.djangoapps.schedules.content_highlights import (
     course_has_highlights_from_store,
     get_all_course_highlights,
     get_next_section_highlights,
-    get_week_highlights
+    get_week_highlights,
 )
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist
 from openedx.core.djangolib.testing.utils import skip_unless_lms

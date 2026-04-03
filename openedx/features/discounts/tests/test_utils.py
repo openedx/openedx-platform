@@ -17,7 +17,7 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.features.discounts.applicability import (
     DISCOUNT_APPLICABILITY_FLAG,
     FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG,
-    get_discount_expiration_date
+    get_discount_expiration_date,
 )
 
 from .. import utils

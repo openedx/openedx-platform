@@ -16,13 +16,13 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.certificates.generation_handler import (
     CertificateGenerationNotAllowed,
     generate_allowlist_certificate_task,
-    generate_certificate_task
+    generate_certificate_task,
 )
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.signals import (
     _handle_id_verification_approved,
     _listen_for_enrollment_mode_change,
-    listen_for_passing_grade
+    listen_for_passing_grade,
 )
 from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFactory
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory

@@ -14,7 +14,7 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.course_blocks.transformers.tests.helpers import ModuleStoreTestCase, TransformerRegistryTestMixin
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 

@@ -32,6 +32,7 @@ import click
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
 from scripts.user_retirement.utils.exception import HttpDoesNotExistException
+
 # pylint: disable=wrong-import-position
 from scripts.user_retirement.utils.helpers import (
     _config_or_exit,
@@ -39,7 +40,7 @@ from scripts.user_retirement.utils.helpers import (
     _fail_exception,
     _get_error_str_from_exception,
     _log,
-    _setup_all_apis_or_exit
+    _setup_all_apis_or_exit,
 )
 
 # Return codes for various fail cases

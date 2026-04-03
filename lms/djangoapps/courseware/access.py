@@ -31,14 +31,15 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgInstructorRole,
     OrgStaffRole,
-    SupportStaffRole
+    SupportStaffRole,
 )
-from common.djangoapps.util import \
-    milestones_helpers as milestones_helpers  # lint-amnesty, pylint: disable=useless-import-alias
+from common.djangoapps.util import (
+    milestones_helpers as milestones_helpers,  # lint-amnesty, pylint: disable=useless-import-alias
+)
 from common.djangoapps.util.milestones_helpers import (
     any_unfulfilled_milestones,
     get_pre_requisite_courses_not_completed,
-    is_prerequisite_courses_enabled
+    is_prerequisite_courses_enabled,
 )
 from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
 from lms.djangoapps.ccx.models import CustomCourseForEdX
@@ -49,14 +50,14 @@ from lms.djangoapps.courseware.access_response import (
     MobileAvailabilityError,
     NoAllowedPartitionGroupsError,
     OldMongoAccessError,
-    VisibilityError
+    VisibilityError,
 )
 from lms.djangoapps.courseware.access_utils import (
     ACCESS_DENIED,
     ACCESS_GRANTED,
     check_course_open_for_learner,
     check_start_date,
-    debug
+    debug,
 )
 from lms.djangoapps.courseware.masquerade import get_masquerade_role, is_masquerading_as_student
 from lms.djangoapps.courseware.toggles import course_is_invitation_only
@@ -66,12 +67,12 @@ from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-    CourseBlock
+    CourseBlock,
 )
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     NoSuchUserPartitionError,
-    NoSuchUserPartitionGroupError
+    NoSuchUserPartitionGroupError,
 )
 
 log = logging.getLogger(__name__)

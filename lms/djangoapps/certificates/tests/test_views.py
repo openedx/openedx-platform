@@ -14,8 +14,9 @@ from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFact
 from lms.djangoapps.certificates.utils import get_certificate_url
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()

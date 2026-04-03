@@ -9,9 +9,8 @@ from urllib.parse import quote
 from django.contrib.sites.shortcuts import get_current_site
 from django.http import Http404
 from django.template.loader import render_to_string
-from django.utils.translation import get_language
+from django.utils.translation import get_language, to_locale
 from django.utils.translation import gettext_lazy as _  # lint-amnesty, pylint: disable=unused-import
-from django.utils.translation import to_locale
 from lti_consumer.lti_1p1.contrib.django import lti_embed
 from web_fragments.fragment import Fragment
 
@@ -23,7 +22,7 @@ from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangoapps.programs.models import (
     ProgramDiscussionsConfiguration,
     ProgramLiveConfiguration,
-    ProgramsApiConfig
+    ProgramsApiConfig,
 )
 from openedx.core.djangoapps.programs.utils import (
     ProgramProgressMeter,
@@ -31,7 +30,7 @@ from openedx.core.djangoapps.programs.utils import (
     get_industry_and_credit_pathways,
     get_program_and_course_data,
     get_program_marketing_url,
-    get_program_urls
+    get_program_urls,
 )
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preferences
 from openedx.core.djangolib.markup import HTML

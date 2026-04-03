@@ -42,13 +42,13 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     _xblock_type_and_display_name,
     add_container_page_publishing_info,
     create_xblock_info,
-    get_block_info
+    get_block_info,
 )
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from common.djangoapps.xblock_django.models import (
     XBlockConfiguration,
     XBlockStudioConfiguration,
-    XBlockStudioConfigurationFlag
+    XBlockStudioConfigurationFlag,
 )
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from common.test.utils import assert_dict_contains_subset
@@ -66,7 +66,7 @@ from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     MINIMUM_UNUSED_PARTITION_ID,
     Group,
-    UserPartition
+    UserPartition,
 )
 from xmodule.partitions.tests.test_partitions import MockPartitionService
 from xmodule.x_module import STUDENT_VIEW, STUDIO_VIEW

@@ -14,7 +14,7 @@ from .proctoring import (
     LimitedProctoredExamSettingsSerializer,
     ProctoredExamConfigurationSerializer,
     ProctoredExamSettingsSerializer,
-    ProctoringErrorsSerializer
+    ProctoringErrorsSerializer,
 )
 from .settings import CourseSettingsSerializer
 from .textbooks import CourseTextbooksSerializer
@@ -24,5 +24,5 @@ from .videos import (
     VideoDownloadSerializer,
     VideoImageSerializer,
     VideoUploadSerializer,
-    VideoUsageSerializer
+    VideoUsageSerializer,
 )

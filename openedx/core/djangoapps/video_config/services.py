@@ -20,7 +20,7 @@ from xblocks_contrib.video.exceptions import TranscriptNotFoundError
 
 from openedx.core.djangoapps.content_libraries.api import (
     add_library_block_static_asset_file,
-    delete_library_block_static_asset_file
+    delete_library_block_static_asset_file,
 )
 from openedx.core.djangoapps.video_config import sharing
 from openedx.core.djangoapps.video_config.models import CourseYoutubeBlockedFlag, HLSPlaybackEnabledFlag
@@ -33,7 +33,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (
     get_transcript,
     get_transcript_for_video,
     manage_video_subtitles_save,
-    remove_subs_from_store
+    remove_subs_from_store,
 )
 from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE
 from xmodule.exceptions import NotFoundError

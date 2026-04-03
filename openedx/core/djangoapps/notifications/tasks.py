@@ -16,7 +16,7 @@ from openedx.core.djangoapps.notifications.audience_filters import NotificationF
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
     get_default_values_of_preferences,
-    get_notification_content
+    get_notification_content,
 )
 from openedx.core.djangoapps.notifications.config.waffle import DISABLE_NOTIFICATIONS, ENABLE_PUSH_NOTIFICATIONS
 from openedx.core.djangoapps.notifications.email.tasks import send_immediate_cadence_email
@@ -25,18 +25,18 @@ from openedx.core.djangoapps.notifications.events import notification_generated_
 from openedx.core.djangoapps.notifications.grouping_notifications import (
     NotificationRegistry,
     get_user_existing_notifications,
-    group_user_notifications
+    group_user_notifications,
 )
 from openedx.core.djangoapps.notifications.models import (
     Notification,
     NotificationPreference,
-    create_notification_preference
+    create_notification_preference,
 )
 from openedx.core.djangoapps.notifications.push.tasks import send_ace_msg_to_push_channel
 from openedx.core.djangoapps.notifications.utils import (
     clean_arguments,
     create_account_notification_pref_if_not_exists,
-    get_list_in_batches
+    get_list_in_batches,
 )
 
 logger = get_task_logger(__name__)

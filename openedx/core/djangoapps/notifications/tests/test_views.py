@@ -22,7 +22,7 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
-    FORUM_ROLE_MODERATOR
+    FORUM_ROLE_MODERATOR,
 )
 from openedx.core.djangoapps.notifications.email.utils import encrypt_string
 from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference

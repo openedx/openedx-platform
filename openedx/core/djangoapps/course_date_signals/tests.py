@@ -9,7 +9,7 @@ from openedx.core.djangoapps.course_date_signals.handlers import (
     _gather_graded_items,
     _get_custom_pacing_children,
     _has_assignment_blocks,
-    extract_dates_from_course
+    extract_dates_from_course,
 )
 from openedx.core.djangoapps.course_date_signals.models import SelfPacedRelativeDatesConfig
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase

@@ -12,7 +12,7 @@ from openedx.core.djangoapps.schedules import resolvers, tasks
 from openedx.core.djangoapps.schedules.management.commands import send_recurring_nudge as nudge
 from openedx.core.djangoapps.schedules.management.commands.tests.send_email_base import (
     ExperienceTest,
-    ScheduleSendEmailTestMixin
+    ScheduleSendEmailTestMixin,
 )
 from openedx.core.djangoapps.schedules.management.commands.tests.upsell_base import ScheduleUpsellTestMixin
 from openedx.core.djangoapps.schedules.models import ScheduleExperience

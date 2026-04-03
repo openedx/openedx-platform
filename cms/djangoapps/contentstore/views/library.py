@@ -28,14 +28,14 @@ from common.djangoapps.student.auth import (
     STUDIO_VIEW_USERS,
     get_user_permissions,
     has_studio_read_access,
-    has_studio_write_access
+    has_studio_write_access,
 )
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseStaffRole,
     LibraryUserRole,
     OrgStaffRole,
-    UserBasedRole
+    UserBasedRole,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
 from xmodule.modulestore import ModuleStoreEnum

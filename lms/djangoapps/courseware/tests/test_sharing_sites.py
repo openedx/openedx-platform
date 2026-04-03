@@ -11,7 +11,7 @@ import ddt
 from openedx.core.djangoapps.video_config.sharing_sites import (
     SharingSiteConfig,
     sharing_sites_info_for_video,
-    sharing_url
+    sharing_url,
 )
 
 TEST_SHARING_SITE_NAME = "test_site_name"

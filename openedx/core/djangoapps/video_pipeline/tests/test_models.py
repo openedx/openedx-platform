@@ -10,7 +10,7 @@ from django.test import TestCase
 from openedx.core.djangoapps.video_config.tests.test_models import FeatureFlagTestMixin
 from openedx.core.djangoapps.video_pipeline.models import (
     CourseVideoUploadsEnabledByDefault,
-    VideoUploadsEnabledByDefault
+    VideoUploadsEnabledByDefault,
 )
 
 

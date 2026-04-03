@@ -22,6 +22,7 @@ from django.db.models.lookups import Exact
 from django.db.transaction import TransactionManagementError
 from edx_django_utils import monitoring
 from edx_django_utils.cache import RequestCache
+
 # Import this just to export it
 from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import
 

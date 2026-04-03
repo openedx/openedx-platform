@@ -12,14 +12,15 @@ from openedx.core.djangoapps.django_comment_common import models
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import TEST_API_KEY, ApiTestCase
 from openedx.core.lib.time_zone_utils import get_display_time_zone
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     fake_requested_retirement,
-    setup_retirement_states
+    setup_retirement_states,
 )
 from ..models import UserOrgTag
 from ..tests.factories import UserPreferenceFactory

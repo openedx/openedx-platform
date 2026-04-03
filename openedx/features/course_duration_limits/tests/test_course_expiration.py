@@ -23,7 +23,7 @@ from common.djangoapps.student.tests.factories import (
     OrgInstructorFactory,
     OrgStaffFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
@@ -33,7 +33,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
-    FORUM_ROLE_MODERATOR
+    FORUM_ROLE_MODERATOR,
 )
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID, CONTENT_TYPE_GATE_GROUP_IDS

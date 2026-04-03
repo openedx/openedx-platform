@@ -9,7 +9,7 @@ from lms.djangoapps.bulk_email.api import (
     create_course_email,
     determine_targets_for_course_email,
     get_course_email,
-    update_course_email
+    update_course_email,
 )
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
 from lms.djangoapps.bulk_email.models import CourseEmail

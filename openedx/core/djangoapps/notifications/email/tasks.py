@@ -32,7 +32,7 @@ from .utils import (
     get_course_info,
     get_language_preference_for_users,
     get_start_end_date,
-    get_text_for_notification_type
+    get_text_for_notification_type,
 )
 
 User = get_user_model()

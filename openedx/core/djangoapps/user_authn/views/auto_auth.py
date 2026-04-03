@@ -21,7 +21,7 @@ from common.djangoapps.student.helpers import (
     AccountValidationError,
     authenticate_new_user,
     create_or_set_user_attribute_created_on_site,
-    do_create_account
+    do_create_account,
 )
 from common.djangoapps.student.models import (
     CourseAccessRole,
@@ -29,7 +29,7 @@ from common.djangoapps.student.models import (
     Registration,
     UserProfile,
     anonymous_id_for_user,
-    create_comments_service_user
+    create_comments_service_user,
 )
 from common.djangoapps.util.json_request import JsonResponse
 from lms.djangoapps.verify_student.models import ManualVerification

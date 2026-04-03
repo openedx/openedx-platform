@@ -18,7 +18,7 @@ from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.course_group_config import (
     CONTENT_GROUP_CONFIGURATION_NAME,
     ENROLLMENT_SCHEME,
-    GroupConfiguration
+    GroupConfiguration,
 )
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
@@ -30,16 +30,16 @@ from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
     Group,
-    UserPartition
+    UserPartition,
 )
 from xmodule.validation import (  # lint-amnesty, pylint: disable=wrong-import-order
     StudioValidation,
-    StudioValidationMessage
+    StudioValidationMessage,
 )
 
 GROUP_CONFIGURATION_JSON = {

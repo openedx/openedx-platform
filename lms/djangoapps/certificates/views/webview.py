@@ -32,20 +32,20 @@ from lms.djangoapps.certificates.api import (
     get_active_web_certificate,
     get_certificate_footer_context,
     get_certificate_header_context,
-    get_certificate_template
+    get_certificate_template,
 )
 from lms.djangoapps.certificates.models import (
     CertificateGenerationCourseSetting,
     CertificateHtmlViewConfiguration,
     CertificateSocialNetworks,
     CertificateStatuses,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.permissions import PREVIEW_CERTIFICATES
 from lms.djangoapps.certificates.utils import (
     emit_certificate_event,
     get_certificate_url,
-    get_preferred_certificate_name
+    get_preferred_certificate_name,
 )
 from openedx.core.djangoapps.catalog.api import get_course_run_details
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none

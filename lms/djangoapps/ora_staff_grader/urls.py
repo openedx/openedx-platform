@@ -12,7 +12,7 @@ from lms.djangoapps.ora_staff_grader.views import (
     SubmissionFilesFetchView,
     SubmissionLockView,
     SubmissionStatusFetchView,
-    UpdateGradeView
+    UpdateGradeView,
 )
 
 urlpatterns = []

@@ -24,7 +24,7 @@ from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.discounts.utils import format_strikeout_price
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     UserPartition,
-    UserPartitionError
+    UserPartitionError,
 )
 
 LOG = logging.getLogger(__name__)

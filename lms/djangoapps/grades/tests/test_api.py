@@ -10,13 +10,14 @@ from lms.djangoapps.grades import api
 from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 

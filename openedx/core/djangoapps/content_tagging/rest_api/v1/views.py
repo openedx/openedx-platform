@@ -24,7 +24,7 @@ from ...api import (
     get_taxonomies_for_org,
     get_taxonomy,
     get_unassigned_taxonomies,
-    set_taxonomy_orgs
+    set_taxonomy_orgs,
 )
 from ...auth import has_view_object_tags_access
 from ...rules import get_admin_orgs
@@ -33,7 +33,7 @@ from .serializers import (
     ObjectTagCopiedMinimalSerializer,
     TaxonomyOrgListQueryParamsSerializer,
     TaxonomyOrgSerializer,
-    TaxonomyUpdateOrgBodySerializer
+    TaxonomyUpdateOrgBodySerializer,
 )
 
 

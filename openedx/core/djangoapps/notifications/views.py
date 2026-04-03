@@ -24,18 +24,18 @@ from .events import (
     notification_preference_update_event,
     notification_read_event,
     notification_tray_opened_event,
-    notifications_app_all_read_event
+    notifications_app_all_read_event,
 )
 from .models import Notification
 from .serializers import (
     NotificationSerializer,
     UserNotificationPreferenceUpdateAllSerializer,
-    add_non_editable_in_preference
+    add_non_editable_in_preference,
 )
 from .utils import (
     create_account_notification_pref_if_not_exists,
     exclude_inaccessible_preferences,
-    get_show_notifications_tray
+    get_show_notifications_tray,
 )
 
 

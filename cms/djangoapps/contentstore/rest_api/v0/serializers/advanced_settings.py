@@ -5,9 +5,8 @@ from typing import Type
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.fields import Field as SerializerField
-from xblock.fields import Boolean, Date, DateTime, Dict
+from xblock.fields import Boolean, Date, DateTime, Dict, Float, Integer, List, String
 from xblock.fields import Field as XBlockField
-from xblock.fields import Float, Integer, List, String
 
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from xmodule.course_block import CourseFields, EmailString

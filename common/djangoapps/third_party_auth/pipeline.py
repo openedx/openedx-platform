@@ -90,7 +90,7 @@ from common.djangoapps.third_party_auth.utils import (
     is_enterprise_customer_user,
     is_oauth_provider,
     is_saml_provider,
-    user_exists
+    user_exists,
 )
 from common.djangoapps.track import segment
 from common.djangoapps.util.json_request import JsonResponse

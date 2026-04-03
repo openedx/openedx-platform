@@ -17,12 +17,12 @@ from common.djangoapps.third_party_auth.utils import (
     is_enterprise_customer_user,
     is_oauth_provider,
     parse_metadata_xml,
-    user_exists
+    user_exists,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerIdentityProviderFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 

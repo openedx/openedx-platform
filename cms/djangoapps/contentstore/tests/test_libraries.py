@@ -22,7 +22,7 @@ from common.djangoapps.student.roles import (
     LibraryUserRole,
     OrgInstructorRole,
     OrgLibraryUserRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService

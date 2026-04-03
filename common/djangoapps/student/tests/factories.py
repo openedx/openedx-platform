@@ -24,7 +24,7 @@ from common.djangoapps.student.models import (
     User,
     UserAttribute,
     UserProfile,
-    UserStanding
+    UserStanding,
 )
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
@@ -32,7 +32,7 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
     GlobalStaff,
     OrgInstructorRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

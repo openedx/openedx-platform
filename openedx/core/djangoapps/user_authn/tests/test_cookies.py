@@ -19,7 +19,7 @@ from openedx.core.djangoapps.profile_images.images import create_profile_images
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_names,
-    get_profile_image_urls_for_user
+    get_profile_image_urls_for_user,
 )
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangoapps.user_authn import cookies as cookies_api

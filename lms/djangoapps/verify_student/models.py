@@ -39,7 +39,7 @@ from lms.djangoapps.verify_student.ssencrypt import (
     generate_signed_message,
     random_aes_key,
     rsa_decrypt,
-    rsa_encrypt
+    rsa_encrypt,
 )
 from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED

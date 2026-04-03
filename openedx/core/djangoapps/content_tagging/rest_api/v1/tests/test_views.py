@@ -31,7 +31,7 @@ from common.djangoapps.student.roles import (
     OrgContentCreatorRole,
     OrgInstructorRole,
     OrgLibraryUserRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin

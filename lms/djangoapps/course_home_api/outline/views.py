@@ -13,15 +13,17 @@ from django.shortcuts import get_object_or_404  # lint-amnesty, pylint: disable=
 from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=wrong-import-order
 from edx_django_utils import monitoring as monitoring_utils  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import \
-    JwtAuthentication  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.session.authentication import \
-    SessionAuthenticationAllowInactiveUser  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.jwt.authentication import (
+    JwtAuthentication,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from edx_rest_framework_extensions.auth.session.authentication import (
+    SessionAuthenticationAllowInactiveUser,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.decorators import (  # lint-amnesty, pylint: disable=wrong-import-order
     api_view,
     authentication_classes,
-    permission_classes
+    permission_classes,
 )
 from rest_framework.exceptions import APIException, ParseError  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.generics import RetrieveAPIView  # lint-amnesty, pylint: disable=wrong-import-order
@@ -58,14 +60,14 @@ from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_F
 from openedx.features.course_experience.course_tools import CourseToolsPluginManager
 from openedx.features.course_experience.course_updates import (
     dismiss_current_update_for_user,
-    get_current_update_for_user
+    get_current_update_for_user,
 )
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from openedx.features.course_experience.utils import get_course_outline_block_tree, get_start_block
 from openedx.features.discounts.utils import generate_offer_data
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE
+    COURSE_VISIBILITY_PUBLIC_OUTLINE,
 )
 
 

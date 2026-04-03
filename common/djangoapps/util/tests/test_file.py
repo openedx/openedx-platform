@@ -26,7 +26,7 @@ from common.djangoapps.util.file import (
     UniversalNewlineIterator,
     course_and_time_based_filename_generator,
     course_filename_prefix_generator,
-    store_uploaded_file
+    store_uploaded_file,
 )
 
 

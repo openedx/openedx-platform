@@ -26,7 +26,7 @@ try:
         searchable_doc_for_container,
         searchable_doc_for_course_block,
         searchable_doc_for_library_block,
-        searchable_doc_tags
+        searchable_doc_tags,
     )
     from ..models import SearchAccess
 except RuntimeError:

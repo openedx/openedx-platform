@@ -51,13 +51,13 @@ from openedx.features.enterprise_support.api import (
     get_enterprise_learner_data_from_db,
     get_enterprise_learner_portal_enabled_message,
     insert_enterprise_pipeline_elements,
-    unlink_enterprise_user_from_idp
+    unlink_enterprise_user_from_idp,
 )
 from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerIdentityProviderFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 from openedx.features.enterprise_support.utils import clear_data_consent_share_cache, get_data_consent_share_cache_key

@@ -10,7 +10,7 @@ from lms.djangoapps.courseware.plugins import ProctoringCourseApp
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseUserType,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 

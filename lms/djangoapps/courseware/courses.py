@@ -34,14 +34,14 @@ from lms.djangoapps.courseware.access_response import (
     EnrollmentRequiredAccessError,
     MilestoneAccessError,
     OldMongoAccessError,
-    StartDateError
+    StartDateError,
 )
 from lms.djangoapps.courseware.access_utils import (
     check_authentication,
     check_correct_active_enterprise_customer,
     check_data_sharing_consent,
     check_enrollment,
-    is_priority_access_error
+    is_priority_access_error,
 )
 from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
@@ -54,7 +54,7 @@ from lms.djangoapps.courseware.date_summary import (
     CourseStartDate,
     TodaysDate,
     VerificationDeadlineDate,
-    VerifiedUpgradeDeadlineDate
+    VerifiedUpgradeDeadlineDate,
 )
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect, CourseRunNotFound
 from lms.djangoapps.courseware.masquerade import check_content_start_date_for_masquerade_user

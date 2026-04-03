@@ -10,7 +10,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import get_user_role_
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
-    FORUM_ROLE_MODERATOR
+    FORUM_ROLE_MODERATOR,
 )
 
 

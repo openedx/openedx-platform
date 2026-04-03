@@ -24,7 +24,7 @@ from common.djangoapps.student.models import (
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
     CourseEnrollmentAttribute,
-    ManualEnrollmentAudit
+    ManualEnrollmentAudit,
 )
 from common.djangoapps.util.json_request import JsonResponse
 from lms.djangoapps.support.decorators import require_support_permission
@@ -37,7 +37,7 @@ from openedx.core.djangoapps.enrollments.serializers import ModeSerializer
 from openedx.features.enterprise_support.api import (
     enterprise_enabled,
     get_data_sharing_consents,
-    get_enterprise_course_enrollments
+    get_enterprise_course_enrollments,
 )
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
 

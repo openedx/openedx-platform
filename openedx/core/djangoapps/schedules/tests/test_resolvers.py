@@ -21,14 +21,14 @@ from lms.djangoapps.experiments.testutils import override_experiment_waffle_flag
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.schedules.config import (
     _EXTERNAL_COURSE_UPDATES_FLAG,
-    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH
+    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH,
 )
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.schedules.resolvers import (
     LOG,
     BinnedSchedulesBaseResolver,
     CourseNextSectionUpdate,
-    CourseUpdateResolver
+    CourseUpdateResolver,
 )
 from openedx.core.djangoapps.schedules.tests.factories import ScheduleConfigFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory, SiteFactory

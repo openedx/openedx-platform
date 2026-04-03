@@ -29,7 +29,7 @@ from .models import (
     CourseCohortsSettings,
     CourseUserGroup,
     CourseUserGroupPartitionGroup,
-    UnregisteredLearnerCohortAssignments
+    UnregisteredLearnerCohortAssignments,
 )
 from .signals.signals import COHORT_MEMBERSHIP_UPDATED
 

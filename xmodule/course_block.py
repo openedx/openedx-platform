@@ -21,7 +21,7 @@ from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, Stri
 from openedx.core.djangoapps.video_config.sharing import (
     COURSE_VIDEO_SHARING_ALL_VIDEOS,
     COURSE_VIDEO_SHARING_NONE,
-    COURSE_VIDEO_SHARING_PER_VIDEO
+    COURSE_VIDEO_SHARING_PER_VIDEO,
 )
 from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
 from openedx.core.lib.license import LicenseMixin

@@ -15,7 +15,7 @@ from cms.djangoapps.course_creators.views import (
     get_course_creator_status,
     update_course_creator_group,
     update_org_content_creator_role,
-    user_requested_access
+    user_requested_access,
 )
 from common.djangoapps.student import auth
 from common.djangoapps.student.roles import CourseCreatorRole, OrgContentCreatorRole

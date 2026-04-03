@@ -23,7 +23,7 @@ from edx_django_utils.plugins import pluggable_override
 from edx_proctoring.api import (
     does_backend_support_onboarding,
     get_exam_by_content_id,
-    get_exam_configuration_dashboard_url
+    get_exam_configuration_dashboard_url,
 )
 from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from help_tokens.core import HelpUrlExpert
@@ -35,7 +35,7 @@ from openedx_authz.constants.permissions import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
-    COURSES_VIEW_COURSE_UPDATES
+    COURSES_VIEW_COURSE_UPDATES,
 )
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
@@ -82,7 +82,7 @@ from ..helpers import (
     xblock_lms_url,
     xblock_primary_child_category,
     xblock_studio_url,
-    xblock_type_display_name
+    xblock_type_display_name,
 )
 from ..utils import (
     ancestor_has_staff_lock,
@@ -96,7 +96,7 @@ from ..utils import (
     has_children_visible_to_specific_partition_groups,
     is_currently_visible_to_students,
     is_self_paced,
-    load_services_for_studio
+    load_services_for_studio,
 )
 from .create_xblock import create_xblock
 from .xblock_helpers import get_block_key_string, usage_key_with_run

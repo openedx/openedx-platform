@@ -18,6 +18,7 @@ from onelogin.saml2.errors import OneLogin_Saml2_Error
 from common.djangoapps.student.models import Registration
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth import pipeline
+
 # Define some XML namespaces:
 from common.djangoapps.third_party_auth.utils import SAML_XML_NS
 from common.djangoapps.third_party_auth.views import inactive_user_view

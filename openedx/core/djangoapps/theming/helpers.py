@@ -21,7 +21,7 @@ from openedx.core.djangoapps.theming.helpers_dirs import (
     get_project_root_name_from_settings,
     get_theme_base_dirs_from_settings,
     get_theme_dirs,
-    get_themes_unchecked
+    get_themes_unchecked,
 )
 from openedx.core.lib.cache_utils import request_cached
 

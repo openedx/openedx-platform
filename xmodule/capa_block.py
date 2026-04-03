@@ -39,7 +39,7 @@ from xblock.fields import (
     ScoreField,
     String,
     Timedelta,
-    XMLString
+    XMLString,
 )
 from xblock.progress import Progress
 from xblock.scorable import ScorableXBlockMixin, Score, ShowCorrectness
@@ -53,7 +53,7 @@ from xblocks_contrib.problem.capa.util import convert_files_to_filenames, get_in
 from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
     ATTR_KEY_USER_ID,
-    ATTR_KEY_USER_IS_STAFF
+    ATTR_KEY_USER_IS_STAFF,
 )
 from openedx.core.djangolib.markup import HTML, Text
 from xmodule.raw_block import RawMixin

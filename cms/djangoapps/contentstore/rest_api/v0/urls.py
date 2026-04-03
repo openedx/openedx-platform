@@ -21,7 +21,7 @@ from .views import (
     YoutubeTranscriptUploadView,
     assets,
     authoring_videos,
-    xblock
+    xblock,
 )
 
 app_name = "v0"

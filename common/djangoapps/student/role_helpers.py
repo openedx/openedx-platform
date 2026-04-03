@@ -13,14 +13,14 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgInstructorRole,
     OrgStaffRole,
-    RoleCache
+    RoleCache,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
-    Role
+    Role,
 )
 from openedx.core.lib.cache_utils import request_cached
 

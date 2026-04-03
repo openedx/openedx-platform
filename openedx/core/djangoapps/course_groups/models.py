@@ -16,10 +16,11 @@ from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wron
     CohortData,
     CourseData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
-from openedx_events.learning.signals import \
-    COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.signals import (
+    COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from openedx_filters.learning.filters import CohortAssignmentRequested, CohortChangeRequested
 
 from openedx.core.djangolib.model_mixins import DeletableByUserValue

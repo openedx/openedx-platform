@@ -9,7 +9,7 @@ import pymongo
 from pymongo.read_preferences import (  # lint-amnesty, pylint: disable=unused-import
     _MODES,
     _MONGOS_MODES,
-    ReadPreference
+    ReadPreference,
 )
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name

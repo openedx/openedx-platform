@@ -22,7 +22,7 @@ from .constants import (
     ATTR_KEY_USER_IS_STAFF,
     ATTR_KEY_USER_PREFERENCES,
     ATTR_KEY_USER_ROLE,
-    ATTR_KEY_USERNAME
+    ATTR_KEY_USERNAME,
 )
 
 USER_PREFERENCES_WHITE_LIST = ['pref-lang', 'time_zone']

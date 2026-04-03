@@ -14,7 +14,7 @@ from django.http import (
     HttpResponseForbidden,
     HttpResponseNotFound,
     HttpResponseNotModified,
-    HttpResponsePermanentRedirect
+    HttpResponsePermanentRedirect,
 )
 from django.views.decorators.http import require_safe
 from edx_django_utils.monitoring import set_custom_attribute

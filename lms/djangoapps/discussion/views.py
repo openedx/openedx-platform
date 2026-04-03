@@ -43,7 +43,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     get_group_id_for_comments_service,
     get_group_id_for_user,
     is_commentable_divided,
-    strip_none
+    strip_none,
 )
 from lms.djangoapps.discussion.exceptions import TeamDiscussionHiddenFromUserException
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
@@ -53,7 +53,7 @@ from openedx.core.djangoapps.discussions.utils import (
     available_division_schemes,
     get_discussion_categories_ids,
     get_divided_discussions,
-    get_group_names_by_id
+    get_group_names_by_id,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
@@ -62,7 +62,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_MODERATOR,
     CourseDiscussionSettings,
     Role,
-    has_permission
+    has_permission,
 )
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView

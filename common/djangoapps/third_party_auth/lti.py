@@ -14,7 +14,7 @@ from oauthlib.oauth1.rfc5849.signature import (
     collect_parameters,
     normalize_parameters,
     sign_hmac_sha1,
-    signature_base_string
+    signature_base_string,
 )
 from social_core.backends.base import BaseAuth
 from social_core.exceptions import AuthFailed

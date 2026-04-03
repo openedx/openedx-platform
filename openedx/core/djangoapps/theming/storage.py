@@ -20,7 +20,7 @@ from openedx.core.djangoapps.theming.helpers import (
     get_project_root_name,
     get_theme_base_dir,
     get_themes,
-    is_comprehensive_theming_enabled
+    is_comprehensive_theming_enabled,
 )
 
 

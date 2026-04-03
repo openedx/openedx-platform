@@ -11,7 +11,7 @@ from openedx.core.djangoapps.user_api.models import (
     RetirementState,
     RetirementStateError,
     UserRetirementRequest,
-    UserRetirementStatus
+    UserRetirementStatus,
 )
 
 from .retirement_helpers import setup_retirement_states  # pylint: disable=unused-import

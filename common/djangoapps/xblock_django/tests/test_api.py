@@ -5,7 +5,7 @@ from common.djangoapps.xblock_django.api import authorable_xblocks, deprecated_x
 from common.djangoapps.xblock_django.models import (  # lint-amnesty, pylint: disable=line-too-long
     XBlockConfiguration,
     XBlockStudioConfiguration,
-    XBlockStudioConfigurationFlag
+    XBlockStudioConfigurationFlag,
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 

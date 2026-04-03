@@ -39,12 +39,12 @@ from openedx.core.djangoapps.django_comment_common import comment_client
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.course import (
     get_course_commentable_counts,
-    get_course_user_stats
+    get_course_user_stats,
 )
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.django_comment_common.comment_client.utils import (
     CommentClient500Error,
-    CommentClientRequestError
+    CommentClientRequestError,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
@@ -52,7 +52,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     CourseDiscussionSettings,
-    Role
+    Role,
 )
 from openedx.core.djangoapps.django_comment_common.signals import (
     comment_created,
@@ -67,7 +67,7 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_flagged,
     thread_followed,
     thread_unfollowed,
-    thread_voted
+    thread_voted,
 )
 from openedx.core.djangoapps.user_api.accounts.api import get_account_settings
 from openedx.core.lib.exceptions import CourseNotFoundError, DiscussionNotFoundError, PageNotFoundError
@@ -86,13 +86,13 @@ from ..django_comment_client.base.views import (
     track_thread_deleted_event,
     track_thread_followed_event,
     track_thread_viewed_event,
-    track_voted_event
+    track_voted_event,
 )
 from ..django_comment_client.utils import (
     get_group_id_for_user,
     get_user_role_names,
     has_discussion_privileges,
-    is_commentable_divided
+    is_commentable_divided,
 )
 from .exceptions import CommentNotFoundError, DiscussionBlackOutException, DiscussionDisabledError, ThreadNotFoundError
 from .forms import CommentActionsForm, ThreadActionsForm, UserOrdering
@@ -102,7 +102,7 @@ from .permissions import (
     can_take_action_on_spam,
     get_editable_fields,
     get_initializable_comment_fields,
-    get_initializable_thread_fields
+    get_initializable_thread_fields,
 )
 from .serializers import (
     CommentSerializer,
@@ -111,7 +111,7 @@ from .serializers import (
     ThreadSerializer,
     TopicOrdering,
     UserStatsSerializer,
-    get_context
+    get_context,
 )
 from .utils import (
     AttributeDict,
@@ -125,7 +125,7 @@ from .utils import (
     is_captcha_enabled,
     is_posting_allowed,
     send_signal_after_commit,
-    set_attribute
+    set_attribute,
 )
 
 User = get_user_model()

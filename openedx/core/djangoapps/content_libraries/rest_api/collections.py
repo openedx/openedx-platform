@@ -22,7 +22,7 @@ from ..models import ContentLibrary
 from .serializers import (
     ContentLibraryCollectionSerializer,
     ContentLibraryCollectionUpdateSerializer,
-    ContentLibraryItemKeysSerializer
+    ContentLibraryItemKeysSerializer,
 )
 from .utils import convert_exceptions
 

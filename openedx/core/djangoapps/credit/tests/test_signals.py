@@ -17,7 +17,7 @@ from openedx_events.learning.signals import (
     EXAM_ATTEMPT_REJECTED,
     EXAM_ATTEMPT_RESET,
     EXAM_ATTEMPT_SUBMITTED,
-    EXAM_ATTEMPT_VERIFIED
+    EXAM_ATTEMPT_VERIFIED,
 )
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -31,11 +31,12 @@ from openedx.core.djangoapps.credit.signals.handlers import (
     listen_for_exam_reset,
     listen_for_exam_submitted,
     listen_for_exam_verified,
-    listen_for_grade_calculation
+    listen_for_grade_calculation,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

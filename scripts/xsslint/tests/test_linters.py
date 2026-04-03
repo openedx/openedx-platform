@@ -12,7 +12,7 @@ from xsslint.linters import (
     JavaScriptLinter,
     MakoTemplateLinter,
     PythonLinter,
-    UnderscoreTemplateLinter
+    UnderscoreTemplateLinter,
 )
 from xsslint.reporting import FileResults
 from xsslint.utils import ParseString

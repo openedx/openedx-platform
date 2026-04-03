@@ -8,7 +8,7 @@ from opaque_keys.edx.keys import CourseKey
 from lms.djangoapps.courseware.masquerade import (
     get_course_masquerade,
     get_masquerading_user_group,
-    is_masquerading_as_specific_student
+    is_masquerading_as_specific_student,
 )
 from lms.djangoapps.teams.api import get_teams_in_teamset
 from lms.djangoapps.teams.models import CourseTeamMembership

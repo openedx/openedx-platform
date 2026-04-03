@@ -22,7 +22,7 @@ from openedx.core.djangoapps.ace_common.template_context import get_base_templat
 from openedx.core.djangoapps.course_date_signals.utils import get_expected_duration
 from openedx.core.djangoapps.schedules.config import (
     COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH,
-    query_external_updates
+    query_external_updates,
 )
 from openedx.core.djangoapps.schedules.content_highlights import get_next_section_highlights, get_week_highlights
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist

@@ -11,7 +11,7 @@ from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTU
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.discussions.tasks import (
     update_discussions_settings_from_course,
-    update_unit_discussion_state_from_discussion_blocks
+    update_unit_discussion_state_from_discussion_blocks,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory

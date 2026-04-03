@@ -11,7 +11,7 @@ from enterprise.models import (
     EnterpriseCustomer,
     EnterpriseCustomerBrandingConfiguration,
     EnterpriseCustomerIdentityProvider,
-    EnterpriseCustomerUser
+    EnterpriseCustomerUser,
 )
 from faker import Factory as FakerFactory
 

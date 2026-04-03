@@ -17,7 +17,7 @@ from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangoapps.user_api.preferences.api import (
     delete_user_preference,
     get_user_preference,
-    set_user_preference
+    set_user_preference,
 )
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 

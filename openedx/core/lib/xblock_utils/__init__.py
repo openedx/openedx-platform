@@ -33,7 +33,7 @@ from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-ord
     PREVIEW_VIEWS,
     STUDENT_VIEW,
     STUDIO_VIEW,
-    shim_xmodule_js
+    shim_xmodule_js,
 )
 
 log = logging.getLogger(__name__)

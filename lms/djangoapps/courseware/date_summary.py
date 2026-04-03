@@ -11,9 +11,8 @@ import crum
 from babel.dates import format_timedelta
 from django.conf import settings
 from django.utils.functional import cached_property
-from django.utils.translation import get_language
+from django.utils.translation import get_language, gettext_lazy, to_locale
 from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy, to_locale
 from lazy import lazy
 from pytz import utc
 

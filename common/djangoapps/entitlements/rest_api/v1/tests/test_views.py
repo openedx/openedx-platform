@@ -23,8 +23,9 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangoapps.user_api.models import UserOrgTag
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ if settings.ROOT_URLCONF == 'lms.urls':
     from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
         CourseEntitlement,
         CourseEntitlementPolicy,
-        CourseEntitlementSupportDetail
+        CourseEntitlementSupportDetail,
     )
     from common.djangoapps.entitlements.rest_api.v1.serializers import CourseEntitlementSerializer
     from common.djangoapps.entitlements.rest_api.v1.views import set_entitlement_policy

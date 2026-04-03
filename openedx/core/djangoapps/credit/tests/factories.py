@@ -17,7 +17,7 @@ from openedx.core.djangoapps.credit.models import (
     CreditProvider,
     CreditRequest,
     CreditRequirement,
-    CreditRequirementStatus
+    CreditRequirementStatus,
 )
 
 

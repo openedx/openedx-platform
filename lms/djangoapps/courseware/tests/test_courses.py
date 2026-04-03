@@ -33,7 +33,7 @@ from lms.djangoapps.courseware.courses import (
     get_course_overview_with_access,
     get_course_with_access,
     get_courses,
-    get_current_child
+    get_current_child,
 )
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect

@@ -18,7 +18,7 @@ from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSec
 from lms.djangoapps.verify_student.utils import (
     most_recent_verification,
     submit_request_to_ss,
-    verification_for_datetime
+    verification_for_datetime,
 )
 
 FAKE_SETTINGS = {

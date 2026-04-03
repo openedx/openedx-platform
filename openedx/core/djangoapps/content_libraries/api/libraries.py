@@ -64,7 +64,7 @@ from openedx_events.content_authoring.data import ContentLibraryData
 from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_CREATED,
     CONTENT_LIBRARY_DELETED,
-    CONTENT_LIBRARY_UPDATED
+    CONTENT_LIBRARY_UPDATED,
 )
 from organizations.models import Organization
 from user_tasks.models import UserTaskArtifact, UserTaskStatus

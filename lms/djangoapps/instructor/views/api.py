@@ -42,12 +42,13 @@ from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import (  # lint-amnesty, pylint: disable=wrong-import-order
     BasePermission,
     IsAdminUser,
-    IsAuthenticated
+    IsAuthenticated,
 )
 from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
-from submissions import \
-    api as sub_api  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
+from submissions import (
+    api as sub_api,  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student import auth
@@ -68,13 +69,13 @@ from common.djangoapps.student.models import (
     Registration,
     UserProfile,
     get_user_by_username_or_email,
-    is_email_retired
+    is_email_retired,
 )
 from common.djangoapps.student.roles import CourseFinanceAdminRole, CourseSalesAdminRole
 from common.djangoapps.util.file import (
     FileValidationException,
     course_and_time_based_filename_generator,
-    store_uploaded_file
+    store_uploaded_file,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest
 from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import
@@ -93,7 +94,7 @@ from lms.djangoapps.instructor.enrollment import (
     get_user_email_language,
     send_beta_role_email,
     send_mail_to_student,
-    unenroll_email
+    unenroll_email,
 )
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_email_features, extract_task_features
 from lms.djangoapps.instructor.views.serializer import (
@@ -117,7 +118,7 @@ from lms.djangoapps.instructor.views.serializer import (
     StudentsUpdateEnrollmentSerializer,
     UniqueStudentIdentifierSerializer,
     UpdateForumRoleMembershipSerializer,
-    UserSerializer
+    UserSerializer,
 )
 from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
 from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
@@ -150,7 +151,7 @@ from .tools import (
     keep_field_private,
     parse_datetime,
     set_due_date_extension,
-    strip_if_string
+    strip_if_string,
 )
 
 log = logging.getLogger(__name__)

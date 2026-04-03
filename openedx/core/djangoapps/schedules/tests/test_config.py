@@ -14,7 +14,7 @@ from lms.djangoapps.experiments.testutils import override_experiment_waffle_flag
 from openedx.core.djangoapps.schedules.config import (
     _EXTERNAL_COURSE_UPDATES_FLAG,
     query_external_updates,
-    set_up_external_updates_for_enrollment
+    set_up_external_updates_for_enrollment,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 

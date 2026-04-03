@@ -99,7 +99,7 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
     from openedx.core.djangoapps.xblock.api import (  # pylint: disable=wrong-import-order
         CheckPerm,
         LatestVersion,
-        load_block
+        load_block,
     )
     try:
         lib_block: XBlock = load_block(

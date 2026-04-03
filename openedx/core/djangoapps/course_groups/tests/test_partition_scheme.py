@@ -15,13 +15,13 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     Group,
     UserPartition,
-    UserPartitionError
+    UserPartitionError,
 )
 
 from ..cohorts import add_user_to_cohort, get_course_cohorts, remove_user_from_cohort

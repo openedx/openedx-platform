@@ -31,7 +31,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 from ..tasks import (
@@ -45,7 +45,7 @@ from ..tasks import (
     export_olx,
     extract_content_URLs_from_course,
     rerun_course,
-    update_special_exams_and_publish
+    update_special_exams_and_publish,
 )
 
 logging = logging.getLogger(__name__)

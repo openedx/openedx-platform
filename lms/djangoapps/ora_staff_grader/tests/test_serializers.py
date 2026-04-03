@@ -26,7 +26,7 @@ from lms.djangoapps.ora_staff_grader.serializers import (
     SubmissionFetchSerializer,
     SubmissionMetadataSerializer,
     SubmissionStatusFetchSerializer,
-    UploadedFileSerializer
+    UploadedFileSerializer,
 )
 from lms.djangoapps.ora_staff_grader.tests import test_data
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

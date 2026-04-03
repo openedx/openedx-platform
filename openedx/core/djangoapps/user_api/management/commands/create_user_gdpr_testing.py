@@ -17,7 +17,7 @@ from enterprise.models import (
     EnterpriseCourseEnrollment,
     EnterpriseCustomer,
     EnterpriseCustomerUser,
-    PendingEnterpriseCustomerUser
+    PendingEnterpriseCustomerUser,
 )
 from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from opaque_keys.edx.keys import CourseKey

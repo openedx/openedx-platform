@@ -26,7 +26,7 @@ from edxval.api import (
     create_video,
     get_course_video_image_url,
     get_transcript_preferences,
-    get_video_info
+    get_video_info,
 )
 
 from cms.djangoapps.contentstore.models import VideoUploadConfig
@@ -38,7 +38,7 @@ from cms.djangoapps.contentstore.video_storage_handlers import (
     TranscriptProvider,
     convert_video_status,
     storage_service_bucket,
-    storage_service_key
+    storage_service_key,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file

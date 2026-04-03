@@ -24,13 +24,13 @@ from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-or
 from edx_proctoring.api import (  # lint-amnesty, pylint: disable=wrong-import-order
     create_exam,
     create_exam_attempt,
-    update_attempt_status
+    update_attempt_status,
 )
 from edx_proctoring.runtime import set_runtime_service  # lint-amnesty, pylint: disable=wrong-import-order
 from edx_proctoring.tests.test_services import (  # lint-amnesty, pylint: disable=wrong-import-order
     MockCertificateService,
     MockCreditService,
-    MockGradesService
+    MockGradesService,
 )
 from edx_toggles.toggles.testutils import override_waffle_switch  # lint-amnesty, pylint: disable=wrong-import-order
 from edx_when.field_data import DateLookupFieldData  # lint-amnesty, pylint: disable=wrong-import-order
@@ -47,8 +47,9 @@ from xblock.field_data import FieldData  # lint-amnesty, pylint: disable=wrong-i
 from xblock.fields import ScopeIds  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.runtime import DictKeyValueStore, KvsFieldData  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.test.tools import TestRuntime  # lint-amnesty, pylint: disable=wrong-import-order
-from xblocks_contrib.problem.capa.tests.response_xml_factory import \
-    OptionResponseXMLFactory  # lint-amnesty, pylint: disable=reimported
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+    OptionResponseXMLFactory,  # lint-amnesty, pylint: disable=reimported
+)
 
 from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
@@ -58,7 +59,7 @@ from common.djangoapps.student.tests.factories import (
     InstructorFactory,
     RequestFactoryNoCsrf,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_ANONYMOUS_USER_ID,
@@ -66,7 +67,7 @@ from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_USER_IS_BETA_TESTER,
     ATTR_KEY_USER_IS_GLOBAL_STAFF,
     ATTR_KEY_USER_IS_STAFF,
-    ATTR_KEY_USER_ROLE
+    ATTR_KEY_USER_ROLE,
 )
 from common.djangoapps.xblock_django.models import XBlockConfiguration
 from lms.djangoapps.courseware import block_render as render
@@ -99,13 +100,13 @@ from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
-    upload_file_to_course
+    upload_file_to_course,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
     ToyCourseFactory,
-    check_mongo_calls
+    check_mongo_calls,
 )
 from xmodule.modulestore.tests.test_asides import AsideTestType  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.services import RebindUserServiceError

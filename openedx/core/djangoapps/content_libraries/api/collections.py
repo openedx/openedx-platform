@@ -16,7 +16,7 @@ from .exceptions import (
     ContentLibraryBlockNotFound,
     ContentLibraryCollectionNotFound,
     ContentLibraryContainerNotFound,
-    LibraryCollectionAlreadyExists
+    LibraryCollectionAlreadyExists,
 )
 
 # The public API is only the following symbols:

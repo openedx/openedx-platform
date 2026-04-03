@@ -17,7 +17,7 @@ from openedx.core.djangoapps.notifications.grouping_notifications import (
     NewResponseOnFollowedPostGrouper,
     NotificationRegistry,
     get_user_existing_notifications,
-    group_user_notifications
+    group_user_notifications,
 )
 from openedx.core.djangoapps.notifications.models import Notification
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

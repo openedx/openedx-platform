@@ -25,7 +25,7 @@ from lms.djangoapps.course_goals.models import CourseGoalReminderStatus
 from lms.djangoapps.course_goals.tests.factories import (
     CourseGoalFactory,
     CourseGoalReminderStatusFactory,
-    UserActivityFactory
+    UserActivityFactory,
 )
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangolib.testing.utils import skip_unless_lms

@@ -18,7 +18,7 @@ from openedx.core.djangoapps.agreements.api import (
     create_integrity_signature,
     create_user_agreement_record,
     get_integrity_signatures_for_course,
-    get_lti_pii_signature
+    get_lti_pii_signature,
 )
 from openedx.core.djangoapps.agreements.models import UserAgreement
 from openedx.core.djangolib.testing.utils import skip_unless_lms

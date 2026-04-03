@@ -18,7 +18,7 @@ from ..models import (
     PostingRestriction,
     Provider,
     ProviderFilter,
-    get_default_provider_type
+    get_default_provider_type,
 )
 
 SUPPORTED_PROVIDERS = [

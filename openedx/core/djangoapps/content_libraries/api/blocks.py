@@ -29,7 +29,7 @@ from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
     LibraryCollectionData,
-    LibraryContainerData
+    LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
@@ -37,14 +37,14 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_UPDATED,
     LIBRARY_COLLECTION_UPDATED,
-    LIBRARY_CONTAINER_UPDATED
+    LIBRARY_CONTAINER_UPDATED,
 )
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.xblock.api import (
     get_component_from_usage_key,
     get_xblock_app_config,
-    xblock_type_display_name
+    xblock_type_display_name,
 )
 from openedx.core.types import User as UserType
 
@@ -58,14 +58,14 @@ from .containers import (
     create_container,
     get_container,
     get_containers_contains_item,
-    update_container_children
+    update_container_children,
 )
 from .exceptions import (
     BlockLimitReachedError,
     ContentLibraryBlockNotFound,
     IncompatibleTypesError,
     InvalidNameError,
-    LibraryBlockAlreadyExists
+    LibraryBlockAlreadyExists,
 )
 from .libraries import PublishableItem
 

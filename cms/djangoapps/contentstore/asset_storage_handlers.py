@@ -21,7 +21,7 @@ from openedx_authz.constants.permissions import (
     COURSES_CREATE_FILES,
     COURSES_DELETE_FILES,
     COURSES_EDIT_FILES,
-    COURSES_VIEW_FILES
+    COURSES_VIEW_FILES,
 )
 from openedx_filters.content_authoring.filters import LMSPageURLRequested
 from pymongo import ASCENDING, DESCENDING

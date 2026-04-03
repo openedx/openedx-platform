@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from common.djangoapps.xblock_django.models import (  # lint-amnesty, pylint: disable=line-too-long
     XBlockConfiguration,
     XBlockStudioConfiguration,
-    XBlockStudioConfigurationFlag
+    XBlockStudioConfigurationFlag,
 )
 
 

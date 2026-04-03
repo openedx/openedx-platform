@@ -16,7 +16,7 @@ from cms.djangoapps.contentstore.models import (
     ComponentLink,
     ContainerLink,
     LearningContextLinksStatus,
-    VideoUploadConfig
+    VideoUploadConfig,
 )
 from cms.djangoapps.contentstore.outlines_regenerate import CourseOutlineRegenerate
 from openedx.core.djangoapps.content.learning_sequences.api import key_supports_outlines

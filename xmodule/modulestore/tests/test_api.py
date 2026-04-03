@@ -15,7 +15,7 @@ from xmodule.modulestore.api import (
     get_javascript_i18n_file_path,
     get_python_locale_root,
     get_root_module_name,
-    get_xblock_root_module_name
+    get_xblock_root_module_name,
 )
 from xmodule.video_block import VideoBlock
 

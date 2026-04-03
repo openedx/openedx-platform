@@ -13,12 +13,12 @@ from openedx_events.learning.data import (
     CoursePassingStatusData,
     PersistentCourseGradeData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import (
     CCX_COURSE_PASSING_STATUS_UPDATED,
     COURSE_PASSING_STATUS_UPDATED,
-    PERSISTENT_GRADE_SUMMARY_CHANGED
+    PERSISTENT_GRADE_SUMMARY_CHANGED,
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 

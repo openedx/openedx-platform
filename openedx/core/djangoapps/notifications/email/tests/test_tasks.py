@@ -22,7 +22,7 @@ from openedx.core.djangoapps.notifications.email.tasks import (
     send_digest_email_to_all_users,
     send_digest_email_to_user,
     send_immediate_cadence_email,
-    send_immediate_email
+    send_immediate_email,
 )
 from openedx.core.djangoapps.notifications.email.utils import get_start_end_date
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence

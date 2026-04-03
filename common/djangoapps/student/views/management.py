@@ -29,15 +29,17 @@ from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie  # lint
 from django.views.decorators.http import (  # lint-amnesty, pylint: disable=unused-import
     require_GET,
     require_http_methods,
-    require_POST
+    require_POST,
 )
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_django_utils import monitoring as monitoring_utils
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.auth.session.authentication import \
-    SessionAuthenticationAllowInactiveUser  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.session.authentication import (
+    SessionAuthenticationAllowInactiveUser,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from eventtracking import tracker
+
 # Note that this lives in LMS, so this dependency should be refactored.
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
@@ -48,7 +50,7 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import (  # lint-amnesty, pylint: disable=unused-import
     marketing_link,
     render_to_response,
-    render_to_string
+    render_to_string,
 )
 from common.djangoapps.entitlements.models import CourseEntitlement
 from common.djangoapps.student.email_helpers import generate_activation_email_context
@@ -56,19 +58,19 @@ from common.djangoapps.student.helpers import (
     DISABLE_UNENROLL_CERT_STATES,
     cert_info,
     get_next_url_for_login_page,
-    get_redirect_url_with_host
+    get_redirect_url_with_host,
 )
 from common.djangoapps.student.message_types import (  # lint-amnesty, pylint: disable=line-too-long
     AccountActivation,
     EmailChange,
     EmailChangeConfirmation,
-    RecoveryEmailCreate
+    RecoveryEmailCreate,
 )
-from common.djangoapps.student.models import PendingEmailChange  # unimport:skip
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=unused-import
     AccountRecovery,
     CourseEnrollment,
     EnrollmentNotAllowed,
+    PendingEmailChange,  # unimport:skip
     PendingSecondaryEmailChange,
     Registration,
     RegistrationCookieConfiguration,
@@ -78,7 +80,7 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     UserSignupSource,
     UserStanding,
     create_comments_service_user,
-    email_exists_or_retired
+    email_exists_or_retired,
 )
 from common.djangoapps.student.signals import REFUND_ORDER, USER_EMAIL_CHANGED
 from common.djangoapps.student.toggles import should_redirect_to_courseware_after_enrollment
@@ -98,7 +100,7 @@ from openedx.core.djangoapps.user_api.preferences import api as preferences_api
 from openedx.core.djangoapps.user_authn.tasks import send_activation_email
 from openedx.core.djangoapps.user_authn.toggles import (
     is_auto_generated_username_enabled,
-    should_redirect_to_authn_microfrontend
+    should_redirect_to_authn_microfrontend,
 )
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
@@ -758,7 +760,7 @@ def validate_secondary_email(user, new_email):
 
     from openedx.core.djangoapps.user_api.accounts.api import (
         get_email_validation_error,
-        get_secondary_email_validation_error
+        get_secondary_email_validation_error,
     )
 
     if get_email_validation_error(new_email):

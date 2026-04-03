@@ -24,7 +24,7 @@ from ..images import (
     _update_exif_orientation,
     create_profile_images,
     remove_profile_images,
-    validate_uploaded_image
+    validate_uploaded_image,
 )
 from .helpers import make_image_file, make_uploaded_file
 

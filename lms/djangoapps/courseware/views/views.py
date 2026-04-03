@@ -79,7 +79,7 @@ from lms.djangoapps.courseware.courses import (
     get_permission_for_course_about,
     get_studio_url,
     sort_by_announcement,
-    sort_by_start_date
+    sort_by_start_date,
 )
 from lms.djangoapps.courseware.date_summary import verified_upgrade_deadline_link
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect, Redirect
@@ -92,7 +92,7 @@ from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateCli
 from lms.djangoapps.courseware.utils import (
     _use_new_financial_assistance_flow,
     create_financial_assistance_application,
-    is_eligible_for_financial_aid
+    is_eligible_for_financial_aid,
 )
 from lms.djangoapps.edxnotes.helpers import is_feature_enabled
 from lms.djangoapps.experiments.utils import get_experiment_user_metadata_context
@@ -106,13 +106,13 @@ from openedx.core.djangoapps.catalog.utils import (
     get_course_data,
     get_course_uuid_for_course,
     get_programs,
-    get_programs_with_type
+    get_programs_with_type,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.api import (
     get_credit_requirement_status,
     is_credit_course,
-    is_user_eligible_for_credit
+    is_user_eligible_for_credit,
 )
 from openedx.core.djangoapps.enrollments.api import add_enrollment
 from openedx.core.djangoapps.enrollments.permissions import ENROLL_IN_COURSE
@@ -133,7 +133,7 @@ from openedx.features.course_experience import course_home_url
 from openedx.features.course_experience.url_helpers import (
     get_courseware_url,
     get_learning_mfe_home_url,
-    is_request_from_learning_mfe
+    is_request_from_learning_mfe,
 )
 from openedx.features.course_experience.utils import dates_banner_should_display
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
@@ -141,7 +141,7 @@ from openedx.features.enterprise_support.api import data_sharing_consent_require
 from xmodule.course_block import (
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
     COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE
+    COURSE_VISIBILITY_PUBLIC_OUTLINE,
 )
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore

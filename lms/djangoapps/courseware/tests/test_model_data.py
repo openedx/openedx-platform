@@ -18,11 +18,16 @@ from lms.djangoapps.courseware.models import (
     StudentModule,
     XModuleStudentInfoField,
     XModuleStudentPrefsField,
-    XModuleUserStateSummaryField
+    XModuleUserStateSummaryField,
 )
-from lms.djangoapps.courseware.tests.factories import COURSE_KEY, LOCATION, StudentInfoFactory
+from lms.djangoapps.courseware.tests.factories import (
+    COURSE_KEY,
+    LOCATION,
+    StudentInfoFactory,
+    StudentPrefsFactory,
+    UserStateSummaryFactory,
+)
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory as cmfStudentModuleFactory
-from lms.djangoapps.courseware.tests.factories import StudentPrefsFactory, UserStateSummaryFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, FilteredQueryCountMixin
 

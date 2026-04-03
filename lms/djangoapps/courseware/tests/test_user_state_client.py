@@ -16,10 +16,11 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.user_state_client import (
     DjangoXBlockUserStateClient,
     XBlockUserState,
-    XBlockUserStateClient
+    XBlockUserStateClient,
 )
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 class _UserStateClientTestUtils(TestCase):

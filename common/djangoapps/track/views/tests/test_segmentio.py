@@ -14,7 +14,7 @@ from common.djangoapps.track.views import segmentio
 from common.djangoapps.track.views.tests.base import (  # lint-amnesty, pylint: disable=line-too-long
     SEGMENTIO_TEST_ENDPOINT,
     SEGMENTIO_TEST_USER_ID,
-    SegmentIOTrackingTestCaseBase
+    SegmentIOTrackingTestCaseBase,
 )
 from openedx.core.lib.tests.assertions.events import assert_event_matches
 

@@ -14,7 +14,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
-    Role
+    Role,
 )
 
 from .tools import get_student_from_identifier

@@ -12,12 +12,12 @@ from user_tasks.models import UserTaskStatus
 from cms.djangoapps.contentstore.core.course_optimizer_provider import (
     get_course_link_update_data,
     get_link_check_data,
-    sort_course_sections
+    sort_course_sections,
 )
 from cms.djangoapps.contentstore.rest_api.v0.serializers.course_optimizer import (
     CourseRerunLinkUpdateRequestSerializer,
     CourseRerunLinkUpdateStatusSerializer,
-    LinkCheckSerializer
+    LinkCheckSerializer,
 )
 from cms.djangoapps.contentstore.tasks import check_broken_links, update_course_rerun_links
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links

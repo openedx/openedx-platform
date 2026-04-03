@@ -26,13 +26,14 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
     Transcript,
     edxval_api,
     get_transcript,
-    subs_filename
+    subs_filename,
 )
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order

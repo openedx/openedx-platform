@@ -16,19 +16,19 @@ from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseInstructorRole,
     CourseLimitedStaffRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT,
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES,
-    COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION
+    COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION,
 )
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 

@@ -3,6 +3,7 @@ Mock views for ESG
 """
 
 from rest_framework.generics import RetrieveAPIView
+
 # pylint: disable=arguments-differ
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,7 +14,7 @@ from lms.djangoapps.ora_staff_grader.mock.utils import (
     get_course_metadata,
     get_ora_metadata,
     get_submissions,
-    save_submission_update
+    save_submission_update,
 )
 
 PARAM_ORA_LOCATION = "oraLocation"

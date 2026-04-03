@@ -13,7 +13,7 @@ from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.api import (
     generate_certificate_task,
     get_enrolled_allowlisted_not_passing_users,
-    get_enrolled_allowlisted_users
+    get_enrolled_allowlisted_users,
 )
 from lms.djangoapps.certificates.data import CertificateStatuses
 

@@ -16,7 +16,7 @@ from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, U
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preferences
+    get_default_values_of_preferences,
 )
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence

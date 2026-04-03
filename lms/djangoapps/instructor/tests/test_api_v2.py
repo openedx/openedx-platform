@@ -24,7 +24,7 @@ from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2

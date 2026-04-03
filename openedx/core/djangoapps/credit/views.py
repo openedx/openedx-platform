@@ -23,20 +23,20 @@ from openedx.core.djangoapps.credit.exceptions import (
     CreditApiBadRequest,
     InvalidCourseKey,
     InvalidCreditRequest,
-    UserNotEligibleException
+    UserNotEligibleException,
 )
 from openedx.core.djangoapps.credit.models import (
     CREDIT_PROVIDER_ID_REGEX,
     CreditCourse,
     CreditEligibility,
     CreditProvider,
-    CreditRequest
+    CreditRequest,
 )
 from openedx.core.djangoapps.credit.serializers import (
     CreditCourseSerializer,
     CreditEligibilitySerializer,
     CreditProviderCallbackSerializer,
-    CreditProviderSerializer
+    CreditProviderSerializer,
 )
 from openedx.core.lib.api.authentication import BearerAuthentication
 from openedx.core.lib.api.mixins import PutAsCreateMixin

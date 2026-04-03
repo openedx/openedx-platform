@@ -22,10 +22,11 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

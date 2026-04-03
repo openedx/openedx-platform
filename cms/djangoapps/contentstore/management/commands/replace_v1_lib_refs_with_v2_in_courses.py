@@ -12,7 +12,7 @@ from django.core.management import BaseCommand, CommandError
 from cms.djangoapps.contentstore.tasks import (
     replace_all_library_source_blocks_ids_for_course,
     undo_all_library_source_blocks_ids_for_course,
-    validate_all_library_source_blocks_ids_for_course
+    validate_all_library_source_blocks_ids_for_course,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 

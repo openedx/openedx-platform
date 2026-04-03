@@ -17,7 +17,7 @@ from common.djangoapps.student.tests.factories import (
     OrgInstructorFactory,
     OrgStaffFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.tests.helpers import CourseAccessTestMixin, LoginEnrollmentTestCase

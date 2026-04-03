@@ -14,7 +14,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ImmediateOnCommitMixin,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 
 try:

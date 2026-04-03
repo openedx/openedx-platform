@@ -21,7 +21,7 @@ from openedx.core.djangoapps.credit.models import (
     CreditProvider,
     CreditRequest,
     CreditRequirement,
-    CreditRequirementStatus
+    CreditRequirementStatus,
 )
 from openedx.core.djangoapps.credit.serializers import CreditEligibilitySerializer, CreditProviderSerializer
 from openedx.core.djangoapps.credit.signature import signature
@@ -29,7 +29,7 @@ from openedx.core.djangoapps.credit.tests.factories import (
     CreditCourseFactory,
     CreditEligibilityFactory,
     CreditProviderFactory,
-    CreditRequestFactory
+    CreditRequestFactory,
 )
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory

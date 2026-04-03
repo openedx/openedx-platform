@@ -31,7 +31,7 @@ from lms.djangoapps.courseware.courses import get_course, get_course_with_access
 from openedx.core.djangoapps.course_groups.models import (
     CohortAssignmentNotAllowed,
     CohortChangeNotAllowed,
-    CohortMembership
+    CohortMembership,
 )
 from openedx.core.djangoapps.course_groups.permissions import IsStaffOrAdmin
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser

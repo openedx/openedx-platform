@@ -7,7 +7,7 @@ from common.djangoapps.student.models.user import (
     USER_LOGGED_IN_EVENT_NAME,
     USER_LOGGED_OUT_EVENT_NAME,
     log_successful_login,
-    log_successful_logout
+    log_successful_logout,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 

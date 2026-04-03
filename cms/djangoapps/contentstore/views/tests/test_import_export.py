@@ -59,7 +59,7 @@ from xmodule.modulestore.xml_importer import (
     CourseImportManager,
     ErrorReadingFileException,
     import_course_from_xml,
-    import_library_from_xml
+    import_library_from_xml,
 )
 
 TASK_LOGGER = 'cms.djangoapps.contentstore.tasks.LOGGER'

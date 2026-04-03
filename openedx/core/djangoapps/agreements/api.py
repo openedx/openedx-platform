@@ -13,14 +13,14 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.agreements.data import (
     LTIPIISignatureData,
     LTIToolsReceivingPIIData,
-    UserAgreementRecordData
+    UserAgreementRecordData,
 )
 from openedx.core.djangoapps.agreements.models import (
     IntegritySignature,
     LTIPIISignature,
     LTIPIITool,
     UserAgreement,
-    UserAgreementRecord
+    UserAgreementRecord,
 )
 
 log = logging.getLogger(__name__)

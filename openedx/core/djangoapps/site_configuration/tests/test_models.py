@@ -11,7 +11,7 @@ from django.test import TestCase
 from openedx.core.djangoapps.site_configuration.models import (
     SiteConfiguration,
     SiteConfigurationHistory,
-    save_siteconfig_without_historical_record
+    save_siteconfig_without_historical_record,
 )
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 

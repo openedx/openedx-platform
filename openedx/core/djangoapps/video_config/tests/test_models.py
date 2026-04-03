@@ -13,7 +13,7 @@ from openedx.core.djangoapps.video_config.models import (
     CourseHLSPlaybackEnabledFlag,
     CourseVideoTranscriptEnabledFlag,
     HLSPlaybackEnabledFlag,
-    VideoTranscriptEnabledFlag
+    VideoTranscriptEnabledFlag,
 )
 
 

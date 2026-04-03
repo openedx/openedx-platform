@@ -13,7 +13,7 @@ from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.courseware.masquerade import (
     get_course_masquerade,
     get_masquerading_user_group,
-    is_masquerading_as_specific_student
+    is_masquerading_as_specific_student,
 )
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 

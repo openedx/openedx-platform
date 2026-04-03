@@ -23,7 +23,7 @@ from common.djangoapps.student.tests.factories import (
     CourseAccessRoleFactory,
     CourseEnrollmentFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from common.test.utils import XssTestMixin
 from lms.djangoapps.courseware.courses import get_studio_url
@@ -37,7 +37,7 @@ from lms.djangoapps.instructor.views.gradebook_api import calculate_page_info
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle import (
     ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
-    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
+    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG,
 )
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from xmodule.modulestore import ModuleStoreEnum

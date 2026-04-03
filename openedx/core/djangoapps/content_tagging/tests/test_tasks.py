@@ -16,13 +16,13 @@ from openedx.core.djangoapps.content_libraries.api import (
     create_library,
     create_library_block,
     delete_library_block,
-    restore_library_block
+    restore_library_block,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ImmediateOnCommitMixin,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 
 from .. import api

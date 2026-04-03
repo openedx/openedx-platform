@@ -34,7 +34,7 @@ from lms.djangoapps.instructor.enrollment import (
     render_message_to_string,
     reset_student_attempts,
     send_beta_role_email,
-    unenroll_email
+    unenroll_email,
 )
 from lms.djangoapps.teams.models import CourseTeamMembership
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory

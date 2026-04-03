@@ -19,13 +19,13 @@ from openedx.core.djangoapps.credit.exceptions import (
     CreditRequestNotFound,
     InvalidCreditStatus,
     RequestAlreadyCompleted,
-    UserIsNotEligible
+    UserIsNotEligible,
 )
 from openedx.core.djangoapps.credit.models import (
     CreditEligibility,
     CreditProvider,
     CreditRequest,
-    CreditRequirementStatus
+    CreditRequirementStatus,
 )
 from openedx.core.djangoapps.credit.signature import get_shared_secret_key, signature
 

@@ -19,7 +19,7 @@ from common.djangoapps.third_party_auth.utils import (
     create_or_update_bulk_saml_provider_data,
     fetch_metadata_xml,
     parse_metadata_xml,
-    validate_uuid4_string
+    validate_uuid4_string,
 )
 
 from ..models import SAMLProviderConfig, SAMLProviderData

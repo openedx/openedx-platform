@@ -31,7 +31,7 @@ from openedx.core.djangoapps.catalog.constants import PathwayType
 from openedx.core.djangoapps.catalog.utils import (
     get_fulfillable_course_runs_for_entitlement,
     get_pathways,
-    get_programs
+    get_programs,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credentials.utils import get_credentials, get_credentials_records_url

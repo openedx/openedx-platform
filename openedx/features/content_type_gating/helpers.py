@@ -84,7 +84,7 @@ def has_full_access_role_in_masquerade(user, course_key):
         is_masquerading_as_full_access,
         is_masquerading_as_non_audit_enrollment,
         is_masquerading_as_specific_student,
-        is_masquerading_as_staff
+        is_masquerading_as_staff,
     )
 
     course_masquerade = get_course_masquerade(user, course_key)

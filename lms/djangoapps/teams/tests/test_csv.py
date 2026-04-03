@@ -9,8 +9,9 @@ from lms.djangoapps.teams import csv
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

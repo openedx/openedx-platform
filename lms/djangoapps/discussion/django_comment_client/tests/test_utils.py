@@ -23,7 +23,7 @@ from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
     InstructorFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
@@ -39,13 +39,13 @@ from openedx.core.djangoapps.discussions.utils import (
     get_accessible_discussion_xblocks,
     get_discussion_categories_ids,
     get_group_names_by_id,
-    has_required_keys
+    has_required_keys,
 )
 from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientMaintenanceError
 from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
     DiscussionsIdMapping,
-    assign_role
+    assign_role,
 )
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase

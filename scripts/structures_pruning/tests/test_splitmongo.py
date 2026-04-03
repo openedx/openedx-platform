@@ -27,7 +27,7 @@ from scripts.structures_pruning.utils.splitmongo import (
     ChangePlan,
     SplitMongoBackend,
     Structure,
-    StructuresGraph
+    StructuresGraph,
 )
 
 

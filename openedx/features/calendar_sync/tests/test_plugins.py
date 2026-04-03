@@ -12,7 +12,7 @@ from openedx.features.calendar_sync.plugins import CalendarSyncToggleTool
 from openedx.features.course_experience import CALENDAR_SYNC_FLAG, RELATIVE_DATES_FLAG
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseUserType,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 

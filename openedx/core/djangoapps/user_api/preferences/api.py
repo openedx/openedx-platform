@@ -24,7 +24,7 @@ from ..errors import (  # lint-amnesty, pylint: disable=unused-import
     UserAPIInternalError,
     UserAPIRequestError,
     UserNotAuthorized,
-    UserNotFound
+    UserNotFound,
 )
 from ..helpers import intercept_errors, serializer_is_dirty
 from ..models import UserOrgTag, UserPreference

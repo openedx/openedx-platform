@@ -38,7 +38,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
     get_transcript_from_val,
     get_transcript_from_youtube,
     get_transcript_link_from_youtube,
-    get_transcript_links_from_youtube
+    get_transcript_links_from_youtube,
 )
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangoapps.xblock.data import CheckPerm

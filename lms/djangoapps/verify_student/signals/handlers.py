@@ -12,7 +12,7 @@ from lms.djangoapps.verify_student.apps import VerifyStudentConfig  # pylint: di
 from lms.djangoapps.verify_student.models import (
     SoftwareSecurePhotoVerification,
     VerificationAttempt,
-    VerificationDeadline
+    VerificationDeadline,
 )
 from lms.djangoapps.verify_student.signals.signals import idv_update_signal
 from openedx.core.djangoapps.user_api.accounts.signals import USER_RETIRE_LMS_CRITICAL, USER_RETIRE_LMS_MISC

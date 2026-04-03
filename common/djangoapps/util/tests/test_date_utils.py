@@ -18,7 +18,7 @@ from common.djangoapps.util.date_utils import (
     get_default_time_display,
     get_time_display,
     strftime_localized,
-    strftime_localized_html
+    strftime_localized_html,
 )
 
 

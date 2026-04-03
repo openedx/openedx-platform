@@ -14,7 +14,7 @@ from openedx.core.djangoapps.user_api.models import RetirementState
 from openedx.core.djangoapps.user_api.tests.factories import (
     RetirementStateFactory,
     UserRetirementRequestFactory,
-    UserRetirementStatusFactory
+    UserRetirementStatusFactory,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

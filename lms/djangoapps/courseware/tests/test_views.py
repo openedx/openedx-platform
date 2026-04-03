@@ -47,7 +47,7 @@ from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     GlobalStaffFactory,
     RequestFactoryNoCsrf,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.tests.test_date_utils import fake_pgettext, fake_ugettext
 from common.djangoapps.util.url import reload_django_url_config
@@ -57,7 +57,7 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
 from lms.djangoapps.commerce.models import CommerceConfiguration
 from lms.djangoapps.commerce.utils import EcommerceService
@@ -68,13 +68,13 @@ from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin, get_expirat
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MICROFRONTEND_SEARCH_ENABLED,
-    COURSEWARE_OPTIMIZED_RENDER_XBLOCK
+    COURSEWARE_OPTIMIZED_RENDER_XBLOCK,
 )
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
 from lms.djangoapps.courseware.views.views import (
     BasePublicVideoXBlockView,
     PublicVideoXBlockEmbedView,
-    PublicVideoXBlockView
+    PublicVideoXBlockView,
 )
 from lms.djangoapps.instructor.access import allow_access
 from lms.djangoapps.verify_student.services import IDVerificationService
@@ -96,7 +96,7 @@ from openedx.features.enterprise_support.api import add_enterprise_customer_to_s
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.data import CertificatesDisplayBehaviors

@@ -24,12 +24,12 @@ from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wron
     CertificateData,
     CourseData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
     CERTIFICATE_CHANGED,
     CERTIFICATE_CREATED,
-    CERTIFICATE_REVOKED
+    CERTIFICATE_REVOKED,
 )
 from simple_history.models import HistoricalRecords
 

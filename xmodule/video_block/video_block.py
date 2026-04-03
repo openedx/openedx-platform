@@ -43,7 +43,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (
     clean_video_id,
     get_endonym_or_label,
     get_html5_ids,
-    subs_filename
+    subs_filename,
 )
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.license import LicenseMixin

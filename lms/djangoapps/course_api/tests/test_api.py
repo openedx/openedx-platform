@@ -19,11 +19,11 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    check_mongo_calls
+    check_mongo_calls,
 )
 
 from ..api import (
@@ -32,7 +32,7 @@ from ..api import (
     get_course_members,
     get_course_run_url,
     get_due_dates,
-    list_courses
+    list_courses,
 )
 from ..exceptions import OverEnrollmentLimitException
 from .mixins import CourseApiFactoryMixin

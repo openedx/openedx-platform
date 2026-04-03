@@ -24,7 +24,7 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentCelebratio
 from lms.djangoapps.certificates.api import get_certificate_url
 from lms.djangoapps.certificates.tests.factories import (
     GeneratedCertificateFactory,
-    LinkedInAddToProfileConfigurationFactory
+    LinkedInAddToProfileConfigurationFactory,
 )
 from lms.djangoapps.courseware.access_utils import ACCESS_DENIED, ACCESS_GRANTED
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
@@ -33,7 +33,7 @@ from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT,
     COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES,
-    COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION
+    COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES_STREAK_CELEBRATION,
 )
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.agreements.api import create_integrity_signature

@@ -17,13 +17,13 @@ from lms.djangoapps.certificates.generation_handler import (
     CertificateGenerationNotAllowed,
     generate_allowlist_certificate_task,
     generate_certificate_task,
-    is_on_certificate_allowlist
+    is_on_certificate_allowlist,
 )
 from lms.djangoapps.certificates.models import (
     CertificateAllowlist,
     CertificateGenerationCourseSetting,
     CertificateStatuses,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.content.course_overviews.signals import COURSE_PACING_CHANGED
@@ -31,7 +31,7 @@ from openedx.core.djangoapps.signals.signals import (
     COURSE_GRADE_NOW_FAILED,
     COURSE_GRADE_NOW_PASSED,
     LEARNER_SSO_VERIFIED,
-    PHOTO_VERIFICATION_APPROVED
+    PHOTO_VERIFICATION_APPROVED,
 )
 
 User = get_user_model()

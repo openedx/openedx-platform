@@ -12,7 +12,7 @@ from common.djangoapps.third_party_auth.models import (
     LTIProviderConfig,
     OAuth2ProviderConfig,
     SAMLConfiguration,
-    SAMLProviderConfig
+    SAMLProviderConfig,
 )
 from openedx.core.djangoapps.theming.helpers import get_current_request
 

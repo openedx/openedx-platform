@@ -11,7 +11,7 @@ from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     UserPartition,
     UserPartitionError,
-    get_partition_from_id
+    get_partition_from_id,
 )
 
 log = logging.getLogger(__name__)

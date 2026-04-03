@@ -12,7 +12,7 @@ from openedx.features.survey_report.queries import (
     get_generated_certificates,
     get_recently_active_users,
     get_registered_learners,
-    get_unique_courses_offered
+    get_unique_courses_offered,
 )
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

@@ -12,6 +12,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode, CourseModeExpirationConfig
 from common.djangoapps.util.date_utils import get_time_display
+
 # Technically, we shouldn't be doing this, since verify_student is defined
 # in LMS, and course_modes is defined in common.
 #

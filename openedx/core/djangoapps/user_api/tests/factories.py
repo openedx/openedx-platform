@@ -12,7 +12,7 @@ from openedx.core.djangoapps.user_api.models import (
     UserOrgTag,
     UserPreference,
     UserRetirementRequest,
-    UserRetirementStatus
+    UserRetirementStatus,
 )
 
 

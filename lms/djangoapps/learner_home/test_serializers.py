@@ -38,14 +38,14 @@ from lms.djangoapps.learner_home.serializers import (
     SocialMediaSiteSettingsSerializer,
     SocialShareSettingsSerializer,
     SuggestedCourseSerializer,
-    UnfulfilledEntitlementSerializer
+    UnfulfilledEntitlementSerializer,
 )
 from lms.djangoapps.learner_home.test_utils import (
     datetime_to_django_format,
     random_bool,
     random_date,
     random_string,
-    random_url
+    random_url,
 )
 from lms.djangoapps.learner_home.utils import course_progress_url
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory as CatalogCourseRunFactory

@@ -12,7 +12,7 @@ from cms.djangoapps.contentstore.rest_api.v0.views.utils import validate_request
 from cms.djangoapps.contentstore.transcript_storage_handlers import (
     delete_video_transcript_or_404,
     handle_transcript_download,
-    upload_transcript
+    upload_transcript,
 )
 from cms.djangoapps.contentstore.views.transcripts_ajax import check_transcripts, replace_transcripts
 from common.djangoapps.util.json_request import expect_json_in_class_view

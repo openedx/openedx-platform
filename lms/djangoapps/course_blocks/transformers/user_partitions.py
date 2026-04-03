@@ -5,12 +5,12 @@ User Partitions Transformer
 
 from lms.djangoapps.courseware.access import has_access
 from openedx.core.djangoapps.content.block_structure.transformer import (  # lint-amnesty, pylint: disable=unused-import
-    BlockStructureTransformer
+    BlockStructureTransformer,
 )
 from xmodule.partitions.partitions_service import (  # lint-amnesty, pylint: disable=wrong-import-order
     get_all_partitions_for_course,
     get_partition_from_id,
-    get_user_partition_groups
+    get_user_partition_groups,
 )
 
 from .split_test import SplitTestTransformer

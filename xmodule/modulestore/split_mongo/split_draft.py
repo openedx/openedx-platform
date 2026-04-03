@@ -9,7 +9,7 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import (
     DIRECT_ONLY_CATEGORIES,
     ModuleStoreDraftAndPublished,
-    UnsupportedRevisionError
+    UnsupportedRevisionError,
 )
 from xmodule.modulestore.exceptions import InsufficientSpecificationError, ItemNotFoundError
 from xmodule.modulestore.split_mongo import BlockKey

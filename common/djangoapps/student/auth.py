@@ -26,7 +26,7 @@ from common.djangoapps.student.roles import (
     OrgInstructorRole,
     OrgLibraryUserRole,
     OrgStaffRole,
-    strict_role_checking
+    strict_role_checking,
 )
 from openedx.core import toggles as core_toggles
 

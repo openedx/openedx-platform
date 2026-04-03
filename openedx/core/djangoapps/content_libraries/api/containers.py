@@ -20,7 +20,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
-    LIBRARY_CONTAINER_UPDATED
+    LIBRARY_CONTAINER_UPDATED,
 )
 
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
@@ -34,7 +34,7 @@ from .container_metadata import (
     ContainerMetadata,
     get_container_from_key,
     get_entity_from_key,
-    library_container_locator
+    library_container_locator,
 )
 from .serializers import ContainerSerializer
 

@@ -20,7 +20,7 @@ from lms.djangoapps.ora_staff_grader.constants import (
     ERR_MISSING_PARAM,
     ERR_UNKNOWN,
     PARAM_ORA_LOCATION,
-    PARAM_SUBMISSION_ID
+    PARAM_SUBMISSION_ID,
 )
 from lms.djangoapps.ora_staff_grader.errors import LockContestedError, XBlockInternalError
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

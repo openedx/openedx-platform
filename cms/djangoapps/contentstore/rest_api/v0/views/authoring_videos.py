@@ -12,7 +12,7 @@ from cms.djangoapps.contentstore.video_storage_handlers import (
     enabled_video_features,
     get_video_encodings_download,
     handle_video_images,
-    handle_videos
+    handle_videos,
 )
 from common.djangoapps.util.json_request import expect_json_in_class_view
 from openedx.core.lib.api.parsers import TypedFileUploadParser

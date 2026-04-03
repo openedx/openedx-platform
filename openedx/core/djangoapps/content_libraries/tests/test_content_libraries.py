@@ -38,7 +38,7 @@ from openedx.core.djangoapps.content_libraries.tests.base import (
     URL_BLOCK_METADATA_URL,
     URL_BLOCK_RENDER_VIEW,
     URL_BLOCK_XBLOCK_HANDLER,
-    ContentLibrariesRestApiTest
+    ContentLibrariesRestApiTest,
 )
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms

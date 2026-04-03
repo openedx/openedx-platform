@@ -36,14 +36,14 @@ from django.utils.text import slugify
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
-    set_custom_attribute
+    set_custom_attribute,
 )
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import (
     BlockUsageLocator,
     LibraryCollectionLocator,
     LibraryContainerLocator,
-    LibraryLocatorV2
+    LibraryLocatorV2,
 )
 from openedx_content import api as content_api
 from openedx_content.api import create_zip_file as create_lib_zip_file
@@ -58,7 +58,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
-    LIBRARY_CONTAINER_UPDATED
+    LIBRARY_CONTAINER_UPDATED,
 )
 from path import Path
 from user_tasks.models import UserTaskArtifact

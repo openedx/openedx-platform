@@ -14,7 +14,7 @@ from .views import (
     TeamsDetailView,
     TeamsListView,
     TopicDetailView,
-    TopicListView
+    TopicListView,
 )
 
 TEAM_ID_PATTERN = r'(?P<team_id>[a-z\d_-]+)'

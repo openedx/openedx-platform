@@ -18,7 +18,7 @@ from openedx.core.djangoapps.catalog.cache import (
     PROGRAMS_BY_TYPE_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_SLUG_CACHE_KEY_TPL,
     SITE_PATHWAY_IDS_CACHE_KEY_TPL,
-    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
+    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
 )
 from openedx.core.djangoapps.catalog.tests.factories import OrganizationFactory, PathwayFactory, ProgramFactory
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin

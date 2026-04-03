@@ -15,7 +15,7 @@ from smtplib import (  # lint-amnesty, pylint: disable=wrong-import-order
     SMTPConnectError,
     SMTPDataError,
     SMTPSenderRefused,
-    SMTPServerDisconnected
+    SMTPServerDisconnected,
 )
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
 from uuid import uuid4  # lint-amnesty, pylint: disable=wrong-import-order

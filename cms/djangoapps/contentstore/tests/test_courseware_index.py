@@ -18,7 +18,7 @@ from cms.djangoapps.contentstore.courseware_index import (
     CourseAboutSearchIndexer,
     CoursewareSearchIndexer,
     LibrarySearchIndexer,
-    SearchIndexingError
+    SearchIndexingError,
 )
 from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish, listen_for_library_update
 from cms.djangoapps.contentstore.tasks import update_search_index
@@ -33,12 +33,12 @@ from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnest
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
-    LibraryFactory
+    LibraryFactory,
 )
 from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 

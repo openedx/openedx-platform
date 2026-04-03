@@ -18,7 +18,7 @@ from lms.djangoapps.courseware.models import (
     StudentModule,
     XModuleStudentInfoField,
     XModuleStudentPrefsField,
-    XModuleUserStateSummaryField
+    XModuleUserStateSummaryField,
 )
 
 COURSE_KEY = CourseKey.from_string('edX/test_course/test')

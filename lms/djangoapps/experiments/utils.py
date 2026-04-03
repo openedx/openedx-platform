@@ -23,7 +23,7 @@ from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
 from xmodule.partitions.partitions_service import (  # lint-amnesty, pylint: disable=wrong-import-order
     get_all_partitions_for_course,
-    get_user_partition_groups
+    get_user_partition_groups,
 )
 
 logger = logging.getLogger(__name__)

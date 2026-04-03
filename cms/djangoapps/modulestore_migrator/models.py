@@ -13,7 +13,7 @@ from openedx_content.models_api import (
     DraftChangeLog,
     DraftChangeLogRecord,
     LearningPackage,
-    PublishableEntity
+    PublishableEntity,
 )
 from user_tasks.models import UserTaskStatus
 

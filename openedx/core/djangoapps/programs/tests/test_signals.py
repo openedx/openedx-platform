@@ -15,13 +15,13 @@ from openedx.core.djangoapps.programs.signals import (
     handle_course_cert_changed,
     handle_course_cert_date_change,
     handle_course_cert_revoked,
-    handle_course_pacing_change
+    handle_course_pacing_change,
 )
 from openedx.core.djangoapps.signals.signals import (
     COURSE_CERT_AWARDED,
     COURSE_CERT_CHANGED,
     COURSE_CERT_DATE_CHANGE,
-    COURSE_CERT_REVOKED
+    COURSE_CERT_REVOKED,
 )
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms

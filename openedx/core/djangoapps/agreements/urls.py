@@ -10,7 +10,7 @@ from openedx.core.djangoapps.agreements.views import (
     IntegritySignatureView,
     LTIPIISignatureView,
     UserAgreementRecordsView,
-    UserAgreementsViewSet
+    UserAgreementsViewSet,
 )
 
 router = DefaultRouter()

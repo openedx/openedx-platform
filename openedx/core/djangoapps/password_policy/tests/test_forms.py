@@ -11,7 +11,7 @@ from django.test.utils import override_settings
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.password_policy.compliance import (
     NonCompliantPasswordException,
-    NonCompliantPasswordWarning
+    NonCompliantPasswordWarning,
 )
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
 

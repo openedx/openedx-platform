@@ -12,7 +12,7 @@ from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, SAM
 from common.djangoapps.third_party_auth.tests.data.saml_identity_provider_mock_data import (
     expected_user_details,
     mock_attributes,
-    mock_conf
+    mock_conf,
 )
 from common.djangoapps.third_party_auth.tests.testutil import SAMLTestCase
 

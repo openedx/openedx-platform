@@ -13,7 +13,7 @@ from lms.djangoapps.learner_dashboard.programs import (
     ProgramDetailsFragmentView,
     ProgramDiscussionLTI,
     ProgramLiveLTI,
-    ProgramsFragmentView
+    ProgramsFragmentView,
 )
 from lms.djangoapps.learner_dashboard.utils import is_enrolled_or_staff, masters_program_tab_view_is_enabled
 from lms.djangoapps.program_enrollments.rest_api.v1.utils import ProgramSpecificViewMixin

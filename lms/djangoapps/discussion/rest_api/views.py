@@ -62,7 +62,7 @@ from ..rest_api.api import (
     get_user_comments,
     get_v2_course_topics_as_v1,
     update_comment,
-    update_thread
+    update_thread,
 )
 from ..rest_api.forms import (
     CommentGetForm,
@@ -73,7 +73,7 @@ from ..rest_api.forms import (
     ThreadListGetForm,
     TopicListGetForm,
     UserCommentListGetForm,
-    UserOrdering
+    UserOrdering,
 )
 from ..rest_api.permissions import IsStaffOrAdmin, IsStaffOrCourseTeamOrEnrolled
 from ..rest_api.serializers import (
@@ -81,7 +81,7 @@ from ..rest_api.serializers import (
     DiscussionRolesListSerializer,
     DiscussionRolesSerializer,
     DiscussionTopicSerializerV2,
-    TopicOrdering
+    TopicOrdering,
 )
 from .utils import (
     create_blocks_params,
@@ -89,7 +89,7 @@ from .utils import (
     get_course_id_from_thread_id,
     is_captcha_enabled,
     is_only_student,
-    verify_recaptcha_token
+    verify_recaptcha_token,
 )
 
 log = logging.getLogger(__name__)

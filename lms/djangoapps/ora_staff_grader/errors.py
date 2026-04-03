@@ -8,7 +8,7 @@ from lms.djangoapps.ora_staff_grader.constants import (
     ERR_INTERNAL,
     ERR_LOCK_CONTESTED,
     ERR_MISSING_PARAM,
-    ERR_UNKNOWN
+    ERR_UNKNOWN,
 )
 
 

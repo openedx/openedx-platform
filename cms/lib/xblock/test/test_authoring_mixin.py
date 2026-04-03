@@ -14,7 +14,7 @@ from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     MINIMUM_UNUSED_PARTITION_ID,
     Group,
-    UserPartition
+    UserPartition,
 )
 from xmodule.tests.test_export import PureXBlock
 

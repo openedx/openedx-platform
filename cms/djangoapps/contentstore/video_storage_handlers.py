@@ -40,7 +40,7 @@ from edxval.api import (
     remove_transcript_preferences,
     remove_video_for_course,
     update_video_image,
-    update_video_status
+    update_video_status,
 )
 from fs.osfs import OSFS
 from opaque_keys import InvalidKeyError

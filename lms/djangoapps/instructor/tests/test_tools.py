@@ -24,7 +24,7 @@ from openedx.core.djangoapps.course_date_signals import handlers
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 

@@ -31,7 +31,7 @@ from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
     CourseInstructorRole,
     CourseSalesAdminRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.proctoring import requires_escalation_email

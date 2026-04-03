@@ -20,8 +20,9 @@ from lms.djangoapps.experiments.models import ExperimentData
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.discounts.models import DiscountRestrictionConfig
 from openedx.features.discounts.utils import REV1008_EXPERIMENT_ID
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..applicability import DISCOUNT_APPLICABILITY_FLAG, _is_in_holdback_and_bucket, can_receive_discount

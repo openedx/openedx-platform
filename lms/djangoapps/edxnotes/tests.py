@@ -30,11 +30,12 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFa
 from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tests.helpers import StubUserService  # lint-amnesty, pylint: disable=wrong-import-order

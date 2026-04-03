@@ -31,14 +31,14 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_edited,
     thread_followed,
     thread_unfollowed,
-    thread_voted
+    thread_voted,
 )
 
 from .errors import (
     AddToIncompatibleTeamError,
     AlreadyOnTeamInTeamset,
     ImmutableMembershipFieldException,
-    NotEnrolledInCourseForTeam
+    NotEnrolledInCourseForTeam,
 )
 
 

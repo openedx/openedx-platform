@@ -10,7 +10,7 @@ from openedx.features.enterprise_support.context import get_enterprise_event_con
 from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 

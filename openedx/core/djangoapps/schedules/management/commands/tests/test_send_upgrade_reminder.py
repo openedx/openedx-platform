@@ -19,7 +19,7 @@ from openedx.core.djangoapps.schedules import resolvers, tasks
 from openedx.core.djangoapps.schedules.management.commands import send_upgrade_reminder as reminder
 from openedx.core.djangoapps.schedules.management.commands.tests.send_email_base import (
     ExperienceTest,
-    ScheduleSendEmailTestMixin
+    ScheduleSendEmailTestMixin,
 )
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms

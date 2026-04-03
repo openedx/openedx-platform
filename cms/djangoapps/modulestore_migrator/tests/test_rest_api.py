@@ -19,7 +19,7 @@ from user_tasks.models import UserTaskStatus
 from cms.djangoapps.modulestore_migrator.data import (
     ModulestoreBlockMigrationFailure,
     ModulestoreBlockMigrationSuccess,
-    ModulestoreMigration
+    ModulestoreMigration,
 )
 from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration as ModulestoreMigrationModel
 from cms.djangoapps.modulestore_migrator.models import ModulestoreSource
@@ -28,7 +28,7 @@ from cms.djangoapps.modulestore_migrator.rest_api.v1.views import (
     BulkMigrationViewSet,
     MigrationInfoViewSet,
     MigrationViewSet,
-    PreviewMigration
+    PreviewMigration,
 )
 from openedx.core.djangoapps.content_libraries import api as lib_api
 

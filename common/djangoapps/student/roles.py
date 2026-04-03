@@ -429,8 +429,9 @@ class RoleBase(AccessRole):
         """
         # silently ignores anonymous and inactive users so that any that are
         # legit get updated.
-        from common.djangoapps.student.models import \
-            CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+        from common.djangoapps.student.models import (
+            CourseAccessRole,  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+        )
         for user in users:
             if user.is_authenticated and user.is_active:
                 CourseAccessRole.objects.get_or_create(

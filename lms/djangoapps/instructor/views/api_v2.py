@@ -62,7 +62,7 @@ from .serializers_v2 import (
     InstructorTaskListSerializer,
     ORASerializer,
     ORASummarySerializer,
-    UnitExtensionSerializer
+    UnitExtensionSerializer,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 

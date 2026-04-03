@@ -20,7 +20,7 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     delete_orphans,
     get_block_info,
     get_xblock,
-    handle_xblock
+    handle_xblock,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.xblock_helpers import get_tags_count, usage_key_with_run
 from cms.lib.xblock.authoring_mixin import VISIBILITY_VIEW
@@ -34,7 +34,7 @@ from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-ord
     AUTHOR_VIEW,
     PREVIEW_VIEWS,
     STUDENT_VIEW,
-    STUDIO_VIEW
+    STUDIO_VIEW,
 )
 
 from ..helpers import is_unit

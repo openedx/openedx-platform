@@ -22,7 +22,7 @@ from openedx.core.lib.xblock_utils import (
     request_token,
     sanitize_html_id,
     wrap_fragment,
-    wrap_xblock
+    wrap_xblock,
 )
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase

@@ -11,16 +11,19 @@ from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from lms.djangoapps.course_api.tests.mixins import \
-    CourseApiFactoryMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.theming.tests.test_util import \
-    with_comprehensive_theme  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.course_api.tests.mixins import (
+    CourseApiFactoryMixin,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from openedx.core.djangoapps.theming.tests.test_util import (
+    with_comprehensive_theme,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from openedx.core.djangolib.testing.utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     CacheIsolationTestCase,
-    skip_unless_lms
+    skip_unless_lms,
 )
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import messages

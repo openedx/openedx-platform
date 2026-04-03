@@ -16,11 +16,12 @@ from lms.djangoapps.instructor.enrollment import reset_student_attempts
 from lms.djangoapps.instructor_task.api import submit_rescore_problem_for_student
 from openedx.core.djangolib.testing.utils import get_mock_request
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 from ... import events

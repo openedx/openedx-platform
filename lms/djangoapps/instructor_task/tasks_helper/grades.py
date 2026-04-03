@@ -26,15 +26,14 @@ from lms.djangoapps.certificates.api import get_certificates_for_course_and_user
 from lms.djangoapps.course_blocks.api import get_course_block_access_transformers, get_course_blocks
 from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from lms.djangoapps.grades.api import CourseGradeFactory
+from lms.djangoapps.grades.api import CourseGradeFactory, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.api import context as grades_context
-from lms.djangoapps.grades.api import prefetch_course_and_subsection_grades
 from lms.djangoapps.instructor_analytics.basic import list_problem_responses
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 from lms.djangoapps.instructor_task.config.waffle import (
     course_grade_report_verified_only,
     problem_grade_report_verified_only,
-    use_on_disk_grade_reporting
+    use_on_disk_grade_reporting,
 )
 from lms.djangoapps.teams.models import CourseTeamMembership
 from lms.djangoapps.verify_student.services import IDVerificationService

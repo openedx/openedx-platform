@@ -29,7 +29,7 @@ from lms.djangoapps.instructor_task.tasks import (
     generate_certificates,
     override_problem_score,
     rescore_problem,
-    reset_problem_attempts
+    reset_problem_attempts,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.tests.test_base import InstructorTaskModuleTestCase

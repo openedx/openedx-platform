@@ -17,7 +17,7 @@ from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, U
 from lms.djangoapps.program_enrollments.tests.factories import (
     CourseAccessRoleAssignmentFactory,
     ProgramCourseEnrollmentFactory,
-    ProgramEnrollmentFactory
+    ProgramEnrollmentFactory,
 )
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -26,7 +26,7 @@ from ..linking import (
     NO_LMS_USER_TEMPLATE,
     NO_PROGRAM_ENROLLMENT_TEMPLATE,
     _user_already_linked_message,
-    link_program_enrollments
+    link_program_enrollments,
 )
 
 LOG_PATH = 'lms.djangoapps.program_enrollments.api.linking'

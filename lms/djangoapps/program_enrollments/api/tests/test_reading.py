@@ -23,13 +23,13 @@ from lms.djangoapps.program_enrollments.constants import ProgramEnrollmentStatus
 from lms.djangoapps.program_enrollments.exceptions import (
     OrganizationDoesNotExistException,
     ProgramDoesNotExistException,
-    ProviderDoesNotExistException
+    ProviderDoesNotExistException,
 )
 from lms.djangoapps.program_enrollments.models import ProgramCourseEnrollment, ProgramEnrollment
 from lms.djangoapps.program_enrollments.tests.factories import (
     CourseAccessRoleAssignmentFactory,
     ProgramCourseEnrollmentFactory,
-    ProgramEnrollmentFactory
+    ProgramEnrollmentFactory,
 )
 from openedx.core.djangoapps.catalog.cache import PROGRAM_CACHE_KEY_TPL
 from openedx.core.djangoapps.catalog.tests.factories import OrganizationFactory as CatalogOrganizationFactory
@@ -48,7 +48,7 @@ from ..reading import (
     get_program_enrollment,
     get_provider_slug,
     get_users_by_external_keys,
-    is_course_staff_enrollment
+    is_course_staff_enrollment,
 )
 
 User = get_user_model()

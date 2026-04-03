@@ -14,7 +14,7 @@ from cms.lib.xblock.upstream_sync import (
     NoUpstream,
     UpstreamLink,
     decline_sync,
-    sever_upstream_link
+    sever_upstream_link,
 )
 from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block, sync_from_upstream_block
 from common.djangoapps.student.tests.factories import UserFactory

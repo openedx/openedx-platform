@@ -14,7 +14,7 @@ from django.http import (
     HttpResponseNotAllowed,
     HttpResponseNotFound,
     HttpResponseServerError,
-    JsonResponse
+    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse

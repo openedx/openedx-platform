@@ -10,6 +10,6 @@ from .api_impl import (
     delete_bookmark,
     delete_bookmarks,
     get_bookmark,
-    get_bookmarks
+    get_bookmarks,
 )
 from .services import BookmarksService

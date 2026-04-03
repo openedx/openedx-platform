@@ -39,7 +39,7 @@ from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.views.index import save_positions_recursively_up
 from lms.djangoapps.mobile_api.models import MobileConfig
-from lms.djangoapps.mobile_api.utils import API_V1, API_V2, API_V3, API_V4, API_V05
+from lms.djangoapps.mobile_api.utils import API_V05, API_V1, API_V2, API_V3, API_V4
 from openedx.core.djangoapps.site_configuration.helpers import get_current_site_orgs
 from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -52,7 +52,7 @@ from .serializers import (
     CourseEnrollmentSerializer,
     CourseEnrollmentSerializerModifiedForPrimary,
     CourseEnrollmentSerializerv05,
-    UserSerializer
+    UserSerializer,
 )
 
 log = logging.getLogger(__name__)

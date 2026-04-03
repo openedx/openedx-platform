@@ -23,7 +23,7 @@ from common.djangoapps.course_modes.models import CourseMode, get_course_prices
 from common.djangoapps.student.models import (
     CourseEnrollment,
     CourseEnrollmentCelebration,
-    LinkedInAddToProfileConfiguration
+    LinkedInAddToProfileConfiguration,
 )
 from common.djangoapps.util.milestones_helpers import get_prerequisite_courses_display
 from common.djangoapps.util.views import expose_header
@@ -39,13 +39,13 @@ from lms.djangoapps.courseware.context_processor import user_timezone_locale_pre
 from lms.djangoapps.courseware.courses import (
     get_course_about_section,
     get_course_with_access,
-    get_permission_for_course_about
+    get_permission_for_course_about,
 )
 from lms.djangoapps.courseware.entrance_exams import course_has_entrance_exam, user_has_passed_entrance_exam
 from lms.djangoapps.courseware.masquerade import (
     is_masquerading_as_non_audit_enrollment,
     is_masquerading_as_specific_student,
-    setup_masquerade
+    setup_masquerade,
 )
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
 from lms.djangoapps.courseware.permissions import VIEW_COURSEWARE

@@ -16,7 +16,7 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     AlreadyEnrolledError,
     CourseEnrollment,
     CourseFullError,
-    EnrollmentClosedError
+    EnrollmentClosedError,
 )
 from common.djangoapps.student.roles import AuthzCompatCourseAccessRole
 from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, CourseEnrollmentFactory, UserFactory
@@ -25,13 +25,14 @@ from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentClosedError,
     CourseEnrollmentExistsError,
     CourseEnrollmentFullError,
-    UserNotFoundError
+    UserNotFoundError,
 )
 from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.exceptions import CourseNotFoundError
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

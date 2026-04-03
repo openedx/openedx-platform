@@ -11,7 +11,7 @@ from rest_framework import serializers
 from cms.djangoapps.contentstore.views.certificate_manager import (
     CERTIFICATE_SCHEMA_VERSION,
     Certificate,
-    CertificateManager
+    CertificateManager,
 )
 from common.djangoapps.student.roles import GlobalStaff
 

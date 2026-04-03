@@ -8,13 +8,15 @@ Course Auth is turned on.
 from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+
 # This import is for an lms djangoapp.
 # Its testcases are only run under lms.
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, CourseAuthorization
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

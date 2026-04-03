@@ -19,7 +19,7 @@ from .views.program_enrollments import (
     LinkProgramEnrollmentSupportView,
     ProgramEnrollmentsInspectorAPIView,
     ProgramEnrollmentsInspectorView,
-    SAMLProvidersWithOrg
+    SAMLProvidersWithOrg,
 )
 from .views.sso_records import SsoView
 

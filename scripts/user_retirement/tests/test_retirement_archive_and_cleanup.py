@@ -21,7 +21,7 @@ from scripts.user_retirement.retirement_archive_and_cleanup import (
     ERR_NO_CONFIG,
     ERR_SETUP_FAILED,
     _upload_to_s3,
-    archive_and_cleanup
+    archive_and_cleanup,
 )
 from scripts.user_retirement.tests.retirement_helpers import fake_config_file, get_fake_user_retirement
 

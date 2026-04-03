@@ -16,7 +16,7 @@ from common.djangoapps.student.models import (
     CourseEnrollmentAttribute,
     CourseFullError,
     EnrollmentClosedError,
-    NonExistentCourseError
+    NonExistentCourseError,
 )
 from common.djangoapps.student.role_helpers import get_course_roles
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -25,7 +25,7 @@ from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentExistsError,
     CourseEnrollmentFullError,
     InvalidEnrollmentAttribute,
-    UserNotFoundError
+    UserNotFoundError,
 )
 from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer, CourseSerializer
 from openedx.core.lib.exceptions import CourseNotFoundError

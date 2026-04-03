@@ -22,7 +22,7 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    upload_file_to_course
+    upload_file_to_course,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.modulestore.tests.test_asides import AsideTestType

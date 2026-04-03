@@ -6,7 +6,7 @@ from django.urls import re_path
 
 from lms.djangoapps.instructor_task.rest_api.v1.views import (
     ListScheduledBulkEmailInstructorTasks,
-    ModifyScheduledBulkEmailInstructorTask
+    ModifyScheduledBulkEmailInstructorTask,
 )
 
 urlpatterns = [

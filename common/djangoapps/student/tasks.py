@@ -16,7 +16,7 @@ from lms.djangoapps.utils import get_email_client
 from openedx.core.djangoapps.catalog.utils import (
     get_course_run_details,
     get_course_uuid_for_course,
-    get_owners_for_course
+    get_owners_for_course,
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.features.course_experience import ENABLE_COURSE_GOALS

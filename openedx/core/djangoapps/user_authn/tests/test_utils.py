@@ -13,7 +13,7 @@ from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFa
 from openedx.core.djangoapps.user_authn.utils import (
     generate_username_suggestions,
     is_safe_login_or_logout_redirect,
-    remove_special_characters_from_name
+    remove_special_characters_from_name,
 )
 
 

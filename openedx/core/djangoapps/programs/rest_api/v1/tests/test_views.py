@@ -20,7 +20,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     CourseFactory,
     CourseRunFactory,
     PathwayFactory,
-    ProgramFactory
+    ProgramFactory,
 )
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
@@ -30,7 +30,7 @@ from openedx.features.enterprise_support.api import enterprise_is_enabled
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory

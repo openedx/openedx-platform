@@ -21,7 +21,7 @@ from social_django.models import Partial
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.tests.utils import (
     ThirdPartyOAuthTestMixinFacebook,
-    ThirdPartyOAuthTestMixinGoogle
+    ThirdPartyOAuthTestMixinGoogle,
 )
 from openedx.core.djangoapps.oauth_dispatch import jwt as jwt_api
 from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter

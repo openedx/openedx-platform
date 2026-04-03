@@ -43,7 +43,7 @@ from openedx.core.djangoapps.user_authn.views.password_reset import (
     LogistrationPasswordResetView,
     PasswordResetConfirmWrapper,
     password_change_request_handler,
-    password_reset
+    password_reset,
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 

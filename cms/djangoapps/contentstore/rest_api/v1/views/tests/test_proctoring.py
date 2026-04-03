@@ -17,7 +17,7 @@ from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 
 from ...mixins import PermissionAccessMixin

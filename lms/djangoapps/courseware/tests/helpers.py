@@ -29,16 +29,16 @@ from openedx.core.lib.url_utils import quote_slashes
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.tests import (  # lint-amnesty, pylint: disable=wrong-import-order
     get_test_descriptor_system,
     get_test_system,
-    prepare_block_runtime
+    prepare_block_runtime,
 )
 
 

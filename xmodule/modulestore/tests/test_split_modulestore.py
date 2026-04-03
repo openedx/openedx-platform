@@ -29,7 +29,7 @@ from xmodule.modulestore.exceptions import (
     DuplicateItemError,
     InsufficientSpecificationError,
     ItemNotFoundError,
-    VersionConflictError
+    VersionConflictError,
 )
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.split_mongo import BlockKey

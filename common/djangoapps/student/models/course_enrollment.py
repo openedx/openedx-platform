@@ -27,7 +27,7 @@ from openedx_events.learning.data import CourseData, CourseEnrollmentData, UserD
 from openedx_events.learning.signals import (
     COURSE_ENROLLMENT_CHANGED,
     COURSE_ENROLLMENT_CREATED,
-    COURSE_UNENROLLMENT_COMPLETED
+    COURSE_UNENROLLMENT_COMPLETED,
 )
 from openedx_filters.learning.filters import CourseEnrollmentStarted, CourseUnenrollmentStarted
 from requests.exceptions import HTTPError, RequestException
@@ -41,14 +41,14 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.courseware.models import (
     CourseDynamicUpgradeDeadlineConfiguration,
     DynamicUpgradeDeadlineConfiguration,
-    OrgDynamicUpgradeDeadlineConfiguration
+    OrgDynamicUpgradeDeadlineConfiguration,
 )
 from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.enrollments.api import (
     _default_course_mode,
     get_enrollment_attributes,
-    set_enrollment_attributes
+    set_enrollment_attributes,
 )
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
 
@@ -557,7 +557,7 @@ class CourseEnrollment(models.Model):
         if mode_changed:
             from common.djangoapps.student.email_helpers import (
                 generate_proctoring_requirements_email_context,
-                should_send_proctoring_requirements_email
+                should_send_proctoring_requirements_email,
             )
             from common.djangoapps.student.emails import send_proctoring_requirements_email
 

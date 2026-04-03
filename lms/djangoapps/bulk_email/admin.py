@@ -13,7 +13,7 @@ from lms.djangoapps.bulk_email.models import (
     CourseEmail,
     CourseEmailTemplate,
     DisabledCourse,
-    Optout
+    Optout,
 )
 
 

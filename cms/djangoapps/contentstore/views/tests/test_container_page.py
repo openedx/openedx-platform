@@ -21,7 +21,7 @@ from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 from .utils import StudioPageTestCase

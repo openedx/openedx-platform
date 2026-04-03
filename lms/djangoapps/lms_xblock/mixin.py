@@ -15,7 +15,7 @@ from lms.lib.utils import is_unit
 from xmodule.modulestore.inheritance import UserPartitionList  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     NoSuchUserPartitionError,
-    NoSuchUserPartitionGroupError
+    NoSuchUserPartitionGroupError,
 )
 
 # Please do not remove, this is a workaround for Django 1.8.

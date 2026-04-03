@@ -10,10 +10,12 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import \
-    CourseFactory as XModuleCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (
+    CourseFactory as XModuleCourseFactory,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 SIGNALS_MODULE = 'openedx.core.djangoapps.credentials.signals'
 

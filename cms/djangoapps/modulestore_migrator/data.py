@@ -16,7 +16,7 @@ from opaque_keys.edx.locator import (
     LibraryContainerLocator,
     LibraryLocator,
     LibraryLocatorV2,
-    LibraryUsageLocatorV2
+    LibraryUsageLocatorV2,
 )
 from openedx_content import models_api as content_models
 

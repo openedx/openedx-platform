@@ -18,7 +18,7 @@ from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     get_available_providers,
-    get_requires_escalation_email_providers
+    get_requires_escalation_email_providers,
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -26,7 +26,7 @@ from ..serializers import (
     LimitedProctoredExamSettingsSerializer,
     ProctoredExamConfigurationSerializer,
     ProctoredExamSettingsSerializer,
-    ProctoringErrorsSerializer
+    ProctoringErrorsSerializer,
 )
 
 

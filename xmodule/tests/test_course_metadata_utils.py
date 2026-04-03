@@ -18,12 +18,12 @@ from xmodule.course_metadata_utils import (
     has_course_ended,
     has_course_started,
     is_enrollment_open,
-    number_for_course_location
+    number_for_course_location,
 )
 from xmodule.modulestore.tests.utils import (
     MixedModulestoreBuilder,
     MongoModulestoreBuilder,
-    VersioningModulestoreBuilder
+    VersioningModulestoreBuilder,
 )
 
 _TODAY = datetime.now(ZoneInfo("UTC"))

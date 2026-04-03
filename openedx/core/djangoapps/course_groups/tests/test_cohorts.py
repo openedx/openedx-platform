@@ -20,7 +20,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 

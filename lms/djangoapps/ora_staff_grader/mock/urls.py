@@ -10,7 +10,7 @@ from lms.djangoapps.ora_staff_grader.mock.views import (
     SubmissionFetchView,
     SubmissionLockView,
     SubmissionStatusFetchView,
-    UpdateGradeView
+    UpdateGradeView,
 )
 
 urlpatterns = []

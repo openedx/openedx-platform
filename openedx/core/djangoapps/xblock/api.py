@@ -10,6 +10,7 @@ Studio APIs cover use cases like adding/deleting/editing blocks.
 import logging
 import threading
 from datetime import datetime
+
 # pylint: disable=unused-import
 from enum import Enum
 
@@ -26,12 +27,13 @@ from xblock.exceptions import NoSuchUsage, NoSuchViewError
 from xblock.plugin import PluginMissingError
 
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
+
 # Made available as part of this package's public API:
 from openedx.core.djangoapps.xblock.learning_context import LearningContext
 from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
 from openedx.core.djangoapps.xblock.runtime.openedx_content_runtime import (
     OpenedXContentFieldData,
-    OpenedXContentRuntime
+    OpenedXContentRuntime,
 )
 from openedx.core.types import User as UserType
 

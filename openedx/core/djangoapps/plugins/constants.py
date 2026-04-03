@@ -3,11 +3,12 @@ Constants used by django app plugins
 """
 
 # expose constants from edx-django-utils so plugins using these continue to work
-from edx_django_utils.plugins import PluginContexts  # pylint: disable=unused-import
-from edx_django_utils.plugins import PluginSettings  # pylint: disable=unused-import
-from edx_django_utils.plugins import PluginSignals  # pylint: disable=unused-import
-from edx_django_utils.plugins import \
-    PluginURLs  # lint-amnesty, pylint: disable=unused-import; pylint: disable=unused-import
+from edx_django_utils.plugins import (
+    PluginContexts,  # pylint: disable=unused-import
+    PluginSettings,  # pylint: disable=unused-import
+    PluginSignals,  # pylint: disable=unused-import
+    PluginURLs,  # lint-amnesty, pylint: disable=unused-import; pylint: disable=unused-import
+)
 
 
 class ProjectType():

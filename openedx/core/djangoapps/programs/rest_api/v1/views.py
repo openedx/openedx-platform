@@ -14,7 +14,7 @@ from openedx.core.djangoapps.programs.utils import (
     get_certificates,
     get_industry_and_credit_pathways,
     get_program_and_course_data,
-    get_program_urls
+    get_program_urls,
 )
 from openedx.features.enterprise_support.api import enterprise_is_enabled, get_enterprise_course_enrollments
 

@@ -19,13 +19,13 @@ from common.djangoapps.student.models import (
     CourseEnrollmentCelebration,
     PendingNameChange,
     is_email_retired,
-    is_username_retired
+    is_username_retired,
 )
 from common.djangoapps.student.models_api import confirm_name_change
 from common.djangoapps.student.signals import (
     USER_EMAIL_CHANGED,
     emit_course_access_role_added,
-    emit_course_access_role_removed
+    emit_course_access_role_removed,
 )
 from lms.djangoapps.courseware.toggles import courseware_mfe_progress_milestones_are_active
 from lms.djangoapps.utils import get_email_client

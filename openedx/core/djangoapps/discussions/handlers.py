@@ -11,7 +11,7 @@ from openedx_events.learning.signals import COURSE_DISCUSSIONS_CHANGED
 from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
     DiscussionTopicLink,
-    get_default_provider_type
+    get_default_provider_type,
 )
 
 log = logging.getLogger(__name__)

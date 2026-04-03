@@ -18,8 +18,9 @@ from common.djangoapps.student.models import UserProfile
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.time_zone_utils import get_display_time_zone
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ...errors import (  # lint-amnesty, pylint: disable=unused-import
@@ -27,7 +28,7 @@ from ...errors import (  # lint-amnesty, pylint: disable=unused-import
     PreferenceUpdateError,
     PreferenceValidationError,
     UserNotAuthorized,
-    UserNotFound
+    UserNotFound,
 )
 from ...models import UserOrgTag
 from ...preferences.api import (
@@ -37,7 +38,7 @@ from ...preferences.api import (
     get_user_preferences,
     set_user_preference,
     update_email_opt_in,
-    update_user_preferences
+    update_user_preferences,
 )
 
 

@@ -42,7 +42,7 @@ from lms.djangoapps.instructor_task.api import (
     submit_rescore_problem_for_all_students,
     submit_rescore_problem_for_student,
     submit_reset_problem_attempts_for_all_students,
-    submit_reset_problem_attempts_in_entrance_exam
+    submit_reset_problem_attempts_in_entrance_exam,
 )
 from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
@@ -50,7 +50,7 @@ from lms.djangoapps.instructor_task.models import PROGRESS, SCHEDULED, Instructo
 from lms.djangoapps.instructor_task.tasks import (
     export_ora2_data,
     export_ora2_submission_files,
-    generate_anonymous_ids_for_course
+    generate_anonymous_ids_for_course,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory, InstructorTaskScheduleFactory
 from lms.djangoapps.instructor_task.tests.test_base import (
@@ -58,7 +58,7 @@ from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
     InstructorTaskTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
 from xmodule.modulestore.exceptions import ItemNotFoundError
 

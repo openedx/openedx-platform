@@ -17,7 +17,7 @@ from common.djangoapps.student.tests.factories import (
     InstructorFactory,
     RequestFactoryNoCsrf,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.milestones_helpers import (
     add_course_content_milestone,
@@ -25,14 +25,14 @@ from common.djangoapps.util.milestones_helpers import (
     add_milestone,
     generate_milestone_namespace,
     get_milestone_relationship_types,
-    get_namespace_choices
+    get_namespace_choices,
 )
 from lms.djangoapps.courseware.block_render import get_block, handle_xblock_callback, toc_for_course
 from lms.djangoapps.courseware.entrance_exams import (
     course_has_entrance_exam,
     get_entrance_exam_content,
     user_can_skip_entrance_exam,
-    user_has_passed_entrance_exam
+    user_has_passed_entrance_exam,
 )
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase

@@ -32,17 +32,18 @@ from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: di
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-    CATALOG_VISIBILITY_NONE
+    CATALOG_VISIBILITY_NONE,
 )
 from xmodule.course_metadata_utils import DEFAULT_START_DATE  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseFactory,
-    check_mongo_calls_range
+    check_mongo_calls_range,
 )
 
 from ..models import CourseOverview, CourseOverviewImageConfig, CourseOverviewImageSet, CourseOverviewTab

@@ -27,12 +27,12 @@ from lms.djangoapps.courseware.date_summary import (
     CourseStartDate,
     TodaysDate,
     VerificationDeadlineDate,
-    VerifiedUpgradeDeadlineDate
+    VerifiedUpgradeDeadlineDate,
 )
 from lms.djangoapps.courseware.models import (
     CourseDynamicUpgradeDeadlineConfiguration,
     DynamicUpgradeDeadlineConfiguration,
-    OrgDynamicUpgradeDeadlineConfiguration
+    OrgDynamicUpgradeDeadlineConfiguration,
 )
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService

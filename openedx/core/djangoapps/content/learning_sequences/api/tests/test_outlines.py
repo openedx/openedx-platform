@@ -25,7 +25,7 @@ from common.djangoapps.student.roles import CourseBetaTesterRole
 from common.djangoapps.student.tests.factories import BetaTesterFactory, UserFactory
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.djangoapps.content.learning_sequences.api.processors.team_partition_groups import (
-    TeamPartitionGroupsOutlineProcessor
+    TeamPartitionGroupsOutlineProcessor,
 )
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from openedx.core.djangoapps.course_groups.models import CourseCohortsSettings, CourseUserGroupPartitionGroup
@@ -33,7 +33,7 @@ from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
-    ENROLLMENT_TRACK_PARTITION_ID
+    ENROLLMENT_TRACK_PARTITION_ID,
 )
 
 from ...data import (
@@ -43,7 +43,7 @@ from ...data import (
     CourseSectionData,
     CourseVisibility,
     ExamData,
-    VisibilityData
+    VisibilityData,
 )
 from ..outlines import (
     get_content_errors,
@@ -51,7 +51,7 @@ from ..outlines import (
     get_user_course_outline,
     get_user_course_outline_details,
     key_supports_outlines,
-    replace_course_outline
+    replace_course_outline,
 )
 from ..processors.enrollment_track_partition_groups import EnrollmentTrackPartitionGroupsOutlineProcessor
 from .test_data import generate_sections

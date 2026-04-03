@@ -133,8 +133,9 @@ class CreditService:
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
         from openedx.core.djangoapps.credit.api.eligibility import is_credit_course
-        from openedx.core.djangoapps.credit.api.eligibility import \
-            set_credit_requirement_status as api_set_credit_requirement_status
+        from openedx.core.djangoapps.credit.api.eligibility import (
+            set_credit_requirement_status as api_set_credit_requirement_status,
+        )
 
         course_key = _get_course_key(course_key_or_id)
 
@@ -188,8 +189,9 @@ class CreditService:
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
         from openedx.core.djangoapps.credit.api.eligibility import is_credit_course
-        from openedx.core.djangoapps.credit.api.eligibility import \
-            remove_credit_requirement_status as api_remove_credit_requirement_status
+        from openedx.core.djangoapps.credit.api.eligibility import (
+            remove_credit_requirement_status as api_remove_credit_requirement_status,
+        )
 
         course_key = _get_course_key(course_key_or_id)
 

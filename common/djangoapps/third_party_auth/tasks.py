@@ -17,7 +17,7 @@ from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLPro
 from common.djangoapps.third_party_auth.utils import (
     MetadataParseError,
     create_or_update_bulk_saml_provider_data,
-    parse_metadata_xml
+    parse_metadata_xml,
 )
 
 log = logging.getLogger(__name__)

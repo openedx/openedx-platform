@@ -17,7 +17,7 @@ from openedx.features.enterprise_support.api import enterprise_enabled
 from openedx.features.enterprise_support.tests import (
     FAKE_ENTERPRISE_CUSTOMER,
     FEATURES_WITH_ENTERPRISE_ENABLED,
-    factories
+    factories,
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 

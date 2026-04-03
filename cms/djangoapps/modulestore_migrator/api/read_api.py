@@ -21,7 +21,7 @@ from openedx.core.djangoapps.content_libraries.api import (
     LibraryBlockAlreadyExists,
     library_component_usage_key,
     library_container_locator,
-    validate_can_add_block_to_library
+    validate_can_add_block_to_library,
 )
 
 from .. import models
@@ -30,7 +30,7 @@ from ..data import (
     ModulestoreBlockMigrationResult,
     ModulestoreBlockMigrationSuccess,
     ModulestoreMigration,
-    SourceContextKey
+    SourceContextKey,
 )
 
 __all__ = (

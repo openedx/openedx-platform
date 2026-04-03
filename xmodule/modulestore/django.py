@@ -20,24 +20,27 @@ if not settings.configured:
 
 import django.dispatch  # lint-amnesty, pylint: disable=wrong-import-position
 import django.utils  # lint-amnesty, pylint: disable=wrong-import-position
-from django.contrib.staticfiles.storage import \
-    staticfiles_storage  # lint-amnesty, pylint: disable=wrong-import-position
+from django.contrib.staticfiles.storage import (
+    staticfiles_storage,  # lint-amnesty, pylint: disable=wrong-import-position
+)
 from django.core.cache import InvalidCacheBackendError, caches  # lint-amnesty, pylint: disable=wrong-import-position
 from django.utils.translation import get_language, to_locale  # lint-amnesty, pylint: disable=wrong-import-position
 from edx_django_utils.cache import DEFAULT_REQUEST_CACHE  # lint-amnesty, pylint: disable=wrong-import-position
 
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.modulestore.draft_and_published import \
-    BranchSettingMixin  # lint-amnesty, pylint: disable=wrong-import-position
+from xmodule.modulestore.draft_and_published import (
+    BranchSettingMixin,  # lint-amnesty, pylint: disable=wrong-import-position
+)
 from xmodule.modulestore.mixed import MixedModuleStore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.util.xmodule_django import \
-    get_current_request_hostname  # lint-amnesty, pylint: disable=wrong-import-position
+from xmodule.util.xmodule_django import (
+    get_current_request_hostname,  # lint-amnesty, pylint: disable=wrong-import-position
+)
 
 from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
     get_javascript_i18n_file_name,
     get_javascript_i18n_file_path,
     get_python_locale_root,
-    get_xblock_root_module_name
+    get_xblock_root_module_name,
 )
 
 # We also may not always have the current request user (crum) module available

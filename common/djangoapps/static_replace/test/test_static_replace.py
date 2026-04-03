@@ -18,7 +18,7 @@ from common.djangoapps.static_replace import (
     process_static_urls,
     replace_course_urls,
     replace_jump_to_id_urls,
-    replace_static_urls
+    replace_static_urls,
 )
 from common.djangoapps.static_replace.services import ReplaceURLService
 from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
@@ -29,11 +29,12 @@ from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wr
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.mongo import MongoModuleStore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseFactory,
-    check_mongo_calls
+    check_mongo_calls,
 )
 from xmodule.modulestore.xml import XMLModuleStore  # lint-amnesty, pylint: disable=wrong-import-order
 

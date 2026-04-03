@@ -49,7 +49,7 @@ from cms.djangoapps.contentstore.toggles import (
     use_new_group_configurations_page,
     use_new_import_page,
     use_new_schedule_details_page,
-    use_new_unit_page
+    use_new_unit_page,
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -72,7 +72,7 @@ from common.djangoapps.util.milestones_helpers import (
     is_prerequisite_courses_enabled,
     is_valid_course_key,
     remove_prerequisite_course,
-    set_prerequisite_courses
+    set_prerequisite_courses,
 )
 from common.djangoapps.xblock_django.api import deprecated_xblocks
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
@@ -102,8 +102,9 @@ from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import \
-    get_all_partitions_for_course  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions_service import (
+    get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService
 from xmodule.util.keys import BlockKey
 
@@ -1587,7 +1588,7 @@ def get_library_context(request, request_is_json=False):
         format_library_for_view,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
-        user_can_create_organizations
+        user_can_create_organizations,
     )
     from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
     from openedx.core.djangoapps.content_libraries.api import user_can_create_library
@@ -1721,7 +1722,7 @@ def get_home_context(request, no_course=False):
         _get_course_creator_status,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
-        user_can_create_organizations
+        user_can_create_organizations,
     )
     from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
     from openedx.core.djangoapps.content_libraries.api import user_can_create_library
@@ -1797,13 +1798,14 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     from edxval.api import (
         get_3rd_party_transcription_plans,
         get_transcript_credentials_state_for_org,
-        get_transcript_preferences
+        get_transcript_preferences,
     )
 
     from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
     from openedx.core.djangoapps.video_config.toggles import use_xpert_translations_component
-    from openedx.core.djangoapps.video_config.transcripts_utils import \
-        Transcript  # lint-amnesty, pylint: disable=wrong-import-order
+    from openedx.core.djangoapps.video_config.transcripts_utils import (
+        Transcript,  # lint-amnesty, pylint: disable=wrong-import-order
+    )
 
     from .video_storage_handlers import _get_default_video_image_url, _get_index_videos, get_all_transcript_languages
 
@@ -1895,7 +1897,7 @@ def _get_course_index_context(request, course_key, course_block):
     from cms.djangoapps.contentstore.views.course import (
         _course_outline_json,
         _deprecated_blocks_info,
-        course_outline_initial_state
+        course_outline_initial_state,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
@@ -1983,11 +1985,11 @@ def get_container_handler_context(request, usage_key, course, xblock):  # pylint
         CONTAINER_TEMPLATES,
         LIBRARY_BLOCK_TYPES,
         get_component_templates,
-        get_unit_tags
+        get_unit_tags,
     )
     from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
         add_container_page_publishing_info,
-        create_xblock_info
+        create_xblock_info,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
@@ -2171,7 +2173,7 @@ def get_group_configurations_context(course, store):
         COHORT_SCHEME,
         ENROLLMENT_SCHEME,
         RANDOM_SCHEME,
-        GroupConfiguration
+        GroupConfiguration,
     )
     from cms.djangoapps.contentstore.views.course import are_content_experiments_enabled
     from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order

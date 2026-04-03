@@ -19,7 +19,7 @@ from openedx.features.discounts.applicability import (
     REV1008_EXPERIMENT_ID,
     can_receive_discount,
     discount_percentage,
-    get_discount_expiration_date
+    get_discount_expiration_date,
 )
 
 

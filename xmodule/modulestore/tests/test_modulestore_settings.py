@@ -13,7 +13,7 @@ from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.modulestore.modulestore_settings import (
     convert_module_store_setting_if_needed,
     get_mixed_stores,
-    update_module_store_settings
+    update_module_store_settings,
 )
 
 

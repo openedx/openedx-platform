@@ -24,7 +24,7 @@ from openedx.core.djangoapps.notifications.email.utils import (
     get_course_info,
     get_time_ago,
     get_unsubscribe_link,
-    update_user_preferences_from_patch
+    update_user_preferences_from_patch,
 )
 from openedx.core.djangoapps.notifications.models import Notification
 from openedx.core.djangoapps.user_api.models import UserPreference

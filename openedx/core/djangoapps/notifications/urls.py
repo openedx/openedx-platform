@@ -10,7 +10,7 @@ from .views import (
     NotificationListAPIView,
     NotificationPreferencesViewV3,
     NotificationReadAPIView,
-    preference_update_from_encrypted_username_view
+    preference_update_from_encrypted_username_view,
 )
 
 router = routers.DefaultRouter()

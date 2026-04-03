@@ -18,7 +18,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.signals import (
     FORUM_RESPONSE_COMMENT_CREATED,
     FORUM_THREAD_CREATED,
-    FORUM_THREAD_RESPONSE_CREATED
+    FORUM_THREAD_RESPONSE_CREATED,
 )
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -34,7 +34,7 @@ from lms.djangoapps.discussion.django_comment_client.base import views
 from lms.djangoapps.discussion.django_comment_client.tests.group_id import (
     CohortedTopicGroupIdTestMixinV2,
     GroupIdAssertionMixinV2,
-    NonCohortedTopicGroupIdTestMixinV2
+    NonCohortedTopicGroupIdTestMixinV2,
 )
 from lms.djangoapps.discussion.django_comment_client.tests.mixins import MockForumApiMixin
 from lms.djangoapps.discussion.django_comment_client.tests.unicode import UnicodeTestMixin
@@ -48,7 +48,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_STUDENT,
     CourseDiscussionSettings,
     Role,
-    assign_role
+    assign_role,
 )
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext, seed_permissions_roles
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
@@ -58,7 +58,7 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 

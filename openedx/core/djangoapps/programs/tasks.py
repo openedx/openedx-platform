@@ -26,7 +26,7 @@ from openedx.core.djangoapps.credentials.api import is_credentials_enabled
 from openedx.core.djangoapps.credentials.utils import (
     get_credentials,
     get_credentials_api_base_url,
-    get_credentials_api_client
+    get_credentials_api_client,
 )
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

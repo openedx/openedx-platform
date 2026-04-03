@@ -12,7 +12,7 @@ from edx_toggles.toggles.testutils import override_waffle_switch
 from edxval.api import (
     get_3rd_party_transcription_plans,
     get_transcript_credentials_state_for_org,
-    get_transcript_preferences
+    get_transcript_preferences,
 )
 from rest_framework import status
 

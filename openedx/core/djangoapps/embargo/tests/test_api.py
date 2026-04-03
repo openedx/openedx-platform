@@ -23,7 +23,7 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgInstructorRole,
     OrgRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin

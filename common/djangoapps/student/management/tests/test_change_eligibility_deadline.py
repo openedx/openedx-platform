@@ -12,8 +12,9 @@ from common.djangoapps.course_modes.tests.factories import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, User
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.change_eligibility_deadline'

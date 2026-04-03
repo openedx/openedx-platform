@@ -18,7 +18,7 @@ from lms.djangoapps.discussion.notification_prefs.views import (
     ajax_disable,
     ajax_enable,
     ajax_status,
-    set_subscription
+    set_subscription,
 )
 from openedx.core.djangoapps.user_api.models import UserPreference
 

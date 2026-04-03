@@ -15,7 +15,7 @@ from openedx.core.djangoapps.notifications.audience_filters import (
     CourseRoleAudienceFilter,
     EnrollmentAudienceFilter,
     ForumRoleAudienceFilter,
-    TeamAudienceFilter
+    TeamAudienceFilter,
 )
 from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_TYPES
 from openedx.core.djangoapps.notifications.models import NotificationPreference

@@ -62,7 +62,7 @@ from .course_enrollment import (
     CourseEnrollmentAllowed,
     CourseOverview,
     ManualEnrollmentAudit,
-    segment
+    segment,
 )
 
 User = get_user_model()

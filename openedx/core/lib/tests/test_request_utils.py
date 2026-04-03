@@ -18,7 +18,7 @@ from openedx.core.lib.request_utils import (
     course_id_from_url,
     get_request_or_stub,
     ignored_error_exception_handler,
-    safe_get_host
+    safe_get_host,
 )
 
 

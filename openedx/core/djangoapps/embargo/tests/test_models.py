@@ -17,7 +17,7 @@ from ..models import (
     EmbargoedCourse,
     EmbargoedState,
     IPFilter,
-    RestrictedCourse
+    RestrictedCourse,
 )
 
 

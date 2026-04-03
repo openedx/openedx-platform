@@ -19,7 +19,7 @@ from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
     LibraryCollectionData,
-    LibraryContainerData
+    LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
@@ -31,7 +31,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
-    LIBRARY_CONTAINER_UPDATED
+    LIBRARY_CONTAINER_UPDATED,
 )
 from user_tasks.models import UserTaskStatus
 

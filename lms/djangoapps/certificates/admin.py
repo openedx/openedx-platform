@@ -22,7 +22,7 @@ from lms.djangoapps.certificates.models import (
     CertificateTemplateAsset,
     GeneratedCertificate,
     ModifiedCertificateTemplateCommandConfiguration,
-    PurgeReferencestoPDFCertificatesCommandConfiguration
+    PurgeReferencestoPDFCertificatesCommandConfiguration,
 )
 
 

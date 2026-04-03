@@ -36,6 +36,7 @@ from social_core.exceptions import AuthAlreadyAssociated, AuthException
 from social_django import utils as social_utils
 
 from common.djangoapps import third_party_auth
+
 # Note that this lives in LMS, so this dependency should be refactored.
 # TODO Have the discussions code subscribe to the REGISTER_USER signal instead.
 from common.djangoapps.student.helpers import (
@@ -44,14 +45,14 @@ from common.djangoapps.student.helpers import (
     create_or_set_user_attribute_created_on_site,
     do_create_account,
     get_next_url_for_login_page,
-    get_redirect_url_with_host
+    get_redirect_url_with_host,
 )
 from common.djangoapps.student.models import (
     RegistrationCookieConfiguration,
     UserAttribute,
     create_comments_service_user,
     email_exists_or_retired,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.student.views import compose_and_send_activation_email
 from common.djangoapps.third_party_auth import pipeline, provider
@@ -72,20 +73,20 @@ from openedx.core.djangoapps.user_api.accounts.api import (
     get_name_validation_error,
     get_password_validation_error,
     get_username_existence_validation_error,
-    get_username_validation_error
+    get_username_validation_error,
 )
 from openedx.core.djangoapps.user_api.preferences import api as preferences_api
 from openedx.core.djangoapps.user_authn.cookies import set_logged_in_cookies
 from openedx.core.djangoapps.user_authn.tasks import check_pwned_password_and_send_track_event
 from openedx.core.djangoapps.user_authn.toggles import (
     is_auto_generated_username_enabled,
-    is_require_third_party_auth_enabled
+    is_require_third_party_auth_enabled,
 )
 from openedx.core.djangoapps.user_authn.utils import generate_username_suggestions, is_registration_api_v1
 from openedx.core.djangoapps.user_authn.views.registration_form import (
     AccountCreationForm,
     RegistrationFormFactory,
-    get_registration_extension_form
+    get_registration_extension_form,
 )
 from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 

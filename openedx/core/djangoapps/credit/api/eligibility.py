@@ -17,7 +17,7 @@ from openedx.core.djangoapps.credit.models import (
     CreditEligibility,
     CreditRequest,
     CreditRequirement,
-    CreditRequirementStatus
+    CreditRequirementStatus,
 )
 
 # TODO: Cleanup this mess! ECOM-2908

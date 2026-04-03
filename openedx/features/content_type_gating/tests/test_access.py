@@ -25,7 +25,7 @@ from common.djangoapps.student.tests.factories import (
     OrgInstructorFactory,
     OrgStaffFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.course_api.blocks.api import get_blocks
 from lms.djangoapps.courseware.block_render import load_single_xblock
@@ -35,7 +35,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
-    FORUM_ROLE_MODERATOR
+    FORUM_ROLE_MODERATOR,
 )
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
 from openedx.core.djangoapps.util.testing import TestConditionalContent
@@ -48,7 +48,7 @@ from openedx.features.content_type_gating.services import ContentTypeGatingServi
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID

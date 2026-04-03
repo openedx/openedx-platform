@@ -33,7 +33,7 @@ from openedx.core.djangoapps.content.search.index_config import (
     INDEX_FILTERABLE_ATTRIBUTES,
     INDEX_RANKING_RULES,
     INDEX_SEARCHABLE_ATTRIBUTES,
-    INDEX_SORTABLE_ATTRIBUTES
+    INDEX_SORTABLE_ATTRIBUTES,
 )
 from openedx.core.djangoapps.content.search.models import IncrementalIndexCompleted, get_access_ids_for_request
 from openedx.core.djangoapps.content_libraries import api as lib_api
@@ -50,7 +50,7 @@ from .documents import (
     searchable_doc_for_course_block,
     searchable_doc_for_key,
     searchable_doc_for_library_block,
-    searchable_doc_tags
+    searchable_doc_tags,
 )
 
 log = logging.getLogger(__name__)

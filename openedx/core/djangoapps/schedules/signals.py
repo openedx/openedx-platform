@@ -15,7 +15,7 @@ from common.djangoapps.student.signals import ENROLLMENT_TRACK_UPDATED  # lint-a
 from lms.djangoapps.courseware.models import (
     CourseDynamicUpgradeDeadlineConfiguration,
     DynamicUpgradeDeadlineConfiguration,
-    OrgDynamicUpgradeDeadlineConfiguration
+    OrgDynamicUpgradeDeadlineConfiguration,
 )
 from openedx.core.djangoapps.content.course_overviews.signals import COURSE_START_DATE_CHANGED
 from openedx.core.djangoapps.schedules.content_highlights import course_has_highlights_from_store

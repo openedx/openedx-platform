@@ -5,7 +5,7 @@ Visibility Transformer implementation.
 
 from openedx.core.djangoapps.content.block_structure.transformer import (
     BlockStructureTransformer,
-    FilteringTransformerMixin
+    FilteringTransformerMixin,
 )
 
 from .utils import collect_merged_boolean_field

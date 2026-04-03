@@ -18,7 +18,7 @@ from edx_ace.utils.date import deserialize, serialize
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
-    set_custom_attribute
+    set_custom_attribute,
 )
 from eventtracking import tracker
 from opaque_keys.edx.keys import CourseKey

@@ -11,7 +11,7 @@ from lms.djangoapps.discussion.rest_api.permissions import (
     can_delete,
     get_editable_fields,
     get_initializable_comment_fields,
-    get_initializable_thread_fields
+    get_initializable_thread_fields,
 )
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread

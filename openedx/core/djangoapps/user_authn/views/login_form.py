@@ -27,7 +27,7 @@ from openedx.core.djangoapps.user_api.helpers import FormDescription
 from openedx.core.djangoapps.user_authn.cookies import set_logged_in_cookies
 from openedx.core.djangoapps.user_authn.toggles import (
     is_require_third_party_auth_enabled,
-    should_redirect_to_authn_microfrontend
+    should_redirect_to_authn_microfrontend,
 )
 from openedx.core.djangoapps.user_authn.views.password_reset import get_password_reset_form
 from openedx.core.djangoapps.user_authn.views.registration_form import RegistrationFormFactory
@@ -36,7 +36,7 @@ from openedx.features.enterprise_support.api import enterprise_customer_for_requ
 from openedx.features.enterprise_support.utils import (
     get_enterprise_slug_login_url,
     handle_enterprise_cookies_for_logistration,
-    update_logistration_context_for_enterprise
+    update_logistration_context_for_enterprise,
 )
 
 log = logging.getLogger(__name__)

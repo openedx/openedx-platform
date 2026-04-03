@@ -19,14 +19,14 @@ from openedx.core.djangoapps.agreements.api import (
     create_lti_pii_signature,
     create_user_agreement_record,
     get_integrity_signature,
-    get_latest_user_agreement_record
+    get_latest_user_agreement_record,
 )
 from openedx.core.djangoapps.agreements.models import UserAgreement
 from openedx.core.djangoapps.agreements.serializers import (
     IntegritySignatureSerializer,
     LTIPIISignatureSerializer,
     UserAgreementRecordSerializer,
-    UserAgreementSerializer
+    UserAgreementSerializer,
 )
 from openedx.core.lib.api.view_utils import view_auth_classes
 

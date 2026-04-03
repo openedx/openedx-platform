@@ -13,7 +13,7 @@ from openedx.core.djangoapps.enrollments import api
 from openedx.core.djangoapps.enrollments.errors import (
     CourseModeNotFoundError,
     EnrollmentApiLoadError,
-    EnrollmentNotFoundError
+    EnrollmentNotFoundError,
 )
 from openedx.core.djangoapps.enrollments.tests import fake_data_api
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms

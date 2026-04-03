@@ -36,7 +36,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     RoleCache,
     get_authz_compat_course_access_roles_for_user,
-    get_role_cache_key_for_course
+    get_role_cache_key_for_course,
 )
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

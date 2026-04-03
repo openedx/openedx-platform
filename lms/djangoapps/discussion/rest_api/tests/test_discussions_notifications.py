@@ -9,7 +9,7 @@ import pytest
 
 from lms.djangoapps.discussion.rest_api.discussions_notifications import (
     DiscussionNotificationSender,
-    clean_thread_html_body
+    clean_thread_html_body,
 )
 
 

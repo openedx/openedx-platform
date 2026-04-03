@@ -28,7 +28,7 @@ from opaque_keys.edx.locator import (
     LibraryContainerLocator,
     LibraryLocator,
     LibraryLocatorV2,
-    LibraryUsageLocatorV2
+    LibraryUsageLocatorV2,
 )
 from openedx_content import api as content_api
 from openedx_content.models_api import (
@@ -37,7 +37,7 @@ from openedx_content.models_api import (
     ComponentType,
     LearningPackage,
     PublishableEntity,
-    PublishableEntityVersion
+    PublishableEntityVersion,
 )
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.core import XBlock

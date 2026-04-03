@@ -27,7 +27,7 @@ from xmodule.course_block import (
     CATALOG_VISIBILITY_NONE,
     COURSE_VISIBILITY_PRIVATE,
     COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE
+    COURSE_VISIBILITY_PUBLIC_OUTLINE,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory

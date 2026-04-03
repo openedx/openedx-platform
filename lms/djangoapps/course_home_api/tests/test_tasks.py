@@ -10,7 +10,7 @@ from testfixtures import LogCapture
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_home_api.tasks import (
     COURSE_COMPLETION_FOR_USER_EVENT_NAME,
-    collect_progress_for_user_in_course
+    collect_progress_for_user_in_course,
 )
 from openedx.core.djangoapps.catalog.tests.factories import CourseFactory, CourseRunFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

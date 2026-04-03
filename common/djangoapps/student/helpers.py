@@ -32,7 +32,7 @@ from common.djangoapps.student.models import (
     UserProfile,
     email_exists_or_retired,
     unique_id_for_user,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.password_policy_validators import normalize_password
 from lms.djangoapps.certificates.api import (
@@ -41,7 +41,7 @@ from lms.djangoapps.certificates.api import (
     certificates_viewable_for_course,
     get_certificate_url,
     has_html_certificates_enabled,
-    has_self_generated_certificates_enabled
+    has_self_generated_certificates_enabled,
 )
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.course_blocks.api import get_course_blocks

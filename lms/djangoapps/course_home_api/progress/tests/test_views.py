@@ -23,7 +23,7 @@ from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.tests.utils import answer_problem
 from lms.djangoapps.verify_student.models import ManualVerification

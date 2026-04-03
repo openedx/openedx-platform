@@ -9,7 +9,7 @@ from openedx.core.djangoapps.agreements.models import (
     LTIPIISignature,
     LTIPIITool,
     ProctoringPIISignature,
-    UserAgreement
+    UserAgreement,
 )
 
 

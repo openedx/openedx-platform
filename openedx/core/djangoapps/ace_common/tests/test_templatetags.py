@@ -9,7 +9,7 @@ from openedx.core.djangoapps.ace_common.templatetags.ace import (
     _get_google_analytics_tracking_url,
     ensure_url_is_absolute,
     google_analytics_tracking_pixel,
-    with_link_tracking
+    with_link_tracking,
 )
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin, QueryStringAssertionMixin
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory

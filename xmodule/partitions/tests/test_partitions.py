@@ -18,7 +18,7 @@ from xmodule.partitions.partitions import (
     Group,
     NoSuchUserPartitionGroupError,
     UserPartition,
-    UserPartitionError
+    UserPartitionError,
 )
 from xmodule.partitions.partitions_service import FEATURES, PartitionService, get_all_partitions_for_course
 

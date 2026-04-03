@@ -21,7 +21,7 @@ from ..exceptions import (
     BadOrganizationShortNameException,
     ProgramDoesNotExistException,
     ProgramHasNoAuthoringOrganizationException,
-    ProviderDoesNotExistException
+    ProviderDoesNotExistException,
 )
 from ..models import ProgramCourseEnrollment, ProgramEnrollment
 

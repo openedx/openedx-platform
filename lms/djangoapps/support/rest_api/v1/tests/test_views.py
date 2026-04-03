@@ -15,7 +15,7 @@ from common.djangoapps.student.tests.factories import (
     InstructorFactory,
     StaffFactory,
     SuperuserFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.support.tests.test_views import SupportViewTestCase
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

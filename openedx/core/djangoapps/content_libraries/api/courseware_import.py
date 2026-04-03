@@ -32,7 +32,7 @@ from .blocks import (
     create_library_block,
     get_library_block,
     get_library_block_static_asset_files,
-    set_library_block_olx
+    set_library_block_olx,
 )
 from .libraries import publish_changes
 

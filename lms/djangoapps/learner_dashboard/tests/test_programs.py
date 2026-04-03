@@ -25,7 +25,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     CourseFactory,
     CourseRunFactory,
     PathwayFactory,
-    ProgramFactory
+    ProgramFactory,
 )
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.programs.models import ProgramDiscussionsConfiguration

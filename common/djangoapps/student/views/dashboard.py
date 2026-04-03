@@ -33,7 +33,7 @@ from common.djangoapps.student.models import (
     CourseEnrollmentAttribute,
     DashboardConfiguration,
     PendingSecondaryEmailChange,
-    UserProfile
+    UserProfile,
 )
 from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
@@ -46,7 +46,7 @@ from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.catalog.utils import (
     get_programs,
     get_pseudo_session_for_entitlement,
-    get_visible_sessions_for_entitlement
+    get_visible_sessions_for_entitlement,
 )
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values, make_providers_strings
 from openedx.core.djangoapps.plugins.constants import ProjectType
@@ -60,7 +60,7 @@ from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
 from openedx.features.enterprise_support.api import (
     get_dashboard_consent_notification,
-    get_enterprise_learner_portal_context
+    get_enterprise_learner_portal_context,
 )
 from openedx.features.enterprise_support.utils import is_enterprise_learner
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

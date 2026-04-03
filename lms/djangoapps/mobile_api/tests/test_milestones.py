@@ -15,7 +15,7 @@ from lms.djangoapps.courseware.tests.test_entrance_exam import add_entrance_exam
 from openedx.core.djangolib.testing.utils import get_mock_request
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 
 

@@ -11,7 +11,7 @@ from requests.exceptions import (  # lint-amnesty, pylint: disable=redefined-bui
     ConnectionError,
     HTTPError,
     RequestException,
-    TooManyRedirects
+    TooManyRedirects,
 )
 
 from openedx.core.djangoapps.ccxcon import api

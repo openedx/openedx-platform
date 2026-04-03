@@ -20,7 +20,7 @@ from common.djangoapps.util.milestones_helpers import (
     add_course_content_milestone,
     add_course_milestone,
     add_milestone,
-    get_milestone_relationship_types
+    get_milestone_relationship_types,
 )
 from lms.djangoapps.courseware.tabs import (
     CoursewareTab,
@@ -28,7 +28,7 @@ from lms.djangoapps.courseware.tabs import (
     ExternalDiscussionCourseTab,
     ExternalLinkCourseTab,
     ProgressTab,
-    get_course_tab_list
+    get_course_tab_list,
 )
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.courseware.views.views import StaticCourseTabView, get_static_tab_fragment
@@ -40,11 +40,11 @@ from xmodule import tabs as xmodule_tabs  # lint-amnesty, pylint: disable=wrong-
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.modulestore.tests.utils import TEST_DATA_DIR  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order

@@ -82,7 +82,7 @@ from xmodule.modulestore import (
     ModuleStoreEnum,
     ModuleStoreWriteBase,
     SortedAssetList,
-    inheritance
+    inheritance,
 )
 from xmodule.modulestore.exceptions import (
     DuplicateCourseError,
@@ -90,7 +90,7 @@ from xmodule.modulestore.exceptions import (
     InsufficientSpecificationError,
     MultipleCourseBlocksFound,
     MultipleLibraryBlocksFound,
-    VersionConflictError
+    VersionConflictError,
 )
 from xmodule.modulestore.split_mongo import CourseEnvelope
 from xmodule.modulestore.split_mongo.mongo_connection import DjangoFlexPersistenceBackend, DuplicateKeyError

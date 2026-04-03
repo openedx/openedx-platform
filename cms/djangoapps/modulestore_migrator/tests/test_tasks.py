@@ -25,7 +25,7 @@ from cms.djangoapps.modulestore_migrator.tasks import (
     _migrate_node,
     _MigratedNode,
     _MigrationContext,
-    bulk_migrate_from_modulestore
+    bulk_migrate_from_modulestore,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api

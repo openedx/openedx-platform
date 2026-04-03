@@ -16,7 +16,7 @@ from lms.djangoapps.verify_student.signals.signals import (
     emit_idv_attempt_approved_event,
     emit_idv_attempt_created_event,
     emit_idv_attempt_denied_event,
-    emit_idv_attempt_pending_event
+    emit_idv_attempt_pending_event,
 )
 from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from lms.djangoapps.verify_student.tasks import send_verification_status_email

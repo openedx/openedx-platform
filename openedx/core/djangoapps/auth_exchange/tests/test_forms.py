@@ -15,7 +15,7 @@ from social_django.models import Partial
 
 from common.djangoapps.third_party_auth.tests.utils import (  # lint-amnesty, pylint: disable=line-too-long
     ThirdPartyOAuthTestMixinFacebook,
-    ThirdPartyOAuthTestMixinGoogle
+    ThirdPartyOAuthTestMixinGoogle,
 )
 
 from ..forms import AccessTokenExchangeForm

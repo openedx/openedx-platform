@@ -28,7 +28,7 @@ from ..middleware import (
     SafeSessionMiddleware,
     mark_user_change_as_expected,
     obscure_token,
-    track_request_user_changes
+    track_request_user_changes,
 )
 from .test_utils import TestSafeSessionsLogMixin
 

@@ -32,7 +32,7 @@ from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
     SuperuserFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.testing import PatchMediaTypeMixin, UrlResetMixin
 from common.test.utils import disable_signal
@@ -44,7 +44,7 @@ from lms.djangoapps.discussion.rest_api.tests.utils import (
     ProfileImageTestMixin,
     make_minimal_cs_comment,
     make_minimal_cs_thread,
-    make_paginated_api_response
+    make_paginated_api_response,
 )
 from lms.djangoapps.discussion.rest_api.utils import get_usernames_from_search_string
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE

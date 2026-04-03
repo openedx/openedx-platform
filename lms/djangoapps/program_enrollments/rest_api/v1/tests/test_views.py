@@ -28,7 +28,7 @@ from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     GlobalStaffFactory,
     InstructorFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.third_party_auth.tests.factories import SAMLProviderConfigFactory
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, Optout
@@ -42,7 +42,7 @@ from lms.djangoapps.program_enrollments.models import ProgramCourseEnrollment, P
 from lms.djangoapps.program_enrollments.tests.factories import (
     CourseAccessRoleAssignmentFactory,
     ProgramCourseEnrollmentFactory,
-    ProgramEnrollmentFactory
+    ProgramEnrollmentFactory,
 )
 from openedx.core.djangoapps.catalog.cache import PROGRAM_CACHE_KEY_TPL, PROGRAMS_BY_ORGANIZATION_CACHE_KEY_TPL
 from openedx.core.djangoapps.catalog.tests.factories import (
@@ -50,7 +50,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     CourseRunFactory,
     CurriculumFactory,
     OrganizationFactory,
-    ProgramFactory
+    ProgramFactory,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
@@ -64,7 +64,7 @@ from ..constants import (
     ENABLE_ENROLLMENT_RESET_FLAG,
     MAX_ENROLLMENT_RECORDS,
     REQUEST_STUDENT_KEY,
-    CourseRunProgressStatuses
+    CourseRunProgressStatuses,
 )
 
 _DJANGOAPP_PATCH_FORMAT = 'lms.djangoapps.program_enrollments.{}'

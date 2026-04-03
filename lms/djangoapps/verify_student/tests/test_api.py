@@ -13,7 +13,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.api import (
     create_verification_attempt,
     send_approval_email,
-    update_verification_attempt
+    update_verification_attempt,
 )
 from lms.djangoapps.verify_student.exceptions import VerificationAttemptInvalidStatus
 from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification, VerificationAttempt

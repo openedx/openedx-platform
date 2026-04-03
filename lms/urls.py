@@ -21,7 +21,7 @@ from lms.djangoapps.courseware.block_render import (
     handle_xblock_callback,
     handle_xblock_callback_noauth,
     xblock_view,
-    xqueue_callback
+    xqueue_callback,
 )
 from lms.djangoapps.courseware.masquerade import MasqueradeView
 from lms.djangoapps.courseware.views import views as courseware_views

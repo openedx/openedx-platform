@@ -20,7 +20,7 @@ from common.djangoapps.student.models import (
     get_retired_email_by_email,
     get_retired_username_by_username,
     is_email_retired,
-    is_username_retired
+    is_username_retired,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms

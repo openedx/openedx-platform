@@ -25,7 +25,7 @@ from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.bulk_email.messages import ACEEmail
 from lms.djangoapps.bulk_email.tasks import _get_course_email_context, _get_source_address
@@ -34,8 +34,9 @@ from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort
 from openedx.core.djangoapps.course_groups.models import CourseCohort
 from openedx.core.djangoapps.enrollments.api import update_enrollment
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..models import BulkEmailFlag, Optout

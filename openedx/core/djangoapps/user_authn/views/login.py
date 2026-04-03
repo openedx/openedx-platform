@@ -52,7 +52,7 @@ from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError, Vulne
 from openedx.core.djangoapps.user_authn.tasks import check_pwned_password_and_send_track_event
 from openedx.core.djangoapps.user_authn.toggles import (
     is_require_third_party_auth_enabled,
-    should_redirect_to_authn_microfrontend
+    should_redirect_to_authn_microfrontend,
 )
 from openedx.core.djangoapps.user_authn.views.login_form import get_login_session_form
 from openedx.core.djangoapps.user_authn.views.password_reset import send_password_reset_email_for_user

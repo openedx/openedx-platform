@@ -19,7 +19,7 @@ from django.views.decorators.csrf import csrf_exempt
 from edx_rest_framework_extensions.auth.jwt.authentication import (
     JwtAuthentication,
     get_decoded_jwt_from_auth,
-    is_jwt_authenticated
+    is_jwt_authenticated,
 )
 from edx_rest_framework_extensions.auth.jwt.decoder import get_asymmetric_only_jwt_decode_handler
 from oauth2_provider import models as dot_models

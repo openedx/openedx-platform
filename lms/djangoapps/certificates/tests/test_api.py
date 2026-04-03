@@ -52,18 +52,18 @@ from lms.djangoapps.certificates.api import (
     is_certificate_invalidated,
     is_on_allowlist,
     remove_allowlist_entry,
-    set_cert_generation_enabled
+    set_cert_generation_enabled,
 )
 from lms.djangoapps.certificates.config import AUTO_CERTIFICATE_GENERATION
 from lms.djangoapps.certificates.models import (
     CertificateGenerationConfiguration,
     CertificateStatuses,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
 from lms.djangoapps.certificates.tests.test_generation_handler import ID_VERIFIED_METHOD, PASSING_GRADE_METHOD
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory

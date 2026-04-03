@@ -26,7 +26,7 @@ from ..entrance_exam import (
     create_entrance_exam,
     delete_entrance_exam,
     remove_entrance_exam_milestone_reference,
-    update_entrance_exam
+    update_entrance_exam,
 )
 
 

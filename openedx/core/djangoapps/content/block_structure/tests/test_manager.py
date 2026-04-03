@@ -20,7 +20,7 @@ from .helpers import (
     MockModulestoreFactory,
     MockTransformer,
     UsageKeyFactoryMixin,
-    mock_registered_transformers
+    mock_registered_transformers,
 )
 
 

@@ -18,7 +18,7 @@ from openedx.core.djangoapps.password_policy.compliance import (
     _check_user_compliance,
     _get_compliance_deadline_for_user,
     enforce_compliance_on_login,
-    should_enforce_compliance_on_login
+    should_enforce_compliance_on_login,
 )
 
 date1 = parse_date('2018-01-01 00:00:00+00:00')

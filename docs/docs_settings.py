@@ -15,7 +15,7 @@ from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
     GIT_EXPORT_DEFAULT_IDENT,
     SCRAPE_YOUTUBE_THUMBNAILS_JOB_QUEUE,
     UPDATE_SEARCH_INDEX_JOB_QUEUE,
-    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE
+    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,
 )
 from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import
 from openedx.core.lib.derived import derive_settings

@@ -30,7 +30,7 @@ from ..signals.handlers import (
     listen_for_passing_grade,
     problem_raw_score_changed_handler,
     submissions_score_reset_handler,
-    submissions_score_set_handler
+    submissions_score_set_handler,
 )
 from ..signals.signals import PROBLEM_RAW_SCORE_CHANGED
 

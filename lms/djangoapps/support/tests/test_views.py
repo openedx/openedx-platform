@@ -39,13 +39,13 @@ from common.djangoapps.student.models import (
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
     CourseEnrollmentAttribute,
-    ManualEnrollmentAudit
+    ManualEnrollmentAudit,
 )
 from common.djangoapps.student.roles import GlobalStaff, SupportStaffRole
 from common.djangoapps.student.tests.factories import (
     CourseEnrollmentAttributeFactory,
     CourseEnrollmentFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.third_party_auth.tests.factories import SAMLProviderConfigFactory
 from common.test.utils import assert_dict_contains_subset, disable_signal
@@ -63,12 +63,12 @@ from openedx.features.course_duration_limits.models import CourseDurationLimitCo
 from openedx.features.enterprise_support.api import enterprise_is_enabled
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory
 

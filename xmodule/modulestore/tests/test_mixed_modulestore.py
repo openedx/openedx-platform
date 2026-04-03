@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 import ddt
 import pymongo
 import pytest
+
 # Mixed modulestore depends on django, so we'll manually configure some django settings
 # before importing the module
 # TODO remove this import and the configuration -- xmodule should not depend on django!
@@ -30,7 +31,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_CREATED,
     XBLOCK_DELETED,
     XBLOCK_PUBLISHED,
-    XBLOCK_UPDATED
+    XBLOCK_UPDATED,
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 from web_fragments.fragment import Fragment

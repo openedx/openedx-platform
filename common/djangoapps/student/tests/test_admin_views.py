@@ -22,14 +22,15 @@ from common.djangoapps.student.admin import (  # lint-amnesty, pylint: disable=l
     COURSE_ENROLLMENT_ADMIN_SWITCH,
     AllowedAuthUserForm,
     CourseEnrollmentForm,
-    UserAdmin
+    UserAdmin,
 )
 from common.djangoapps.student.models import AllowedAuthUser, CourseEnrollment, LoginFailures
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory, UserProfileFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

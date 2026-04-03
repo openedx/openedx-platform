@@ -8,7 +8,7 @@ from openedx.core.djangoapps.user_authn.api.tests.data_mock import (
     MFE_CONTEXT_WITH_TPA_DATA,
     MFE_CONTEXT_WITHOUT_TPA_DATA,
     SERIALIZED_MFE_CONTEXT_WITH_TPA_DATA,
-    SERIALIZED_MFE_CONTEXT_WITHOUT_TPA_DATA
+    SERIALIZED_MFE_CONTEXT_WITHOUT_TPA_DATA,
 )
 from openedx.core.djangoapps.user_authn.serializers import MFEContextSerializer
 

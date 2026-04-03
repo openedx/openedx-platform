@@ -14,7 +14,7 @@ from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable
 from xmodule.modulestore.search import path_to_location  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseFactory,
-    check_mongo_calls_range
+    check_mongo_calls_range,
 )
 
 

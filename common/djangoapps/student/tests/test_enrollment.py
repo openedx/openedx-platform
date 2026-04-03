@@ -16,7 +16,7 @@ from common.djangoapps.student.models import (
     SCORE_RECALCULATION_DELAY_ON_ENROLLMENT_UPDATE,
     CourseEnrollment,
     CourseFullError,
-    EnrollmentClosedError
+    EnrollmentClosedError,
 )
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentAllowedFactory, UserFactory

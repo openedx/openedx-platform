@@ -25,7 +25,7 @@ from common.djangoapps.third_party_auth.models import SAMLProviderConfig
 from common.djangoapps.util.password_policy_validators import (
     password_validators_instruction_texts,
     password_validators_restrictions,
-    validate_password
+    validate_password,
 )
 from openedx.core.djangoapps.embargo.models import GlobalRestrictedCountry
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

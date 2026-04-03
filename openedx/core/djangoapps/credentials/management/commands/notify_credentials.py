@@ -21,7 +21,7 @@ from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.catalog.api import (
     get_course_run_key_for_program_from_cache,
-    get_programs_from_cache_by_uuid
+    get_programs_from_cache_by_uuid,
 )
 from openedx.core.djangoapps.credentials.models import NotifyCredentialsConfig
 from openedx.core.djangoapps.credentials.tasks.v1.tasks import handle_notify_credentials

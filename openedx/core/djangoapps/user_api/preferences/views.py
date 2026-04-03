@@ -24,7 +24,7 @@ from .api import (
     get_user_preference,
     get_user_preferences,
     set_user_preference,
-    update_user_preferences
+    update_user_preferences,
 )
 
 

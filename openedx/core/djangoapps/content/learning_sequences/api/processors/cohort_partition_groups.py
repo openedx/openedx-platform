@@ -9,7 +9,7 @@ from openedx.core import types
 from openedx.core.djangoapps.course_groups.cohorts import (
     get_cohort,
     get_cohorted_user_partition_id,
-    get_group_info_for_cohort
+    get_group_info_for_cohort,
 )
 
 from .base import OutlineProcessor

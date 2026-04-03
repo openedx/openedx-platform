@@ -6,5 +6,5 @@ from .outlines import (
     get_user_course_outline,
     get_user_course_outline_details,
     key_supports_outlines,
-    replace_course_outline
+    replace_course_outline,
 )

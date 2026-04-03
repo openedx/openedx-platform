@@ -20,7 +20,7 @@ from openedx_events.learning.data import DiscussionThreadData, UserData, UserPer
 from openedx_events.learning.signals import (
     FORUM_RESPONSE_COMMENT_CREATED,
     FORUM_THREAD_CREATED,
-    FORUM_THREAD_RESPONSE_CREATED
+    FORUM_THREAD_RESPONSE_CREATED,
 )
 
 import lms.djangoapps.discussion.django_comment_client.settings as cc_settings
@@ -44,7 +44,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     get_user_group_ids,
     is_comment_too_deep,
     prepare_content,
-    sanitize_body
+    sanitize_body,
 )
 from lms.djangoapps.discussion.rest_api.utils import send_signal_after_commit
 from openedx.core.djangoapps.django_comment_common.models import has_permission
@@ -61,7 +61,7 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_flagged,
     thread_followed,
     thread_unfollowed,
-    thread_voted
+    thread_voted,
 )
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext
 from openedx.core.lib.courses import get_course_by_id

@@ -18,7 +18,7 @@ from cms.djangoapps.contentstore.utils import (
     get_user_partition_info,
     get_visibility_partition_info,
     get_xblock_render_error,
-    get_xblock_validation_messages
+    get_xblock_validation_messages,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_xblock
 from cms.lib.xblock.upstream_sync import UpstreamLink

@@ -5,6 +5,7 @@ Utility functions related to databases.
 
 
 import random
+
 # TransactionManagementError used below actually *does* derive from the standard "Exception" class.
 # lint-amnesty, pylint: disable=bad-option-value, nonstandard-exception
 from contextlib import contextmanager

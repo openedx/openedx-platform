@@ -37,7 +37,7 @@ from lms.djangoapps.bulk_email.messages import ACEEmail, DjangoEmail
 from lms.djangoapps.bulk_email.models import CourseEmail, Optout
 from lms.djangoapps.bulk_email.toggles import (
     is_bulk_email_edx_ace_enabled,
-    is_email_use_course_id_from_for_bulk_enabled
+    is_email_use_course_id_from_for_bulk_enabled,
 )
 from lms.djangoapps.courseware.courses import get_course
 from lms.djangoapps.instructor_task.models import InstructorTask
@@ -45,7 +45,7 @@ from lms.djangoapps.instructor_task.subtasks import (
     SubtaskStatus,
     check_subtask_is_valid,
     queue_subtasks_for_query,
-    update_subtask_status
+    update_subtask_status,
 )
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

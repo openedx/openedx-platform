@@ -27,13 +27,13 @@ from common.djangoapps.student.roles import (
     CourseCcxCoachRole,
     CourseDataResearcherRole,
     CourseInstructorRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
 from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.certificates.api import create_or_update_eligible_certificate_for_user, get_certificate_for_user_id
 from lms.djangoapps.certificates.data import CertificateStatuses
@@ -46,7 +46,7 @@ from lms.djangoapps.grades.models import (
     BlockRecordList,
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.rest_api.v1.tests.mixins import GradeViewTestMixin
 from lms.djangoapps.grades.rest_api.v1.views import CourseEnrollmentPagination

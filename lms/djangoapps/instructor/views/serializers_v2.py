@@ -19,7 +19,7 @@ from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
     CourseInstructorRole,
     CourseSalesAdminRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.certificates.models import CertificateGenerationConfiguration

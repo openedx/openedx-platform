@@ -19,7 +19,7 @@ from xmodule.modulestore.mongo.base import (
     MongoModuleStore,
     MongoRevisionKey,
     as_draft,
-    as_published
+    as_published,
 )
 
 log = logging.getLogger(__name__)

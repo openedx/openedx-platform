@@ -27,7 +27,7 @@ from openedx.core.djangoapps.credentials.utils import get_credentials_api_base_u
 from openedx.core.djangoapps.programs.signals import (
     handle_course_cert_awarded,
     handle_course_cert_changed,
-    handle_course_cert_revoked
+    handle_course_cert_revoked,
 )
 from openedx.core.djangoapps.programs.tasks import update_certificate_available_date_on_course_update
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration

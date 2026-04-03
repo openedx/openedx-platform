@@ -7,5 +7,5 @@ from common.djangoapps.student.signals.signals import (
     UNENROLL_DONE,
     USER_EMAIL_CHANGED,
     emit_course_access_role_added,
-    emit_course_access_role_removed
+    emit_course_access_role_removed,
 )

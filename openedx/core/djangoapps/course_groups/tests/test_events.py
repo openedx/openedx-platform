@@ -10,10 +10,11 @@ from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wron
     CohortData,
     CourseData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
-from openedx_events.learning.signals import \
-    COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.signals import (
+    COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.tests.factories import UserFactory
@@ -22,8 +23,9 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.core.djangoapps.course_groups.models import CohortMembership
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_lms

@@ -19,7 +19,7 @@ from common.djangoapps.student.tests.tests import UserSettingsEventTestMixin
 from openedx.core.djangoapps.user_api.accounts.image_helpers import (
     get_profile_image_names,
     get_profile_image_storage,
-    set_has_profile_image
+    set_has_profile_image,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 

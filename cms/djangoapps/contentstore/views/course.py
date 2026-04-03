@@ -31,7 +31,7 @@ from opaque_keys.edx.locator import BlockUsageLocator
 from openedx_authz.constants.permissions import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
-    COURSES_VIEW_COURSE_UPDATES
+    COURSES_VIEW_COURSE_UPDATES,
 )
 from organizations.api import add_organization_course, ensure_organization
 from organizations.exceptions import InvalidOrganizationException
@@ -55,7 +55,7 @@ from common.djangoapps.student.auth import (
     has_studio_advanced_settings_access,
     has_studio_read_access,
     has_studio_write_access,
-    is_content_creator
+    is_content_creator,
 )
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
@@ -63,7 +63,7 @@ from common.djangoapps.student.roles import (
     GlobalStaff,
     OrgStaffRole,
     UserBasedRole,
-    strict_role_checking
+    strict_role_checking,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
 from common.djangoapps.util.string_utils import _has_non_ascii_characters
@@ -84,7 +84,7 @@ from xmodule.modulestore.exceptions import DuplicateCourseError  # lint-amnesty,
 from xmodule.tabs import (  # lint-amnesty, pylint: disable=wrong-import-order
     CourseTab,
     CourseTabList,
-    InvalidTabsException
+    InvalidTabsException,
 )
 
 from ..course_group_config import COHORT_SCHEME, RANDOM_SCHEME, GroupConfiguration, GroupConfigurationsValidationError
@@ -96,7 +96,7 @@ from ..toggles import (
     use_new_advanced_settings_page,
     use_new_grading_page,
     use_new_group_configurations_page,
-    use_new_schedule_details_page
+    use_new_schedule_details_page,
 )
 from ..utils import (
     add_instructor,
@@ -121,7 +121,7 @@ from ..utils import (
     reverse_url,
     reverse_usage_url,
     update_course_details,
-    update_course_discussions_settings
+    update_course_discussions_settings,
 )
 from .component import ADVANCED_COMPONENT_TYPES
 

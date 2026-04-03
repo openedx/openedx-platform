@@ -27,7 +27,7 @@ from common.djangoapps.student.views.dashboard import (
     credit_statuses,
     get_course_enrollments,
     get_filtered_course_entitlements,
-    get_org_black_and_whitelist_for_site
+    get_org_black_and_whitelist_for_site,
 )
 from common.djangoapps.util.course import get_encoded_course_sharing_utm_params, get_link_for_about_page
 from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
@@ -46,7 +46,7 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from openedx.features.enterprise_support.api import (
     enterprise_customer_from_session_or_learner_data,
-    get_enterprise_learner_data_from_db
+    get_enterprise_learner_data_from_db,
 )
 
 logger = logging.getLogger(__name__)

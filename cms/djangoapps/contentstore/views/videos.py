@@ -10,30 +10,37 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 from edx_toggles.toggles import WaffleSwitch
 from rest_framework.decorators import api_view
 
-from cms.djangoapps.contentstore.video_storage_handlers import check_video_images_upload_enabled
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    convert_video_status as convert_video_status_source_function
-from cms.djangoapps.contentstore.video_storage_handlers import enabled_video_features
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    get_all_transcript_languages as get_all_transcript_languages_source_function
 from cms.djangoapps.contentstore.video_storage_handlers import (
+    check_video_images_upload_enabled,
+    enabled_video_features,
     get_course_youtube_edx_video_ids,
     get_video_encodings_download,
     handle_generate_video_upload_link,
     handle_transcript_preferences,
     handle_video_images,
-    handle_videos
+    handle_videos,
 )
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    is_status_update_request as is_status_update_request_source_function
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    send_video_status_update as send_video_status_update_source_function
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    storage_service_bucket as storage_service_bucket_source_function
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    storage_service_key as storage_service_key_source_function
-from cms.djangoapps.contentstore.video_storage_handlers import \
-    validate_transcript_preferences as validate_transcript_preferences_source_function
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    convert_video_status as convert_video_status_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    get_all_transcript_languages as get_all_transcript_languages_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    is_status_update_request as is_status_update_request_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    send_video_status_update as send_video_status_update_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    storage_service_bucket as storage_service_bucket_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    storage_service_key as storage_service_key_source_function,
+)
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    validate_transcript_preferences as validate_transcript_preferences_source_function,
+)
 from cms.djangoapps.contentstore.video_storage_handlers import videos_index_html as videos_index_html_source_function
 from cms.djangoapps.contentstore.video_storage_handlers import videos_index_json as videos_index_json_source_function
 from cms.djangoapps.contentstore.video_storage_handlers import videos_post as videos_post_source_function

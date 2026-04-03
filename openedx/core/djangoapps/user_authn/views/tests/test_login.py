@@ -29,7 +29,7 @@ from common.djangoapps.util.password_policy_validators import DEFAULT_MAX_PASSWO
 from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.password_policy.compliance import (
     NonCompliantPasswordException,
-    NonCompliantPasswordWarning
+    NonCompliantPasswordWarning,
 )
 from openedx.core.djangoapps.password_policy.hibp import PwnedPasswordsAPI
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
@@ -40,7 +40,7 @@ from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_cli
 from openedx.core.djangoapps.user_authn.views.login import (
     ENABLE_LOGIN_USING_THIRDPARTY_AUTH_ONLY,
     AllowedAuthUser,
-    _check_user_auth_flow
+    _check_user_auth_flow,
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import ApiTestCase

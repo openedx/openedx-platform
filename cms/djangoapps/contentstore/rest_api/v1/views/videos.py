@@ -13,7 +13,7 @@ import cms.djangoapps.contentstore.toggles as contentstore_toggles
 from cms.djangoapps.contentstore.rest_api.v1.serializers import (
     CourseVideosSerializer,
     VideoDownloadSerializer,
-    VideoUsageSerializer
+    VideoUsageSerializer,
 )
 from cms.djangoapps.contentstore.video_storage_handlers import create_video_zip, get_video_usage_path
 from common.djangoapps.student.auth import has_studio_read_access

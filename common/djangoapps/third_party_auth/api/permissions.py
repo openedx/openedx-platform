@@ -10,7 +10,7 @@ from edx_rest_framework_extensions.permissions import (
     IsSuperuser,
     JwtHasScope,
     JwtRestrictedApplication,
-    NotJwtRestrictedApplication
+    NotJwtRestrictedApplication,
 )
 from rest_framework.permissions import BasePermission
 

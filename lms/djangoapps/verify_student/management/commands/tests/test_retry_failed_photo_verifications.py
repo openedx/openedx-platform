@@ -18,7 +18,7 @@ from lms.djangoapps.verify_student.tests import TestVerificationBase
 from lms.djangoapps.verify_student.tests.test_models import (
     FAKE_SETTINGS,
     mock_software_secure_post,
-    mock_software_secure_post_error
+    mock_software_secure_post_error,
 )
 
 LOGGER_NAME = 'retry_photo_verification'

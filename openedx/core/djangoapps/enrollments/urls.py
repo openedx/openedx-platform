@@ -13,7 +13,7 @@ from .views import (
     EnrollmentListView,
     EnrollmentUserRolesView,
     EnrollmentView,
-    UnenrollmentView
+    UnenrollmentView,
 )
 
 urlpatterns = [

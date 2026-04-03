@@ -22,7 +22,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    Role
+    Role,
 )
 from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_TYPES
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig

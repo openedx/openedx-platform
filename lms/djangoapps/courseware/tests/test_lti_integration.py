@@ -20,11 +20,12 @@ from lms.djangoapps.courseware.tests.helpers import BaseTestXmodule
 from lms.djangoapps.courseware.views.views import get_course_lti_endpoints
 from openedx.core.lib.url_utils import quote_slashes
 from xmodule import lti_block
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.tests.helpers import mock_render_template
 

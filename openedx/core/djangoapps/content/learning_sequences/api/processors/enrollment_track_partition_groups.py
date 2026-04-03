@@ -7,14 +7,15 @@ from opaque_keys.edx.keys import CourseKey
 
 from openedx.core import types
 from xmodule.partitions.enrollment_track_partition_generator import (  # lint-amnesty, pylint: disable=wrong-import-order
-    create_enrollment_track_partition_with_course_id
+    create_enrollment_track_partition_with_course_id,
 )
-from xmodule.partitions.partitions import Group  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
-    ENROLLMENT_TRACK_PARTITION_ID
+    ENROLLMENT_TRACK_PARTITION_ID,
+    Group,  # lint-amnesty, pylint: disable=wrong-import-order
 )
-from xmodule.partitions.partitions_service import \
-    get_user_partition_groups  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions_service import (
+    get_user_partition_groups,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from .base import OutlineProcessor
 

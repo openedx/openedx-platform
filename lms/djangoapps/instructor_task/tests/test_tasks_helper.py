@@ -23,8 +23,9 @@ from django.test.utils import override_settings
 from edx_django_utils.cache import RequestCache
 from freezegun import freeze_time
 from pytz import UTC
-from xblocks_contrib.problem.capa.tests.response_xml_factory import \
-    MultipleChoiceResponseXMLFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xblocks_contrib.problem.capa.tests.response_xml_factory import (
+    MultipleChoiceResponseXMLFactory,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 import openedx.core.djangoapps.user_api.course_tag.api as course_tag_api
@@ -48,19 +49,19 @@ from lms.djangoapps.instructor_task.tasks_helper.grades import (
     NOT_ENROLLED_IN_COURSE,
     CourseGradeReport,
     ProblemGradeReport,
-    ProblemResponses
+    ProblemResponses,
 )
 from lms.djangoapps.instructor_task.tasks_helper.misc import (
     cohort_students_and_upload,
     upload_course_survey_report,
     upload_ora2_data,
     upload_ora2_submission_files,
-    upload_ora2_summary
+    upload_ora2_summary,
 )
 from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
 from lms.djangoapps.survey.models import SurveyAnswer, SurveyForm
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
@@ -72,14 +73,16 @@ from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartiti
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase, TestConditionalContent
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
-    check_mongo_calls
+    check_mongo_calls,
 )
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import
 

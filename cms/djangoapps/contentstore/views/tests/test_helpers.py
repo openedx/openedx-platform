@@ -8,7 +8,7 @@ from urllib.parse import quote
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    LibraryFactory
+    LibraryFactory,
 )
 
 from ...helpers import xblock_embed_lms_url, xblock_lms_url, xblock_studio_url, xblock_type_display_name

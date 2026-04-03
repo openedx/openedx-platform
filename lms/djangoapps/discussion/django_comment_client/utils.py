@@ -30,7 +30,7 @@ from openedx.core.djangoapps.discussions.utils import (
     get_course_division_scheme,
     get_discussion_categories_ids,
     get_group_names_by_id,
-    has_required_keys
+    has_required_keys,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
@@ -41,7 +41,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
     DiscussionsIdMapping,
     Role,
-    has_permission
+    has_permission,
 )
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id

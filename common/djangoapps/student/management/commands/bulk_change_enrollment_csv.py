@@ -18,7 +18,7 @@ from common.djangoapps.student.models import (
     BulkChangeEnrollmentConfiguration,
     CourseEnrollment,
     CourseEnrollmentAttribute,
-    User
+    User,
 )
 
 logger = logging.getLogger('common.djangoapps.student.management.commands.bulk_change_enrollment_csv')

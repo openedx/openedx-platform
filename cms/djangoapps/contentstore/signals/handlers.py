@@ -17,7 +17,7 @@ from openedx_events.content_authoring.data import (
     CourseScheduleData,
     LibraryBlockData,
     LibraryContainerData,
-    XBlockData
+    XBlockData,
 )
 from openedx_events.content_authoring.signals import (
     COURSE_CATALOG_INFO_CHANGED,
@@ -27,14 +27,14 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     XBLOCK_CREATED,
     XBLOCK_DELETED,
-    XBLOCK_UPDATED
+    XBLOCK_UPDATED,
 )
 from pytz import UTC
 
 from cms.djangoapps.contentstore.courseware_index import (
     CourseAboutSearchIndexer,
     CoursewareSearchIndexer,
-    LibrarySearchIndexer
+    LibrarySearchIndexer,
 )
 from common.djangoapps.track.event_transaction_utils import get_event_transaction_id, get_event_transaction_type
 from common.djangoapps.util.block_utils import yield_dynamic_block_descendants
@@ -52,7 +52,7 @@ from ..tasks import (
     handle_create_xblock_upstream_link,
     handle_unlink_upstream_block,
     handle_unlink_upstream_container,
-    handle_update_xblock_upstream_link
+    handle_update_xblock_upstream_link,
 )
 from .signals import GRADING_POLICY_CHANGED
 
@@ -132,7 +132,7 @@ def listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable=
     from cms.djangoapps.contentstore.tasks import (
         update_outline_from_modulestore_task,
         update_search_index,
-        update_special_exams_and_publish
+        update_special_exams_and_publish,
     )
 
     # DEVELOPER README: probably all tasks here should use transaction.on_commit

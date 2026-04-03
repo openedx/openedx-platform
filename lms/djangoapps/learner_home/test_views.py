@@ -33,7 +33,7 @@ from lms.djangoapps.learner_home.views import (
     get_platform_settings,
     get_social_share_settings,
     get_suggested_courses,
-    get_user_account_confirmation_info
+    get_user_account_confirmation_info,
 )
 from openedx.core.djangoapps.catalog.tests.factories import CourseFactory as CatalogCourseFactory
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory as CatalogCourseRunFactory

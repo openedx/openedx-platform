@@ -9,7 +9,7 @@ from django.urls import path, re_path
 from openedx.features.course_experience.api.v1.views import (
     CourseDeadlinesMobileView,
     reset_all_course_deadlines,
-    reset_course_deadlines
+    reset_course_deadlines,
 )
 
 urlpatterns = []

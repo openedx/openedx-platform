@@ -25,7 +25,7 @@ from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amn
     Transcript,
     get_transcript,
     get_video_transcript_content,
-    remove_subs_from_store
+    remove_subs_from_store,
 )
 from openedx.core.djangoapps.xblock import api as xblock_api
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order

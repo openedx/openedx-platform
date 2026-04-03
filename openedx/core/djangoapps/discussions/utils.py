@@ -17,7 +17,7 @@ from xmodule.discussion_block import DiscussionXBlock
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
-    Group
+    Group,
 )
 from xmodule.partitions.partitions_service import PartitionService  # lint-amnesty, pylint: disable=wrong-import-order
 

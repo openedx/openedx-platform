@@ -29,7 +29,7 @@ from lms.djangoapps.ora_staff_grader.errors import (
     LockContestedResponse,
     MissingParamResponse,
     UnknownErrorResponse,
-    XBlockInternalError
+    XBlockInternalError,
 )
 from lms.djangoapps.ora_staff_grader.ora_api import (
     batch_delete_submission_locks,
@@ -40,7 +40,7 @@ from lms.djangoapps.ora_staff_grader.ora_api import (
     get_assessments,
     get_submission_info,
     get_submissions,
-    submit_grade
+    submit_grade,
 )
 from lms.djangoapps.ora_staff_grader.serializers import (
     AssessmentFeedbackSerializer,
@@ -49,7 +49,7 @@ from lms.djangoapps.ora_staff_grader.serializers import (
     LockStatusSerializer,
     StaffAssessSerializer,
     SubmissionFetchSerializer,
-    SubmissionStatusFetchSerializer
+    SubmissionStatusFetchSerializer,
 )
 from lms.djangoapps.ora_staff_grader.utils import require_params
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none

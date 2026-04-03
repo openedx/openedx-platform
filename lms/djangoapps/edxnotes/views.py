@@ -30,7 +30,7 @@ from lms.djangoapps.edxnotes.helpers import (
     get_course_position,
     get_edxnotes_id_token,
     get_notes,
-    is_feature_enabled
+    is_feature_enabled,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
 from openedx.core.djangoapps.user_api.models import RetirementStateError, UserRetirementStatus

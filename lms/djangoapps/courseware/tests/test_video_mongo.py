@@ -29,7 +29,7 @@ from edxval.api import (
     create_video_transcript,
     get_video_info,
     get_video_transcript,
-    get_video_transcript_data
+    get_video_transcript_data,
 )
 from edxval.utils import create_file_in_fs
 from fs.osfs import OSFS
@@ -45,7 +45,7 @@ from openedx.core.djangoapps.video_config import sharing
 from openedx.core.djangoapps.video_config.sharing import (
     COURSE_VIDEO_SHARING_ALL_VIDEOS,
     COURSE_VIDEO_SHARING_NONE,
-    COURSE_VIDEO_SHARING_PER_VIDEO
+    COURSE_VIDEO_SHARING_PER_VIDEO,
 )
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, save_to_store, subs_filename
@@ -56,6 +56,7 @@ from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
+
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import
 from xmodule.tests.test_import import DummyModuleStoreRuntime

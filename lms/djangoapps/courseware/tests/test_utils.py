@@ -20,7 +20,7 @@ from lms.djangoapps.courseware.tests.factories import FinancialAssistanceConfigu
 from lms.djangoapps.courseware.utils import (
     create_financial_assistance_application,
     get_financial_assistance_application_status,
-    is_eligible_for_financial_aid
+    is_eligible_for_financial_aid,
 )
 
 

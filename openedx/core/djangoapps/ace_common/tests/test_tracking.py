@@ -10,7 +10,7 @@ from openedx.core.djangoapps.ace_common.tracking import (
     DEFAULT_CAMPAIGN_MEDIUM,
     DEFAULT_CAMPAIGN_SOURCE,
     CampaignTrackingInfo,
-    GoogleAnalyticsTrackingPixel
+    GoogleAnalyticsTrackingPixel,
 )
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase

@@ -26,7 +26,7 @@ from lms.djangoapps.instructor_task.api_helper import (
     encode_problem_and_student_input,
     schedule_task,
     submit_scheduled_task,
-    submit_task
+    submit_task,
 )
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
 from lms.djangoapps.instructor_task.models import SCHEDULED, InstructorTask, InstructorTaskSchedule
@@ -49,7 +49,7 @@ from lms.djangoapps.instructor_task.tasks import (
     proctored_exam_results_csv,
     rescore_problem,
     reset_problem_attempts,
-    send_bulk_course_email
+    send_bulk_course_email,
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 

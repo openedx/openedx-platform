@@ -19,9 +19,8 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
-from django.utils.translation import get_language
+from django.utils.translation import get_language, to_locale
 from django.utils.translation import gettext as _
-from django.utils.translation import to_locale
 from django.views.generic.base import View
 from edx_django_utils.monitoring.utils import increment
 from opaque_keys.edx.keys import CourseKey

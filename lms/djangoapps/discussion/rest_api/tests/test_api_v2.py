@@ -30,7 +30,7 @@ from common.djangoapps.student.tests.factories import (
     BetaTesterFactory,
     CourseEnrollmentFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.testing import UrlResetMixin
 from common.test.utils import MockSignalHandlerMixin, disable_signal
@@ -48,20 +48,20 @@ from lms.djangoapps.discussion.rest_api.api import (
     get_thread_list,
     get_user_comments,
     update_comment,
-    update_thread
+    update_thread,
 )
 from lms.djangoapps.discussion.rest_api.exceptions import (
     CommentNotFoundError,
     DiscussionBlackOutException,
     DiscussionDisabledError,
-    ThreadNotFoundError
+    ThreadNotFoundError,
 )
 from lms.djangoapps.discussion.rest_api.serializers import TopicOrdering
 from lms.djangoapps.discussion.rest_api.tests.utils import (
     CommentsServiceMockMixin,
     ForumMockUtilsMixin,
     make_paginated_api_response,
-    parsed_body
+    parsed_body,
 )
 from lms.djangoapps.discussion.tests.utils import make_minimal_cs_comment, make_minimal_cs_thread
 from openedx.core.djangoapps.course_groups.models import CourseUserGroupPartitionGroup
@@ -70,7 +70,7 @@ from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
     DiscussionTopicLink,
     PostingRestriction,
-    Provider
+    Provider,
 )
 from openedx.core.djangoapps.discussions.tasks import update_discussions_settings_from_course_task
 from openedx.core.djangoapps.django_comment_common.models import (
@@ -79,7 +79,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    Role
+    Role,
 )
 from openedx.core.lib.exceptions import CourseNotFoundError, PageNotFoundError
 from xmodule.modulestore import ModuleStoreEnum

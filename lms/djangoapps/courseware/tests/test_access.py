@@ -36,7 +36,7 @@ from common.djangoapps.student.tests.factories import (
     GlobalStaffFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.milestones_helpers import fulfill_course_milestone, set_prerequisite_courses
 from lms.djangoapps.ccx.models import CustomCourseForEdX
@@ -53,28 +53,28 @@ from openedx.features.enterprise_support.api import add_enterprise_customer_to_s
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-    CATALOG_VISIBILITY_NONE
+    CATALOG_VISIBILITY_NONE,
 )
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
     BlockFactory,
-    CourseFactory
+    CourseFactory,
 )
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     MINIMUM_UNUSED_PARTITION_ID,
     Group,
-    UserPartition
+    UserPartition,
 )
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES

@@ -21,7 +21,7 @@ from scripts.user_retirement.tests.retirement_helpers import (
     FAKE_USERNAMES,
     TEST_RETIREMENT_QUEUE_STATES,
     TEST_RETIREMENT_STATE,
-    get_fake_user_retirement
+    get_fake_user_retirement,
 )
 from scripts.user_retirement.utils import edx_api
 

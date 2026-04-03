@@ -31,13 +31,14 @@ from lms.djangoapps.instructor_analytics.basic import (  # lint-amnesty, pylint:
     get_student_features_with_custom,
     issued_certificates,
     list_may_enroll,
-    list_problem_responses
+    list_problem_responses,
 )
 from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollmentFactory
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 User = get_user_model()

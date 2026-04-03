@@ -20,7 +20,7 @@ from common.djangoapps.student.models import (
     User,
     UserProfile,
     email_exists_or_retired,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.model_utils import emit_settings_changed_event
 from common.djangoapps.util.password_policy_validators import validate_password
@@ -32,7 +32,7 @@ from openedx.core.djangoapps.user_api import accounts, errors, helpers
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
-    PreferenceValidationError
+    PreferenceValidationError,
 )
 from openedx.core.djangoapps.user_api.preferences.api import update_user_preferences
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password

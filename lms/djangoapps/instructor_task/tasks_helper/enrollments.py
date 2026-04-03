@@ -13,7 +13,7 @@ from common.djangoapps.student.models import CourseEnrollment  # lint-amnesty, p
 from lms.djangoapps.instructor_analytics.basic import (
     enrolled_students_features,
     list_inactive_enrolled_students,
-    list_may_enroll
+    list_may_enroll,
 )
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 

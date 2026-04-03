@@ -49,7 +49,7 @@ from common.djangoapps.student.models import (
     UserAttribute,
     UserCelebration,
     UserProfile,
-    UserTestGroup
+    UserTestGroup,
 )
 from common.djangoapps.student.roles import REGISTERED_ACCESS_ROLES
 from openedx.core.lib.courses import clean_course_id

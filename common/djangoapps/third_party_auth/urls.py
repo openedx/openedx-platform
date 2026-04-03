@@ -8,7 +8,7 @@ from .views import (
     inactive_user_view,
     lti_login_and_complete_view,
     post_to_custom_auth_form,
-    saml_metadata_view
+    saml_metadata_view,
 )
 
 urlpatterns = [

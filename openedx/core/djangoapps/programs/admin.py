@@ -11,7 +11,7 @@ from openedx.core.djangoapps.programs.forms import ProgramDiscussionsConfigurati
 from openedx.core.djangoapps.programs.models import (
     ProgramDiscussionsConfiguration,
     ProgramLiveConfiguration,
-    ProgramsApiConfig
+    ProgramsApiConfig,
 )
 
 

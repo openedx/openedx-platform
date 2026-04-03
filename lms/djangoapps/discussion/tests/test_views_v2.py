@@ -32,14 +32,14 @@ from lms.djangoapps.discussion.django_comment_client.permissions import get_team
 from lms.djangoapps.discussion.django_comment_client.tests.group_id import (
     CohortedTopicGroupIdTestMixinV2,
     GroupIdAssertionMixinV2,
-    NonCohortedTopicGroupIdTestMixinV2
+    NonCohortedTopicGroupIdTestMixinV2,
 )
 from lms.djangoapps.discussion.django_comment_client.tests.mixins import MockForumApiMixin
 from lms.djangoapps.discussion.django_comment_client.tests.unicode import UnicodeTestMixin
 from lms.djangoapps.discussion.django_comment_client.tests.utils import (
     CohortedTestCase,
     config_course_discussions,
-    topic_name_to_id
+    topic_name_to_id,
 )
 from lms.djangoapps.discussion.django_comment_client.utils import strip_none
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
@@ -61,7 +61,7 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 

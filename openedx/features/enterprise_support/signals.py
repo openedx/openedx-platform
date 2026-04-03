@@ -12,7 +12,7 @@ from django.dispatch import receiver
 from enterprise.models import EnterpriseCourseEnrollment, EnterpriseCustomer
 from integrated_channels.integrated_channel.tasks import (
     transmit_single_learner_data,
-    transmit_single_subsection_learner_data
+    transmit_single_subsection_learner_data,
 )
 from slumber.exceptions import HttpClientError
 

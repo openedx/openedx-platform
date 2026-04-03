@@ -29,9 +29,8 @@ from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
 from openedx.core.lib.api.view_utils import view_auth_classes
 
-from ..api import CheckPerm, LatestVersion, get_block_display_name, get_block_metadata, get_block_olx
+from ..api import CheckPerm, LatestVersion, get_block_display_name, get_block_metadata, get_block_olx, load_block
 from ..api import get_handler_url as _get_handler_url
-from ..api import load_block
 from ..api import render_block_view as _render_block_view
 from ..utils import validate_secure_token_for_xblock_handler
 from .serializers import XBlockOlxSerializer

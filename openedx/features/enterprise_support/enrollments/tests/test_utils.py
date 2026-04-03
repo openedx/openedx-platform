@@ -12,7 +12,7 @@ from openedx.core.djangoapps.enrollments.errors import CourseEnrollmentError, Co
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.enrollments.exceptions import (
     CourseIdMissingException,
-    UserDoesNotExistException
+    UserDoesNotExistException,
 )
 from openedx.features.enterprise_support.enrollments.utils import lms_update_or_create_enrollment
 

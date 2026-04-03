@@ -11,7 +11,7 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED,
     ImmediateOnCommitMixin,
-    ModuleStoreTestCase
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory
 

@@ -14,7 +14,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_CREATED,
     XBLOCK_DELETED,
     XBLOCK_DUPLICATED,
-    XBLOCK_UPDATED
+    XBLOCK_UPDATED,
 )
 
 from .api import copy_object_tags
@@ -23,7 +23,7 @@ from .tasks import (
     delete_xblock_tags,
     update_course_tags,
     update_library_block_tags,
-    update_xblock_tags
+    update_xblock_tags,
 )
 from .toggles import CONTENT_TAGGING_AUTO
 

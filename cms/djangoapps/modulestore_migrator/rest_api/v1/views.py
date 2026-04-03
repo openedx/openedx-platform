@@ -35,7 +35,7 @@ from ...data import (
     ModulestoreBlockMigrationResult,
     ModulestoreMigration,
     RepeatHandlingStrategy,
-    SourceContextKey
+    SourceContextKey,
 )
 from .serializers import (
     BlockMigrationInfoSerializer,
@@ -44,7 +44,7 @@ from .serializers import (
     MigrationInfoResponseSerializer,
     ModulestoreMigrationSerializer,
     PreviewMigrationSerializer,
-    StatusWithModulestoreMigrationsSerializer
+    StatusWithModulestoreMigrationsSerializer,
 )
 
 log = logging.getLogger(__name__)

@@ -9,7 +9,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     XBLOCK_CREATED,
     XBLOCK_DELETED,
-    XBLOCK_UPDATED
+    XBLOCK_UPDATED,
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 from openedx_tagging.models import Tag

@@ -16,7 +16,7 @@ from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
-    LIBRARY_COLLECTION_UPDATED
+    LIBRARY_COLLECTION_UPDATED,
 )
 
 from lms.djangoapps.grades.api import signals as grades_signals

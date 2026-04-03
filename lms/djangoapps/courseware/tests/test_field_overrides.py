@@ -15,7 +15,7 @@ from ..field_overrides import (
     OverrideFieldData,
     OverrideModulestoreFieldData,
     disable_overrides,
-    resolve_dotted
+    resolve_dotted,
 )
 from ..testutils import FieldOverrideTestMixin
 

@@ -17,7 +17,7 @@ from .paths import (  # lint-amnesty, pylint: disable=wrong-import-position
     add_lookup,
     clear_lookups,
     lookup_template,
-    save_lookups
+    save_lookups,
 )
 
 

@@ -11,7 +11,7 @@ from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.course_home_api.progress.api import (
     aggregate_assignment_type_grade_summary,
-    calculate_progress_for_learner_in_course
+    calculate_progress_for_learner_in_course,
 )
 
 

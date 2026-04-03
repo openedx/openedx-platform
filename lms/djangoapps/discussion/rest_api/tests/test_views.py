@@ -18,7 +18,7 @@ from common.djangoapps.util.testing import UrlResetMixin
 from lms.djangoapps.discussion.rest_api.tests.utils import (
     ForumMockUtilsMixin,
     make_minimal_cs_comment,
-    make_minimal_cs_thread
+    make_minimal_cs_thread,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

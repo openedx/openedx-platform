@@ -8,12 +8,12 @@ from django.contrib import admin
 from openedx.core.djangoapps.video_config.admin import CourseSpecificEnabledFlagBaseAdmin
 from openedx.core.djangoapps.video_pipeline.forms import (
     CourseVideoUploadsEnabledByDefaultAdminForm,
-    VEMPipelineIntegrationAdminForm
+    VEMPipelineIntegrationAdminForm,
 )
 from openedx.core.djangoapps.video_pipeline.models import (
     CourseVideoUploadsEnabledByDefault,
     VEMPipelineIntegration,
-    VideoUploadsEnabledByDefault
+    VideoUploadsEnabledByDefault,
 )
 
 

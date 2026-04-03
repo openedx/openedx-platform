@@ -10,7 +10,7 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.core.djangoapps.course_groups.models import (
     CohortAssignmentNotAllowed,
     CohortChangeNotAllowed,
-    CohortMembership
+    CohortMembership,
 )
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms

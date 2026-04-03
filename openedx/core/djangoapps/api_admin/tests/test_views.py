@@ -16,7 +16,7 @@ from openedx.core.djangoapps.api_admin.models import ApiAccessConfig, ApiAccessR
 from openedx.core.djangoapps.api_admin.tests.factories import (
     ApiAccessRequestFactory,
     ApplicationFactory,
-    CatalogFactory
+    CatalogFactory,
 )
 from openedx.core.djangoapps.api_admin.tests.utils import VALID_DATA
 from openedx.core.djangolib.testing.utils import skip_unless_lms

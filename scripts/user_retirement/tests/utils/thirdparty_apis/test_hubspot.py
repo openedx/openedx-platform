@@ -11,6 +11,7 @@ from six.moves import reload_module
 
 # This module is imported separately solely so it can be re-loaded below.
 from scripts.user_retirement.utils.thirdparty_apis import hubspot_api
+
 # This HubspotAPI class will be used without being re-loaded.
 from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import HubspotAPI
 

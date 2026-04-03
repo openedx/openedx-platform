@@ -37,7 +37,7 @@ from lms.djangoapps.certificates.models import (
     CertificateTemplate,
     CertificateTemplateAsset,
     ExampleCertificateSet,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.utils import certificate_status as _certificate_status
 from lms.djangoapps.certificates.utils import certificate_status_for_student as _certificate_status_for_student

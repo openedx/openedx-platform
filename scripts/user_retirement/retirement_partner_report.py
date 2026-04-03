@@ -26,7 +26,7 @@ from scripts.user_retirement.utils.helpers import (
     _fail,
     _fail_exception,
     _log,
-    _setup_lms_api_or_exit
+    _setup_lms_api_or_exit,
 )
 from scripts.user_retirement.utils.thirdparty_apis.google_api import DriveApi  # pylint: disable=wrong-import-position
 

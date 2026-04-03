@@ -10,8 +10,9 @@ from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
 from xmodule.capa_block import SHOWANSWER  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

@@ -5,7 +5,7 @@ from opaque_keys.edx.locator import (
     LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
-    LibraryUsageLocatorV2
+    LibraryUsageLocatorV2,
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_CREATED,
@@ -25,7 +25,7 @@ from openedx_events.content_authoring.signals import (
     ContentLibraryData,
     LibraryBlockData,
     LibraryCollectionData,
-    LibraryContainerData
+    LibraryContainerData,
 )
 
 from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
