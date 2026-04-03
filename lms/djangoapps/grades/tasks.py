@@ -26,8 +26,8 @@ from lms.djangoapps.courseware.model_data import get_score
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyNotInBlockStructure
-from openedx.core.djangoapps.content.course_overviews.models import (
-    CourseOverview,  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+    CourseOverview,
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 

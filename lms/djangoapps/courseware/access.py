@@ -33,8 +33,8 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     SupportStaffRole,
 )
-from common.djangoapps.util import (
-    milestones_helpers as milestones_helpers,  # lint-amnesty, pylint: disable=useless-import-alias
+from common.djangoapps.util import (  # lint-amnesty, pylint: disable=useless-import-alias
+    milestones_helpers as milestones_helpers,
 )
 from common.djangoapps.util.milestones_helpers import (
     any_unfulfilled_milestones,

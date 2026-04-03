@@ -8,8 +8,8 @@ Note that these views are only for interacting with existing blocks. Other
 Studio APIs cover use cases like adding/deleting/editing blocks.
 """
 import logging
-import threading
-from datetime import datetime
+import threading  # pylint: disable=unused-import
+from datetime import datetime  # pylint: disable=unused-import
 
 # pylint: disable=unused-import
 from enum import Enum

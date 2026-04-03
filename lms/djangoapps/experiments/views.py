@@ -14,7 +14,7 @@ from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-
 
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.util.json_request import JsonResponse  # lint-amnesty, pylint: disable=reimported
-from lms.djangoapps.courseware import courses  # lint-amnesty, pylint: disable=reimported
+from lms.djangoapps.courseware import courses  # lint-amnesty, pylint: disable=reimported, unused-import
 from lms.djangoapps.experiments import filters, serializers
 from lms.djangoapps.experiments.models import ExperimentData, ExperimentKeyValue
 from lms.djangoapps.experiments.permissions import IsStaffOrOwner, IsStaffOrReadOnly, IsStaffOrReadOnlyForSelf

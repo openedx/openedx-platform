@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 from django import test
 from django.conf import settings  # lint-amnesty, pylint: disable=reimported
-from django.conf import settings as django_settings
+from django.conf import settings as django_settings  # pylint: disable=reimported
 from django.contrib import auth, messages
 from django.contrib.auth import models as auth_models
 from django.contrib.messages.storage import fallback
