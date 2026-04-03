@@ -10,18 +10,12 @@ from django.contrib.auth import get_user_model
 from django.test.client import RequestFactory
 from opaque_keys.edx.keys import CourseKey
 
+from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.discussion.rest_api.api import get_user_comments
+from lms.djangoapps.discussion.rest_api.tests.utils import ForumMockUtilsMixin, make_minimal_cs_comment
+from openedx.core.lib.exceptions import CourseNotFoundError, PageNotFoundError
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
-from common.djangoapps.student.tests.factories import (
-    UserFactory
-)
-from lms.djangoapps.discussion.rest_api.api import get_user_comments
-from lms.djangoapps.discussion.rest_api.tests.utils import (
-    ForumMockUtilsMixin,
-    make_minimal_cs_comment,
-)
-from openedx.core.lib.exceptions import CourseNotFoundError, PageNotFoundError
 
 User = get_user_model()
 

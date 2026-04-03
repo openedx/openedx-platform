@@ -4,6 +4,7 @@ Helpers methods for site configuration.
 
 
 from django.conf import settings
+
 from openedx.core.lib.cache_utils import request_cached
 
 

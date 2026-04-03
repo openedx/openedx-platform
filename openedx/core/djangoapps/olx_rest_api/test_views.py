@@ -3,9 +3,9 @@ Test for the OLX REST API app.
 """
 from xml.etree import ElementTree
 
-from openedx.core.djangolib.testing.utils import skip_unless_cms
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import ToyCourseFactory

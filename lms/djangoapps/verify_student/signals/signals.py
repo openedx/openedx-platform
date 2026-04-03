@@ -3,13 +3,12 @@ Signal definitions and functions to send those signals for the verify_student ap
 """
 
 from django.dispatch import Signal
-
 from openedx_events.learning.data import UserData, UserPersonalData, VerificationAttemptData
 from openedx_events.learning.signals import (
-    IDV_ATTEMPT_CREATED,
-    IDV_ATTEMPT_PENDING,
     IDV_ATTEMPT_APPROVED,
+    IDV_ATTEMPT_CREATED,
     IDV_ATTEMPT_DENIED,
+    IDV_ATTEMPT_PENDING
 )
 
 # Signal for emitting IDV submission and review updates

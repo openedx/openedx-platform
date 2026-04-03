@@ -5,11 +5,11 @@ Tests of Zendesk interaction utility functions
 
 import json
 from collections import OrderedDict
-
 from unittest.mock import MagicMock, patch
-from django.test.utils import override_settings
 
 import ddt
+from django.test.utils import override_settings
+
 from openedx.core.djangoapps.zendesk_proxy.utils import create_zendesk_ticket
 from openedx.core.lib.api.test_utils import ApiTestCase
 

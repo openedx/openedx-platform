@@ -3,8 +3,7 @@ import json
 from unittest.mock import Mock
 
 from django.conf import settings
-from django.test import TestCase
-from django.test import override_settings
+from django.test import TestCase, override_settings
 from fs.memoryfs import MemoryFS
 from lxml import etree
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -14,6 +13,7 @@ from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 
 from xmodule import word_cloud_block
+
 from . import get_test_descriptor_system, get_test_system
 
 

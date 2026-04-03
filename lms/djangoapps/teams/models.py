@@ -11,7 +11,6 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.dispatch import receiver
-
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy
 from django_countries.fields import CountryField

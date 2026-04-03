@@ -7,13 +7,13 @@ from django.test import override_settings
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CertificateRenderStarted
 from rest_framework import status
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 
 from lms.djangoapps.certificates.models import CertificateTemplate
 from lms.djangoapps.certificates.tests.test_webview_views import CommonCertificatesTestCase
 from lms.djangoapps.certificates.utils import get_certificate_url
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 
 FEATURES_WITH_CERTS_ENABLED = settings.FEATURES.copy()
 FEATURES_WITH_CERTS_ENABLED['CERTIFICATES_HTML_VIEW'] = True

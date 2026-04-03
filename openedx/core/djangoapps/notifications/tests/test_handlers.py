@@ -1,10 +1,11 @@
 """
 Tests for the notifications handlers.
 """
-from django.test import TestCase
 from unittest.mock import patch
-from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
+
+from django.test import TestCase
 from openedx_events.learning.data import CourseNotificationData
+from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
 
 
 class CourseNotificationsTest(TestCase):

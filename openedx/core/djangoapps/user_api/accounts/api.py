@@ -5,6 +5,7 @@ Programmatic integration point for User API Accounts sub-application
 
 import datetime
 import re
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -12,7 +13,6 @@ from django.core.validators import ValidationError, validate_email
 from django.utils.translation import gettext as _
 from django.utils.translation import override as override_language
 from eventtracking import tracker
-from zoneinfo import ZoneInfo
 
 from common.djangoapps.student import views as student_views
 from common.djangoapps.student.models import (

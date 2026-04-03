@@ -12,9 +12,7 @@ from django.urls import reverse
 from edx_django_utils import monitoring as monitoring_utils
 from edx_django_utils.monitoring import function_trace
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,
-)
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from edx_rest_framework_extensions.permissions import NotJwtRestrictedApplication
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.permissions import IsAuthenticated
@@ -23,46 +21,32 @@ from rest_framework.views import APIView
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import marketing_link
-from common.djangoapps.student.helpers import (
-    cert_info,
-    user_has_passing_grade_in_course,
-)
+from common.djangoapps.student.helpers import cert_info, user_has_passing_grade_in_course
 from common.djangoapps.student.views.dashboard import (
     complete_course_mode_info,
     credit_statuses,
     get_course_enrollments,
     get_filtered_course_entitlements,
-    get_org_black_and_whitelist_for_site,
+    get_org_black_and_whitelist_for_site
 )
-from common.djangoapps.util.course import (
-    get_encoded_course_sharing_utm_params,
-    get_link_for_about_page,
-)
-from common.djangoapps.util.milestones_helpers import (
-    get_pre_requisite_courses_not_completed,
-)
+from common.djangoapps.util.course import get_encoded_course_sharing_utm_params, get_link_for_about_page
+from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
 from lms.djangoapps.branding import toggles
 from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.bulk_email.models_api import is_bulk_email_feature_enabled
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access import administrative_accesses_to_course_for_user
 from lms.djangoapps.courseware.access_utils import check_course_open_for_learner
-from lms.djangoapps.learner_home.serializers import (
-    LearnerDashboardSerializer,
-)
-from lms.djangoapps.learner_home.utils import (
-    get_masquerade_user,
-)
+from lms.djangoapps.learner_home.serializers import LearnerDashboardSerializer
+from lms.djangoapps.learner_home.utils import get_masquerade_user
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-from openedx.features.course_duration_limits.access import (
-    get_user_course_expiration_date,
-)
+from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from openedx.features.enterprise_support.api import (
     enterprise_customer_from_session_or_learner_data,
-    get_enterprise_learner_data_from_db,
+    get_enterprise_learner_data_from_db
 )
 
 logger = logging.getLogger(__name__)

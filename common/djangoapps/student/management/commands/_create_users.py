@@ -1,14 +1,12 @@
 """ Shared behavior between create_test_users and create_random_users """
 from django.contrib.auth import get_user_model
 from django.core.validators import ValidationError
-from xmodule.modulestore.django import modulestore
 
-
+from common.djangoapps.student.helpers import AccountValidationError, do_create_account
+from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.instructor.access import allow_access
 from openedx.core.djangoapps.user_authn.views.registration_form import AccountCreationForm
-from common.djangoapps.student.helpers import do_create_account, AccountValidationError
-from common.djangoapps.student.models import CourseEnrollment
-
+from xmodule.modulestore.django import modulestore
 
 User = get_user_model()
 

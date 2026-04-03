@@ -14,12 +14,8 @@ from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import (
-    FieldError,
-    ImproperlyConfigured,
-    PermissionDenied,
-    ValidationError as DjangoValidationError,
-)
+from django.core.exceptions import FieldError, ImproperlyConfigured, PermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import QuerySet
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import redirect
@@ -27,72 +23,71 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiRequest, OpenApiResponse
+from drf_spectacular.utils import OpenApiParameter, OpenApiRequest, OpenApiResponse, extend_schema
 from edx_django_utils.monitoring import function_trace
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator
+from openedx_authz.constants.permissions import (
+    COURSES_MANAGE_COURSE_UPDATES,
+    COURSES_MANAGE_GROUP_CONFIGURATIONS,
+    COURSES_VIEW_COURSE_UPDATES
+)
 from organizations.api import add_organization_course, ensure_organization
 from organizations.exceptions import InvalidOrganizationException
-from rest_framework.exceptions import ValidationError
+from organizations.models import Organization
 from rest_framework.decorators import api_view
-from openedx.core.lib.api.view_utils import view_auth_classes
+from rest_framework.exceptions import ValidationError
 
+from cms.djangoapps.contentstore.api.views.utils import get_bool_param
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
-from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
 from cms.djangoapps.course_creators.models import CourseCreator
+from cms.djangoapps.course_creators.views import add_user_with_status_unrequested, get_course_creator_status
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from cms.djangoapps.models.settings.encoder import CourseSettingsEncoder
 from cms.djangoapps.modulestore_migrator.data import ModulestoreMigration
-from cms.djangoapps.contentstore.api.views.utils import get_bool_param
 from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import (
     has_course_author_access,
+    has_studio_advanced_settings_access,
     has_studio_read_access,
     has_studio_write_access,
-    has_studio_advanced_settings_access,
-    is_content_creator,
-)
-from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
-from openedx.core.djangoapps.authz.decorators import user_has_course_permission
-from openedx_authz.constants.permissions import (
-    COURSES_MANAGE_COURSE_UPDATES,
-    COURSES_VIEW_COURSE_UPDATES,
-    COURSES_MANAGE_GROUP_CONFIGURATIONS,
+    is_content_creator
 )
 from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseStaffRole,
     GlobalStaff,
-    UserBasedRole,
     OrgStaffRole,
-    strict_role_checking,
+    UserBasedRole,
+    strict_role_checking
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
 from common.djangoapps.util.string_utils import _has_non_ascii_characters
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
+from openedx.core.lib.api.view_utils import view_auth_classes
 from openedx.core.lib.course_tabs import CourseTabPluginManager
-from organizations.models import Organization
 from xmodule.course_block import CourseBlock, CourseFields  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import EdxJSONEncoder  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import DuplicateCourseError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import CourseTab, CourseTabList, InvalidTabsException  # lint-amnesty, pylint: disable=wrong-import-order
-
-from ..course_group_config import (
-    COHORT_SCHEME,
-    RANDOM_SCHEME,
-    GroupConfiguration,
-    GroupConfigurationsValidationError
+from xmodule.tabs import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseTab,
+    CourseTabList,
+    InvalidTabsException
 )
+
+from ..course_group_config import COHORT_SCHEME, RANDOM_SCHEME, GroupConfiguration, GroupConfigurationsValidationError
 from ..course_info_model import delete_course_update, get_course_updates, update_course_updates
 from ..courseware_index import CoursewareSearchIndexer, SearchIndexingError
 from ..tasks import rerun_course as rerun_course_task
@@ -117,8 +112,8 @@ from ..utils import (
     get_proctored_exam_settings_url,
     get_schedule_details_url,
     get_studio_home_url,
-    get_updates_url,
     get_textbooks_url,
+    get_updates_url,
     initialize_permissions,
     remove_all_instructors,
     reverse_course_url,
@@ -126,7 +121,7 @@ from ..utils import (
     reverse_url,
     reverse_usage_url,
     update_course_details,
-    update_course_discussions_settings,
+    update_course_discussions_settings
 )
 from .component import ADVANCED_COMPONENT_TYPES
 

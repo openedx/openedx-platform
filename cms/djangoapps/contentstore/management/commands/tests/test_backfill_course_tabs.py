@@ -5,11 +5,11 @@ from unittest import mock
 
 import ddt
 from django.core.management import call_command
+
+from cms.djangoapps.contentstore.models import BackfillCourseTabsConfig
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
-from cms.djangoapps.contentstore.models import BackfillCourseTabsConfig
 
 
 @ddt.ddt

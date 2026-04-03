@@ -4,8 +4,8 @@ import logging
 from functools import partial
 
 from django.conf import settings
-from django.core.cache import cache
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.http import Http404, HttpResponseBadRequest
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -18,36 +18,31 @@ from xblock.django.request import django_to_webob_request, webob_to_django_respo
 from xblock.exceptions import NoSuchHandlerError, NotFoundError, ProcessingError
 from xblock.runtime import KvsFieldData
 
-from openedx.core.djangoapps.video_config.services import VideoConfigService
+from cms.djangoapps.contentstore.toggles import individualize_anonymous_user_id
+from cms.djangoapps.xblock_config.models import StudioConfig
+from cms.lib.xblock.field_data import CmsFieldData
+from cms.lib.xblock.upstream_sync import UpstreamLink
+from common.djangoapps.edxmako.services import MakoService
+from common.djangoapps.edxmako.shortcuts import render_to_string
+from common.djangoapps.static_replace.services import ReplaceURLService
+from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
+from common.djangoapps.student.models import anonymous_id_for_user
+from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
+from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.lib.cache_utils import CacheService
+from openedx.core.lib.license import wrap_with_license
+from openedx.core.lib.xblock_utils import request_token, wrap_fragment, wrap_xblock, wrap_xblock_aside
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.partitions.partitions_service import PartitionService
 from xmodule.services import SettingsService, TeamsConfigurationService, XQueueService
 from xmodule.studio_editable import has_author_view
-from xmodule.util.sandboxing import SandboxService
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
+from xmodule.util.sandboxing import SandboxService
 from xmodule.x_module import AUTHOR_VIEW, PREVIEW_VIEWS, STUDENT_VIEW, XModuleMixin
-from cms.djangoapps.xblock_config.models import StudioConfig
-from cms.djangoapps.contentstore.toggles import individualize_anonymous_user_id
-from cms.lib.xblock.field_data import CmsFieldData
-from cms.lib.xblock.upstream_sync import UpstreamLink
-from common.djangoapps.static_replace.services import ReplaceURLService
-from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
-from common.djangoapps.student.models import anonymous_id_for_user
-from common.djangoapps.edxmako.shortcuts import render_to_string
-from common.djangoapps.edxmako.services import MakoService
-from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
-from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from openedx.core.lib.license import wrap_with_license
-from openedx.core.lib.cache_utils import CacheService
-from openedx.core.lib.xblock_utils import (
-    request_token,
-    wrap_fragment,
-    wrap_xblock,
-    wrap_xblock_aside
-)
 
 from ..utils import StudioPermissionsService, get_visibility_partition_info
 from .access import get_user_role

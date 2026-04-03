@@ -6,11 +6,14 @@ API for initiating and tracking requests for credit from a provider.
 import datetime
 import logging
 import uuid
-
 from zoneinfo import ZoneInfo
+
 from django.db import transaction
 from edx_proctoring.api import get_last_exam_completion_date
 
+from common.djangoapps.student.models import CourseEnrollment, User
+from common.djangoapps.util.date_utils import to_timestamp
+from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.credit.exceptions import (
     CreditProviderNotConfigured,
     CreditRequestNotFound,
@@ -25,9 +28,6 @@ from openedx.core.djangoapps.credit.models import (
     CreditRequirementStatus
 )
 from openedx.core.djangoapps.credit.signature import get_shared_secret_key, signature
-from common.djangoapps.student.models import CourseEnrollment, User
-from common.djangoapps.util.date_utils import to_timestamp
-from common.djangoapps.util.json_request import JsonResponse
 
 # TODO: Cleanup this mess! ECOM-2908
 

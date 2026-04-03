@@ -6,15 +6,14 @@ This view is used in the MFE to preview XBlocks that are in the library.
 import re
 
 import ddt
+import pytest
 from django.core.exceptions import ValidationError
 from django.test.utils import override_settings
-import pytest
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+
 from .fields_test_block import FieldsTestBlock
 
 

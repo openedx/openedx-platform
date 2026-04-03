@@ -3,9 +3,9 @@ Progress Tab Serializers
 """
 from datetime import datetime
 
+from pytz import UTC
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-from pytz import UTC
 
 from lms.djangoapps.course_home_api.serializers import ReadOnlySerializer, VerifiedModeSerializer
 

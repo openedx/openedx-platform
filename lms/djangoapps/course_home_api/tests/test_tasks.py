@@ -2,11 +2,10 @@
 Tests for Celery tasks used by the `course_home_api` app.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from opaque_keys.edx.keys import CourseKey
 from testfixtures import LogCapture
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_home_api.tasks import (
@@ -14,6 +13,7 @@ from lms.djangoapps.course_home_api.tasks import (
     collect_progress_for_user_in_course
 )
 from openedx.core.djangoapps.catalog.tests.factories import CourseFactory, CourseRunFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 LOG_PATH = 'lms.djangoapps.course_home_api.tasks'
 

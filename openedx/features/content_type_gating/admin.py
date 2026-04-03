@@ -9,5 +9,4 @@ from openedx.core.djangoapps.config_model_utils.admin import StackedConfigModelA
 
 from .models import ContentTypeGatingConfig
 
-
 admin.site.register(ContentTypeGatingConfig, StackedConfigModelAdmin)

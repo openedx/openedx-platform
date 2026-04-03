@@ -1,21 +1,22 @@
 """ Commerce API Service. """
 
 
-import requests
-import slumber
 import datetime
 import json
 import os
 import socket
+
+import requests
+import slumber
 from django.conf import settings
-from edx_rest_api_client.auth import SuppliedJwtAuth, JwtAuth
 from edx_django_utils.cache import TieredCache
+from edx_django_utils.monitoring import set_custom_attribute
+from edx_rest_api_client.auth import JwtAuth, SuppliedJwtAuth
 from eventtracking import tracker
+from requests.auth import AuthBase
 
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
-from requests.auth import AuthBase
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from edx_django_utils.monitoring import set_custom_attribute
 
 # When caching tokens, use this value to err on expiring tokens a little early so they are
 # sure to be valid at the time they are used.

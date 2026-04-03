@@ -9,6 +9,7 @@ import logging
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.credit.email_utils import send_credit_notifications
 from openedx.core.djangoapps.credit.exceptions import InvalidCreditCourse, InvalidCreditRequirements
 from openedx.core.djangoapps.credit.models import (
@@ -18,7 +19,6 @@ from openedx.core.djangoapps.credit.models import (
     CreditRequirement,
     CreditRequirementStatus
 )
-from common.djangoapps.student.models import CourseEnrollment
 
 # TODO: Cleanup this mess! ECOM-2908
 

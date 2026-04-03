@@ -15,7 +15,7 @@ from opaque_keys.edx.locator import (
     LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
-    LibraryUsageLocatorV2,
+    LibraryUsageLocatorV2
 )
 
 from . import api

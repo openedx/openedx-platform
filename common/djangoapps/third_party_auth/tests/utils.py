@@ -6,15 +6,15 @@ from base64 import b64encode
 from unittest import skip
 
 import httpretty
-from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from oauth2_provider.models import Application
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from social_core.backends.facebook import API_VERSION as FACEBOOK_API_VERSION
 from social_core.backends.facebook import FacebookOAuth2
 from social_django.models import Partial, UserSocialAuth
 
 from common.djangoapps.student.tests.factories import UserFactory
 
-from .testutil import ThirdPartyAuthTestMixin, AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY
+from .testutil import AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY, ThirdPartyAuthTestMixin
 
 
 @httpretty.activate

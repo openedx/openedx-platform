@@ -1,7 +1,8 @@
 """ Django admins for support models """
 from django import forms
 from django.contrib import admin
-from lms.djangoapps.support.models import CourseResetCourseOptIn, CourseResetAudit
+
+from lms.djangoapps.support.models import CourseResetAudit, CourseResetCourseOptIn
 from openedx.core.lib.courses import clean_course_id
 
 

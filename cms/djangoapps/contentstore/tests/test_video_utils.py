@@ -4,8 +4,7 @@ Unit tests for video utils.
 
 
 from datetime import datetime
-from unittest import TestCase
-from unittest import mock
+from unittest import TestCase, mock
 
 import ddt
 import pytz

@@ -20,11 +20,7 @@ from meilisearch.errors import MeilisearchApiError, MeilisearchError
 from meilisearch.models.task import TaskInfo
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import (
-    LibraryCollectionLocator,
-    LibraryContainerLocator,
-    LibraryLocatorV2,
-)
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
 from rest_framework.request import Request
@@ -48,13 +44,13 @@ from .documents import (
     Fields,
     meili_id_from_opaque_key,
     searchable_doc_collections,
+    searchable_doc_containers,
     searchable_doc_for_collection,
     searchable_doc_for_container,
     searchable_doc_for_course_block,
-    searchable_doc_for_library_block,
     searchable_doc_for_key,
-    searchable_doc_tags,
-    searchable_doc_containers,
+    searchable_doc_for_library_block,
+    searchable_doc_tags
 )
 
 log = logging.getLogger(__name__)

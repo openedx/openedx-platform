@@ -10,9 +10,9 @@ import logging
 from os.path import abspath, dirname
 from os.path import join as joinpath
 from os.path import realpath
+from tarfile import TarFile, TarInfo
 from typing import List, Union
 from zipfile import ZipFile, ZipInfo
-from tarfile import TarFile, TarInfo
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation

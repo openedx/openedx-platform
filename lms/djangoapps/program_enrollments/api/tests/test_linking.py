@@ -10,7 +10,6 @@ from django.test import TestCase
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.keys import CourseKey
 from testfixtures import LogCapture
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.student.api import get_course_access_role
 from common.djangoapps.student.roles import CourseStaffRole
@@ -21,6 +20,7 @@ from lms.djangoapps.program_enrollments.tests.factories import (
     ProgramEnrollmentFactory
 )
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from ..linking import (
     NO_LMS_USER_TEMPLATE,

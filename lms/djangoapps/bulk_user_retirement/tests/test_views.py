@@ -3,8 +3,9 @@ Test cases for GDPR User Retirement Views
 """
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
-from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
+
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 
 
 class BulkUserRetirementViewTests(APITestCase):

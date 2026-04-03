@@ -6,11 +6,12 @@ Tests for the CCX REST APIs.
 import json
 import math
 import string
+import urllib
 from datetime import timedelta
 from unittest import mock
-import urllib
-import pytest
+
 import ddt
+import pytest
 from ccx_keys.locator import CCXLocator
 from django.conf import settings
 from django.urls import Resolver404, resolve, reverse

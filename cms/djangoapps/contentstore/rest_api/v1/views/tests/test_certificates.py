@@ -2,9 +2,8 @@
 Unit tests for the course's certificate.
 """
 from django.urls import reverse
+from openedx_authz.constants.roles import COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
-
-from openedx_authz.constants.roles import COURSE_STAFF, COURSE_EDITOR
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.views.tests.test_certificates import HelperMethods

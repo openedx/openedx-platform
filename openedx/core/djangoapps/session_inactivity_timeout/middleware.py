@@ -13,14 +13,13 @@ which defaults to 1209600 (2 weeks, in seconds).
 """
 
 
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib import auth
 from django.utils.deprecation import MiddlewareMixin
 from edx_django_utils import monitoring as monitoring_utils
-
 
 log = logging.getLogger(__name__)
 

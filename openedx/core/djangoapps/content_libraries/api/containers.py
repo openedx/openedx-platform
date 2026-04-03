@@ -4,43 +4,39 @@ API for containers (Sections, Subsections, Units) in Content Libraries
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import logging
-from uuid import uuid4
 import typing
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from django.db import transaction
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_events.content_authoring.data import (
-    ContentObjectChangedData,
-    LibraryCollectionData,
-    LibraryContainerData,
-)
+from openedx_content import api as content_api
+from openedx_content.models_api import Container, Unit
+from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData, LibraryContainerData
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
-    LIBRARY_CONTAINER_UPDATED,
+    LIBRARY_CONTAINER_UPDATED
 )
-from openedx_content import api as content_api
-from openedx_content.models_api import Container, Unit
+
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
 
 from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata
 from .container_metadata import (
+    LIBRARY_ALLOWED_CONTAINER_TYPES,
     ContainerHierarchy,
     ContainerMetadata,
-    library_container_locator,
     get_container_from_key,
     get_entity_from_key,
-    LIBRARY_ALLOWED_CONTAINER_TYPES,
+    library_container_locator
 )
 from .serializers import ContainerSerializer
-
 
 if typing.TYPE_CHECKING:
     from openedx.core.djangoapps.content_staging.api import UserClipboardData

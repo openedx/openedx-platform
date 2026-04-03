@@ -10,7 +10,6 @@ from pact import Verifier
 
 from openedx.features.discounts.applicability import DISCOUNT_APPLICABILITY_FLAG
 
-
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 

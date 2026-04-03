@@ -4,8 +4,8 @@ Content rendering functionality
 Note that this module is designed to imitate the front end behavior as
 implemented in Markdown.Sanitizer.js.
 """
-import nh3
 import markdown
+import nh3
 
 ALLOWED_TAGS = nh3.ALLOWED_TAGS | {
     'br', 'dd', 'del', 'dl', 'dt', 'h1', 'h2', 'h3', 'h4', 'hr', 'img', 'kbd', 'p', 'pre', 's',

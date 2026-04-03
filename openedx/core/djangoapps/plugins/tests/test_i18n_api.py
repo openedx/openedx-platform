@@ -11,7 +11,7 @@ from ..i18n_api import (
     BaseAtlasPullCommand,
     atlas_pull_by_modules,
     compile_po_files,
-    get_installed_plugins_module_names,
+    get_installed_plugins_module_names
 )
 
 

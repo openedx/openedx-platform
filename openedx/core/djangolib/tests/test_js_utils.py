@@ -3,9 +3,9 @@
 Tests for js_utils.py
 """
 
+import html
 import json
 import re
-import html
 from unittest import TestCase
 
 from mako.template import Template

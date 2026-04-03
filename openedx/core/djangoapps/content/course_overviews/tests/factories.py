@@ -1,10 +1,10 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
-from datetime import timedelta
 import json
+from datetime import timedelta
 
-from django.utils import timezone
 import factory
+from django.utils import timezone
 from factory.django import DjangoModelFactory
 from opaque_keys.edx.locator import CourseLocator
 

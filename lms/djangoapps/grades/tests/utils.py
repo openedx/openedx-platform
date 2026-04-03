@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, patch
 
 import pytz
 
-from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.block_render import get_block
+from lms.djangoapps.courseware.model_data import FieldDataCache
 from xmodule.graders import ProblemScore  # lint-amnesty, pylint: disable=wrong-import-order
 
 

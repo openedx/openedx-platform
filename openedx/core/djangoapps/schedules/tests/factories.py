@@ -3,12 +3,13 @@ Factories for schedules tests
 """
 
 
-import factory
 from zoneinfo import ZoneInfo
 
+import factory
+
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.schedules import models
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 
 
 class ScheduleExperienceFactory(factory.django.DjangoModelFactory):

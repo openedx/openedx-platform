@@ -6,15 +6,14 @@ from typing import Callable, Protocol
 from urllib.parse import urljoin  # pylint: disable=import-error
 
 import crum
-from common.djangoapps.student.models import anonymous_id_for_user
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from completion.models import BlockCompletion
 from completion.services import CompletionService
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from eventtracking import tracker
-from opaque_keys.edx.keys import UsageKeyV2, LearningContextKey
+from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.exceptions import NoSuchServiceError
@@ -22,27 +21,28 @@ from xblock.field_data import DictFieldData, FieldData, SplitFieldData
 from xblock.fields import Scope, ScopeIds
 from xblock.runtime import IdReader, KvsFieldData, MemoryIdManager, Runtime
 
-from xmodule.errortracker import make_error_tracker
-from xmodule.contentstore.django import contentstore
-from xmodule.modulestore.django import XBlockI18nService
-from xmodule.services import EventPublishingService, RebindUserService, XQueueService
-from xmodule.util.sandboxing import SandboxService
 from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.static_replace.services import ReplaceURLService
+from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.track import contexts as track_contexts
 from common.djangoapps.track import views as track_views
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from lms.djangoapps.grades.api import signals as grades_signals
-from openedx.core.types import User as UserType
 from openedx.core.djangoapps.enrollments.services import EnrollmentsService
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
-from openedx.core.djangoapps.xblock.data import AuthoredDataMode, StudentDataMode, LatestVersion
+from openedx.core.djangoapps.xblock.data import AuthoredDataMode, LatestVersion, StudentDataMode
 from openedx.core.djangoapps.xblock.runtime.ephemeral_field_data import EphemeralKeyValueStore
 from openedx.core.djangoapps.xblock.runtime.mixin import LmsBlockMixin
 from openedx.core.djangoapps.xblock.utils import get_xblock_id_for_anonymous_user
 from openedx.core.lib.cache_utils import CacheService
-from openedx.core.lib.xblock_utils import wrap_fragment, xblock_local_resource_url, request_token
+from openedx.core.lib.xblock_utils import request_token, wrap_fragment, xblock_local_resource_url
+from openedx.core.types import User as UserType
+from xmodule.contentstore.django import contentstore
+from xmodule.errortracker import make_error_tracker
+from xmodule.modulestore.django import XBlockI18nService
+from xmodule.services import EventPublishingService, RebindUserService, XQueueService
+from xmodule.util.sandboxing import SandboxService
 
 from .id_managers import OpaqueKeyReader
 from .shims import RuntimeShim, XBlockShim

@@ -9,8 +9,8 @@ from web_fragments.fragment import Fragment
 
 from lms.djangoapps.courseware.courses import get_course_date_blocks, get_course_with_access
 from lms.djangoapps.courseware.tabs import DatesTab
-from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
+from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 
 
 class CourseDatesFragmentView(EdxFragmentView):

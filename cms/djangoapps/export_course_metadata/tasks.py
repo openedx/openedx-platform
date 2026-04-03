@@ -8,6 +8,7 @@ from celery import shared_task
 from django.core.files.base import ContentFile
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
+
 from openedx.core.djangoapps.schedules.content_highlights import get_all_course_highlights
 
 from .storage import course_metadata_export_storage

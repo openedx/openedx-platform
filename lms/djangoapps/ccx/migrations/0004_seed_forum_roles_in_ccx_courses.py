@@ -3,6 +3,7 @@ import logging
 import six
 from ccx_keys.locator import CCXLocator
 from django.db import migrations
+
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,

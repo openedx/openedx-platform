@@ -11,11 +11,19 @@ from collections import namedtuple
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
-from uuid import uuid4
 from unittest.mock import Mock, call, patch
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import ddt
+import pymongo
+import pytest
+# Mixed modulestore depends on django, so we'll manually configure some django settings
+# before importing the module
+# TODO remove this import and the configuration -- xmodule should not depend on django!
+from django.conf import settings
+from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator  # pylint: disable=unused-import
 from openedx_events.content_authoring.data import CourseData, XBlockData
 from openedx_events.content_authoring.signals import (
     COURSE_CREATED,
@@ -25,31 +33,20 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_UPDATED
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
-import pymongo
-import pytest
-# Mixed modulestore depends on django, so we'll manually configure some django settings
-# before importing the module
-# TODO remove this import and the configuration -- xmodule should not depend on django!
-from django.conf import settings
-from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator  # pylint: disable=unused-import
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
 from xblock.fields import Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 from xblock.test.tools import TestRuntime
 
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.lib.tests import attr
 from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import InvalidVersionError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES, UnsupportedRevisionError
 from xmodule.modulestore.edit_info import EditInfoMixin
-from xmodule.modulestore.exceptions import (
-    DuplicateCourseError,
-    ItemNotFoundError,
-    NoPathToItem,
-)
+from xmodule.modulestore.exceptions import DuplicateCourseError, ItemNotFoundError, NoPathToItem
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.search import navigation_index, path_to_location
@@ -63,7 +60,6 @@ from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import LocationMixin, import_course_from_xml
 from xmodule.tests import DATA_DIR, CourseComparisonTest
 from xmodule.x_module import XModuleMixin
-from common.test.utils import assert_dict_contains_subset
 
 if not settings.configured:
     settings.configure()

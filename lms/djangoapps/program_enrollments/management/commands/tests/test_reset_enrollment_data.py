@@ -6,6 +6,7 @@ Tests for the reset_enrollment_data management command.
 import sys
 from contextlib import contextmanager
 from uuid import uuid4
+
 import pytest
 from django.core.management import call_command
 from django.core.management.base import CommandError

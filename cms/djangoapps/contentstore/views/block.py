@@ -15,51 +15,32 @@ from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
 from cms.djangoapps.contentstore.utils import load_services_for_studio
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
+    create_xblock_info,
+    delete_orphans,
+    get_block_info,
+    get_xblock,
+    handle_xblock
+)
+from cms.djangoapps.contentstore.xblock_storage_handlers.xblock_helpers import get_tags_count, usage_key_with_run
 from cms.lib.xblock.authoring_mixin import VISIBILITY_VIEW
 from common.djangoapps.edxmako.shortcuts import render_to_response, render_to_string
-from common.djangoapps.student.auth import (
-    has_studio_read_access,
-    has_studio_write_access,
-)
+from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.util.json_request import JsonResponse, expect_json
-from openedx.core.lib.xblock_utils import (
-    hash_resource,
-    request_token,
-    wrap_xblock,
-    wrap_xblock_aside,
-)
-from xmodule.modulestore.django import (
-    modulestore,
-)  # lint-amnesty, pylint: disable=wrong-import-order
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
-
-from xmodule.x_module import (
+from openedx.core.lib.xblock_utils import hash_resource, request_token, wrap_xblock, wrap_xblock_aside
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-order
     AUTHOR_VIEW,
     PREVIEW_VIEWS,
     STUDENT_VIEW,
-    STUDIO_VIEW,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-
-
-from ..helpers import (
-    is_unit,
+    STUDIO_VIEW
 )
-from .preview import get_preview_fragment
-from .component import _get_item_in_course
+
+from ..helpers import is_unit
 from ..utils import get_container_handler_context
-
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
-    handle_xblock,
-    create_xblock_info,
-    get_block_info,
-    get_xblock,
-    delete_orphans,
-)
-from cms.djangoapps.contentstore.xblock_storage_handlers.xblock_helpers import (
-    usage_key_with_run,
-    get_tags_count,
-)
-
+from .component import _get_item_in_course
+from .preview import get_preview_fragment
 
 __all__ = [
     "orphan_handler",

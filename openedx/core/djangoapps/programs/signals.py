@@ -13,7 +13,7 @@ from openedx.core.djangoapps.signals.signals import (
     COURSE_CERT_AWARDED,
     COURSE_CERT_CHANGED,
     COURSE_CERT_DATE_CHANGE,
-    COURSE_CERT_REVOKED,
+    COURSE_CERT_REVOKED
 )
 
 LOGGER = logging.getLogger(__name__)

@@ -4,22 +4,22 @@ Test password policy utilities
 
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import pytest
-from zoneinfo import ZoneInfo
 from dateutil.parser import parse as parse_date
 from django.test import TestCase, override_settings
 
-from openedx.core.djangoapps.password_policy.compliance import (NonCompliantPasswordException,
-                                                                NonCompliantPasswordWarning,
-                                                                _check_user_compliance,
-                                                                _get_compliance_deadline_for_user,
-                                                                enforce_compliance_on_login,
-                                                                should_enforce_compliance_on_login)
-from common.djangoapps.student.tests.factories import (CourseAccessRoleFactory,
-                                                       UserFactory)
+from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, UserFactory
 from common.djangoapps.util.password_policy_validators import ValidationError
-
+from openedx.core.djangoapps.password_policy.compliance import (
+    NonCompliantPasswordException,
+    NonCompliantPasswordWarning,
+    _check_user_compliance,
+    _get_compliance_deadline_for_user,
+    enforce_compliance_on_login,
+    should_enforce_compliance_on_login
+)
 
 date1 = parse_date('2018-01-01 00:00:00+00:00')
 date2 = parse_date('2018-02-02 00:00:00+00:00')

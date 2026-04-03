@@ -7,8 +7,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lms.djangoapps.discussion.rest_api.discussions_notifications import DiscussionNotificationSender, \
+from lms.djangoapps.discussion.rest_api.discussions_notifications import (
+    DiscussionNotificationSender,
     clean_thread_html_body
+)
 
 
 @patch('lms.djangoapps.discussion.rest_api.discussions_notifications.DiscussionNotificationSender'

@@ -3,7 +3,7 @@
 
 import datetime
 from unittest import skipUnless
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -35,8 +35,8 @@ from lms.djangoapps.certificates.tests.factories import (
     GeneratedCertificateFactory,
     LinkedInAddToProfileConfigurationFactory
 )
-from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from lms.djangoapps.certificates.utils import get_certificate_url
+from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,

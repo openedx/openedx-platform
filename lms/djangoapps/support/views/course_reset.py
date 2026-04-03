@@ -1,20 +1,18 @@
 """ Views for the course reset feature """
 
-from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from django.utils.decorators import method_decorator
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from common.djangoapps.student.models import CourseEnrollment, get_user_by_username_or_email
 from common.djangoapps.student.helpers import user_has_passing_grade_in_course
+from common.djangoapps.student.models import CourseEnrollment, get_user_by_username_or_email
 from lms.djangoapps.support.decorators import require_support_permission
-from lms.djangoapps.support.models import (
-    CourseResetCourseOptIn,
-    CourseResetAudit
-)
+from lms.djangoapps.support.models import CourseResetAudit, CourseResetCourseOptIn
+
 from ..tasks import reset_student_course
 
 User = get_user_model()

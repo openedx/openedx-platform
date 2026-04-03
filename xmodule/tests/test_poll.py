@@ -2,14 +2,14 @@
 
 import json
 
+from django.test import TestCase, override_settings
 from opaque_keys.edx.keys import CourseKey
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 
-from django.test import override_settings
-from django.test import TestCase
 from openedx.core.lib.safe_lxml import etree
 from xmodule import poll_block
+
 from . import get_test_system
 from .test_import import DummyModuleStoreRuntime
 

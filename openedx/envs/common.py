@@ -25,34 +25,29 @@ def center_with_hashes(text: str, width: int = 76):
     print(f"{f' {text} ':#^{width}}")
 ```
 """
-import os
 import importlib.util
-from path import Path as path
+import os
 
 from django.utils.translation import gettext_lazy as _
+from path import Path as path
 
-from openedx.core.lib.derived import Derived
-from openedx.core.release import doc_version
-from openedx.core.djangoapps.theming.helpers_dirs import (
-    get_themes_unchecked,
-    get_theme_base_dirs_from_settings
-)
-
+from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 # We have legacy components that reference these constants via the settings module.
 # New code should import them directly from `openedx.core.constants` instead.
 from openedx.core.constants import (  # pylint: disable=unused-import
     ASSET_KEY_PATTERN,
-    COURSE_KEY_REGEX,
-    COURSE_KEY_PATTERN,
     COURSE_ID_PATTERN,
-    USAGE_KEY_PATTERN,
+    COURSE_KEY_PATTERN,
+    COURSE_KEY_REGEX,
     USAGE_ID_PATTERN,
+    USAGE_KEY_PATTERN
 )
-
+from openedx.core.djangoapps.theming.helpers_dirs import get_theme_base_dirs_from_settings, get_themes_unchecked
+from openedx.core.lib.derived import Derived
+from openedx.core.release import doc_version
 from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.x_module import XModuleMixin
-from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 
 ################ Shared Functions for Derived Configuration ################
 

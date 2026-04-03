@@ -3,8 +3,8 @@ Set up lookup paths for mako templates.
 """
 import contextlib
 import hashlib
-import os
 import importlib.resources as resources
+import os
 
 from django.conf import settings
 from mako.exceptions import TopLevelLookupException

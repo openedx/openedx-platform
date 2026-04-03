@@ -15,7 +15,6 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.lib.cache_utils import get_cache
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
-
 NAMESPACE_CHOICES = {
     'ENTRANCE_EXAM': 'entrance_exams'
 }

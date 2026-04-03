@@ -13,11 +13,11 @@ from milestones import api as milestones_api
 from opaque_keys.edx.keys import UsageKey
 from xblock.completable import XBlockCompletionMode as CompletionMode
 
+from common.djangoapps.util import milestones_helpers
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import _has_access_to_course
 from lms.djangoapps.grades.api import SubsectionGradeFactory
 from openedx.core.lib.gating.exceptions import GatingValidationError
-from common.djangoapps.util import milestones_helpers
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 

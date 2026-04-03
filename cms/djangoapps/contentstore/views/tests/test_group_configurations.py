@@ -6,31 +6,41 @@ Group Configuration Tests.
 import json
 from operator import itemgetter
 from unittest.mock import patch
-from edx_toggles.toggles.testutils import override_waffle_flag
-from rest_framework import status
 
 import ddt
+from django.test import Client
+from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from rest_framework import status
 
 from cms.djangoapps.contentstore import toggles
+from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.course_group_config import (
     CONTENT_GROUP_CONFIGURATION_NAME,
     ENROLLMENT_SCHEME,
     GroupConfiguration
 )
-from django.test import Client
-from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from common.djangoapps.student.tests.factories import UserFactory
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID
 from openedx.features.content_type_gating.partitions import CONTENT_TYPE_GATING_SCHEME
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID, Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.validation import StudioValidation, StudioValidationMessage  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory
+)
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    ENROLLMENT_TRACK_PARTITION_ID,
+    Group,
+    UserPartition
+)
+from xmodule.validation import (  # lint-amnesty, pylint: disable=wrong-import-order
+    StudioValidation,
+    StudioValidationMessage
+)
 
 GROUP_CONFIGURATION_JSON = {
     'name': 'Test name',

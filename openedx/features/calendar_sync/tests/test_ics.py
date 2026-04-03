@@ -2,8 +2,8 @@
 
 from datetime import datetime, timedelta
 from unittest.mock import patch
-
 from zoneinfo import ZoneInfo
+
 from django.test import RequestFactory, TestCase
 from freezegun import freeze_time
 

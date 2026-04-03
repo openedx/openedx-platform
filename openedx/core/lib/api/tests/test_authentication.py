@@ -12,9 +12,9 @@ import ddt
 from django.http import HttpResponse
 from django.test import TestCase
 from django.test.utils import override_settings
+from django.urls import path
 from django.utils.http import urlencode
 from django.utils.timezone import now
-from django.urls import path
 from oauth2_provider import models as dot_models
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated

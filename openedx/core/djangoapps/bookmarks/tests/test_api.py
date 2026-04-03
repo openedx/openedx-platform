@@ -3,8 +3,8 @@ Tests for bookmarks api.
 """
 from unittest.mock import Mock, patch
 
-import pytest
 import ddt
+import pytest
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import UsageKey

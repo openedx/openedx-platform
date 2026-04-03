@@ -19,7 +19,7 @@ from edx_ace import ace
 from edx_ace.recipient import Recipient
 from eventtracking import tracker
 from submissions import api as sub_api  # installed from the edx-submissions repository
-from submissions.models import score_set, score_reset
+from submissions.models import score_reset, score_set
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long

@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import uuid
+from zoneinfo import ZoneInfo
 
 import markupsafe
 from django.conf import settings
@@ -19,7 +20,6 @@ from django.utils.html import escape
 from edx_django_utils.plugins import pluggable_override
 from lxml import etree, html
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
-from zoneinfo import ZoneInfo
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.exceptions import InvalidScopeError

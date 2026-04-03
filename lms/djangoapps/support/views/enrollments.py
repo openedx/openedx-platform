@@ -31,7 +31,7 @@ from lms.djangoapps.support.decorators import require_support_permission
 from lms.djangoapps.support.serializers import ManualEnrollmentSerializer
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values
-from openedx.core.djangoapps.enrollments.api import get_enrollments, get_enrollment_attributes, update_enrollment
+from openedx.core.djangoapps.enrollments.api import get_enrollment_attributes, get_enrollments, update_enrollment
 from openedx.core.djangoapps.enrollments.errors import CourseModeNotFoundError
 from openedx.core.djangoapps.enrollments.serializers import ModeSerializer
 from openedx.features.enterprise_support.api import (
@@ -40,7 +40,6 @@ from openedx.features.enterprise_support.api import (
     get_enterprise_course_enrollments
 )
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
-
 
 logger = logging.getLogger(__name__)
 

@@ -5,6 +5,7 @@ Serializers for Enhanced Staff Grader (ESG)
 # pylint: disable=missing-function-docstring
 
 from urllib.parse import urljoin
+
 from django.conf import settings
 from rest_framework import serializers
 

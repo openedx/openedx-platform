@@ -16,11 +16,7 @@ from http import HTTPStatus
 
 from rest_framework.request import Request
 
-from lms.djangoapps.ora_staff_grader.errors import (
-    LockContestedError,
-    XBlockInternalError,
-)
-
+from lms.djangoapps.ora_staff_grader.errors import LockContestedError, XBlockInternalError
 from lms.djangoapps.ora_staff_grader.utils import call_xblock_json_handler, is_json
 
 

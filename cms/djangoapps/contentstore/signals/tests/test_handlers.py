@@ -9,8 +9,8 @@ from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseCatalogData, CourseScheduleData
 
 import cms.djangoapps.contentstore.signals.handlers as sh
-from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.django import SignalHandler
+from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import SampleCourseFactory
 

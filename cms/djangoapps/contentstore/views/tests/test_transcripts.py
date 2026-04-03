@@ -18,21 +18,21 @@ from opaque_keys.edx.keys import UsageKey
 from organizations.tests.factories import OrganizationFactory
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase, setup_caption_responses
-from openedx.core.djangoapps.contentserver.caching import del_cached_content
 from openedx.core.djangoapps.content_libraries import api as lib_api
+from openedx.core.djangoapps.contentserver.caching import del_cached_content
+from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    GetTranscriptsFromYouTubeException,
+    Transcript,
+    get_transcript,
+    get_video_transcript_content,
+    remove_subs_from_store
+)
+from openedx.core.djangoapps.xblock import api as xblock_api
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
-    GetTranscriptsFromYouTubeException,
-    Transcript,
-    get_video_transcript_content,
-    get_transcript,
-    remove_subs_from_store,
-)
-from openedx.core.djangoapps.xblock import api as xblock_api
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex

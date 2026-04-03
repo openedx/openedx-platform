@@ -10,9 +10,9 @@ from lms.djangoapps.bulk_email.forms import CourseAuthorizationAdminForm, Course
 from lms.djangoapps.bulk_email.models import (
     BulkEmailFlag,
     CourseAuthorization,
-    DisabledCourse,
     CourseEmail,
     CourseEmailTemplate,
+    DisabledCourse,
     Optout
 )
 

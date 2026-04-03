@@ -6,8 +6,8 @@ Tests for XML importer.
 import importlib
 import os
 import unittest
-from uuid import uuid4
 from unittest import mock
+from uuid import uuid4
 
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator

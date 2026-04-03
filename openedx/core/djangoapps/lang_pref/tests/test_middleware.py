@@ -11,15 +11,15 @@ from django.conf import settings
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse
 from django.test.client import Client, RequestFactory
-from openedx.core.lib.api.test_utils import override_settings
 from django.urls import reverse
 from django.utils.translation.trans_real import parse_accept_lang_header
 
+from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
 from openedx.core.djangoapps.lang_pref import COOKIE_DURATION, LANGUAGE_KEY
 from openedx.core.djangoapps.lang_pref.middleware import LanguagePreferenceMiddleware
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
-    with_site_configuration_context,
+    with_site_configuration_context
 )
 from openedx.core.djangoapps.user_api.preferences.api import (
     delete_user_preference,
@@ -27,7 +27,7 @@ from openedx.core.djangoapps.user_api.preferences.api import (
     set_user_preference
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
+from openedx.core.lib.api.test_utils import override_settings
 
 
 @ddt.ddt

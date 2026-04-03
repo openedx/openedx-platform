@@ -2,8 +2,8 @@
 Sync course runs from catalog service.
 """
 
-from collections import namedtuple
 import logging
+from collections import namedtuple
 
 from django.core.management.base import BaseCommand
 from opaque_keys.edx.keys import CourseKey

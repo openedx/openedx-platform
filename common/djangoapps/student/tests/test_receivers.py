@@ -9,9 +9,10 @@ from common.djangoapps.student.models import CourseEnrollmentCelebration, Pendin
 from common.djangoapps.student.signals.signals import USER_EMAIL_CHANGED
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory, UserProfileFactory
 from lms.djangoapps.courseware.toggles import COURSEWARE_MICROFRONTEND_PROGRESS_MILESTONES
-from openedx.core.djangolib.testing.utils import skip_unless_lms, get_mock_request
+from openedx.core.djangolib.testing.utils import get_mock_request, skip_unless_lms
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import \
+    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 
 name_affirmation_installed = is_name_affirmation_installed()
 if name_affirmation_installed:

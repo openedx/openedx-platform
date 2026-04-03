@@ -5,9 +5,9 @@ A managment command that can be used to set up Schedules with various configurat
 
 import datetime
 from textwrap import dedent
+from zoneinfo import ZoneInfo
 
 import factory
-from zoneinfo import ZoneInfo
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 
@@ -19,7 +19,10 @@ from openedx.core.djangoapps.schedules.tests.factories import (
     ScheduleFactory
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import XMODULE_FACTORY_LOCK, CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    XMODULE_FACTORY_LOCK,
+    CourseFactory
+)
 
 
 class ThreeDayNudgeSchedule(ScheduleFactory):

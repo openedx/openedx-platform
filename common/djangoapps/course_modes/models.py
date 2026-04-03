@@ -3,9 +3,10 @@ Add and create new modes for running courses on this particular LMS
 """
 
 
+import logging
 from collections import defaultdict, namedtuple
 from datetime import timedelta
-import logging
+
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,7 +14,6 @@ from django.core.validators import validate_comma_separated_integer_list
 from django.db import models
 from django.db.models import Q
 from django.dispatch import receiver
-
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from edx_django_utils.cache import RequestCache

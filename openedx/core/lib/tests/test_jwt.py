@@ -7,8 +7,7 @@ from time import time
 from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, MissingRequiredClaimError
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.core.lib.jwt import _encode_and_sign, create_jwt, unpack_jwt, unpack_and_verify
-
+from openedx.core.lib.jwt import _encode_and_sign, create_jwt, unpack_and_verify, unpack_jwt
 
 test_user_id = 121
 invalid_test_user_id = 120

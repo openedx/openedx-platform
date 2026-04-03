@@ -146,8 +146,9 @@ def _create_subsection_grade(user_id, course_key, usage_key):
     Given a user_id, course_key, and subsection usage_key,
     creates a new ``PersistentSubsectionGrade``.
     """
-    from lms.djangoapps.courseware.courses import get_course
     from django.contrib.auth import get_user_model
+
+    from lms.djangoapps.courseware.courses import get_course
     course = get_course(course_key, depth=None)
     subsection = course.get_child(usage_key)
     if not subsection:

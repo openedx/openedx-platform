@@ -13,18 +13,15 @@ from .views.enrollments import EnrollmentSupportListView, EnrollmentSupportView
 from .views.feature_based_enrollments import FeatureBasedEnrollmentsSupportView, FeatureBasedEnrollmentSupportAPIView
 from .views.index import index
 from .views.manage_user import ManageUserDetailView, ManageUserSupportView
-from .views.program_enrollments import (
-    LinkProgramEnrollmentSupportView,
-    LinkProgramEnrollmentSupportAPIView,
-    ProgramEnrollmentsInspectorView,
-    SAMLProvidersWithOrg,
-    ProgramEnrollmentsInspectorAPIView,
-)
-from .views.sso_records import (
-    SsoView,
-)
 from .views.onboarding_status import OnboardingView
-
+from .views.program_enrollments import (
+    LinkProgramEnrollmentSupportAPIView,
+    LinkProgramEnrollmentSupportView,
+    ProgramEnrollmentsInspectorAPIView,
+    ProgramEnrollmentsInspectorView,
+    SAMLProvidersWithOrg
+)
+from .views.sso_records import SsoView
 
 COURSE_ENTITLEMENTS_VIEW = EntitlementSupportView.as_view()
 

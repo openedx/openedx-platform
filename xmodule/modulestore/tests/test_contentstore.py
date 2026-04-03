@@ -10,9 +10,9 @@ import unittest
 from tempfile import mkdtemp
 from uuid import uuid4
 
-import pytest
 import ddt
 import path
+import pytest
 from opaque_keys.edx.keys import AssetKey
 from opaque_keys.edx.locator import AssetLocator, CourseLocator
 

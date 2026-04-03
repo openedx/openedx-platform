@@ -2,16 +2,14 @@
 Unit tests for instructor API enrollment list endpoints with search and pagination.
 """
 import json
+
 from django.urls import reverse
+
 from common.djangoapps.student.roles import CourseBetaTesterRole
-from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
-    InstructorFactory,
-    UserFactory
-)
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, InstructorFactory, UserFactory
+from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 
 
 class TestListCourseRoleMembersWithPagination(SharedModuleStoreTestCase, LoginEnrollmentTestCase):

@@ -13,33 +13,28 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from xblock.scorable import ShowCorrectness
 
-from xmodule.modulestore.django import modulestore
 from common.djangoapps.student.models import CourseEnrollment
-from lms.djangoapps.course_home_api.progress.serializers import ProgressTabSerializer
-from lms.djangoapps.course_home_api.progress.api import aggregate_assignment_type_grade_summary
-
-from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
-from lms.djangoapps.courseware.access import has_access, has_ccx_coach_role
+from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.course_blocks.transformers import start_date
-
-from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
+from lms.djangoapps.course_home_api.progress.api import aggregate_assignment_type_grade_summary
+from lms.djangoapps.course_home_api.progress.serializers import ProgressTabSerializer
+from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.course_home_api.utils import get_course_or_403
-from lms.djangoapps.courseware.courses import (
-    get_course_blocks_completion_summary, get_studio_url,
-)
+from lms.djangoapps.courseware.access import has_access, has_ccx_coach_role
+from lms.djangoapps.courseware.courses import get_course_blocks_completion_summary, get_studio_url
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from lms.djangoapps.courseware.views.views import credit_course_requirements, get_cert_data
-
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.verify_student.services import IDVerificationService
-from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 from openedx.core.djangoapps.content.block_structure.api import get_block_structure_manager
+from openedx.core.djangoapps.content.block_structure.transformers import BlockStructureTransformers
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.features.content_type_gating.block_transformers import ContentTypeGateTransformer
 from openedx.features.course_duration_limits.access import get_access_expiration_data
 from openedx.features.enterprise_support.utils import get_enterprise_learner_generic_name
+from xmodule.modulestore.django import modulestore
 
 User = get_user_model()
 

@@ -7,6 +7,7 @@ import datetime
 import itertools
 import unicodedata
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
@@ -17,7 +18,6 @@ from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
-from zoneinfo import ZoneInfo
 from social_django.models import UserSocialAuth
 
 from common.djangoapps.student.models import (

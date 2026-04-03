@@ -19,8 +19,12 @@ import lms.djangoapps.discussion.django_comment_client.utils as utils
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.roles import CourseStaffRole
-from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
+from common.djangoapps.student.tests.factories import (
+    AdminFactory,
+    CourseEnrollmentFactory,
+    InstructorFactory,
+    UserFactory
+)
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
@@ -35,11 +39,9 @@ from openedx.core.djangoapps.discussions.utils import (
     get_accessible_discussion_xblocks,
     get_discussion_categories_ids,
     get_group_names_by_id,
-    has_required_keys,
+    has_required_keys
 )
-from openedx.core.djangoapps.django_comment_common.comment_client.utils import (
-    CommentClientMaintenanceError,
-)
+from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientMaintenanceError
 from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
     DiscussionsIdMapping,
@@ -49,7 +51,7 @@ from openedx.core.djangoapps.django_comment_common.utils import seed_permissions
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, ToyCourseFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory
 
 
 class DictionaryTestCase(TestCase):

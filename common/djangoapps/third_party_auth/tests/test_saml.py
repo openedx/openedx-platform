@@ -8,7 +8,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from social_core.exceptions import AuthMissingParameter
 
 from common.djangoapps.third_party_auth.dummy import DummyBackend
-from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, get_saml_idp_class, SAMLAuthBackend
+from common.djangoapps.third_party_auth.saml import EdXSAMLIdentityProvider, SAMLAuthBackend, get_saml_idp_class
 from common.djangoapps.third_party_auth.tests.data.saml_identity_provider_mock_data import (
     expected_user_details,
     mock_attributes,

@@ -3,43 +3,43 @@ Tests of student.roles
 """
 
 
-import ddt
 from unittest.mock import patch
+
+import ddt
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
-
-from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx_authz.api.data import ContentLibraryData, RoleAssignmentData, RoleData, UserData
 from openedx_authz.engine.enforcer import AuthzEnforcer
 
 from common.djangoapps.student.admin import CourseAccessRoleHistoryAdmin
 from common.djangoapps.student.models import CourseAccessRoleHistory, User
+from common.djangoapps.student.role_helpers import get_course_roles, has_staff_roles
 from common.djangoapps.student.roles import (
+    ROLE_CACHE_UNGROUPED_ROLES__KEY,
     AuthzCompatCourseAccessRole,
     CourseAccessRole,
     CourseBetaTesterRole,
-    CourseInstructorRole,
-    CourseRole,
-    CourseLimitedStaffRole,
-    CourseStaffRole,
-    CourseFinanceAdminRole,
-    CourseSalesAdminRole,
-    LibraryUserRole,
     CourseDataResearcherRole,
+    CourseFinanceAdminRole,
+    CourseInstructorRole,
+    CourseLimitedStaffRole,
+    CourseRole,
+    CourseSalesAdminRole,
+    CourseStaffRole,
     GlobalStaff,
+    LibraryUserRole,
     OrgContentCreatorRole,
     OrgInstructorRole,
     OrgStaffRole,
     RoleCache,
     get_authz_compat_course_access_roles_for_user,
-    get_role_cache_key_for_course,
-    ROLE_CACHE_UNGROUPED_ROLES__KEY
+    get_role_cache_key_for_course
 )
-from common.djangoapps.student.role_helpers import get_course_roles, has_staff_roles
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, InstructorFactory, StaffFactory, UserFactory
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.toggles import AUTHZ_COURSE_AUTHORING_FLAG
 
 
@@ -69,9 +69,9 @@ class RolesTestCase(TestCase):
         This simulates the one-time database seeding that would happen
         during application deployment, separate from the runtime policy loading.
         """
+        import casbin
         import pkg_resources
         from openedx_authz.engine.utils import migrate_policy_between_enforcers
-        import casbin
 
         global_enforcer = AuthzEnforcer.get_enforcer()
         global_enforcer.load_policy()

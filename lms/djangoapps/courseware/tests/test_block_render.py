@@ -3,17 +3,17 @@ Test for lms courseware app, block render unit
 """
 import json
 import textwrap
+import warnings
 from datetime import datetime
 from functools import partial
 from unittest.mock import MagicMock, Mock, patch
-import warnings
 
-import pytest
 import ddt
+import pytest
 import pytz
 from bson import ObjectId
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # lint-amnesty, pylint: disable=wrong-import-order
 from completion.models import BlockCompletion  # lint-amnesty, pylint: disable=wrong-import-order
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # lint-amnesty, pylint: disable=wrong-import-order
 from django.conf import settings  # lint-amnesty, pylint: disable=wrong-import-order
 from django.contrib.auth.models import AnonymousUser  # lint-amnesty, pylint: disable=wrong-import-order
 from django.http import Http404, HttpResponse  # lint-amnesty, pylint: disable=wrong-import-order
@@ -21,9 +21,17 @@ from django.middleware.csrf import get_token  # lint-amnesty, pylint: disable=wr
 from django.test.client import RequestFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from django.test.utils import override_settings  # lint-amnesty, pylint: disable=wrong-import-order
 from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.api import create_exam, create_exam_attempt, update_attempt_status  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_proctoring.api import (  # lint-amnesty, pylint: disable=wrong-import-order
+    create_exam,
+    create_exam_attempt,
+    update_attempt_status
+)
 from edx_proctoring.runtime import set_runtime_service  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.tests.test_services import MockCertificateService, MockCreditService, MockGradesService  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_proctoring.tests.test_services import (  # lint-amnesty, pylint: disable=wrong-import-order
+    MockCertificateService,
+    MockCreditService,
+    MockGradesService
+)
 from edx_toggles.toggles.testutils import override_waffle_switch  # lint-amnesty, pylint: disable=wrong-import-order
 from edx_when.field_data import DateLookupFieldData  # lint-amnesty, pylint: disable=wrong-import-order
 from freezegun import freeze_time  # lint-amnesty, pylint: disable=wrong-import-order
@@ -39,8 +47,48 @@ from xblock.field_data import FieldData  # lint-amnesty, pylint: disable=wrong-i
 from xblock.fields import ScopeIds  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.runtime import DictKeyValueStore, KvsFieldData  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.test.tools import TestRuntime  # lint-amnesty, pylint: disable=wrong-import-order
+from xblocks_contrib.problem.capa.tests.response_xml_factory import \
+    OptionResponseXMLFactory  # lint-amnesty, pylint: disable=reimported
 
-from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory  # lint-amnesty, pylint: disable=reimported
+from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
+from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
+from common.djangoapps.student.tests.factories import (
+    BetaTesterFactory,
+    GlobalStaffFactory,
+    InstructorFactory,
+    RequestFactoryNoCsrf,
+    StaffFactory,
+    UserFactory
+)
+from common.djangoapps.xblock_django.constants import (
+    ATTR_KEY_ANONYMOUS_USER_ID,
+    ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
+    ATTR_KEY_USER_IS_BETA_TESTER,
+    ATTR_KEY_USER_IS_GLOBAL_STAFF,
+    ATTR_KEY_USER_IS_STAFF,
+    ATTR_KEY_USER_ROLE
+)
+from common.djangoapps.xblock_django.models import XBlockConfiguration
+from lms.djangoapps.courseware import block_render as render
+from lms.djangoapps.courseware.access_response import AccessResponse
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor, hash_resource
+from lms.djangoapps.courseware.courses import get_course_info_section, get_course_with_access
+from lms.djangoapps.courseware.field_overrides import OverrideFieldData
+from lms.djangoapps.courseware.masquerade import CourseMasquerade
+from lms.djangoapps.courseware.model_data import FieldDataCache
+from lms.djangoapps.courseware.models import StudentModule
+from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
+from lms.djangoapps.courseware.tests.test_submitting_problems import TestSubmittingProblems
+from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
+from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
+from openedx.core.djangoapps.credit.api import set_credit_requirement_status, set_credit_requirements
+from openedx.core.djangoapps.credit.models import CreditCourse
+from openedx.core.djangoapps.oauth_dispatch.jwt import _create_jwt, create_jwt_for_user
+from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
+from openedx.core.lib.courses import course_image_url
+from openedx.core.lib.gating import api as gating_api
+from openedx.core.lib.url_utils import quote_slashes
 from xmodule.capa_block import ProblemBlock
 from xmodule.contentstore.django import contentstore
 from xmodule.html_block import AboutBlock, CourseInfoBlock, HtmlBlock, StaticTabBlock
@@ -51,53 +99,18 @@ from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
-    upload_file_to_course,
+    upload_file_to_course
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, ToyCourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+    ToyCourseFactory,
+    check_mongo_calls
+)
 from xmodule.modulestore.tests.test_asides import AsideTestType  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.services import RebindUserServiceError
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # lint-amnesty, pylint: disable=wrong-import-order
-from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
-from common.djangoapps.student.tests.factories import (
-    BetaTesterFactory,
-    GlobalStaffFactory,
-    InstructorFactory,
-    RequestFactoryNoCsrf,
-    StaffFactory,
-    UserFactory,
-)
-from common.djangoapps.xblock_django.constants import (
-    ATTR_KEY_ANONYMOUS_USER_ID,
-    ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
-    ATTR_KEY_USER_IS_BETA_TESTER,
-    ATTR_KEY_USER_IS_GLOBAL_STAFF,
-    ATTR_KEY_USER_IS_STAFF,
-    ATTR_KEY_USER_ROLE,
-)
-from lms.djangoapps.courseware import block_render as render
-from lms.djangoapps.courseware.access_response import AccessResponse
-from lms.djangoapps.courseware.courses import get_course_info_section, get_course_with_access
-from lms.djangoapps.courseware.field_overrides import OverrideFieldData
-from lms.djangoapps.courseware.masquerade import CourseMasquerade
-from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.models import StudentModule
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor, hash_resource
-from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
-from lms.djangoapps.courseware.tests.test_submitting_problems import TestSubmittingProblems
-from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
-from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from openedx.core.djangoapps.credit.api import set_credit_requirement_status, set_credit_requirements
-from openedx.core.djangoapps.credit.models import CreditCourse
-from openedx.core.djangoapps.oauth_dispatch.jwt import _create_jwt, create_jwt_for_user
-from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
-from openedx.core.lib.courses import course_image_url
-from openedx.core.lib.gating import api as gating_api
-from openedx.core.lib.url_utils import quote_slashes
-from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
-from lms.djangoapps.verify_student.tests.factories import SoftwareSecurePhotoVerificationFactory
-from common.djangoapps.xblock_django.models import XBlockConfiguration
-
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 

@@ -2,11 +2,12 @@
 Test that various filters are fired for models/views in the student app.
 """
 from django.test import override_settings
-from common.djangoapps.util import course
 from openedx_filters import PipelineStep
+
+from common.djangoapps.util import course
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 class TestPageURLRequestedPipelineStep(PipelineStep):

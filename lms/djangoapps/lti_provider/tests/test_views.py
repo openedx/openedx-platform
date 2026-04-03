@@ -9,12 +9,13 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from openedx_events.learning.data import UserData, UserPersonalData, LtiProviderLaunchData, LtiProviderLaunchParamsData
+from openedx_events.learning.data import LtiProviderLaunchData, LtiProviderLaunchParamsData, UserData, UserPersonalData
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.lti_provider import models, views
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import \
+    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 
 LTI_DEFAULT_PARAMS = {
     'roles': 'Instructor,urn:lti:instrole:ims/lis/Administrator',

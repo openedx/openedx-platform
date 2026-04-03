@@ -2,9 +2,9 @@
 CMS feature toggles.
 """
 from edx_toggles.toggles import SettingToggle, WaffleFlag
+
 from openedx.core.djangoapps.content.search import api as search_api
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-
 
 # .. toggle_name: ENABLE_EXPORT_GIT
 # .. toggle_implementation: SettingToggle

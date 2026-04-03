@@ -5,35 +5,33 @@ from __future__ import annotations
 
 import typing as t
 from uuid import UUID
-from django.conf import settings
 
+from django.conf import settings
 from opaque_keys.edx.keys import UsageKey
-from opaque_keys.edx.locator import (
-    LibraryLocatorV2, LibraryUsageLocatorV2, LibraryContainerLocator
-)
-from openedx_content.api import get_draft_version, get_all_drafts
-from openedx_content.models_api import (
-    PublishableEntityVersion, PublishableEntity, DraftChangeLogRecord
-)
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content.api import get_all_drafts, get_draft_version
+from openedx_content.models_api import DraftChangeLogRecord, PublishableEntity, PublishableEntityVersion
 from xblock.plugin import PluginMissingError
 
+from openedx.core.djangoapps.content.search.api import fetch_block_types, get_all_blocks_from_context
 from openedx.core.djangoapps.content_libraries.api import (
-    library_component_usage_key, library_container_locator,
-    validate_can_add_block_to_library, BlockLimitReachedError,
-    IncompatibleTypesError, LibraryBlockAlreadyExists,
-    ContentLibrary
-)
-from openedx.core.djangoapps.content.search.api import (
-    fetch_block_types,
-    get_all_blocks_from_context,
+    BlockLimitReachedError,
+    ContentLibrary,
+    IncompatibleTypesError,
+    LibraryBlockAlreadyExists,
+    library_component_usage_key,
+    library_container_locator,
+    validate_can_add_block_to_library
 )
 
-from ..data import (
-    SourceContextKey, ModulestoreMigration, ModulestoreBlockMigrationResult,
-    ModulestoreBlockMigrationSuccess, ModulestoreBlockMigrationFailure
-)
 from .. import models
-
+from ..data import (
+    ModulestoreBlockMigrationFailure,
+    ModulestoreBlockMigrationResult,
+    ModulestoreBlockMigrationSuccess,
+    ModulestoreMigration,
+    SourceContextKey
+)
 
 __all__ = (
     'get_forwarding',

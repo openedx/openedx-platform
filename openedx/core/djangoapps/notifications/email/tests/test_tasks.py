@@ -26,16 +26,13 @@ from openedx.core.djangoapps.notifications.email.tasks import (
 )
 from openedx.core.djangoapps.notifications.email.utils import get_start_end_date
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
-from openedx.core.djangoapps.notifications.models import (
-    Notification,
-    NotificationPreference
-)
+from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference
 from openedx.core.djangoapps.notifications.tasks import send_notifications
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-from .utils import create_notification
 from ...config.waffle import DISABLE_EMAIL_NOTIFICATIONS
+from .utils import create_notification
 
 User = get_user_model()
 

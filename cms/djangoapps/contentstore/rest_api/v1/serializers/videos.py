@@ -2,6 +2,7 @@
 API Serializers for videos
 """
 from rest_framework import serializers
+
 from cms.djangoapps.contentstore.rest_api.serializers.common import StrictSerializer
 
 

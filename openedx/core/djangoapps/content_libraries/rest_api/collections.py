@@ -3,29 +3,28 @@ Collections API Views
 """
 from __future__ import annotations
 
+from django.db import transaction
 from django.db.models import QuerySet
 from django.utils.text import slugify
-from django.db import transaction
-
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.status import HTTP_204_NO_CONTENT
-
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT
+from rest_framework.viewsets import ModelViewSet
+
+from openedx.core.types.http import RestRequest
 
 from .. import api, permissions
 from ..models import ContentLibrary
-from .utils import convert_exceptions
 from .serializers import (
     ContentLibraryCollectionSerializer,
     ContentLibraryCollectionUpdateSerializer,
-    ContentLibraryItemKeysSerializer,
+    ContentLibraryItemKeysSerializer
 )
-from openedx.core.types.http import RestRequest
+from .utils import convert_exceptions
 
 
 class LibraryCollectionsView(ModelViewSet):

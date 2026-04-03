@@ -7,13 +7,11 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
 
-from xmodule.modulestore.django import modulestore
-from xmodule.tabs import CourseTabList
-
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseTab
-
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
+from xmodule.modulestore.django import modulestore
+from xmodule.tabs import CourseTabList
 
 User = get_user_model()
 

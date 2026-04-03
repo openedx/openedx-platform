@@ -28,7 +28,7 @@ from xmodule.modulestore.tests.utils import (
     CONTENTSTORE_SETUPS,
     SPLIT_MODULESTORE_SETUP,
     TEST_DATA_DIR,
-    MongoContentstoreBuilder,
+    MongoContentstoreBuilder
 )
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml

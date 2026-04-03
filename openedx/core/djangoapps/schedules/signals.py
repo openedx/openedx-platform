@@ -10,6 +10,8 @@ from django.dispatch import receiver
 from edx_ace.utils import date
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.signals import ENROLLMENT_TRACK_UPDATED  # lint-amnesty, pylint: disable=unused-import
 from lms.djangoapps.courseware.models import (
     CourseDynamicUpgradeDeadlineConfiguration,
     DynamicUpgradeDeadlineConfiguration,
@@ -19,8 +21,7 @@ from openedx.core.djangoapps.content.course_overviews.signals import COURSE_STAR
 from openedx.core.djangoapps.schedules.content_highlights import course_has_highlights_from_store
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.signals import ENROLLMENT_TRACK_UPDATED  # lint-amnesty, pylint: disable=unused-import
+
 from .models import Schedule
 from .tasks import update_course_schedules
 

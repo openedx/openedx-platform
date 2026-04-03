@@ -1,16 +1,16 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from contextlib import contextmanager
 import json
+from contextlib import contextmanager
 from io import BytesIO
 from urllib.parse import urlencode
 
-from organizations.models import Organization
-from rest_framework.test import APITransactionTestCase, APIClient
 from opaque_keys.edx.keys import ContainerKey, UsageKey
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryCollectionLocator
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2
 from openedx_content import models_api as content_models
+from organizations.models import Organization
+from rest_framework.test import APIClient, APITransactionTestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.json_request import JsonResponse as SpecialJsonResponse

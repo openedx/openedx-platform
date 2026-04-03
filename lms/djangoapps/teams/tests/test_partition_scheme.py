@@ -6,12 +6,13 @@ in this file are the following:
 from unittest.mock import MagicMock, patch
 
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from lms.djangoapps.teams.team_partition_scheme import TeamPartitionScheme
+from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.lib.teams_config import create_team_set_partitions_with_course_id
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import ToyCourseFactory
 from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import \
+    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import ToyCourseFactory
 from xmodule.partitions.partitions import Group
 
 

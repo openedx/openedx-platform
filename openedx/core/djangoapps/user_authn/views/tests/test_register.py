@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from unittest import mock, skipIf, skipUnless
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
@@ -16,7 +17,6 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
-from zoneinfo import ZoneInfo
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 

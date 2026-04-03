@@ -9,19 +9,19 @@ import crum
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
+from django.shortcuts import redirect
 from django.views.decorators.csrf import ensure_csrf_cookie, requires_csrf_token
 from django.views.defaults import server_error
-from django.shortcuts import redirect
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
+from common.djangoapps.edxmako.shortcuts import render_to_response
+from common.djangoapps.student.roles import GlobalStaff
+from common.djangoapps.track import views as track_views
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
 from openedx.features.course_experience.utils import dates_banner_should_display
-from common.djangoapps.track import views as track_views
-from common.djangoapps.edxmako.shortcuts import render_to_response
-from common.djangoapps.student.roles import GlobalStaff
 
 log = logging.getLogger(__name__)
 

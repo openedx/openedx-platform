@@ -3,16 +3,15 @@
 
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
-from cms.djangoapps.contentstore.asset_storage_handlers import (
-    handle_assets,
-    get_asset_usage_path_json,
-    update_course_run_asset as update_course_run_asset_source_function,
-    get_file_size as get_file_size_source_function,
-    delete_asset as delete_asset_source_function,
-    get_asset_json as get_asset_json_source_function,
-    update_asset as update_asset_source_function,
 
-)
+from cms.djangoapps.contentstore.asset_storage_handlers import delete_asset as delete_asset_source_function
+from cms.djangoapps.contentstore.asset_storage_handlers import get_asset_json as get_asset_json_source_function
+from cms.djangoapps.contentstore.asset_storage_handlers import get_asset_usage_path_json
+from cms.djangoapps.contentstore.asset_storage_handlers import get_file_size as get_file_size_source_function
+from cms.djangoapps.contentstore.asset_storage_handlers import handle_assets
+from cms.djangoapps.contentstore.asset_storage_handlers import update_asset as update_asset_source_function
+from cms.djangoapps.contentstore.asset_storage_handlers import \
+    update_course_run_asset as update_course_run_asset_source_function
 
 __all__ = ['assets_handler', 'asset_usage_path_handler']
 

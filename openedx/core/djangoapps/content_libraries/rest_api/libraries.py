@@ -80,8 +80,6 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.base import TemplateResponseMixin, View
 from drf_yasg.utils import swagger_auto_schema
-from user_tasks.models import UserTaskStatus
-
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from organizations.api import ensure_organization
@@ -95,15 +93,14 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
+from user_tasks.models import UserTaskStatus
 
 import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
+from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.views.course import (
     get_allowed_organizations_for_libraries,
     user_can_create_organizations
 )
-from cms.djangoapps.contentstore.storage import course_import_export_storage
-from openedx.core.djangoapps.content_libraries.tasks import restore_library
-
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.api.libraries import get_backup_task_status
 from openedx.core.djangoapps.content_libraries.rest_api.serializers import (
@@ -125,7 +122,7 @@ from openedx.core.djangoapps.content_libraries.rest_api.serializers import (
     LibraryXBlockTypeSerializer,
     PublishableItemSerializer
 )
-from openedx.core.djangoapps.content_libraries.tasks import backup_library
+from openedx.core.djangoapps.content_libraries.tasks import backup_library, restore_library
 from openedx.core.djangoapps.safe_sessions.middleware import mark_user_change_as_expected
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.api.view_utils import view_auth_classes

@@ -21,7 +21,8 @@ class StudentConfig(AppConfig):
         # The django-simple-history model on CourseEnrollment creates performance
         # problems in testing, we mock it here so that the mock impacts all tests.
         if os.environ.get('DISABLE_COURSEENROLLMENT_HISTORY', False):
-            import common.djangoapps.student.models as student_models
             from unittest.mock import MagicMock
+
+            import common.djangoapps.student.models as student_models
 
             student_models.CourseEnrollment.history = MagicMock()

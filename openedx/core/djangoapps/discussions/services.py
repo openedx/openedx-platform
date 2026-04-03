@@ -9,8 +9,9 @@ for the extracted discussion block in xblocks-contrib repository.
 from django.conf import settings
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from opaque_keys.edx.keys import CourseKey
-from openedx.core.djangoapps.django_comment_common.models import has_permission
+
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
+from openedx.core.djangoapps.django_comment_common.models import has_permission
 
 
 class DiscussionConfigService:

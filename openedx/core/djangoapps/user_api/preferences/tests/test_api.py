@@ -5,19 +5,21 @@ Unit tests for preference APIs.
 
 import datetime
 from unittest.mock import patch
-import pytest
+
 import ddt
+import pytest
 from dateutil.parser import parse as parse_datetime
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 from django.urls import reverse
 from pytz import common_timezones, utc
 
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
-from openedx.core.lib.time_zone_utils import get_display_time_zone
 from common.djangoapps.student.models import UserProfile
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
+from openedx.core.lib.time_zone_utils import get_display_time_zone
+from xmodule.modulestore.tests.django_utils import \
+    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ...errors import (  # lint-amnesty, pylint: disable=unused-import

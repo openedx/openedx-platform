@@ -2,7 +2,7 @@
 
 from django.urls import path, re_path
 
-from lms.djangoapps.learner_dashboard import programs, program_views
+from lms.djangoapps.learner_dashboard import program_views, programs
 
 urlpatterns = [
     path('programs/', program_views.program_listing, name='program_listing_view'),

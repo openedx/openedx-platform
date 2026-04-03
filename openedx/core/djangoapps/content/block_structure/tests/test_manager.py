@@ -2,9 +2,10 @@
 Tests for manager.py
 """
 
-import pytest
-import ddt
 from unittest.mock import MagicMock
+
+import ddt
+import pytest
 from django.test import TestCase
 
 from xmodule.modulestore import ModuleStoreEnum

@@ -4,9 +4,7 @@ Serializers for the Agreements app
 
 from rest_framework import serializers
 
-from openedx.core.djangoapps.agreements.models import (
-    IntegritySignature, LTIPIISignature, UserAgreement,
-)
+from openedx.core.djangoapps.agreements.models import IntegritySignature, LTIPIISignature, UserAgreement
 from openedx.core.lib.api.serializers import CourseKeyField
 
 

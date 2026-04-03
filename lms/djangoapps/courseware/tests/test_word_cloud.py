@@ -14,8 +14,9 @@ from xblock import plugin
 from common.djangoapps.student.tests.factories import RequestFactoryNoCsrf
 from xmodule import word_cloud_block
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import override_descriptor_system, mock_render_template  # pylint: disable=unused-import
+from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import
 from xmodule.x_module import STUDENT_VIEW
+
 from .helpers import BaseTestXmodule
 
 

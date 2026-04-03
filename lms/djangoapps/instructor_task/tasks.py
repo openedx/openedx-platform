@@ -38,14 +38,13 @@ from lms.djangoapps.instructor_task.tasks_helper.enrollments import (
 from lms.djangoapps.instructor_task.tasks_helper.grades import CourseGradeReport, ProblemGradeReport, ProblemResponses
 from lms.djangoapps.instructor_task.tasks_helper.misc import (
     cohort_students_and_upload,
+    generate_anonymous_ids,
     upload_course_survey_report,
     upload_ora2_data,
     upload_ora2_submission_files,
     upload_ora2_summary,
-    upload_proctored_exam_results_report,
-    generate_anonymous_ids
+    upload_proctored_exam_results_report
 )
-
 from lms.djangoapps.instructor_task.tasks_helper.module_state import (
     delete_problem_module_state,
     override_score_module_state,

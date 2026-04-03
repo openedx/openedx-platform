@@ -3,12 +3,11 @@
 
 from unittest.mock import patch
 
+from django.conf import settings
 from django.middleware.csrf import get_token
 from django.test import TestCase
-from django.test.utils import override_settings
 from django.test.client import RequestFactory
-from django.conf import settings
-
+from django.test.utils import override_settings
 from rest_framework.exceptions import PermissionDenied
 
 from ..authentication import SessionAuthenticationCrossDomainCsrf

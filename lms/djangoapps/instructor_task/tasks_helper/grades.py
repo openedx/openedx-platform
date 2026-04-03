@@ -9,7 +9,6 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryFile
-
 from time import time
 
 from django.conf import settings
@@ -35,7 +34,7 @@ from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 from lms.djangoapps.instructor_task.config.waffle import (
     course_grade_report_verified_only,
     problem_grade_report_verified_only,
-    use_on_disk_grade_reporting,
+    use_on_disk_grade_reporting
 )
 from lms.djangoapps.teams.models import CourseTeamMembership
 from lms.djangoapps.verify_student.services import IDVerificationService
@@ -51,7 +50,7 @@ from xmodule.partitions.partitions_service import PartitionService  # lint-amnes
 from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .runner import TaskProgress
-from .utils import upload_csv_to_report_store, upload_csv_file_to_report_store
+from .utils import upload_csv_file_to_report_store, upload_csv_to_report_store
 
 TASK_LOG = logging.getLogger('edx.celery.task')
 

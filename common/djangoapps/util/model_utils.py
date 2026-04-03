@@ -2,7 +2,7 @@
 Utilities for django models.
 """
 
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
 from django.conf import settings
 from django.dispatch import Signal

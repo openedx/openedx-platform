@@ -3,9 +3,10 @@ Subscription model is used to get users who are subscribed to the main thread/po
 """
 import logging
 
-from . import models, settings, utils
 from forum import api as forum_api
 from forum.backend import get_backend
+
+from . import models, settings, utils
 
 log = logging.getLogger(__name__)
 

@@ -6,10 +6,13 @@ from contextlib import contextmanager
 from logging import getLogger
 
 from django.dispatch import receiver
-from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
 from opaque_keys import InvalidKeyError
-from openedx_events.learning.signals import EXTERNAL_GRADER_SCORE_SUBMITTED
-from openedx_events.learning.signals import EXAM_ATTEMPT_REJECTED, EXAM_ATTEMPT_VERIFIED
+from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
+from openedx_events.learning.signals import (
+    EXAM_ATTEMPT_REJECTED,
+    EXAM_ATTEMPT_VERIFIED,
+    EXTERNAL_GRADER_SCORE_SUBMITTED
+)
 from submissions.models import score_reset, score_set
 from xblock.scorable import ScorableXBlockMixin, Score
 

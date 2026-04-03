@@ -6,8 +6,8 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
 
-from openedx.core.djangoapps.user_api.course_tag import api as course_tag_api
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.course_tag import api as course_tag_api
 
 
 class TestCourseTagAPI(TestCase):

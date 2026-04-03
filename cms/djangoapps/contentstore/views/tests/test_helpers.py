@@ -2,11 +2,14 @@
 Unit tests for helpers.py.
 """
 
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from urllib.parse import quote
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from xmodule.modulestore.tests.factories import BlockFactory, LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    LibraryFactory
+)
 
 from ...helpers import xblock_embed_lms_url, xblock_lms_url, xblock_studio_url, xblock_type_display_name
 

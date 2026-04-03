@@ -5,7 +5,7 @@ Instructor API endpoint urls.
 
 from django.urls import path, re_path
 
-from lms.djangoapps.instructor.views import api, gradebook_api, api_v2
+from lms.djangoapps.instructor.views import api, api_v2, gradebook_api
 from openedx.core.constants import COURSE_ID_PATTERN
 
 # These endpoints are exposing existing views in a way that can be used by MFEs

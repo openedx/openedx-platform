@@ -5,15 +5,13 @@ Shared test values between the LMS and CMS should be declared here when possible
 rather than duplicated or imported accross services.
 """
 import os
-from path import Path as path
 from uuid import uuid4
 
 from django.utils.translation import gettext_lazy
-
-from openedx.core.lib.derived import Derived
+from path import Path as path
 
 from common.djangoapps.util.testing import patch_sessions, patch_testcase
-
+from openedx.core.lib.derived import Derived
 
 # This patch disables the commit_on_success decorator during tests
 # in TestCase subclasses.

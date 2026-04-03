@@ -5,8 +5,9 @@ This provides Data models to represent Certificates data.
 """
 
 from dataclasses import dataclass
-from opaque_keys.edx.keys import CourseKey
+
 from django.contrib.auth import get_user_model
+from opaque_keys.edx.keys import CourseKey
 
 User = get_user_model()
 

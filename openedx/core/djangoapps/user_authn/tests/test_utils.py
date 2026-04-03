@@ -3,6 +3,7 @@
 
 from collections import namedtuple
 from urllib.parse import urlencode  # pylint: disable=import-error
+
 import ddt
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -10,9 +11,9 @@ from django.test.utils import override_settings
 
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory
 from openedx.core.djangoapps.user_authn.utils import (
-    is_safe_login_or_logout_redirect,
     generate_username_suggestions,
-    remove_special_characters_from_name,
+    is_safe_login_or_logout_redirect,
+    remove_special_characters_from_name
 )
 
 

@@ -1,13 +1,13 @@
 """Tests for zendesk_proxy views."""
 
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 import ddt
-from django.urls import reverse
 from django.test.utils import override_settings
+from django.urls import reverse
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.zendesk_proxy.v1.views import ZendeskProxyThrottle

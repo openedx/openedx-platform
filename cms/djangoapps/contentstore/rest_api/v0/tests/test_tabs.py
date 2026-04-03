@@ -8,10 +8,10 @@ from urllib.parse import urlencode
 
 import ddt
 from django.urls import reverse
-from xmodule.modulestore.tests.factories import BlockFactory
-from xmodule.tabs import CourseTabList
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from xmodule.modulestore.tests.factories import BlockFactory
+from xmodule.tabs import CourseTabList
 
 
 @ddt.ddt

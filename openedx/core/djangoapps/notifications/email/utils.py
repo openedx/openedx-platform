@@ -22,12 +22,12 @@ from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KE
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_preference_unsubscribe_event
 from openedx.core.djangoapps.notifications.models import NotificationPreference
-from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.models import UserPreference
 from xmodule.modulestore.django import modulestore
 
-from .notification_icons import NotificationTypeIcons
 from ..utils import create_account_notification_pref_if_not_exists
+from .notification_icons import NotificationTypeIcons
 
 User = get_user_model()
 

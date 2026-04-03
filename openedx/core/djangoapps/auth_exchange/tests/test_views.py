@@ -6,8 +6,7 @@ Tests for OAuth token exchange views
 
 import json
 import unittest
-from datetime import timedelta
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import ddt
 import httpretty
@@ -19,14 +18,14 @@ from oauth2_provider.models import Application
 from rest_framework.test import APIClient
 from social_django.models import Partial
 
-from openedx.core.djangoapps.oauth_dispatch import jwt as jwt_api
-from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
-from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.tests.utils import (
     ThirdPartyOAuthTestMixinFacebook,
-    ThirdPartyOAuthTestMixinGoogle,
+    ThirdPartyOAuthTestMixinGoogle
 )
+from openedx.core.djangoapps.oauth_dispatch import jwt as jwt_api
+from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
+from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from .mixins import DOTAdapterMixin

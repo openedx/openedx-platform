@@ -4,14 +4,12 @@ Additional utilities for Learner Home
 
 import logging
 
-from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.core.exceptions import MultipleObjectsReturned
-from rest_framework.exceptions import PermissionDenied, NotFound
+from django.urls import reverse
+from rest_framework.exceptions import NotFound, PermissionDenied
 
-from common.djangoapps.student.models import (
-    get_user_by_username_or_email,
-)
+from common.djangoapps.student.models import get_user_by_username_or_email
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 

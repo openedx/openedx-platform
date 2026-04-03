@@ -5,13 +5,13 @@ import logging
 from uuid import uuid4
 
 from django.db import transaction
-
 from openedx_events.learning.data import CourseDiscussionConfigurationData
 from openedx_events.learning.signals import COURSE_DISCUSSIONS_CHANGED
+
 from openedx.core.djangoapps.discussions.models import (
-    DiscussionTopicLink,
     DiscussionsConfiguration,
-    get_default_provider_type,
+    DiscussionTopicLink,
+    get_default_provider_type
 )
 
 log = logging.getLogger(__name__)

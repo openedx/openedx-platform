@@ -7,7 +7,6 @@ import logging
 
 import ddt
 import pytest
-
 # pylint: disable=protected-access
 from django.test import TestCase
 # pylint: enable=E0611

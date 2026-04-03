@@ -4,9 +4,10 @@ Storage backend for course import and export.
 
 
 from django.conf import settings
-from common.djangoapps.util.storage import resolve_storage_backend
 from storages.backends.s3boto3 import S3Boto3Storage
 from storages.utils import setting
+
+from common.djangoapps.util.storage import resolve_storage_backend
 
 
 class ImportExportS3Storage(S3Boto3Storage):  # pylint: disable=abstract-method

@@ -10,9 +10,9 @@ import json
 import os
 import re
 import sys
-
 from functools import reduce
 from io import StringIO
+
 from xsslint.reporting import SummaryResults
 from xsslint.rules import RuleSet
 from xsslint.utils import is_skip_dir

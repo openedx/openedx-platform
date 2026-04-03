@@ -12,15 +12,14 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationAccessFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 # oauth_dispatch is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
     from oauth2_provider import models as dot_models
 
-    from .. import adapters
-    from .. import models
+    from .. import adapters, models
     from ..dot_overrides.validators import EdxOAuth2Validator
     from .constants import DUMMY_REDIRECT_URL
 

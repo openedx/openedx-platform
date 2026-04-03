@@ -3,7 +3,6 @@
 
 from edx_toggles.toggles import WaffleSwitch
 
-
 WAFFLE_SWITCH_NAMESPACE = 'course_list_api_rate_limit'
 
 # .. toggle_name: course_list_api_rate_limit.rate_limit_2

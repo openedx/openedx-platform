@@ -7,43 +7,38 @@ the older runtime.
 Note that these views are only for interacting with existing blocks. Other
 Studio APIs cover use cases like adding/deleting/editing blocks.
 """
-# pylint: disable=unused-import
-from enum import Enum
-from datetime import datetime
 import logging
 import threading
+from datetime import datetime
+# pylint: disable=unused-import
+from enum import Enum
 
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from openedx_content import api as content_api
-from openedx_content.models_api import Component, ComponentVersion
 from opaque_keys.edx.keys import UsageKeyV2
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
+from openedx_content import api as content_api
+from openedx_content.models_api import Component, ComponentVersion
 from rest_framework.exceptions import NotFound
 from xblock.core import XBlock
 from xblock.exceptions import NoSuchUsage, NoSuchViewError
 from xblock.plugin import PluginMissingError
 
-from openedx.core.types import User as UserType
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
+# Made available as part of this package's public API:
+from openedx.core.djangoapps.xblock.learning_context import LearningContext
 from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
 from openedx.core.djangoapps.xblock.runtime.openedx_content_runtime import (
     OpenedXContentFieldData,
-    OpenedXContentRuntime,
+    OpenedXContentRuntime
 )
+from openedx.core.types import User as UserType
+
 from .data import CheckPerm, LatestVersion
 from .rest_api.url_converters import VersionConverter
-from .utils import (
-    get_secure_token_for_xblock_handler,
-    get_xblock_id_for_anonymous_user,
-    get_auto_latest_version,
-)
-
 from .runtime.openedx_content_runtime import OpenedXContentRuntime
-
-# Made available as part of this package's public API:
-from openedx.core.djangoapps.xblock.learning_context import LearningContext
+from .utils import get_auto_latest_version, get_secure_token_for_xblock_handler, get_xblock_id_for_anonymous_user
 
 # Implementation:
 

@@ -1,11 +1,11 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from datetime import datetime, timezone
 import os
-import zipfile
-import uuid
 import tempfile
+import uuid
+import zipfile
+from datetime import datetime, timezone
 from io import StringIO
 from unittest import skip
 from unittest.mock import ANY, patch
@@ -13,18 +13,22 @@ from unittest.mock import ANY, patch
 import ddt
 import tomlkit
 from bridgekeeper import perms
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models import Q
 from django.test import override_settings
 from django.test.client import Client
 from freezegun import freeze_time
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2, LibraryCollectionLocator
-from organizations.models import Organization
-from rest_framework.test import APITestCase
-from rest_framework import status
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz import api as authz_api
+from openedx_authz.constants import roles
+from openedx_authz.constants.permissions import VIEW_LIBRARY
+from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_content.models_api import LearningPackage
-from user_tasks.models import UserTaskStatus, UserTaskArtifact
+from organizations.models import Organization
+from rest_framework import status
+from rest_framework.test import APITestCase
+from user_tasks.models import UserTaskArtifact, UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries.constants import CC_4_BY
@@ -34,14 +38,10 @@ from openedx.core.djangoapps.content_libraries.tests.base import (
     URL_BLOCK_METADATA_URL,
     URL_BLOCK_RENDER_VIEW,
     URL_BLOCK_XBLOCK_HANDLER,
-    ContentLibrariesRestApiTest,
+    ContentLibrariesRestApiTest
 )
-from openedx_authz import api as authz_api
-from openedx_authz.constants import roles
-from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from openedx_authz.constants.permissions import VIEW_LIBRARY
 
 from ..models import ContentLibrary, ContentLibraryPermission
 from ..permissions import CAN_VIEW_THIS_CONTENT_LIBRARY, HasPermissionInContentLibraryScope
@@ -1785,9 +1785,9 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
         This simulates the one-time database seeding that would happen
         during application deployment, separate from the runtime policy loading.
         """
+        import casbin
         import pkg_resources
         from openedx_authz.engine.utils import migrate_policy_between_enforcers
-        import casbin
 
         global_enforcer = AuthzEnforcer.get_enforcer()
         global_enforcer.load_policy()

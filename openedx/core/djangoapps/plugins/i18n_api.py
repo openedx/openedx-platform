@@ -2,11 +2,11 @@
 edx-platform specific i18n helpers for edx-django-utils plugins.
 """
 
-from dataclasses import dataclass, asdict
-from collections import defaultdict
 import os
-from pathlib import Path
 import subprocess
+from collections import defaultdict
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from django.core.management import BaseCommand, CommandError
 from importlib_metadata import entry_points

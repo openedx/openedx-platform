@@ -1,12 +1,12 @@
 """ Tests for transcripts_utils. """
 
-from contextlib import contextmanager
 import copy
 import json
 import re
 import tempfile
 import textwrap
 import unittest
+from contextlib import contextmanager
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -15,16 +15,20 @@ import pytest
 from django.conf import settings
 from django.test.utils import override_settings
 from django.utils import translation
+from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.tests.utils import setup_caption_responses
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.video_config import transcripts_utils  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.video_config import transcripts_utils  # lint-amnesty, pylint: disable=wrong-import-order
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
+from xmodule.modulestore.tests.django_utils import \
+    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory
+)
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex

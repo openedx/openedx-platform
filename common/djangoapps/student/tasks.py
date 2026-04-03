@@ -2,23 +2,21 @@
 Celery task for course enrollment email
 """
 import logging
+
 from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
-from common.djangoapps.track import segment
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.student.helpers import (
-    get_course_dates_for_email,
-    get_instructors,
-)
+from common.djangoapps.student.helpers import get_course_dates_for_email, get_instructors
+from common.djangoapps.track import segment
 from lms.djangoapps.utils import get_email_client
 from openedx.core.djangoapps.catalog.utils import (
-    get_course_uuid_for_course,
-    get_owners_for_course,
     get_course_run_details,
+    get_course_uuid_for_course,
+    get_owners_for_course
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.features.course_experience import ENABLE_COURSE_GOALS

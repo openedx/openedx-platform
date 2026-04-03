@@ -2,8 +2,8 @@
 URL configuration for the new XBlock API
 """
 from django.urls import include, path, re_path, register_converter
-from . import url_converters
-from . import views
+
+from . import url_converters, views
 
 # Note that the exact same API URLs are used in Studio and the LMS, but the API
 # may act a bit differently in each (e.g. Studio stores user state ephemerally).

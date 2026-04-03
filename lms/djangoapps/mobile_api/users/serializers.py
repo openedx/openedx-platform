@@ -14,9 +14,9 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, User
 from common.djangoapps.util.course import get_encoded_course_sharing_utm_params, get_link_for_about_page
 from lms.djangoapps.certificates.api import certificate_downloadable_status
+from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_assignments_completions, get_past_and_future_course_assignments
-from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from lms.djangoapps.mobile_api.utils import API_V4, get_course_organization_logo
 from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from xmodule.modulestore.django import modulestore

@@ -11,24 +11,21 @@ from urllib.parse import unquote
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.transaction import atomic
 from django.urls import reverse
-
-from openedx_content import api as content_api
-
 from lxml import etree
-
+from openedx_content import api as content_api
 from xblock.core import XBlock
 from xblock.exceptions import NoSuchUsage
-from xblock.fields import Field, Scope, ScopeIds
 from xblock.field_data import FieldData
+from xblock.fields import Field, Scope, ScopeIds
 
 from openedx.core.djangoapps.xblock.api import get_xblock_app_config
 from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 from openedx.core.lib.xblock_serializer.data import StaticFile
-from ..data import AuthoredDataMode, LatestVersion
-from ..utils import get_auto_latest_version
-from ..learning_context.manager import get_learning_context_impl
-from .runtime import XBlockRuntime
 
+from ..data import AuthoredDataMode, LatestVersion
+from ..learning_context.manager import get_learning_context_impl
+from ..utils import get_auto_latest_version
+from .runtime import XBlockRuntime
 
 log = logging.getLogger(__name__)
 

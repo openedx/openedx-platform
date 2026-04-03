@@ -2,6 +2,7 @@
 API Serializers for xblocks
 """
 from rest_framework import serializers
+
 from cms.djangoapps.contentstore.rest_api.serializers.common import StrictSerializer
 
 # The XblockSerializer is designed to be scalable and generic. As such, its structure

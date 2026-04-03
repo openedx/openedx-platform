@@ -19,7 +19,7 @@ from openedx.core.djangoapps.agreements.api import (
     get_latest_user_agreement_record,
     get_lti_pii_signature,
     get_pii_receiving_lti_tools,
-    get_user_agreement_records,
+    get_user_agreement_records
 )
 from openedx.core.djangoapps.agreements.models import LTIPIITool, UserAgreement
 from openedx.core.djangolib.testing.utils import skip_unless_lms

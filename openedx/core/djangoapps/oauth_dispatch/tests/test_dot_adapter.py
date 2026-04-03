@@ -3,9 +3,9 @@ Tests for DOT Adapter
 """
 
 from datetime import timedelta
-import pytest
 
 import ddt
+import pytest
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.timezone import now
@@ -16,8 +16,8 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 # oauth_dispatch is not in CMS' INSTALLED_APPS so these imports will error during test collection
 from ..adapters import DOTAdapter
-from .constants import DUMMY_REDIRECT_URL, DUMMY_REDIRECT_URL2
 from ..models import RestrictedApplication
+from .constants import DUMMY_REDIRECT_URL, DUMMY_REDIRECT_URL2
 
 
 @ddt.ddt

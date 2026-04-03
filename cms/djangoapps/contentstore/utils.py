@@ -27,7 +27,6 @@ from milestones import api as milestones_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import BlockUsageLocator, LibraryContainerLocator, LibraryLocator
-from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.learning.data import CourseNotificationData
@@ -50,7 +49,7 @@ from cms.djangoapps.contentstore.toggles import (
     use_new_group_configurations_page,
     use_new_import_page,
     use_new_schedule_details_page,
-    use_new_unit_page,
+    use_new_unit_page
 )
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -63,11 +62,7 @@ from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.student import auth
 from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_read_access, has_studio_write_access
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import (
-    CourseInstructorRole,
-    CourseStaffRole,
-    GlobalStaff,
-)
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.track import contexts
 from common.djangoapps.util.course import get_link_for_about_page
 from common.djangoapps.util.date_utils import get_default_time_display
@@ -77,7 +72,7 @@ from common.djangoapps.util.milestones_helpers import (
     is_prerequisite_courses_enabled,
     is_valid_course_key,
     remove_prerequisite_course,
-    set_prerequisite_courses,
+    set_prerequisite_courses
 )
 from common.djangoapps.xblock_django.api import deprecated_xblocks
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
@@ -93,6 +88,7 @@ from openedx.core.djangoapps.django_comment_common.utils import seed_permissions
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
+from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from openedx.core.lib.courses import course_image_url
 from openedx.core.lib.html_to_text import html_to_text
@@ -106,9 +102,8 @@ from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import (
-    get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
-)
+from xmodule.partitions.partitions_service import \
+    get_all_partitions_for_course  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService
 from xmodule.util.keys import BlockKey
 
@@ -1418,7 +1413,7 @@ def get_course_settings(request, course_key, course_block):
     It is used for both DRF and django views.
     """
 
-    from .views.course import get_courses_accessible_to_user, _process_courses_list
+    from .views.course import _process_courses_list, get_courses_accessible_to_user
 
     credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
     upload_asset_url = reverse_course_url('assets_handler', course_key)
@@ -1592,14 +1587,10 @@ def get_library_context(request, request_is_json=False):
         format_library_for_view,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
-        user_can_create_organizations,
+        user_can_create_organizations
     )
-    from cms.djangoapps.contentstore.views.library import (
-        user_can_view_create_library_button,
-    )
-    from openedx.core.djangoapps.content_libraries.api import (
-        user_can_create_library,
-    )
+    from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
+    from openedx.core.djangoapps.content_libraries.api import user_can_create_library
 
     is_migrated: bool | None  # None means: do not filter on is_migrated
     if (is_migrated_param := request.GET.get('is_migrated')) is not None:
@@ -1654,10 +1645,7 @@ def get_course_context(request):
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.views.course import (
-        get_courses_accessible_to_user,
-        _process_courses_list,
-    )
+    from cms.djangoapps.contentstore.views.course import _process_courses_list, get_courses_accessible_to_user
 
     def format_in_process_course_view(uca):
         """
@@ -1693,9 +1681,7 @@ def get_course_context_v2(request):
     # Importing here to avoid circular imports:
     # ImportError: cannot import name 'reverse_course_url' from partially initialized module
     # 'cms.djangoapps.contentstore.utils' (most likely due to a circular import)
-    from cms.djangoapps.contentstore.views.course import (
-        get_courses_accessible_to_user,
-    )
+    from cms.djangoapps.contentstore.views.course import get_courses_accessible_to_user
 
     def format_in_process_course_view(uca):
         """
@@ -1732,17 +1718,13 @@ def get_home_context(request, no_course=False):
     """
 
     from cms.djangoapps.contentstore.views.course import (
+        _get_course_creator_status,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
-        user_can_create_organizations,
-        _get_course_creator_status,
+        user_can_create_organizations
     )
-    from cms.djangoapps.contentstore.views.library import (
-        user_can_view_create_library_button,
-    )
-    from openedx.core.djangoapps.content_libraries.api import (
-        user_can_create_library,
-    )
+    from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
+    from openedx.core.djangoapps.content_libraries.api import user_can_create_library
 
     active_courses = []
     archived_courses = []
@@ -1815,17 +1797,15 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
     from edxval.api import (
         get_3rd_party_transcription_plans,
         get_transcript_credentials_state_for_org,
-        get_transcript_preferences,
+        get_transcript_preferences
     )
+
     from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
     from openedx.core.djangoapps.video_config.toggles import use_xpert_translations_component
-    from openedx.core.djangoapps.video_config.transcripts_utils import Transcript  # lint-amnesty, pylint: disable=wrong-import-order
+    from openedx.core.djangoapps.video_config.transcripts_utils import \
+        Transcript  # lint-amnesty, pylint: disable=wrong-import-order
 
-    from .video_storage_handlers import (
-        get_all_transcript_languages,
-        _get_index_videos,
-        _get_default_video_image_url
-    )
+    from .video_storage_handlers import _get_default_video_image_url, _get_index_videos, get_all_transcript_languages
 
     VIDEO_SUPPORTED_FILE_FORMATS = {
         '.mp4': 'video/mp4',
@@ -1913,9 +1893,9 @@ def _get_course_index_context(request, course_key, course_block):
     """
 
     from cms.djangoapps.contentstore.views.course import (
-        course_outline_initial_state,
         _course_outline_json,
         _deprecated_blocks_info,
+        course_outline_initial_state
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
@@ -1998,16 +1978,16 @@ def get_container_handler_context(request, usage_key, course, xblock):  # pylint
     It is used for both DRF and django views.
     """
 
+    from cms.djangoapps.contentstore.helpers import get_parent_xblock, is_unit
     from cms.djangoapps.contentstore.views.component import (
-        get_component_templates,
-        get_unit_tags,
         CONTAINER_TEMPLATES,
         LIBRARY_BLOCK_TYPES,
+        get_component_templates,
+        get_unit_tags
     )
-    from cms.djangoapps.contentstore.helpers import get_parent_xblock, is_unit
     from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
         add_container_page_publishing_info,
-        create_xblock_info,
+        create_xblock_info
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
@@ -2188,11 +2168,12 @@ def get_group_configurations_context(course, store):
     """
 
     from cms.djangoapps.contentstore.course_group_config import (
-        COHORT_SCHEME, ENROLLMENT_SCHEME, GroupConfiguration, RANDOM_SCHEME
+        COHORT_SCHEME,
+        ENROLLMENT_SCHEME,
+        RANDOM_SCHEME,
+        GroupConfiguration
     )
-    from cms.djangoapps.contentstore.views.course import (
-        are_content_experiments_enabled
-    )
+    from cms.djangoapps.contentstore.views.course import are_content_experiments_enabled
     from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
     course_key = course.id

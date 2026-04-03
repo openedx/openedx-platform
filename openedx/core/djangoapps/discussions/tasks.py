@@ -11,9 +11,9 @@ from openedx_events.learning.signals import COURSE_DISCUSSIONS_CHANGED
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
-from .config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 
-from .models import DiscussionsConfiguration, Provider, DiscussionTopicLink
+from .config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
+from .models import DiscussionsConfiguration, DiscussionTopicLink, Provider
 from .utils import get_accessible_discussion_xblocks_by_course_id
 
 log = logging.getLogger(__name__)

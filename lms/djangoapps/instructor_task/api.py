@@ -25,11 +25,11 @@ from lms.djangoapps.instructor_task.api_helper import (
     encode_entrance_exam_and_student_input,
     encode_problem_and_student_input,
     schedule_task,
-    submit_task,
     submit_scheduled_task,
+    submit_task
 )
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
-from lms.djangoapps.instructor_task.models import InstructorTask, InstructorTaskSchedule, SCHEDULED
+from lms.djangoapps.instructor_task.models import SCHEDULED, InstructorTask, InstructorTaskSchedule
 from lms.djangoapps.instructor_task.tasks import (
     calculate_grades_csv,
     calculate_inactive_enrolled_students_info_csv,
@@ -43,13 +43,13 @@ from lms.djangoapps.instructor_task.tasks import (
     export_ora2_data,
     export_ora2_submission_files,
     export_ora2_summary,
+    generate_anonymous_ids_for_course,
     generate_certificates,
     override_problem_score,
     proctored_exam_results_csv,
     rescore_problem,
     reset_problem_attempts,
-    send_bulk_course_email,
-    generate_anonymous_ids_for_course
+    send_bulk_course_email
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 

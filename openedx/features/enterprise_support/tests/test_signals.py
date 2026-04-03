@@ -28,7 +28,8 @@ from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerUserFactory
 )
 from openedx.features.enterprise_support.utils import get_data_consent_share_cache_key
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import \
+    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)

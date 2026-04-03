@@ -11,14 +11,14 @@ from django.conf import settings
 from django.http import HttpRequest
 from django.test.client import Client
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.dark_lang.middleware import DarkLangMiddleware
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
-    with_site_configuration_context,
+    with_site_configuration_context
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-from common.djangoapps.student.tests.factories import UserFactory
 
 UNSET = object()
 

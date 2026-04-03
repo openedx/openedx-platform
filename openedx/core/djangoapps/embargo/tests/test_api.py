@@ -4,37 +4,37 @@ Tests for EmbargoMiddleware
 
 from contextlib import contextmanager
 from unittest import mock
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import ddt
 import geoip2.database
 import maxminddb
-import ddt
 import pytest
-
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connection
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, mixed_store_config
 
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, skip_unless_lms
-from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
-from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.roles import (
-    GlobalStaff, CourseRole, OrgRole,
-    CourseStaffRole, CourseInstructorRole,
-    OrgStaffRole, OrgInstructorRole
+    CourseInstructorRole,
+    CourseRole,
+    CourseStaffRole,
+    GlobalStaff,
+    OrgInstructorRole,
+    OrgRole,
+    OrgStaffRole
 )
+from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
-
-from ..models import (
-    RestrictedCourse, Country, CountryAccessRule,
-)
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, mixed_store_config
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from .. import api as embargo_api
 from ..exceptions import InvalidAccessPoint
+from ..models import Country, CountryAccessRule, RestrictedCourse
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 

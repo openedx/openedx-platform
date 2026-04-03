@@ -6,8 +6,7 @@
 import django.utils.timezone
 import model_utils.fields
 import opaque_keys.edx.django.models
-from django.db import connection
-from django.db import migrations, models
+from django.db import connection, migrations, models
 
 
 def run_before_migrate(migrations, db_engine):

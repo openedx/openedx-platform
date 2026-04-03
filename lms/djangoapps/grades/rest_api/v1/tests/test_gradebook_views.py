@@ -8,7 +8,6 @@ from collections import OrderedDict, namedtuple
 from contextlib import contextmanager
 from datetime import datetime
 from unittest.mock import MagicMock, patch
-from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 
 import ddt
 import pytest
@@ -19,11 +18,10 @@ from opaque_keys.edx.locator import BlockUsageLocator
 from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseCcxCoachRole,
@@ -31,14 +29,14 @@ from common.djangoapps.student.roles import (
     CourseInstructorRole,
     CourseStaffRole
 )
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.api import (
-    get_certificate_for_user_id,
-    create_or_update_eligible_certificate_for_user
+from common.djangoapps.student.tests.factories import (
+    CourseEnrollmentFactory,
+    InstructorFactory,
+    StaffFactory,
+    UserFactory
 )
+from lms.djangoapps.certificates.api import create_or_update_eligible_certificate_for_user, get_certificate_for_user_id
+from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.grades.config.waffle import BULK_MANAGEMENT, WRITABLE_GRADEBOOK
 from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.course_data import CourseData
@@ -55,6 +53,8 @@ from lms.djangoapps.grades.rest_api.v1.views import CourseEnrollmentPagination
 from lms.djangoapps.grades.subsection_grade import ReadSubsectionGrade
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 # pylint: disable=unused-variable

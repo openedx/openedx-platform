@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from django.db.models import Count
 from django.http import StreamingHttpResponse
+from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
+from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
 from rest_framework import status
@@ -12,15 +14,9 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from openedx_events.content_authoring.data import ContentObjectData, ContentObjectChangedData
-from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    CONTENT_OBJECT_TAGS_CHANGED,
-)
 
 from openedx.core.types.http import RestRequest
 
-from ...auth import has_view_object_tags_access
 from ...api import (
     create_taxonomy,
     generate_csv_rows,
@@ -30,13 +26,14 @@ from ...api import (
     get_unassigned_taxonomies,
     set_taxonomy_orgs
 )
+from ...auth import has_view_object_tags_access
 from ...rules import get_admin_orgs
 from .filters import ObjectTagTaxonomyOrgFilterBackend, UserOrgFilterBackend
 from .serializers import (
     ObjectTagCopiedMinimalSerializer,
     TaxonomyOrgListQueryParamsSerializer,
     TaxonomyOrgSerializer,
-    TaxonomyUpdateOrgBodySerializer,
+    TaxonomyUpdateOrgBodySerializer
 )
 
 

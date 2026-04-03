@@ -1,7 +1,7 @@
 """
 Studio URL configuration for openedx-olx-rest-api.
 """
-from django.urls import path, include
+from django.urls import include, path
 
 from . import views
 

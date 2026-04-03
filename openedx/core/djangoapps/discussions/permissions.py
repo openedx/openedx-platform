@@ -4,7 +4,7 @@ API library for Django REST Framework permissions-oriented workflows
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
 
-from common.djangoapps.student.roles import CourseStaffRole, GlobalStaff, CourseInstructorRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
 from openedx.core.lib.api.view_utils import validate_course_key
 

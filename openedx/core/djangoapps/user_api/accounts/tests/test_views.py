@@ -8,9 +8,9 @@ import json
 from copy import deepcopy
 from unittest import mock
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.test.testcases import TransactionTestCase
@@ -31,11 +31,11 @@ from common.djangoapps.student.tests.factories import (
 )
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.user_api.accounts import ACCOUNT_VISIBILITY_PREF_KEY
+from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
 from openedx.core.djangoapps.user_api.accounts.tests.factories import (
     RetirementStateFactory,
     UserRetirementStatusFactory
 )
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
 from openedx.core.djangoapps.user_api.models import UserPreference, UserRetirementStatus
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES

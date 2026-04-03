@@ -22,7 +22,7 @@ from lms.djangoapps.discussion.rest_api.views import (
     ReplaceUsernamesView,
     RetireUserView,
     ThreadViewSet,
-    UploadFileView,
+    UploadFileView
 )
 
 ROUTER = SimpleRouter()

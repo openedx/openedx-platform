@@ -4,10 +4,9 @@ Tests that several XBlock APIs support versioning
 from django.test.utils import override_settings
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+
 from .fields_test_block import FieldsTestBlock
 
 

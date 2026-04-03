@@ -3,8 +3,8 @@
 from cms.djangoapps.contentstore.rest_api.v2.serializers.downstreams import (
     ComponentLinksSerializer,
     ContainerLinksSerializer,
-    PublishableEntityLinksSummarySerializer,
-    PublishableEntityLinkSerializer
+    PublishableEntityLinkSerializer,
+    PublishableEntityLinksSummarySerializer
 )
 from cms.djangoapps.contentstore.rest_api.v2.serializers.home import CourseHomeTabSerializerV2
 

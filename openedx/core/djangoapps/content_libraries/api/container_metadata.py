@@ -4,20 +4,21 @@ Content libraries data classes related to Containers.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dataclass_field
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from enum import Enum
-from django.db.models import QuerySet
 
+from django.db.models import QuerySet
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import (
     Component,
     Container,
-    Unit,
-    Subsection,
-    Section,
     PublishableEntity,
     PublishableEntityMixin,
+    Section,
+    Subsection,
+    Unit
 )
 
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts

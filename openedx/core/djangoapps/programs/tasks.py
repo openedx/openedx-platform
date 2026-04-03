@@ -19,14 +19,14 @@ from opaque_keys.edx.keys import CourseKey
 from requests.exceptions import HTTPError
 
 from common.djangoapps.course_modes.models import CourseMode
-from lms.djangoapps.certificates.data import GeneratedCertificateData
 from lms.djangoapps.certificates.api import get_eligible_certificate
+from lms.djangoapps.certificates.data import GeneratedCertificateData
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 from openedx.core.djangoapps.credentials.api import is_credentials_enabled
 from openedx.core.djangoapps.credentials.utils import (
     get_credentials,
     get_credentials_api_base_url,
-    get_credentials_api_client,
+    get_credentials_api_client
 )
 from openedx.core.djangoapps.programs.utils import ProgramProgressMeter
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers

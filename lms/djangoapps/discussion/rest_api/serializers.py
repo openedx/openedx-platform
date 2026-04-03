@@ -3,11 +3,10 @@ Discussion API serializers
 """
 import html
 import re
-
-from bs4 import BeautifulSoup
 from typing import Dict
 from urllib.parse import urlencode, urlunparse
 
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -18,25 +17,29 @@ from rest_framework import serializers
 
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.student.roles import GlobalStaff
-from lms.djangoapps.discussion.django_comment_client.base.views import track_thread_lock_unlock_event, \
-    track_thread_edited_event, track_comment_edited_event, track_forum_response_mark_event
+from lms.djangoapps.discussion.django_comment_client.base.views import (
+    track_comment_edited_event,
+    track_forum_response_mark_event,
+    track_thread_edited_event,
+    track_thread_lock_unlock_event
+)
 from lms.djangoapps.discussion.django_comment_client.utils import (
     course_discussion_division_enabled,
     get_group_id_for_user,
     get_group_name,
-    is_comment_too_deep,
+    is_comment_too_deep
 )
 from lms.djangoapps.discussion.rest_api.permissions import (
     NON_UPDATABLE_COMMENT_FIELDS,
     NON_UPDATABLE_THREAD_FIELDS,
     can_delete,
-    get_editable_fields,
+    get_editable_fields
 )
 from lms.djangoapps.discussion.rest_api.render import render_body
 from lms.djangoapps.discussion.rest_api.utils import (
     get_course_staff_users_list,
-    get_moderator_users_list,
     get_course_ta_users_list,
+    get_moderator_users_list
 )
 from openedx.core.djangoapps.discussions.models import DiscussionTopicLink
 from openedx.core.djangoapps.discussions.utils import get_group_names_by_id

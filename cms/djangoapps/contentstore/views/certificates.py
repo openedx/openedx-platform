@@ -29,35 +29,29 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse
 from django.shortcuts import redirect
-from django.utils.translation import gettext as _
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
-from rest_framework.views import APIView
+from opaque_keys.edx.keys import CourseKey
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-from opaque_keys.edx.keys import CourseKey
+from rest_framework.views import APIView
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from cms.djangoapps.contentstore.views.permissions import HasStudioWriteAccess
+from cms.djangoapps.contentstore.views.serializers import CertificateActivationSerializer, CertificateSerializer
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_studio_write_access
 from common.djangoapps.student.roles import GlobalStaff
-
 from common.djangoapps.util.json_request import JsonResponse
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from xmodule.modulestore import EdxJSONEncoder  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
-from cms.djangoapps.contentstore.views.serializers import CertificateActivationSerializer, CertificateSerializer
-from cms.djangoapps.contentstore.views.permissions import HasStudioWriteAccess
-
-from .certificate_manager import CertificateManager, CertificateValidationError
 from ..toggles import use_new_certificates_page
-from ..utils import (
-    get_certificates_context,
-    get_certificates_url,
-    reverse_course_url,
-)
+from ..utils import get_certificates_context, get_certificates_url, reverse_course_url
+from .certificate_manager import CertificateManager, CertificateValidationError
 
 CERTIFICATE_MINIMUM_ID = 100
 

@@ -3,10 +3,11 @@ Tests for the Sending activation email celery tasks
 """
 
 
+from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
+
 from django.conf import settings
 from django.test import TestCase
 from edx_ace.errors import ChannelError, RecoverableChannelDeliveryError
-from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import Registration
 from common.djangoapps.student.views.management import compose_activation_email, compose_and_send_activation_email

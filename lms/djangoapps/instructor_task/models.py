@@ -25,7 +25,6 @@ from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.files.base import ContentFile
 from django.db import models, transaction
-
 from django.utils.translation import gettext as _
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField

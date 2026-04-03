@@ -19,15 +19,13 @@ import tempfile
 from django.utils.translation import gettext_lazy
 from edx_django_utils.plugins import add_plugins
 
-from xmodule.modulestore.modulestore_settings import update_module_store_settings  # pylint: disable=wrong-import-order
-
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import derive_settings
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.test import *  # pylint: disable=wrong-import-order
+from xmodule.modulestore.modulestore_settings import update_module_store_settings  # pylint: disable=wrong-import-order
 
 from .common import *
-
-from openedx.envs.test import *  # pylint: disable=wrong-import-order
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())

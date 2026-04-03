@@ -17,7 +17,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from lms.djangoapps.certificates.models import (
     GeneratedCertificate,
-    PurgeReferencestoPDFCertificatesCommandConfiguration,
+    PurgeReferencestoPDFCertificatesCommandConfiguration
 )
 
 User = get_user_model()

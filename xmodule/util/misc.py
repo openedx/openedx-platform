@@ -5,10 +5,8 @@ Miscellaneous utility functions.
 
 import re
 
-from opaque_keys.edx.locator import (
-    CourseLocator,
-    LibraryLocator,
-)
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator
+
 from xmodule.annotator_mixin import html_to_text
 
 

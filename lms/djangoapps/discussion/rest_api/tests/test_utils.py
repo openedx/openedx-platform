@@ -18,9 +18,9 @@ from lms.djangoapps.discussion.rest_api.utils import (
     get_course_staff_users_list,
     get_course_ta_users_list,
     get_moderator_users_list,
+    is_only_student,
     is_posting_allowed,
-    remove_empty_sequentials,
-    is_only_student
+    remove_empty_sequentials
 )
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, PostingRestriction
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

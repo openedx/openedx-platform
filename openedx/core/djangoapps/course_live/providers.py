@@ -2,7 +2,8 @@
 LTI Providers for course live module
 """
 from abc import ABC
-from typing import List, Dict
+from typing import Dict, List
+
 from django.conf import settings
 
 

@@ -9,8 +9,9 @@ from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
 
 from openedx.core.djangoapps.notifications.base_notification import (
-    get_notification_content,
-    COURSE_NOTIFICATION_TYPES, get_default_values_of_preferences
+    COURSE_NOTIFICATION_TYPES,
+    get_default_values_of_preferences,
+    get_notification_content
 )
 
 User = get_user_model()

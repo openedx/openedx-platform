@@ -3,10 +3,10 @@
 import logging
 
 import django.utils.timezone
-from oauth2_provider import models as dot_models
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from edx_django_utils.monitoring import set_custom_attribute
+from oauth2_provider import models as dot_models
+from rest_framework.authentication import BaseAuthentication, get_authorization_header
+from rest_framework.exceptions import AuthenticationFailed
 
 OAUTH2_TOKEN_ERROR = 'token_error'
 OAUTH2_TOKEN_ERROR_EXPIRED = 'token_expired'

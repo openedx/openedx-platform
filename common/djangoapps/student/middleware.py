@@ -9,8 +9,8 @@ from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import gettext as _
 
-from openedx.core.djangolib.markup import HTML, Text
 from common.djangoapps.student.models import UserStanding
+from openedx.core.djangolib.markup import HTML, Text
 
 
 class UserStandingMiddleware(MiddlewareMixin):

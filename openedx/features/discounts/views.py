@@ -24,7 +24,7 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermissionIsAuthenticated
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
-from .applicability import can_receive_discount, discount_percentage, REV1008_EXPERIMENT_ID
+from .applicability import REV1008_EXPERIMENT_ID, can_receive_discount, discount_percentage
 
 log = logging.getLogger(__name__)
 

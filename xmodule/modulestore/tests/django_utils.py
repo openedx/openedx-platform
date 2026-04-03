@@ -16,20 +16,19 @@ from django.contrib.auth.models import AnonymousUser
 from django.db import connections, transaction
 from django.test import TestCase
 from django.test.utils import override_settings
+
+from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import AdminFactory, InstructorFactory, StaffFactory, UserFactory
+from lms.djangoapps.courseware.field_overrides import OverrideFieldData
+from openedx.core.djangolib.testing.utils import CacheIsolationMixin, CacheIsolationTestCase, FilteredQueryCountMixin
+from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import _CONTENTSTORE
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import SignalHandler, clear_existing_modulestores, modulestore
 from xmodule.modulestore.tests.factories import XMODULE_FACTORY_LOCK
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
-
-from lms.djangoapps.courseware.field_overrides import OverrideFieldData
-from openedx.core.djangolib.testing.utils import CacheIsolationMixin, CacheIsolationTestCase, FilteredQueryCountMixin
-from openedx.core.lib.tempdir import mkdtemp_clean
-from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory, InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
 
 
 class CourseUserType(Enum):

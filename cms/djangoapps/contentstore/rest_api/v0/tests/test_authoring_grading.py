@@ -11,6 +11,7 @@ from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 
+
 class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     """
     Tests Authoring Grading configuration API authorization using openedx-authz.

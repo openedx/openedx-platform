@@ -5,8 +5,8 @@ from django.template import engines
 from django.template.utils import InvalidTemplateEngineError
 from xblock.reference.plugins import Service
 
-from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.edxmako import Engines
+from common.djangoapps.edxmako.shortcuts import render_to_string
 
 try:
     engines[Engines.PREVIEW]

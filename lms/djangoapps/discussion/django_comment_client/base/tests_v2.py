@@ -1,7 +1,6 @@
 # pylint: skip-file
 """Tests for django comment client views."""
 
-import pytest
 import json
 import logging
 from contextlib import contextmanager
@@ -9,6 +8,7 @@ from unittest import mock
 from unittest.mock import ANY, Mock, patch
 
 import ddt
+import pytest
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test.client import RequestFactory
@@ -16,43 +16,31 @@ from django.urls import reverse
 from eventtracking.processors.exceptions import EventEmissionExit
 from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.signals import (
-    FORUM_THREAD_CREATED,
-    FORUM_THREAD_RESPONSE_CREATED,
     FORUM_RESPONSE_COMMENT_CREATED,
+    FORUM_THREAD_CREATED,
+    FORUM_THREAD_RESPONSE_CREATED
 )
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.roles import CourseStaffRole, UserBasedRole
-from common.djangoapps.student.tests.factories import (
-    CourseAccessRoleFactory,
-    CourseEnrollmentFactory,
-    UserFactory,
-)
+from common.djangoapps.student.tests.factories import CourseAccessRoleFactory, CourseEnrollmentFactory, UserFactory
 from common.djangoapps.track.middleware import TrackMiddleware
 from common.djangoapps.track.views import segmentio
-from common.djangoapps.track.views.tests.base import (
-    SEGMENTIO_TEST_USER_ID,
-    SegmentIOTrackingTestCaseBase,
-)
+from common.djangoapps.track.views.tests.base import SEGMENTIO_TEST_USER_ID, SegmentIOTrackingTestCaseBase
 from common.djangoapps.util.testing import UrlResetMixin
-from common.test.utils import MockSignalHandlerMixin, disable_signal, assert_dict_contains_subset
+from common.test.utils import MockSignalHandlerMixin, assert_dict_contains_subset, disable_signal
 from lms.djangoapps.discussion.django_comment_client.base import views
 from lms.djangoapps.discussion.django_comment_client.tests.group_id import (
     CohortedTopicGroupIdTestMixinV2,
     GroupIdAssertionMixinV2,
-    NonCohortedTopicGroupIdTestMixinV2,
+    NonCohortedTopicGroupIdTestMixinV2
 )
-from lms.djangoapps.discussion.django_comment_client.tests.unicode import (
-    UnicodeTestMixin,
-)
-from lms.djangoapps.discussion.django_comment_client.tests.utils import (
-    CohortedTestCase,
-)
-from lms.djangoapps.teams.tests.factories import (
-    CourseTeamFactory,
-    CourseTeamMembershipFactory,
-)
+from lms.djangoapps.discussion.django_comment_client.tests.mixins import MockForumApiMixin
+from lms.djangoapps.discussion.django_comment_client.tests.unicode import UnicodeTestMixin
+from lms.djangoapps.discussion.django_comment_client.tests.utils import CohortedTestCase
+from lms.djangoapps.discussion.tests.utils import make_minimal_cs_comment, make_minimal_cs_thread
+from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.django_comment_common.comment_client import Thread
@@ -60,12 +48,9 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_STUDENT,
     CourseDiscussionSettings,
     Role,
-    assign_role,
+    assign_role
 )
-from openedx.core.djangoapps.django_comment_common.utils import (
-    ThreadContext,
-    seed_permissions_roles,
-)
+from openedx.core.djangoapps.django_comment_common.utils import ThreadContext, seed_permissions_roles
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore import ModuleStoreEnum
@@ -73,23 +58,11 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase,
+    SharedModuleStoreTestCase
 )
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory,
-    check_mongo_calls,
-)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 from .event_transformers import ForumThreadViewedEventTransformer
-from lms.djangoapps.discussion.django_comment_client.tests.mixins import (
-    MockForumApiMixin,
-)
-
-from lms.djangoapps.discussion.tests.utils import (
-    make_minimal_cs_thread,
-    make_minimal_cs_comment,
-)
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 

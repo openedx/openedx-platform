@@ -23,7 +23,11 @@ from pymongo import MongoClient
 sys.path.append(path.abspath(path.join(path.dirname(__file__), '../..')))
 
 from scripts.structures_pruning.utils.splitmongo import (
-    ActiveVersionBranch, ChangePlan, Structure, SplitMongoBackend, StructuresGraph
+    ActiveVersionBranch,
+    ChangePlan,
+    SplitMongoBackend,
+    Structure,
+    StructuresGraph
 )
 
 

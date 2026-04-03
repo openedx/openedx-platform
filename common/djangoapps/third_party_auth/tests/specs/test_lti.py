@@ -4,7 +4,7 @@ Integration tests for third_party_auth LTI auth providers
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.urls import reverse
-from oauthlib.oauth1.rfc5849 import Client, SIGNATURE_TYPE_BODY
+from oauthlib.oauth1.rfc5849 import SIGNATURE_TYPE_BODY, Client
 
 from common.djangoapps.third_party_auth.tests import testutil
 from openedx.core.djangolib.testing.utils import skip_unless_lms

@@ -3,8 +3,9 @@ Model Factories for testing purposes of User Accounts
 """
 from factory import SubFactory
 from factory.django import DjangoModelFactory
-from openedx.core.djangoapps.user_api.models import UserRetirementStatus, RetirementState
+
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 
 
 class RetirementStateFactory(DjangoModelFactory):

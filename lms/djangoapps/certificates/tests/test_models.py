@@ -2,8 +2,8 @@
 
 
 import json
-from unittest.mock import patch
 from unittest import mock, skipUnless
+from unittest.mock import patch
 
 import ddt
 import pytest
@@ -31,14 +31,15 @@ from lms.djangoapps.certificates.models import (
     GeneratedCertificate
 )
 from lms.djangoapps.certificates.tests.factories import (
-    CertificateInvalidationFactory,
-    GeneratedCertificateFactory,
     CertificateAllowlistFactory,
+    CertificateInvalidationFactory,
+    GeneratedCertificateFactory
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import \
+    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 ENROLLMENT_METHOD = 'common.djangoapps.student.models.course_enrollment.CourseEnrollment.enrollment_mode_for_user'

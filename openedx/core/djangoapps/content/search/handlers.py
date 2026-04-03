@@ -16,7 +16,7 @@ from openedx_events.content_authoring.data import (
     LibraryBlockData,
     LibraryCollectionData,
     LibraryContainerData,
-    XBlockData,
+    XBlockData
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_CREATED,
@@ -38,7 +38,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_UPDATED,
     XBLOCK_CREATED,
     XBLOCK_DELETED,
-    XBLOCK_UPDATED,
+    XBLOCK_UPDATED
 )
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -50,7 +50,7 @@ from .api import (
     only_if_meilisearch_enabled,
     upsert_content_object_tags_index_doc,
     upsert_item_collections_index_docs,
-    upsert_item_containers_index_docs,
+    upsert_item_containers_index_docs
 )
 from .tasks import (
     delete_course_index_docs,
@@ -62,7 +62,7 @@ from .tasks import (
     update_library_container_index_doc,
     upsert_course_blocks_docs,
     upsert_library_block_index_doc,
-    upsert_xblock_index_doc,
+    upsert_xblock_index_doc
 )
 
 log = logging.getLogger(__name__)

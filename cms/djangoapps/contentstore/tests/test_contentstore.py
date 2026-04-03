@@ -21,7 +21,7 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_toggles.toggles.testutils import override_waffle_switch, override_waffle_flag
+from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
 from edxval.api import create_video, get_videos_for_course
 from fs.osfs import OSFS
 from lxml import etree
@@ -29,6 +29,19 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey, CourseKey, UsageKey
 from opaque_keys.edx.locations import CourseLocator
 from path import Path as path
+
+from cms.djangoapps.contentstore import toggles
+from cms.djangoapps.contentstore.config import waffle
+from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, get_url, parse_json
+from cms.djangoapps.contentstore.utils import delete_course, reverse_course_url, reverse_url
+from cms.djangoapps.contentstore.views.component import ADVANCED_COMPONENT_TYPES
+from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
+from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
+from common.djangoapps.student import auth
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.roles import CourseCreatorRole, CourseInstructorRole
+from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
+from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.capa_block import ProblemBlock
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
@@ -41,28 +54,11 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.split_mongo import BlockKey
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml, perform_xlint
 from xmodule.seq_block import SequenceBlock
 from xmodule.video_block import VideoBlock
-
-from cms.djangoapps.contentstore import toggles
-from cms.djangoapps.contentstore.config import waffle
-from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, get_url, parse_json
-from cms.djangoapps.contentstore.utils import (
-    delete_course,
-    reverse_course_url,
-    reverse_url,
-)
-from cms.djangoapps.contentstore.views.component import ADVANCED_COMPONENT_TYPES
-from common.djangoapps.course_action_state.managers import CourseActionStateItemNotFoundError
-from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
-from common.djangoapps.student import auth
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import CourseCreatorRole, CourseInstructorRole
-from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
-from openedx.core.lib.tempdir import mkdtemp_clean
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex

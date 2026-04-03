@@ -7,11 +7,9 @@ import itertools
 import re
 from collections import defaultdict
 from datetime import datetime
-
 from enum import Enum
 from typing import Dict, Iterable, List, Literal, Optional, Set, Tuple
 from urllib.parse import urlencode, urlunparse
-from pytz import UTC
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -22,27 +20,20 @@ from django.urls import reverse
 from edx_django_utils.monitoring import function_trace
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import CourseKey
+from pytz import UTC
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from common.djangoapps.student.roles import (
-    CourseInstructorRole,
-    CourseStaffRole,
-)
-
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from lms.djangoapps.course_api.blocks.api import get_blocks
 from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.discussion.rate_limit import is_content_creation_rate_limited
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE, ONLY_VERIFIED_USERS_CAN_POST
 from lms.djangoapps.discussion.views import is_privileged_user
-from openedx.core.djangoapps.discussions.models import (
-    DiscussionsConfiguration,
-    DiscussionTopicLink,
-    Provider,
-)
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, DiscussionTopicLink, Provider
 from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks
 from openedx.core.djangoapps.django_comment_common import comment_client
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
@@ -66,8 +57,8 @@ from openedx.core.djangoapps.django_comment_common.models import (
 from openedx.core.djangoapps.django_comment_common.signals import (
     comment_created,
     comment_deleted,
-    comment_endorsed,
     comment_edited,
+    comment_endorsed,
     comment_flagged,
     comment_voted,
     thread_created,
@@ -75,8 +66,8 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_edited,
     thread_flagged,
     thread_followed,
-    thread_voted,
-    thread_unfollowed
+    thread_unfollowed,
+    thread_voted
 )
 from openedx.core.djangoapps.user_api.accounts.api import get_account_settings
 from openedx.core.lib.exceptions import CourseNotFoundError, DiscussionNotFoundError, PageNotFoundError
@@ -88,13 +79,14 @@ from xmodule.tabs import CourseTabList
 from ..django_comment_client.base.views import (
     track_comment_created_event,
     track_comment_deleted_event,
-    track_thread_created_event,
-    track_thread_deleted_event,
-    track_thread_viewed_event,
-    track_voted_event,
     track_discussion_reported_event,
     track_discussion_unreported_event,
-    track_forum_search_event, track_thread_followed_event
+    track_forum_search_event,
+    track_thread_created_event,
+    track_thread_deleted_event,
+    track_thread_followed_event,
+    track_thread_viewed_event,
+    track_voted_event
 )
 from ..django_comment_client.utils import (
     get_group_id_for_user,
@@ -124,14 +116,16 @@ from .serializers import (
 from .utils import (
     AttributeDict,
     add_stats_for_users_with_no_discussion_content,
+    can_user_notify_all_learners,
     create_blocks_params,
     discussion_open_for_user,
+    get_captcha_site_key_by_platform,
     get_usernames_for_course,
     get_usernames_from_search_string,
-    send_signal_after_commit,
-    set_attribute,
+    is_captcha_enabled,
     is_posting_allowed,
-    can_user_notify_all_learners, is_captcha_enabled, get_captcha_site_key_by_platform
+    send_signal_after_commit,
+    set_attribute
 )
 
 User = get_user_model()

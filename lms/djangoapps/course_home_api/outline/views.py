@@ -13,30 +13,32 @@ from django.shortcuts import get_object_or_404  # lint-amnesty, pylint: disable=
 from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
 from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=wrong-import-order
 from edx_django_utils import monitoring as monitoring_utils  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.jwt.authentication import \
+    JwtAuthentication  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.session.authentication import \
+    SessionAuthenticationAllowInactiveUser  # lint-amnesty, pylint: disable=wrong-import-order
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.decorators import api_view, authentication_classes, permission_classes  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.decorators import (  # lint-amnesty, pylint: disable=wrong-import-order
+    api_view,
+    authentication_classes,
+    permission_classes
+)
 from rest_framework.exceptions import APIException, ParseError  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.generics import RetrieveAPIView  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.permissions import IsAuthenticated  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.completable import XBlockCompletionMode
+from xblock.core import XBlock
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.util.views import expose_header
-from lms.djangoapps.course_goals.api import (
-    add_course_goal,
-    get_course_goal,
-)
+from lms.djangoapps.course_goals.api import add_course_goal, get_course_goal
 from lms.djangoapps.course_goals.models import CourseGoal
-from lms.djangoapps.course_home_api.outline.serializers import (
-    CourseBlockSerializer,
-    OutlineTabSerializer,
-)
-from lms.djangoapps.course_home_api.utils import get_course_or_403
+from lms.djangoapps.course_home_api.outline.serializers import CourseBlockSerializer, OutlineTabSerializer
 from lms.djangoapps.course_home_api.tasks import collect_progress_for_user_in_course
 from lms.djangoapps.course_home_api.toggles import send_course_progress_analytics_for_student_is_enabled
+from lms.djangoapps.course_home_api.utils import get_course_or_403
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import get_course_date_blocks, get_course_info_section
@@ -47,8 +49,8 @@ from lms.djangoapps.courseware.toggles import courseware_disable_navigation_side
 from lms.djangoapps.courseware.views.views import get_cert_data
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.utils import OptimizelyClient
-from openedx.core.djangoapps.content.learning_sequences.api import get_user_course_outline
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_404
+from openedx.core.djangoapps.content.learning_sequences.api import get_user_course_outline
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.features.course_duration_limits.access import get_access_expiration_data
@@ -61,9 +63,10 @@ from openedx.features.course_experience.course_updates import (
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from openedx.features.course_experience.utils import get_course_outline_block_tree, get_start_block
 from openedx.features.discounts.utils import generate_offer_data
-from xblock.core import XBlock
-from xblock.completable import XBlockCompletionMode
-from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
+    COURSE_VISIBILITY_PUBLIC,
+    COURSE_VISIBILITY_PUBLIC_OUTLINE
+)
 
 
 class UnableToDismissWelcomeMessage(APIException):

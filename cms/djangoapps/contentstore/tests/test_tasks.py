@@ -5,11 +5,11 @@ import copy
 import json
 import logging
 from unittest import mock
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from celery import Task
 
 import pytest
+from celery import Task
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.utils import override_settings
@@ -29,19 +29,23 @@ from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, R
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory
+)
+
 from ..tasks import (
     LinkState,
-    export_olx,
-    update_special_exams_and_publish,
-    rerun_course,
-    _validate_urls_access_in_batches,
-    _filter_by_status,
     _check_broken_links,
+    _convert_to_standard_url,
+    _filter_by_status,
     _is_studio_url,
     _scan_course_for_links,
-    _convert_to_standard_url,
-    extract_content_URLs_from_course
+    _validate_urls_access_in_batches,
+    export_olx,
+    extract_content_URLs_from_course,
+    rerun_course,
+    update_special_exams_and_publish
 )
 
 logging = logging.getLogger(__name__)

@@ -6,8 +6,6 @@ Tests for discussion API permission logic
 import itertools
 
 import ddt
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from lms.djangoapps.discussion.rest_api.permissions import (
     can_delete,
@@ -18,6 +16,8 @@ from lms.djangoapps.discussion.rest_api.permissions import (
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.django_comment_common.comment_client.user import User
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 def _get_context(

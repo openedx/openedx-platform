@@ -5,23 +5,20 @@ import logging
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
+from rest_framework.fields import BooleanField
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.fields import BooleanField
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import ContainerHandlerMixin
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    CourseIndexSerializer,
-    ContainerChildrenSerializer,
-)
+from cms.djangoapps.contentstore.rest_api.v1.serializers import ContainerChildrenSerializer, CourseIndexSerializer
 from cms.djangoapps.contentstore.utils import (
     get_course_index_context,
     get_user_partition_info,
     get_visibility_partition_info,
     get_xblock_render_error,
-    get_xblock_validation_messages,
+    get_xblock_validation_messages
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_xblock
 from cms.lib.xblock.upstream_sync import UpstreamLink

@@ -27,7 +27,7 @@ from openedx.core.djangoapps.catalog.cache import (
     PROGRAMS_BY_TYPE_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_SLUG_CACHE_KEY_TPL,
     SITE_PATHWAY_IDS_CACHE_KEY_TPL,
-    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
+    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
 )
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.tests.factories import (
@@ -36,7 +36,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     PathwayFactory,
     ProgramFactory,
     ProgramTypeAttrsFactory,
-    ProgramTypeFactory,
+    ProgramTypeFactory
 )
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.catalog.utils import (
@@ -55,7 +55,7 @@ from openedx.core.djangoapps.catalog.utils import (
     get_programs_by_type_slug,
     get_visible_sessions_for_entitlement,
     is_course_run_in_program,
-    normalize_program_type,
+    normalize_program_type
 )
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory

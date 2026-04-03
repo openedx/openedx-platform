@@ -19,12 +19,10 @@ from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
     CourseInstructorRole,
     CourseSalesAdminRole,
-    CourseStaffRole,
+    CourseStaffRole
 )
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
-from lms.djangoapps.certificates.models import (
-    CertificateGenerationConfiguration
-)
+from lms.djangoapps.certificates.models import CertificateGenerationConfiguration
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
@@ -33,9 +31,7 @@ from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_d
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from xmodule.modulestore.django import modulestore
 
-
-from .tools import get_student_from_identifier, parse_datetime, DashboardError
-
+from .tools import DashboardError, get_student_from_identifier, parse_datetime
 
 log = logging.getLogger(__name__)
 

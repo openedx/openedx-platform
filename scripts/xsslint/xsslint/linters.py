@@ -10,10 +10,10 @@ import re
 import textwrap
 
 from xsslint import visitors
+from xsslint.django_linter import BlockTransExpression, HtmlInterpolateExpression, TransExpression
 from xsslint.reporting import ExpressionRuleViolation, FileResults, RuleViolation
 from xsslint.rules import RuleSet
 from xsslint.utils import Expression, ParseString, StringLines, is_skip_dir
-from xsslint.django_linter import TransExpression, BlockTransExpression, HtmlInterpolateExpression
 
 
 class BaseLinter:

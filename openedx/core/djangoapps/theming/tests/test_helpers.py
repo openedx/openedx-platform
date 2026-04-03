@@ -4,6 +4,7 @@ Test helpers for Comprehensive Theming.
 
 
 from unittest.mock import Mock, patch
+
 from django.conf import settings
 from django.test import TestCase, override_settings
 

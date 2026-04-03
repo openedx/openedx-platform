@@ -5,27 +5,17 @@ Unit tests for the vertical block.
 from urllib.parse import quote
 
 from django.urls import reverse
-from rest_framework import status
 from edx_toggles.toggles.testutils import override_waffle_flag
+from rest_framework import status
 from xblock.validation import ValidationMessage
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
 from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
-from xmodule.partitions.partitions import (
-    ENROLLMENT_TRACK_PARTITION_ID,
-    Group,
-    UserPartition,
-)
-from xmodule.modulestore.django import (
-    modulestore,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import (
-    BlockFactory,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import (
-    ModuleStoreEnum,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
+from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID, Group, UserPartition
 
 
 class BaseXBlockContainer(CourseTestCase, ContentLibrariesRestApiTest):

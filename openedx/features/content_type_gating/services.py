@@ -4,9 +4,7 @@ Content Type Gating service.
 import crum
 
 from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.courseware.masquerade import (
-    is_masquerading_as_limited_access, is_masquerading_as_audit_enrollment,
-)
+from lms.djangoapps.courseware.masquerade import is_masquerading_as_audit_enrollment, is_masquerading_as_limited_access
 from openedx.core.lib.graph_traversals import get_children, leaf_filter, traverse_pre_order
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 

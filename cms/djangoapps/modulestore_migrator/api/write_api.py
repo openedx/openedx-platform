@@ -7,12 +7,11 @@ from celery.result import AsyncResult
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_content.api import get_collection
 
-from openedx.core.types.user import AuthUser
 from openedx.core.djangoapps.content_libraries.api import get_library
+from openedx.core.types.user import AuthUser
 
-from ..data import SourceContextKey, CompositionLevel, RepeatHandlingStrategy
-from .. import tasks, models
-
+from .. import models, tasks
+from ..data import CompositionLevel, RepeatHandlingStrategy, SourceContextKey
 
 __all__ = (
     'start_migration_to_library',

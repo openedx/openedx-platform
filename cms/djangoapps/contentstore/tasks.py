@@ -94,12 +94,12 @@ from xmodule.modulestore.xml_importer import CourseImportException, import_cours
 from xmodule.tabs import StaticTab
 from xmodule.util.keys import BlockKey
 
+from .api import get_ready_to_migrate_legacy_library_content_blocks
 from .models import ComponentLink, ContainerLink, LearningContextLinksStatus, LearningContextLinksStatusChoices
 from .outlines import update_outline_from_modulestore
 from .outlines_regenerate import CourseOutlineRegenerate
 from .toggles import bypass_olx_failure_enabled
 from .utils import course_import_olx_validation_is_enabled
-from .api import get_ready_to_migrate_legacy_library_content_blocks
 
 User = get_user_model()
 

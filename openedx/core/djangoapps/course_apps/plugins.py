@@ -1,12 +1,11 @@
 """
 Course Apps plugin base class and plugin manager.
 """
+from abc import ABC, abstractmethod
 from typing import Dict, Iterator, Optional
 
-from abc import ABC, abstractmethod
 from edx_django_utils.plugins import PluginManager
 from opaque_keys.edx.keys import CourseKey
-
 
 # Stevedore extension point namespaces
 COURSE_APPS_PLUGIN_NAMESPACE = "openedx.course_app"

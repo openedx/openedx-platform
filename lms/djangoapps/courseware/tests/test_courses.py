@@ -5,10 +5,10 @@ Tests for course access
 
 import datetime
 import itertools
-
 from unittest import mock
-import pytest
+
 import ddt
+import pytest
 import pytz
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionWaffleTestMixin
@@ -19,13 +19,9 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import _get_modulestore_branch_setting, modulestore
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, ToyCourseFactory, BlockFactory, check_mongo_calls
-from xmodule.tests.xml import XModuleXmlImportTest
-from xmodule.tests.xml import factories as xml
 
+from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courses import (
     course_open_for_self_enrollment,
     get_cms_block_link,
@@ -39,13 +35,17 @@ from lms.djangoapps.courseware.courses import (
     get_courses,
     get_current_child
 )
-from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
+from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.courses import course_image_url
-from common.djangoapps.student.tests.factories import UserFactory
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import _get_modulestore_branch_setting, modulestore
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, check_mongo_calls
+from xmodule.tests.xml import XModuleXmlImportTest
+from xmodule.tests.xml import factories as xml
 
 CMS_BASE_TEST = 'testcms'
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT

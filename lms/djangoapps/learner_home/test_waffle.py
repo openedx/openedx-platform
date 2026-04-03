@@ -3,6 +3,7 @@ Tests for toggles, where there is logic beyond enable/disable.
 """
 
 from unittest.mock import patch
+
 import ddt
 
 from common.djangoapps.student.tests.factories import UserFactory

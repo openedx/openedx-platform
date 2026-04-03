@@ -9,10 +9,8 @@ from unittest import TestCase
 from zoneinfo import ZoneInfo
 
 import pytest
-from xmodule.block_metadata_utils import (
-    display_name_with_default,
-    display_name_with_default_escaped,
-)
+
+from xmodule.block_metadata_utils import display_name_with_default, display_name_with_default_escaped
 from xmodule.course_metadata_utils import (
     DEFAULT_START_DATE,
     clean_course_key,

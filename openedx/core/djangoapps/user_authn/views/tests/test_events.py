@@ -16,9 +16,9 @@ from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED, STUDENT_REG
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.test.utils import assert_dict_contains_subset
 
 
 @skip_unless_lms

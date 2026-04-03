@@ -4,17 +4,18 @@ Tests for SAMLProviderConfig endpoints
 import copy
 import re
 from uuid import uuid4
-from django.urls import reverse
+
 from django.contrib.sites.models import Site
+from django.urls import reverse
 from django.utils.http import urlencode
+from enterprise.constants import ENTERPRISE_ADMIN_ROLE, ENTERPRISE_LEARNER_ROLE
+from enterprise.models import EnterpriseCustomer, EnterpriseCustomerIdentityProvider
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomer
-from enterprise.constants import ENTERPRISE_ADMIN_ROLE, ENTERPRISE_LEARNER_ROLE
 from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 from common.djangoapps.third_party_auth.tests.samlutils import set_jwt_cookie
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration
 from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 from common.djangoapps.third_party_auth.utils import convert_saml_slug_provider_id
 

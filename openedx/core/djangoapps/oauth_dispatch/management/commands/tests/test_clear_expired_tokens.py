@@ -2,12 +2,12 @@
 Tests the ``edx_clear_expired_tokens`` management command.
 """
 
+import math
 from datetime import timedelta
 from unittest.mock import patch
 
-import math
-import pytest
 import ddt
+import pytest
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
@@ -15,12 +15,12 @@ from django.db.models import QuerySet
 from django.test import TestCase
 from django.test.utils import override_settings
 from django.utils import timezone
-from oauth2_provider.models import AccessToken, RefreshToken, Grant
+from oauth2_provider.models import AccessToken, Grant, RefreshToken
 from testfixtures import LogCapture
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.oauth_dispatch.tests import factories
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 LOGGER_NAME = 'openedx.core.djangoapps.oauth_dispatch.management.commands.edx_clear_expired_tokens'
 

@@ -39,23 +39,23 @@ from xblock.fields import (
     ScoreField,
     String,
     Timedelta,
-    XMLString,
+    XMLString
 )
 from xblock.progress import Progress
 from xblock.scorable import ScorableXBlockMixin, Score, ShowCorrectness
 from xblocks_contrib.problem import ProblemBlock as _ExtractedProblemBlock
-
-from common.djangoapps.xblock_django.constants import (
-    ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
-    ATTR_KEY_USER_ID,
-    ATTR_KEY_USER_IS_STAFF,
-)
-from openedx.core.djangolib.markup import HTML, Text
 from xblocks_contrib.problem.capa import responsetypes
 from xblocks_contrib.problem.capa.capa_problem import LoncapaProblem, LoncapaSystem
 from xblocks_contrib.problem.capa.inputtypes import Status
 from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
 from xblocks_contrib.problem.capa.util import convert_files_to_filenames, get_inner_html_from_xpath
+
+from common.djangoapps.xblock_django.constants import (
+    ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID,
+    ATTR_KEY_USER_ID,
+    ATTR_KEY_USER_IS_STAFF
+)
+from openedx.core.djangolib.markup import HTML, Text
 from xmodule.raw_block import RawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.x_module import XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js

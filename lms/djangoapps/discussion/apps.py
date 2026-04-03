@@ -40,5 +40,5 @@ class DiscussionConfig(AppConfig):
         """
         Connect handlers to send notifications about discussions.
         """
+        from .rest_api import tasks  # pylint: disable=unused-import
         from .signals import handlers  # pylint: disable=unused-import
-        from .rest_api import tasks    # pylint: disable=unused-import

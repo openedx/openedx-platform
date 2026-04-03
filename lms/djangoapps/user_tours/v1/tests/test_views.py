@@ -10,7 +10,7 @@ from rest_framework import status
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.user_tours.handlers import init_user_tour
-from lms.djangoapps.user_tours.models import UserTour, UserDiscussionsTours
+from lms.djangoapps.user_tours.models import UserDiscussionsTours, UserTour
 from lms.djangoapps.user_tours.toggles import USER_TOURS_DISABLED
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 

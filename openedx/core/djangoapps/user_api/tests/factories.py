@@ -6,14 +6,13 @@ from factory.django import DjangoModelFactory
 from opaque_keys.edx.locator import CourseLocator
 
 from common.djangoapps.student.tests.factories import UserFactory
-
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
     UserCourseTag,
     UserOrgTag,
     UserPreference,
     UserRetirementRequest,
-    UserRetirementStatus,
+    UserRetirementStatus
 )
 
 

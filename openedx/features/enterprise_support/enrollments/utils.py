@@ -11,7 +11,7 @@ from openedx.core.djangoapps.enrollments import api as enrollment_api
 from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentError,
     CourseEnrollmentExistsError,
-    CourseEnrollmentNotUpdatableError,
+    CourseEnrollmentNotUpdatableError
 )
 from openedx.core.lib.log_utils import audit_log
 from openedx.features.enterprise_support.enrollments.exceptions import (

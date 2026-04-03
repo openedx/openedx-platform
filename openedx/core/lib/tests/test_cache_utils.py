@@ -6,9 +6,9 @@ from unittest import TestCase
 from unittest.mock import Mock
 
 import ddt
-from edx_django_utils.cache import RequestCache
 from django.core.cache import cache
 from django.test.utils import override_settings
+from edx_django_utils.cache import RequestCache
 
 from openedx.core.lib.cache_utils import CacheService, request_cached
 

@@ -2,17 +2,17 @@
 Tests for the Python APIs exposed by the Progress API of the Course Home API app.
 """
 
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import TestCase
 from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.course_home_api.progress.api import (
-    calculate_progress_for_learner_in_course,
     aggregate_assignment_type_grade_summary,
+    calculate_progress_for_learner_in_course
 )
-from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
 
 def _make_subsection(fmt, earned, possible, show_corr, *, due_delta_days=None, is_included=True):

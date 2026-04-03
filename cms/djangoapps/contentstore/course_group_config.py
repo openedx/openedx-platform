@@ -18,11 +18,16 @@ from openedx.core.djangoapps.course_groups.constants import (  # pylint: disable
     CONTENT_GROUP_CONFIGURATION_DESCRIPTION,
     CONTENT_GROUP_CONFIGURATION_NAME,
     ENROLLMENT_SCHEME,
-    RANDOM_SCHEME,
+    RANDOM_SCHEME
 )
 from openedx.core.djangoapps.course_groups.partition_scheme import get_cohorted_user_partition
-from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID, ReadOnlyUserPartitionError, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import get_all_partitions_for_course  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    MINIMUM_UNUSED_PARTITION_ID,
+    ReadOnlyUserPartitionError,
+    UserPartition
+)
+from xmodule.partitions.partitions_service import \
+    get_all_partitions_for_course  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
 
 MINIMUM_GROUP_ID = MINIMUM_UNUSED_PARTITION_ID

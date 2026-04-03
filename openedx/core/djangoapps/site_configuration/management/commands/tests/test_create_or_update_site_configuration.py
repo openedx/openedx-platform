@@ -4,10 +4,11 @@ Tests for the create_or_update_site_configuration management command.
 
 import codecs
 import json
-import pytest
+
 import ddt
+import pytest
 from django.contrib.sites.models import Site
-from django.core.management import call_command, CommandError
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from path import Path
 

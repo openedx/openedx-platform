@@ -13,9 +13,9 @@ originally from http://www.djangosnippets.org/snippets/828/ by dnordberg
 """
 
 
+import configparser
 import logging
 
-import configparser
 import django
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError

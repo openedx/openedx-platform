@@ -6,10 +6,10 @@ import logging
 from celery import shared_task
 from django.contrib.auth import get_user_model
 from edx_django_utils.monitoring import set_code_owner_attribute
-from opaque_keys.edx.locator import CourseKey
 from eventtracking import tracker
+from opaque_keys.edx.locator import CourseKey
 
-from common.djangoapps.student.roles import CourseStaffRole, CourseInstructorRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.track import segment
 from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.discussion.django_comment_client.utils import get_user_role_names
@@ -18,7 +18,6 @@ from lms.djangoapps.discussion.rest_api.utils import can_user_notify_all_learner
 from openedx.core.djangoapps.django_comment_common.comment_client import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.notifications.config.waffle import DISABLE_NOTIFICATIONS
-
 
 User = get_user_model()
 log = logging.getLogger(__name__)

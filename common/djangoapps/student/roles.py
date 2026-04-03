@@ -11,15 +11,15 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.api import users as authz_api
-from openedx_authz.api.data import RoleAssignmentData, CourseOverviewData
+from openedx_authz.api.data import CourseOverviewData, RoleAssignmentData
 from openedx_authz.constants import roles as authz_roles
 
 from common.djangoapps.student.models import CourseAccessRole
+from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from openedx.core.lib.cache_utils import get_cache
 from openedx.core.toggles import enable_authz_course_authoring
 

@@ -4,12 +4,12 @@ Contains URLs for the Course Experience API
 
 
 from django.conf import settings
-from django.urls import re_path, path
+from django.urls import path, re_path
 
 from openedx.features.course_experience.api.v1.views import (
-    reset_course_deadlines,
-    reset_all_course_deadlines,
     CourseDeadlinesMobileView,
+    reset_all_course_deadlines,
+    reset_course_deadlines
 )
 
 urlpatterns = []

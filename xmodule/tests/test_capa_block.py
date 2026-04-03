@@ -26,19 +26,16 @@ from xblock.exceptions import NotFoundError
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 from xblock.scorable import Score
+from xblocks_contrib.problem.capa import responsetypes
+from xblocks_contrib.problem.capa.correctmap import CorrectMap
+from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError, ResponseError, StudentInputError
+from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 
 from lms.djangoapps.courseware.user_state_client import XBlockUserState
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xblocks_contrib.problem.capa import responsetypes
-from xblocks_contrib.problem.capa.correctmap import CorrectMap
-from xblocks_contrib.problem.capa.responsetypes import (
-    LoncapaProblemError,
-    ResponseError,
-    StudentInputError,
-)
-from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
-from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
-from xmodule.capa_block import ComplexEncoder, _BuiltInProblemBlock as ProblemBlock
+from xmodule.capa_block import ComplexEncoder
+from xmodule.capa_block import _BuiltInProblemBlock as ProblemBlock
 from xmodule.tests import DATA_DIR
 
 from ..capa_block import RANDOMIZATION, SHOWANSWER

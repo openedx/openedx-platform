@@ -5,19 +5,18 @@ Centralized in openedx/features/course_experience instead of lms/djangoapps/cour
 because the Studio course outline may need these utilities.
 """
 from typing import Optional
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.http.request import QueryDict
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from urllib.parse import urlparse
 
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.search import path_to_location  # lint-amnesty, pylint: disable=wrong-import-order
-
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 User = get_user_model()
 

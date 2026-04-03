@@ -8,8 +8,8 @@ https://openedx.atlassian.net/wiki/display/TNL/User+API
 import datetime
 import logging
 from functools import wraps
-
 from zoneinfo import ZoneInfo
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, logout
@@ -35,7 +35,6 @@ from rest_framework.viewsets import ViewSet
 from wiki.models import ArticleRevision
 from wiki.models.pluginbase import RevisionPluginRevision
 
-from common.djangoapps.track import segment
 from common.djangoapps.entitlements.models import CourseEntitlement
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=unused-import
     CourseEnrollmentAllowed,
@@ -49,9 +48,10 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     get_retired_email_by_email,
     get_retired_username_by_username,
     is_email_retired,
-    is_username_retired,
+    is_username_retired
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_pending_name_change
+from common.djangoapps.track import segment
 from lms.djangoapps.certificates.api import clear_pii_from_certificate_records_for_user
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.api_admin.models import ApiAccessRequest
@@ -74,7 +74,7 @@ from ..models import (
     RetirementStateError,
     UserOrgTag,
     UserRetirementPartnerReportingStatus,
-    UserRetirementStatus,
+    UserRetirementStatus
 )
 from .api import get_account_settings, update_account_settings
 from .permissions import (
@@ -82,13 +82,13 @@ from .permissions import (
     CanDeactivateUser,
     CanGetAccountInfo,
     CanReplaceUsername,
-    CanRetireUser,
+    CanRetireUser
 )
 from .serializers import (
     PendingNameChangeSerializer,
     UserRetirementPartnerReportSerializer,
     UserRetirementStatusSerializer,
-    UserSearchEmailSerializer,
+    UserSearchEmailSerializer
 )
 from .signals import USER_RETIRE_LMS_CRITICAL, USER_RETIRE_LMS_MISC, USER_RETIRE_MAILINGS
 from .utils import create_retirement_request_and_deactivate_account, username_suffix_generator

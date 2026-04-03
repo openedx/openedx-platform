@@ -9,7 +9,6 @@ from lms.djangoapps.instructor_task.rest_api.v1.views import (
     ModifyScheduledBulkEmailInstructorTask
 )
 
-
 urlpatterns = [
     re_path(
         fr"schedules/{settings.COURSE_ID_PATTERN}/bulk_email/$",

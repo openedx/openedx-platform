@@ -4,8 +4,9 @@ Unit tests for ProgramEnrollment models.
 
 
 from uuid import UUID
-import pytest
+
 import ddt
+import pytest
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from edx_django_utils.cache import RequestCache

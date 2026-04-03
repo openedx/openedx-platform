@@ -2,10 +2,10 @@
 Unit tests for course optimizer
 """
 from django.test import TestCase
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from django.urls import reverse
 
 from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 class TestGetLinkCheckStatus(AuthorizeStaffTestCase, ModuleStoreTestCase, TestCase):

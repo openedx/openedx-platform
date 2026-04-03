@@ -13,16 +13,17 @@ import textwrap
 from collections import namedtuple
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from celery.states import FAILURE, SUCCESS
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 from django.urls import reverse
-
 from xblocks_contrib.problem.capa.responsetypes import StudentInputError
 from xblocks_contrib.problem.capa.tests.response_xml_factory import CodeResponseXMLFactory, CustomResponseXMLFactory
 from xblocks_contrib.problem.capa.tests.test_util import UseUnsafeCodejail
+
+from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.courseware.model_data import StudentModule
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor_task.api import (
@@ -44,7 +45,6 @@ from openedx.core.djangoapps.util.testing import TestConditionalContent
 from openedx.core.lib.url_utils import quote_slashes
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from common.test.utils import assert_dict_contains_subset
 
 log = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ Test signal handlers for completion.
 
 from datetime import datetime
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
@@ -11,7 +12,6 @@ from completion import handlers
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionSetUpMixin
 from django.test import TestCase
-from zoneinfo import ZoneInfo
 from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 

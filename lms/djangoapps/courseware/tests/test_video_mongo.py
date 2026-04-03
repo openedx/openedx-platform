@@ -3,10 +3,10 @@ Video xmodule tests in mongo.
 """
 
 
-from contextlib import contextmanager
 import json
 import shutil
 from collections import OrderedDict
+from contextlib import contextmanager
 from tempfile import mkdtemp
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
@@ -29,19 +29,30 @@ from edxval.api import (
     create_video_transcript,
     get_video_info,
     get_video_transcript,
-    get_video_transcript_data,
+    get_video_transcript_data
 )
 from edxval.utils import create_file_in_fs
 from fs.osfs import OSFS
 from fs.path import combine
 from lxml import etree
 from path import Path as path
-from xmodule.contentstore.content import StaticContent
+from xblocks_contrib.video import bumper_utils
+
+from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE
+from common.test.utils import assert_dict_contains_subset
+from lms.djangoapps.courseware.tests.helpers import get_context_from_dict
+from openedx.core.djangoapps.video_config import sharing
 from openedx.core.djangoapps.video_config.sharing import (
     COURSE_VIDEO_SHARING_ALL_VIDEOS,
     COURSE_VIDEO_SHARING_NONE,
     COURSE_VIDEO_SHARING_PER_VIDEO
 )
+from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
+from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, save_to_store, subs_filename
+from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE
+from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
@@ -50,22 +61,11 @@ from xmodule.tests.helpers import mock_render_template, override_descriptor_syst
 from xmodule.tests.test_import import DummyModuleStoreRuntime
 from xmodule.tests.test_video import VideoBlockTestBase
 from xmodule.video_block import VideoBlock, video_utils
-from xblocks_contrib.video import bumper_utils
-from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, save_to_store, subs_filename
 from xmodule.video_block.video_block import EXPORT_IMPORT_COURSE_DIR, EXPORT_IMPORT_STATIC_DIR
 from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW
 
-from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE
-from lms.djangoapps.courseware.tests.helpers import get_context_from_dict
-from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
-from openedx.core.djangoapps.video_config import sharing
-from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE
-from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-
 from .test_video_handlers import BaseTestVideoXBlock, TestVideo
-from .test_video_xml import SOURCE_XML, PUBLIC_SOURCE_XML
-from common.test.utils import assert_dict_contains_subset
+from .test_video_xml import PUBLIC_SOURCE_XML, SOURCE_XML
 
 TRANSCRIPT_FILE_SRT_DATA = """
 1

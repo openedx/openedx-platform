@@ -2,13 +2,12 @@
 API module.
 """
 import logging
+from datetime import datetime
+from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext as _
-
-from datetime import datetime
-from typing import Optional
 
 from lms.djangoapps.verify_student.emails import send_verification_approved_email
 from lms.djangoapps.verify_student.exceptions import VerificationAttemptInvalidStatus
@@ -17,7 +16,7 @@ from lms.djangoapps.verify_student.signals.signals import (
     emit_idv_attempt_approved_event,
     emit_idv_attempt_created_event,
     emit_idv_attempt_denied_event,
-    emit_idv_attempt_pending_event,
+    emit_idv_attempt_pending_event
 )
 from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from lms.djangoapps.verify_student.tasks import send_verification_status_email

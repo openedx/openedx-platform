@@ -1,19 +1,18 @@
 """
 URLs for Enhanced Staff Grader (ESG) backend-for-frontend (BFF)
 """
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from lms.djangoapps.ora_staff_grader.views import (
+    AssessmentFeedbackView,
     InitializeView,
     SubmissionBatchUnlockView,
     SubmissionFetchView,
     SubmissionFilesFetchView,
     SubmissionLockView,
     SubmissionStatusFetchView,
-    UpdateGradeView,
-    AssessmentFeedbackView,
+    UpdateGradeView
 )
 
 urlpatterns = []

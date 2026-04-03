@@ -4,6 +4,7 @@ Discussion XBlock
 
 import logging
 import urllib
+
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.template.loader import render_to_string

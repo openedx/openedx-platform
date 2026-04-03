@@ -35,7 +35,7 @@ class CommonInitializationConfig(AppConfig):  # lint-amnesty, pylint: disable=mi
         :return:
         """
         if 'postgresql' in connection.vendor.lower():
-            from opaque_keys.edx.locator import CourseLocator, LibraryLocator, BlockUsageLocator
+            from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator
             from psycopg2.extensions import QuotedString, register_adapter
 
             def adapt_course_locator(course_locator):

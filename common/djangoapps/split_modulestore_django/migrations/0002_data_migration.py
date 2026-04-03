@@ -1,4 +1,5 @@
 import logging
+
 from django.db import migrations, models
 from django.db.utils import IntegrityError
 

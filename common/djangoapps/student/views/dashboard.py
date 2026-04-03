@@ -17,21 +17,31 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import ensure_csrf_cookie
 from edx_django_utils import monitoring as monitoring_utils
-from edx_django_utils.plugins import get_plugins_view_context
+from edx_django_utils.plugins import get_plugins_view_context, pluggable_override
 from edx_toggles.toggles import WaffleFlag
 from opaque_keys.edx.keys import CourseKey
 from openedx_filters.learning.filters import DashboardRenderStarted
 
-from edx_django_utils.plugins import pluggable_override
-from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
-from lms.djangoapps.bulk_email.models import Optout
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response, render_to_string
 from common.djangoapps.entitlements.models import CourseEntitlement
+from common.djangoapps.student.api import COURSE_DASHBOARD_PLUGIN_VIEW_NAME
+from common.djangoapps.student.helpers import cert_info, check_verify_status_by_course, get_resume_urls_for_enrollments
+from common.djangoapps.student.models import (
+    AccountRecovery,
+    CourseEnrollment,
+    CourseEnrollmentAttribute,
+    DashboardConfiguration,
+    PendingSecondaryEmailChange,
+    UserProfile
+)
+from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
+from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
+from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.learner_home.waffle import learner_home_mfe_enabled
 from lms.djangoapps.experiments.utils import get_dashboard_course_info, get_experiment_user_metadata_context
+from lms.djangoapps.learner_home.waffle import learner_home_mfe_enabled
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.catalog.utils import (
     get_programs,
@@ -50,21 +60,9 @@ from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.access import get_user_course_duration, get_user_course_expiration_date
 from openedx.features.enterprise_support.api import (
     get_dashboard_consent_notification,
-    get_enterprise_learner_portal_context,
+    get_enterprise_learner_portal_context
 )
 from openedx.features.enterprise_support.utils import is_enterprise_learner
-
-from common.djangoapps.student.api import COURSE_DASHBOARD_PLUGIN_VIEW_NAME
-from common.djangoapps.student.helpers import cert_info, check_verify_status_by_course, get_resume_urls_for_enrollments
-from common.djangoapps.student.models import (
-    AccountRecovery,
-    CourseEnrollment,
-    CourseEnrollmentAttribute,
-    DashboardConfiguration,
-    PendingSecondaryEmailChange,
-    UserProfile
-)
-from common.djangoapps.util.milestones_helpers import get_pre_requisite_courses_not_completed
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")

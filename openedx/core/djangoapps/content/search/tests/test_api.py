@@ -4,33 +4,31 @@ Tests for the Studio content search API.
 from __future__ import annotations
 
 import copy
-
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, Mock, call, patch
-from opaque_keys.edx.keys import UsageKey
-from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
-from openedx_content import models_api as content_models
 
 import ddt
 import pytest
 from django.test import override_settings
 from freezegun import freeze_time
 from meilisearch.errors import MeilisearchApiError
+from opaque_keys.edx.keys import UsageKey
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from organizations.tests.factories import OrganizationFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content.course_overviews.api import CourseOverview
 from openedx.core.djangoapps.content_libraries import api as library_api
 from openedx.core.djangoapps.content_tagging import api as tagging_api
-from openedx.core.djangoapps.content.course_overviews.api import CourseOverview
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-
 
 try:
     # This import errors in the lms because content.search is not an installed app there.
     from .. import api
-    from ..models import SearchAccess, IncrementalIndexCompleted
+    from ..models import IncrementalIndexCompleted, SearchAccess
 except RuntimeError:
     SearchAccess = {}
 

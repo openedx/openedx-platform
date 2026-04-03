@@ -4,15 +4,13 @@ API Serializers for content tagging org
 
 from __future__ import annotations
 
-from rest_framework import serializers, fields
-
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     TaxonomyListQueryParamsSerializer,
-    TaxonomySerializer,
+    TaxonomySerializer
 )
-
 from organizations.models import Organization
+from rest_framework import fields, serializers
 
 from ...models import TaxonomyOrg
 

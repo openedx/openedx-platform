@@ -1,8 +1,9 @@
 """ Tests for course home api utils """
 
 from contextlib import contextmanager
-from rest_framework.exceptions import PermissionDenied
 from unittest import mock
+
+from rest_framework.exceptions import PermissionDenied
 
 from lms.djangoapps.course_home_api.utils import get_course_or_403
 from lms.djangoapps.courseware.access_response import AccessError

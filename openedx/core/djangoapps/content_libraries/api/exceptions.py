@@ -2,12 +2,10 @@
 Exceptions that can be thrown by the Content Libraries API.
 """
 from django.db import IntegrityError
-
 from openedx_content.models_api import Collection, Container
 from xblock.exceptions import XBlockNotFoundError
 
 from ..models import ContentLibrary
-
 
 # The public API is only the following symbols:
 __all__ = [

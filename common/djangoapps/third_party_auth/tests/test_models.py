@@ -2,10 +2,11 @@
 Tests for third_party_auth/models.py.
 """
 import unittest
+
 from django.test import TestCase, override_settings
 
-from .factories import SAMLProviderConfigFactory
 from ..models import SAMLProviderConfig, clean_username
+from .factories import SAMLProviderConfigFactory
 
 
 class TestSamlProviderConfigModel(TestCase, unittest.TestCase):

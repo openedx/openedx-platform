@@ -16,17 +16,16 @@ from django.utils.http import http_date, parse_http_date
 from edx_rest_framework_extensions.auth.jwt import cookies as jwt_cookies
 from edx_rest_framework_extensions.auth.jwt.constants import JWT_DELIMITER
 from oauth2_provider.models import Application
-from common.djangoapps.student.models import UserProfile
 
+from common.djangoapps.student.models import UserProfile
+from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_from_token
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangoapps.user_authn.exceptions import AuthFailedError
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from common.djangoapps.util.json_request import JsonResponse
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
-
 
 log = logging.getLogger(__name__)
 

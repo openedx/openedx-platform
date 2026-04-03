@@ -4,21 +4,26 @@ Test classes for the events sent in the cohort assignment process.
 Classes:
     CohortEventTest: Test event sent after cohort membership changes.
 """
-from openedx.core.djangoapps.course_groups.models import CohortMembership
 from unittest.mock import Mock  # lint-amnesty, pylint: disable=wrong-import-order
 
-from openedx_events.learning.data import CohortData, CourseData, UserData, UserPersonalData  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx_events.learning.signals import COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CohortData,
+    CourseData,
+    UserData,
+    UserPersonalData
+)
+from openedx_events.learning.signals import \
+    COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
 from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-
-from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
-
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from common.test.utils import assert_dict_contains_subset
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx.core.djangoapps.course_groups.models import CohortMembership
+from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import \
+    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 
 
 @skip_unless_lms

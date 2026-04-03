@@ -6,20 +6,23 @@ Unit tests for the container page.
 import datetime
 import re
 from unittest.mock import Mock, patch
+from urllib.parse import quote
 
 from django.http import Http404
 from django.test.client import RequestFactory
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from pytz import UTC
-from urllib.parse import quote
 
 import cms.djangoapps.contentstore.views.component as views
 from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory
+)
 
 from .utils import StudioPageTestCase
 

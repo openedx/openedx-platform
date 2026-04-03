@@ -21,15 +21,19 @@ from django.test.utils import override_settings
 from django.urls import NoReverseMatch, reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from freezegun import freeze_time
-from common.djangoapps.student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory
 from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
+from common.djangoapps.student.models import LoginFailures
+from common.djangoapps.student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory
+from common.djangoapps.util.password_policy_validators import DEFAULT_MAX_PASSWORD_LENGTH
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.password_policy.compliance import (
     NonCompliantPasswordException,
     NonCompliantPasswordWarning
 )
 from openedx.core.djangoapps.password_policy.hibp import PwnedPasswordsAPI
-from openedx.core.djangoapps.user_api.accounts import EMAIL_MIN_LENGTH, EMAIL_MAX_LENGTH
+from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
+from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
 from openedx.core.djangoapps.user_authn.config.waffle import ENABLE_PWNED_PASSWORD_API
 from openedx.core.djangoapps.user_authn.cookies import jwt_cookies
 from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
@@ -39,12 +43,8 @@ from openedx.core.djangoapps.user_authn.views.login import (
     _check_user_auth_flow
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
-from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.lib.api.test_utils import ApiTestCase
 from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
-from common.djangoapps.student.models import LoginFailures
-from common.djangoapps.util.password_policy_validators import DEFAULT_MAX_PASSWORD_LENGTH
-from common.test.utils import assert_dict_contains_subset
 
 
 @ddt.ddt

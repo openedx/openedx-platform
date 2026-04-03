@@ -28,7 +28,7 @@ from common.djangoapps.xblock_django.constants import (
     ATTR_KEY_USER_IS_BETA_TESTER,
     ATTR_KEY_USER_IS_GLOBAL_STAFF,
     ATTR_KEY_USER_IS_STAFF,
-    ATTR_KEY_USER_ROLE,
+    ATTR_KEY_USER_ROLE
 )
 from openedx.core.djangolib.markup import HTML
 from xmodule import block_metadata_utils

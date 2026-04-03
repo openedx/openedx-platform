@@ -8,12 +8,16 @@ import ddt
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.grades import api
 from lms.djangoapps.grades.models import (
+    PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride,
-    PersistentCourseGrade
+    PersistentSubsectionGradeOverride
 )
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import \
+    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory
+)
 
 
 @ddt.ddt

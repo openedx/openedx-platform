@@ -15,10 +15,8 @@ import json
 import logging
 import os.path
 import uuid
-
 from datetime import timedelta
 from email.utils import formatdate
-
 
 import requests
 from config_models.models import ConfigurationModel
@@ -27,15 +25,14 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.core.files.base import ContentFile
 from django.db import models, transaction
 from django.urls import reverse
-
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from model_utils import Choices
 from model_utils.models import StatusModel, TimeStampedModel
-from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from opaque_keys.edx.django.models import CourseKeyField
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from lms.djangoapps.verify_student.ssencrypt import (
     decode_and_decrypt,
     encrypt_and_encode,
@@ -44,7 +41,7 @@ from lms.djangoapps.verify_student.ssencrypt import (
     rsa_decrypt,
     rsa_encrypt
 )
-from common.djangoapps.util.storage import resolve_storage_backend
+from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED
 
 from .utils import auto_verify_for_testing_enabled, earliest_allowed_verification_date, submit_request_to_ss

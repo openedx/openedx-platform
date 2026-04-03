@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import ddt
 from django.db import transaction
-from django.urls import reverse
 from django.test.utils import override_settings
+from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.course_modes.models import CourseMode

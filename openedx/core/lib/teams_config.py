@@ -7,9 +7,10 @@ from enum import Enum
 
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.partitions.partitions import UserPartition, UserPartitionError
+
 log = logging.getLogger(__name__)
 
 # "Arbitrarily large" but still limited

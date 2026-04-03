@@ -2,8 +2,8 @@
 Course app configuration for live.
 """
 from typing import Dict, Optional
-from django.conf import settings
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_noop as _
 from lti_consumer.models import LtiConfiguration

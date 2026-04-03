@@ -5,9 +5,9 @@ Tests for minimum grade and credit requirement status
 from datetime import datetime, timedelta, timezone
 from unittest import mock
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.test.client import RequestFactory
 from opaque_keys.edx.keys import UsageKey
 from openedx_events.data import EventsMetadata

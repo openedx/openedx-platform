@@ -6,16 +6,10 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from cms.djangoapps.contentstore.rest_api.v1.serializers import CourseTextbooksSerializer
 from cms.djangoapps.contentstore.utils import get_textbooks_context
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    CourseTextbooksSerializer,
-)
 from common.djangoapps.student.auth import has_studio_read_access
-from openedx.core.lib.api.view_utils import (
-    DeveloperErrorViewMixin,
-    verify_course_exists,
-    view_auth_classes,
-)
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
 

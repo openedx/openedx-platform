@@ -2,7 +2,6 @@
 
 
 import ddt
-
 from django.test import override_settings
 
 from openedx.core.djangoapps.catalog.tests import mixins

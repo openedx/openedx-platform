@@ -3,6 +3,7 @@ Tests for the views in the notifications app.
 """
 from datetime import datetime, timedelta
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.conf import settings
@@ -10,12 +11,11 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test.utils import override_settings
 from django.urls import reverse
-from zoneinfo import ZoneInfo
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import CourseStaffRole, CourseInstructorRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
@@ -25,18 +25,13 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_MODERATOR
 )
 from openedx.core.djangoapps.notifications.email.utils import encrypt_string
-from openedx.core.djangoapps.notifications.models import (
-    Notification,
-    NotificationPreference
-)
+from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference
 from openedx.core.djangoapps.notifications.serializers import add_non_editable_in_preference
-
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
-from ..base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, \
-    get_default_values_of_preferences
-from ..utils import get_notification_types_with_visibility_settings, exclude_inaccessible_preferences
+from ..base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, get_default_values_of_preferences
+from ..utils import exclude_inaccessible_preferences, get_notification_types_with_visibility_settings
 
 User = get_user_model()
 

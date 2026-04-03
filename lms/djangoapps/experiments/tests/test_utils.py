@@ -8,8 +8,6 @@ from unittest import TestCase
 
 from django.utils.timezone import now
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.partitions.partitions import Group
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_blocks.transformers.tests.helpers import ModuleStoreTestCase
@@ -20,6 +18,8 @@ from lms.djangoapps.experiments.utils import (
     get_unenrolled_courses,
     is_enrolled_in_course_run
 )
+from xmodule.modulestore.tests.factories import CourseFactory
+from xmodule.partitions.partitions import Group
 
 
 class ExperimentUtilsTests(ModuleStoreTestCase, TestCase):

@@ -2,15 +2,14 @@
 Urls of Studio.
 """
 
+from auth_backends.urls import oauth2_urlpatterns
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.admin import autodiscover as django_autodiscover
-from django.urls import include
-from django.urls import path, re_path
-from django.utils.translation import gettext_lazy as _
 from django.contrib import admin
+from django.contrib.admin import autodiscover as django_autodiscover
+from django.urls import include, path, re_path
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from auth_backends.urls import oauth2_urlpatterns
 from edx_api_doc_tools import make_docs_urls
 
 import openedx.core.djangoapps.common_views.xblock
@@ -20,11 +19,10 @@ from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore import views as contentstore_views
 from cms.djangoapps.contentstore.views.block import xblock_edit_view
 from cms.djangoapps.contentstore.views.organization import OrganizationListView
+from openedx.core import toggles as core_toggles
 from openedx.core.apidocs import api_info
 from openedx.core.djangoapps.password_policy import compliance as password_policy_compliance
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
-from openedx.core import toggles as core_toggles
-
 
 django_autodiscover()
 admin.site.site_header = _('Studio Administration')
@@ -269,7 +267,7 @@ if settings.FEATURES.get('CERTIFICATES_HTML_VIEW'):
         CertificateActivationAPIView,
         CertificateDetailAPIView,
         certificates_list_handler,
-        signatory_detail_handler,
+        signatory_detail_handler
     )
 
     urlpatterns += [

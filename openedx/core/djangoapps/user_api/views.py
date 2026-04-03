@@ -20,7 +20,7 @@ from openedx.core.djangoapps.user_api.preferences.api import get_country_time_zo
 from openedx.core.djangoapps.user_api.serializers import (
     CountryTimeZoneSerializer,
     UserPreferenceSerializer,
-    UserSerializer,
+    UserSerializer
 )
 from openedx.core.lib.api.permissions import ApiKeyHeaderPermission
 from openedx.core.lib.api.view_utils import require_post_params

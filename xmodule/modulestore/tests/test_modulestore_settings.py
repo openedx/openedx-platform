@@ -6,8 +6,8 @@ Tests for testing the modulestore settings migration code.
 import copy
 from unittest import TestCase
 
-import pytest
 import ddt
+import pytest
 
 from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.modulestore.modulestore_settings import (

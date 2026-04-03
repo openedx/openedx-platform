@@ -46,9 +46,9 @@ from ..reading import (
     get_external_key_by_user_and_course,
     get_program_course_enrollment,
     get_program_enrollment,
-    get_users_by_external_keys,
-    is_course_staff_enrollment,
     get_provider_slug,
+    get_users_by_external_keys,
+    is_course_staff_enrollment
 )
 
 User = get_user_model()

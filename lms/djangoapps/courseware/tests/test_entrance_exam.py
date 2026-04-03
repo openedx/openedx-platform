@@ -4,29 +4,21 @@ Tests use cases related to LMS Entrance Exam behavior, such as gated content acc
 
 
 from unittest.mock import patch
+
 from crum import set_current_request
 from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
-from lms.djangoapps.courseware.entrance_exams import (
-    course_has_entrance_exam,
-    get_entrance_exam_content,
-    user_can_skip_entrance_exam,
-    user_has_passed_entrance_exam
-)
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
-from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block, handle_xblock_callback, toc_for_course
-from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
-from openedx.core.djangolib.testing.utils import get_mock_request
+
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import AnonymousUserFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import RequestFactoryNoCsrf
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import (
+    AnonymousUserFactory,
+    InstructorFactory,
+    RequestFactoryNoCsrf,
+    StaffFactory,
+    UserFactory
+)
 from common.djangoapps.util.milestones_helpers import (
     add_course_content_milestone,
     add_course_milestone,
@@ -35,6 +27,18 @@ from common.djangoapps.util.milestones_helpers import (
     get_milestone_relationship_types,
     get_namespace_choices
 )
+from lms.djangoapps.courseware.block_render import get_block, handle_xblock_callback, toc_for_course
+from lms.djangoapps.courseware.entrance_exams import (
+    course_has_entrance_exam,
+    get_entrance_exam_content,
+    user_can_skip_entrance_exam,
+    user_has_passed_entrance_exam
+)
+from lms.djangoapps.courseware.model_data import FieldDataCache
+from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
+from openedx.core.djangolib.testing.utils import get_mock_request
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @override_settings(ENTRANCE_EXAMS=True)

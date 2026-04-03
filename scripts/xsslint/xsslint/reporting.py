@@ -7,7 +7,6 @@ import json
 import os
 import re
 
-
 from xsslint.utils import StringLines
 
 

@@ -20,23 +20,19 @@ from eventtracking import tracker
 from opaque_keys.edx.keys import CourseKey
 from six.moves.urllib.parse import urljoin
 
-from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
-from lms.djangoapps.discussion.toggles_utils import reported_content_email_notification_enabled
-from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
-from xmodule.modulestore.django import modulestore
-
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from common.djangoapps.track import segment
-from lms.djangoapps.discussion.django_comment_client.utils import (
-    permalink,
-    get_users_with_moderator_roles,
-)
-from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks_by_course_id
+from lms.djangoapps.discussion.django_comment_client.utils import get_users_with_moderator_roles, permalink
+from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
+from lms.djangoapps.discussion.toggles_utils import reported_content_email_notification_enabled
 from openedx.core.djangoapps.ace_common.message import BaseMessageType
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
+from openedx.core.djangoapps.discussions.utils import get_accessible_discussion_xblocks_by_course_id
 from openedx.core.djangoapps.django_comment_common.models import DiscussionsIdMapping
 from openedx.core.lib.celery.task_utils import emulate_http_request
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 

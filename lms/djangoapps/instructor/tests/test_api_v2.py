@@ -9,29 +9,28 @@ from uuid import uuid4
 
 import ddt
 from django.test import SimpleTestCase, override_settings
-from django.urls import NoReverseMatch
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
+from edx_when.api import set_date_for_block, set_dates_for_course
 from opaque_keys import InvalidKeyError
 from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from edx_when.api import set_dates_for_course, set_date_for_block
+from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import CourseBetaTesterRole, CourseDataResearcherRole, CourseInstructorRole
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory,
+    UserFactory
 )
-from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt

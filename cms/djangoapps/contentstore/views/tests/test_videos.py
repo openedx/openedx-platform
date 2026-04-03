@@ -12,11 +12,10 @@ from io import StringIO
 from unittest.mock import Mock, patch
 
 import dateutil.parser
-from common.djangoapps.student.tests.factories import UserFactory
 import ddt
 import pytz
-from django.test import TestCase
 from django.conf import settings
+from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
@@ -29,31 +28,27 @@ from edxval.api import (
     get_transcript_preferences,
     get_video_info
 )
+
 from cms.djangoapps.contentstore.models import VideoUploadConfig
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
-from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
-from openedx.core.djangoapps.video_pipeline.config.waffle import (
-    DEPRECATE_YOUTUBE,
-    ENABLE_DEVSTACK_VIDEO_UPLOADS,
+from cms.djangoapps.contentstore.video_storage_handlers import (
+    PUBLIC_VIDEO_SHARE,
+    StatusDisplayStrings,
+    TranscriptProvider,
+    convert_video_status,
+    storage_service_bucket,
+    storage_service_key
 )
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
+from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE, ENABLE_DEVSTACK_VIDEO_UPLOADS
 from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
-from ..videos import (
-    KEY_EXPIRATION_IN_SECONDS,
-    VIDEO_IMAGE_UPLOAD_ENABLED,
-)
-from cms.djangoapps.contentstore.video_storage_handlers import (
-    TranscriptProvider,
-    StatusDisplayStrings,
-    convert_video_status,
-    storage_service_bucket,
-    storage_service_key,
-    PUBLIC_VIDEO_SHARE
-)
+from ..videos import KEY_EXPIRATION_IN_SECONDS, VIDEO_IMAGE_UPLOAD_ENABLED
 
 
 def setup_s3_mocks(mock_boto3_resource, bucket_name='test-bucket'):

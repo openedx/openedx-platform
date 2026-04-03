@@ -4,16 +4,16 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.conf import settings
 from oauth2_provider import models as dot_models
 from rest_framework import status
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.oauth_dispatch.adapters.dot import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.jwt import _create_jwt
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 class AuthType(Enum):

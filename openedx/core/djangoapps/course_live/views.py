@@ -19,9 +19,10 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from openedx.core.djangoapps.course_live.permissions import IsEnrolledOrStaff, IsStaffOrInstructor
 from openedx.core.djangoapps.course_live.tab import CourseLiveTab
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-from .providers import ProviderManager
+
 from ...lib.api.view_utils import verify_course_exists
 from .models import CourseLiveConfiguration
+from .providers import ProviderManager
 from .serializers import CourseLiveConfigurationSerializer
 
 

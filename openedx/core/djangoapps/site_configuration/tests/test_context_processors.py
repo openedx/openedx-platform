@@ -8,9 +8,8 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 
 from openedx.core.djangoapps.site_configuration.context_processors import configuration_context
-from openedx.core.djangoapps.site_configuration.tests.test_util import (
-    with_site_configuration,
-)
+from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
+
 PLATFORM_NAME = 'Test Platform'
 
 

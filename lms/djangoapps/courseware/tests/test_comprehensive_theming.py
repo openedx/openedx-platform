@@ -7,9 +7,9 @@ from django.test import TestCase
 from path import Path
 
 from common.djangoapps import edxmako
-from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme
 from openedx.core.djangoapps.theming.helpers import get_themes
 from openedx.core.djangoapps.theming.helpers_dirs import get_theme_dirs
+from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme
 from openedx.core.lib.tempdir import create_symlink, delete_symlink, mkdtemp_clean
 
 

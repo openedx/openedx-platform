@@ -24,51 +24,44 @@ from rest_framework import status
 from rest_framework.parsers import JSONParser
 from rest_framework.test import APIClient, APITestCase
 
-from lms.djangoapps.discussion.django_comment_client.tests.utils import (
-    config_course_discussions,
-    topic_name_to_id,
-)
-from lms.djangoapps.discussion.rest_api import api
-from lms.djangoapps.discussion.rest_api.tests.utils import (
-    CommentsServiceMockMixin,
-    ForumMockUtilsMixin,
-    ProfileImageTestMixin,
-    make_paginated_api_response,
-    make_minimal_cs_comment,
-    make_minimal_cs_thread,
-)
-from lms.djangoapps.discussion.rest_api.utils import get_usernames_from_search_string
-from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
-
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.models import CourseEnrollment, get_retired_username_by_username
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
     SuperuserFactory,
     UserFactory
 )
-from common.djangoapps.student.models import get_retired_username_by_username, CourseEnrollment
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.util.testing import PatchMediaTypeMixin, UrlResetMixin
 from common.test.utils import disable_signal
-
+from lms.djangoapps.discussion.django_comment_client.tests.utils import config_course_discussions, topic_name_to_id
+from lms.djangoapps.discussion.rest_api import api
+from lms.djangoapps.discussion.rest_api.tests.utils import (
+    CommentsServiceMockMixin,
+    ForumMockUtilsMixin,
+    ProfileImageTestMixin,
+    make_minimal_cs_comment,
+    make_minimal_cs_thread,
+    make_paginated_api_response
+)
+from lms.djangoapps.discussion.rest_api.utils import get_usernames_from_search_string
+from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
 from openedx.core.djangoapps.course_groups.tests.helpers import config_course_cohorts
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, DiscussionTopicLink, Provider
 from openedx.core.djangoapps.discussions.tasks import update_discussions_settings_from_course_task
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, Role
+from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
-from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
-from openedx.core.djangoapps.django_comment_common.models import (
-    CourseDiscussionSettings, Role
-)
-from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
-from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_storage
+from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 
 class DiscussionAPIViewTestMixin(ForumMockUtilsMixin, UrlResetMixin):

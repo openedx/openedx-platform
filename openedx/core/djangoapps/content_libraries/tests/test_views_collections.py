@@ -3,16 +3,16 @@ Tests Library Collections REST API views
 """
 
 from __future__ import annotations
+
 import ddt
-
-from openedx_content.models_api import Collection
 from opaque_keys.edx.locator import LibraryLocatorV2
+from openedx_content.models_api import Collection
 
-from openedx.core.djangolib.testing.utils import skip_unless_cms
-from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
-from openedx.core.djangoapps.content_libraries.models import ContentLibrary
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_libraries import api
+from openedx.core.djangoapps.content_libraries.models import ContentLibrary
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 
 URL_PREFIX = '/api/libraries/v2/{lib_key}/'
 URL_LIB_COLLECTIONS = URL_PREFIX + 'collections/'

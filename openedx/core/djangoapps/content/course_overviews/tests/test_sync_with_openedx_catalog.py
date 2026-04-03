@@ -3,7 +3,6 @@ Test that changes to courses get synced into the new openedx_catalog models.
 """
 
 import pytest
-
 from openedx_catalog import api as catalog_api
 from openedx_catalog.models_api import CatalogCourse, CourseRun
 
@@ -11,8 +10,8 @@ from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED,
-    ModuleStoreTestCase,
     ImmediateOnCommitMixin,
+    ModuleStoreTestCase
 )
 from xmodule.modulestore.tests.factories import CourseFactory
 

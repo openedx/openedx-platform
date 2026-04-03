@@ -8,17 +8,17 @@ import logging
 
 from django.core.exceptions import (  # lint-amnesty, pylint: disable=wrong-import-order
     ObjectDoesNotExist,
-    ValidationError,
+    ValidationError
 )
 from django.db import IntegrityError  # lint-amnesty, pylint: disable=wrong-import-order
 from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
 from django.utils.decorators import method_decorator  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import (
-    JwtAuthentication,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.jwt.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
+    JwtAuthentication
+)
+from edx_rest_framework_extensions.auth.session.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
+    SessionAuthenticationAllowInactiveUser
+)
 from opaque_keys import InvalidKeyError  # lint-amnesty, pylint: disable=wrong-import-order
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework import permissions, status  # lint-amnesty, pylint: disable=wrong-import-order
@@ -41,13 +41,13 @@ from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentError,
     CourseEnrollmentExistsError,
     CourseModeNotFoundError,
-    InvalidEnrollmentAttribute,
+    InvalidEnrollmentAttribute
 )
 from openedx.core.djangoapps.enrollments.forms import CourseEnrollmentsApiListForm
 from openedx.core.djangoapps.enrollments.paginators import CourseEnrollmentsApiListPagination
 from openedx.core.djangoapps.enrollments.serializers import (
     CourseEnrollmentAllowedSerializer,
-    CourseEnrollmentsApiListSerializer,
+    CourseEnrollmentsApiListSerializer
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
 from openedx.core.djangoapps.user_api.models import UserRetirementStatus
@@ -61,7 +61,7 @@ from openedx.features.enterprise_support.api import (
     ConsentApiServiceClient,
     EnterpriseApiException,
     EnterpriseApiServiceClient,
-    enterprise_enabled,
+    enterprise_enabled
 )
 
 log = logging.getLogger(__name__)

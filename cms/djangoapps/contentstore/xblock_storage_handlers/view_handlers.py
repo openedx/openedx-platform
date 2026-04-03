@@ -20,11 +20,14 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.translation import gettext as _
 from edx_django_utils.plugins import pluggable_override
-from openedx_content import api as content_api
-from openedx_content import models_api as content_models
-from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
-from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
-from openedx.core import toggles as core_toggles
+from edx_proctoring.api import (
+    does_backend_support_onboarding,
+    get_exam_by_content_id,
+    get_exam_configuration_dashboard_url
+)
+from edx_proctoring.exceptions import ProctoredExamNotFoundException
+from help_tokens.core import HelpUrlExpert
+from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import (
     COURSES_EDIT_COURSE_CONTENT,
@@ -32,19 +35,12 @@ from openedx_authz.constants.permissions import (
     COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
-    COURSES_VIEW_COURSE_UPDATES,
+    COURSES_VIEW_COURSE_UPDATES
 )
-from edx_proctoring.api import (
-    does_backend_support_onboarding,
-    get_exam_by_content_id,
-    get_exam_configuration_dashboard_url,
-)
-from edx_proctoring.exceptions import ProctoredExamNotFoundException
-from help_tokens.core import HelpUrlExpert
-from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from xblock.core import XBlock
 from xblock.fields import Scope
-from .xblock_helpers import get_block_key_string
 
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
@@ -53,19 +49,19 @@ from cms.lib.xblock.upstream_sync import BadUpstream, UpstreamLink
 from cms.lib.xblock.upstream_sync_block import sync_from_upstream_block
 from cms.lib.xblock.upstream_sync_container import sync_from_upstream_container
 from common.djangoapps.static_replace import replace_static_urls
-from common.djangoapps.student.auth import (
-    has_studio_read_access,
-    has_studio_write_access,
-)
+from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 from common.djangoapps.util.proctoring import show_review_rules
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.bookmarks import api as bookmarks_api
+from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
+from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
-from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.cache_utils import request_cached
+from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.xblock_utils import get_icon
 from openedx.core.toggles import ENTRANCE_EXAMS
 from xmodule.course_block import DEFAULT_START_DATE
@@ -76,23 +72,6 @@ from xmodule.modulestore.exceptions import InvalidLocationError, ItemNotFoundErr
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.tabs import CourseTabList
 
-from ..utils import (
-    ancestor_has_staff_lock,
-    find_release_date_source,
-    find_staff_lock_source,
-    get_split_group_display_name,
-    get_user_partition_info,
-    get_visibility_partition_info,
-    has_children_visible_to_specific_partition_groups,
-    is_currently_visible_to_students,
-    is_self_paced,
-    get_taxonomy_tags_widget_url,
-    load_services_for_studio,
-    duplicate_block,
-)
-
-from .create_xblock import create_xblock
-from .xblock_helpers import usage_key_with_run
 from ..helpers import (
     concat_static_file_notices,
     get_parent_xblock,
@@ -103,8 +82,24 @@ from ..helpers import (
     xblock_lms_url,
     xblock_primary_child_category,
     xblock_studio_url,
-    xblock_type_display_name,
+    xblock_type_display_name
 )
+from ..utils import (
+    ancestor_has_staff_lock,
+    duplicate_block,
+    find_release_date_source,
+    find_staff_lock_source,
+    get_split_group_display_name,
+    get_taxonomy_tags_widget_url,
+    get_user_partition_info,
+    get_visibility_partition_info,
+    has_children_visible_to_specific_partition_groups,
+    is_currently_visible_to_students,
+    is_self_paced,
+    load_services_for_studio
+)
+from .create_xblock import create_xblock
+from .xblock_helpers import get_block_key_string, usage_key_with_run
 
 log = logging.getLogger(__name__)
 

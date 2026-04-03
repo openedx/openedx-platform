@@ -10,7 +10,7 @@ from .views import (
     LibraryCourseMigrationViewSet,
     MigrationInfoViewSet,
     MigrationViewSet,
-    PreviewMigration,
+    PreviewMigration
 )
 
 ROUTER = SimpleRouter()

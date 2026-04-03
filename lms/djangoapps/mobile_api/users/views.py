@@ -18,6 +18,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import dateparse
 from django.utils.decorators import method_decorator
+from edx_rest_framework_extensions.paginators import DefaultPagination
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator
@@ -27,19 +28,18 @@ from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from xblock.fields import Scope
 from xblock.runtime import KeyValueStore
-from edx_rest_framework_extensions.paginators import DefaultPagination
 
 from common.djangoapps.student.models import CourseEnrollment, User  # lint-amnesty, pylint: disable=reimported
 from lms.djangoapps.courseware.access import is_mobile_available_for_user
 from lms.djangoapps.courseware.access_utils import ACCESS_GRANTED
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from lms.djangoapps.courseware.courses import get_current_child
 from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.views.index import save_positions_recursively_up
 from lms.djangoapps.mobile_api.models import MobileConfig
-from lms.djangoapps.mobile_api.utils import API_V1, API_V05, API_V2, API_V3, API_V4
+from lms.djangoapps.mobile_api.utils import API_V1, API_V2, API_V3, API_V4, API_V05
 from openedx.core.djangoapps.site_configuration.helpers import get_current_site_orgs
 from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -52,7 +52,7 @@ from .serializers import (
     CourseEnrollmentSerializer,
     CourseEnrollmentSerializerModifiedForPrimary,
     CourseEnrollmentSerializerv05,
-    UserSerializer,
+    UserSerializer
 )
 
 log = logging.getLogger(__name__)

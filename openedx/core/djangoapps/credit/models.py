@@ -9,8 +9,8 @@ successful completion of a course on EdX
 import datetime
 import logging
 from collections import defaultdict
-
 from zoneinfo import ZoneInfo
+
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.core.cache import cache

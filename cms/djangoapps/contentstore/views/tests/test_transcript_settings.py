@@ -18,8 +18,8 @@ from cms.djangoapps.contentstore.transcript_storage_handlers import (
 )
 from cms.djangoapps.contentstore.utils import reverse_course_url
 from common.djangoapps.student.roles import CourseStaffRole
-from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 
 
 @ddt.ddt

@@ -12,10 +12,9 @@ from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.db import models, transaction
-
-from common.djangoapps.util.storage import resolve_storage_backend
 from model_utils.models import TimeStampedModel
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from openedx.core.djangoapps.xmodule_django.models import UsageKeyWithRunField
 
 from . import config

@@ -27,7 +27,7 @@ from .views import (
     ProctoringErrorsView,
     VideoDownloadView,
     VideoUsageView,
-    vertical_container_children_redirect_view,
+    vertical_container_children_redirect_view
 )
 
 app_name = 'v1'

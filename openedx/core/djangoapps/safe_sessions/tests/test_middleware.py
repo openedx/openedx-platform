@@ -2,7 +2,7 @@
 Unit tests for SafeSessionMiddleware
 """
 import uuid
-from unittest.mock import call, patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 import ddt
 from crum import set_current_request
@@ -17,10 +17,10 @@ from edx_django_utils.cache import RequestCache
 from edx_rest_framework_extensions.auth.jwt import cookies as jwt_cookies
 
 from common.djangoapps.student.models import PendingEmailChange
-from openedx.core.djangolib.testing.utils import get_mock_request, CacheIsolationTestCase, skip_unless_lms
-from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
-from openedx.core.djangoapps.user_authn.cookies import ALL_LOGGED_IN_COOKIE_NAMES
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_authn.cookies import ALL_LOGGED_IN_COOKIE_NAMES
+from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, get_mock_request, skip_unless_lms
 
 from ..middleware import (
     EmailChangeMiddleware,

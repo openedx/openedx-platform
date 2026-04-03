@@ -9,9 +9,7 @@ from uuid import uuid4
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from opaque_keys.edx.locator import (
-    BlockUsageLocator, CourseLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-)
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from organizations.tests.factories import OrganizationFactory
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
@@ -19,23 +17,20 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from user_tasks.models import UserTaskStatus
 
 from cms.djangoapps.modulestore_migrator.data import (
-    ModulestoreMigration,
-    ModulestoreBlockMigrationSuccess,
     ModulestoreBlockMigrationFailure,
+    ModulestoreBlockMigrationSuccess,
+    ModulestoreMigration
 )
-from cms.djangoapps.modulestore_migrator.models import (
-    ModulestoreMigration as ModulestoreMigrationModel,
-    ModulestoreSource,
-)
+from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration as ModulestoreMigrationModel
+from cms.djangoapps.modulestore_migrator.models import ModulestoreSource
 from cms.djangoapps.modulestore_migrator.rest_api.v1.views import (
     BlockMigrationInfo,
     BulkMigrationViewSet,
     MigrationInfoViewSet,
     MigrationViewSet,
-    PreviewMigration,
+    PreviewMigration
 )
 from openedx.core.djangoapps.content_libraries import api as lib_api
-
 
 User = get_user_model()
 

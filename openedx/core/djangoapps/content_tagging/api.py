@@ -2,27 +2,24 @@
 Content Tagging APIs
 """
 from __future__ import annotations
-import io
 
-from itertools import groupby
 import csv
+import io
+from itertools import groupby
 from typing import Iterator
-from opaque_keys.edx.keys import CourseKey, CollectionKey, ContainerKey, UsageKey
 
 import openedx_tagging.api as oel_tagging
 from django.db.models import Exists, OuterRef, Q, QuerySet
 from django.utils.timezone import now
+from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
+from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
+from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_tagging.models import ObjectTag, Taxonomy
 from openedx_tagging.models.utils import TAGS_CSV_SEPARATOR
 from organizations.models import Organization
-from .helpers.objecttag_export_helpers import build_object_tree_with_objecttags, iterate_with_level
-from openedx_events.content_authoring.data import ContentObjectData, ContentObjectChangedData
-from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    CONTENT_OBJECT_TAGS_CHANGED,
-)
 
+from .helpers.objecttag_export_helpers import build_object_tree_with_objecttags, iterate_with_level
 from .models import TaxonomyOrg
 from .types import ContentKey, TagValuesByObjectIdDict, TagValuesByTaxonomyIdDict, TaxonomyDict
 from .utils import check_taxonomy_context_key_org, get_content_key_from_string, get_context_key_from_key

@@ -131,8 +131,8 @@ def _get_course_block(course_descriptor, user):
     # Adding courseware imports here to insulate other apps (e.g. schedules) to
     # avoid import errors.
     # TODO remove the LMS dependency https://github.com/openedx/edx-platform/issues/37659
-    from lms.djangoapps.courseware.model_data import FieldDataCache
     from lms.djangoapps.courseware.block_render import get_block_for_descriptor
+    from lms.djangoapps.courseware.model_data import FieldDataCache
 
     # Fake a request to fool parts of the courseware that want to inspect it.
     request = get_request_or_stub()

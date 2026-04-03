@@ -6,6 +6,7 @@ import uuid
 from collections import namedtuple
 from copy import deepcopy
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
@@ -15,7 +16,6 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from zoneinfo import ZoneInfo
 from testfixtures import LogCapture
 
 from common.djangoapps.course_modes.models import CourseMode

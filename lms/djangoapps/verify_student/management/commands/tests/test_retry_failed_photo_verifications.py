@@ -4,14 +4,14 @@ Tests for django admin commands in the verify_student module
 Lots of imports from verify_student's model tests, since they cover similar ground
 """
 
-from freezegun import freeze_time
-from unittest.mock import call, patch, ANY
+from unittest.mock import ANY, call, patch
 
 from django.conf import settings
 from django.core.management import call_command
+from django.test.utils import override_settings
+from freezegun import freeze_time
 from testfixtures import LogCapture
 
-from django.test.utils import override_settings
 from common.test.utils import MockS3Boto3Mixin
 from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification, SSPVerificationRetryConfig
 from lms.djangoapps.verify_student.tests import TestVerificationBase

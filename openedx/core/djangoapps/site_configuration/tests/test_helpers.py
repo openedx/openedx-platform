@@ -8,7 +8,7 @@ from django.test import TestCase
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
-    with_site_configuration_context,
+    with_site_configuration_context
 )
 
 test_config = {   # pylint: disable=invalid-name

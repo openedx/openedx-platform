@@ -10,7 +10,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpRequest
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import AssetKey, UsageKey, ContainerKey
+from opaque_keys.edx.keys import AssetKey, ContainerKey, UsageKey
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict
@@ -19,21 +19,11 @@ from xmodule import block_metadata_utils
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 
-from .data import (
-    CLIPBOARD_PURPOSE,
-    StagedContentData,
-    StagedContentFileData,
-    StagedContentStatus,
-    UserClipboardData,
-)
-from .models import (
-    UserClipboard as _UserClipboard,
-    StagedContent as _StagedContent,
-    StagedContentFile as _StagedContentFile,
-)
-from .serializers import (
-    UserClipboardSerializer as _UserClipboardSerializer,
-)
+from .data import CLIPBOARD_PURPOSE, StagedContentData, StagedContentFileData, StagedContentStatus, UserClipboardData
+from .models import StagedContent as _StagedContent
+from .models import StagedContentFile as _StagedContentFile
+from .models import UserClipboard as _UserClipboard
+from .serializers import UserClipboardSerializer as _UserClipboardSerializer
 from .tasks import delete_expired_clipboards
 
 log = logging.getLogger(__name__)

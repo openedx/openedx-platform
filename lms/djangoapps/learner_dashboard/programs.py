@@ -31,7 +31,7 @@ from openedx.core.djangoapps.programs.utils import (
     get_industry_and_credit_pathways,
     get_program_and_course_data,
     get_program_marketing_url,
-    get_program_urls,
+    get_program_urls
 )
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preferences
 from openedx.core.djangolib.markup import HTML

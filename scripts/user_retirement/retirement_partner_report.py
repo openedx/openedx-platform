@@ -20,7 +20,6 @@ from six import text_type
 # Add top-level project path to sys.path before importing scripts code
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from scripts.user_retirement.utils.thirdparty_apis.google_api import DriveApi  # pylint: disable=wrong-import-position
 # pylint: disable=wrong-import-position
 from scripts.user_retirement.utils.helpers import (
     _config_with_drive_or_exit,
@@ -29,6 +28,7 @@ from scripts.user_retirement.utils.helpers import (
     _log,
     _setup_lms_api_or_exit
 )
+from scripts.user_retirement.utils.thirdparty_apis.google_api import DriveApi  # pylint: disable=wrong-import-position
 
 # Return codes for various fail cases
 ERR_SETUP_FAILED = -1

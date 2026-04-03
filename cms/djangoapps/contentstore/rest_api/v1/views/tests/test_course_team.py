@@ -5,9 +5,9 @@ import ddt
 from django.urls import reverse
 from rest_framework import status
 
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 
 from ...mixins import PermissionAccessMixin
 

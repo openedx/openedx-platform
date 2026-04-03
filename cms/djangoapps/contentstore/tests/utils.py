@@ -9,17 +9,16 @@ from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.client import Client
 from opaque_keys.edx.keys import AssetKey
+
+from cms.djangoapps.contentstore.utils import reverse_url
+from common.djangoapps.student.models import Registration
+from openedx.core.djangoapps.video_config.tests.test_transcripts_utils import YoutubeVideoHTMLResponse
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.split_mongo.split import SplitMongoModuleStore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import ProceduralCourseTestMixin
-from openedx.core.djangoapps.video_config.tests.test_transcripts_utils import YoutubeVideoHTMLResponse
-
-from cms.djangoapps.contentstore.utils import reverse_url
-from common.djangoapps.student.models import Registration
-
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 

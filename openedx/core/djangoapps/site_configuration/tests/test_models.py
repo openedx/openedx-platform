@@ -2,10 +2,12 @@
 Tests for site configuration's django models.
 """
 from unittest.mock import patch
+
 import pytest
 from django.contrib.sites.models import Site
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+
 from openedx.core.djangoapps.site_configuration.models import (
     SiteConfiguration,
     SiteConfigurationHistory,

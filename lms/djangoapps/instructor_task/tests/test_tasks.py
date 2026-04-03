@@ -9,8 +9,9 @@ paths actually work.
 import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
-import pytest
+
 import ddt
+import pytest
 from celery.states import FAILURE, SUCCESS
 from django.utils.translation import gettext_noop
 from opaque_keys.edx.keys import i4xEncoder

@@ -1,14 +1,14 @@
 """
     Viewset for auth/saml/v0/samlproviderdata
 """
-from datetime import datetime
 import logging
-from requests.exceptions import SSLError, MissingSchema, HTTPError
+from datetime import datetime
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from edx_rbac.mixins import PermissionRequiredMixin
 from enterprise.models import EnterpriseCustomerIdentityProvider
+from requests.exceptions import HTTPError, MissingSchema, SSLError
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ParseError

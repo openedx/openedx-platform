@@ -1,31 +1,29 @@
 """
 Test cases for the HTTP endpoints of the profile image api.
 """
+import datetime  # lint-amnesty, pylint: disable=wrong-import-order
 from contextlib import closing
 from unittest import mock
 from unittest.mock import patch
-
-import pytest
-import datetime  # lint-amnesty, pylint: disable=wrong-import-order
 from zoneinfo import ZoneInfo
 
-from django.urls import reverse
-from django.http import HttpResponse
-
 import ddt
+import pytest
+from django.http import HttpResponse
+from django.urls import reverse
 from PIL import Image
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.tests.tests import UserSettingsEventTestMixin
 from openedx.core.djangoapps.user_api.accounts.image_helpers import (
-    set_has_profile_image,
     get_profile_image_names,
     get_profile_image_storage,
+    set_has_profile_image
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
-from ..images import create_profile_images, ImageValidationError
+from ..images import ImageValidationError, create_profile_images
 from ..views import LOG_MESSAGE_CREATE, LOG_MESSAGE_DELETE
 from .helpers import make_image_file
 

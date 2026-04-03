@@ -2,8 +2,9 @@
 
 """Tests for `user_util` package."""
 
-import pytest
 from types import GeneratorType
+
+import pytest
 
 from openedx.core.lib import user_util
 

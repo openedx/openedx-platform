@@ -6,17 +6,17 @@ from django.db import IntegrityError
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
-from openedx_events.content_authoring.data import LibraryCollectionData
-from openedx_events.content_authoring.signals import LIBRARY_COLLECTION_UPDATED
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection, Component, PublishableEntity
+from openedx_events.content_authoring.data import LibraryCollectionData
+from openedx_events.content_authoring.signals import LIBRARY_COLLECTION_UPDATED
 
 from ..models import ContentLibrary
 from .exceptions import (
     ContentLibraryBlockNotFound,
     ContentLibraryCollectionNotFound,
     ContentLibraryContainerNotFound,
-    LibraryCollectionAlreadyExists,
+    LibraryCollectionAlreadyExists
 )
 
 # The public API is only the following symbols:

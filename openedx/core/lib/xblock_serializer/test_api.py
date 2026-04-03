@@ -3,18 +3,18 @@ Test for the XBlock serialization lib's API
 """
 from xml.etree import ElementTree
 
+from openedx_tagging.models import Tag
+
+from openedx.core.djangoapps.content_tagging import api as tagging_api
+from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.modulestore.django import contentstore, modulestore
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase, upload_file_to_course
-from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, LibraryFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory, ToyCourseFactory
 from xmodule.util.sandboxing import DEFAULT_PYTHON_LIB_FILENAME
-from openedx_tagging.models import Tag
-from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
-from openedx.core.djangoapps.content_tagging import api as tagging_api
 
 from . import api
 from .block_serializer import XBlockSerializer
-
 
 # The expected OLX string for the 'Toy_Videos' sequential in the toy course
 EXPECTED_SEQUENTIAL_OLX = """

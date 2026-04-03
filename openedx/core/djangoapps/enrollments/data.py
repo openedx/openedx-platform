@@ -10,6 +10,15 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.db import transaction
 from opaque_keys.edx.keys import CourseKey
 
+from common.djangoapps.student.models import (
+    AlreadyEnrolledError,
+    CourseEnrollment,
+    CourseEnrollmentAttribute,
+    CourseFullError,
+    EnrollmentClosedError,
+    NonExistentCourseError
+)
+from common.djangoapps.student.role_helpers import get_course_roles
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.enrollments.errors import (
     CourseEnrollmentClosedError,
@@ -20,15 +29,6 @@ from openedx.core.djangoapps.enrollments.errors import (
 )
 from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer, CourseSerializer
 from openedx.core.lib.exceptions import CourseNotFoundError
-from common.djangoapps.student.models import (
-    AlreadyEnrolledError,
-    CourseEnrollment,
-    CourseEnrollmentAttribute,
-    CourseFullError,
-    EnrollmentClosedError,
-    NonExistentCourseError
-)
-from common.djangoapps.student.role_helpers import get_course_roles
 
 log = logging.getLogger(__name__)
 
