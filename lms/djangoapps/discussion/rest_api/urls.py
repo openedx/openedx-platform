@@ -18,6 +18,7 @@ from lms.djangoapps.discussion.rest_api.views import (
     CourseTopicsViewV3,
     CourseView,
     CourseViewV2,
+    DiscussionModerationViewSet,
     LearnerThreadView,
     ReplaceUsernamesView,
     RetireUserView,
@@ -30,6 +31,32 @@ ROUTER.register("threads", ThreadViewSet, basename="thread")
 ROUTER.register("comments", CommentViewSet, basename="comment")
 
 urlpatterns = [
+    # Moderation endpoints (defined first to avoid router conflicts)
+    path(
+        'v1/moderation/ban-user/',
+        DiscussionModerationViewSet.as_view({'post': 'ban_user'}),
+        name='discussion-moderation-ban-user'
+    ),
+    path(
+        'v1/moderation/unban-user/',
+        DiscussionModerationViewSet.as_view({'post': 'unban_user'}),
+        name='discussion-moderation-unban-user'
+    ),
+    path(
+        'v1/moderation/<int:pk>/unban/',
+        DiscussionModerationViewSet.as_view({'post': 'unban_user_by_id'}),
+        name='discussion-moderation-unban-by-id'
+    ),
+    path(
+        'v1/moderation/bulk-delete-ban/',
+        DiscussionModerationViewSet.as_view({'post': 'bulk_delete_ban'}),
+        name='discussion-moderation-bulk-delete-ban'
+    ),
+    re_path(
+        fr'^v1/moderation/banned-users/{settings.COURSE_ID_PATTERN}/?$',
+        DiscussionModerationViewSet.as_view({'get': 'banned_users'}),
+        name='discussion-moderation-banned-users'
+    ),
     re_path(
         r"^v1/courses/{}/settings$".format(
             settings.COURSE_ID_PATTERN

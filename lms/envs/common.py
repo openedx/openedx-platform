@@ -3097,6 +3097,40 @@ ENTERPRISE_MANUAL_REPORTING_CUSTOMER_UUIDS = []
 
 AVAILABLE_DISCUSSION_TOURS = []
 
+############## DISCUSSION MODERATION ##############
+
+# .. toggle_name: settings.DISCUSSION_MODERATION_BAN_EMAIL_ENABLED
+# .. toggle_implementation: DjangoSetting
+# .. toggle_default: True
+# .. toggle_description: Enable/disable email notifications when users are banned from discussions.
+#   Set to False in development/test environments to prevent spam to partner-support@edx.org.
+#   When enabled, escalation emails are sent to DISCUSSION_MODERATION_ESCALATION_EMAIL address.
+# .. toggle_use_cases: opt_in
+# .. toggle_creation_date: 2024-11-24
+# .. toggle_tickets: COSMO2-736
+DISCUSSION_MODERATION_BAN_EMAIL_ENABLED = True
+
+# .. setting_name: DISCUSSION_MODERATION_ESCALATION_EMAIL
+# .. setting_default: 'partner-support@edx.org'
+# .. setting_description: Email address to receive ban escalation notifications when users are banned
+#   from discussions. Override in development to use a test email address.
+# .. setting_use_cases: opt_in
+# .. setting_creation_date: 2024-11-24
+# .. setting_tickets: COSMO2-736
+DISCUSSION_MODERATION_ESCALATION_EMAIL = 'partner-support@edx.org'
+
+# .. setting_name: DISCUSSION_MODERATION_BAN_REASON_MAX_LENGTH
+# .. setting_default: 1000
+# .. setting_description: Maximum character length for ban reason text.
+# .. setting_use_cases: opt_in
+# .. setting_creation_date: 2024-11-24
+# .. setting_tickets: COSMO2-736
+DISCUSSION_MODERATION_BAN_REASON_MAX_LENGTH = 1000
+
+############## NOTIFICATIONS ##############
+NOTIFICATION_TYPE_ICONS = {}
+DEFAULT_NOTIFICATION_ICON_URL = ""
+
 ############## SELF PACED EMAIL ##############
 SELF_PACED_BANNER_URL = ""
 SELF_PACED_CLOUD_URL = ""

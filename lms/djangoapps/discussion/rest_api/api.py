@@ -36,7 +36,11 @@ from lms.djangoapps.course_api.blocks.api import get_blocks
 from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.discussion.rate_limit import is_content_creation_rate_limited
-from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE, ONLY_VERIFIED_USERS_CAN_POST
+from lms.djangoapps.discussion.toggles import (
+    ENABLE_DISCUSSIONS_MFE,
+    ENABLE_DISCUSSION_BAN,
+    ONLY_VERIFIED_USERS_CAN_POST,
+)
 from lms.djangoapps.discussion.views import is_privileged_user
 from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
@@ -102,6 +106,7 @@ from ..django_comment_client.utils import (
     has_discussion_privileges,
     is_commentable_divided
 )
+from forum import api as forum_api
 from .exceptions import CommentNotFoundError, DiscussionBlackOutException, DiscussionDisabledError, ThreadNotFoundError
 from .forms import CommentActionsForm, ThreadActionsForm, UserOrdering
 from .pagination import DiscussionAPIPagination
@@ -339,9 +344,22 @@ def get_course(request, course_key, check_tab=True):
     discussion_tab = CourseTabList.get_tab_by_type(course.tabs, 'discussion')
     is_course_staff = CourseStaffRole(course_key).has_user(request.user)
     is_course_admin = CourseInstructorRole(course_key).has_user(request.user)
+
+    # Check if the user is banned from discussions
+    is_user_banned_func = getattr(forum_api, 'is_user_banned', None)
+    is_user_banned = False
+    # Only check ban status if feature flag is enabled
+    if ENABLE_DISCUSSION_BAN.is_enabled(course_key) and is_user_banned_func is not None:
+        try:
+            is_user_banned = is_user_banned_func(request.user, course_key)
+        except Exception:  # pylint: disable=broad-except
+            # If ban check fails, default to False
+            is_user_banned = False
+
     return {
         "id": str(course_key),
         "is_posting_enabled": is_posting_enabled,
+        "is_user_banned": is_user_banned,
         "blackouts": [
             {
                 "start": _format_datetime(blackout["start"]),
@@ -387,8 +405,13 @@ def get_course(request, course_key, check_tab=True):
             'site_key': get_captcha_site_key_by_platform('web'),
         },
         "is_email_verified": request.user.is_active,
-        "only_verified_users_can_post": ONLY_VERIFIED_USERS_CAN_POST.is_enabled(course_key),
-        "content_creation_rate_limited": is_content_creation_rate_limited(request, course_key, increment=False),
+        "only_verified_users_can_post": ONLY_VERIFIED_USERS_CAN_POST.is_enabled(
+            course_key
+        ),
+        "content_creation_rate_limited": is_content_creation_rate_limited(
+            request, course_key, increment=False
+        ),
+        "enable_discussion_ban": ENABLE_DISCUSSION_BAN.is_enabled(course_key),
     }
 
 
@@ -1495,6 +1518,22 @@ def create_thread(request, thread_data):
     if not discussion_open_for_user(course, user):
         raise DiscussionBlackOutException
 
+    # Check if user is banned from discussions
+    is_user_banned_func = getattr(forum_api, 'is_user_banned', None)
+    user_banned = False
+    if ENABLE_DISCUSSION_BAN.is_enabled(course_key) and is_user_banned_func:
+        try:
+            user_banned = is_user_banned_func(user, course_key)
+        except (CommentClientRequestError, CommentClient500Error) as exc:
+            log.warning(
+                "Error while checking discussion ban status for user %s in course %s: %s",
+                getattr(user, "id", None),
+                course_key,
+                exc,
+            )
+    if user_banned:
+        raise PermissionDenied("You are banned from posting in this course's discussions.")
+
     notify_all_learners = thread_data.pop("notify_all_learners", False)
 
     context = get_context(course, request)
@@ -1550,6 +1589,22 @@ def create_comment(request, comment_data):
     course = context["course"]
     if not discussion_open_for_user(course, request.user):
         raise DiscussionBlackOutException
+
+    # Check if user is banned from discussions
+    is_user_banned_func = getattr(forum_api, 'is_user_banned', None)
+    user_banned = False
+    if ENABLE_DISCUSSION_BAN.is_enabled(course.id) and is_user_banned_func:
+        try:
+            user_banned = is_user_banned_func(request.user, course.id)
+        except (CommentClientRequestError, CommentClient500Error) as exc:
+            log.warning(
+                "Error while checking discussion ban status for user %s in course %s: %s",
+                getattr(request.user, "id", None),
+                course.id,
+                exc,
+            )
+    if user_banned:
+        raise PermissionDenied("You are banned from posting in this course's discussions.")
 
     # if a thread is closed; no new comments could be made to it
     if cc_thread["closed"]:
@@ -1937,6 +1992,33 @@ def get_course_discussion_user_stats(
         params['usernames'] = comma_separated_usernames
 
     course_stats_response = get_course_user_stats(course_key, params)
+
+    # Exclude banned users from the learners list
+    # Get all active bans for this course using forum API
+    get_banned_usernames = getattr(forum_api, 'get_banned_usernames', None)
+    banned_usernames = []
+    # Only filter banned users if feature flag is enabled
+    if ENABLE_DISCUSSION_BAN.is_enabled(course_key) and get_banned_usernames is not None:
+        try:
+            banned_usernames = get_banned_usernames(
+                course_id=course_key,
+                org_key=course_key.org
+            )
+        except Exception:  # pylint: disable=broad-except
+            log.exception(
+                "Error retrieving banned usernames for course %s; returning unfiltered discussion stats.",
+                course_key,
+            )
+            banned_usernames = []
+
+    # Filter out banned users from the stats
+    if banned_usernames:
+        course_stats_response["user_stats"] = [
+            stats for stats in course_stats_response["user_stats"]
+            if stats.get('username') not in banned_usernames
+        ]
+        # Update count to reflect filtered results
+        course_stats_response["count"] = len(course_stats_response["user_stats"])
 
     if comma_separated_usernames:
         updated_course_stats = add_stats_for_users_with_no_discussion_content(

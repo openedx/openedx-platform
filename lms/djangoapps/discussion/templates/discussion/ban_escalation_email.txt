@@ -1,0 +1,28 @@
+DISCUSSION BAN ALERT
+================================================================================
+
+A user has been banned from course discussions.
+
+Banned User:    {{ banned_username }} ({{ banned_email }})
+User ID:        {{ banned_user_id }}
+
+Moderator:      {{ moderator_username }} ({{ moderator_email }})
+Moderator ID:   {{ moderator_id }}
+
+Course ID:      {{ course_id }}
+Ban Scope:      {{ scope|upper }}
+
+Reason:         {{ reason }}
+
+Content Deleted:
+- Threads:      {{ threads_deleted }}
+- Comments:     {{ comments_deleted }}
+- Total:        {{ total_deleted }}
+
+================================================================================
+
+ACTION REQUIRED:
+Please review this moderation action and follow up as needed. If this ban was
+applied in error or requires adjustment, contact the moderator or course staff.
+
+================================================================================

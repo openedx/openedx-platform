@@ -45,6 +45,18 @@ for log_name, log_level in LOG_OVERRIDES:
 # can test everything else :)
 DISABLE_START_DATES = True
 
+# Most tests don't use the discussion service, so we turn it off to speed them up.
+# Tests that do can enable this flag, but must use the UrlResetMixin class to force urls.py
+# to reload. For consistency in user-experience, keep the value of this setting in sync with
+# the one in cms/envs/test.py
+ENABLE_DISCUSSION_SERVICE = False
+
+# Disable ban emails in tests to prevent spam and speed up tests
+DISCUSSION_MODERATION_BAN_EMAIL_ENABLED = False
+DISCUSSION_MODERATION_ESCALATION_EMAIL = 'test@example.com'
+
+ENABLE_SERVICE_STATUS = True
+
 ENABLE_VERIFIED_CERTIFICATES = True
 
 ENABLE_BULK_ENROLLMENT_VIEW = True

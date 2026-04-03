@@ -1,0 +1,82 @@
+{% extends 'ace_common/edx_ace/common/base_body.html' %}
+
+{% load i18n %}
+{% load django_markup %}
+{% load static %}
+
+{% block content %}
+<table width="100%" align="left" border="0" cellpadding="0" cellspacing="0" role="presentation">
+    <tr>
+        <td>
+            <h2 style="font-weight: normal;">
+                {% filter force_escape %}
+                    {% blocktrans %}
+                        Discussion Ban Alert
+                    {% endblocktrans %}
+                {% endfilter %}
+            </h2>
+
+            <p style="color: rgba(0,0,0,.75);">
+                {% filter force_escape %}
+                    {% blocktrans %}
+                        A user has been banned from course discussions. Please review this moderation action.
+                    {% endblocktrans %}
+                {% endfilter %}
+            </p>
+
+            <table style="margin: 20px 0; border-collapse: collapse; width: 100%; max-width: 600px;">
+                <tr style="background-color: #f5f5f5;">
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Banned User</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ banned_username }} ({{ banned_email }})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">User ID</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ banned_user_id }}</td>
+                </tr>
+                <tr style="background-color: #f5f5f5;">
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Moderator</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ moderator_username }} ({{ moderator_email }})</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Moderator ID</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ moderator_id }}</td>
+                </tr>
+                <tr style="background-color: #f5f5f5;">
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Course ID</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ course_id }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Ban Scope</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">
+                        <strong>{{ scope|upper }}</strong>{% if scope == 'organization' %} (All courses in organization){% endif %}
+                    </td>
+                </tr>
+                <tr style="background-color: #f5f5f5;">
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Reason</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ reason }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Content Deleted</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">
+                        {{ threads_deleted }} thread{{ threads_deleted|pluralize }}, 
+                        {{ comments_deleted }} comment{{ comments_deleted|pluralize }}
+                        <br/>
+                        <strong>Total: {{ total_deleted }} item{{ total_deleted|pluralize }}</strong>
+                    </td>
+                </tr>
+            </table>
+
+            <p style="color: rgba(0,0,0,.75); margin-top: 20px;">
+                <strong>{% trans "Action Required:" as action_required %}{{ action_required|force_escape }}</strong>
+                {% trans "Please review this moderation action and follow up as needed. If this ban was applied in error or requires adjustment, contact the moderator or course staff." as review_instructions %}{{ review_instructions|force_escape }}
+            </p>
+
+            {% block google_analytics_pixel %}
+                {% if ga_tracking_pixel_url %}
+                <img src="{{ ga_tracking_pixel_url }}" alt="" role="presentation" aria-hidden="true" style="display: block;"/>
+                {% endif %}
+            {% endblock %}
+        </td>
+    </tr>
+</table>
+{% endblock %}

@@ -381,6 +381,8 @@ class CommentViewSetPartialUpdateTest(
             "parent_id": None,
             "author": self.user.username,
             "author_label": None,
+            "is_author_banned": False,
+            "author_ban_scope": None,
             "created_at": "1970-01-01T00:00:00Z",
             "updated_at": "1970-01-01T00:00:00Z",
             "raw_body": "Original body",

@@ -1,51 +1,35 @@
-# pylint: disable=unused-import
+# pylint: skip-file
 """
 Tests for the internal interface of the Discussion API (rest_api/api.py).
 
 This module directly tests the internal API functions of the Discussion API, such as create_thread,
-create_comment, update_thread, update_comment, and related helpers, by invoking them with various data and
-request objects.
+create_comment, update_thread, update_comment, and related helpers, by invoking them with various data and request objects.
 """
 
 import itertools
 import random
 from datetime import datetime, timedelta
 from unittest import mock
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import ddt
 import httpretty
 import pytest
-from django.test import override_settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test.client import RequestFactory
-from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from pytz import UTC
 from rest_framework.exceptions import PermissionDenied
 
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,
-    SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.partitions.partitions import Group, UserPartition
-
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
-    BetaTesterFactory,
     CourseEnrollmentFactory,
-    StaffFactory,
     UserFactory,
 )
 from common.djangoapps.util.testing import UrlResetMixin
 from common.test.utils import MockSignalHandlerMixin, disable_signal
-from lms.djangoapps.discussion.tests.utils import (
-    make_minimal_cs_comment,
-    make_minimal_cs_thread,
+from lms.djangoapps.discussion.django_comment_client.tests.utils import (
+    ForumsEnableMixin,
 )
 from lms.djangoapps.discussion.rest_api import api
 from lms.djangoapps.discussion.rest_api.api import (
@@ -54,12 +38,9 @@ from lms.djangoapps.discussion.rest_api.api import (
     delete_comment,
     delete_thread,
     get_comment_list,
-    get_course,
-    get_course_topics,
     get_course_topics_v2,
     get_thread,
     get_thread_list,
-    get_user_comments,
     update_comment,
     update_thread,
 )
@@ -71,18 +52,19 @@ from lms.djangoapps.discussion.rest_api.exceptions import (
 )
 from lms.djangoapps.discussion.rest_api.serializers import TopicOrdering
 from lms.djangoapps.discussion.rest_api.tests.utils import (
-    CommentsServiceMockMixin,
     ForumMockUtilsMixin,
     make_paginated_api_response,
-    parsed_body,
 )
-from openedx.core.djangoapps.course_groups.models import CourseUserGroupPartitionGroup
+from lms.djangoapps.discussion.tests.utils import (
+    make_minimal_cs_comment,
+    make_minimal_cs_thread,
+)
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.discussions.models import (
     DiscussionsConfiguration,
     DiscussionTopicLink,
-    Provider,
     PostingRestriction,
+    Provider,
 )
 from openedx.core.djangoapps.discussions.tasks import (
     update_discussions_settings_from_course_task,
@@ -96,6 +78,13 @@ from openedx.core.djangoapps.django_comment_common.models import (
     Role,
 )
 from openedx.core.lib.exceptions import CourseNotFoundError, PageNotFoundError
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 User = get_user_model()
 
@@ -180,6 +169,7 @@ def _set_course_discussion_blackout(course, user_id):
 @disable_signal(api, "thread_voted")
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class CreateThreadTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -271,10 +261,13 @@ class CreateThreadTest(
         )
         self.register_post_thread_response(cs_thread)
         with self.assert_signal_sent(
-            api, "thread_created", sender=None, user=self.user, exclude_args=("post", "notify_all_learners")
+            api,
+            "thread_created",
+            sender=None,
+            user=self.user,
+            exclude_args=("post", "notify_all_learners"),
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = create_thread(self.request, self.minimal_data)
+            actual = create_thread(self.request, self.minimal_data)
         expected = self.expected_thread_data(
             {
                 "id": "test_id",
@@ -351,10 +344,13 @@ class CreateThreadTest(
         )
 
         with self.assert_signal_sent(
-            api, "thread_created", sender=None, user=self.user, exclude_args=("post", "notify_all_learners")
+            api,
+            "thread_created",
+            sender=None,
+            user=self.user,
+            exclude_args=("post", "notify_all_learners"),
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = create_thread(self.request, self.minimal_data)
+            actual = create_thread(self.request, self.minimal_data)
         expected = self.expected_thread_data(
             {
                 "author_label": "Moderator",
@@ -362,6 +358,7 @@ class CreateThreadTest(
                 "course_id": str(self.course.id),
                 "comment_list_url": "http://testserver/api/discussion/v1/comments/?thread_id=test_id",
                 "read": True,
+                "learner_status": "staff",
                 "editable_fields": [
                     "abuse_flagged",
                     "anonymous",
@@ -377,6 +374,7 @@ class CreateThreadTest(
                     "type",
                     "voted",
                 ],
+                "is_deleted": False,
             }
         )
         assert actual == expected
@@ -428,10 +426,13 @@ class CreateThreadTest(
         )
         self.register_post_thread_response(cs_thread)
         with self.assert_signal_sent(
-            api, "thread_created", sender=None, user=self.user, exclude_args=("post", "notify_all_learners")
+            api,
+            "thread_created",
+            sender=None,
+            user=self.user,
+            exclude_args=("post", "notify_all_learners"),
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                create_thread(self.request, data)
+            create_thread(self.request, data)
         event_name, event_data = mock_emit.call_args[0]
         assert event_name == "edx.forum.thread.created"
         assert event_data == {
@@ -600,6 +601,7 @@ class CreateThreadTest(
     new=mock.Mock(),
 )
 class CreateCommentTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -681,14 +683,16 @@ class CreateCommentTest(
         with self.assert_signal_sent(
             api, "comment_created", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = create_comment(self.request, data)
+            actual = create_comment(self.request, data)
         expected = {
             "id": "test_comment",
             "thread_id": "test_thread",
             "parent_id": parent_id,
             "author": self.user.username,
             "author_label": None,
+            "is_author_banned": False,
+            "author_ban_scope": None,
+            "learner_status": "new",
             "created_at": "2015-05-27T00:00:00Z",
             "updated_at": "2015-05-27T00:00:00Z",
             "raw_body": "Test body",
@@ -716,6 +720,10 @@ class CreateCommentTest(
                 "image_url_medium": "http://testserver/static/default_50.png",
                 "image_url_small": "http://testserver/static/default_30.png",
             },
+            "is_deleted": False,
+            "deleted_at": None,
+            "deleted_by": None,
+            "deleted_by_label": None,
         }
         assert actual == expected
 
@@ -789,14 +797,16 @@ class CreateCommentTest(
         with self.assert_signal_sent(
             api, "comment_created", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = create_comment(self.request, data)
+            actual = create_comment(self.request, data)
         expected = {
             "id": "test_comment",
             "thread_id": "test_thread",
             "parent_id": parent_id,
             "author": self.user.username,
             "author_label": "Moderator",
+            "is_author_banned": False,
+            "author_ban_scope": None,
+            "learner_status": "staff",
             "created_at": "2015-05-27T00:00:00Z",
             "updated_at": "2015-05-27T00:00:00Z",
             "raw_body": "Test body",
@@ -824,6 +834,10 @@ class CreateCommentTest(
                 "image_url_medium": "http://testserver/static/default_50.png",
                 "image_url_small": "http://testserver/static/default_30.png",
             },
+            "is_deleted": False,
+            "deleted_at": None,
+            "deleted_by": None,
+            "deleted_by_label": None,
         }
         assert actual == expected
 
@@ -912,7 +926,9 @@ class CreateCommentTest(
         )
         try:
             create_comment(self.request, data)
-            last_commemt_params = self.get_mock_func_calls("create_parent_comment")[-1][1]
+            last_commemt_params = self.get_mock_func_calls("create_parent_comment")[-1][
+                1
+            ]
             assert last_commemt_params["endorsed"]
             assert not expected_error
         except ValidationError:
@@ -1039,6 +1055,7 @@ class CreateCommentTest(
 @disable_signal(api, "thread_voted")
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class UpdateThreadTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -1123,10 +1140,9 @@ class UpdateThreadTest(
         with self.assert_signal_sent(
             api, "thread_edited", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = update_thread(
-                    self.request, "test_thread", {"raw_body": "Edited body"}
-                )
+            actual = update_thread(
+                self.request, "test_thread", {"raw_body": "Edited body"}
+            )
 
         assert actual == self.expected_thread_data(
             {
@@ -1257,7 +1273,7 @@ class UpdateThreadTest(
             "thread_id": "test_thread",
             "action": "unflag",
             "user_id": "1",
-            "update_all": bool(remove_all),
+            "update_all": True if remove_all else False,
             "course_id": str(self.course.id),
         }
 
@@ -1442,13 +1458,13 @@ class UpdateThreadTest(
         self.register_thread()
         data = {"following": new_following}
         signal_name = "thread_followed" if new_following else "thread_unfollowed"
-        # Patch at the api module level where the signal is imported and used
-        mock_path = f"lms.djangoapps.discussion.rest_api.api.{signal_name}"
+        mock_path = (
+            f"openedx.core.djangoapps.django_comment_common.signals.{signal_name}.send"
+        )
         with mock.patch(mock_path) as signal_patch:
-            with self.captureOnCommitCallbacks(execute=True):
-                result = update_thread(self.request, "test_thread", data)
+            result = update_thread(self.request, "test_thread", data)
             if old_following != new_following:
-                self.assertEqual(signal_patch.send.call_count, 1)
+                self.assertEqual(signal_patch.call_count, 1)
         assert result["following"] == new_following
 
         if old_following == new_following:
@@ -1699,6 +1715,7 @@ class UpdateThreadTest(
 @disable_signal(api, "comment_voted")
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class UpdateCommentTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -1788,10 +1805,9 @@ class UpdateCommentTest(
         with self.assert_signal_sent(
             api, "comment_edited", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                actual = update_comment(
-                    self.request, "test_comment", {"raw_body": "Edited body"}
-                )
+            actual = update_comment(
+                self.request, "test_comment", {"raw_body": "Edited body"}
+            )
         expected = {
             "anonymous": False,
             "anonymous_to_peers": False,
@@ -1800,6 +1816,9 @@ class UpdateCommentTest(
             "parent_id": parent_id,
             "author": self.user.username,
             "author_label": None,
+            "is_author_banned": False,
+            "author_ban_scope": None,
+            "learner_status": "new",
             "created_at": "2015-06-03T00:00:00Z",
             "updated_at": "2015-06-03T00:00:00Z",
             "raw_body": "Edited body",
@@ -1825,6 +1844,10 @@ class UpdateCommentTest(
                 "image_url_medium": "http://testserver/static/default_50.png",
                 "image_url_small": "http://testserver/static/default_30.png",
             },
+            "is_deleted": False,
+            "deleted_at": None,
+            "deleted_by": None,
+            "deleted_by_label": None,
         }
         assert actual == expected
         params = {
@@ -1885,7 +1908,7 @@ class UpdateCommentTest(
                 else "edx.forum.response.unreported"
             )
             expected_event_data = {
-                "discussion": {'id': 'test_thread'},
+                "discussion": {"id": "test_thread"},
                 "body": "Original body",
                 "id": "test_comment",
                 "content_type": "Response",
@@ -1938,7 +1961,7 @@ class UpdateCommentTest(
             "comment_id": "test_comment",
             "action": "unflag",
             "user_id": "1",
-            "update_all": bool(remove_all),
+            "update_all": True if remove_all else False,
             "course_id": str(self.course.id),
         }
         self.check_mock_called_with("update_comment_flag", -1, **params)
@@ -1948,7 +1971,7 @@ class UpdateCommentTest(
             "body": "Original body",
             "id": "test_comment",
             "content_type": "Response",
-            "discussion": {'id': 'test_thread'},
+            "discussion": {"id": "test_thread"},
             "commentable_id": "dummy",
             "truncated": False,
             "url": "",
@@ -2214,7 +2237,7 @@ class UpdateCommentTest(
     )
     @ddt.unpack
     @mock.patch(
-        "lms.djangoapps.discussion.rest_api.api.comment_endorsed.send"
+        "openedx.core.djangoapps.django_comment_common.signals.comment_endorsed.send"
     )
     def test_endorsed_access(
         self, role_name, is_thread_author, thread_type, is_comment_author, endorsed_mock
@@ -2233,8 +2256,7 @@ class UpdateCommentTest(
             thread_type == "discussion" or not is_thread_author
         )
         try:
-            with self.captureOnCommitCallbacks(execute=True):
-                update_comment(self.request, "test_comment", {"endorsed": True})
+            update_comment(self.request, "test_comment", {"endorsed": True})
             self.assertEqual(endorsed_mock.call_count, 1)
             assert not expected_error
         except ValidationError as err:
@@ -2304,6 +2326,7 @@ class UpdateCommentTest(
 @disable_signal(api, "thread_deleted")
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class DeleteThreadTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -2362,12 +2385,12 @@ class DeleteThreadTest(
         with self.assert_signal_sent(
             api, "thread_deleted", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                assert delete_thread(self.request, self.thread_id) is None
+            assert delete_thread(self.request, self.thread_id) is None
         self.check_mock_called("delete_thread")
         params = {
             "thread_id": self.thread_id,
             "course_id": str(self.course.id),
+            "deleted_by": str(self.user.id),
         }
         self.check_mock_called_with("delete_thread", -1, **params)
 
@@ -2483,6 +2506,7 @@ class DeleteThreadTest(
 @disable_signal(api, "comment_deleted")
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class DeleteCommentTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     MockSignalHandlerMixin,
@@ -2549,12 +2573,12 @@ class DeleteCommentTest(
         with self.assert_signal_sent(
             api, "comment_deleted", sender=None, user=self.user, exclude_args=("post",)
         ):
-            with self.captureOnCommitCallbacks(execute=True):
-                assert delete_comment(self.request, self.comment_id) is None
+            assert delete_comment(self.request, self.comment_id) is None
         self.check_mock_called("delete_comment")
         params = {
             "comment_id": self.comment_id,
             "course_id": str(self.course.id),
+            "deleted_by": str(self.user.id),
         }
         self.check_mock_called_with("delete_comment", -1, **params)
 
@@ -2673,6 +2697,7 @@ class DeleteCommentTest(
 @ddt.ddt
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class RetrieveThreadTest(
+    ForumsEnableMixin,
     UrlResetMixin,
     SharedModuleStoreTestCase,
     ForumMockUtilsMixin,
@@ -2723,6 +2748,7 @@ class RetrieveThreadTest(
                 "title": "Test Title",
                 "body": "Test body",
                 "resp_total": 0,
+                "is_deleted": False,
             }
         )
         cs_data.update(overrides or {})
@@ -2757,6 +2783,7 @@ class RetrieveThreadTest(
                     "voted",
                 ],
                 "unread_comment_count": 1,
+                "is_deleted": None,
             }
         )
         self.check_mock_called("get_thread")
@@ -2829,7 +2856,7 @@ class RetrieveThreadTest(
 @ddt.ddt
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class GetThreadListTest(
-        ForumMockUtilsMixin, UrlResetMixin, SharedModuleStoreTestCase
+    ForumsEnableMixin, ForumMockUtilsMixin, UrlResetMixin, SharedModuleStoreTestCase
 ):
     """Test for get_thread_list"""
 
@@ -2918,6 +2945,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 1,
             "commentable_ids": ["topic_x", "topic_meow"],
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -2933,6 +2961,7 @@ class GetThreadListTest(
             "sort_key": "activity",
             "page": 6,
             "per_page": 14,
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -2960,6 +2989,7 @@ class GetThreadListTest(
                     "read": True,
                     "created_at": "2015-04-28T00:00:00Z",
                     "updated_at": "2015-04-28T11:11:11Z",
+                    "is_deleted": False,
                 }
             ),
             make_minimal_cs_thread(
@@ -2977,6 +3007,7 @@ class GetThreadListTest(
                     "comments_count": 18,
                     "created_at": "2015-04-28T22:22:22Z",
                     "updated_at": "2015-04-28T00:33:33Z",
+                    "is_deleted": False,
                 }
             ),
         ]
@@ -3003,6 +3034,7 @@ class GetThreadListTest(
                     "updated_at": "2015-04-28T11:11:11Z",
                     "abuse_flagged_count": None,
                     "can_delete": False,
+                    "is_deleted": None,
                 }
             ),
             self.expected_thread_data(
@@ -3037,6 +3069,7 @@ class GetThreadListTest(
                     ],
                     "abuse_flagged_count": None,
                     "can_delete": False,
+                    "is_deleted": None,
                 }
             ),
         ]
@@ -3073,10 +3106,10 @@ class GetThreadListTest(
         self.get_thread_list([], course=cohort_course)
         thread_func_params = self.get_mock_func_calls("get_user_threads")[-1][1]
         actual_has_group = "group_id" in thread_func_params
-        expected_has_group = (
-            course_is_cohorted and role_name in (
-                FORUM_ROLE_STUDENT, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_GROUP_MODERATOR
-            )
+        expected_has_group = course_is_cohorted and role_name in (
+            FORUM_ROLE_STUDENT,
+            FORUM_ROLE_COMMUNITY_TA,
+            FORUM_ROLE_GROUP_MODERATOR,
         )
         assert actual_has_group == expected_has_group
 
@@ -3141,6 +3174,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 10,
             "text": "test search string",
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "search_threads",
@@ -3167,6 +3201,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 10,
             "author_id": str(self.user.id),
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -3213,6 +3248,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 10,
             "thread_type": thread_type,
+            "show_deleted": False,
         }
 
         if thread_type is None:
@@ -3250,6 +3286,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 10,
             "flagged": flagged_boolean,
+            "show_deleted": False,
         }
 
         if flagged_boolean is None:
@@ -3290,6 +3327,7 @@ class GetThreadListTest(
             "count_flagged": True,
             "page": 1,
             "per_page": 10,
+            "show_deleted": False,
         }
 
         self.check_mock_called_with(
@@ -3316,7 +3354,7 @@ class GetThreadListTest(
             )
 
     def test_following(self):
-        self.register_subscribed_threads_response(self.user, [], page=1, num_pages=1)
+        self.register_subscribed_threads_response(self.user, [], page=1, num_pages=0)
         result = get_thread_list(
             self.request,
             self.course.id,
@@ -3326,7 +3364,7 @@ class GetThreadListTest(
         ).data
 
         expected_result = make_paginated_api_response(
-            results=[], count=0, num_pages=1, next_link=None, previous_link=None
+            results=[], count=0, num_pages=0, next_link=None, previous_link=None
         )
         expected_result.update({"text_search_rewrite": None})
         assert result == expected_result
@@ -3338,6 +3376,7 @@ class GetThreadListTest(
             "sort_key": "activity",
             "page": 1,
             "per_page": 11,
+            "show_deleted": False,
         }
         self.check_mock_called_with("get_user_subscriptions", -1, **params)
 
@@ -3365,6 +3404,7 @@ class GetThreadListTest(
             "page": 1,
             "per_page": 11,
             query: True,
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -3406,6 +3446,7 @@ class GetThreadListTest(
             "sort_key": cc_query,
             "page": 1,
             "per_page": 11,
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -3438,6 +3479,7 @@ class GetThreadListTest(
             "sort_key": "activity",
             "page": 1,
             "per_page": 11,
+            "show_deleted": False,
         }
         self.check_mock_called_with(
             "get_user_threads",
@@ -3464,7 +3506,7 @@ class GetThreadListTest(
 @ddt.ddt
 @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
 class GetCommentListTest(
-        SharedModuleStoreTestCase, ForumMockUtilsMixin
+    ForumsEnableMixin, SharedModuleStoreTestCase, ForumMockUtilsMixin
 ):
     """Test for get_comment_list"""
 
@@ -3712,6 +3754,7 @@ class GetCommentListTest(
                 "votes": {"up_count": 4},
                 "child_count": 0,
                 "children": [],
+                "is_deleted": False,
             },
             {
                 "type": "comment",
@@ -3729,6 +3772,7 @@ class GetCommentListTest(
                 "votes": {"up_count": 7},
                 "child_count": 0,
                 "children": [],
+                "is_deleted": False,
             },
         ]
         expected_comments = [
@@ -3738,6 +3782,9 @@ class GetCommentListTest(
                 "parent_id": None,
                 "author": self.author.username,
                 "author_label": None,
+                "is_author_banned": False,
+                "author_ban_scope": None,
+                "learner_status": "new",
                 "created_at": "2015-05-11T00:00:00Z",
                 "updated_at": "2015-05-11T11:11:11Z",
                 "raw_body": "Test body",
@@ -3765,6 +3812,10 @@ class GetCommentListTest(
                     "image_url_medium": "http://testserver/static/default_50.png",
                     "image_url_small": "http://testserver/static/default_30.png",
                 },
+                "is_deleted": None,
+                "deleted_at": None,
+                "deleted_by": None,
+                "deleted_by_label": None,
             },
             {
                 "id": "test_comment_2",
@@ -3772,6 +3823,9 @@ class GetCommentListTest(
                 "parent_id": None,
                 "author": None,
                 "author_label": None,
+                "is_author_banned": False,
+                "author_ban_scope": None,
+                "learner_status": "anonymous",
                 "created_at": "2015-05-11T22:22:22Z",
                 "updated_at": "2015-05-11T33:33:33Z",
                 "raw_body": "More content",
@@ -3799,6 +3853,10 @@ class GetCommentListTest(
                     "image_url_medium": "http://testserver/static/default_50.png",
                     "image_url_small": "http://testserver/static/default_30.png",
                 },
+                "is_deleted": None,
+                "deleted_at": None,
+                "deleted_by": None,
+                "deleted_by_label": None,
             },
         ]
         return source_comments, expected_comments
@@ -4231,561 +4289,3 @@ class CourseTopicsV2Test(ModuleStoreTestCase):
                 user=self.user,
                 order_by=TopicOrdering.ACTIVITY,
             )
-
-
-@mock.patch.dict("django.conf.settings.FEATURES", {"DISABLE_START_DATES": False})
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-class GetCourseTopicsTest(ForumMockUtilsMixin, UrlResetMixin, ModuleStoreTestCase):
-    """Test for get_course_topics"""
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-    def setUp(self):
-        httpretty.reset()
-        httpretty.enable()
-        self.addCleanup(httpretty.reset)
-        self.addCleanup(httpretty.disable)
-        super().setUp()
-        self.maxDiff = None  # pylint: disable=invalid-name
-        self.partition = UserPartition(
-            0,
-            "partition",
-            "Test Partition",
-            [Group(0, "Cohort A"), Group(1, "Cohort B")],
-            scheme_id="cohort"
-        )
-        self.course = CourseFactory.create(
-            org="x",
-            course="y",
-            run="z",
-            start=datetime.now(UTC),
-            discussion_topics={"Test Topic": {"id": "non-courseware-topic-id"}},
-            user_partitions=[self.partition],
-            cohort_config={"cohorted": True},
-            days_early_for_beta=3
-        )
-        self.user = UserFactory.create()
-        self.request = RequestFactory().get("/dummy")
-        self.request.user = self.user
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id)
-        self.thread_counts_map = {
-            "courseware-1": {"discussion": 2, "question": 3},
-            "courseware-2": {"discussion": 4, "question": 5},
-            "courseware-3": {"discussion": 7, "question": 2},
-        }
-        self.register_get_course_commentable_counts_response(self.course.id, self.thread_counts_map)
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        super().setUpClassAndForumMock()
-
-    @classmethod
-    def tearDownClass(cls):
-        """Stop patches after tests complete."""
-        super().tearDownClass()
-        super().disposeForumMocks()
-
-    def make_discussion_xblock(self, topic_id, category, subcategory, **kwargs):
-        """
-        Build a discussion xblock in self.course.
-        """
-        BlockFactory.create(
-            parent_location=self.course.location,
-            category="discussion",
-            discussion_id=topic_id,
-            discussion_category=category,
-            discussion_target=subcategory,
-            **kwargs
-        )
-
-    def get_thread_list_url(self, topic_id_list):
-        """
-        Returns the URL for the thread_list_url field, given a list of topic_ids
-        """
-        path = "http://testserver/api/discussion/v1/threads/"
-        topic_ids_to_query = [("topic_id", topic_id) for topic_id in topic_id_list]
-        query_list = [("course_id", str(self.course.id))] + topic_ids_to_query
-        return urlunparse(("", "", path, "", urlencode(query_list), ""))
-
-    def get_course_topics(self):
-        """
-        Get course topics for self.course, using the given user or self.user if
-        not provided, and generating absolute URIs with a test scheme/host.
-        """
-        return get_course_topics(self.request, self.course.id)
-
-    def make_expected_tree(self, topic_id, name, children=None):
-        """
-        Build an expected result tree given a topic id, display name, and
-        children
-        """
-        topic_id_list = [topic_id] if topic_id else [child["id"] for child in children]
-        children = children or []
-        thread_counts = self.thread_counts_map.get(topic_id, {"discussion": 0, "question": 0})
-        node = {
-            "id": topic_id,
-            "name": name,
-            "children": children,
-            "thread_list_url": self.get_thread_list_url(topic_id_list),
-            "thread_counts": thread_counts if not children else None
-        }
-
-        return node
-
-    def test_nonexistent_course(self):
-        with pytest.raises(CourseNotFoundError):
-            get_course_topics(self.request, CourseLocator.from_string("course-v1:non+existent+course"))
-
-    def test_not_enrolled(self):
-        unenrolled_user = UserFactory.create()
-        self.request.user = unenrolled_user
-        with pytest.raises(CourseNotFoundError):
-            self.get_course_topics()
-
-    def test_discussions_disabled(self):
-        _remove_discussion_tab(self.course, self.user.id)
-        with pytest.raises(DiscussionDisabledError):
-            self.get_course_topics()
-
-    def test_without_courseware(self):
-        actual = self.get_course_topics()
-        expected = {
-            "courseware_topics": [],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic")
-            ],
-        }
-        assert actual == expected
-
-    def test_with_courseware(self):
-        self.make_discussion_xblock("courseware-topic-id", "Foo", "Bar")
-        actual = self.get_course_topics()
-        expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "Foo",
-                    [self.make_expected_tree("courseware-topic-id", "Bar")]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic")
-            ],
-        }
-        assert actual == expected
-
-    def test_many(self):
-        with self.store.bulk_operations(self.course.id, emit_signals=False):
-            self.course.discussion_topics = {
-                "A": {"id": "non-courseware-1"},
-                "B": {"id": "non-courseware-2"},
-            }
-            self.store.update_item(self.course, self.user.id)
-            self.make_discussion_xblock("courseware-1", "Week 1", "1")
-            self.make_discussion_xblock("courseware-2", "Week 1", "2")
-            self.make_discussion_xblock("courseware-3", "Week 10", "1")
-            self.make_discussion_xblock("courseware-4", "Week 10", "2")
-            self.make_discussion_xblock("courseware-5", "Week 9", "1")
-        actual = self.get_course_topics()
-        expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "Week 1",
-                    [
-                        self.make_expected_tree("courseware-1", "1"),
-                        self.make_expected_tree("courseware-2", "2"),
-                    ]
-                ),
-                self.make_expected_tree(
-                    None,
-                    "Week 9",
-                    [self.make_expected_tree("courseware-5", "1")]
-                ),
-                self.make_expected_tree(
-                    None,
-                    "Week 10",
-                    [
-                        self.make_expected_tree("courseware-3", "1"),
-                        self.make_expected_tree("courseware-4", "2"),
-                    ]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-1", "A"),
-                self.make_expected_tree("non-courseware-2", "B"),
-            ],
-        }
-        assert actual == expected
-
-    def test_sort_key_doesnot_work(self):
-        """
-        Test to check that providing sort_key doesn't change the sort order
-        """
-        with self.store.bulk_operations(self.course.id, emit_signals=False):
-            self.course.discussion_topics = {
-                "W": {"id": "non-courseware-1", "sort_key": "Z"},
-                "X": {"id": "non-courseware-2"},
-                "Y": {"id": "non-courseware-3", "sort_key": "Y"},
-                "Z": {"id": "non-courseware-4", "sort_key": "W"},
-            }
-            self.store.update_item(self.course, self.user.id)
-            self.make_discussion_xblock("courseware-1", "First", "A", sort_key="B")
-            self.make_discussion_xblock("courseware-2", "First", "B", sort_key="D")
-            self.make_discussion_xblock("courseware-3", "First", "C", sort_key="E")
-            self.make_discussion_xblock("courseware-4", "Second", "A", sort_key="A")
-            self.make_discussion_xblock("courseware-5", "Second", "B", sort_key="B")
-            self.make_discussion_xblock("courseware-6", "Second", "C")
-            self.make_discussion_xblock("courseware-7", "Second", "D", sort_key="D")
-
-        actual = self.get_course_topics()
-        expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "First",
-                    [
-                        self.make_expected_tree("courseware-1", "A"),
-                        self.make_expected_tree("courseware-2", "B"),
-                        self.make_expected_tree("courseware-3", "C"),
-                    ]
-                ),
-                self.make_expected_tree(
-                    None,
-                    "Second",
-                    [
-                        self.make_expected_tree("courseware-4", "A"),
-                        self.make_expected_tree("courseware-5", "B"),
-                        self.make_expected_tree("courseware-6", "C"),
-                        self.make_expected_tree("courseware-7", "D"),
-                    ]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-1", "W"),
-                self.make_expected_tree("non-courseware-2", "X"),
-                self.make_expected_tree("non-courseware-3", "Y"),
-                self.make_expected_tree("non-courseware-4", "Z"),
-            ],
-        }
-        assert actual == expected
-
-    def test_access_control(self):
-        """
-        Test that only topics that a user has access to are returned. The
-        ways in which a user may not have access are:
-
-        * Block is visible to staff only
-        * Block is accessible only to a group the user is not in
-
-        Also, there is a case that ensures that a category with no accessible
-        subcategories does not appear in the result.
-        """
-        beta_tester = BetaTesterFactory.create(course_key=self.course.id)
-        CourseEnrollmentFactory.create(user=beta_tester, course_id=self.course.id)
-        staff = StaffFactory.create(course_key=self.course.id)
-        for user, group_idx in [(self.user, 0), (beta_tester, 1)]:
-            cohort = CohortFactory.create(
-                course_id=self.course.id,
-                name=self.partition.groups[group_idx].name,
-                users=[user]
-            )
-            CourseUserGroupPartitionGroup.objects.create(
-                course_user_group=cohort,
-                partition_id=self.partition.id,
-                group_id=self.partition.groups[group_idx].id
-            )
-
-        with self.store.bulk_operations(self.course.id, emit_signals=False):
-            self.store.update_item(self.course, self.user.id)
-            self.make_discussion_xblock(
-                "courseware-2",
-                "First",
-                "Cohort A",
-                group_access={self.partition.id: [self.partition.groups[0].id]}
-            )
-            self.make_discussion_xblock(
-                "courseware-3",
-                "First",
-                "Cohort B",
-                group_access={self.partition.id: [self.partition.groups[1].id]}
-            )
-            self.make_discussion_xblock("courseware-1", "First", "Everybody")
-            self.make_discussion_xblock(
-                "courseware-5",
-                "Second",
-                "Future Start Date",
-                start=datetime.now(UTC) + timedelta(days=1)
-            )
-            self.make_discussion_xblock("courseware-4", "Second", "Staff Only", visible_to_staff_only=True)
-
-        student_actual = self.get_course_topics()
-        student_expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "First",
-                    [
-                        self.make_expected_tree("courseware-2", "Cohort A"),
-                        self.make_expected_tree("courseware-1", "Everybody"),
-                    ]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic"),
-            ],
-        }
-        assert student_actual == student_expected
-        self.request.user = beta_tester
-        beta_actual = self.get_course_topics()
-        beta_expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "First",
-                    [
-                        self.make_expected_tree("courseware-3", "Cohort B"),
-                        self.make_expected_tree("courseware-1", "Everybody"),
-                    ]
-                )
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic"),
-            ],
-        }
-        assert beta_actual == beta_expected
-
-        self.request.user = staff
-        staff_actual = self.get_course_topics()
-        staff_expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "First",
-                    [
-                        self.make_expected_tree("courseware-2", "Cohort A"),
-                        self.make_expected_tree("courseware-3", "Cohort B"),
-                        self.make_expected_tree("courseware-1", "Everybody"),
-                    ]
-                ),
-                self.make_expected_tree(
-                    None,
-                    "Second",
-                    [
-                        self.make_expected_tree("courseware-4", "Staff Only"),
-                    ]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic"),
-            ],
-        }
-        assert staff_actual == staff_expected
-
-    def test_un_released_discussion_topic(self):
-        """
-        Test discussion topics that have not yet started
-        """
-        staff = StaffFactory.create(course_key=self.course.id)
-        with self.store.bulk_operations(self.course.id, emit_signals=False):
-            self.store.update_item(self.course, self.user.id)
-            self.make_discussion_xblock(
-                "courseware-2",
-                "First",
-                "Released",
-                start=datetime.now(UTC) - timedelta(days=1)
-            )
-            self.make_discussion_xblock(
-                "courseware-3",
-                "First",
-                "Future release",
-                start=datetime.now(UTC) + timedelta(days=1)
-            )
-
-        self.request.user = staff
-        staff_actual = self.get_course_topics()
-        staff_expected = {
-            "courseware_topics": [
-                self.make_expected_tree(
-                    None,
-                    "First",
-                    [
-                        self.make_expected_tree("courseware-2", "Released"),
-                    ]
-                ),
-            ],
-            "non_courseware_topics": [
-                self.make_expected_tree("non-courseware-topic-id", "Test Topic"),
-            ],
-        }
-        assert staff_actual == staff_expected
-
-    def test_discussion_topic(self):
-        """
-        Tests discussion topic details against a requested topic id
-        """
-        topic_id_1 = "topic_id_1"
-        topic_id_2 = "topic_id_2"
-        self.make_discussion_xblock(topic_id_1, "test_category_1", "test_target_1")
-        self.make_discussion_xblock(topic_id_2, "test_category_2", "test_target_2")
-        actual = get_course_topics(self.request, self.course.id, {"topic_id_1", "topic_id_2"})
-        assert actual == {
-            'non_courseware_topics': [],
-            'courseware_topics': [
-                {
-                    'children': [
-                        {
-                            'children': [],
-                            'id': 'topic_id_1',
-                            'thread_list_url': 'http://testserver/api/discussion/v1/threads/'
-                                               '?course_id=course-v1%3Ax%2By%2Bz&topic_id=topic_id_1',
-                            'name': 'test_target_1',
-                            'thread_counts': {'discussion': 0, 'question': 0},
-                        },
-                    ],
-                    'id': None,
-                    'thread_list_url': 'http://testserver/api/discussion/v1/threads/'
-                                       '?course_id=course-v1%3Ax%2By%2Bz&topic_id=topic_id_1',
-                    'name': 'test_category_1',
-                    'thread_counts': None,
-                },
-                {
-                    'children': [
-                        {
-                            'children': [],
-                            'id': 'topic_id_2',
-                            'thread_list_url': 'http://testserver/api/discussion/v1/threads/'
-                                               '?course_id=course-v1%3Ax%2By%2Bz&topic_id=topic_id_2',
-                            'name': 'test_target_2',
-                            'thread_counts': {'discussion': 0, 'question': 0},
-                        }
-                    ],
-                    'id': None,
-                    'thread_list_url': 'http://testserver/api/discussion/v1/threads/'
-                                       '?course_id=course-v1%3Ax%2By%2Bz&topic_id=topic_id_2',
-                    'name': 'test_category_2',
-                    'thread_counts': None,
-                }
-            ]
-        }
-
-
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-@override_settings(DISCUSSION_MODERATION_EDIT_REASON_CODES={"test-edit-reason": "Test Edit Reason"})
-@override_settings(DISCUSSION_MODERATION_CLOSE_REASON_CODES={"test-close-reason": "Test Close Reason"})
-@ddt.ddt
-class GetCourseTest(UrlResetMixin, SharedModuleStoreTestCase):
-    """Test for get_course"""
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.course = CourseFactory.create(org="x", course="y", run="z")
-
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-    def setUp(self):
-        super().setUp()
-        self.user = UserFactory.create()
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id)
-        self.request = RequestFactory().get("/dummy")
-        self.request.user = self.user
-
-    def test_nonexistent_course(self):
-        with pytest.raises(CourseNotFoundError):
-            get_course(self.request, CourseLocator.from_string("course-v1:non+existent+course"))
-
-    def test_not_enrolled(self):
-        unenrolled_user = UserFactory.create()
-        self.request.user = unenrolled_user
-        with pytest.raises(CourseNotFoundError):
-            get_course(self.request, self.course.id)
-
-    def test_discussions_disabled(self):
-        with pytest.raises(DiscussionDisabledError):
-            get_course(self.request, _discussion_disabled_course_for(self.user).id)
-
-    def test_discussions_disabled_v2(self):
-        data = get_course(self.request, _discussion_disabled_course_for(self.user).id, False)
-        assert data['show_discussions'] is False
-
-    def test_basic(self):
-        assert get_course(self.request, self.course.id) == {
-            'id': str(self.course.id),
-            'is_posting_enabled': True,
-            'blackouts': [],
-            'thread_list_url': 'http://testserver/api/discussion/v1/threads/?course_id=course-v1%3Ax%2By%2Bz',
-            'following_thread_list_url':
-                'http://testserver/api/discussion/v1/threads/?course_id=course-v1%3Ax%2By%2Bz&following=True',
-            'topics_url': 'http://testserver/api/discussion/v1/course_topics/course-v1:x+y+z',
-            'allow_anonymous': True,
-            'allow_anonymous_to_peers': False,
-            'enable_in_context': True,
-            'group_at_subsection': False,
-            'provider': 'legacy',
-            'has_moderation_privileges': False,
-            "is_course_staff": False,
-            "is_course_admin": False,
-            'is_group_ta': False,
-            'is_user_admin': False,
-            'user_roles': {'Student'},
-            'edit_reasons': [{'code': 'test-edit-reason', 'label': 'Test Edit Reason'}],
-            'post_close_reasons': [{'code': 'test-close-reason', 'label': 'Test Close Reason'}],
-            'show_discussions': True,
-            'has_bulk_delete_privileges': False,
-            'is_notify_all_learners_enabled': False,
-            'captcha_settings': {'enabled': False, 'site_key': None},
-            'is_email_verified': True,
-            'only_verified_users_can_post': False,
-            'content_creation_rate_limited': False,
-        }
-
-    @ddt.data(
-        FORUM_ROLE_ADMINISTRATOR,
-        FORUM_ROLE_MODERATOR,
-        FORUM_ROLE_COMMUNITY_TA,
-    )
-    def test_privileged_roles(self, role):
-        """
-        Test that the api returns the correct roles and privileges.
-        """
-        _assign_role_to_user(user=self.user, course_id=self.course.id, role=role)
-        course_meta = get_course(self.request, self.course.id)
-        assert course_meta["has_moderation_privileges"]
-        assert course_meta["user_roles"] == {FORUM_ROLE_STUDENT} | {role}
-
-
-@ddt.ddt
-@mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-class GetCourseTestBlackouts(UrlResetMixin, ModuleStoreTestCase):
-    """
-    Tests of get_course for courses that have blackout dates.
-    """
-    @mock.patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
-    def setUp(self):
-        super().setUp()
-        self.course = CourseFactory.create(org="x", course="y", run="z")
-        self.user = UserFactory.create()
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id)
-        self.request = RequestFactory().get("/dummy")
-        self.request.user = self.user
-
-    def test_blackout(self):
-        # A variety of formats is accepted
-        self.course.discussion_blackouts = [
-            ["2015-06-09T00:00:00Z", "6-10-15"],
-            [1433980800000, datetime(2015, 6, 12, tzinfo=UTC)],
-        ]
-        self.update_course(self.course, self.user.id)
-        result = get_course(self.request, self.course.id)
-        assert result['blackouts'] == [
-            {'start': '2015-06-09T00:00:00Z', 'end': '2015-06-10T00:00:00Z'},
-            {'start': '2015-06-11T00:00:00Z', 'end': '2015-06-12T00:00:00Z'}
-        ]
-
-    @ddt.data(None, "not a datetime", "2015", [])
-    def test_blackout_errors(self, bad_value):
-        self.course.discussion_blackouts = [
-            [bad_value, "2015-06-09T00:00:00Z"],
-            ["2015-06-10T00:00:00Z", "2015-06-11T00:00:00Z"],
-        ]
-        modulestore().update_item(self.course, self.user.id)
-        result = get_course(self.request, self.course.id)
-        assert result['blackouts'] == []

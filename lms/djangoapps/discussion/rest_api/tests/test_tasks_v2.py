@@ -13,6 +13,7 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
 from lms.djangoapps.discussion.rest_api.tasks import (
+    delete_course_post_for_user,
     send_response_endorsed_notifications,
     send_response_notifications,
     send_thread_created_notification
@@ -787,3 +788,50 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
         self.assertEqual(notification_data.content_url, _get_mfe_url(self.course.id, thread.id))
         self.assertEqual(notification_data.app_name, 'discussion')
         self.assertEqual('response_endorsed', notification_data.notification_type)
+
+
+class TestDeleteCoursePostForUserTask(ModuleStoreTestCase):
+    """Tests for delete_course_post_for_user task behavior."""
+
+    def setUp(self):
+        super().setUp()
+        self.course = CourseFactory.create()
+        self.target_user = UserFactory.create()
+        self.moderator = UserFactory.create()
+
+    def test_ban_succeeds_when_email_send_fails(self):
+        """Ban should still succeed even if escalation email raises an exception."""
+        with mock.patch(
+            'lms.djangoapps.discussion.rest_api.tasks.Thread.delete_user_threads',
+            return_value=2,
+        ), mock.patch(
+            'lms.djangoapps.discussion.rest_api.tasks.Comment.delete_user_comments',
+            return_value=3,
+        ), mock.patch(
+            'forum.api.ban_user',
+            return_value={'id': 42},
+            create=True,
+        ) as mock_ban_user, mock.patch(
+            'lms.djangoapps.discussion.rest_api.emails.send_ban_escalation_email',
+            side_effect=Exception('email failure'),
+        ) as mock_send_email, mock.patch(
+            'lms.djangoapps.discussion.rest_api.tasks.tracker.emit',
+        ), mock.patch(
+            'lms.djangoapps.discussion.rest_api.tasks.segment.track',
+        ):
+            result = delete_course_post_for_user.run(
+                user_id=self.target_user.id,
+                username=self.target_user.username,
+                course_ids=[str(self.course.id)],
+                event_data={'triggered_by_user_id': self.moderator.id},
+                ban_user=True,
+                ban_scope='course',
+                moderator_id=self.moderator.id,
+                reason='test reason',
+            )
+
+        mock_ban_user.assert_called_once()
+        mock_send_email.assert_called_once()
+        self.assertTrue(result['ban_created'])
+        self.assertEqual(result['ban_id'], 42)
+        self.assertIsNone(result['ban_error'])
