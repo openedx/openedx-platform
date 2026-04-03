@@ -360,6 +360,14 @@ urlpatterns += [
     path('api/content_tagging/', include(('openedx.core.djangoapps.content_tagging.urls', 'content_tagging'))),
 ]
 
+# Assessment Criteria
+urlpatterns += [
+    path('api/assessment_criteria/', include(
+        ('openedx_learning.apps.assessment_criteria.urls', 'oel_assessment_criteria'),
+        namespace='oel_assessment_criteria'
+    )),
+]
+
 # Authoring-api specific API docs (using drf-spectacular and openapi-v3).
 # This is separate from and in addition to the full studio swagger documentation already existing at /api-docs.
 # Custom settings are provided in SPECTACULAR_SETTINGS as environment variables

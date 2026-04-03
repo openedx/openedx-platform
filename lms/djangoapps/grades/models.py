@@ -16,8 +16,16 @@ from hashlib import sha1
 
 from django.apps import apps
 from django.db import models, IntegrityError, transaction
-from openedx_events.learning.data import CourseData, PersistentCourseGradeData
-from openedx_events.learning.signals import PERSISTENT_GRADE_SUMMARY_CHANGED
+from openedx_events.learning.data import (
+    CourseData,
+    PersistentCourseGradeData,
+    PersistentSubsectionGradeData,
+    XBlockWithScoringData,
+)
+from openedx_events.learning.signals import (
+    PERSISTENT_GRADE_SUMMARY_CHANGED,
+    PERSISTENT_SUBSECTION_GRADE_CHANGED,
+)
 
 from django.utils.timezone import now
 from lazy import lazy
@@ -27,6 +35,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from simple_history.models import HistoricalRecords
 
 from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
+from lms.djangoapps.grades.course_data import CourseData as GradesCourseData
 from lms.djangoapps.grades import events  # lint-amnesty, pylint: disable=unused-import
 from openedx.core.lib.cache_utils import get_cache
 from lms.djangoapps.grades.signals.signals import (
@@ -479,6 +488,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
             grade.save()
 
         cls._emit_grade_calculated_event(grade)
+        cls._emit_openedx_persistent_subsection_grade_changed_event(grade)
         return grade
 
     @classmethod
@@ -501,6 +511,7 @@ class PersistentSubsectionGrade(TimeStampedModel):
         grades = cls.objects.bulk_create(grades)
         for grade in grades:
             cls._emit_grade_calculated_event(grade)
+            cls._emit_openedx_persistent_subsection_grade_changed_event(grade)
         return grades
 
     @classmethod
@@ -529,6 +540,53 @@ class PersistentSubsectionGrade(TimeStampedModel):
     @staticmethod
     def _emit_grade_calculated_event(grade):
         events.subsection_grade_calculated(grade)
+
+    @staticmethod
+    def _emit_openedx_persistent_subsection_grade_changed_event(grade):
+        """
+        When called emits an event when a persistent subsection grade is created or updated.
+        """
+        # .. event_implemented_name: PERSISTENT_SUBSECTION_GRADE_CHANGED
+        # .. event_type: org.openedx.learning.course.persistent_subsection_grade.changed.v1
+        try:
+            grading_policy_hash = GradesCourseData(user=None, course_key=grade.course_id).grading_policy_hash
+        except Exception:  # pylint: disable=broad-except
+            grading_policy_hash = ""
+            log.debug(
+                "Unable to compute grading_policy_hash for course %s",
+                grade.course_id,
+                exc_info=True,
+            )
+
+        visible_blocks = [
+            XBlockWithScoringData(
+                usage_key=block.locator,
+                block_type=block.locator.block_type,
+                graded=block.graded,
+                raw_possible=block.raw_possible,
+                weight=block.weight,
+            )
+            for block in grade.visible_blocks.blocks
+        ]
+
+        PERSISTENT_SUBSECTION_GRADE_CHANGED.send_event(
+            grade=PersistentSubsectionGradeData(
+                user_id=grade.user_id,
+                course=CourseData(
+                    course_key=grade.course_id,
+                ),
+                subsection_edited_timestamp=grade.subtree_edited_timestamp,
+                grading_policy_hash=grading_policy_hash,
+                usage_key=grade.usage_key,
+                weighted_graded_earned=grade.earned_graded,
+                weighted_graded_possible=grade.possible_graded,
+                weighted_total_earned=grade.earned_all,
+                weighted_total_possible=grade.possible_all,
+                first_attempted=grade.first_attempted,
+                visible_blocks=visible_blocks,
+                visible_blocks_hash=str(grade.visible_blocks_id),
+            )
+        )
 
     @classmethod
     def _cache_key(cls, course_id):
