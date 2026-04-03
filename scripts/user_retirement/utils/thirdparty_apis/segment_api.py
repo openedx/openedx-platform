@@ -99,6 +99,29 @@ class SegmentApi:
         self.auth_token = auth_token
         self.workspace_slug = workspace_slug
 
+    @staticmethod
+    def get_instance(config):
+        """
+        This function is used to get instance of SegmentApi.
+
+        Returns:
+            SegmentApi: Returns instance of SegmentApi.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Raises:
+            KeyError: If segment_base_url, segment_auth_token, and segment_workspace_slug are not present in config.
+        """
+        segment_base_url = config.get('segment_base_url', None)
+        segment_auth_token = config.get('segment_auth_token', None)
+        segment_workspace_slug = config.get('segment_workspace_slug', None)
+
+        if not segment_base_url or not segment_auth_token or not segment_workspace_slug:
+            raise KeyError("segment_base_url, segment_auth_token or segment_workspace_slug is not present in config.")
+
+        return SegmentApi(segment_base_url, segment_auth_token, segment_workspace_slug)
+
     @_retry_segment_api()
     def _call_segment_post(self, url, params):
         """

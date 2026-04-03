@@ -37,6 +37,30 @@ class HubspotAPI:
         self.from_address = from_address
         self.alert_email = alert_email
 
+    @staticmethod
+    def get_instance(config):
+        """
+        This function is used to get instance of HubspotAPI.
+
+        Returns:
+            HubspotAPI: Returns instance of HubspotAPI.
+
+        Args:
+            config (dict): Configuration dictionary.
+
+        Raises:
+            KeyError: If hubspot_api_key is not present in config.
+        """
+        hubspot_api_key = config.get('hubspot_api_key', None)
+        hubspot_aws_region = config.get('hubspot_aws_region', None)
+        hubspot_from_address = config.get('hubspot_from_address', None)
+        hubspot_alert_email = config.get('hubspot_alert_email', None)
+
+        if not hubspot_api_key or not hubspot_aws_region or not hubspot_from_address or not hubspot_alert_email:
+            raise KeyError("hubspot_api_key, hubspot_aws_region, hubspot_from_address, or hubspot_alert_email is not present in config.")
+
+        return HubspotAPI(hubspot_api_key, hubspot_aws_region, hubspot_from_address, hubspot_alert_email)
+
     @backoff.on_exception(
         backoff.expo,
         HubspotException,

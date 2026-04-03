@@ -16,18 +16,10 @@ import unicodedata
 
 import yaml
 from six import text_type
+from stevedore import driver
 
 from scripts.user_retirement.utils.edx_api import LmsApi  # pylint: disable=wrong-import-position
 from scripts.user_retirement.utils.edx_api import CredentialsApi, EcommerceApi, LicenseManagerApi
-from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import \
-    AmplitudeApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.braze_api import BrazeApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import \
-    HubspotAPI  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.salesforce_api import \
-    SalesforceApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.segment_api import \
-    SegmentApi  # pylint: disable=wrong-import-position
 
 
 def _log(kind, message):
@@ -147,68 +139,12 @@ def _setup_all_apis_or_exit(fail_func, fail_code, config):
         lms_base_url = config['base_urls']['lms']
         ecommerce_base_url = config['base_urls'].get('ecommerce', None)
         credentials_base_url = config['base_urls'].get('credentials', None)
-        segment_base_url = config['base_urls'].get('segment', None)
         license_manager_base_url = config['base_urls'].get('license_manager', None)
         client_id = config['client_id']
         client_secret = config['client_secret']
-        braze_api_key = config.get('braze_api_key', None)
-        braze_instance = config.get('braze_instance', None)
-        amplitude_api_key = config.get('amplitude_api_key', None)
-        amplitude_secret_key = config.get('amplitude_secret_key', None)
-        salesforce_user = config.get('salesforce_user', None)
-        salesforce_password = config.get('salesforce_password', None)
-        salesforce_token = config.get('salesforce_token', None)
-        salesforce_domain = config.get('salesforce_domain', None)
-        salesforce_assignee = config.get('salesforce_assignee', None)
-        segment_auth_token = config.get('segment_auth_token', None)
-        segment_workspace_slug = config.get('segment_workspace_slug', None)
-        hubspot_api_key = config.get('hubspot_api_key', None)
-        hubspot_aws_region = config.get('hubspot_aws_region', None)
-        hubspot_from_address = config.get('hubspot_from_address', None)
-        hubspot_alert_email = config.get('hubspot_alert_email', None)
 
-        for state in config['retirement_pipeline']:
-            for service, service_url in (
-                ('BRAZE', braze_api_key),
-                ('AMPLITUDE', amplitude_api_key),
-                ('ECOMMERCE', ecommerce_base_url),
-                ('CREDENTIALS', credentials_base_url),
-                ('SEGMENT', segment_base_url),
-                ('HUBSPOT', hubspot_api_key),
-            ):
-                if state[2] == service and service_url is None:
-                    fail_func(fail_code, 'Service URL is not configured, but required for state {}'.format(state))
-
+        # Load any Open edX service Apis that are configured
         config['LMS'] = LmsApi(lms_base_url, lms_base_url, client_id, client_secret)
-
-        if braze_api_key:
-            config['BRAZE'] = BrazeApi(
-                braze_api_key,
-                braze_instance,
-            )
-
-        if amplitude_api_key and amplitude_secret_key:
-            config['AMPLITUDE'] = AmplitudeApi(
-                amplitude_api_key,
-                amplitude_secret_key,
-            )
-
-        if salesforce_user and salesforce_password and salesforce_token:
-            config['SALESFORCE'] = SalesforceApi(
-                salesforce_user,
-                salesforce_password,
-                salesforce_token,
-                salesforce_domain,
-                salesforce_assignee
-            )
-
-        if hubspot_api_key:
-            config['HUBSPOT'] = HubspotAPI(
-                hubspot_api_key,
-                hubspot_aws_region,
-                hubspot_from_address,
-                hubspot_alert_email
-            )
 
         if ecommerce_base_url:
             config['ECOMMERCE'] = EcommerceApi(lms_base_url, ecommerce_base_url, client_id, client_secret)
@@ -224,11 +160,19 @@ def _setup_all_apis_or_exit(fail_func, fail_code, config):
                 client_secret,
             )
 
-        if segment_base_url:
-            config['SEGMENT'] = SegmentApi(
-                segment_base_url,
-                segment_auth_token,
-                segment_workspace_slug
+        # Load and configure any retirement plugin APIs that are installed
+        for state in config['retirement_pipeline']:
+            service_name = state[2]
+
+            # Skip any states that have already loaded APIs
+            if service_name in config:
+                continue
+
+            mgr = driver.DriverManager(
+                namespace="retirement_driver",
+                name=service_name
             )
+            config[service_name] = mgr.driver.get_instance(config)
+
     except Exception as exc:  # pylint: disable=broad-except
         fail_func(fail_code, 'Unexpected error occurred!', exc)
