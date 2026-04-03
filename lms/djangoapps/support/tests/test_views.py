@@ -30,10 +30,6 @@ from organizations.tests.factories import OrganizationFactory
 from pytz import UTC
 from rest_framework import status
 from social_django.models import UserSocialAuth
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase, SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -47,16 +43,16 @@ from common.djangoapps.student.models import (
 )
 from common.djangoapps.student.roles import GlobalStaff, SupportStaffRole
 from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
     CourseEnrollmentAttributeFactory,
-    UserFactory,
+    CourseEnrollmentFactory,
+    UserFactory
 )
 from common.djangoapps.third_party_auth.tests.factories import SAMLProviderConfigFactory
-from common.test.utils import disable_signal, assert_dict_contains_subset
+from common.test.utils import assert_dict_contains_subset, disable_signal
 from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnrollmentFactory, ProgramEnrollmentFactory
 from lms.djangoapps.support.models import CourseResetAudit
 from lms.djangoapps.support.serializers import ProgramEnrollmentSerializer
-from lms.djangoapps.support.tests.factories import CourseResetCourseOptInFactory, CourseResetAuditFactory
+from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService
 from lms.djangoapps.verify_student.tests.factories import SSOVerificationFactory
@@ -64,16 +60,12 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.oauth_dispatch.tests import factories
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
-from openedx.features.enterprise_support.api import enterprise_is_enabled
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+from xmodule.modulestore.tests.django_utils import (
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase
 )
-
-try:
-    from consent.models import DataSharingConsent
-except ImportError:  # pragma: no cover
-    pass
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class SupportViewTestCase(ModuleStoreTestCase):
@@ -357,7 +349,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         )
         assert {CourseMode.VERIFIED, CourseMode.AUDIT, CourseMode.HONOR, CourseMode.NO_ID_PROFESSIONAL_MODE,
                 CourseMode.PROFESSIONAL, CourseMode.CREDIT_MODE} == {mode['slug'] for mode in data[0]['course_modes']}
-        assert 'enterprise_course_enrollments' not in data[0]
+        assert data[0]['enterprise_course_enrollments'] == []
         assert data[0]['order_number'] == ''
         assert data[0]['source_system'] == ''
 
@@ -398,52 +390,37 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert len(data) == 1
         assert data[0]['source_system'] == 'commercetools'
 
-    @override_settings(FEATURES=dict(ENABLE_ENTERPRISE_INTEGRATION=True))
-    @enterprise_is_enabled()
-    def test_get_enrollments_enterprise_enabled(self):
+    @patch(
+        'lms.djangoapps.support.views.enrollments.SupportEnrollmentDataRequested.run_filter'
+    )
+    def test_get_enrollments_with_enterprise_filter(self, mock_run_filter):
+        """
+        Test that enterprise enrollment data from the filter is included in the response.
+        """
+        course_id = str(self.course.id)
+        mock_enterprise_enrollment = {
+            'course_id': course_id,
+            'enterprise_customer_name': 'Test Enterprise',
+            'enterprise_customer_user_id': 42,
+            'license': None,
+            'saved_for_later': False,
+            'data_sharing_consent': None,
+        }
+        mock_run_filter.return_value = {course_id: [mock_enterprise_enrollment]}
+
         url = reverse(
             'support:enrollment_list',
             kwargs={'username_or_email': self.student.username}
         )
-
-        enterprise_customer_user = EnterpriseCustomerUserFactory(
-            user_id=self.student.id
-        )
-        enterprise_course_enrollment = EnterpriseCourseEnrollmentFactory(
-            course_id=self.course.id,
-            enterprise_customer_user=enterprise_customer_user
-        )
-        data_sharing_consent = DataSharingConsent(
-            course_id=self.course.id,
-            enterprise_customer=enterprise_customer_user.enterprise_customer,
-            username=self.student.username,
-            granted=True
-        )
-        data_sharing_consent.save()
-
         response = self.client.get(url)
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         assert len(data) == 1
 
+        mock_run_filter.assert_called_once()
         enterprise_course_enrollments_data = data[0]['enterprise_course_enrollments']
         assert len(enterprise_course_enrollments_data) == 1
-        expected = {
-            'course_id': str(enterprise_course_enrollment.course_id),
-            'enterprise_customer_name': enterprise_customer_user.enterprise_customer.name,
-            'enterprise_customer_user_id': enterprise_customer_user.id,
-            'license': None,
-            'saved_for_later': enterprise_course_enrollment.saved_for_later,
-            'data_sharing_consent': {
-                'username': self.student.username,
-                'enterprise_customer_uuid': str(enterprise_customer_user.enterprise_customer_id),
-                'exists': data_sharing_consent.exists,
-                'consent_provided': data_sharing_consent.granted,
-                'consent_required': data_sharing_consent.consent_required(),
-                'course_id': str(enterprise_course_enrollment.course_id),
-            }
-        }
-        assert enterprise_course_enrollments_data[0] == expected
+        assert enterprise_course_enrollments_data[0] == mock_enterprise_enrollment
 
     @ddt.data(
         (True, 'Self Paced'),

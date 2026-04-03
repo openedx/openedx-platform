@@ -7,11 +7,11 @@ from django.conf import settings
 from django.http import Http404
 from django.shortcuts import redirect
 from django.views.generic import View
+from openedx_filters.learning.filters import SupportContactContextRequested
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.features.enterprise_support import api as enterprise_api
 
 
 class ContactUsView(View):
@@ -46,9 +46,9 @@ class ContactUsView(View):
         if request.user.is_authenticated:
             context['course_id'] = request.session.get('course_id', '')
             context['user_enrollments'] = CourseEnrollment.enrollments_for_user_with_overviews_preload(request.user)
-            enterprise_customer = enterprise_api.enterprise_customer_for_request(request)
-            if enterprise_customer:
-                tags.append('enterprise_learner')
+            tags = SupportContactContextRequested.run_filter(
+                tags=tags, request=request, user=request.user
+            )
 
         context['tags'] = tags
 

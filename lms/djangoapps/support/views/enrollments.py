@@ -2,7 +2,6 @@
 Support tool for changing course enrollments.
 """
 import logging
-from collections import defaultdict
 
 import markupsafe
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -14,6 +13,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import View
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
+from openedx_filters.learning.filters import SupportEnrollmentDataRequested
 from rest_framework.generics import GenericAPIView
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -31,16 +31,9 @@ from lms.djangoapps.support.decorators import require_support_permission
 from lms.djangoapps.support.serializers import ManualEnrollmentSerializer
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values
-from openedx.core.djangoapps.enrollments.api import get_enrollments, get_enrollment_attributes, update_enrollment
+from openedx.core.djangoapps.enrollments.api import get_enrollment_attributes, get_enrollments, update_enrollment
 from openedx.core.djangoapps.enrollments.errors import CourseModeNotFoundError
 from openedx.core.djangoapps.enrollments.serializers import ModeSerializer
-from openedx.features.enterprise_support.api import (
-    enterprise_enabled,
-    get_data_sharing_consents,
-    get_enterprise_course_enrollments
-)
-from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
-
 
 logger = logging.getLogger(__name__)
 
@@ -71,35 +64,6 @@ class EnrollmentSupportListView(GenericAPIView):
     # does not specify a serializer class.
     exclude_from_schema = True
 
-    def _enterprise_course_enrollments_by_course_id(self, user):
-        """
-        Returns a dict containing enterprise course enrollments data with
-        course ids as keys.
-        """
-        enterprise_course_enrollments = get_enterprise_course_enrollments(user)
-        data_sharing_consents_for_user = get_data_sharing_consents(user)
-
-        enterprise_enrollments_by_course_id = defaultdict(list)
-        consent_by_course_and_enterprise_customer_id = {}
-
-        # Get data sharing consent for each enterprise enrollment
-        for consent in data_sharing_consents_for_user:
-            key = f'{consent.course_id}-{consent.enterprise_customer_id}'
-            consent_by_course_and_enterprise_customer_id[key] = consent.serialize()
-
-        for enterprise_course_enrollment in enterprise_course_enrollments:
-            serialized_enterprise_course_enrollment = EnterpriseCourseEnrollmentSerializer(
-                enterprise_course_enrollment
-            ).data
-            course_id = enterprise_course_enrollment.course_id
-            enterprise_customer_id = enterprise_course_enrollment.enterprise_customer_user.enterprise_customer_id
-            key = f'{course_id}-{enterprise_customer_id}'
-            consent = consent_by_course_and_enterprise_customer_id.get(key)
-            serialized_enterprise_course_enrollment['data_sharing_consent'] = consent
-            enterprise_enrollments_by_course_id[course_id].append(serialized_enterprise_course_enrollment)
-
-        return enterprise_enrollments_by_course_id
-
     @method_decorator(require_support_permission)
     def get(self, request, username_or_email):
         """
@@ -127,11 +91,13 @@ class EnrollmentSupportListView(GenericAPIView):
             # Add manual enrollment history, if it exists
             enrollment['manual_enrollment'] = self.manual_enrollment_data(enrollment, course_key)
 
-        if enterprise_enabled():
-            enterprise_enrollments_by_course_id = self._enterprise_course_enrollments_by_course_id(user)
-            for enrollment in enrollments:
-                enterprise_course_enrollments = enterprise_enrollments_by_course_id.get(enrollment['course_id'], [])
-                enrollment['enterprise_course_enrollments'] = enterprise_course_enrollments
+        enterprise_enrollments_by_course_id = SupportEnrollmentDataRequested.run_filter(
+            enrollment_data={}, user=user
+        )
+        for enrollment in enrollments:
+            enrollment['enterprise_course_enrollments'] = enterprise_enrollments_by_course_id.get(
+                enrollment['course_id'], []
+            )
 
         return JsonResponse(enrollments)
 
