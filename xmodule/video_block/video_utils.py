@@ -22,12 +22,9 @@ def create_youtube_string(block):
     courses.
     """
     youtube_ids = [
-        block.youtube_id_0_75,
         block.youtube_id_1_0,
-        block.youtube_id_1_25,
-        block.youtube_id_1_5
     ]
-    youtube_speeds = ['0.75', '1.00', '1.25', '1.50']
+    youtube_speeds = ['1.00']
     return ','.join([
         ':'.join(pair)
         for pair

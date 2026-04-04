@@ -60,14 +60,14 @@ class BaseTranscripts(CourseTestCase):
 
     def clear_subs_content(self):
         """Remove, if transcripts content exists."""
-        for youtube_id in self.get_youtube_ids().values():
-            filename = f'subs_{youtube_id}.srt.sjson'
-            content_location = StaticContent.compute_location(self.course.id, filename)
-            try:
-                content = contentstore().find(content_location)
-                contentstore().delete(content.get_id())
-            except NotFoundError:
-                pass
+        item = modulestore().get_item(self.video_usage_key)
+        filename = f'subs_{item.youtube_id_1_0}.srt.sjson'
+        content_location = StaticContent.compute_location(self.course.id, filename)
+        try:
+            content = contentstore().find(content_location)
+            contentstore().delete(content.get_id())
+        except NotFoundError:
+            pass
 
     def save_subs_to_store(self, subs, subs_id):
         """
@@ -128,17 +128,6 @@ class BaseTranscripts(CourseTestCase):
         """ Returns the usage key from the response returned by a create operation. """
         usage_key_string = json.loads(resp.content.decode('utf-8')).get('locator')
         return UsageKey.from_string(usage_key_string)
-
-    def get_youtube_ids(self):
-        """Return youtube speeds and ids."""
-        item = modulestore().get_item(self.video_usage_key)
-
-        return {
-            0.75: item.youtube_id_0_75,
-            1: item.youtube_id_1_0,
-            1.25: item.youtube_id_1_25,
-            1.5: item.youtube_id_1_5
-        }
 
     def create_non_video_block(self):
         """
