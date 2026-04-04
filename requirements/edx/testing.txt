@@ -1310,6 +1310,7 @@ pytest==8.2.0
     #   pytest-json-report
     #   pytest-metadata
     #   pytest-randomly
+    #   pytest-reportlog
     #   pytest-xdist
 pytest-attrib==0.1.3
     # via -r requirements/edx/testing.in
@@ -1324,6 +1325,8 @@ pytest-metadata==3.1.1
     #   -r requirements/edx/testing.in
     #   pytest-json-report
 pytest-randomly==4.0.1
+    # via -r requirements/edx/testing.in
+pytest-reportlog==1.0.0
     # via -r requirements/edx/testing.in
 pytest-xdist[psutil]==3.8.0
     # via -r requirements/edx/testing.in

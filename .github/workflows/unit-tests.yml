@@ -119,7 +119,16 @@ jobs:
       - name: run tests
         shell: bash
         run: |
-          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} --cov=.
+          python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} --cov=. \
+            --report-log=reports/pytest-report-${{ matrix.shard_name }}.jsonl
+
+      - name: Upload pytest timing report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pytest-report-${{ matrix.shard_name }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
+          path: reports/pytest-report-${{ matrix.shard_name }}.jsonl
+          overwrite: true
 
       - name: rename warnings json file
         if: success()
