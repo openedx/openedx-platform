@@ -21,7 +21,23 @@
                 userLanguage: userLanguage,
                 userTimezone: userTimezone
             };
-            if (setDefaultFilter && userLanguage) {
+            // Read facet filters from URL query parameters and apply them.
+            var urlParams = new URLSearchParams(window.location.search);
+            urlParams.forEach(function(value, key) {
+                if (key === 'search_query') {
+                    return; // handled separately via the searchQuery argument
+                }
+                if (key in meanings) {
+                    filters.add({
+                        type: key,
+                        query: value,
+                        name: refineSidebar.termName(key, value)
+                    });
+                }
+            });
+
+            // Apply the default language filter, except when provided via URL parameters.
+            if (setDefaultFilter && userLanguage && !filters.get('language')) {
                 filters.add({
                     type: 'language',
                     query: userLanguage,
@@ -29,6 +45,16 @@
                 });
             }
             listing = new CoursesListing({model: courseListingModel});
+
+            function updateUrl() {
+                var params = new URLSearchParams();
+                filters.each(function(filter) {
+                    params.set(filter.id, filter.get('query'));
+                });
+                var qs = params.toString();
+                var newUrl = window.location.pathname + (qs ? '?' + qs : '');
+                history.replaceState(null, '', newUrl);
+            }
 
             dispatcher.listenTo(form, "search", function (query) {
                 form.showLoadingIndicator();
@@ -79,6 +105,7 @@
                 form.hideLoadingIndicator();
                 listing.render();
                 refineSidebar.render();
+                updateUrl();
             });
 
             dispatcher.listenTo(search, 'error', function() {

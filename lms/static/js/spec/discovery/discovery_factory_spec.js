@@ -233,4 +233,100 @@ define([
             expect(request.requestBody).toMatch(/language=en/);
         });
     });
+
+    describe('discovery.DiscoveryFactory URL sync', function() {
+        var originalSearch;
+        var replaceStateSpy;
+
+        function setUrlSearch(search) {
+            // Override window.location.search for the factory to read
+            originalSearch = window.location.search;
+            // Use history.replaceState to set query parameters without navigation
+            history.replaceState(null, '', window.location.pathname + search);
+        }
+
+        beforeEach(function() {
+            originalSearch = window.location.search;
+            replaceStateSpy = spyOn(history, 'replaceState').and.callThrough();
+            loadFixtures('js/fixtures/discovery.html');
+            TemplateHelpers.installTemplates([
+                'templates/discovery/course_card',
+                'templates/discovery/facet',
+                'templates/discovery/facet_option',
+                'templates/discovery/filter',
+                'templates/discovery/filter_bar'
+            ]);
+            jasmine.clock().install();
+        });
+
+        afterEach(function() {
+            jasmine.clock().uninstall();
+            // Restore original URL
+            history.replaceState(null, '', window.location.pathname + originalSearch);
+        });
+
+        it('pre-populates filters from URL query params', function() {
+            setUrlSearch('?modes=honor');
+            DiscoveryFactory(MEANINGS);
+
+            var requests = AjaxHelpers.requests(this);
+            $('.discovery-submit').trigger('click');
+            var request = AjaxHelpers.currentRequest(requests);
+            expect(request.requestBody).toMatch(/modes=honor/);
+            expect($('.active-filter').length).toBe(1);
+        });
+
+        it('overrides default language filter with URL param', function() {
+            // Set URL with language filter different from the default
+            setUrlSearch('?language=hr');
+            // Call DiscoveryFactory with userLanguage='en' and setDefaultFilter=true
+            DiscoveryFactory(MEANINGS, '', 'en', 'Europe/Lisbon', true);
+
+            var requests = AjaxHelpers.requests(this);
+            $('.discovery-submit').trigger('click');
+            var request = AjaxHelpers.currentRequest(requests);
+            expect(request.requestBody).toMatch(/language=hr/);
+            expect(request.requestBody).not.toMatch(/language=en/);
+        });
+
+        it('ignores unrecognized URL params', function() {
+            setUrlSearch('?bogus=value');
+            DiscoveryFactory(MEANINGS);
+
+            var requests = AjaxHelpers.requests(this);
+            $('.discovery-submit').trigger('click');
+            var request = AjaxHelpers.currentRequest(requests);
+            expect(request.requestBody).not.toMatch(/bogus/);
+            expect($('.active-filter').length).toBe(0);
+        });
+
+        it('updates URL after search completes', function() {
+            setUrlSearch('');
+            DiscoveryFactory(MEANINGS);
+
+            var requests = AjaxHelpers.requests(this);
+            $('.discovery-input').val('test');
+            $('.discovery-submit').trigger('click');
+            AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
+            expect(replaceStateSpy).toHaveBeenCalled();
+            var lastCall = replaceStateSpy.calls.mostRecent();
+            expect(lastCall.args[2]).toMatch(/search_query=test/);
+        });
+
+        it('clears URL params when filters are reset', function() {
+            setUrlSearch('?language=en');
+            DiscoveryFactory(MEANINGS);
+
+            var requests = AjaxHelpers.requests(this);
+            // Trigger initial search to load results
+            $('.discovery-submit').trigger('click');
+            AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
+            // Clear all filters
+            $('#clear-all-filters').trigger('click');
+            // The clear triggers a new search with empty query
+            AjaxHelpers.respondWithJson(requests, JSON_RESPONSE);
+            var lastCall = replaceStateSpy.calls.mostRecent();
+            expect(lastCall.args[2]).toBe(window.location.pathname);
+        });
+    });
 });
