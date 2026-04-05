@@ -2,168 +2,169 @@
   "lms-1": {
     "settings": "lms.envs.test",
     "paths": [
-      "lms/djangoapps/branding/",
-      "lms/djangoapps/bulk_email/",
-      "lms/djangoapps/bulk_enroll/",
-      "lms/djangoapps/bulk_user_retirement/",
-      "lms/djangoapps/ccx/",
-      "lms/djangoapps/certificates/",
-      "lms/djangoapps/commerce/"
+      "lms/djangoapps/discussion/rest_api/"
     ]
   },
   "lms-2": {
     "settings": "lms.envs.test",
     "paths": [
+      "lms/djangoapps/ccx/",
+      "lms/djangoapps/commerce/",
       "lms/djangoapps/course_api/",
-      "lms/djangoapps/course_blocks/",
-      "lms/djangoapps/course_goals/",
-      "lms/djangoapps/course_home_api/",
       "lms/djangoapps/course_wiki/",
-      "lms/djangoapps/coursewarehistoryextended/",
-      "lms/djangoapps/debug/"
+      "lms/djangoapps/discussion/notification_prefs/",
+      "lms/djangoapps/instructor_task/",
+      "lms/djangoapps/ora_staff_grader/",
+      "lms/djangoapps/survey/",
+      "lms/djangoapps/teams/",
+      "lms/djangoapps/verify_student/"
     ]
   },
   "lms-3": {
     "settings": "lms.envs.test",
     "paths": [
-      "lms/djangoapps/courseware/"
+      "lms/djangoapps/branding/",
+      "lms/djangoapps/bulk_enroll/",
+      "lms/djangoapps/courseware/",
+      "lms/djangoapps/instructor_analytics/",
+      "lms/djangoapps/learner_dashboard/",
+      "lms/djangoapps/lti_provider/",
+      "lms/djangoapps/program_enrollments/"
     ]
   },
   "lms-4": {
     "settings": "lms.envs.test",
     "paths": [
-      "lms/djangoapps/discussion/",
-      "lms/djangoapps/edxnotes/",
-      "lms/djangoapps/experiments/"
+      "lms/djangoapps/bulk_user_retirement/",
+      "lms/djangoapps/course_blocks/",
+      "lms/djangoapps/course_goals/",
+      "lms/djangoapps/course_home_api/",
+      "lms/djangoapps/coursewarehistoryextended/",
+      "lms/djangoapps/discussion/tests/",
+      "lms/djangoapps/experiments/",
+      "lms/djangoapps/grades/",
+      "lms/djangoapps/instructor/",
+      "lms/djangoapps/mfe_config_api/",
+      "lms/djangoapps/staticbook/",
+      "lms/lib/"
     ]
   },
   "lms-5": {
     "settings": "lms.envs.test",
     "paths": [
+      "lms/djangoapps/bulk_email/",
+      "lms/djangoapps/certificates/",
+      "lms/djangoapps/debug/",
+      "lms/djangoapps/discussion/django_comment_client/",
+      "lms/djangoapps/edxnotes/",
       "lms/djangoapps/gating/",
-      "lms/djangoapps/grades/",
-      "lms/djangoapps/instructor/",
-      "lms/djangoapps/instructor_analytics/"
-    ]
-  },
-  "lms-6": {
-    "settings": "lms.envs.test",
-    "paths": [
-      "lms/djangoapps/instructor_task/",
-      "lms/djangoapps/learner_dashboard/",
       "lms/djangoapps/learner_home/",
       "lms/djangoapps/lms_initialization/",
       "lms/djangoapps/lms_xblock/",
-      "lms/djangoapps/lti_provider/",
       "lms/djangoapps/mailing/",
       "lms/djangoapps/mobile_api/",
       "lms/djangoapps/monitoring/",
-      "lms/djangoapps/ora_staff_grader/",
-      "lms/djangoapps/program_enrollments/",
       "lms/djangoapps/rss_proxy/",
       "lms/djangoapps/static_template_view/",
-      "lms/djangoapps/staticbook/",
       "lms/djangoapps/support/",
-      "lms/djangoapps/survey/",
-      "lms/djangoapps/teams/",
       "lms/djangoapps/tests/",
       "lms/djangoapps/user_tours/",
-      "lms/djangoapps/verify_student/",
-      "lms/djangoapps/mfe_config_api/",
       "lms/envs/",
-      "lms/lib/",
       "lms/tests.py"
     ]
   },
-  "openedx-1-with-lms": {
+  "shared-with-lms-1": {
+    "settings": "lms.envs.test",
+    "paths": [
+      "common/djangoapps/",
+      "openedx/core/djangoapps/agreements/",
+      "openedx/core/djangoapps/api_admin/",
+      "openedx/core/djangoapps/authz/",
+      "openedx/core/djangoapps/cache_toolbox/",
+      "openedx/core/djangoapps/ccxcon/",
+      "openedx/core/djangoapps/content/",
+      "openedx/core/djangoapps/content_libraries/",
+      "openedx/core/djangoapps/course_apps/",
+      "openedx/core/djangoapps/credentials/",
+      "openedx/core/djangoapps/credit/",
+      "openedx/core/djangoapps/dark_lang/",
+      "openedx/core/djangoapps/django_comment_common/",
+      "openedx/core/djangoapps/embargo/",
+      "openedx/core/djangoapps/header_control/",
+      "openedx/core/djangoapps/heartbeat/",
+      "openedx/core/djangoapps/models/",
+      "openedx/core/djangoapps/notifications/",
+      "openedx/core/djangoapps/oauth_dispatch/",
+      "openedx/core/djangoapps/safe_sessions/",
+      "openedx/core/djangoapps/schedules/",
+      "openedx/core/djangoapps/user_api/",
+      "openedx/core/djangoapps/util/",
+      "openedx/core/djangoapps/video_pipeline/",
+      "openedx/core/djangoapps/waffle_utils/",
+      "openedx/core/djangoapps/xblock/",
+      "openedx/core/tests/",
+      "openedx/features/",
+      "openedx/tests/"
+    ]
+  },
+  "shared-with-lms-2": {
     "settings": "lms.envs.test",
     "paths": [
       "openedx/core/djangoapps/ace_common/",
-      "openedx/core/djangoapps/cors_csrf/",
-      "openedx/core/djangoapps/agreements/",
-      "openedx/core/djangoapps/api_admin/",
       "openedx/core/djangoapps/auth_exchange/",
       "openedx/core/djangoapps/bookmarks/",
-      "openedx/core/djangoapps/cache_toolbox/",
       "openedx/core/djangoapps/catalog/",
-      "openedx/core/djangoapps/ccxcon/",
       "openedx/core/djangoapps/commerce/",
       "openedx/core/djangoapps/common_initialization/",
       "openedx/core/djangoapps/common_views/",
       "openedx/core/djangoapps/config_model_utils/",
-      "openedx/core/djangoapps/content/",
-      "openedx/core/djangoapps/content_libraries/",
       "openedx/core/djangoapps/contentserver/",
       "openedx/core/djangoapps/cookie_metadata/",
-      "openedx/core/djangoapps/course_apps/",
+      "openedx/core/djangoapps/cors_csrf/",
       "openedx/core/djangoapps/course_date_signals/",
       "openedx/core/djangoapps/course_groups/",
+      "openedx/core/djangoapps/course_live/",
       "openedx/core/djangoapps/courseware_api/",
       "openedx/core/djangoapps/crawlers/",
-      "openedx/core/djangoapps/credentials/",
-      "openedx/core/djangoapps/credit/",
-      "openedx/core/djangoapps/course_live/",
-      "openedx/core/djangoapps/dark_lang/",
       "openedx/core/djangoapps/debug/",
       "openedx/core/djangoapps/discussions/",
-      "openedx/core/djangoapps/django_comment_common/",
-      "openedx/core/djangoapps/embargo/",
       "openedx/core/djangoapps/enrollments/",
-      "openedx/core/djangoapps/external_user_ids/"
-    ]
-  },
-  "openedx-2-with-lms": {
-    "settings": "lms.envs.test",
-    "paths": [
+      "openedx/core/djangoapps/external_user_ids/",
       "openedx/core/djangoapps/geoinfo/",
-      "openedx/core/djangoapps/header_control/",
-      "openedx/core/djangoapps/heartbeat/",
       "openedx/core/djangoapps/lang_pref/",
-      "openedx/core/djangoapps/models/",
       "openedx/core/djangoapps/monkey_patch/",
-      "openedx/core/djangoapps/notifications/",
-      "openedx/core/djangoapps/oauth_dispatch/",
       "openedx/core/djangoapps/olx_rest_api/",
       "openedx/core/djangoapps/password_policy/",
       "openedx/core/djangoapps/plugin_api/",
       "openedx/core/djangoapps/plugins/",
       "openedx/core/djangoapps/profile_images/",
       "openedx/core/djangoapps/programs/",
-      "openedx/core/djangoapps/safe_sessions/",
-      "openedx/core/djangoapps/schedules/",
       "openedx/core/djangoapps/service_status/",
       "openedx/core/djangoapps/session_inactivity_timeout/",
       "openedx/core/djangoapps/signals/",
       "openedx/core/djangoapps/site_configuration/",
       "openedx/core/djangoapps/system_wide_roles/",
       "openedx/core/djangoapps/theming/",
-      "openedx/core/djangoapps/user_api/",
       "openedx/core/djangoapps/user_authn/",
-      "openedx/core/djangoapps/util/",
       "openedx/core/djangoapps/verified_track_content/",
       "openedx/core/djangoapps/video_config/",
-      "openedx/core/djangoapps/video_pipeline/",
-      "openedx/core/djangoapps/waffle_utils/",
-      "openedx/core/djangoapps/xblock/",
       "openedx/core/djangoapps/xmodule_django/",
       "openedx/core/djangoapps/zendesk_proxy/",
-      "openedx/core/djangoapps/authz/",
       "openedx/core/djangolib/",
       "openedx/core/lib/",
-      "openedx/core/tests/",
-      "openedx/features/",
       "openedx/testing/",
-      "openedx/tests/"
+      "xmodule/"
     ]
   },
-  "openedx-1-with-cms": {
+  "shared-with-cms-1": {
     "settings": "cms.envs.test",
     "paths": [
+      "common/djangoapps/",
       "openedx/core/djangoapps/ace_common/",
-      "openedx/core/djangoapps/cors_csrf/",
       "openedx/core/djangoapps/agreements/",
       "openedx/core/djangoapps/api_admin/",
       "openedx/core/djangoapps/auth_exchange/",
+      "openedx/core/djangoapps/authz/",
       "openedx/core/djangoapps/bookmarks/",
       "openedx/core/djangoapps/cache_toolbox/",
       "openedx/core/djangoapps/catalog/",
@@ -175,8 +176,10 @@
       "openedx/core/djangoapps/content/",
       "openedx/core/djangoapps/content_libraries/",
       "openedx/core/djangoapps/content_staging/",
+      "openedx/core/djangoapps/content_tagging/",
       "openedx/core/djangoapps/contentserver/",
       "openedx/core/djangoapps/cookie_metadata/",
+      "openedx/core/djangoapps/cors_csrf/",
       "openedx/core/djangoapps/course_apps/",
       "openedx/core/djangoapps/course_date_signals/",
       "openedx/core/djangoapps/course_groups/",
@@ -190,13 +193,7 @@
       "openedx/core/djangoapps/django_comment_common/",
       "openedx/core/djangoapps/embargo/",
       "openedx/core/djangoapps/enrollments/",
-      "openedx/core/djangoapps/external_user_ids/"
-    ]
-  },
-  "openedx-2-with-cms": {
-    "settings": "cms.envs.test",
-    "paths": [
-      "openedx/core/djangoapps/content_tagging/",
+      "openedx/core/djangoapps/external_user_ids/",
       "openedx/core/djangoapps/geoinfo/",
       "openedx/core/djangoapps/header_control/",
       "openedx/core/djangoapps/heartbeat/",
@@ -228,9 +225,9 @@
       "openedx/core/djangoapps/xblock/",
       "openedx/core/djangoapps/xmodule_django/",
       "openedx/core/djangoapps/zendesk_proxy/",
-      "openedx/core/djangoapps/authz/",
       "openedx/core/lib/",
-      "openedx/tests/"
+      "openedx/tests/",
+      "xmodule/"
     ]
   },
   "cms-1": {
@@ -238,44 +235,15 @@
     "paths": [
       "cms/djangoapps/api/",
       "cms/djangoapps/cms_user_tasks/",
+      "cms/djangoapps/contentstore/",
       "cms/djangoapps/course_creators/",
       "cms/djangoapps/export_course_metadata/",
-      "cms/djangoapps/modulestore_migrator/",
       "cms/djangoapps/models/",
+      "cms/djangoapps/modulestore_migrator/",
       "cms/djangoapps/pipeline_js/",
       "cms/djangoapps/xblock_config/",
       "cms/envs/",
       "cms/lib/"
-    ]
-  },
-  "cms-2": {
-    "settings": "cms.envs.test",
-    "paths": [
-      "cms/djangoapps/contentstore/"
-    ]
-  },
-  "common-with-lms": {
-    "settings": "lms.envs.test",
-    "paths": [
-      "common/djangoapps/"
-    ]
-  },
-  "common-with-cms": {
-    "settings": "cms.envs.test",
-    "paths": [
-      "common/djangoapps/"
-    ]
-  },
-  "xmodule-with-lms": {
-    "settings": "lms.envs.test",
-    "paths": [
-      "xmodule/"
-    ]
-  },
-  "xmodule-with-cms": {
-    "settings": "cms.envs.test",
-    "paths": [
-      "xmodule/"
     ]
   }
 }
