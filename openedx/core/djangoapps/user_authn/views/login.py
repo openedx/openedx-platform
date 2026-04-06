@@ -59,7 +59,6 @@ from openedx.core.djangoapps.user_authn.views.password_reset import send_passwor
 from openedx.core.djangoapps.user_authn.views.utils import API_V1, ENTERPRISE_ENROLLMENT_URL_REGEX, UUID4_REGEX
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.core.lib.api.view_utils import require_post_params  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from openedx.features.enterprise_support.api import activate_learner_enterprise, get_enterprise_learner_data_from_api
 
 log = logging.getLogger("edx.student")
