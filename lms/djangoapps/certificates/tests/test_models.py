@@ -381,10 +381,10 @@ class CertificateInvalidationTest(SharedModuleStoreTestCase, OpenEdxEventsTestMi
         """
         super().setUpClass()
         cls.start_events_isolation()
+        cls.course = CourseFactory()
 
     def setUp(self):
         super().setUp()
-        self.course = CourseFactory()
         self.course_overview = CourseOverviewFactory.create(
             id=self.course.id
         )
@@ -708,6 +708,7 @@ class CertificateAllowlistTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin
         """
         super().setUpClass()
         cls.start_events_isolation()
+        cls.course_run = CourseFactory()
 
     def setUp(self):
         super().setUp()
@@ -716,7 +717,6 @@ class CertificateAllowlistTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin
         self.user = UserFactory(username=self.username, email=self.user_email)
         self.second_user = UserFactory()
 
-        self.course_run = CourseFactory()
         self.course_run_key = self.course_run.id  # pylint: disable=no-member
 
     def test_get_allowlist_empty(self):

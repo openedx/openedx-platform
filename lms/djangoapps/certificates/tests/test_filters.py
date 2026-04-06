@@ -71,9 +71,13 @@ class CertificateFiltersTest(SharedModuleStoreTestCase):
     - CertificateCreationRequested
     """
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course_run = CourseFactory()
+
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
-        self.course_run = CourseFactory()
         self.user = UserFactory.create(
             username="somestudent",
             first_name="Student",
