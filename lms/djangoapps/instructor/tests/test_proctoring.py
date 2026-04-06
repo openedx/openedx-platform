@@ -10,7 +10,6 @@ from django.conf import settings
 from django.urls import reverse
 from edx_proctoring.api import create_exam
 from edx_proctoring.backends.tests.test_backend import TestBackendProvider
-from edx_toggles.toggles.testutils import override_waffle_flag  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory
