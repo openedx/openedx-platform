@@ -213,7 +213,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "W", "I"]
+select = ["E", "W", "I", "F", "PT", "DJ", "UP", "B"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (pylint enforces this at 120 chars while ignoring trailing comments)
