@@ -42,7 +42,7 @@ class StagedContent(models.Model):
     class Meta:
         verbose_name_plural = _("Staged Content")
 
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(primary_key=True)  # noqa: DJ012
     # The user that created and owns this staged content. Only this user can read it.
     user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
     created = models.DateTimeField(null=False, auto_now_add=True)
@@ -77,12 +77,12 @@ class StagedContent(models.Model):
         """ Get a filename that can be used for the OLX content of this staged content """
         return f"{self.suggested_url_name}.xml"
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         """ String representation of this instance """
         return f'Staged {self.block_type} block "{self.display_name}" ({self.status})'
 
 
-class StagedContentFile(models.Model):
+class StagedContentFile(models.Model):  # noqa: DJ008
     """
     A data file ("Static Asset") associated with some StagedContent.
 
@@ -101,7 +101,7 @@ class StagedContentFile(models.Model):
     md5_hash = models.CharField(max_length=32, blank=True)
 
 
-class UserClipboard(models.Model):
+class UserClipboard(models.Model):  # noqa: DJ008
     """
     Each user has a clipboard that can hold one item at a time, where an item
     is some OLX content that can be used in a course, such as an XBlock, a Unit,
@@ -157,7 +157,7 @@ class UserClipboard(models.Model):
                 f"StagedContent.purpose must be '{CLIPBOARD_PURPOSE}' to use it as clipboard content."
             )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         """ Save this model instance """
         # Enforce checks on save:
         self.full_clean()

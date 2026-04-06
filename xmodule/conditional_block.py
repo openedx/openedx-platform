@@ -191,7 +191,7 @@ class ConditionalBlock(
                         # We do not want to log when block is None, and it is when requester
                         # does not have access to the requested required block.
                         log.warning('Error in conditional block: \
-                            required module {block} has no {block_attr}'.format(block=block, block_attr=attr_name))
+                            required module {block} has no {block_attr}'.format(block=block, block_attr=attr_name))  # noqa: UP032
                     return False
 
                 attr = getattr(block, attr_name)

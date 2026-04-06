@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 import markupsafe
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user  # noqa: F401
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.urls import reverse
 from django.utils.html import escape
@@ -21,11 +21,11 @@ from edx_django_utils.plugins import pluggable_override
 from lxml import etree, html
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
 from web_fragments.fragment import Fragment
-from xblock.core import XBlock
+from xblock.core import XBlock  # noqa: F401
 from xblock.exceptions import InvalidScopeError
 from xblock.scorable import ScorableXBlockMixin
 
-from common.djangoapps import static_replace
+from common.djangoapps import static_replace  # noqa: F401
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from xmodule.seq_block import SequenceBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.vertical_block import VerticalBlock  # lint-amnesty, pylint: disable=wrong-import-order
@@ -33,7 +33,7 @@ from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-ord
     PREVIEW_VIEWS,
     STUDENT_VIEW,
     STUDIO_VIEW,
-    shim_xmodule_js,
+    shim_xmodule_js,  # noqa: F401
 )
 
 log = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ def wrap_xblock(
     css_classes = [
         'xblock',
         f'xblock-{markupsafe.escape(view)}',
-        'xblock-{}-{}'.format(
+        'xblock-{}-{}'.format(  # noqa: UP032
             markupsafe.escape(view),
             markupsafe.escape(block.scope_ids.block_type),
         )
@@ -193,7 +193,7 @@ def wrap_xblock_aside(
 
     css_classes = [
         f'xblock-{markupsafe.escape(view)}',
-        'xblock-{}-{}'.format(
+        'xblock-{}-{}'.format(  # noqa: UP032
             markupsafe.escape(view),
             markupsafe.escape(aside.scope_ids.block_type),
         ),
@@ -423,7 +423,7 @@ def xblock_local_resource_url(block, uri):
     """
     xblock_class = getattr(block.__class__, 'unmixed_class', block.__class__)
     if settings.PIPELINE['PIPELINE_ENABLED'] or not settings.REQUIRE_DEBUG:
-        return staticfiles_storage.url('xblock/resources/{package_name}/{path}'.format(
+        return staticfiles_storage.url('xblock/resources/{package_name}/{path}'.format(  # noqa: UP032
             package_name=xblock_resource_pkg(xblock_class),
             path=uri
         ))

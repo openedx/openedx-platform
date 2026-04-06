@@ -23,7 +23,7 @@ TODO: Validate all datetimes to be UTC.
 import logging
 from datetime import datetime
 from enum import Enum
-from typing import Dict, FrozenSet, List, Optional
+from typing import Dict, FrozenSet, List, Optional  # noqa: UP035
 
 import attr
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -59,7 +59,7 @@ class ContentErrorData:
     the outline (unknown tag types, sequences where we expect sections, etc.)
     """
     message: str
-    usage_key: Optional[UsageKey] = None
+    usage_key: Optional[UsageKey] = None  # noqa: UP045
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -136,7 +136,7 @@ class CourseLearningSequenceData:
     # associated with this piece of content. See models.UserPartitionGroup
     # for more details.
     user_partition_groups = attr.ib(
-        type=Dict[int, FrozenSet[int]],
+        type=Dict[int, FrozenSet[int]],  # noqa: UP006
         factory=dict,
         validator=[user_partition_groups_not_empty],
     )
@@ -150,13 +150,13 @@ class CourseSectionData:
     usage_key = attr.ib(type=UsageKey)
     title = attr.ib(type=str)
     visibility = attr.ib(type=VisibilityData, default=VisibilityData())
-    sequences = attr.ib(type=List[CourseLearningSequenceData], factory=list)
+    sequences = attr.ib(type=List[CourseLearningSequenceData], factory=list)  # noqa: UP006
 
     # Mapping of UserPartition IDs to list of UserPartition Groups that are
     # associated with this piece of content. See models.UserPartitionGroup
     # for more details.
     user_partition_groups = attr.ib(
-        type=Dict[int, FrozenSet[int]],
+        type=Dict[int, FrozenSet[int]],  # noqa: UP006
         factory=dict,
         validator=[user_partition_groups_not_empty],
     )
@@ -200,21 +200,21 @@ class CourseOutlineData:
 
     # The time period (in days) before the official start of the course during which
     # beta testers have access to the course.
-    days_early_for_beta = attr.ib(type=Optional[int])
+    days_early_for_beta = attr.ib(type=Optional[int])  # noqa: UP045
 
-    sections = attr.ib(type=List[CourseSectionData])
+    sections = attr.ib(type=List[CourseSectionData])  # noqa: UP006
 
     # Defines if course self-paced or instructor-paced.
     self_paced = attr.ib(type=bool)
 
     # To make sure that our data structure is consistent, this field is
     # derived from what you pass into `sections`. Do not set this directly.
-    sequences = attr.ib(type=Dict[UsageKey, CourseLearningSequenceData], init=False)
+    sequences = attr.ib(type=Dict[UsageKey, CourseLearningSequenceData], init=False)  # noqa: UP006
 
     course_visibility: CourseVisibility = attr.ib(validator=attr.validators.in_(CourseVisibility))
 
     # Entrance Exam ID
-    entrance_exam_id = attr.ib(type=Optional[str])
+    entrance_exam_id = attr.ib(type=Optional[str])  # noqa: UP045
 
     def __attrs_post_init__(self):
         """Post-init hook that validates and inits the `sequences` field."""
@@ -223,7 +223,7 @@ class CourseOutlineData:
             for seq in section.sequences:
                 if seq.usage_key in sequences:  # lint-amnesty, pylint: disable=no-else-raise
                     raise ValueError(
-                        "Sequence {} appears in more than one Section."
+                        "Sequence {} appears in more than one Section."  # noqa: UP032
                         .format(seq.usage_key)
                     )
                 else:
@@ -237,7 +237,7 @@ class CourseOutlineData:
         # sequences manually here, instead of in a @sequences.validator
         if len(sequences) > self.MAX_SEQUENCE_COUNT:
             raise ValueError(
-                "sequences cannot have more than {} entries ({} attempted)"
+                "sequences cannot have more than {} entries ({} attempted)"  # noqa: UP032
                 .format(self.MAX_SEQUENCE_COUNT, len(sequences))
             )
 
@@ -285,7 +285,7 @@ class CourseOutlineData:
         """
         if value is not None and value < 0:
             raise ValueError(
-                "Provided value {} for days_early_for_beta is invalid. The value must be positive or zero. "
+                "Provided value {} for days_early_for_beta is invalid. The value must be positive or zero. "  # noqa: UP032
                 "A positive value will shift back the starting date for Beta users by that many days.".format(value)
             )
 
@@ -298,11 +298,11 @@ class ScheduleItemData:
     usage_key: UsageKey
 
     # Start date that is specified for this item
-    start: Optional[datetime]
+    start: Optional[datetime]  # noqa: UP045
 
     # Effective release date that it's available (may be affected by parents)
-    effective_start: Optional[datetime]
-    due: Optional[datetime]
+    effective_start: Optional[datetime]  # noqa: UP045
+    due: Optional[datetime]  # noqa: UP045
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -310,10 +310,10 @@ class ScheduleData:
     """
     Overall course schedule data.
     """
-    course_start: Optional[datetime]
-    course_end: Optional[datetime]
-    sections: Dict[UsageKey, ScheduleItemData]
-    sequences: Dict[UsageKey, ScheduleItemData]
+    course_start: Optional[datetime]  # noqa: UP045
+    course_end: Optional[datetime]  # noqa: UP045
+    sections: Dict[UsageKey, ScheduleItemData]  # noqa: UP006
+    sequences: Dict[UsageKey, ScheduleItemData]  # noqa: UP006
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -321,7 +321,7 @@ class SpecialExamAttemptData:
     """
     Overall special exam attempt data.
     """
-    sequences: Dict[UsageKey, Dict]
+    sequences: Dict[UsageKey, Dict]  # noqa: UP006
 
 
 @attr.s(frozen=True, auto_attribs=True)
@@ -360,7 +360,7 @@ class UserCourseOutlineData(CourseOutlineData):
     # * If anonymous course access is enabled in "public_outline" mode,
     #   unauthenticated users (AnonymousUser) will see the course outline but
     #   not be able to access anything inside.
-    accessible_sequences: FrozenSet[UsageKey]
+    accessible_sequences: FrozenSet[UsageKey]  # noqa: UP006
 
 
 @attr.s(frozen=True, auto_attribs=True)

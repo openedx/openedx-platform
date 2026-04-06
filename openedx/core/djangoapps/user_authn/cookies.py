@@ -361,6 +361,6 @@ def _get_login_oauth_client():
     try:
         return Application.objects.get(client_id=login_client_id)
     except Application.DoesNotExist:
-        raise AuthFailedError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             f"OAuth Client for the Login service, '{login_client_id}', is not configured."
         )

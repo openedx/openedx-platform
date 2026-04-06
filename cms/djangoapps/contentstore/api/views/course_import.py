@@ -155,7 +155,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             })
         except Exception as e:
             log.exception(f'Course import {course_key}: Unknown error in import')
-            raise self.api_error(
+            raise self.api_error(  # noqa: B904
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 developer_message=str(e),
                 error_code='internal_error'
@@ -177,7 +177,7 @@ class CourseImportView(CourseImportExportViewMixin, GenericAPIView):
             })
         except Exception as e:
             log.exception(str(e))
-            raise self.api_error(
+            raise self.api_error(  # noqa: B904
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 developer_message=str(e),
                 error_code='internal_error'

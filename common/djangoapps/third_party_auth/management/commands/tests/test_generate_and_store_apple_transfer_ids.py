@@ -54,7 +54,7 @@ class TestGenerateAndStoreTransferIds(TestCase):
         mock_generate_access_token.return_value = None
 
         error_string = 'Failed to create access token.'
-        with self.assertRaisesRegex(CommandError, error_string):
+        with self.assertRaisesRegex(CommandError, error_string):  # noqa: PT027
             call_command(self.command, 'sample_team_id')
 
     @mock.patch('common.djangoapps.third_party_auth.management.commands.'
@@ -72,14 +72,14 @@ class TestGenerateAndStoreTransferIds(TestCase):
         mock_generate_client_secret.return_value = 'sample_client_secret'
         mock_generate_access_token.return_value = 'sample_access_token'
 
-        self.assertEqual(0, AppleMigrationUserIdInfo.objects.all().count())
+        self.assertEqual(0, AppleMigrationUserIdInfo.objects.all().count())  # noqa: PT009
 
         with mock.patch.object(AppleIdAuth, 'name', self.slug):
             call_command(self.command, 'sample_team_id')
 
-        self.assertTrue(AppleMigrationUserIdInfo.objects.filter(
+        self.assertTrue(AppleMigrationUserIdInfo.objects.filter(  # noqa: PT009
             old_apple_id='sample_old_apple_id').exists())
         expected_transfer_sub = 'sample_transfer_sub'
         actual_transfer_sub = AppleMigrationUserIdInfo.objects.filter(
             old_apple_id='sample_old_apple_id').first().transfer_id
-        self.assertEqual(expected_transfer_sub, actual_transfer_sub)
+        self.assertEqual(expected_transfer_sub, actual_transfer_sub)  # noqa: PT009

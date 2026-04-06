@@ -71,7 +71,7 @@ class TestLinter(TestCase):
                 print(f"Found violation: {violation.rule}")
 
         assert len(results.violations) == len(rules)
-        for violation, rule in zip(results.violations, rules):
+        for violation, rule in zip(results.violations, rules):  # noqa: B905
             assert violation.rule == rule
 
 
@@ -1421,7 +1421,7 @@ class TestMakoTemplateLinter(TestLinter):
         """
         Test _parse_string helper
         """
-        linter = _build_mako_linter()
+        linter = _build_mako_linter()  # noqa: F841
 
         parse_string = ParseString(data['template'], data['result']['start_index'], len(data['template']))
         string_dict = {
@@ -1430,7 +1430,7 @@ class TestMakoTemplateLinter(TestLinter):
             'quote_length': parse_string.quote_length,
         }
 
-        self.assertDictEqual(string_dict, data['result'])
+        self.assertDictEqual(string_dict, data['result'])  # noqa: PT009
         if parse_string.end_index is not None:
             assert data['template'][parse_string.start_index:parse_string.end_index] == parse_string.string
             start_inner_index = parse_string.start_index + parse_string.quote_length

@@ -72,7 +72,7 @@ class StackedConfigurationModel(ConfigurationModel):
             "Configure values for all course runs associated with this site."
         ),
     )
-    org = models.CharField(
+    org = models.CharField(  # noqa: DJ001
         max_length=255,
         db_index=True,
         null=True,
@@ -82,7 +82,7 @@ class StackedConfigurationModel(ConfigurationModel):
             "Organization. This is the organization string (i.e. edX, MITx)."
         )
     )
-    org_course = models.CharField(
+    org_course = models.CharField(  # noqa: DJ001
         max_length=255,
         db_index=True,
         null=True,

@@ -107,7 +107,7 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
                 # the requested user, then we should sever the link to the existing edX user before
                 # linking the ProgramEnrollment to the new user.
                 if program_enrollment.user and program_enrollment.user != user:
-                    message = ('Unlinking user with username={old_username} from program enrollment with '
+                    message = ('Unlinking user with username={old_username} from program enrollment with '  # noqa: UP032
                                'program uuid={program_uuid} with external_student_key={external_user_key} '
                                'and linking user with username={new_username} '
                                'to program enrollment.').format(
@@ -123,7 +123,7 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
 
                 link_program_enrollment_to_lms_user(program_enrollment, user)
         except (CourseEnrollmentException, IntegrityError) as e:
-            logger.exception("Rolling back all operations for {}:{}".format(
+            logger.exception("Rolling back all operations for {}:{}".format(  # noqa: UP032
                 external_user_key,
                 username,
             ))
@@ -223,7 +223,7 @@ def link_program_enrollment_to_lms_user(program_enrollment, user):
             program course enrollment
             IntegrityError if we try to create invalid records.
     """
-    link_log_info = 'user id={} with external_user_key={} for program uuid={}'.format(
+    link_log_info = 'user id={} with external_user_key={} for program uuid={}'.format(  # noqa: UP032
         user.id,
         program_enrollment.external_user_key,
         program_enrollment.program_uuid,
@@ -244,7 +244,7 @@ def link_program_enrollment_to_lms_user(program_enrollment, user):
         raise
     except CourseEnrollmentException as e:
         logger.error(
-            "CourseEnrollmentException while linking {}: {}".format(
+            "CourseEnrollmentException while linking {}: {}".format(  # noqa: UP032
                 link_log_info, str(e)
             )
         )

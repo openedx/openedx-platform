@@ -1,7 +1,7 @@
 """
 Course app configuration for discussions.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -54,7 +54,7 @@ class DiscussionCourseApp(CourseApp):
         return configuration.enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
         """
         Return allowed operations for discussions app.
         """

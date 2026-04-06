@@ -31,13 +31,13 @@ class CourseCertificatesViewTest(CourseTestCase, PermissionAccessMixin, HelperMe
         self._add_course_certificates(count=2, signatory_count=2)
         response = self.client.get(self.url)
         response_data = response.data
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response_data["certificates"]), 2)
-        self.assertEqual(len(response_data["certificates"][0]["signatories"]), 2)
-        self.assertEqual(len(response_data["certificates"][1]["signatories"]), 2)
-        self.assertEqual(response_data["course_number_override"], self.course.display_coursenumber)
-        self.assertEqual(response_data["course_title"], self.course.display_name_with_default)
-        self.assertEqual(response_data["course_number"], self.course.number)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(len(response_data["certificates"]), 2)  # noqa: PT009
+        self.assertEqual(len(response_data["certificates"][0]["signatories"]), 2)  # noqa: PT009
+        self.assertEqual(len(response_data["certificates"][1]["signatories"]), 2)  # noqa: PT009
+        self.assertEqual(response_data["course_number_override"], self.course.display_coursenumber)  # noqa: PT009
+        self.assertEqual(response_data["course_title"], self.course.display_name_with_default)  # noqa: PT009
+        self.assertEqual(response_data["course_number"], self.course.number)  # noqa: PT009
 
 
 class CourseCertificatesAuthzViewTest(
@@ -59,7 +59,7 @@ class CourseCertificatesAuthzViewTest(
         self._add_course_certificates(count=2, signatory_count=2)
         self.add_user_to_role_in_course(self.authorized_user, COURSE_STAFF.external_key, self.course.id)
         resp = self.authorized_client.get(self.url)
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -69,4 +69,4 @@ class CourseCertificatesAuthzViewTest(
         self._add_course_certificates(count=2, signatory_count=2)
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
         resp = self.authorized_client.get(self.url)
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

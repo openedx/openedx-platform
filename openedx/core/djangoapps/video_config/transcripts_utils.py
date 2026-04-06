@@ -69,7 +69,7 @@ def exception_decorator(func):
             return func(*args, **kwds)
         except (TranscriptsGenerationException, UnicodeDecodeError) as ex:
             log.exception(str(ex))
-            raise NotFoundError  # lint-amnesty, pylint: disable=raise-missing-from
+            raise NotFoundError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return wrapper
 
 
@@ -310,7 +310,7 @@ def generate_subs_from_source(speed_subs, subs_type, subs_filedata, block, langu
         msg = _("Something wrong with SubRip transcripts file during parsing. Inner message is {error_message}").format(
             error_message=str(ex)
         )
-        raise TranscriptsGenerationException(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise TranscriptsGenerationException(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     if not srt_subs_obj:
         raise TranscriptsGenerationException(_("Something wrong with SubRip transcripts file during parsing."))
 
@@ -468,7 +468,7 @@ def youtube_speed_dict(item):
     """
     yt_ids = [item.youtube_id_0_75, item.youtube_id_1_0, item.youtube_id_1_25, item.youtube_id_1_5]
     yt_speeds = [0.75, 1.00, 1.25, 1.50]
-    youtube_ids = {p[0]: p[1] for p in zip(yt_ids, yt_speeds) if p[0]}
+    youtube_ids = {p[0]: p[1] for p in zip(yt_ids, yt_speeds) if p[0]}  # noqa: B905
     return youtube_ids
 
 
@@ -491,7 +491,7 @@ def generate_sjson_for_all_speeds(block, user_filename, result_subs_dict, lang):
     try:
         srt_transcripts = contentstore().find(Transcript.asset_location(block.location, user_filename))
     except NotFoundError as ex:
-        raise TranscriptException(_("{exception_message}: Can't find uploaded transcripts: {user_filename}").format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise TranscriptException(_("{exception_message}: Can't find uploaded transcripts: {user_filename}").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             exception_message=str(ex),
             user_filename=user_filename
         ))
@@ -912,7 +912,7 @@ def get_transcript_from_contentstore(video, language, output_format, transcripts
             continue
 
     if transcript_content is None:
-        raise NotFoundError('No transcript for `{lang}` language'.format(
+        raise NotFoundError('No transcript for `{lang}` language'.format(  # noqa: UP032
             lang=language
         ))
 
@@ -1090,7 +1090,7 @@ def resolve_language_code_to_transcript_code(transcripts, dest_lang):
     """
     Attempts to match the requested dest lang with the existing transcript languages
     """
-    sub, other_lang = transcripts["sub"], transcripts["transcripts"]
+    sub, other_lang = transcripts["sub"], transcripts["transcripts"]  # noqa: F841
     # lang code exists in list of other transcript languages as-is
     if dest_lang in other_lang:
         return dest_lang

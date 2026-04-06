@@ -67,7 +67,7 @@ class EmbargoMiddleware(MiddlewareMixin):
             raise MiddlewareNotUsed()
         super().__init__(*args, **kwargs)
 
-    def process_request(self, request: Request) -> Optional[Response]:
+    def process_request(self, request: Request) -> Optional[Response]:  # noqa: UP045
         """Block requests based on embargo rules.
 
         This will perform the following checks:
@@ -133,7 +133,7 @@ class EmbargoMiddleware(MiddlewareMixin):
             # This applies only to courseware URLs.
             return self.country_access_rules(request)
 
-    def country_access_rules(self, request: Request) -> Optional[Response]:
+    def country_access_rules(self, request: Request) -> Optional[Response]:  # noqa: UP045
         """
         Check the country access rules for a given course.
         Applies only to courseware URLs.

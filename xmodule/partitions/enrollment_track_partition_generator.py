@@ -51,7 +51,7 @@ def create_enrollment_track_partition(course):
     used_ids = {p.id for p in course.user_partitions}
     if ENROLLMENT_TRACK_PARTITION_ID in used_ids:
         log.warning(
-            "Can't add 'enrollment_track' partition, as ID {id} is assigned to {partition} in course {course}.".format(
+            "Can't add 'enrollment_track' partition, as ID {id} is assigned to {partition} in course {course}.".format(  # noqa: UP032
                 id=ENROLLMENT_TRACK_PARTITION_ID,
                 partition=get_partition_from_id(course.user_partitions, ENROLLMENT_TRACK_PARTITION_ID).name,
                 course=str(course.id)

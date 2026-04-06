@@ -75,11 +75,11 @@ def preview_handler(request, usage_key_string, handler, suffix=''):
 
     except NoSuchHandlerError:
         log.exception("XBlock %s attempted to access missing handler %r", instance, handler)
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     except (XModuleNotFoundError, NotFoundError):
         log.exception("Module indicating to user that request doesn't exist")
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     except ProcessingError:
         log.warning("Module raised an error while processing AJAX request",

@@ -428,8 +428,8 @@ class CourseDateSummaryTest(SharedModuleStoreTestCase):
             enrollment.created = enrollment_created
             enrollment.save()
         date_summary = CourseStartDate(user=user, course=course)
-        self.assertEqual(date_summary.date, expected_date)
-        self.assertEqual(str(date_summary.title), expected_title)
+        self.assertEqual(date_summary.date, expected_date)  # noqa: PT009
+        self.assertEqual(str(date_summary.title), expected_title)  # noqa: PT009
 
     ## Tests Course End Date Block
     def test_course_end_date_for_certificate_eligible_mode(self):

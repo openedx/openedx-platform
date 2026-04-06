@@ -603,7 +603,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_exception_redirect_looks_correct("/")
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(
@@ -771,7 +771,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_third_party_accounts_state(post_request, duplicate=True, linked=True)
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(

@@ -163,5 +163,5 @@ class TestRetryFailedPhotoVerificationsBetweenDates(MockS3Boto3Mixin, TestVerifi
                 photo_id_name=ANY, full_name=ANY
             ),
         ]
-        self.assertEqual(send_idv_update_mock.call_count, 8)
+        self.assertEqual(send_idv_update_mock.call_count, 8)  # noqa: PT009
         send_idv_update_mock.assert_has_calls(expected_calls, any_order=True)

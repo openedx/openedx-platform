@@ -279,7 +279,7 @@ class TaggedCourseMixin(TestGetAllObjectTagsMixin, ModuleStoreTestCase):  # type
         untagged_sequential.children.append(untagged_vertical)
         # /Untagged blocks
 
-        vertical = BlockFactory.create(
+        vertical = BlockFactory.create(  # noqa: F841
             parent=self.sequential,
             category="vertical",
             display_name="test vertical1",

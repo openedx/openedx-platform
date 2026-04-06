@@ -156,7 +156,7 @@ class TestLoginWithAccessTokenView(TestCase):
 
     def _get_response(self, access_token, token_type='Bearer'):
         url = reverse("login_with_access_token")
-        return self.client.post(url, HTTP_AUTHORIZATION=f"{token_type} {access_token}".encode('utf-8'))
+        return self.client.post(url, HTTP_AUTHORIZATION=f"{token_type} {access_token}".encode('utf-8'))  # noqa: UP012
 
     def _verify_response(self, access_token, expected_status_code, token_type='Bearer', expected_cookie_name=None):
         """
@@ -239,7 +239,7 @@ class TestLoginWithAccessTokenView(TestCase):
             'error_code': 'non_asymmetric_token',
             'developer_message': 'Only asymmetric jwt are supported.'
         }
-        self.assertDictEqual(error_msg, json.loads(response.content))
+        self.assertDictEqual(error_msg, json.loads(response.content))  # noqa: PT009
         assert '_auth_user_id' not in self.client.session
         assert response.status_code == 401
 
@@ -253,7 +253,7 @@ class TestLoginWithAccessTokenView(TestCase):
             'error_code': 'account_disabled',
             'developer_message': 'User account is disabled.'
         }
-        self.assertDictEqual(error_msg, json.loads(response.content))
+        self.assertDictEqual(error_msg, json.loads(response.content))  # noqa: PT009
         assert '_auth_user_id' not in self.client.session
         assert response.status_code == 401
 

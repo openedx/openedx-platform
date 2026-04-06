@@ -34,17 +34,17 @@ class SettingsOverrideIntegrationTest(TestCase):
 
         target_notification = config['new_comment_on_response']
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             target_notification['email'],
             "The 'email' setting should be overridden to True."
         )
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             target_notification['use_app_defaults'],
             "The 'use_app_defaults' field should not be overridable via settings."
         )
 
         # IMMUTABILITY CHECK: Ensure the global module variable wasn't touched
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             _COURSE_NOTIFICATION_TYPES['new_discussion_post']['email'],
             "The original global _COURSE_NOTIFICATION_TYPES must remain immutable."
         )
@@ -58,7 +58,7 @@ class SettingsOverrideIntegrationTest(TestCase):
         is safely ignored.
         """
         config = get_notification_types_config()
-        self.assertNotIn('non_existent_notification', config)
+        self.assertNotIn('non_existent_notification', config)  # noqa: PT009
 
     @override_settings(NOTIFICATION_APPS_OVERRIDE={
         'discussion': {
@@ -74,17 +74,17 @@ class SettingsOverrideIntegrationTest(TestCase):
 
         target_app = config['discussion']
 
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             target_app['email'],
             "The 'email' setting should be overridden to False."
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             target_app['enabled'],
             "The 'enabled' field should not be overridable via settings."
         )
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             _COURSE_NOTIFICATION_APPS['discussion']['email'],
             "The original global _COURSE_NOTIFICATION_APPS must remain immutable."
         )
@@ -99,9 +99,9 @@ class SettingsOverrideIntegrationTest(TestCase):
         config = get_notification_types_config()
         target = config['course_updates']
 
-        self.assertFalse(target['web'])
+        self.assertFalse(target['web'])  # noqa: PT009
 
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             target['email'],
             "The 'email' field should be preserved from the default config."
         )
@@ -119,7 +119,7 @@ class SettingsOverrideIntegrationTest(TestCase):
         config = get_notification_types_config()
         target = config['new_discussion_post']
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             target.get('email_cadence'),
             'Weekly',
             "The 'email_cadence' setting should be overridden to 'Weekly'."
@@ -138,7 +138,7 @@ class SettingsOverrideIntegrationTest(TestCase):
         config = get_notification_apps_config()
         target_app = config['discussion']
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             target_app.get('email_cadence'),
             'Immediately',
             "The 'email_cadence' setting should be overridden to 'Immediately'."

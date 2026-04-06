@@ -50,7 +50,7 @@ class TestStrikeoutPrice(TestCase):
         ):
             content, has_discount = utils.format_strikeout_price(Mock(name='user'), Mock(name='course'))
 
-        assert str(content) == (
+        assert str(content) == (  # noqa: UP032
             "<span class='sr-only'>"
             "Original price: <span class='price original'>{original_price}</span>, discount price: "
             "</span>"
@@ -100,5 +100,5 @@ class TestOfferData(TestCase):
         assert utils.generate_offer_data(AnonymousUser(), self.overview) is None
 
     @patch('openedx.features.discounts.utils.can_receive_discount', return_value=False)
-    def test_no_discount(self, _mock):
+    def test_no_discount(self, _mock):  # noqa: PT019
         assert utils.generate_offer_data(self.user, self.overview) is None

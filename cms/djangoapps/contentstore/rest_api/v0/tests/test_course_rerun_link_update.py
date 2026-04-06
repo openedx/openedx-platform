@@ -86,8 +86,8 @@ class TestCourseLinkUpdateAPI(CourseTestCase):
                 data = {"action": "all"}
                 response = self.make_post_request(data=data)
 
-                self.assertEqual(response.status_code, 200)
-                self.assertIn("status", response.json())
+                self.assertEqual(response.status_code, 200)  # noqa: PT009
+                self.assertIn("status", response.json())  # noqa: PT009
                 mock_task.delay.assert_called_once()
 
     def test_post_update_single_links_success(self):
@@ -113,8 +113,8 @@ class TestCourseLinkUpdateAPI(CourseTestCase):
                 }
                 response = self.make_post_request(data=data)
 
-                self.assertEqual(response.status_code, 200)
-                self.assertIn("status", response.json())
+                self.assertEqual(response.status_code, 200)  # noqa: PT009
+                self.assertIn("status", response.json())  # noqa: PT009
                 mock_task.delay.assert_called_once()
 
     def test_post_update_missing_action_returns_400(self):
@@ -126,9 +126,9 @@ class TestCourseLinkUpdateAPI(CourseTestCase):
             data = {}
             response = self.make_post_request(data=data)
 
-            self.assertEqual(response.status_code, 400)
-            self.assertIn("error", response.json())
-            self.assertIn("action", response.json()["error"])
+            self.assertEqual(response.status_code, 400)  # noqa: PT009
+            self.assertIn("error", response.json())  # noqa: PT009
+            self.assertIn("action", response.json()["error"])  # noqa: PT009
 
     def test_error_handling_workflow(self):
         """Test error handling in the complete workflow"""
@@ -142,11 +142,11 @@ class TestCourseLinkUpdateAPI(CourseTestCase):
 
                 data = {"action": "all"}
                 response = self.make_post_request(data=data)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, 200)  # noqa: PT009
 
                 # Step 2: Check failed status
                 with patch(self.task_status_patch) as mock_status:
-                    with patch(self.user_task_artifact_patch) as mock_artifact:
+                    with patch(self.user_task_artifact_patch) as mock_artifact:  # noqa: F841
                         mock_task_status = Mock()
                         mock_task_status.state = UserTaskStatus.FAILED
                         mock_status.return_value = mock_task_status
@@ -154,7 +154,7 @@ class TestCourseLinkUpdateAPI(CourseTestCase):
                         status_url = self.get_status_url(self.course.id)
                         status_response = self.client.get(status_url)
 
-                        self.assertEqual(status_response.status_code, 200)
+                        self.assertEqual(status_response.status_code, 200)  # noqa: PT009
                         status_data = status_response.json()
-                        self.assertEqual(status_data["status"], "Failed")
-                        self.assertEqual(status_data["results"], [])
+                        self.assertEqual(status_data["status"], "Failed")  # noqa: PT009
+                        self.assertEqual(status_data["results"], [])  # noqa: PT009

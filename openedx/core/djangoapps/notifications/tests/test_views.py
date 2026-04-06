@@ -68,13 +68,13 @@ class NotificationListAPIViewTest(APITestCase):
 
         # Assert that the response is successful.
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = response.data['results']
         # Assert that the response contains the notification.
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['app_name'], 'discussion')
-        self.assertEqual(data[0]['notification_type'], 'new_response')
-        self.assertEqual(
+        self.assertEqual(len(data), 1)  # noqa: PT009
+        self.assertEqual(data[0]['app_name'], 'discussion')  # noqa: PT009
+        self.assertEqual(data[0]['notification_type'], 'new_response')  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             data[0]['content'],
             '<p><strong>test_user</strong> responded to your post <strong>This is a test post.</strong></p>'
         )
@@ -104,14 +104,14 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url + "?app_name=discussion")
 
         # Assert that the response is successful.
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         # Assert that the response contains only the notification for app1.
         data = response.data['results']
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['app_name'], 'discussion')
-        self.assertEqual(data[0]['notification_type'], 'new_response')
-        self.assertEqual(
+        self.assertEqual(len(data), 1)  # noqa: PT009
+        self.assertEqual(data[0]['app_name'], 'discussion')  # noqa: PT009
+        self.assertEqual(data[0]['notification_type'], 'new_response')  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             data[0]['content'],
             '<p><strong>test_user</strong> responded to your post <strong>This is a test post.</strong></p>'
         )
@@ -147,11 +147,11 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url + "?app_name=discussion")
 
         # Assert that the response is successful.
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         # Assert that the response contains expected results i.e. channels contains web or is null.
         data = response.data['results']
-        self.assertEqual(len(data), expected_count)
+        self.assertEqual(len(data), expected_count)  # noqa: PT009
 
     @mock.patch("eventtracking.tracker.emit")
     def test_list_notifications_with_tray_opened_param(self, mock_emit):
@@ -164,12 +164,12 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url + "?tray_opened=True")
 
         # Assert that the response is successful.
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         event_name, event_data = mock_emit.call_args[0]
-        self.assertEqual(event_name, 'edx.notifications.tray_opened')
-        self.assertEqual(event_data['user_id'], self.user.id)
-        self.assertEqual(event_data['unseen_notifications_count'], 0)
+        self.assertEqual(event_name, 'edx.notifications.tray_opened')  # noqa: PT009
+        self.assertEqual(event_data['user_id'], self.user.id)  # noqa: PT009
+        self.assertEqual(event_data['unseen_notifications_count'], 0)  # noqa: PT009
 
     def test_list_notifications_without_authentication(self):
         """
@@ -179,7 +179,7 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url)
 
         # Assert that the response is unauthorized.
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_list_notifications_with_expiry_date(self):
         """
@@ -204,12 +204,12 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url)
 
         # Assert that the response is successful.
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         # Assert that the response contains only the notification for current date.
         data = response.data['results']
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]['created'], today.strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+        self.assertEqual(len(data), 1)  # noqa: PT009
+        self.assertEqual(data[0]['created'], today.strftime('%Y-%m-%dT%H:%M:%S.%fZ'))  # noqa: PT009
 
     def test_list_notifications_with_order_by_reverse_id(self):
         """
@@ -231,12 +231,12 @@ class NotificationListAPIViewTest(APITestCase):
         response = self.client.get(self.url)
 
         # Assert that the response is successful.
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         # Assert that the response id list is in reverse order.
         data = response.data['results']
-        self.assertEqual(len(data), 2)
-        self.assertEqual([data[0]['id'], data[1]['id']], [notification2.id, notification1.id])
+        self.assertEqual(len(data), 2)  # noqa: PT009
+        self.assertEqual([data[0]['id'], data[1]['id']], [notification2.id, notification1.id])  # noqa: PT009
 
 
 @ddt.ddt
@@ -283,19 +283,19 @@ class NotificationCountViewSetTestCase(ModuleStoreTestCase):
         # Make a request to the view
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['count'], 4)
-        self.assertEqual(response.data['count_by_app_name'], {
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data['count'], 4)  # noqa: PT009
+        self.assertEqual(response.data['count_by_app_name'], {  # noqa: PT009
             'App Name 1': 2, 'App Name 2': 1, 'App Name 3': 1, 'discussion': 0,
             'updates': 0, 'grading': 0})
-        self.assertEqual(response.data['show_notifications_tray'], True)
+        self.assertEqual(response.data['show_notifications_tray'], True)  # noqa: PT009
 
     def test_get_unseen_notifications_count_for_unauthenticated_user(self):
         """
         Test that the endpoint returns 401 for an unauthenticated user.
         """
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_get_unseen_notifications_count_for_user_with_no_notifications(self):
         """
@@ -306,9 +306,9 @@ class NotificationCountViewSetTestCase(ModuleStoreTestCase):
         self.client.login(username=user.username, password=self.TEST_PASSWORD)
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['count'], 0)
-        self.assertEqual(response.data['count_by_app_name'], {'discussion': 0, 'updates': 0,
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data['count'], 0)  # noqa: PT009
+        self.assertEqual(response.data['count_by_app_name'], {'discussion': 0, 'updates': 0,  # noqa: PT009
                                                               'grading': 0})
 
     def test_get_expiry_days_in_count_view(self):
@@ -318,8 +318,8 @@ class NotificationCountViewSetTestCase(ModuleStoreTestCase):
         user = UserFactory()
         self.client.login(username=user.username, password=self.TEST_PASSWORD)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['notification_expiry_days'], 60)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data['notification_expiry_days'], 60)  # noqa: PT009
 
 
 class MarkNotificationsSeenAPIViewTestCase(APITestCase):
@@ -344,15 +344,15 @@ class MarkNotificationsSeenAPIViewTestCase(APITestCase):
         self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
         response = self.client.put(url)
         # Assert the response status code is 200 (OK)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
         # Assert the response data contains the expected message
         expected_data = {'message': 'Notifications marked as seen.'}
-        self.assertEqual(response.data, expected_data)
+        self.assertEqual(response.data, expected_data)  # noqa: PT009
 
         # Assert the notifications for 'App Name 1' are marked as seen for the user
         notifications = Notification.objects.filter(user=self.user, app_name=app_name, last_seen__isnull=False)
-        self.assertEqual(notifications.count(), 2)
+        self.assertEqual(notifications.count(), 2)  # noqa: PT009
 
 
 class NotificationReadAPIViewTestCase(APITestCase):
@@ -380,13 +380,13 @@ class NotificationReadAPIViewTestCase(APITestCase):
 
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {'message': 'Notifications marked read.'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data, {'message': 'Notifications marked read.'})  # noqa: PT009
         notifications = Notification.objects.filter(user=self.user, app_name=app_name, last_read__isnull=False)
-        self.assertEqual(notifications.count(), 2)
+        self.assertEqual(notifications.count(), 2)  # noqa: PT009
         event_name, event_data = mock_emit.call_args[0]
-        self.assertEqual(event_name, 'edx.notifications.app_all_read')
-        self.assertEqual(event_data['notification_app'], 'discussion')
+        self.assertEqual(event_name, 'edx.notifications.app_all_read')  # noqa: PT009
+        self.assertEqual(event_data['notification_app'], 'discussion')  # noqa: PT009
 
     def test_mark_all_notifications_read_with_invalid_app_name(self):
         # Create a PATCH request to mark all notifications as read for 'app_name_1'
@@ -395,8 +395,8 @@ class NotificationReadAPIViewTestCase(APITestCase):
 
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'error': 'Invalid app_name or notification_id.'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertEqual(response.data, {'error': 'Invalid app_name or notification_id.'})  # noqa: PT009
 
     @mock.patch("eventtracking.tracker.emit")
     def test_mark_notification_read_with_notification_id(self, mock_emit):
@@ -406,16 +406,16 @@ class NotificationReadAPIViewTestCase(APITestCase):
 
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {'message': 'Notification marked read.'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data, {'message': 'Notification marked read.'})  # noqa: PT009
         notifications = Notification.objects.filter(user=self.user, id=notification_id, last_read__isnull=False)
-        self.assertEqual(notifications.count(), 1)
+        self.assertEqual(notifications.count(), 1)  # noqa: PT009
         event_name, event_data = mock_emit.call_args[0]
-        self.assertEqual(event_name, 'edx.notifications.read')
-        self.assertEqual(event_data.get('notification_metadata').get('notification_id'), notification_id)
-        self.assertEqual(event_data['notification_app'], 'discussion')
-        self.assertEqual(event_data['notification_type'], 'Type A')
-        self.assertEqual(event_data['first_read'], True)
+        self.assertEqual(event_name, 'edx.notifications.read')  # noqa: PT009
+        self.assertEqual(event_data.get('notification_metadata').get('notification_id'), notification_id)  # noqa: PT009
+        self.assertEqual(event_data['notification_app'], 'discussion')  # noqa: PT009
+        self.assertEqual(event_data['notification_type'], 'Type A')  # noqa: PT009
+        self.assertEqual(event_data['first_read'], True)  # noqa: PT009
 
     def test_mark_notification_read_with_other_user_notification_id(self):
         # Create a PATCH request to mark notification as read for notification_id: 2 through a different user
@@ -427,9 +427,9 @@ class NotificationReadAPIViewTestCase(APITestCase):
         data = {'notification_id': notification_id}
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
         notifications = Notification.objects.filter(user=self.user, id=notification_id, last_read__isnull=False)
-        self.assertEqual(notifications.count(), 0)
+        self.assertEqual(notifications.count(), 0)  # noqa: PT009
 
     def test_mark_notification_read_with_invalid_notification_id(self):
         # Create a PATCH request to mark notification as read for notification_id: 23345
@@ -438,8 +438,8 @@ class NotificationReadAPIViewTestCase(APITestCase):
 
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data["detail"].code, 'not_found')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+        self.assertEqual(response.data["detail"].code, 'not_found')  # noqa: PT009
 
     def test_mark_notification_read_with_app_name_and_notification_id(self):
         # Create a PATCH request to mark notification as read for existing app e.g 'discussion' and notification_id: 2
@@ -450,21 +450,21 @@ class NotificationReadAPIViewTestCase(APITestCase):
 
         response = self.client.patch(self.url, data)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {'message': 'Notification marked read.'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data, {'message': 'Notification marked read.'})  # noqa: PT009
         notifications = Notification.objects.filter(
             user=self.user,
             id=notification_id,
             last_read__isnull=False
         )
-        self.assertEqual(notifications.count(), 1)
+        self.assertEqual(notifications.count(), 1)  # noqa: PT009
 
     def test_mark_notification_read_without_app_name_and_notification_id(self):
         # Create a PATCH request to mark notification as read without app_name and notification_id
         response = self.client.patch(self.url, {})
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'error': 'Invalid app_name or notification_id.'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertEqual(response.data, {'error': 'Invalid app_name or notification_id.'})  # noqa: PT009
 
 
 @ddt.ddt
@@ -541,7 +541,7 @@ def remove_notifications_with_visibility_settings(expected_response):
     """
     not_visible = get_notification_types_with_visibility_settings()
     for expected_response_app in expected_response['notification_preference_config']:
-        for notification_type, visibility_settings in not_visible.items():
+        for notification_type, visibility_settings in not_visible.items():  # noqa: B007
             types = expected_response['notification_preference_config'][expected_response_app]['notification_types']
             if notification_type in types:
                 expected_response['notification_preference_config'][expected_response_app]['notification_types'].pop(
@@ -688,24 +688,24 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
-        self.assertIn('data', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
+        self.assertIn('data', response.data)  # noqa: PT009
 
         expected_data = exclude_inaccessible_preferences(self.default_data['data'], self.user)
         expected_data = add_non_editable_in_preference(expected_data)
 
-        self.assertEqual(response.data['data'], expected_data)
+        self.assertEqual(response.data['data'], expected_data)  # noqa: PT009
 
         notification_apps = {}
         for app in ['discussion', 'grading']:
             notification_apps.update(response.data['data'][app]['notification_types'])
 
         for app in visible_apps:
-            self.assertIn(app, notification_apps, msg=f"{app} should be visible for role: {role_type}")
+            self.assertIn(app, notification_apps, msg=f"{app} should be visible for role: {role_type}")  # noqa: PT009
 
         for app in hidden_apps:
-            self.assertNotIn(app, notification_apps, msg=f"{app} should NOT be visible for role: {role_type}")
+            self.assertNotIn(app, notification_apps, msg=f"{app} should NOT be visible for role: {role_type}")  # noqa: PT009
 
         if role_type == "forum":
             role_instance.users.clear()
@@ -727,9 +727,9 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
             email=False,
         )
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
-        self.assertIn('data', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
+        self.assertIn('data', response.data)  # noqa: PT009
         data = {
             "status": "success",
             "show_preferences": True,
@@ -809,7 +809,7 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
                 },
             }
         }
-        self.assertEqual(response.data, data)
+        self.assertEqual(response.data, data)  # noqa: PT009
 
     def test_api_view_permissions(self):
         """
@@ -818,12 +818,12 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         # Check if the view requires authentication
         self.client.logout()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
         # Re-authenticate and check again
         self.client.force_authenticate(user=self.user)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_update_preferences_grouped(self):
         """
@@ -842,13 +842,13 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         ]
         self.client.get(self.url)
         response = self.client.put(self.url, update_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
         cadence_set = NotificationPreference.objects.filter(user=self.user, type__in=grouped_types).values_list(
             'email_cadence', flat=True
         )
-        self.assertEqual(len(set(cadence_set)), 1)
-        self.assertIn('Weekly', set(cadence_set))
+        self.assertEqual(len(set(cadence_set)), 1)  # noqa: PT009
+        self.assertIn('Weekly', set(cadence_set))  # noqa: PT009
 
     def test_update_preferences(self):
         """
@@ -862,13 +862,13 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         }
         self.client.get(self.url)
         response = self.client.put(self.url, update_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
         preference = NotificationPreference.objects.get(
             type='new_discussion_post',
             user__id=self.user.id
         )
-        self.assertEqual(preference.web, True)
+        self.assertEqual(preference.web, True)  # noqa: PT009
 
     def test_update_preferences_non_grouped_email(self):
         """
@@ -882,10 +882,10 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
         }
         self.client.get(self.url)
         response = self.client.put(self.url, update_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
         preference = NotificationPreference.objects.get(
             type='new_discussion_post',
             user__id=self.user.id
         )
-        self.assertEqual(preference.email_cadence, 'Weekly')
+        self.assertEqual(preference.email_cadence, 'Weekly')  # noqa: PT009

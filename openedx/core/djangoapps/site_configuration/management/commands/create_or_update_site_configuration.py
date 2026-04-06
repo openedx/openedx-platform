@@ -100,7 +100,7 @@ class Command(BaseCommand):
         site_configuration, created = SiteConfiguration.objects.get_or_create(site=site)
         if created:
             LOG.info(
-                "Site configuration does not exist. Created new instance for '{site_name}'".format(
+                "Site configuration does not exist. Created new instance for '{site_name}'".format(  # noqa: UP032
                     site_name=site.domain
                 )
             )

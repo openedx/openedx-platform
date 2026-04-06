@@ -744,7 +744,7 @@ class TestProgramProgressMeter(ModuleStoreTestCase):
 
         meter = ProgramProgressMeter(self.site, self.user)
         available_dates = meter.completed_programs_with_available_dates
-        self.assertDictEqual(available_dates, {
+        self.assertDictEqual(available_dates, {  # noqa: PT009
             program_complete['uuid']: datetime.datetime(2017, 1, 1)
         })
 
@@ -773,7 +773,7 @@ class TestProgramProgressMeter(ModuleStoreTestCase):
         self._create_certificates(unknown['key'], status='unknown')
 
         meter = ProgramProgressMeter(self.site, self.user)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             meter.completed_course_runs,
             [
                 {'course_run_id': str(downloadable['key']), 'type': CourseMode.VERIFIED},
@@ -1380,7 +1380,7 @@ class TestGetCertificates(TestCase):
             # Give all course runs a certificate URL, but only expect one to come
             # back. This verifies the break in the function under test that ensures
             # only one certificate per course comes back.
-            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable
+            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
                 course_run['certificate_url'] = self.course_certificate_url
                 course_run['may_certify'] = True
 
@@ -1423,7 +1423,7 @@ class TestGetCertificates(TestCase):
         """
         # make the first course have no certification, the second have no url...
         for course_index, course in enumerate(self.program['courses']):
-            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable
+            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
                 if course_index == 0:
                     course_run['may_certify'] = False
                 elif course_index == 1:
@@ -1744,7 +1744,7 @@ class TestProgramEnrollment(SharedModuleStoreTestCase):
         assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)
 
         # We should continue to return false even if they do contain paid modes
-        Mode = namedtuple('Mode', ['slug'])  # lint-amnesty, pylint: disable=unused-variable
+        Mode = namedtuple('Mode', ['slug'])  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         # mock_get_paid_modes_for_course.return_value = [Mode(CourseMode.VERIFIED)]
         assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)
 

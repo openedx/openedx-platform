@@ -114,11 +114,11 @@ class Command(BaseCommand):
 
         total_verification = sspv.count()
         if not total_verification:
-            logger.info("No approved expired entries found in SoftwareSecurePhotoVerification for the "
+            logger.info("No approved expired entries found in SoftwareSecurePhotoVerification for the "  # noqa: UP032
                         "date range {} - {}".format(start_date.date(), now().date()))
             return
 
-        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"
+        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"  # noqa: UP032
                     .format(start_date.date(), now().date(), total_verification))
 
         batch_verifications = []
@@ -184,7 +184,7 @@ class Command(BaseCommand):
         """
         if email_config['dry_run']:
             logger.info(
-                "This was a dry run, no email was sent. For the actual run email would have been sent "
+                "This was a dry run, no email was sent. For the actual run email would have been sent "  # noqa: UP032
                 "to {} learner(s)".format(len(batch_verifications))
             )
             return True

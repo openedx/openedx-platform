@@ -68,7 +68,7 @@ class SAMLProviderDataViewSet(PermissionRequiredMixin, SAMLProviderDataMixin, vi
             saml_provider = SAMLProviderConfig.objects.current_set().get(
                 slug=convert_saml_slug_provider_id(enterprise_customer_idp.provider_id))
         except SAMLProviderConfig.DoesNotExist:
-            raise Http404('No matching SAML provider found.')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404('No matching SAML provider found.')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         provider_data_id = self.request.parser_context.get('kwargs').get('pk')
         if provider_data_id:
             return SAMLProviderData.objects.filter(id=provider_data_id)

@@ -75,7 +75,7 @@ def assert_student_view_invalid_html(block, html):  # lint-amnesty, pylint: disa
     :param block: The :class:`XBlock` that generated the html
     :param html: A string, not parseable as html
     """
-    assert False, "student_view should produce valid html"
+    assert False, "student_view should produce valid html"  # noqa: B011, PT015
 
 
 @singledispatch
@@ -87,7 +87,7 @@ def assert_studio_view_invalid_html(block, html):  # lint-amnesty, pylint: disab
     :param block: The :class:`XBlock` that generated the html
     :param html: A string, not parseable as html
     """
-    assert False, "studio_view should produce valid html"
+    assert False, "studio_view should produce valid html"  # noqa: B011, PT015
 
 
 def assert_student_view(block, fragment):

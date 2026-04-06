@@ -390,7 +390,7 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title="Test Course Outline!",
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2022",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -441,12 +441,12 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_before_enrollment(self):
-        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)
+        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_after_enrollment(self):
-        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)
+        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
@@ -723,7 +723,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title='Test Course Outline!',
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version='5ebece4b69dd593d82fe2022',
             entrance_exam_id=None,
             days_early_for_beta=None,

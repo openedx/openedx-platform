@@ -263,7 +263,7 @@ class TestCourseGoalsUserActivityAPI(MobileAPITestCase, SharedModuleStoreTestCas
         response = self.client.post(self.apiUrl, post_data)
         assert response.status_code == 200
         mock_logger.warning.assert_called_with(
-            'For this mobile request, user activity is not enabled for this user {} and course {}'.format(
+            'For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032
                 str(self.user.id), str(self.course.id))
         )
 
@@ -315,11 +315,11 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
 
         result_user = BlocksInfoInCourseView().get_requested_user(self.request.user, username)
         if expected_username:
-            self.assertEqual(result_user.username, expected_username)
+            self.assertEqual(result_user.username, expected_username)  # noqa: PT009
             if username and request_user.username != username:
                 mock_get.assert_called_with(username=username)
         else:
-            self.assertIsNone(result_user)
+            self.assertIsNone(result_user)  # noqa: PT009
 
     @patch('lms.djangoapps.mobile_api.course_info.utils.certificate_downloadable_status')
     def test_additional_info_response(self, mock_certificate_downloadable_status):
@@ -372,8 +372,8 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
             }
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(response.data['course_access_details'], expected_course_access_details)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(response.data['course_access_details'], expected_course_access_details)  # noqa: PT009
 
     def test_course_sharing_utm_parameters(self):
         response = self.verify_response(url=self.url)
@@ -383,8 +383,8 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
             'twitter': 'utm_medium=social&utm_campaign=social-sharing-db&utm_source=twitter'
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(response.data['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(response.data['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009
 
     def test_course_about_url(self):
         response = self.verify_response(url=self.url)
@@ -392,16 +392,16 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
         course_overview = CourseOverview.objects.get(id=self.course.course_id)
         expected_course_about_link = get_link_for_about_page(course_overview)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['course_about'], expected_course_about_link)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['course_about'], expected_course_about_link)  # noqa: PT009
 
     def test_course_modes(self):
         response = self.verify_response(url=self.url)
 
         expected_course_modes = [{'slug': 'audit', 'sku': None, 'android_sku': None, 'ios_sku': None, 'min_price': 0}]
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data['course_modes'], expected_course_modes)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data['course_modes'], expected_course_modes)  # noqa: PT009
 
     def test_extend_sequential_info_with_assignment_progress_get_only_sequential(self) -> None:
         response = self.verify_response(url=self.url, params={'block_types_filter': 'sequential'})
@@ -421,17 +421,17 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
             },
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for sequential_info, assignment_progress in zip(response.data['blocks'].values(), expected_results):
-            self.assertDictEqual(sequential_info['assignment_progress'], assignment_progress)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        for sequential_info, assignment_progress in zip(response.data['blocks'].values(), expected_results):  # noqa: B905
+            self.assertDictEqual(sequential_info['assignment_progress'], assignment_progress)  # noqa: PT009
 
     @ddt.data('chapter', 'vertical', 'problem', 'video', 'html')
     def test_extend_sequential_info_with_assignment_progress_for_other_types(self, block_type: 'str') -> None:
         response = self.verify_response(url=self.url, params={'block_types_filter': block_type})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         for block_info in response.data['blocks'].values():
-            self.assertNotEqual('assignment_progress', block_info)
+            self.assertNotEqual('assignment_progress', block_info)  # noqa: PT009
 
 
 class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin):  # lint-amnesty, pylint: disable=test-inherits-tests
@@ -491,15 +491,15 @@ class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin
             'facebook': 'utm_medium=social&utm_campaign=social-sharing-db&utm_source=facebook',
             'twitter': 'utm_medium=social&utm_campaign=social-sharing-db&utm_source=twitter'
         }
-        self.assertDictEqual(course_info['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)
+        self.assertDictEqual(course_info['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009
 
         expected_course_modes = [{'slug': 'audit', 'sku': None, 'android_sku': None, 'ios_sku': None, 'min_price': 0}]
-        self.assertListEqual(course_info['course_modes'], expected_course_modes)
+        self.assertListEqual(course_info['course_modes'], expected_course_modes)  # noqa: PT009
 
         course_overview = CourseOverview.objects.get(id=self.course.course_id)
         expected_course_about_link = get_link_for_about_page(course_overview)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(course_info['course_about'], expected_course_about_link)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(course_info['course_about'], expected_course_about_link)  # noqa: PT009
 
     def verify_course_access_details(self, response):
         """ Verify access details """
@@ -519,8 +519,8 @@ class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin
             }
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(response.data['course_access_details'], expected_course_access_details)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(response.data['course_access_details'], expected_course_access_details)  # noqa: PT009
 
     def verify_certificate(self, response, mock_certificate_downloadable_status):
         """ Verify certificate url """
@@ -601,5 +601,5 @@ class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin
 
         response = self.client.get(path=url)
         assert response.status_code == 400
-        expected_error = "'{}' is not a valid course key.".format(invalid_id)
+        expected_error = "'{}' is not a valid course key.".format(invalid_id)  # noqa: UP032
         assert response.data['error'] == expected_error

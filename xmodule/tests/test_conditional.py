@@ -158,7 +158,7 @@ class ConditionalBlockBasicTest(unittest.TestCase):
         for attempted in ["false", "true"]:
             for icon_class in ['other', 'problem', 'video']:
                 blocks['source_block'].is_attempted = attempted
-                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop
+                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop  # noqa: B023
                 assert blocks['cond_block'].get_icon_class() == icon_class
 
     def test_get_html(self):
@@ -238,7 +238,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
 
     @patch('xmodule.x_module.block_global_local_resource_url')
     @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': False})
-    def test_conditional_block(self, _):
+    def test_conditional_block(self, _):  # noqa: PT019
         """Make sure that conditional block works"""
         # edx - HarvardX
         # cond_test - ER22x
@@ -293,7 +293,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             dummy_scope_ids,
         )
 
-        new_run = conditional.location.course_key.run  # lint-amnesty, pylint: disable=unused-variable
+        new_run = conditional.location.course_key.run  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         assert conditional.sources_list[0] == BlockUsageLocator.from_string(conditional.xml_attributes['sources'])\
             .replace(run=dummy_location.course_key.run)
 
@@ -337,7 +337,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             'message': 'You must complete {link} before you can access this unit.',
             'sources': ''
         }
-        self.assertDictEqual(blocks['cond_block'].xml_attributes, expected_xml_attributes)
+        self.assertDictEqual(blocks['cond_block'].xml_attributes, expected_xml_attributes)  # noqa: PT009
 
 
 class ConditionalBlockStudioTest(XModuleXmlImportTest):

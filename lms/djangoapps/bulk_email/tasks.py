@@ -98,7 +98,7 @@ def _get_course_email_context(course):
     course_title = course.display_name
     course_end_date = get_default_time_display(course.end)
     course_root = reverse('course_root', kwargs={'course_id': course_id})
-    course_url = '{}{}'.format(
+    course_url = '{}{}'.format(  # noqa: UP032
         settings.LMS_ROOT_URL,
         course_root
     )

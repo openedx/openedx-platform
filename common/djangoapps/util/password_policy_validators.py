@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 DEFAULT_MAX_PASSWORD_LENGTH = 5000
 
 
-def create_validator_config(name, options={}):  # lint-amnesty, pylint: disable=dangerous-default-value
+def create_validator_config(name, options={}):  # lint-amnesty, pylint: disable=dangerous-default-value  # noqa: B006
     """
     This function is meant to be used for testing purposes to create validators
     easily. It returns a validator config of the form:
@@ -98,7 +98,7 @@ def normalize_password(password):
             password = str(password, encoding='utf8')
         except UnicodeDecodeError:
             # no reason to get into weeds
-            raise ValidationError([_('Invalid password.')])  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError([_('Invalid password.')])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return unicodedata.normalize('NFKC', password)
 
 

@@ -77,7 +77,7 @@ def _change_access(course, user, level, action, send_email=True):
     try:
         role = ROLES[level](course.id)
     except KeyError:
-        raise ValueError(f"unrecognized level '{level}'")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(f"unrecognized level '{level}'")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     if action == 'allow':
         if level == 'ccx_coach':

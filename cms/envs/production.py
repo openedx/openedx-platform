@@ -29,7 +29,7 @@ from openedx.core.lib.logsettings import get_logger_config  # lint-amnesty, pyli
 from xmodule.modulestore.modulestore_settings import \
     convert_module_store_setting_if_needed  # lint-amnesty, pylint: disable=wrong-import-order
 
-from .common import *
+from .common import *  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -40,8 +40,8 @@ def get_env_setting(setting):
     try:
         return os.environ[setting]
     except KeyError:
-        error_msg = "Set the %s env variable" % setting
-        raise ImproperlyConfigured(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        error_msg = "Set the %s env variable" % setting  # noqa: UP031
+        raise ImproperlyConfigured(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 #######################################################################################################################
 #### YAML LOADING
@@ -106,7 +106,7 @@ except Exception:  # pylint: disable=broad-except
     REVISION_CONFIG = {}
 
 # Do NOT calculate this dynamically at startup with git because it's *slow*.
-EDX_PLATFORM_REVISION = REVISION_CONFIG.get('EDX_PLATFORM_REVISION', EDX_PLATFORM_REVISION)
+EDX_PLATFORM_REVISION = REVISION_CONFIG.get('EDX_PLATFORM_REVISION', EDX_PLATFORM_REVISION)  # noqa: F405
 
 
 #######################################################################################################################
@@ -126,60 +126,60 @@ CELERYD_PREFETCH_MULTIPLIER = 1
 
 CELERY_ROUTES = "openedx.core.lib.celery.routers.route_task"
 
-if STATIC_URL_BASE:
-    STATIC_URL = STATIC_URL_BASE
+if STATIC_URL_BASE:  # noqa: F405
+    STATIC_URL = STATIC_URL_BASE  # noqa: F405
     if not STATIC_URL.endswith("/"):
         STATIC_URL += "/"
     STATIC_URL += 'studio/'
 
-if STATIC_ROOT_BASE:
-    STATIC_ROOT = path(STATIC_ROOT_BASE) / 'studio'
+if STATIC_ROOT_BASE:  # noqa: F405
+    STATIC_ROOT = path(STATIC_ROOT_BASE) / 'studio'  # noqa: F405
 
-DATA_DIR = path(DATA_DIR)
+DATA_DIR = path(DATA_DIR)  # noqa: F405
 
 # Cache used for location mapping -- called many times with the same key/value
 # in a given request.
-if 'loc_cache' not in CACHES:
-    CACHES['loc_cache'] = {
+if 'loc_cache' not in CACHES:  # noqa: F405
+    CACHES['loc_cache'] = {  # noqa: F405
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'edx_location_mem_cache',
     }
 
-if 'staticfiles' in CACHES:
-    CACHES['staticfiles']['KEY_PREFIX'] = EDX_PLATFORM_REVISION
+if 'staticfiles' in CACHES:  # noqa: F405
+    CACHES['staticfiles']['KEY_PREFIX'] = EDX_PLATFORM_REVISION  # noqa: F405
 
 
-MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))
+MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))  # noqa: F405
 
 #Timezone overrides
-TIME_ZONE = CELERY_TIMEZONE
+TIME_ZONE = CELERY_TIMEZONE  # noqa: F405
 
 for feature, value in _YAML_TOKENS.get('FEATURES', {}).items():
     FEATURES[feature] = value
 
 # Additional installed apps
 for app in _YAML_TOKENS.get('ADDL_INSTALLED_APPS', []):
-    INSTALLED_APPS.append(app)
+    INSTALLED_APPS.append(app)  # noqa: F405
 
 LOGGING = get_logger_config(
-    LOG_DIR,
-    logging_env=LOGGING_ENV,
-    service_variant=SERVICE_VARIANT,
+    LOG_DIR,  # noqa: F405
+    logging_env=LOGGING_ENV,  # noqa: F405
+    service_variant=SERVICE_VARIANT,  # noqa: F405
 )
 
-LOGIN_REDIRECT_WHITELIST.extend([reverse_lazy('home')])
+LOGIN_REDIRECT_WHITELIST.extend([reverse_lazy('home')])  # noqa: F405
 
 ############### XBlock filesystem field config ##########
-if 'url_root' in DJFS:
-    DJFS['url_root'] = DJFS['url_root'].format(platform_revision=EDX_PLATFORM_REVISION)
+if 'url_root' in DJFS:  # noqa: F405
+    DJFS['url_root'] = DJFS['url_root'].format(platform_revision=EDX_PLATFORM_REVISION)  # noqa: F405
 
 # Note that this is the Studio key for Segment. There is a separate key for the LMS.
 CMS_SEGMENT_KEY = _YAML_TOKENS.get('SEGMENT_KEY')
 
-if AWS_ACCESS_KEY_ID == "":
+if AWS_ACCESS_KEY_ID == "":  # noqa: F405
     AWS_ACCESS_KEY_ID = None
 
-if AWS_SECRET_ACCESS_KEY == "":
+if AWS_SECRET_ACCESS_KEY == "":  # noqa: F405
     AWS_SECRET_ACCESS_KEY = None
 
 AWS_DEFAULT_ACL = 'private'
@@ -200,30 +200,30 @@ _storages_default_backend_is_missing = not _yaml_storages.get('default', {}).get
 # without overwriting user-defined STORAGES and AWS creds are treated only as a fallback.
 if _storages_default_backend_is_missing:
     if 'DEFAULT_FILE_STORAGE' in _YAML_TOKENS:
-        STORAGES['default']['BACKEND'] = _YAML_TOKENS['DEFAULT_FILE_STORAGE']
+        STORAGES['default']['BACKEND'] = _YAML_TOKENS['DEFAULT_FILE_STORAGE']  # noqa: F405
     elif AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        STORAGES['default']['BACKEND'] = 'storages.backends.s3boto3.S3Boto3Storage'
+        STORAGES['default']['BACKEND'] = 'storages.backends.s3boto3.S3Boto3Storage'  # noqa: F405
 
 # Apply legacy STATICFILES_STORAGE if no backend is defined for "staticfiles"
 if 'STATICFILES_STORAGE' in _YAML_TOKENS and not _yaml_storages.get('staticfiles', {}).get('BACKEND'):
-    STORAGES['staticfiles']['BACKEND'] = _YAML_TOKENS['STATICFILES_STORAGE']
+    STORAGES['staticfiles']['BACKEND'] = _YAML_TOKENS['STATICFILES_STORAGE']  # noqa: F405
 
-if COURSE_IMPORT_EXPORT_BUCKET:
+if COURSE_IMPORT_EXPORT_BUCKET:  # noqa: F405
     COURSE_IMPORT_EXPORT_STORAGE = 'cms.djangoapps.contentstore.storage.ImportExportS3Storage'
 else:
-    COURSE_IMPORT_EXPORT_STORAGE = STORAGES['default']['BACKEND']
+    COURSE_IMPORT_EXPORT_STORAGE = STORAGES['default']['BACKEND']  # noqa: F405
 
 USER_TASKS_ARTIFACT_STORAGE = COURSE_IMPORT_EXPORT_STORAGE
 
-if COURSE_METADATA_EXPORT_BUCKET:
+if COURSE_METADATA_EXPORT_BUCKET:  # noqa: F405
     COURSE_METADATA_EXPORT_STORAGE = 'cms.djangoapps.export_course_metadata.storage.CourseMetadataExportS3Storage'
 else:
-    COURSE_METADATA_EXPORT_STORAGE = STORAGES['default']['BACKEND']
+    COURSE_METADATA_EXPORT_STORAGE = STORAGES['default']['BACKEND']  # noqa: F405
 
 # The normal database user does not have enough permissions to run migrations.
 # Migrations are run with separate credentials, given as DB_MIGRATION_*
 # environment variables
-for name, database in DATABASES.items():
+for name, database in DATABASES.items():  # noqa: F405
     if name != 'read_replica':
         database.update({
             'ENGINE': os.environ.get('DB_MIGRATION_ENGINE', database['ENGINE']),
@@ -234,15 +234,15 @@ for name, database in DATABASES.items():
             'PORT': os.environ.get('DB_MIGRATION_PORT', database['PORT']),
         })
 
-MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)
+MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)  # noqa: F405
 
 # Celery Broker
 
-BROKER_URL = "{}://{}:{}@{}/{}".format(CELERY_BROKER_TRANSPORT,
-                                       CELERY_BROKER_USER,
-                                       CELERY_BROKER_PASSWORD,
-                                       CELERY_BROKER_HOSTNAME,
-                                       CELERY_BROKER_VHOST)
+BROKER_URL = "{}://{}:{}@{}/{}".format(CELERY_BROKER_TRANSPORT,  # noqa: F405, UP032
+                                       CELERY_BROKER_USER,  # noqa: F405
+                                       CELERY_BROKER_PASSWORD,  # noqa: F405
+                                       CELERY_BROKER_HOSTNAME,  # noqa: F405
+                                       CELERY_BROKER_VHOST)  # noqa: F405
 
 try:
     BROKER_TRANSPORT_OPTIONS = {
@@ -261,7 +261,7 @@ if _YAML_CELERY_QUEUES:
 # Then add alternate environment queues
 _YAML_ALTERNATE_WORKER_QUEUES = _YAML_TOKENS.get('ALTERNATE_WORKER_QUEUES', '').split()
 ALTERNATE_QUEUES = [
-    DEFAULT_PRIORITY_QUEUE.replace(SERVICE_VARIANT, alternate)
+    DEFAULT_PRIORITY_QUEUE.replace(SERVICE_VARIANT, alternate)  # noqa: F405
     for alternate in _YAML_ALTERNATE_WORKER_QUEUES
 ]
 
@@ -274,38 +274,38 @@ CELERY_QUEUES.update(
 )
 
 # Event tracking
-TRACKING_BACKENDS.update(_YAML_TOKENS.get("TRACKING_BACKENDS", {}))
-EVENT_TRACKING_BACKENDS['tracking_logs']['OPTIONS']['backends'].update(
+TRACKING_BACKENDS.update(_YAML_TOKENS.get("TRACKING_BACKENDS", {}))  # noqa: F405
+EVENT_TRACKING_BACKENDS['tracking_logs']['OPTIONS']['backends'].update(  # noqa: F405
     _YAML_TOKENS.get("EVENT_TRACKING_BACKENDS", {})
 )
-EVENT_TRACKING_BACKENDS['segmentio']['OPTIONS']['processors'][0]['OPTIONS']['whitelist'].extend(
-    EVENT_TRACKING_SEGMENTIO_EMIT_WHITELIST
+EVENT_TRACKING_BACKENDS['segmentio']['OPTIONS']['processors'][0]['OPTIONS']['whitelist'].extend(  # noqa: F405
+    EVENT_TRACKING_SEGMENTIO_EMIT_WHITELIST  # noqa: F405
 )
 
 
-if ENABLE_COURSEWARE_INDEX or ENABLE_LIBRARY_INDEX:
+if ENABLE_COURSEWARE_INDEX or ENABLE_LIBRARY_INDEX:  # noqa: F405
     # Use ElasticSearch for the search engine
     SEARCH_ENGINE = "search.elastic.ElasticSearchEngine"
 
 # TODO: Once we have successfully upgraded to ES7, switch this back to ELASTIC_SEARCH_CONFIG.
 ELASTIC_SEARCH_CONFIG = _YAML_TOKENS.get('ELASTIC_SEARCH_CONFIG_ES7', [{}])
 
-XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = FEATURES["LICENSING"]
-XBLOCK_SETTINGS.setdefault("VideoBlock", {})['YOUTUBE_API_KEY'] = YOUTUBE_API_KEY
+XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = FEATURES["LICENSING"]  # noqa: F405
+XBLOCK_SETTINGS.setdefault("VideoBlock", {})['YOUTUBE_API_KEY'] = YOUTUBE_API_KEY  # noqa: F405
 
 ############################ OAUTH2 Provider ###################################
 
 #### JWT configuration ####
-JWT_AUTH.update(_YAML_TOKENS.get('JWT_AUTH', {}))
+JWT_AUTH.update(_YAML_TOKENS.get('JWT_AUTH', {}))  # noqa: F405
 
 ######################## CUSTOM COURSES for EDX CONNECTOR ######################
-if CUSTOM_COURSES_EDX:
-    INSTALLED_APPS.append('openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig')
+if CUSTOM_COURSES_EDX:  # noqa: F405
+    INSTALLED_APPS.append('openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig')  # noqa: F405
 
 ########################## Extra middleware classes  #######################
 
 # Allow extra middleware classes to be added to the app through configuration.
-MIDDLEWARE.extend(EXTRA_MIDDLEWARE_CLASSES)
+MIDDLEWARE.extend(EXTRA_MIDDLEWARE_CLASSES)  # noqa: F405
 
 
 #######################################################################################################################
@@ -344,7 +344,7 @@ add_plugins(__name__, ProjectType.CMS, SettingsType.PRODUCTION)
 ####
 
 ############# CORS headers for cross-domain requests #################
-if ENABLE_CORS_HEADERS:
+if ENABLE_CORS_HEADERS:  # noqa: F405
     CORS_ALLOW_CREDENTIALS = True
     CORS_ORIGIN_WHITELIST = _YAML_TOKENS.get('CORS_ORIGIN_WHITELIST', ())
     CORS_ORIGIN_ALLOW_ALL = _YAML_TOKENS.get('CORS_ORIGIN_ALLOW_ALL', False)
@@ -362,26 +362,26 @@ ALTERNATE_ENV_TASKS = {
 # Defines the task -> alternate worker queue to be used when routing.
 EXPLICIT_QUEUES = {
     'lms.djangoapps.grades.tasks.compute_all_grades_for_course': {
-        'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},
+        'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.grades.tasks.recalculate_course_and_subsection_grades_for_user': {
-        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},
+        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
     'cms.djangoapps.contentstore.tasks.update_search_index': {
-        'queue': UPDATE_SEARCH_INDEX_JOB_QUEUE},
+        'queue': UPDATE_SEARCH_INDEX_JOB_QUEUE},  # noqa: F405
 }
 
 ############## XBlock extra mixins ############################
-XBLOCK_MIXINS += tuple(XBLOCK_EXTRA_MIXINS)
+XBLOCK_MIXINS += tuple(XBLOCK_EXTRA_MIXINS)  # noqa: F405
 
 # Translation overrides
-LANGUAGE_COOKIE_NAME = _YAML_TOKENS.get('LANGUAGE_COOKIE') or LANGUAGE_COOKIE_NAME
+LANGUAGE_COOKIE_NAME = _YAML_TOKENS.get('LANGUAGE_COOKIE') or LANGUAGE_COOKIE_NAME  # noqa: F405
 
 ############## DRF overrides ##############
-REST_FRAMEWORK.update(_YAML_TOKENS.get('REST_FRAMEWORK', {}))
+REST_FRAMEWORK.update(_YAML_TOKENS.get('REST_FRAMEWORK', {}))  # noqa: F405
 
 # keys for  big blue button live provider
 # TODO: This should not be in the core platform. If it has to stay for now, though, then we should move these
 #       defaults into common.py
-COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {
+COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {  # noqa: F405
     "KEY": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_KEY'),
     "SECRET": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_SECRET'),
     "URL": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_URL'),
@@ -389,11 +389,11 @@ COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {
 
 # TODO: We believe that this could be more simply defined as CMS_ROOT_URL. We are not making the change now,
 #       but please don't follow this pattern in other defaults...
-INACTIVE_USER_URL = f'http{"s" if HTTPS == "on" else ""}://{CMS_BASE}'
+INACTIVE_USER_URL = f'http{"s" if HTTPS == "on" else ""}://{CMS_BASE}'  # noqa: F405
 
 ############## Event bus producer ##############
 EVENT_BUS_PRODUCER_CONFIG = merge_producer_configs(
-    EVENT_BUS_PRODUCER_CONFIG,
+    EVENT_BUS_PRODUCER_CONFIG,  # noqa: F405
     _YAML_TOKENS.get('EVENT_BUS_PRODUCER_CONFIG', {})
 )
 
@@ -414,7 +414,7 @@ SPECTACULAR_SETTINGS = {
     \n - Public vs. Local servers: The "Public" server is where you can reach the API externally. The "Local" server is
     for development with a local edx-platform version,  and for use via the
     [Swagger UI](https://{CMS_BASE}/authoring-api/ui/).
-    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)''',
+    \n - Swaggerfile: [Download link](https://{CMS_BASE}/authoring-api/schema/)''',  # noqa: F405
     'VERSION': '0.1.0',
     'SERVE_INCLUDE_SCHEMA': False,
     # restrict spectacular to CMS API endpoints (cms/lib/spectacular.py):
@@ -423,9 +423,9 @@ SPECTACULAR_SETTINGS = {
     'SCHEMA_PATH_PREFIX': '/api/contentstore',
     'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
     'SERVERS': [
-        {'url': AUTHORING_API_URL, 'description': 'Public'},
-        {'url': f'https://{CMS_BASE}', 'description': 'Local'},
-        {'url': f'https://{CMS_BASE}/api/contentstore', 'description': 'CMS-contentstore'}
+        {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
+        {'url': f'https://{CMS_BASE}', 'description': 'Local'},  # noqa: F405
+        {'url': f'https://{CMS_BASE}/api/contentstore', 'description': 'CMS-contentstore'}  # noqa: F405
     ],
 }
 

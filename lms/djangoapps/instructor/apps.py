@@ -36,7 +36,7 @@ class InstructorConfig(AppConfig):
     }
 
     def ready(self):
-        from . import handlers  # pylint: disable=unused-import,import-outside-toplevel
+        from . import handlers  # pylint: disable=unused-import,import-outside-toplevel  # noqa: F401
         if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
             from .services import InstructorService
             set_runtime_service('instructor', InstructorService())

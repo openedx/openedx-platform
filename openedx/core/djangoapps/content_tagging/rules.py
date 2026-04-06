@@ -26,7 +26,7 @@ from common.djangoapps.student.roles import (
 from .models import TaxonomyOrg
 from .utils import check_taxonomy_context_key_org, get_context_key_from_key_string, rules_cache
 
-UserType = Union[django.contrib.auth.models.User, django.contrib.auth.models.AnonymousUser]
+UserType = Union[django.contrib.auth.models.User, django.contrib.auth.models.AnonymousUser]  # noqa: UP007
 
 
 def is_org_admin(user: UserType, orgs: list[Organization] | None = None) -> bool:

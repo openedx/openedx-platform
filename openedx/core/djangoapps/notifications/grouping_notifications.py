@@ -3,7 +3,7 @@ Notification grouping utilities for notifications
 """
 import datetime
 from abc import ABC, abstractmethod
-from typing import Dict, Type, Union
+from typing import Dict, Type, Union  # noqa: UP035
 
 from pytz import utc
 
@@ -27,7 +27,7 @@ class NotificationRegistry:
     """
     Registry for notification groupers.
     """
-    _groupers: Dict[str, Type[BaseNotificationGrouper]] = {}
+    _groupers: Dict[str, Type[BaseNotificationGrouper]] = {}  # noqa: UP006
 
     @classmethod
     def register(cls, notification_type: str):
@@ -40,7 +40,7 @@ class NotificationRegistry:
             A decorator that registers the grouper class for the given notification type.
         """
 
-        def decorator(grouper_class: Type[BaseNotificationGrouper]) -> Type[BaseNotificationGrouper]:
+        def decorator(grouper_class: Type[BaseNotificationGrouper]) -> Type[BaseNotificationGrouper]:  # noqa: UP006
             """
             Registers the grouper class for the given notification type.
             """
@@ -54,7 +54,7 @@ class NotificationRegistry:
         return decorator
 
     @classmethod
-    def get_grouper(cls, notification_type: str) -> Union[BaseNotificationGrouper, None]:
+    def get_grouper(cls, notification_type: str) -> Union[BaseNotificationGrouper, None]:  # noqa: UP007
         """Retrieves the appropriate notification grouper based on the given notification type.
 
         Args:

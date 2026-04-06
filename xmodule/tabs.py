@@ -20,7 +20,7 @@ _ = lambda text: text
 READ_ONLY_COURSE_TAB_ATTRIBUTES = ['type']
 
 
-class CourseTab(metaclass=ABCMeta):
+class CourseTab(metaclass=ABCMeta):  # noqa: B024
     """
     The Course Tab class is a data abstraction for all tabs (i.e., course navigation links) within a course.
     It is an abstract class - to be inherited by various tab types.
@@ -526,7 +526,7 @@ class CourseTabList(List):
         """
         count = sum(1 for tab in tabs if tab.get('type') == tab_type)
         if count > max_num:
-            msg = (
+            msg = (  # noqa: UP032
                 "Tab of type '{type}' appears {count} time(s). "
                 "Expected maximum of {max} time(s)."
             ).format(

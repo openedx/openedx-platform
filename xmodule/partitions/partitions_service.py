@@ -4,7 +4,7 @@ user partitions.  It uses the user_service key/value store provided by the LMS r
 persist the assignments.
 """
 import logging
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -45,7 +45,7 @@ def get_all_partitions_for_course(course, active_only=False):
 
 
 def get_user_partition_groups(course_key: CourseKey, user_partitions: list, user: User,
-                              partition_dict_key: str = 'name') -> Dict[str, Group]:
+                              partition_dict_key: str = 'name') -> Dict[str, Group]:  # noqa: UP006
     """
     Collect group ID for each partition in this course for this user.
      Arguments:
@@ -180,7 +180,7 @@ class PartitionService:
         Raises:
             ValueError if the user_partition_id isn't found.
         """
-        cache_key = "PartitionService.ugidfp.{}.{}.{}".format(
+        cache_key = "PartitionService.ugidfp.{}.{}.{}".format(  # noqa: UP032
             user.id, self._course_id, user_partition_id
         )
 
@@ -190,7 +190,7 @@ class PartitionService:
         user_partition = self.get_user_partition(user_partition_id)
         if user_partition is None:
             raise ValueError(
-                "Configuration problem!  No user_partition with id {} "
+                "Configuration problem!  No user_partition with id {} "  # noqa: UP032
                 "in course {}".format(user_partition_id, self._course_id)
             )
 

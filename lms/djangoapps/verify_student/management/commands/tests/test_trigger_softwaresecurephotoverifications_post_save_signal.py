@@ -66,5 +66,5 @@ class TestTriggerSoftwareSecurePhotoVerificationsPostSaveSignal(MockS3Boto3Mixin
             ),
         ]
         print(send_idv_update_mock.mock_calls)
-        self.assertEqual(send_idv_update_mock.call_count, 4)
+        self.assertEqual(send_idv_update_mock.call_count, 4)  # noqa: PT009
         send_idv_update_mock.assert_has_calls(expected_calls, any_order=True)

@@ -24,13 +24,13 @@ REFERENCE_PARAMS = {
     "validation_xblock_handler_token_keys": None,
     # A reference time that produces a token that will expire within the next day
     # but not for a few hours.
-    "reference_time": datetime.datetime(2021, 1, 28, 13, 26, 38, 787309, datetime.timezone.utc),
+    "reference_time": datetime.datetime(2021, 1, 28, 13, 26, 38, 787309, datetime.timezone.utc),  # noqa: UP017
     "validation_time_delta_s": 0,
 }
 
 
 @pytest.mark.parametrize(
-    "param_delta,expected_validation",
+    "param_delta,expected_validation",  # noqa: PT006
     [
         # Happy Path case with the above REFERENCE_PARAMS.
         ({}, True),
@@ -48,7 +48,7 @@ REFERENCE_PARAMS = {
         # Demonstrating maximum possible validity period is just below 4 days
         # This passes because validation time is just below the cutoff point
         (
-            {"reference_time": datetime.datetime(2021, 1, 27, 0, 0, 20, tzinfo=datetime.timezone.utc),
+            {"reference_time": datetime.datetime(2021, 1, 27, 0, 0, 20, tzinfo=datetime.timezone.utc),  # noqa: UP017
              "validation_time_delta_s": (86400 * 4) - 21
              },
             True,
@@ -57,7 +57,7 @@ REFERENCE_PARAMS = {
         # Demonstrating maximum possible validity period is just below 4 days
         # This does not pass because validation time is just above the cutoff point
         (
-            {"reference_time": datetime.datetime(2021, 1, 27, 0, 0, 20, tzinfo=datetime.timezone.utc),
+            {"reference_time": datetime.datetime(2021, 1, 27, 0, 0, 20, tzinfo=datetime.timezone.utc),  # noqa: UP017
              "validation_time_delta_s": (86400 * 4) - 19
              },
             False,
@@ -66,7 +66,7 @@ REFERENCE_PARAMS = {
         # Demonstrating minimum possible validity period is just above 2 days
         # This passes because validation time is just below the cutoff point
         (
-            {"reference_time": datetime.datetime(2021, 1, 28, 23, 59, 40, tzinfo=datetime.timezone.utc),
+            {"reference_time": datetime.datetime(2021, 1, 28, 23, 59, 40, tzinfo=datetime.timezone.utc),  # noqa: UP017
              "validation_time_delta_s": (86400 * 2) + 19
              },
             True,
@@ -75,7 +75,7 @@ REFERENCE_PARAMS = {
         # Demonstrating minimum possible validity period is just above 2 days
         # This fails because validation time is just above the cutoff point
         (
-            {"reference_time": datetime.datetime(2021, 1, 28, 23, 59, 40, tzinfo=datetime.timezone.utc),
+            {"reference_time": datetime.datetime(2021, 1, 28, 23, 59, 40, tzinfo=datetime.timezone.utc),  # noqa: UP017
              "validation_time_delta_s": (86400 * 2) + 21
              },
             False),
@@ -162,7 +162,7 @@ def test_private_get_secure_token_for_xblock_handler():
     Confirms function behaviour has not changed and is giving the same token for same inputs
     If these tokens change, this will invalidate some or all of the tokens handed out to learners
     """
-    with freeze_time(datetime.datetime(2021, 1, 27, 0, 0, 0, tzinfo=datetime.timezone.utc)):
+    with freeze_time(datetime.datetime(2021, 1, 27, 0, 0, 0, tzinfo=datetime.timezone.utc)):  # noqa: UP017
         token_now = _get_secure_token_for_xblock_handler("12345", "some_block_key", 0, "some_hashing_key")
         token_previous = _get_secure_token_for_xblock_handler("12345", "some_block_key", -1, "some_hashing_key")
         assert token_now == "de8399a51fef6aa7584a"

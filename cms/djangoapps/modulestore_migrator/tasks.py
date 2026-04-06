@@ -283,7 +283,7 @@ def _import_assets(migration: models.ModulestoreMigration) -> dict[str, int]:
         return {}
 
     content_by_filename: dict[str, int] = {}
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
     for staged_content_file_data in staging_api.get_staged_content_static_files(migration.staged_content.id):
         old_path = staged_content_file_data.filename
         file_data = staging_api.get_staged_content_static_file_data(migration.staged_content.id, old_path)
@@ -367,7 +367,7 @@ def _import_structure(
         repeat_handling_strategy=RepeatHandlingStrategy(migration.repeat_handling_strategy),
         preserve_url_slugs=migration.preserve_url_slugs,
         created_by=status.user_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),  # noqa: UP017
     )
     with content_api.bulk_draft_changes_for(migration.target.id) as change_log:
         root_migrated_node = _migrate_node(
@@ -431,7 +431,7 @@ def _create_collection(
     key = slugify(title)
     collection: Collection | None = None
     attempt = 0
-    created_at = strftime_localized(datetime.now(timezone.utc), DEFAULT_DATE_TIME_FORMAT)
+    created_at = strftime_localized(datetime.now(timezone.utc), DEFAULT_DATE_TIME_FORMAT)  # noqa: UP017
     if course_name:
         description = f"{_('This collection contains content imported from the course')} {course_name} on: {created_at}"
     else:

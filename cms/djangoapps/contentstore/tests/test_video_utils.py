@@ -36,7 +36,7 @@ class ValidateVideoImageTestCase(TestCase):
         Test that when no file information is provided to validate_video_image, it gives proper error message.
         """
         error = validate_video_image({})
-        self.assertEqual(error, 'The image must have name, content type, and size information.')
+        self.assertEqual(error, 'The image must have name, content type, and size information.')  # noqa: PT009
 
     def test_corrupt_image_file(self):
         """
@@ -49,7 +49,7 @@ class ValidateVideoImageTestCase(TestCase):
                 size=settings.VIDEO_IMAGE_SETTINGS['VIDEO_IMAGE_MIN_BYTES']
             )
             error = validate_video_image(uploaded_image_file)
-            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')
+            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')  # noqa: PT009
 
 
 @ddt.ddt
@@ -223,8 +223,8 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
         thumbnail_content, thumbnail_content_type = download_youtube_video_thumbnail('test-yt-id')
 
         # Verify that we get the expected thumbnail content.
-        self.assertEqual(thumbnail_content, expected_thumbnail_content)
-        self.assertEqual(thumbnail_content_type, 'image/jpeg')
+        self.assertEqual(thumbnail_content, expected_thumbnail_content)  # noqa: PT009
+        self.assertEqual(thumbnail_content_type, 'image/jpeg')  # noqa: PT009
 
     @override_settings(AWS_ACCESS_KEY_ID='test_key_id', AWS_SECRET_ACCESS_KEY='test_secret')
     @mock.patch('requests.get')
@@ -241,11 +241,11 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
 
         # Verify that video1 has no image attached.
         video1_image_url = get_course_video_image_url(course_id=course_id, edx_video_id=video1_edx_video_id)
-        self.assertIsNone(video1_image_url)
+        self.assertIsNone(video1_image_url)  # noqa: PT009
 
         # Verify that video2 has already image attached.
         video2_image_url = get_course_video_image_url(course_id=course_id, edx_video_id=video2_edx_video_id)
-        self.assertIsNotNone(video2_image_url)
+        self.assertIsNotNone(video2_image_url)  # noqa: PT009
 
         # Scrape video thumbnails.
         scrape_youtube_thumbnail(course_id, video1_edx_video_id, 'test-yt-id')
@@ -253,11 +253,11 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
 
         # Verify that now video1 image is attached.
         video1_image_url = get_course_video_image_url(course_id=course_id, edx_video_id=video1_edx_video_id)
-        self.assertIsNotNone(video1_image_url)
+        self.assertIsNotNone(video1_image_url)  # noqa: PT009
 
         # Also verify that video2's image is not updated.
         video2_image_url_latest = get_course_video_image_url(course_id=course_id, edx_video_id=video2_edx_video_id)
-        self.assertEqual(video2_image_url, video2_image_url_latest)
+        self.assertEqual(video2_image_url, video2_image_url_latest)  # noqa: PT009
 
     @ddt.data(
         (
@@ -313,21 +313,21 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
         (
             None,
             'image/jpeg',
-            'This image file must be larger than {image_min_size}.'.format(
+            'This image file must be larger than {image_min_size}.'.format(  # noqa: UP032
                 image_min_size=settings.VIDEO_IMAGE_MIN_FILE_SIZE_KB
             )
         ),
         (
             b'dummy-content',
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),
         (
             None,
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),
@@ -352,7 +352,7 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
 
         # Verify that video1 has no image attached.
         video1_image_url = get_course_video_image_url(course_id=course_id, edx_video_id=video1_edx_video_id)
-        self.assertIsNone(video1_image_url)
+        self.assertIsNone(video1_image_url)  # noqa: PT009
 
         # Scrape video thumbnail.
         scrape_youtube_thumbnail(course_id, video1_edx_video_id, 'test-yt-id')
@@ -366,7 +366,7 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
 
         # Verify that no image is attached to video1.
         video1_image_url = get_course_video_image_url(course_id=course_id, edx_video_id=video1_edx_video_id)
-        self.assertIsNone(video1_image_url)
+        self.assertIsNone(video1_image_url)  # noqa: PT009
 
 
 @ddt.ddt
@@ -387,7 +387,7 @@ class S3Boto3TestCase(TestCase):
         return dictionary
 
     def test_video_backend(self):
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             S3Boto3Storage,
             import_string(
                 'storages.backends.s3boto3.S3Boto3Storage',
@@ -404,7 +404,7 @@ class S3Boto3TestCase(TestCase):
             settings.VIDEO_IMAGE_SETTINGS.get('STORAGE_CLASS', {})
         )(**settings.VIDEO_IMAGE_SETTINGS.get('STORAGE_KWARGS', {}))
 
-        self.assertEqual(S3Boto3Storage, storage.__class__)
+        self.assertEqual(S3Boto3Storage, storage.__class__)  # noqa: PT009
 
     def test_storage_without_global_default_acl_setting(self):
         """

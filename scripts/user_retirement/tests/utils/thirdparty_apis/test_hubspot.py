@@ -29,7 +29,7 @@ class TestHubspot(unittest.TestCase):
     """
 
     def setUp(self):
-        super(TestHubspot, self).setUp()
+        super(TestHubspot, self).setUp()  # noqa: UP008
         self.test_learner = {'original_email': 'foo@bar.com'}
         self.api_key = 'example_key'
         self.test_vid = 12345
@@ -56,14 +56,14 @@ class TestHubspot(unittest.TestCase):
         )
 
     def test_delete_no_email(self, req_mock, mock_alert):  # pylint: disable=unused-argument
-        with self.assertRaises(TypeError) as exc:
+        with self.assertRaises(TypeError) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user({})
-            self.assertIn('Expected an email address for user to delete, but received None.', str(exc))
+            self.assertIn('Expected an email address for user to delete, but received None.', str(exc))  # noqa: PT009
             mock_alert.assert_not_called()
 
     def test_delete_success(self, req_mock, mock_alert):
@@ -96,65 +96,65 @@ class TestHubspot(unittest.TestCase):
 
     def test_delete_server_failure_on_user_retrieval(self, req_mock, mock_alert):
         self._mock_get_vid(req_mock, 500)
-        with self.assertRaises(hubspot_api.HubspotException) as exc:
+        with self.assertRaises(hubspot_api.HubspotException) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user(self.test_learner)
-            self.assertIn("Error attempted to get user_vid from Hubspot", str(exc))
+            self.assertIn("Error attempted to get user_vid from Hubspot", str(exc))  # noqa: PT009
             mock_alert.assert_not_called()
 
     def test_delete_unauthorized_deletion(self, req_mock, mock_alert):
         self._mock_get_vid(req_mock, 200)
         self._mock_delete(req_mock, 401)
-        with self.assertRaises(hubspot_api.HubspotException) as exc:
+        with self.assertRaises(hubspot_api.HubspotException) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user(self.test_learner)
-            self.assertIn("Hubspot user deletion failed due to authorized API call", str(exc))
+            self.assertIn("Hubspot user deletion failed due to authorized API call", str(exc))  # noqa: PT009
             mock_alert.assert_not_called()
 
     def test_delete_vid_not_found(self, req_mock, mock_alert):
         self._mock_get_vid(req_mock, 200)
         self._mock_delete(req_mock, 404)
-        with self.assertRaises(hubspot_api.HubspotException) as exc:
+        with self.assertRaises(hubspot_api.HubspotException) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user(self.test_learner)
-            self.assertIn("Hubspot user deletion failed because vid doesn't match user", str(exc))
+            self.assertIn("Hubspot user deletion failed because vid doesn't match user", str(exc))  # noqa: PT009
             mock_alert.assert_not_called()
 
     def test_delete_server_failure_on_deletion(self, req_mock, mock_alert):
         self._mock_get_vid(req_mock, 200)
         self._mock_delete(req_mock, 500)
-        with self.assertRaises(hubspot_api.HubspotException) as exc:
+        with self.assertRaises(hubspot_api.HubspotException) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user(self.test_learner)
-            self.assertIn("Hubspot user deletion failed due to server-side (Hubspot) issues", str(exc))
+            self.assertIn("Hubspot user deletion failed due to server-side (Hubspot) issues", str(exc))  # noqa: PT009
             mock_alert.assert_not_called()
 
     def test_delete_catch_all_on_deletion(self, req_mock, mock_alert):
         self._mock_get_vid(req_mock, 200)
         # Testing 403 as it's not a response type per the Hubspot API docs, so it doesn't have it's own error.
         self._mock_delete(req_mock, 403)
-        with self.assertRaises(hubspot_api.HubspotException) as exc:
+        with self.assertRaises(hubspot_api.HubspotException) as exc:  # noqa: PT027
             HubspotAPI(
                 self.api_key,
                 self.test_region,
                 self.from_address,
                 self.alert_email
             ).delete_user(self.test_learner)
-            self.assertIn("Hubspot user deletion failed due to unknown reasons", str(exc))
+            self.assertIn("Hubspot user deletion failed due to unknown reasons", str(exc))  # noqa: PT009
             mock_alert.assert_not_called()

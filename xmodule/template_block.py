@@ -94,7 +94,7 @@ class CustomTagBlock(CustomTagTemplateBlock):  # pylint: disable=abstract-method
         try:
             template_block = system.get_block(template_loc)
             template_block_data = template_block.data
-        except ItemNotFoundError as ex:
+        except ItemNotFoundError as ex:  # noqa: F841
             template_block_data = f"Could not find template block for custom tag with Id {template_name}"
             log.info(template_block_data)
 

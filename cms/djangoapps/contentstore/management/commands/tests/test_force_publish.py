@@ -37,7 +37,7 @@ class TestForcePublish(SharedModuleStoreTestCase):
         """
         errstring = "Error: the following arguments are required: course_key"
 
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('force_publish')
 
     def test_invalid_course_key(self):
@@ -45,7 +45,7 @@ class TestForcePublish(SharedModuleStoreTestCase):
         Test 'force_publish' command with invalid course key
         """
         errstring = "Invalid course key."
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('force_publish', 'TestX/TS01')
 
     def test_too_many_arguments(self):
@@ -53,7 +53,7 @@ class TestForcePublish(SharedModuleStoreTestCase):
         Test 'force_publish' command with more than 2 arguments
         """
         errstring = "Error: unrecognized arguments: invalid-arg"
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('force_publish', str(self.course.id), '--commit', 'invalid-arg')
 
     def test_course_key_not_found(self):
@@ -61,7 +61,7 @@ class TestForcePublish(SharedModuleStoreTestCase):
         Test 'force_publish' command with non-existing course key
         """
         errstring = "Course not found."
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('force_publish', 'course-v1:org+course+run')
 
 
@@ -91,7 +91,7 @@ class TestForcePublishModifications(ModuleStoreTestCase):
         )
 
         # verify that course has changes.
-        self.assertTrue(self.store.has_changes(self.store.get_item(self.course.location)))
+        self.assertTrue(self.store.has_changes(self.store.get_item(self.course.location)))  # noqa: PT009
 
         # get draft and publish branch versions
         versions = get_course_versions(str(self.course.id))
@@ -99,7 +99,7 @@ class TestForcePublishModifications(ModuleStoreTestCase):
         published_version = versions['published-branch']
 
         # verify that draft and publish point to different versions
-        self.assertNotEqual(draft_version, published_version)
+        self.assertNotEqual(draft_version, published_version)  # noqa: PT009
 
         with mock.patch('cms.djangoapps.contentstore.management.commands.force_publish.query_yes_no') as patched_yes_no:
             patched_yes_no.return_value = True
@@ -108,7 +108,7 @@ class TestForcePublishModifications(ModuleStoreTestCase):
             call_command('force_publish', str(self.course.id), '--commit')
 
             # verify that course has no changes
-            self.assertFalse(self.store.has_changes(self.store.get_item(self.course.location)))
+            self.assertFalse(self.store.has_changes(self.store.get_item(self.course.location)))  # noqa: PT009
 
             # get new draft and publish branch versions
             versions = get_course_versions(str(self.course.id))
@@ -116,8 +116,8 @@ class TestForcePublishModifications(ModuleStoreTestCase):
             new_published_version = versions['published-branch']
 
             # verify that the draft branch didn't change while the published branch did
-            self.assertEqual(draft_version, new_draft_version)
-            self.assertNotEqual(published_version, new_published_version)
+            self.assertEqual(draft_version, new_draft_version)  # noqa: PT009
+            self.assertNotEqual(published_version, new_published_version)  # noqa: PT009
 
             # verify that draft and publish point to same versions now
-            self.assertEqual(new_draft_version, new_published_version)
+            self.assertEqual(new_draft_version, new_published_version)  # noqa: PT009

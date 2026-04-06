@@ -31,7 +31,7 @@ def create_youtube_string(block):
     return ','.join([
         ':'.join(pair)
         for pair
-        in zip(youtube_speeds, youtube_ids)
+        in zip(youtube_speeds, youtube_ids)  # noqa: B905
         if pair[1]
     ])
 
@@ -102,7 +102,7 @@ def format_xml_exception_message(location, key, value):
     Generate exception message for VideoBlock class which will use for ValueError and UnicodeDecodeError
     when setting xml attributes.
     """
-    exception_message = "Block-location:{location}, Key:{key}, Value:{value}".format(
+    exception_message = "Block-location:{location}, Key:{key}, Value:{value}".format(  # noqa: UP032
         location=str(location),
         key=key,
         value=value

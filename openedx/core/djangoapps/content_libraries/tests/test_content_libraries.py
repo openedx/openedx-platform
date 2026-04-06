@@ -308,7 +308,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
 
         Tests with some non-ASCII chars in slugs, titles, descriptions.
         """
-        admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)
+        admin = UserFactory.create(username="Admin", email="admin@example.com", is_staff=True)  # noqa: F841
 
         lib = self._create_library(slug="téstlꜟط", title="A Tést Lꜟطrary", description="Tésting XBlocks")
         lib_id = lib["id"]
@@ -318,7 +318,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'problem' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(create_date):
             block_data = self._add_block_to_library(lib_id, "problem", "ࠒröblæm1")
         self.assertDictContainsEntries(block_data, {
@@ -338,7 +338,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -367,7 +367,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
             </multiplechoiceresponse>
         </problem>
         """.strip()
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -409,7 +409,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_block_olx(block_id) == new_olx
         unpublished_block_data = self._get_library_block(block_id)
         assert unpublished_block_data['has_unpublished_changes'] is True
-        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=timezone.utc)
+        block_update_date = datetime(2024, 8, 8, 8, 8, 9, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(block_update_date):
             self._publish_library_block(block_id)
         # Confirm the block is now published:
@@ -432,7 +432,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library_blocks(lib_id)['results'] == []
 
         # Add a 'html' XBlock to the library:
-        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)
+        create_date = datetime(2024, 6, 6, 6, 6, 6, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(create_date):
             block_data = self._add_block_to_library(lib_id, "problem", "problem1")
         self.assertDictContainsEntries(block_data, {
@@ -452,7 +452,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert self._get_library(lib_id)['has_unpublished_changes'] is True
 
         # Publish the changes:
-        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)
+        publish_date = datetime(2024, 7, 7, 7, 7, 7, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(publish_date):
             self._commit_library_changes(lib_id)
         assert self._get_library(lib_id)['has_unpublished_changes'] is False
@@ -469,7 +469,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         assert '<problem' in orig_olx
         new_olx = "<problem><b>Hello world!</b></problem>"
 
-        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)
+        update_date = datetime(2024, 8, 8, 8, 8, 8, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(update_date):
             self._set_library_block_olx(block_id, new_olx)
         # now reading it back, we should get that exact OLX (no change to whitespace etc.):
@@ -543,8 +543,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         """Test that requests fail with 404 when the library does not exist"""
         valid_not_found_key = 'lb:valid:key:video:1'
         response = self.client.get(URL_BLOCK_METADATA_URL.format(block_key=valid_not_found_key))
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
+        self.assertEqual(response.json(), {  # noqa: PT009
             'detail': "Content Library 'lib:valid:key' does not exist",
         })
 
@@ -558,8 +558,8 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
         library_key = LibraryLocatorV2.from_string(lib['id'])
         non_existent_block_key = LibraryUsageLocatorV2(lib_key=library_key, block_type='video', usage_id='123')
         response = self.client.get(URL_BLOCK_METADATA_URL.format(block_key=non_existent_block_key))
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.json(), {
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
+        self.assertEqual(response.json(), {  # noqa: PT009
             'detail': f"The component '{non_existent_block_key}' does not exist.",
         })
 
@@ -625,7 +625,7 @@ class ContentLibrariesTestCase(ContentLibrariesRestApiTest):
                 {"username": author.username, "group_name": None, "access_level": "author"},
                 reader_grant,
             ]
-            for entry, expected in zip(team_response, expected_response):
+            for entry, expected in zip(team_response, expected_response):  # noqa: B905
                 self.assertDictContainsEntries(entry, expected)
 
         # A random user cannot get the library nor its team:
@@ -987,17 +987,17 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         with self.as_user(self.admin_user):
             response_data = self._start_library_restore_task(self.uploaded_zip_file)
 
-        self.assertIn('task_id', response_data)
-        self.assertIsNotNone(response_data['task_id'])
+        self.assertIn('task_id', response_data)  # noqa: PT009
+        self.assertIsNotNone(response_data['task_id'])  # noqa: PT009
 
         ## GET the task status and result (task is run synchronously in tests)
         with self.as_user(self.admin_user):
             response_data = self._get_library_restore_task(response_data['task_id'])
 
-        self.assertIn('state', response_data)
-        self.assertEqual(response_data['state'], 'Succeeded')
+        self.assertIn('state', response_data)  # noqa: PT009
+        self.assertEqual(response_data['state'], 'Succeeded')  # noqa: PT009
 
-        self.assertIn('result', response_data)
+        self.assertIn('result', response_data)  # noqa: PT009
         task_result = response_data.get('result', {})
 
         # Validate the learning package data in the result
@@ -1022,11 +1022,11 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             },
         }
 
-        self.assertIn('learning_package_id', task_result)
-        self.assertTrue(LearningPackage.objects.filter(pk=task_result['learning_package_id']).exists())
+        self.assertIn('learning_package_id', task_result)  # noqa: PT009
+        self.assertTrue(LearningPackage.objects.filter(pk=task_result['learning_package_id']).exists())  # noqa: PT009
 
         for key, value in expected.items():
-            self.assertEqual(task_result[key], value)
+            self.assertEqual(task_result[key], value)  # noqa: PT009
 
     def test_create_content_library_from_restore(self):
         """
@@ -1035,19 +1035,19 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
         with self.as_user(self.admin_user):
             response_data = self._start_library_restore_task(self.uploaded_zip_file)
 
-        self.assertIn('task_id', response_data)
-        self.assertIsNotNone(response_data['task_id'])
+        self.assertIn('task_id', response_data)  # noqa: PT009
+        self.assertIsNotNone(response_data['task_id'])  # noqa: PT009
 
         with self.as_user(self.admin_user):
             response_data = self._get_library_restore_task(response_data['task_id'])
 
-        self.assertIn('state', response_data)
-        self.assertEqual(response_data['state'], 'Succeeded')
+        self.assertIn('state', response_data)  # noqa: PT009
+        self.assertEqual(response_data['state'], 'Succeeded')  # noqa: PT009
 
         task_result = response_data.get('result', {})
-        self.assertIn('learning_package_id', task_result)
+        self.assertIn('learning_package_id', task_result)  # noqa: PT009
         learning_package_id = task_result['learning_package_id']
-        self.assertTrue(LearningPackage.objects.filter(pk=learning_package_id).exists())
+        self.assertTrue(LearningPackage.objects.filter(pk=learning_package_id).exists())  # noqa: PT009
 
         library_title = "Restored Library"
         library_description = "A library restored from a learning package"
@@ -1061,16 +1061,16 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
                 learning_package=learning_package_id,
             )
 
-        self.assertIn('id', create_response_data)
+        self.assertIn('id', create_response_data)  # noqa: PT009
         library_locator = LibraryLocatorV2.from_string(create_response_data['id'])
         content_library = ContentLibrary.objects.get_by_key(library_locator)
 
-        self.assertIsNotNone(content_library)
-        self.assertEqual(content_library.learning_package.id, learning_package_id)
-        self.assertEqual(content_library.learning_package.title, library_title)
-        self.assertEqual(content_library.learning_package.description, library_description)
-        self.assertIn(self.org_short_name, content_library.library_key.org)
-        self.assertIn(self.library_slug, content_library.library_key.slug)
+        self.assertIsNotNone(content_library)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.id, learning_package_id)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.title, library_title)  # noqa: PT009
+        self.assertEqual(content_library.learning_package.description, library_description)  # noqa: PT009
+        self.assertIn(self.org_short_name, content_library.library_key.org)  # noqa: PT009
+        self.assertIn(self.library_slug, content_library.library_key.slug)  # noqa: PT009
 
     def test_restore_library_unauthorized(self):
         """
@@ -1112,7 +1112,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             "error_log": None,
         }
 
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
         in_progress_task_status = self._create_user_task_status(state=UserTaskStatus.IN_PROGRESS)
 
@@ -1123,7 +1123,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             response_data = self._get_library_restore_task(in_progress_task_status.task_id)
 
         expected["state"] = UserTaskStatus.IN_PROGRESS
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
     def test_task_user_mismatch(self):
         """
@@ -1164,7 +1164,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             "error_log": None,
         }
 
-        self.assertEqual(response_data, expected)
+        self.assertEqual(response_data, expected)  # noqa: PT009
 
     def test_failed_task_with_error_log(self):
         """
@@ -1194,7 +1194,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             'result': None,
         }
 
-        self.assertEqual(task_data, expected)
+        self.assertEqual(task_data, expected)  # noqa: PT009
 
     def test_uncaught_error_creates_error_log(self):
         """
@@ -1217,7 +1217,7 @@ class LibraryRestoreViewTestCase(ContentLibrariesRestApiTest):
             'result': None,
         }
 
-        self.assertEqual(task_data, expected)
+        self.assertEqual(task_data, expected)  # noqa: PT009
 
 
 @skip_unless_cms
@@ -1280,19 +1280,19 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
 
             # TEST: Verify exactly 2 libraries returned (lib1 and lib2, not lib3)
-            self.assertEqual(filtered.count(), 2, "Should return exactly 2 authorized libraries")
+            self.assertEqual(filtered.count(), 2, "Should return exactly 2 authorized libraries")  # noqa: PT009
 
             # TEST: Verify correct libraries are included/excluded
             slugs = set(filtered.values_list('slug', flat=True))
-            self.assertIn('lib1', slugs, "lib1 (org1:lib1) should be included")
-            self.assertIn('lib2', slugs, "lib2 (org2:lib2) should be included")
-            self.assertNotIn('lib3', slugs, "lib3 (org1:lib3) should be excluded")
+            self.assertIn('lib1', slugs, "lib1 (org1:lib1) should be included")  # noqa: PT009
+            self.assertIn('lib2', slugs, "lib2 (org2:lib2) should be included")  # noqa: PT009
+            self.assertNotIn('lib3', slugs, "lib3 (org1:lib3) should be excluded")  # noqa: PT009
 
             # TEST: Verify the org/slug combinations match
             lib1_result = filtered.get(slug='lib1')
             lib2_result = filtered.get(slug='lib2')
-            self.assertEqual(lib1_result.org.short_name, 'org1')
-            self.assertEqual(lib2_result.org.short_name, 'org2')
+            self.assertEqual(lib1_result.org.short_name, 'org1')  # noqa: PT009
+            self.assertEqual(lib2_result.org.short_name, 'org2')  # noqa: PT009
 
     def test_authz_scope_individual_check_with_permission(self):
         """
@@ -1321,7 +1321,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch("openedx_authz.api.is_user_allowed", return_value=True):
             result = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].check(user, library_obj)
 
-            self.assertTrue(result, "Should return True when user is authorized")
+            self.assertTrue(result, "Should return True when user is authorized")  # noqa: PT009
 
     def test_authz_scope_individual_check_without_permission(self):
         """
@@ -1350,10 +1350,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
         with patch('openedx_authz.api.is_user_allowed', return_value=False):
             result = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].check(user, library_obj)
 
-            self.assertFalse(result, "Should return False when user is not authorized")
+            self.assertFalse(result, "Should return False when user is not authorized")  # noqa: PT009
 
-            self.assertFalse(library_obj.allow_public_read)
-            self.assertFalse(user.is_staff)
+            self.assertFalse(library_obj.allow_public_read)  # noqa: PT009
+            self.assertFalse(user.is_staff)  # noqa: PT009
 
     def test_authz_scope_handles_empty_scopes(self):
         """
@@ -1387,13 +1387,13 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
                 ContentLibrary.objects.filter(slug="empty-lib")
             ).distinct()
 
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 0,
                 "Should return 0 libraries when user has no authorized scopes",
             )
 
-            self.assertTrue(
+            self.assertTrue(  # noqa: PT009
                 ContentLibrary.objects.filter(slug="empty-lib").exists(),
                 "Library should exist in database",
             )
@@ -1427,10 +1427,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             q_obj = rule.query(user)
 
             # Test 1: Verify it returns a Q object
-            self.assertIsInstance(q_obj, Q)
+            self.assertIsInstance(q_obj, Q)  # noqa: PT009
 
             # Test 2: Verify Q object uses OR connector (for multiple scopes)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 q_obj.connector,
                 'OR',
                 "Should use OR to combine different library scopes",
@@ -1440,38 +1440,38 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             q_str = str(q_obj)
 
             # Should filter by org__short_name field
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "org__short_name",
                 q_str,
                 "Q object must filter by org__short_name field",
             )
 
             # Should filter by slug field
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "slug",
                 q_str,
                 "Q object must filter by slug field",
             )
 
             # Should contain exact org values
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-org1",
                 q_str,
                 "Q object must include 'specific-org1'",
             )
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-org2",
                 q_str,
                 "Q object must include 'specific-org2'",
             )
 
             # Should contain exact slug values
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 "specific-slug1",
                 q_str,
                 "Q object must include 'specific-slug1'",
             )
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 'specific-slug2',
                 q_str,
                 "Q object must include 'specific-slug2'",
@@ -1525,7 +1525,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             filtered = ContentLibrary.objects.filter(q_obj)
 
             # TEST: Verify EXACTLY 2 libraries match (lib1 and lib2 only)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 2,
                 "Must match EXACTLY 2 libraries - only those with authorized (org, slug) pairs",
@@ -1533,7 +1533,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib1 matches (pair-org1, pair-lib1)
             lib1_result = filtered.filter(slug='pair-lib1', org__short_name='pair-org1')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib1_result.count(),
                 1,
                 "Must match lib1: (pair-org1, pair-lib1) - this exact pair is authorized",
@@ -1541,7 +1541,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib2 matches (pair-org2, pair-lib2)
             lib2_result = filtered.filter(slug='pair-lib2', org__short_name='pair-org2')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib2_result.count(),
                 1,
                 "Must match lib2: (pair-org2, pair-lib2) - this exact pair is authorized",
@@ -1549,7 +1549,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib3 does NOT match (pair-org1, pair-lib3)
             lib3_result = filtered.filter(slug='pair-lib3', org__short_name='pair-org1')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib3_result.count(),
                 0,
                 "Must NOT match lib3: (pair-org1, pair-lib3) - only pair-lib1 is authorized for pair-org1",
@@ -1557,7 +1557,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify lib4 does NOT match (pair-org3, pair-lib1)
             lib4_result = filtered.filter(slug='pair-lib1', org__short_name='pair-org3')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib4_result.count(),
                 0,
                 "Must NOT match lib4: (pair-org3, pair-lib1) - only pair-org1 is authorized for pair-lib1",
@@ -1566,7 +1566,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             # TEST: Verify the result set contains exactly the right libraries
             result_pairs = set(filtered.values_list('org__short_name', 'slug'))
             expected_pairs = {('pair-org1', 'pair-lib1'), ('pair-org2', 'pair-lib2')}
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 result_pairs,
                 expected_pairs,
                 f"Result must contain exactly {expected_pairs}, got {result_pairs}",
@@ -1605,10 +1605,10 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             lib1 = self._create_library(slug="comb-lib1", org="comb-org", title="AuthZ Only Library")
             lib2 = self._create_library(slug="comb-lib2", org="comb-org", title="Legacy Only Library")
             lib3 = self._create_library(slug="comb-lib3", org="comb-org", title="Both AuthZ and Legacy Library")
-            lib4 = self._create_library(slug="comb-lib4", org="comb-org", title="No Permissions Library")
+            lib4 = self._create_library(slug="comb-lib4", org="comb-org", title="No Permissions Library")  # noqa: F841
 
         # Retrieve library objects for permission assignment
-        lib1_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib1['id']))
+        lib1_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib1['id']))  # noqa: F841
         lib2_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib2['id']))
         lib3_obj = ContentLibrary.objects.get_by_key(LibraryLocatorV2.from_string(lib3['id']))
 
@@ -1640,7 +1640,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             filtered = perms[CAN_VIEW_THIS_CONTENT_LIBRARY].filter(user, all_libs).distinct()
 
             # TEST: Verify exactly 3 libraries returned (lib1, lib2, lib3 - NOT lib4)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 filtered.count(),
                 3,
                 "Should return exactly 3 libraries: AuthZ-only, legacy-only, and both",
@@ -1648,14 +1648,14 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
 
             # TEST: Verify correct libraries are included
             slugs = set(filtered.values_list('slug', flat=True))
-            self.assertIn('comb-lib1', slugs, "lib1 should be accessible via AuthZ permission")
-            self.assertIn('comb-lib2', slugs, "lib2 should be accessible via legacy permission")
-            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")
-            self.assertNotIn('comb-lib4', slugs, "lib4 should NOT be accessible (no permissions)")
+            self.assertIn('comb-lib1', slugs, "lib1 should be accessible via AuthZ permission")  # noqa: PT009
+            self.assertIn('comb-lib2', slugs, "lib2 should be accessible via legacy permission")  # noqa: PT009
+            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")  # noqa: PT009
+            self.assertNotIn('comb-lib4', slugs, "lib4 should NOT be accessible (no permissions)")  # noqa: PT009
 
             # TEST: Verify lib3 doesn't get duplicated despite having both permission types
             lib3_results = filtered.filter(slug='comb-lib3')
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 lib3_results.count(),
                 1,
                 "lib3 should appear exactly once despite having both AuthZ and legacy permissions",
@@ -1669,7 +1669,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
                 ('comb-org', 'comb-lib2'),  # Legacy only
                 ('comb-org', 'comb-lib3'),  # Both
             }
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 result_pairs,
                 expected_pairs,
                 f"Should get exactly the 3 authorized libraries via OR logic, got {result_pairs}",
@@ -1691,7 +1691,7 @@ class ContentLibraryXBlockValidationTest(APITestCase):
         response = self.client.get(
             endpoint.format(**endpoint_parameters),
         )
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
     def test_xblock_handler_invalid_key(self):
         """This endpoint is tested separately from the previous ones as it's not a DRF endpoint."""
@@ -1702,7 +1702,7 @@ class ContentLibraryXBlockValidationTest(APITestCase):
             user_id='random',
             secure_token='random',
         )))
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
 
 @skip_unless_cms

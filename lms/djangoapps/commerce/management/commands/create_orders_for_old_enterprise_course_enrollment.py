@@ -173,7 +173,7 @@ class Command(BaseCommand):
         self.stdout.write('\t\tSyncing started...')
         success, new, failed, order_numbers = self._create_manual_enrollment_orders(enrollments_payload)
         self.stdout.write(
-            '\t\tSuccess: {} , New: {}, Failed: {}, Invalid:{} , Non-Paid: {}'.format(
+            '\t\tSuccess: {} , New: {}, Failed: {}, Invalid:{} , Non-Paid: {}'.format(  # noqa: UP032
                 success, new, failed, invalid, non_paid,
             )
         )
@@ -198,7 +198,7 @@ class Command(BaseCommand):
         while offset < enrollments_count:
             is_last_iteration = (offset + enrollments_query_batch_size) >= enrollments_count
             self.stdout.write(
-                '\tSyncing enrollments batch from {start} to {end}.'.format(
+                '\tSyncing enrollments batch from {start} to {end}.'.format(  # noqa: UP032
                     start=offset, end=offset + enrollments_query_batch_size
                 )
             )
@@ -222,14 +222,14 @@ class Command(BaseCommand):
                 time.sleep(sleep_time)
 
             self.stdout.write(
-                '\tSuccessfully synced enrollments batch from {start} to {end}'.format(
+                '\tSuccessfully synced enrollments batch from {start} to {end}'.format(  # noqa: UP032
                     start=offset, end=offset + enrollments_query_batch_size,
                 )
             )
             offset += enrollments_query_batch_size
 
         self.stdout.write(
-            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(
+            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(  # noqa: UP032
                 successfully_synced_enrollments, new_created_orders, failed_to_synced_enrollments, invalid_enrollments,
                 non_paid_enrollments
             )
@@ -286,4 +286,4 @@ class Command(BaseCommand):
 
         except Exception as ex:
             traceback.print_exc()
-            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031

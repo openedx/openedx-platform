@@ -185,7 +185,7 @@ class TestRefundSignal(ModuleStoreTestCase):
                 assert not mock_send_notification.called
 
                 last_request = httpretty.last_request()
-                self.assertDictEqual(json.loads(last_request.body.decode('utf8')), {'action': 'approve_payment_only'})
+                self.assertDictEqual(json.loads(last_request.body.decode('utf8')), {'action': 'approve_payment_only'})  # noqa: PT009
 
     @mock.patch('lms.djangoapps.commerce.utils._send_refund_notification')
     def test_notification_no_refund(self, mock_send_notification):
@@ -307,7 +307,7 @@ class TestRefundSignal(ModuleStoreTestCase):
         expected = {
             'content-type': JSON,
             'Authorization': 'Basic {}'.format(base64.b64encode(
-                f'{ZENDESK_USER}/token:{ZENDESK_API_KEY}'.encode('utf8')).decode('utf8')
+                f'{ZENDESK_USER}/token:{ZENDESK_API_KEY}'.encode('utf8')).decode('utf8')  # noqa: UP012
             )
         }
         assert_dict_contains_subset(self, expected, last_request.headers)
@@ -327,4 +327,4 @@ class TestRefundSignal(ModuleStoreTestCase):
         response_dict = json.loads(last_request.body.decode('utf8'))
         response_dict['ticket']['tags'].sort()
         expected['ticket']['tags'].sort()
-        self.assertDictEqual(response_dict, expected)
+        self.assertDictEqual(response_dict, expected)  # noqa: PT009

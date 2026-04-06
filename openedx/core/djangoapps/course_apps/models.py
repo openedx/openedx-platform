@@ -1,7 +1,7 @@
 """
 Models to store course apps data.
 """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 from django.db import models
 from model_utils.models import TimeStampedModel
@@ -27,7 +27,7 @@ class CourseAppStatus(TimeStampedModel):
         return f'CourseAppStatus(course_key="{self.course_key}", app_id="{self.app_id}", enabled="{self.enabled})"'
 
     @classmethod
-    def get_all_app_status_data_for_course(cls, course_key: CourseKey) -> Dict[str, bool]:
+    def get_all_app_status_data_for_course(cls, course_key: CourseKey) -> Dict[str, bool]:  # noqa: UP006
         """
         Get a dictionary containing the status of all apps linked to the course.
 

@@ -44,12 +44,12 @@ class LMSLinksTestCase(TestCase):
         course_key = CourseLocator('mitX', '101', 'test')
         location = course_key.make_usage_key('vertical', 'contacting_us')
         link = utils.get_lms_link_for_item(location, False)
-        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"
+        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009
                                "@vertical+block@contacting_us")
 
         # test preview
         link = utils.get_lms_link_for_item(location, True)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             link,
             "//preview.localhost/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type@vertical+block"
             "@contacting_us "
@@ -58,27 +58,27 @@ class LMSLinksTestCase(TestCase):
         # now test with the course' location
         location = course_key.make_usage_key('course', 'test')
         link = utils.get_lms_link_for_item(location)
-        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"
+        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009
                                "@course+block@test")
 
     def lms_link_for_certificate_web_view_test(self):
         """ Tests get_lms_link_for_certificate_web_view. """
         course_key = CourseLocator('mitX', '101', 'test')
-        dummy_user = ModuleStoreEnum.UserID.test
+        dummy_user = ModuleStoreEnum.UserID.test  # noqa: F841
         mode = 'professional'
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             utils.get_lms_link_for_certificate_web_view(course_key, mode),
-            "//localhost:8000/certificates/course/{course_key}?preview={mode}".format(
+            "//localhost:8000/certificates/course/{course_key}?preview={mode}".format(  # noqa: UP032
                 course_key=course_key,
                 mode=mode
             )
         )
 
         with with_site_configuration_context(configuration={"course_org_filter": "mitX", "LMS_BASE": "dummyhost:8000"}):
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 utils.get_lms_link_for_certificate_web_view(course_key, mode),
-                "//dummyhost:8000/certificates/course/{course_key}?preview={mode}".format(
+                "//dummyhost:8000/certificates/course/{course_key}?preview={mode}".format(  # noqa: UP032
                     course_key=course_key,
                     mode=mode
                 )
@@ -151,7 +151,7 @@ class XBlockVisibilityTestCase(SharedModuleStoreTestCase):
         vertical.start = self.future
         modulestore().update_item(vertical, self.dummy_user)
 
-        self.assertTrue(utils.is_currently_visible_to_students(vertical))
+        self.assertTrue(utils.is_currently_visible_to_students(vertical))  # noqa: PT009
 
     def _test_visible_to_students(self, expected_visible_without_lock, name, start_date, publish=False):
         """
@@ -159,13 +159,13 @@ class XBlockVisibilityTestCase(SharedModuleStoreTestCase):
         with and without visible_to_staff_only set.
         """
         no_staff_lock = self._create_xblock_with_start_date(name, start_date, publish, visible_to_staff_only=False)
-        self.assertEqual(expected_visible_without_lock, utils.is_currently_visible_to_students(no_staff_lock))
+        self.assertEqual(expected_visible_without_lock, utils.is_currently_visible_to_students(no_staff_lock))  # noqa: PT009
 
         # any xblock with visible_to_staff_only set to True should not be visible to students.
         staff_lock = self._create_xblock_with_start_date(
             name + "_locked", start_date, publish, visible_to_staff_only=True
         )
-        self.assertFalse(utils.is_currently_visible_to_students(staff_lock))
+        self.assertFalse(utils.is_currently_visible_to_students(staff_lock))  # noqa: PT009
 
     def _create_xblock_with_start_date(self, name, start_date, publish=False, visible_to_staff_only=False):
         """Helper to create an xblock with a start date, optionally publishing it"""
@@ -211,8 +211,8 @@ class ReleaseDateSourceTest(CourseTestCase):
     def _verify_release_date_source(self, item, expected_source):
         """Helper to verify that the release date source of a given item matches the expected source"""
         source = utils.find_release_date_source(item)
-        self.assertEqual(source.location, expected_source.location)
-        self.assertEqual(source.start, expected_source.start)
+        self.assertEqual(source.location, expected_source.location)  # noqa: PT009
+        self.assertEqual(source.start, expected_source.start)  # noqa: PT009
 
     def test_chapter_source_for_vertical(self):
         """Tests a vertical's release date being set by its chapter"""
@@ -280,8 +280,8 @@ class StaffLockSourceTest(StaffLockTest):
     def _verify_staff_lock_source(self, item, expected_source):
         """Helper to verify that the staff lock source of a given item matches the expected source"""
         source = utils.find_staff_lock_source(item)
-        self.assertEqual(source.location, expected_source.location)
-        self.assertTrue(source.visible_to_staff_only)
+        self.assertEqual(source.location, expected_source.location)  # noqa: PT009
+        self.assertTrue(source.visible_to_staff_only)  # noqa: PT009
 
     def test_chapter_source_for_vertical(self):
         """Tests a vertical's staff lock being set by its chapter"""
@@ -306,12 +306,12 @@ class StaffLockSourceTest(StaffLockTest):
 
     def test_orphan_has_no_source(self):
         """Tests that a orphaned xblock has no staff lock source"""
-        self.assertIsNone(utils.find_staff_lock_source(self.orphan))
+        self.assertIsNone(utils.find_staff_lock_source(self.orphan))  # noqa: PT009
 
     def test_no_source_for_vertical(self):
         """Tests a vertical with no staff lock set anywhere"""
         self._update_staff_locks(False, False, False)
-        self.assertIsNone(utils.find_staff_lock_source(self.vertical))
+        self.assertIsNone(utils.find_staff_lock_source(self.vertical))  # noqa: PT009
 
 
 class InheritedStaffLockTest(StaffLockTest):
@@ -320,27 +320,27 @@ class InheritedStaffLockTest(StaffLockTest):
     def test_no_inheritance(self):
         """Tests that a locked or unlocked vertical with no locked ancestors does not have an inherited lock"""
         self._update_staff_locks(False, False, False)
-        self.assertFalse(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertFalse(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
         self._update_staff_locks(False, False, True)
-        self.assertFalse(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertFalse(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
 
     def test_inheritance_in_locked_section(self):
         """Tests that a locked or unlocked vertical in a locked section has an inherited lock"""
         self._update_staff_locks(True, False, False)
-        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
         self._update_staff_locks(True, False, True)
-        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
 
     def test_inheritance_in_locked_subsection(self):
         """Tests that a locked or unlocked vertical in a locked subsection has an inherited lock"""
         self._update_staff_locks(False, True, False)
-        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
         self._update_staff_locks(False, True, True)
-        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))
+        self.assertTrue(utils.ancestor_has_staff_lock(self.vertical))  # noqa: PT009
 
     def test_no_inheritance_for_orphan(self):
         """Tests that an orphaned xblock does not inherit staff lock"""
-        self.assertFalse(utils.ancestor_has_staff_lock(self.orphan))
+        self.assertFalse(utils.ancestor_has_staff_lock(self.orphan))  # noqa: PT009
 
 
 class GroupVisibilityTest(CourseTestCase):
@@ -412,8 +412,8 @@ class GroupVisibilityTest(CourseTestCase):
         def verify_all_components_visible_to_all():
             """ Verifies when group_access has not been set on anything. """
             for item in (self.sequential, self.vertical, self.html, self.problem):
-                self.assertFalse(utils.has_children_visible_to_specific_partition_groups(item))
-                self.assertFalse(utils.is_visible_to_specific_partition_groups(item))
+                self.assertFalse(utils.has_children_visible_to_specific_partition_groups(item))  # noqa: PT009
+                self.assertFalse(utils.is_visible_to_specific_partition_groups(item))  # noqa: PT009
 
         verify_all_components_visible_to_all()
 
@@ -435,15 +435,15 @@ class GroupVisibilityTest(CourseTestCase):
         self.problem = self.store.get_item(self.problem.location)
 
         # Note that "has_children_visible_to_specific_partition_groups" only checks immediate children.
-        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.sequential))
-        self.assertTrue(utils.has_children_visible_to_specific_partition_groups(self.vertical))
-        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.html))
-        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.problem))
+        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.sequential))  # noqa: PT009
+        self.assertTrue(utils.has_children_visible_to_specific_partition_groups(self.vertical))  # noqa: PT009
+        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.html))  # noqa: PT009
+        self.assertFalse(utils.has_children_visible_to_specific_partition_groups(self.problem))  # noqa: PT009
 
-        self.assertTrue(utils.is_visible_to_specific_partition_groups(self.sequential))
-        self.assertFalse(utils.is_visible_to_specific_partition_groups(self.vertical))
-        self.assertFalse(utils.is_visible_to_specific_partition_groups(self.html))
-        self.assertTrue(utils.is_visible_to_specific_partition_groups(self.problem))
+        self.assertTrue(utils.is_visible_to_specific_partition_groups(self.sequential))  # noqa: PT009
+        self.assertFalse(utils.is_visible_to_specific_partition_groups(self.vertical))  # noqa: PT009
+        self.assertFalse(utils.is_visible_to_specific_partition_groups(self.html))  # noqa: PT009
+        self.assertTrue(utils.is_visible_to_specific_partition_groups(self.problem))  # noqa: PT009
 
 
 class GetUserPartitionInfoTest(ModuleStoreTestCase):
@@ -518,12 +518,12 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
                 ]
             }
         ]
-        self.assertEqual(self._get_partition_info(schemes=["cohort", "random"]), expected)
+        self.assertEqual(self._get_partition_info(schemes=["cohort", "random"]), expected)  # noqa: PT009
 
         # Update group access and expect that now one group is marked as selected.
         self._set_group_access({0: [1]})
         expected[0]["groups"][1]["selected"] = True
-        self.assertEqual(self._get_partition_info(schemes=["cohort", "random"]), expected)
+        self.assertEqual(self._get_partition_info(schemes=["cohort", "random"]), expected)  # noqa: PT009
 
     def test_deleted_groups(self):
         # Select a group that is not defined in the partition
@@ -532,8 +532,8 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
         # Expect that the group appears as selected but is marked as deleted
         partitions = self._get_partition_info()
         groups = partitions[0]["groups"]
-        self.assertEqual(len(groups), 3)
-        self.assertEqual(groups[2], {
+        self.assertEqual(len(groups), 3)  # noqa: PT009
+        self.assertEqual(groups[2], {  # noqa: PT009
             "id": 3,
             "name": "Deleted Group",
             "selected": True,
@@ -557,8 +557,8 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
         self._set_group_access({0: [1]})
         partitions = self._get_partition_info()
         groups = partitions[0]["groups"]
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(groups[0], {
+        self.assertEqual(len(groups), 1)  # noqa: PT009
+        self.assertEqual(groups[0], {  # noqa: PT009
             "id": 1,
             "name": "Deleted Group",
             "selected": True,
@@ -567,8 +567,8 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
 
     def test_filter_by_partition_scheme(self):
         partitions = self._get_partition_info(schemes=["random"])
-        self.assertEqual(len(partitions), 1)
-        self.assertEqual(partitions[0]["scheme"], "random")
+        self.assertEqual(len(partitions), 1)  # noqa: PT009
+        self.assertEqual(partitions[0]["scheme"], "random")  # noqa: PT009
 
     def test_exclude_inactive_partitions(self):
         # Include an inactive verification scheme
@@ -597,8 +597,8 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
 
         # Expect that the inactive scheme is excluded from the results
         partitions = self._get_partition_info(schemes=["cohort", "verification"])
-        self.assertEqual(len(partitions), 1)
-        self.assertEqual(partitions[0]["scheme"], "cohort")
+        self.assertEqual(len(partitions), 1)  # noqa: PT009
+        self.assertEqual(partitions[0]["scheme"], "cohort")  # noqa: PT009
 
     def test_exclude_partitions_with_no_groups(self):
         # The cohort partition has no groups defined
@@ -623,8 +623,8 @@ class GetUserPartitionInfoTest(ModuleStoreTestCase):
 
         # Expect that the partition with no groups is excluded from the results
         partitions = self._get_partition_info(schemes=["cohort", "random"])
-        self.assertEqual(len(partitions), 1)
-        self.assertEqual(partitions[0]["scheme"], "random")
+        self.assertEqual(len(partitions), 1)  # noqa: PT009
+        self.assertEqual(partitions[0]["scheme"], "random")  # noqa: PT009
 
     def _set_partitions(self, partitions):
         """Set the user partitions of the course block. """
@@ -661,24 +661,24 @@ class ValidateCourseOlxTests(CourseTestCase):
         Tests that olx is validation is skipped with library locator.
         """
         library_key = LibraryLocator(org='TestOrg', library='TestProbs')
-        self.assertTrue(validate_course_olx(library_key, self.toy_course_path, self.status))
-        self.assertFalse(mock_olxcleaner_validate.called)
+        self.assertTrue(validate_course_olx(library_key, self.toy_course_path, self.status))  # noqa: PT009
+        self.assertFalse(mock_olxcleaner_validate.called)  # noqa: PT009
 
     def test_config_settings_enabled(self, mock_olxcleaner_validate):
         """
         Tests olx validation with config setting is disabled.
         """
         with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=False):
-            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))
-            self.assertFalse(mock_olxcleaner_validate.called)
+            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
+            self.assertFalse(mock_olxcleaner_validate.called)  # noqa: PT009
 
     def test_config_settings_disabled(self, mock_olxcleaner_validate):
         """
         Tests olx validation with config setting is enabled.
         """
         with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True):
-            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))
-            self.assertTrue(mock_olxcleaner_validate.called)
+            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
+            self.assertTrue(mock_olxcleaner_validate.called)  # noqa: PT009
 
     def test_exception_during_validation(self, mock_olxcleaner_validate):
         """
@@ -689,8 +689,8 @@ class ValidateCourseOlxTests(CourseTestCase):
         """
         mock_olxcleaner_validate.side_effect = Exception
         with mock.patch(self.LOGGER) as patched_log:
-            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))
-            self.assertTrue(mock_olxcleaner_validate.called)
+            self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
+            self.assertTrue(mock_olxcleaner_validate.called)  # noqa: PT009
             patched_log.exception.assert_called_once_with(
                 f'Course import {self.course.id}: CourseOlx could not be validated')
 
@@ -704,10 +704,10 @@ class ValidateCourseOlxTests(CourseTestCase):
             Mock(errors=[], return_error=Mock(return_value=False)),
             Mock()
         ]
-        self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))
+        self.assertTrue(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
         task_artifact = UserTaskArtifact.objects.filter(status=self.status, name='OLX_VALIDATION_ERROR').first()
-        self.assertIsNone(task_artifact)
-        self.assertTrue(mock_olxcleaner_validate.called)
+        self.assertIsNone(task_artifact)  # noqa: PT009
+        self.assertTrue(mock_olxcleaner_validate.called)  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.report_error_summary')
     @mock.patch('cms.djangoapps.contentstore.tasks.report_errors')
@@ -728,12 +728,12 @@ class ValidateCourseOlxTests(CourseTestCase):
         mock_report_error_summary.return_value = [f'Errors: {len(errors)}']
 
         with patch(self.LOGGER) as patched_log:
-            self.assertFalse(validate_course_olx(self.course.id, self.toy_course_path, self.status))
+            self.assertFalse(validate_course_olx(self.course.id, self.toy_course_path, self.status))  # noqa: PT009
             patched_log.error.assert_called_once_with(
                 f'Course import {self.course.id}: CourseOlx validation failed.')
 
         task_artifact = UserTaskArtifact.objects.filter(status=self.status, name='OLX_VALIDATION_ERROR').first()
-        self.assertIsNotNone(task_artifact)
+        self.assertIsNotNone(task_artifact)  # noqa: PT009
 
     def test_validate_calls_with(self, mock_olxcleaner_validate):
         """
@@ -764,7 +764,7 @@ class DetermineLabelTests(TestCase):
         display_name = None
         block_type = "html"
         result = utils.determine_label(display_name, block_type)
-        self.assertEqual(result, "Text")
+        self.assertEqual(result, "Text")  # noqa: PT009
 
     def test_html_replaced_with_text_for_empty(self):
         """
@@ -773,7 +773,7 @@ class DetermineLabelTests(TestCase):
         display_name = ""
         block_type = "html"
         result = utils.determine_label(display_name, block_type)
-        self.assertEqual(result, "Text")
+        self.assertEqual(result, "Text")  # noqa: PT009
 
     def test_set_titles_not_replaced(self):
         """
@@ -782,7 +782,7 @@ class DetermineLabelTests(TestCase):
         display_name = "Something"
         block_type = "html"
         result = utils.determine_label(display_name, block_type)
-        self.assertEqual(result, "Something")
+        self.assertEqual(result, "Something")  # noqa: PT009
 
     def test_non_html_blocks_titles_not_replaced(self):
         """
@@ -791,10 +791,10 @@ class DetermineLabelTests(TestCase):
         display_name = None
         block_type = "something else"
         result = utils.determine_label(display_name, block_type)
-        self.assertEqual(result, "something else")
+        self.assertEqual(result, "something else")  # noqa: PT009
 
 
-class AuthorizeStaffTestCase():
+class AuthorizeStaffTestCase():  # noqa: UP039
     """
     Test that only staff roles can access an API endpoint.
     """

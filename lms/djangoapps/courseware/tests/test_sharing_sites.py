@@ -51,14 +51,14 @@ class TestSharingSites(TestCase):
         Test that the sharing url is built correctly
         """
         base_url, params = sharing_url(TEST_PUBLIC_URL, config).split("?")
-        self.assertEqual(base_url, config.base_share_url)
+        self.assertEqual(base_url, config.base_share_url)  # noqa: PT009
         decoded_params = dict(parse_qsl(params))
-        self.assertEqual(decoded_params[config.url_param_name], TEST_PUBLIC_URL)
+        self.assertEqual(decoded_params[config.url_param_name], TEST_PUBLIC_URL)  # noqa: PT009
         if getattr(config, 'additional_site_params', False):
             # additional_site_params will be the subset of decoded_params
             for key, expected_value in config.additional_site_params.items():
                 assert decoded_params[key] == expected_value
-            self.assertNotIn('additional_site_params', decoded_params)
+            self.assertNotIn('additional_site_params', decoded_params)  # noqa: PT009
 
     def test_sharing_sites_info_for_video(self):
         """
@@ -70,8 +70,8 @@ class TestSharingSites(TestCase):
         ]
         with patch('openedx.core.djangoapps.video_config.sharing_sites.ALL_SHARING_SITES', new=sharing_site_configs):
             sharing_sites_info = sharing_sites_info_for_video(TEST_PUBLIC_URL, organization=None)
-            for expected_config, actual_info in zip(sharing_site_configs, sharing_sites_info):
-                self.assertDictEqual(
+            for expected_config, actual_info in zip(sharing_site_configs, sharing_sites_info):  # noqa: B905
+                self.assertDictEqual(  # noqa: PT009
                     actual_info,
                     {
                         'name': expected_config.name,

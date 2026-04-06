@@ -187,7 +187,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         self._set_opt_in_pref(self.user, self.TEST_ORG, True)
 
         # No course available for this particular org
-        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):
+        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):  # noqa: PT027
             self._run_command("other_org")
 
     def test_specify_subset_of_courses(self):
@@ -272,7 +272,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
             expected_msg_regex = (
                 "^Error: the following arguments are required: OUTPUT_FILENAME, ORG_ALIASES$"
             )
-        with self.assertRaisesRegex(CommandError, expected_msg_regex):
+        with self.assertRaisesRegex(CommandError, expected_msg_regex):  # noqa: PT027
             call_command('email_opt_in_list', *args)
 
     def test_file_already_exists(self):
@@ -281,7 +281,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         def _cleanup():
             temp_file.close()
 
-        with self.assertRaisesRegex(CommandError, "^File already exists"):
+        with self.assertRaisesRegex(CommandError, "^File already exists"):  # noqa: PT027
             call_command('email_opt_in_list', temp_file.name, self.TEST_ORG)
 
     def test_no_user_profile(self):

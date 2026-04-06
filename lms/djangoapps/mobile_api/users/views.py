@@ -6,7 +6,7 @@ Views for user API
 import datetime
 import logging
 from functools import cached_property
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set  # noqa: UP035
 
 import pytz
 from completion.exceptions import UnavailableCompletionData
@@ -29,7 +29,7 @@ from rest_framework.response import Response
 from xblock.fields import Scope
 from xblock.runtime import KeyValueStore
 
-from common.djangoapps.student.models import CourseEnrollment, User  # lint-amnesty, pylint: disable=reimported
+from common.djangoapps.student.models import CourseEnrollment, User  # lint-amnesty, pylint: disable=reimported  # noqa: F811
 from lms.djangoapps.courseware.access import is_mobile_available_for_user
 from lms.djangoapps.courseware.access_utils import ACCESS_GRANTED
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
@@ -473,7 +473,7 @@ class UserCourseEnrollmentsList(generics.ListAPIView):
         """
         return get_object_or_404(User, username=self.kwargs['username'])
 
-    def get_primary_enrollment_by_latest_enrollment_or_progress(self) -> Optional[CourseEnrollment]:
+    def get_primary_enrollment_by_latest_enrollment_or_progress(self) -> Optional[CourseEnrollment]:  # noqa: UP045
         """
         Gets primary enrollment obj by latest enrollment or latest progress on the course.
         """
@@ -517,7 +517,7 @@ class UserCourseEnrollmentsList(generics.ListAPIView):
         Implements solutions from the discussion at
         https://www.github.com/encode/django-rest-framework/issues/6397.
         """
-        super().paginator  # pylint: disable=expression-not-assigned
+        super().paginator  # pylint: disable=expression-not-assigned  # noqa: B018
         api_version = self.kwargs.get('api_version')
 
         if self._paginator is None and api_version == API_V3:
@@ -620,8 +620,8 @@ class UserEnrollmentsStatus(views.APIView):
         self,
         username: str,
         active_status_date: datetime,
-        course_ids: Set[CourseLocator],
-    ) -> List[Dict[str, bool]]:
+        course_ids: Set[CourseLocator],  # noqa: UP006
+    ) -> List[Dict[str, bool]]:  # noqa: UP006
         """
         Builds list with dictionaries with user's enrolments statuses.
         """
@@ -655,7 +655,7 @@ class UserEnrollmentsStatus(views.APIView):
     def _get_course_ids_where_user_has_completions(
         username: str,
         active_status_date: datetime,
-    ) -> Set[CourseLocator]:
+    ) -> Set[CourseLocator]:  # noqa: UP006
         """
         Gets course keys where user has completions.
         """

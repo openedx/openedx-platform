@@ -84,7 +84,7 @@ class Command(BaseCommand):
             for enrollment in enrollments:
                 enrollment.update_enrollment(is_active=False, skip_refund=True)
                 logger.info(
-                    "User [{}] have been successfully unenrolled from the course: {}".format(
+                    "User [{}] have been successfully unenrolled from the course: {}".format(  # noqa: UP032
                         enrollment.user.username, course_key
                     )
                 )

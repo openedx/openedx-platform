@@ -164,7 +164,7 @@ class AccessTokenExchangeForm(forms.Form):
         try:
             client = self.oauth2_adapter.get_client(client_id=client_id)
         except Application.DoesNotExist:
-            raise OAuthValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise OAuthValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 {
                     "error": "invalid_client",
                     "error_description": f"{client_id} is not a valid client_id",

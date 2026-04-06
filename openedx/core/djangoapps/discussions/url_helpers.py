@@ -8,7 +8,7 @@ from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 
 
-def _get_url_with_view_query_params(path: str, view: Optional[str] = None) -> str:
+def _get_url_with_view_query_params(path: str, view: Optional[str] = None) -> str:  # noqa: UP045
     """
     Helper function to build url if a url is configured
 
@@ -34,7 +34,7 @@ def _get_url_with_view_query_params(path: str, view: Optional[str] = None) -> st
     return url
 
 
-def get_discussions_mfe_url(course_key: CourseKey, view: Optional[str] = None) -> str:
+def get_discussions_mfe_url(course_key: CourseKey, view: Optional[str] = None) -> str:  # noqa: UP045
     """
     Returns the url for discussions for the specified course in the discussions MFE.
 
@@ -48,7 +48,7 @@ def get_discussions_mfe_url(course_key: CourseKey, view: Optional[str] = None) -
     return _get_url_with_view_query_params(f"{course_key}/", view)
 
 
-def get_discussions_mfe_topic_url(course_key: CourseKey, topic_id: str, view: Optional[str] = None) -> str:
+def get_discussions_mfe_topic_url(course_key: CourseKey, topic_id: str, view: Optional[str] = None) -> str:  # noqa: UP045
     """
     Returns the url for discussions for the specified course and topic in the discussions MFE.
 

@@ -152,7 +152,7 @@ class CourseEnrollmentQuerySet(models.QuerySet):
         """
         return self.filter(course_id__in=self.get_user_course_ids_with_certificates(username))
 
-    def in_progress(self, username, time_zone=ZoneInfo("UTC")):
+    def in_progress(self, username, time_zone=ZoneInfo("UTC")):  # noqa: B008
         """
         Returns a queryset of CourseEnrollment objects for courses that are currently in progress.
         """
@@ -170,7 +170,7 @@ class CourseEnrollmentQuerySet(models.QuerySet):
         """
         return self.active().with_certificates(username)
 
-    def expired(self, username, time_zone=ZoneInfo("UTC")):
+    def expired(self, username, time_zone=ZoneInfo("UTC")):  # noqa: B008
         """
         Returns a queryset of CourseEnrollment objects for courses that have expired.
         """
@@ -319,7 +319,7 @@ class CourseEnrollment(models.Model):
     def course_price(self):
         return get_cosmetic_verified_display_price(self.course)
 
-    created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)  # noqa: DJ012
 
     # If is_active is False, then the student is not considered to be enrolled
     # in the course (is_enrolled() will return False)
@@ -337,19 +337,19 @@ class CourseEnrollment(models.Model):
         table_name='student_courseenrollment_history'
     )
 
-    objects = CourseEnrollmentManager()
+    objects = CourseEnrollmentManager()  # noqa: DJ012
 
     # cache key format e.g enrollment.<username>.<course_key>.mode = 'honor'
     COURSE_ENROLLMENT_CACHE_KEY = "enrollment.{}.{}.mode"
 
     MODE_CACHE_NAMESPACE = 'CourseEnrollment.mode_and_active'
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         unique_together = (('user', 'course'),)
         indexes = [Index(fields=['user', '-created'])]
         ordering = ('user', 'course')
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):  # noqa: DJ012
         super().__init__(*args, **kwargs)
 
         # Private variable for storing course_overview to minimize calls to the database.
@@ -357,11 +357,11 @@ class CourseEnrollment(models.Model):
         self._course_overview = None
 
     def __str__(self):
-        return (
+        return (  # noqa: UP032
             "[CourseEnrollment] {}: {} ({}); active: ({})"
         ).format(self.user, self.course_id, self.created, self.is_active)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         super().save(*args, **kwargs)
 
         # Delete the cached status hash, forcing the value to be recalculated the next time it is needed.
@@ -739,7 +739,7 @@ class CourseEnrollment(models.Model):
             )
             if check_access:
                 log.warning("User %s failed to enroll in non-existent course %s", user.username, str(course_key))
-                raise NonExistentCourseError  # lint-amnesty, pylint: disable=raise-missing-from
+                raise NonExistentCourseError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if check_access:
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
@@ -1515,7 +1515,7 @@ def update_expiry_email_date(sender, instance, **kwargs):  # pylint: disable=unu
         SoftwareSecurePhotoVerification.update_expiry_email_date_for_user(instance.user, email_config)
 
 
-class ManualEnrollmentAudit(models.Model):
+class ManualEnrollmentAudit(models.Model):  # noqa: DJ008
     """
     Table for tracking which enrollments were performed through manual enrollment.
 
@@ -1528,8 +1528,8 @@ class ManualEnrollmentAudit(models.Model):
     enrolled_email = models.CharField(max_length=255, db_index=True)
     time_stamp = models.DateTimeField(auto_now_add=True, null=True)
     state_transition = models.CharField(max_length=255, choices=TRANSITION_STATES)
-    reason = models.TextField(null=True)
-    role = models.CharField(blank=True, null=True, max_length=64)
+    reason = models.TextField(null=True)  # noqa: DJ001
+    role = models.CharField(blank=True, null=True, max_length=64)  # noqa: DJ001
     history = HistoricalRecords()
 
     @classmethod
@@ -1669,7 +1669,7 @@ class CourseEnrollmentAttribute(models.Model):
 
     def __str__(self):
         """Unicode representation of the attribute. """
-        return "{namespace}:{name}, {value}".format(
+        return "{namespace}:{name}, {value}".format(  # noqa: UP032
             namespace=self.namespace,
             name=self.name,
             value=self.value,
@@ -1802,7 +1802,7 @@ class CourseEnrollmentCelebration(TimeStampedModel):
     celebrate_weekly_goal = models.BooleanField(default=False)
 
     def __str__(self):
-        return (
+        return (  # noqa: UP032
             '[CourseEnrollmentCelebration] course: {}; user: {}'
         ).format(self.enrollment.course.id, self.enrollment.user.username)
 

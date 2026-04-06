@@ -132,7 +132,7 @@ class _CourseGradeReportContext:
             graded_subsections_map = OrderedDict()
             for subsection_index, subsection_info in enumerate(subsection_infos, start=1):
                 subsection = subsection_info['subsection_block']
-                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(
+                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(  # noqa: UP032
                     assignment_type=assignment_type_name,
                     subsection_index=subsection_index,
                     subsection_name=subsection.display_name,
@@ -174,7 +174,7 @@ class _ProblemGradeReportContext:
 
     def __init__(self, _xblock_instance_args, _entry_id, course_id, _task_input, action_name):
         task_id = _xblock_instance_args.get('task_id') if _xblock_instance_args is not None else None
-        self.task_info_string = (
+        self.task_info_string = (  # noqa: UP032
             'Task: {task_id}, '
             'InstructorTask ID: {entry_id}, '
             'Course: {course_id}, '
@@ -327,7 +327,7 @@ class InMemoryReportMixin:
         the given batched_rows.
         """
         # partition and chain successes and errors
-        success_rows, error_rows = zip(*batched_rows)
+        success_rows, error_rows = zip(*batched_rows)  # noqa: B905
         success_rows = list(chain(*success_rows))
         error_rows = list(chain(*error_rows))
 

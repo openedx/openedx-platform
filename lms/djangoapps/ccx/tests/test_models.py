@@ -47,9 +47,9 @@ class TestCCX(ModuleStoreTestCase):
             # these statements are used entirely to demonstrate the
             # instance-level caching of these values on CCX objects. The
             # check_mongo_calls context is the point here.
-            self.ccx.course  # pylint: disable=pointless-statement
+            self.ccx.course  # pylint: disable=pointless-statement  # noqa: B018
         with check_mongo_calls(0):
-            self.ccx.course  # pylint: disable=pointless-statement
+            self.ccx.course  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_ccx_start_is_correct(self):
         """verify that the start datetime for a ccx is correctly retrieved
@@ -73,9 +73,9 @@ class TestCCX(ModuleStoreTestCase):
             # these statements are used entirely to demonstrate the
             # instance-level caching of these values on CCX objects. The
             # check_mongo_calls context is the point here.
-            self.ccx.start  # pylint: disable=pointless-statement
+            self.ccx.start  # pylint: disable=pointless-statement  # noqa: B018
         with check_mongo_calls(0):
-            self.ccx.start  # pylint: disable=pointless-statement
+            self.ccx.start  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_ccx_due_without_override(self):
         """verify that due returns None when the field has not been set"""
@@ -98,9 +98,9 @@ class TestCCX(ModuleStoreTestCase):
             # these statements are used entirely to demonstrate the
             # instance-level caching of these values on CCX objects. The
             # check_mongo_calls context is the point here.
-            self.ccx.due  # pylint: disable=pointless-statement
+            self.ccx.due  # pylint: disable=pointless-statement  # noqa: B018
         with check_mongo_calls(0):
-            self.ccx.due  # pylint: disable=pointless-statement
+            self.ccx.due  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_ccx_has_started(self):
         """verify that a ccx marked as starting yesterday has started"""

@@ -21,7 +21,7 @@ class TestCourseOutlineData(TestCase):
         test as needed.
         """
         super().setUpClass()
-        normal_visibility = VisibilityData(  # lint-amnesty, pylint: disable=unused-variable
+        normal_visibility = VisibilityData(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             hide_from_toc=False,
             visible_to_staff_only=False
         )
@@ -29,7 +29,7 @@ class TestCourseOutlineData(TestCase):
         cls.course_outline = CourseOutlineData(
             course_key=cls.course_key,
             title="Exciting Test Course!",
-            published_at=datetime(2020, 5, 19, tzinfo=timezone.utc),
+            published_at=datetime(2020, 5, 19, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2014",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -41,7 +41,7 @@ class TestCourseOutlineData(TestCase):
     def test_deprecated_course_key(self):
         """Old-Mongo style, "Org/Course/Run" keys are not supported."""
         old_course_key = CourseKey.from_string("OpenEdX/TestCourse/TestRun")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             attr.evolve(self.course_outline, course_key=old_course_key)
 
     def test_sequence_building(self):
@@ -58,7 +58,7 @@ class TestCourseOutlineData(TestCase):
         section_with_dupe_seq = attr.evolve(
             self.course_outline.sections[1], title="Chapter 2 dupe",
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             attr.evolve(
                 self.course_outline,
                 sections=self.course_outline.sections + [section_with_dupe_seq]
@@ -66,7 +66,7 @@ class TestCourseOutlineData(TestCase):
 
     def test_size(self):
         """Limit how large a CourseOutline is allowed to be."""
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             attr.evolve(
                 self.course_outline,
                 sections=generate_sections(self.course_key, [1001])
@@ -116,7 +116,7 @@ class TestCourseOutlineData(TestCase):
         assert new_outline != self.course_outline
         assert new_outline.days_early_for_beta == 5
 
-        with pytest.raises(ValueError) as error:
+        with pytest.raises(ValueError) as error:  # noqa: PT011
             attr.evolve(self.course_outline, days_early_for_beta=-1)
         assert error.match(
             "Provided value -1 for days_early_for_beta is invalid. The value must be positive or zero. "
@@ -139,7 +139,7 @@ class TestCourseOutlineData(TestCase):
                 51: frozenset([1]),
             }
         )
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             attr.evolve(
                 valid_section,
                 user_partition_groups={

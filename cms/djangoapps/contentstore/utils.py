@@ -209,7 +209,7 @@ def get_lms_link_for_item(location, preview=False):
         query_string = urlencode(params)
 
     url_parts = list(urlparse(lms_base))
-    url_parts[2] = '/courses/{course_key}/jump_to/{location}'.format(
+    url_parts[2] = '/courses/{course_key}/jump_to/{location}'.format(  # noqa: UP032
         course_key=str(location.course_key),
         location=str(location),
     )
@@ -230,7 +230,7 @@ def get_lms_link_for_certificate_web_view(course_key, mode):
     if lms_base is None:
         return None
 
-    return "//{certificate_web_base}/certificates/course/{course_id}?preview={mode}".format(
+    return "//{certificate_web_base}/certificates/course/{course_id}?preview={mode}".format(  # noqa: UP032
         certificate_web_base=lms_base,
         course_id=str(course_key),
         mode=mode
@@ -996,7 +996,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(
+            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032
                 section=section.location,
                 subsection=subsection.location
             ))
@@ -1010,7 +1010,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_parent().get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: In section {section} in course".format(
+            log.error("URL Retrieval Error: In section {section} in course".format(  # noqa: UP032
                 section=section.location,
             ))
             return None
@@ -1221,7 +1221,7 @@ def duplicate_block(
         # .. event_implemented_name: XBLOCK_DUPLICATED
         # .. event_type: org.openedx.content_authoring.xblock.duplicated.v1
         XBLOCK_DUPLICATED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             xblock_info=DuplicatedXBlockData(
                 usage_key=dest_block.location,
                 block_type=dest_block.location.block_type,

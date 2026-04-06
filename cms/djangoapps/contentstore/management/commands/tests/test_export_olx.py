@@ -28,7 +28,7 @@ class TestArgParsingCourseExportOlx(unittest.TestCase):
         Test export command with no arguments
         """
         errstring = "Error: the following arguments are required: course_id"
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export_olx')
 
 
@@ -42,7 +42,7 @@ class TestCourseExportOlx(TaggedCourseMixin, ModuleStoreTestCase):
         Test export command with an invalid course key.
         """
         errstring = "Unparsable course_id"
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export_olx', 'InvalidCourseID')
 
     def test_course_key_not_found(self):
@@ -50,13 +50,13 @@ class TestCourseExportOlx(TaggedCourseMixin, ModuleStoreTestCase):
         Test export command with a valid course key that doesn't exist.
         """
         errstring = "Invalid course_id"
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export_olx', 'x/y/z')
 
     def create_dummy_course(self, store_type):
         """Create small course."""
         course = CourseFactory.create(default_store=store_type)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             modulestore().has_course(course.id),
             f"Could not find course in {store_type}"
         )
@@ -65,17 +65,17 @@ class TestCourseExportOlx(TaggedCourseMixin, ModuleStoreTestCase):
     def check_export_file(self, tar_file, course_key, with_tags=False):
         """Check content of export file."""
         names = tar_file.getnames()
-        dirname = "{0.org}-{0.course}-{0.run}".format(course_key)
-        self.assertIn(dirname, names)
+        dirname = "{0.org}-{0.course}-{0.run}".format(course_key)  # noqa: UP032
+        self.assertIn(dirname, names)  # noqa: PT009
         # Check if some of the files are present, without being exhaustive.
-        self.assertIn(f"{dirname}/about", names)
-        self.assertIn(f"{dirname}/about/overview.html", names)
-        self.assertIn(f"{dirname}/assets/assets.xml", names)
-        self.assertIn(f"{dirname}/policies", names)
+        self.assertIn(f"{dirname}/about", names)  # noqa: PT009
+        self.assertIn(f"{dirname}/about/overview.html", names)  # noqa: PT009
+        self.assertIn(f"{dirname}/assets/assets.xml", names)  # noqa: PT009
+        self.assertIn(f"{dirname}/policies", names)  # noqa: PT009
         if with_tags:
-            self.assertIn(f"{dirname}/tags.csv", names)
+            self.assertIn(f"{dirname}/tags.csv", names)  # noqa: PT009
         else:
-            self.assertNotIn(f"{dirname}/tags.csv", names)
+            self.assertNotIn(f"{dirname}/tags.csv", names)  # noqa: PT009
 
     def test_export_course(self):
         test_course_key = self.create_dummy_course(ModuleStoreEnum.Type.split)

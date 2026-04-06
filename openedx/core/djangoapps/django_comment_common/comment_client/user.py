@@ -37,7 +37,7 @@ class User(models.Model):
         Calls forum service to mark thread as read for the user
         """
         course_id = self.attributes.get("course_id")
-        course_key = utils.get_course_key(course_id)
+        course_key = utils.get_course_key(course_id)  # noqa: F841
         forum_api.mark_thread_as_read(self.id, source.id, course_id=str(course_id))
 
     def follow(self, source, course_id=None):
@@ -171,7 +171,7 @@ class User(models.Model):
         })
         try:
             response = forum_api.get_user(**params)
-        except ForumV2RequestError as e:
+        except ForumV2RequestError as e:  # noqa: F841
             self.save({"course_id": course_id})
             response = forum_api.get_user(**params)
         self._update_from_response(response)

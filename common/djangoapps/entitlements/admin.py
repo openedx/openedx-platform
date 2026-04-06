@@ -36,7 +36,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
             try:
                 self.data['unenrolled_run'] = CourseKey.from_string(self.data['unenrolled_run'])
             except InvalidKeyError:
-                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # lint-amnesty, pylint: disable=raise-missing-from
+                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def clean_course_id(self):
         """Cleans course id and attempts to make course key from string version of key"""
@@ -44,7 +44,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(f"Cannot find course with id {course_id} in the modulestore")
@@ -52,7 +52,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
         return course_key
 
     class Meta:
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
         model = CourseEntitlementSupportDetail
 
 
@@ -77,7 +77,7 @@ class CourseEntitlementPolicyForm(forms.ModelForm):
         self.fields['mode'].required = False
 
     class Meta:
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
         model = CourseEntitlementPolicy
 
 

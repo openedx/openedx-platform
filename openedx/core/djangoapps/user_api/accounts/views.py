@@ -48,7 +48,7 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     get_retired_email_by_email,
     get_retired_username_by_username,
     is_email_retired,
-    is_username_retired,
+    is_username_retired,  # noqa: F401
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_pending_name_change
 from common.djangoapps.track import segment

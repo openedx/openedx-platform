@@ -78,7 +78,7 @@ from common.djangoapps.util.file import (
     store_uploaded_file,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest
-from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import
+from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import  # noqa: F401
 from lms.djangoapps.bulk_email.api import create_course_email, is_bulk_email_feature_enabled
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
@@ -1689,7 +1689,7 @@ class GetStudentsFeatures(DeveloperErrorViewMixin, APIView):
                 )
                 success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
             except Exception as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
 
             return JsonResponse({"status": success_status})
 
@@ -1720,7 +1720,7 @@ class GetStudentsWhoMayEnroll(DeveloperErrorViewMixin, APIView):
             task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
 
         return JsonResponse({"status": success_status})
 
@@ -1758,7 +1758,7 @@ class GetInactiveEnrolledStudents(DeveloperErrorViewMixin, APIView):
             )
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(
+            raise self.api_error(  # noqa: B904
                 status.HTTP_400_BAD_REQUEST, str(e), "Requested task is already running"
             )
 
@@ -1865,7 +1865,7 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
             )
             task_api.submit_cohort_students(request, course_key, file_name)
         except (FileValidationException, ValueError) as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')  # noqa: B904
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -2018,7 +2018,7 @@ class StudentProgressUrlSerializer(serializers.Serializer):
         if course_home_mfe_progress_tab_is_active(course_id):
             progress_url = get_learning_mfe_home_url(course_id, url_fragment='progress')
             if user is not None:
-                progress_url += '/{}/'.format(user.id)
+                progress_url += '/{}/'.format(user.id)  # noqa: UP032
         else:
             progress_url = reverse('student_progress', kwargs={'course_id': str(course_id), 'student_id': user.id})
 
@@ -4028,7 +4028,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     return data
 
@@ -4045,7 +4045,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             user=username_or_email
         ))
 

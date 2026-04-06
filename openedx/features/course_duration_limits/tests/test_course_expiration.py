@@ -266,7 +266,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'You lose all access to this course, including your progress,'
         if show_expiration_banner:
             self.assertContains(response, banner_text)
@@ -302,7 +302,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'You lose all access to this course, including your progress,'
         self.assertNotContains(response, banner_text)
 
@@ -337,7 +337,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertContains(response, banner_text)
 
@@ -387,7 +387,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertNotContains(response, banner_text)
 
@@ -435,6 +435,6 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertNotContains(response, banner_text)

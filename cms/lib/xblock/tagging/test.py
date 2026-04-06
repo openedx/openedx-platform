@@ -60,21 +60,21 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
             category='chapter',
             display_name="Week 1",
             publish_item=True,
-            start=datetime(2015, 3, 1, tzinfo=timezone.utc),
+            start=datetime(2015, 3, 1, tzinfo=timezone.utc),  # noqa: UP017
         )
         self.sequential = BlockFactory.create(
             parent_location=self.chapter.location,
             category='sequential',
             display_name="Lesson 1",
             publish_item=True,
-            start=datetime(2015, 3, 1, tzinfo=timezone.utc),
+            start=datetime(2015, 3, 1, tzinfo=timezone.utc),  # noqa: UP017
         )
         self.vertical = BlockFactory.create(
             parent_location=self.sequential.location,
             category='vertical',
             display_name='Subsection 1',
             publish_item=True,
-            start=datetime(2015, 4, 1, tzinfo=timezone.utc),
+            start=datetime(2015, 4, 1, tzinfo=timezone.utc),  # noqa: UP017
         )
         self.problem = BlockFactory.create(
             category="problem",
@@ -131,7 +131,7 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         runtime = TestRuntime(services={'field-data': field_data})
         xblock_aside = StructuredTagsAside(scope_ids=sids, runtime=runtime)
         available_tags = xblock_aside.get_available_tags()
-        self.assertEqual(len(available_tags), 2, "StructuredTagsAside should contains two tag categories")
+        self.assertEqual(len(available_tags), 2, "StructuredTagsAside should contains two tag categories")  # noqa: PT009
 
     def test_preview_html(self):
         """
@@ -152,46 +152,46 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         tree = etree.parse(StringIO(problem_html), parser)
 
         main_div_nodes = tree.xpath('/html/body/div/section/div')
-        self.assertEqual(len(main_div_nodes), 2)
+        self.assertEqual(len(main_div_nodes), 2)  # noqa: PT009
 
         loader_div_node = main_div_nodes[0]
-        self.assertIn('ui-loading', loader_div_node.get('class'))
+        self.assertIn('ui-loading', loader_div_node.get('class'))  # noqa: PT009
 
         div_node = main_div_nodes[1]
-        self.assertEqual(div_node.get('data-init'), 'StructuredTagsInit')
-        self.assertEqual(div_node.get('data-runtime-class'), 'PreviewRuntime')
-        self.assertEqual(div_node.get('data-block-type'), 'tagging_aside')
-        self.assertEqual(div_node.get('data-runtime-version'), '1')
-        self.assertIn('xblock_asides-v1', div_node.get('class'))
+        self.assertEqual(div_node.get('data-init'), 'StructuredTagsInit')  # noqa: PT009
+        self.assertEqual(div_node.get('data-runtime-class'), 'PreviewRuntime')  # noqa: PT009
+        self.assertEqual(div_node.get('data-block-type'), 'tagging_aside')  # noqa: PT009
+        self.assertEqual(div_node.get('data-runtime-version'), '1')  # noqa: PT009
+        self.assertIn('xblock_asides-v1', div_node.get('class'))  # noqa: PT009
 
         select_nodes = div_node.xpath("div//select[@multiple='multiple']")
-        self.assertEqual(len(select_nodes), 2)
+        self.assertEqual(len(select_nodes), 2)  # noqa: PT009
 
         select_node1 = select_nodes[0]
-        self.assertEqual(select_node1.get('name'), self.aside_tag_dif)
+        self.assertEqual(select_node1.get('name'), self.aside_tag_dif)  # noqa: PT009
 
         option_nodes1 = select_node1.xpath('option')
-        self.assertEqual(len(option_nodes1), 3)
+        self.assertEqual(len(option_nodes1), 3)  # noqa: PT009
 
         option_values1 = [opt_elem.text for opt_elem in option_nodes1]
-        self.assertEqual(option_values1, ['Easy', 'Hard', 'Medium'])
+        self.assertEqual(option_values1, ['Easy', 'Hard', 'Medium'])  # noqa: PT009
 
         select_node2 = select_nodes[1]
-        self.assertEqual(select_node2.get('name'), self.aside_tag_lo)
-        self.assertEqual(select_node2.get('multiple'), 'multiple')
+        self.assertEqual(select_node2.get('name'), self.aside_tag_lo)  # noqa: PT009
+        self.assertEqual(select_node2.get('multiple'), 'multiple')  # noqa: PT009
 
         option_nodes2 = select_node2.xpath('option')
-        self.assertEqual(len(option_nodes2), 3)
+        self.assertEqual(len(option_nodes2), 3)  # noqa: PT009
 
         option_values2 = [opt_elem.text for opt_elem in option_nodes2 if opt_elem.text]
-        self.assertEqual(option_values2, ['Learned a few things', 'Learned everything', 'Learned nothing'])
+        self.assertEqual(option_values2, ['Learned a few things', 'Learned everything', 'Learned nothing'])  # noqa: PT009
 
         # Now ensure the acid_aside is not in the result
-        self.assertNotRegex(problem_html, r"data-block-type=[\"\']acid_aside[\"\']")
+        self.assertNotRegex(problem_html, r"data-block-type=[\"\']acid_aside[\"\']")  # noqa: PT009
 
         # Ensure about video don't have asides
         video_html = get_preview_fragment(request, self.video, context).content
-        self.assertNotRegex(video_html, "<select")
+        self.assertNotRegex(video_html, "<select")  # noqa: PT009
 
     @ddt.data(AsideUsageKeyV1, AsideUsageKeyV2)
     def test_handle_requests(self, aside_key_class):
@@ -208,15 +208,15 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         client.login(username=self.user.username, password=self.user_password)
 
         response = client.post(handler_url, json.dumps({}), content_type="application/json")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
         response = client.post(handler_url, json.dumps({'undefined_tag': ['undefined1', 'undefined2']}),
                                content_type="application/json")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
         response = client.post(handler_url, json.dumps({self.aside_tag_dif: ['undefined1', 'undefined2']}),
                                content_type="application/json")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
         def _test_helper_func(problem_location):
             """
@@ -233,18 +233,18 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
 
         response = client.post(handler_url, json.dumps({self.aside_tag_dif: [self.aside_tag_dif_value]}),
                                content_type="application/json")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         tag_aside = _test_helper_func(self.problem.location)
-        self.assertIsNotNone(tag_aside, "Necessary StructuredTagsAside object isn't found")
-        self.assertEqual(tag_aside.saved_tags[self.aside_tag_dif], [self.aside_tag_dif_value])
+        self.assertIsNotNone(tag_aside, "Necessary StructuredTagsAside object isn't found")  # noqa: PT009
+        self.assertEqual(tag_aside.saved_tags[self.aside_tag_dif], [self.aside_tag_dif_value])  # noqa: PT009
 
         response = client.post(handler_url, json.dumps({self.aside_tag_dif: [self.aside_tag_dif_value,
                                                                              self.aside_tag_dif_value2]}),
                                content_type="application/json")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         tag_aside = _test_helper_func(self.problem.location)
-        self.assertIsNotNone(tag_aside, "Necessary StructuredTagsAside object isn't found")
-        self.assertEqual(tag_aside.saved_tags[self.aside_tag_dif], [self.aside_tag_dif_value,
+        self.assertIsNotNone(tag_aside, "Necessary StructuredTagsAside object isn't found")  # noqa: PT009
+        self.assertEqual(tag_aside.saved_tags[self.aside_tag_dif], [self.aside_tag_dif_value,  # noqa: PT009
                                                                     self.aside_tag_dif_value2])

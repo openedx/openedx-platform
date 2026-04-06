@@ -140,7 +140,7 @@ def prepare_saml_response_from_xml(xml, relay_state='testshib'):
          (str): Base64 and URL encoded XML.
     """
     b64encoded_xml = b64encode(xml.encode())
-    return 'RelayState={relay_state}&SAMLResponse={saml_response}'.format(
+    return 'RelayState={relay_state}&SAMLResponse={saml_response}'.format(  # noqa: UP032
         relay_state=OneLogin_Saml2_Utils.escape_url(relay_state),
         saml_response=OneLogin_Saml2_Utils.escape_url(b64encoded_xml)
     )
@@ -152,4 +152,4 @@ def skip_unless_thirdpartyauth():
     """
     if AUTH_FEATURE_ENABLED:
         return lambda func: func
-    return skip("%s not enabled" % AUTH_FEATURES_KEY)
+    return skip("%s not enabled" % AUTH_FEATURES_KEY)  # noqa: UP031

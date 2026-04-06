@@ -543,7 +543,7 @@ def get_response_state(response):
     except TypeError:
         username = response.student.username
         err_msg = (
-            'Error occurred while attempting to load learner state '
+            'Error occurred while attempting to load learner state '  # noqa: UP032
             '{username} for state {state}.'.format(
                 username=username,
                 state=problem_state
@@ -643,42 +643,42 @@ def dump_grading_context(course):
     msg = hbar
     msg += "Course grader:\n"
 
-    msg += '%s\n' % course.grader.__class__
+    msg += '%s\n' % course.grader.__class__  # noqa: UP031
     graders = {}
     if isinstance(course.grader, xmgraders.WeightedSubsectionsGrader):
         msg += '\n'
         msg += "Graded sections:\n"
         for subgrader, category, weight in course.grader.subgraders:
             msg += "  subgrader=%s, type=%s, category=%s, weight=%s\n"\
-                % (subgrader.__class__, subgrader.type, category, weight)
+                % (subgrader.__class__, subgrader.type, category, weight)  # noqa: UP031
             subgrader.index = 1
             graders[subgrader.type] = subgrader
     msg += hbar
-    msg += "Listing grading context for course %s\n" % str(course.id)
+    msg += "Listing grading context for course %s\n" % str(course.id)  # noqa: UP031
 
     gcontext = grades_context.grading_context_for_course(course)
     msg += "graded sections:\n"
 
-    msg += '%s\n' % list(gcontext['all_graded_subsections_by_type'].keys())
+    msg += '%s\n' % list(gcontext['all_graded_subsections_by_type'].keys())  # noqa: UP031
     for (gsomething, gsvals) in gcontext['all_graded_subsections_by_type'].items():
-        msg += "--> Section %s:\n" % (gsomething)
+        msg += "--> Section %s:\n" % (gsomething)  # noqa: UP031
         for sec in gsvals:
             sdesc = sec['subsection_block']
             frmat = getattr(sdesc, 'format', None)
             aname = ''
             if frmat in graders:
                 gform = graders[frmat]
-                aname = '%s %02d' % (gform.short_label, gform.index)
+                aname = '%s %02d' % (gform.short_label, gform.index)  # noqa: UP031
                 gform.index += 1
             elif sdesc.display_name in graders:
                 gform = graders[sdesc.display_name]
-                aname = '%s' % gform.short_label
+                aname = '%s' % gform.short_label  # noqa: UP031
             notes = ''
             if getattr(sdesc, 'score_by_attempt', False):
                 notes = ', score by attempt!'
             msg += "      %s (format=%s, Assignment=%s%s)\n"\
-                % (sdesc.display_name, frmat, aname, notes)
+                % (sdesc.display_name, frmat, aname, notes)  # noqa: UP031
     msg += "all graded blocks:\n"
-    msg += "length=%d\n" % gcontext['count_all_graded_blocks']
+    msg += "length=%d\n" % gcontext['count_all_graded_blocks']  # noqa: UP031
     msg = HTML('<pre>{}</pre>').format(Text(msg))
     return msg

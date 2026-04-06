@@ -2,7 +2,7 @@
 Common base classes for all new XBlock runtimes.
 """
 import logging
-from typing import Callable, Protocol
+from typing import Callable, Protocol  # noqa: UP035
 from urllib.parse import urljoin  # pylint: disable=import-error
 
 import crum
@@ -371,7 +371,7 @@ class XBlockRuntime(RuntimeShim, Runtime):
             student_data_store = DictFieldData({})
         elif self.user.is_anonymous:
             # This is an anonymous (non-registered) user:
-            assert isinstance(self.user_id, str) and self.user_id.startswith("anon")
+            assert isinstance(self.user_id, str) and self.user_id.startswith("anon")  # noqa: PT018
             kvs = EphemeralKeyValueStore()
             student_data_store = KvsFieldData(kvs)
         elif self.student_data_mode == StudentDataMode.Ephemeral:

@@ -89,7 +89,7 @@ class Programs(APIView):
                 }
             ]
         """
-        user: "AnonymousUser | User" = request.user
+        user: "AnonymousUser | User" = request.user  # noqa: UP037
 
         if enterprise_uuid:
             enrollments = list(self._get_enterprise_course_enrollments(enterprise_uuid, user))
@@ -316,8 +316,8 @@ class ProgramProgressDetailView(APIView):
                 ]
             }
         """
-        user: "AnonymousUser | User" = request.user
-        site: "Site" = request.site
+        user: "AnonymousUser | User" = request.user  # noqa: UP037
+        site: "Site" = request.site  # noqa: UP037
         program_data, course_data = get_program_and_course_data(site, user, program_uuid)
         if not program_data:
             return Response(status=404, data={"error_code": "No program data available."})

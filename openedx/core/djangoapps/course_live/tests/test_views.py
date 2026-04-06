@@ -78,7 +78,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         Test response if PII sharing is not allowed
         """
         response = self._get()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         expected_data = {
             'course_key': None,
             'provider_type': '',
@@ -92,7 +92,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
             'free_tier': False,
             'pii_sharing_allowed': False
         }
-        self.assertEqual(response.data, expected_data)
+        self.assertEqual(response.data, expected_data)  # noqa: PT009
 
     def test_pii_sharing_is_allowed(self):
         """
@@ -100,7 +100,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         """
         CourseAllowPIISharingInLTIFlag.objects.create(course_id=self.course.id, enabled=True)
         response = self._get()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         expected_data = {
             'enabled': True,
             'course_key': None,
@@ -115,7 +115,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
             'provider_type': ''
         }
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(content, expected_data)
+        self.assertEqual(content, expected_data)  # noqa: PT009
 
     @ddt.data(('zoom', False, False), ('big_blue_button', False, True))
     @ddt.unpack
@@ -126,26 +126,26 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         lti_config, data, response = self.create_course_live_config(provider)
         course_live_configurations = CourseLiveConfiguration.get(self.course.id)
         lti_configuration = course_live_configurations.get(self.course.id).lti_configuration
-        self.assertEqual(self.course.id, course_live_configurations.course_key)
-        self.assertEqual(data['enabled'], course_live_configurations.enabled)
-        self.assertEqual(data['provider_type'], course_live_configurations.provider_type)
+        self.assertEqual(self.course.id, course_live_configurations.course_key)  # noqa: PT009
+        self.assertEqual(data['enabled'], course_live_configurations.enabled)  # noqa: PT009
+        self.assertEqual(data['provider_type'], course_live_configurations.provider_type)  # noqa: PT009
 
-        self.assertEqual(lti_config['lti_1p1_client_key'], lti_configuration.lti_1p1_client_key)
-        self.assertEqual(lti_config['lti_1p1_client_secret'], lti_configuration.lti_1p1_client_secret)
-        self.assertEqual(lti_config['lti_1p1_launch_url'], lti_configuration.lti_1p1_launch_url)
+        self.assertEqual(lti_config['lti_1p1_client_key'], lti_configuration.lti_1p1_client_key)  # noqa: PT009
+        self.assertEqual(lti_config['lti_1p1_client_secret'], lti_configuration.lti_1p1_client_secret)  # noqa: PT009
+        self.assertEqual(lti_config['lti_1p1_launch_url'], lti_configuration.lti_1p1_launch_url)  # noqa: PT009
 
         provider_instance = ProviderManager().get_enabled_providers().get(provider)
         additional_param = {'additional_parameters': {}}
         if provider_instance.additional_parameters:
             additional_param = {'additional_parameters': {'custom_instructor_email': 'email@example.com'}}
 
-        self.assertEqual({
+        self.assertEqual({  # noqa: PT009
             'pii_share_username': share_username,
             'pii_share_email': share_email,
             **additional_param
         }, lti_configuration.lti_config)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @ddt.data(('zoom', False, False), ('big_blue_button', False, True))
     @ddt.unpack
@@ -174,26 +174,26 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         live_configurations = CourseLiveConfiguration.get(self.course.id)
         lti_configuration = live_configurations.get(self.course.id).lti_configuration
 
-        self.assertEqual(self.course.id, live_configurations.course_key)
-        self.assertEqual(updated_data['enabled'], live_configurations.enabled)
-        self.assertEqual(updated_data['provider_type'], live_configurations.provider_type)
+        self.assertEqual(self.course.id, live_configurations.course_key)  # noqa: PT009
+        self.assertEqual(updated_data['enabled'], live_configurations.enabled)  # noqa: PT009
+        self.assertEqual(updated_data['provider_type'], live_configurations.provider_type)  # noqa: PT009
 
-        self.assertEqual(updated_lti_config.get('lti_1p1_client_key'), lti_configuration.lti_1p1_client_key)
-        self.assertEqual(lti_config.get('lti_1p1_client_secret'), lti_configuration.lti_1p1_client_secret)
-        self.assertEqual(updated_lti_config.get('lti_1p1_launch_url'), lti_configuration.lti_1p1_launch_url)
+        self.assertEqual(updated_lti_config.get('lti_1p1_client_key'), lti_configuration.lti_1p1_client_key)  # noqa: PT009
+        self.assertEqual(lti_config.get('lti_1p1_client_secret'), lti_configuration.lti_1p1_client_secret)  # noqa: PT009
+        self.assertEqual(updated_lti_config.get('lti_1p1_launch_url'), lti_configuration.lti_1p1_launch_url)  # noqa: PT009
 
         provider_instance = ProviderManager().get_enabled_providers().get(provider)
         additional_param = {'additional_parameters': {}}
         if provider_instance.additional_parameters:
             additional_param = updated_lti_config.get('lti_config')
 
-        self.assertEqual({
+        self.assertEqual({  # noqa: PT009
             'pii_share_username': share_username,
             'pii_share_email': share_email,
             **additional_param
         }, lti_configuration.lti_config)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @ddt.data(('zoom', False, False), ('big_blue_button', False, True))
     @ddt.unpack
@@ -227,8 +227,8 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         }
 
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(content, expected_data)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(content, expected_data)  # noqa: PT009
 
     @ddt.data(('zoom', False, False), ('big_blue_button', False, True))
     @ddt.unpack
@@ -253,7 +253,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         }
         response = self._post(updated_data)
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         provider_instance = ProviderManager().get_enabled_providers().get(provider)
         additional_param = {'additional_parameters': {}}
@@ -277,7 +277,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
             },
             'pii_sharing_allowed': share_email or share_username
         }
-        self.assertEqual(content, expected_data)
+        self.assertEqual(content, expected_data)  # noqa: PT009
 
     def test_post_error_messages(self):
         """
@@ -289,8 +289,8 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         expected_data = {
             'provider_type': ['This field is required.'],
         }
-        self.assertEqual(content, expected_data)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(content, expected_data)  # noqa: PT009
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_non_staff_user_access(self):
         """
@@ -299,13 +299,13 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         self.user = self.create_user_for_course(self.course, user_type=CourseUserType.UNENROLLED)
         response = self._get()
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(content, {'detail': 'You do not have permission to perform this action.'})
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
+        self.assertEqual(content, {'detail': 'You do not have permission to perform this action.'})  # noqa: PT009
 
         response = self._post({})
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(content, {'detail': 'You do not have permission to perform this action.'})
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
+        self.assertEqual(content, {'detail': 'You do not have permission to perform this action.'})  # noqa: PT009
 
     def test_courseware_api_has_live_tab(self):
         """
@@ -316,7 +316,7 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         response = self.client.get(url)
         content = json.loads(response.content.decode('utf-8'))
         data = next((tab for tab in content['tabs'] if tab['tab_id'] == 'lti_live'), None)
-        self.assertEqual(data, {
+        self.assertEqual(data, {  # noqa: PT009
             'tab_id': 'lti_live',
             'title': 'Live',
             'url': f'http://learning-mfe/course/{self.course.id}/live'
@@ -350,8 +350,8 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         }
 
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(content, expected_data)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(content, expected_data)  # noqa: PT009
 
 
 class TestCourseLiveProvidersView(ModuleStoreTestCase, APITestCase):
@@ -384,7 +384,7 @@ class TestCourseLiveProvidersView(ModuleStoreTestCase, APITestCase):
         }
         response = self.client.get(self.url)
         content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(content, expected_data)
+        self.assertEqual(content, expected_data)  # noqa: PT009
 
 
 class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
@@ -430,9 +430,9 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
         )
         live_config.save()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.data['iframe'], Markup)
-        self.assertIn('iframe', str(response.data['iframe']))
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertIsInstance(response.data['iframe'], Markup)  # noqa: PT009
+        self.assertIn('iframe', str(response.data['iframe']))  # noqa: PT009
 
     def test_non_authenticated_user(self):
         """
@@ -440,7 +440,7 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
         """
         self.client.logout()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_not_enrolled_user(self):
         """
@@ -448,7 +448,7 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
         """
         self.user = self.create_user_for_course(self.course, user_type=CourseUserType.UNENROLLED)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_live_configuration_disabled(self):
         """
@@ -460,4 +460,4 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
             provider_type="zoom",
         )
         response = self.client.get(self.url)
-        self.assertEqual(response.data['developer_message'], 'Course live is not enabled for this course.')
+        self.assertEqual(response.data['developer_message'], 'Course live is not enabled for this course.')  # noqa: PT009

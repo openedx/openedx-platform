@@ -111,14 +111,14 @@ class Command(BaseCommand):
             programs_by_type_slug.update(self.get_programs_by_type_slug(site, new_programs))
             organizations.update(self.get_programs_by_organization(new_programs))
 
-            logger.info('Caching UUIDs for {total} programs for site {site_name}.'.format(
+            logger.info('Caching UUIDs for {total} programs for site {site_name}.'.format(  # noqa: UP032
                 total=len(uuids),
                 site_name=site.domain,
             ))
             cache.set(SITE_PROGRAM_UUIDS_CACHE_KEY_TPL.format(domain=site.domain), uuids, None)
 
             pathway_ids = list(new_pathways.keys())
-            logger.info('Caching ids for {total} pathways for site {site_name}.'.format(
+            logger.info('Caching ids for {total} pathways for site {site_name}.'.format(  # noqa: UP032
                 total=len(pathway_ids),
                 site_name=site.domain,
             ))
@@ -166,7 +166,7 @@ class Command(BaseCommand):
             logger.exception(f'Failed to retrieve program UUIDs for site: {site.domain}.')
             failure = True
 
-        logger.info('Received {total} UUIDs for site {domain}'.format(
+        logger.info('Received {total} UUIDs for site {domain}'.format(  # noqa: UP032
             total=len(uuids),
             domain=site.domain
         ))
@@ -214,7 +214,7 @@ class Command(BaseCommand):
             )
             failure = True
 
-        logger.info('Received {total} pathways for site {domain}'.format(
+        logger.info('Received {total} pathways for site {domain}'.format(  # noqa: UP032
             total=len(pathways),
             domain=site.domain
         ))

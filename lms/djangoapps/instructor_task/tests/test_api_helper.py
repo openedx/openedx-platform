@@ -47,7 +47,7 @@ class ScheduledBulkEmailInstructorTaskTests(InstructorTaskCourseTestCase):
         self.request = self.FakeRequest(self.instructor)
         self.targets = [BulkEmailTargetChoices.SEND_TO_MYSELF]
         self.course_email = self._create_course_email(self.targets)
-        self.schedule = datetime.datetime.now(datetime.timezone.utc)
+        self.schedule = datetime.datetime.now(datetime.timezone.utc)  # noqa: UP017
         self.task_type = InstructorTaskTypes.BULK_COURSE_EMAIL
         self.task_input = json.dumps(self._generate_bulk_email_task_input(self.course_email, self.targets))
         self.task_key = hashlib.md5(str(self.course_email.id).encode('utf-8')).hexdigest()
@@ -128,7 +128,7 @@ class ScheduledBulkEmailInstructorTaskTests(InstructorTaskCourseTestCase):
             "Error occurred during task or schedule creation: boom!",
         ]
 
-        with self.assertRaises(QueueConnectionError):
+        with self.assertRaises(QueueConnectionError):  # noqa: PT027
             with LogCapture() as log:
                 schedule_task(
                     self.request, self.task_type, self.course.id, self.task_input, self.task_key, self.schedule
@@ -227,7 +227,7 @@ class ScheduledInstructorTaskSubmissionTests(InstructorTaskCourseTestCase):
             "double quotes: line 1 column 2 (char 1)",
         ]
 
-        with self.assertRaises(QueueConnectionError):
+        with self.assertRaises(QueueConnectionError):  # noqa: PT027
             with LogCapture() as log:
                 submit_scheduled_task(schedule)
 

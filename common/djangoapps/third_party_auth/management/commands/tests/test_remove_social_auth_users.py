@@ -87,7 +87,7 @@ class TestRemoveSocialAuthUsersCommand(TestCase):
     def test_invalid_idp(self):
         invalid_slug = 'jedi-academy'
         err_string = f'No SAML provider found for slug {invalid_slug}'
-        with self.assertRaisesRegex(CommandError, err_string):
+        with self.assertRaisesRegex(CommandError, err_string):  # noqa: PT027
             call_command(self.command, invalid_slug)
 
     @override_settings(FEATURES=FEATURES_WITH_ENABLED)
@@ -104,7 +104,7 @@ class TestRemoveSocialAuthUsersCommand(TestCase):
     @override_settings(FEATURES=FEATURES_WITH_ENABLED)
     def test_confirmation_failure(self):
         err_string = 'User confirmation required.  No records have been modified'
-        with self.assertRaisesRegex(CommandError, err_string):
+        with self.assertRaisesRegex(CommandError, err_string):  # noqa: PT027
             with self._replace_stdin('no'):
                 call_command(self.command, self.provider_hogwarts.slug)
 
@@ -115,5 +115,5 @@ class TestRemoveSocialAuthUsersCommand(TestCase):
     def test_feature_default_disabled(self):
         """ By default this command should not be enabled """
         err_string = 'ENABLE_ENROLLMENT_RESET feature not enabled on this enviroment'
-        with self.assertRaisesRegex(CommandError, err_string):
+        with self.assertRaisesRegex(CommandError, err_string):  # noqa: PT027
             call_command(self.command, self.provider_hogwarts.slug, force=True)

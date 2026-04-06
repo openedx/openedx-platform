@@ -55,7 +55,7 @@ class DOTAdapterTestCase(TestCase):
         Make sure unicode representation of RestrictedApplication is correct
         """
         assert str(self.restricted_app) == "<RestrictedApplication '{name}'>"\
-            .format(name=self.restricted_client.name)
+            .format(name=self.restricted_client.name)  # noqa: UP032
 
     @ddt.data(
         ('confidential', models.Application.CLIENT_CONFIDENTIAL),

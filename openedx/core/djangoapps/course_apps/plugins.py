@@ -2,7 +2,7 @@
 Course Apps plugin base class and plugin manager.
 """
 from abc import ABC, abstractmethod
-from typing import Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional  # noqa: UP035
 
 from edx_django_utils.plugins import PluginManager
 from opaque_keys.edx.keys import CourseKey
@@ -23,7 +23,7 @@ class CourseApp(ABC):
     # A description for the app.
     description: str = ""
     # A map of documentation links for the app
-    documentation_links: Dict = {
+    documentation_links: Dict = {  # noqa: UP006
         # eg:
         # "learn_more_configuration": "https://..."
     }
@@ -60,7 +60,7 @@ class CourseApp(ABC):
 
     @classmethod
     @abstractmethod
-    def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:
+    def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:  # noqa: F821
         """
         Update the status of this app for the provided course and return the new status.
 
@@ -75,7 +75,7 @@ class CourseApp(ABC):
 
     @classmethod
     @abstractmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: F821, UP006
         """
         Returns a dictionary of available operations for this app.
 

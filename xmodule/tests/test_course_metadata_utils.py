@@ -162,5 +162,5 @@ class CourseMetadataUtilsTestCase(TestCase):
         # Even though we don't care about testing mock_strftime_localized,
         # we still need to test it with a bad format string in order to
         # satisfy the coverage checker.
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             mock_strftime_localized(test_datetime, 'BAD_FORMAT_SPECIFIER')

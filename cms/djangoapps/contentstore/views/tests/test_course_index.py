@@ -71,29 +71,29 @@ class TestCourseOutline(CourseTestCase):
         outline_url = outline_url + '?format=concise' if is_concise else outline_url
         resp = self.client.get(outline_url, HTTP_ACCEPT='application/json')
         if self.course.id.deprecated:
-            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.status_code, 404)  # noqa: PT009
             return
 
         json_response = json.loads(resp.content.decode('utf-8'))
 
         # First spot check some values in the root response
-        self.assertEqual(json_response['category'], 'course')
-        self.assertEqual(json_response['id'], str(self.course.location))
-        self.assertEqual(json_response['display_name'], self.course.display_name)
-        self.assertNotEqual(json_response.get('published', False), is_concise)
-        self.assertIsNone(json_response.get('visibility_state'))
+        self.assertEqual(json_response['category'], 'course')  # noqa: PT009
+        self.assertEqual(json_response['id'], str(self.course.location))  # noqa: PT009
+        self.assertEqual(json_response['display_name'], self.course.display_name)  # noqa: PT009
+        self.assertNotEqual(json_response.get('published', False), is_concise)  # noqa: PT009
+        self.assertIsNone(json_response.get('visibility_state'))  # noqa: PT009
 
         # Now verify the first child
         children = json_response['child_info']['children']
-        self.assertGreater(len(children), 0)
+        self.assertGreater(len(children), 0)  # noqa: PT009
         first_child_response = children[0]
-        self.assertEqual(first_child_response['category'], 'chapter')
-        self.assertEqual(first_child_response['id'], str(self.chapter.location))
-        self.assertEqual(first_child_response['display_name'], 'Week 1')
-        self.assertNotEqual(json_response.get('published', False), is_concise)
+        self.assertEqual(first_child_response['category'], 'chapter')  # noqa: PT009
+        self.assertEqual(first_child_response['id'], str(self.chapter.location))  # noqa: PT009
+        self.assertEqual(first_child_response['display_name'], 'Week 1')  # noqa: PT009
+        self.assertNotEqual(json_response.get('published', False), is_concise)  # noqa: PT009
         if not is_concise:
-            self.assertEqual(first_child_response['visibility_state'], VisibilityState.unscheduled)
-        self.assertGreater(len(first_child_response['child_info']['children']), 0)
+            self.assertEqual(first_child_response['visibility_state'], VisibilityState.unscheduled)  # noqa: PT009
+        self.assertGreater(len(first_child_response['child_info']['children']), 0)  # noqa: PT009
 
         # Finally, validate the entire response for consistency
         self.assert_correct_json_response(json_response, is_concise)
@@ -102,10 +102,10 @@ class TestCourseOutline(CourseTestCase):
         """
         Asserts that the JSON response is syntactically consistent
         """
-        self.assertIsNotNone(json_response['display_name'])
-        self.assertIsNotNone(json_response['id'])
-        self.assertIsNotNone(json_response['category'])
-        self.assertNotEqual(json_response.get('published', False), is_concise)
+        self.assertIsNotNone(json_response['display_name'])  # noqa: PT009
+        self.assertIsNotNone(json_response['id'])  # noqa: PT009
+        self.assertIsNotNone(json_response['category'])  # noqa: PT009
+        self.assertNotEqual(json_response.get('published', False), is_concise)  # noqa: PT009
         if json_response.get('child_info', None):
             for child_response in json_response['child_info']['children']:
                 self.assert_correct_json_response(child_response, is_concise)
@@ -119,15 +119,15 @@ class TestCourseOutline(CourseTestCase):
         )
 
         # Verify that None is returned for a non-existent locator
-        self.assertIsNone(course_outline_initial_state('no-such-locator', course_structure))
+        self.assertIsNone(course_outline_initial_state('no-such-locator', course_structure))  # noqa: PT009
 
         # Verify that the correct initial state is returned for the test chapter
         chapter_locator = str(self.chapter.location)
         initial_state = course_outline_initial_state(chapter_locator, course_structure)
-        self.assertEqual(initial_state['locator_to_show'], chapter_locator)
+        self.assertEqual(initial_state['locator_to_show'], chapter_locator)  # noqa: PT009
         expanded_locators = initial_state['expanded_locators']
-        self.assertIn(str(self.sequential.location), expanded_locators)
-        self.assertIn(str(self.vertical.location), expanded_locators)
+        self.assertIn(str(self.sequential.location), expanded_locators)  # noqa: PT009
+        self.assertIn(str(self.vertical.location), expanded_locators)  # noqa: PT009
 
     def _create_test_data(self, course_block, create_blocks=False, publish=True, block_types=None):
         """
@@ -161,13 +161,13 @@ class TestCourseOutline(CourseTestCase):
                 ]
             )
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             info['deprecated_enabled_block_types'],
             [component for component in advanced_modules if component in deprecated_block_types]
         )
 
-        self.assertCountEqual(info['blocks'], expected_blocks)
-        self.assertEqual(
+        self.assertCountEqual(info['blocks'], expected_blocks)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             info['advance_settings_url'],
             reverse_course_url('advanced_settings_handler', course_id)
         )
@@ -281,15 +281,15 @@ class TestCourseReIndex(CourseTestCase):
 
         # A course with the default release date should display as "Unscheduled"
         self.assertContains(response, self.SUCCESSFUL_RESPONSE)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         response = self.client.post(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.content, b'')
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.content, b'')  # noqa: PT009
+        self.assertEqual(response.status_code, 405)  # noqa: PT009
 
         self.client.logout()
         response = self.client.get(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 302)  # noqa: PT009
 
     def test_negative_conditions(self):
         """
@@ -299,7 +299,7 @@ class TestCourseReIndex(CourseTestCase):
         # register a non-staff member and try to delete the course branch
         non_staff_client, _ = self.create_non_staff_authed_user_client()
         response = non_staff_client.get(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_empty_content_type(self):
         """
@@ -310,7 +310,7 @@ class TestCourseReIndex(CourseTestCase):
 
         # A course with the default release date should display as "Unscheduled"
         self.assertContains(response, self.SUCCESSFUL_RESPONSE)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
     def test_reindex_course_search_index_error(self, mock_index_dictionary):
@@ -326,7 +326,7 @@ class TestCourseReIndex(CourseTestCase):
 
         # Start manual reindex and check error in response
         response = self.client.get(index_url, {}, HTTP_ACCEPT='application/json')
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 500)  # noqa: PT009
 
     def test_reindex_json_responses(self):
         """
@@ -339,7 +339,7 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # Start manual reindex
         reindex_course_and_check_access(self.course.id, self.user)
@@ -351,7 +351,7 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
     @mock.patch('xmodule.video_block.VideoBlock.index_dictionary')
     def test_reindex_video_error_json_responses(self, mock_index_dictionary):
@@ -365,14 +365,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = SearchIndexingError
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, self.user)
 
     @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
@@ -387,14 +387,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = SearchIndexingError
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, self.user)
 
     @mock.patch('xmodule.seq_block.SequenceBlock.index_dictionary')
@@ -409,14 +409,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = Exception
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, self.user)
 
     @mock.patch('xmodule.modulestore.split_mongo.split.SplitMongoModuleStore.get_course')
@@ -429,13 +429,13 @@ class TestCourseReIndex(CourseTestCase):
         mock_get_course.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, self.user)
 
     def test_reindex_no_permissions(self):
         # register a non-staff member and try to delete the course branch
         user2 = UserFactory()
-        with self.assertRaises(PermissionDenied):
+        with self.assertRaises(PermissionDenied):  # noqa: PT027
             reindex_course_and_check_access(self.course.id, user2)
 
     def test_indexing_responses(self):
@@ -449,7 +449,7 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # Start manual reindex
         CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
@@ -461,7 +461,7 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
     @mock.patch('xmodule.video_block.VideoBlock.index_dictionary')
     def test_indexing_video_error_responses(self, mock_index_dictionary):
@@ -475,14 +475,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = Exception
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
 
     @mock.patch('xmodule.html_block.HtmlBlock.index_dictionary')
@@ -497,14 +497,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = Exception
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
 
     @mock.patch('xmodule.seq_block.SequenceBlock.index_dictionary')
@@ -519,14 +519,14 @@ class TestCourseReIndex(CourseTestCase):
             size=10,
             from_=0,
             course_id=str(self.course.id))
-        self.assertEqual(response['total'], 1)
+        self.assertEqual(response['total'], 1)  # noqa: PT009
 
         # set mocked exception response
         err = Exception
         mock_index_dictionary.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
 
     @mock.patch('xmodule.modulestore.split_mongo.split.SplitMongoModuleStore.get_course')
@@ -539,5 +539,5 @@ class TestCourseReIndex(CourseTestCase):
         mock_get_course.return_value = err
 
         # Start manual reindex and check error in response
-        with self.assertRaises(SearchIndexingError):
+        with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)

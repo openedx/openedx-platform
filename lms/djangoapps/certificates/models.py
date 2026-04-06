@@ -70,7 +70,7 @@ class CertificateAllowlist(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     course_id = CourseKeyField(blank=True, default=None)
     allowlist = models.BooleanField(default=0)
-    notes = models.TextField(default=None, null=True)
+    notes = models.TextField(default=None, null=True)  # noqa: DJ001
 
     # This is necessary because CMS does not install the certificates app, but it
     # imports this model's code. Simple History will attempt to connect to the installed
@@ -166,7 +166,7 @@ class EligibleAvailableCertificateManager(EligibleCertificateManager):
         )
 
 
-class GeneratedCertificate(models.Model):
+class GeneratedCertificate(models.Model):  # noqa: DJ008
     """
     Base model for generated course certificates
 
@@ -309,8 +309,8 @@ class GeneratedCertificate(models.Model):
         else:
             return query.values('status').annotate(count=Count('status'))
 
-    def __repr__(self):
-        return "<GeneratedCertificate: {course_id}, user={user}>".format(
+    def __repr__(self):  # noqa: DJ012
+        return "<GeneratedCertificate: {course_id}, user={user}>".format(  # noqa: UP032
             course_id=self.course_id,
             user=self.user
         )
@@ -413,7 +413,7 @@ class GeneratedCertificate(models.Model):
         # .. event_implemented_name: CERTIFICATE_REVOKED
         # .. event_type: org.openedx.learning.certificate.revoked.v1
         CERTIFICATE_REVOKED.send_event(
-            time=self.modified_date.astimezone(timezone.utc),
+            time=self.modified_date.astimezone(timezone.utc),  # noqa: UP017
             certificate=CertificateData(
                 user=UserData(
                     pii=UserPersonalData(
@@ -472,7 +472,7 @@ class GeneratedCertificate(models.Model):
         """
         return self.status == CertificateStatuses.downloadable
 
-    def save(self, *args, **kwargs):  # pylint: disable=signature-differs
+    def save(self, *args, **kwargs):  # pylint: disable=signature-differs  # noqa: DJ012
         """
         After the base save() method finishes, fire the COURSE_CERT_CHANGED signal. If the learner is currently passing
         the course we also fire the COURSE_CERT_AWARDED signal.
@@ -485,7 +485,7 @@ class GeneratedCertificate(models.Model):
         """
         super().save(*args, **kwargs)
 
-        timestamp = self.modified_date.astimezone(timezone.utc)
+        timestamp = self.modified_date.astimezone(timezone.utc)  # noqa: UP017
 
         COURSE_CERT_CHANGED.send_robust(
             sender=self.__class__,
@@ -616,7 +616,7 @@ class CertificateGenerationHistory(TimeStampedModel):
 
     def __str__(self):
         return "certificates %s by %s on %s for %s" % \
-               ("regenerated" if self.is_regeneration else "generated", self.generated_by, self.created, self.course_id)
+               ("regenerated" if self.is_regeneration else "generated", self.generated_by, self.created, self.course_id)  # noqa: UP031
 
 
 class CertificateInvalidation(TimeStampedModel):
@@ -627,7 +627,7 @@ class CertificateInvalidation(TimeStampedModel):
     """
     generated_certificate = models.ForeignKey(GeneratedCertificate, on_delete=models.CASCADE)
     invalidated_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    notes = models.TextField(default=None, null=True)
+    notes = models.TextField(default=None, null=True)  # noqa: DJ001
     active = models.BooleanField(default=True)
 
     # This is necessary because CMS does not install the certificates app, but
@@ -642,7 +642,7 @@ class CertificateInvalidation(TimeStampedModel):
 
     def __str__(self):
         return "Certificate %s, invalidated by %s on %s." % \
-               (self.generated_certificate, self.invalidated_by, self.created)
+               (self.generated_certificate, self.invalidated_by, self.created)  # noqa: UP031
 
     def deactivate(self):
         """
@@ -790,9 +790,9 @@ class ExampleCertificateSet(TimeStampedModel):
     def _template_for_mode(mode_slug, course_key):
         """Calculate the template PDF based on the course mode. """
         return (
-            "certificate-template-{key.org}-{key.course}-verified.pdf".format(key=course_key)
+            "certificate-template-{key.org}-{key.course}-verified.pdf".format(key=course_key)  # noqa: UP032
             if mode_slug == 'verified'
-            else "certificate-template-{key.org}-{key.course}.pdf".format(key=course_key)
+            else "certificate-template-{key.org}-{key.course}.pdf".format(key=course_key)  # noqa: UP032
         )
 
 
@@ -893,13 +893,13 @@ class ExampleCertificate(TimeStampedModel):
         help_text=_("The status of the example certificate.")
     )
 
-    error_reason = models.TextField(
+    error_reason = models.TextField(  # noqa: DJ001
         null=True,
         default=None,
         help_text=_("The reason an error occurred during certificate generation.")
     )
 
-    download_url = models.CharField(
+    download_url = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         default=None,
@@ -929,7 +929,7 @@ class ExampleCertificate(TimeStampedModel):
 
         """
         if status not in [self.STATUS_SUCCESS, self.STATUS_ERROR]:
-            msg = "Invalid status: must be either '{success}' or '{error}'.".format(
+            msg = "Invalid status: must be either '{success}' or '{error}'.".format(  # noqa: UP032
                 success=self.STATUS_SUCCESS,
                 error=self.STATUS_ERROR
             )
@@ -1144,7 +1144,7 @@ class CertificateTemplate(TimeStampedModel):
         max_length=255,
         help_text=_('Name of template.'),
     )
-    description = models.CharField(
+    description = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -1165,7 +1165,7 @@ class CertificateTemplate(TimeStampedModel):
         blank=True,
         db_index=True,
     )
-    mode = models.CharField(
+    mode = models.CharField(  # noqa: DJ001
         max_length=125,
         choices=GeneratedCertificate.MODES,
         default=GeneratedCertificate.MODES.honor,
@@ -1177,7 +1177,7 @@ class CertificateTemplate(TimeStampedModel):
         help_text=_('On/Off switch.'),
         default=False,
     )
-    language = models.CharField(
+    language = models.CharField(  # noqa: DJ001
         max_length=2,
         blank=True,
         null=True,
@@ -1217,7 +1217,7 @@ class CertificateTemplateAsset(TimeStampedModel):
 
     .. no_pii:
     """
-    description = models.CharField(
+    description = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -1228,7 +1228,7 @@ class CertificateTemplateAsset(TimeStampedModel):
         upload_to=template_assets_path,
         help_text=_('Asset file. It could be an image or css file.'),
     )
-    asset_slug = models.SlugField(
+    asset_slug = models.SlugField(  # noqa: DJ001
         max_length=255,
         unique=True,
         null=True,
@@ -1360,7 +1360,7 @@ class CertificateDateOverride(TimeStampedModel):
 
     def __str__(self):
         return "Certificate %s, date overridden to %s by %s on %s." % \
-               (self.generated_certificate, self.date, self.overridden_by, self.created)
+               (self.generated_certificate, self.date, self.overridden_by, self.created)  # noqa: UP031
 
     def send_course_cert_changed_signal(self):
         COURSE_CERT_CHANGED.send_robust(

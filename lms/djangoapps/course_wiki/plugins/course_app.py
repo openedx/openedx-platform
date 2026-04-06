@@ -1,5 +1,5 @@
 """Module with the course app configuration for the Wiki."""
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.utils.translation import gettext_noop as _
@@ -72,7 +72,7 @@ class WikiCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: UP006
         """
         Returns the operations you can perform on the wiki.
         """

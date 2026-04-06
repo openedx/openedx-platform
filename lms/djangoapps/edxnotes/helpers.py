@@ -57,7 +57,7 @@ def get_edxnotes_id_token(user):
     try:
         notes_application = Application.objects.get(name=settings.EDXNOTES_CLIENT_NAME)
     except Application.DoesNotExist:
-        raise ImproperlyConfigured(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ImproperlyConfigured(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             f'OAuth2 Client with name [{settings.EDXNOTES_CLIENT_NAME}] does not exist.'
         )
     return create_jwt_for_user(
@@ -114,7 +114,7 @@ def send_request(user, course_id, page, page_size, path="", text=None):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(params))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     return response
 
@@ -145,7 +145,7 @@ def delete_all_notes_for_user(user):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(headers))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     return response
 
@@ -338,7 +338,7 @@ def get_notes(request, course, page=DEFAULT_PAGE, page_size=DEFAULT_PAGE_SIZE, t
         collection = json.loads(response.content.decode('utf-8'))
     except ValueError:
         log.error("Invalid JSON response received from notes api: response_content=%s", response.content)
-        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Verify response dict structure
     expected_keys = ['total', 'rows', 'num_pages', 'start', 'next', 'previous', 'current_page']
@@ -388,7 +388,7 @@ def get_endpoint(api_url, path=""):
 
         return api_url + path
     except (AttributeError, KeyError):
-        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def get_public_endpoint(path=""):

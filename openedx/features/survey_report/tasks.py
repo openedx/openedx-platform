@@ -26,5 +26,5 @@ def generate_survey_report():
     try:
         generate_report()
         log.info('Done - generate survey report')
-    except (Exception, ):  # pylint: disable=broad-except
+    except (Exception, ):  # pylint: disable=broad-except  # noqa: B013
         log.error('Error - generate survey report')

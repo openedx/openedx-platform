@@ -57,32 +57,32 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
         """GET API: Returns 400 if no query parameters are provided."""
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def test_get_api_with_username_parameter(self):
         """GET API: Can query by username parameter."""
         self.client.login(username=self.staff.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"username": self.user.username})
-        self.assertEqual(resp.status_code, 200)
-        self.assertIsInstance(resp.data, list)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertIsInstance(resp.data, list)  # noqa: PT009
 
     def test_get_api_with_user_id_parameter(self):
         """GET API: Can query by user_id parameter."""
         self.client.login(username=self.staff.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"user_id": self.user.id})
-        self.assertEqual(resp.status_code, 200)
-        self.assertIsInstance(resp.data, list)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertIsInstance(resp.data, list)  # noqa: PT009
 
     def test_get_api_nonexistent_user_returns_404(self):
         """GET API: Returns 404 for a nonexistent user email."""
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"email": "notfound@example.com"})
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     def test_get_api_unauthenticated_user_returns_401(self):
         """GET API: Unauthenticated users receive 401 Unauthorized."""
         resp = self.client.get(self.url, {"email": self.user.email})
-        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.status_code, 401)  # noqa: PT009
 
     @ddt.data(
         ("instructor", "instructor"),
@@ -100,23 +100,23 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             CourseStaffRole(self.extra_courses[0].id).add_users(self.user)
 
         response = self.client.get(self.url, {"email": self.user.email})
-        self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.data, list)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertIsInstance(response.data, list)  # noqa: PT009
 
         course_found = False
         for course in response.data:
             if course["course_id"] == str(self.extra_courses[0].id):
                 with self.subTest(role=assigned_role):
-                    self.assertEqual(course["role"], expected_role)
+                    self.assertEqual(course["role"], expected_role)  # noqa: PT009
                     # Verify new fields are present
-                    self.assertIn("status", course)
-                    self.assertIn("org", course)
-                    self.assertIn("run", course)
-                    self.assertIn("number", course)
-                    self.assertIn("course_name", course)
-                    self.assertIn("course_url", course)
+                    self.assertIn("status", course)  # noqa: PT009
+                    self.assertIn("org", course)  # noqa: PT009
+                    self.assertIn("run", course)  # noqa: PT009
+                    self.assertIn("number", course)  # noqa: PT009
+                    self.assertIn("course_name", course)  # noqa: PT009
+                    self.assertIn("course_url", course)  # noqa: PT009
                 course_found = True
-        self.assertTrue(course_found, "Expected course not found in response.")
+        self.assertTrue(course_found, "Expected course not found in response.")  # noqa: PT009
 
     def test_get_api_instructor_can_only_see_their_courses(self):
         """GET API: Course instructor sees only courses they have access to."""
@@ -124,19 +124,19 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             username=self.instructor_user.username, password=TEST_PASSWORD
         )
         resp = self.client.get(self.url, {"email": self.user.email})
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         course_ids = [course["course_id"] for course in resp.data]
-        self.assertIn(str(self.extra_courses[0].id), course_ids)
+        self.assertIn(str(self.extra_courses[0].id), course_ids)  # noqa: PT009
         for i in range(1, 3):
-            self.assertNotIn(str(self.extra_courses[i].id), course_ids)
+            self.assertNotIn(str(self.extra_courses[i].id), course_ids)  # noqa: PT009
 
     def test_get_api_user_with_no_access_sees_no_courses(self):
         """GET API: Non-instructor users see no courses in the response."""
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         resp = self.client.get(self.url, {"email": self.user.email})
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data, [])
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data, [])  # noqa: PT009
 
     # --- PUT API TEST CASES ---
 
@@ -145,34 +145,34 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         data = {"bulk_role_operations": []}
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.data["email"], "")
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(resp.data["email"], "")  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("error", result)
-        self.assertIn("email", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("error", result)  # noqa: PT009
+        self.assertIn("email", result["error"])  # noqa: PT009
 
     def test_put_api_empty_operations_returns_400(self):
         """PUT API: Sending empty bulk_role_operations returns 400 with an error message."""
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         data = {"email": "test@example.com", "bulk_role_operations": []}
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(resp.data["email"], "test@example.com")
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(resp.data["email"], "test@example.com")  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("error", result)
-        self.assertIn("bulk_role_operations", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("error", result)  # noqa: PT009
+        self.assertIn("bulk_role_operations", result["error"])  # noqa: PT009
 
     def test_put_api_non_dict_input_returns_400(self):
         """PUT API: Sending a non-dict input returns 400 with an error message."""
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         resp = self.client.put(self.url, ["invalid"], format="json")
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("error", result)
-        self.assertIn("JSON object", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("error", result)  # noqa: PT009
+        self.assertIn("JSON object", result["error"])  # noqa: PT009
 
     def test_put_api_missing_fields_returns_error(self):
         """PUT API: Request with missing required fields returns field-level errors."""
@@ -184,12 +184,12 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             "bulk_role_operations": [{"course_id": "", "role": "", "action": ""}],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
         for field in ("course_id", "role", "action"):
-            self.assertIn(field, result)
+            self.assertIn(field, result)  # noqa: PT009
 
     def test_put_api_invalid_user_email_returns_error(self):
         """PUT API: Invalid user email in request returns an error."""
@@ -207,11 +207,11 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 404)
-        self.assertEqual(resp.data["email"], "notfound@example.com")
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
+        self.assertEqual(resp.data["email"], "notfound@example.com")  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("User not found", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("User not found", result["error"])  # noqa: PT009
 
     def test_put_api_invalid_course_id_returns_error(self):
         """PUT API: Invalid course_id in request returns an error."""
@@ -229,11 +229,11 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("Invalid course_id", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("Invalid course_id", result["error"])  # noqa: PT009
 
     def test_put_api_invalid_action_returns_error(self):
         """PUT API: Invalid action value in request returns an error."""
@@ -251,11 +251,11 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
         result = resp.data["results"][0]
-        self.assertEqual(result["status"], "failed")
-        self.assertIn("Invalid action", result["error"])
+        self.assertEqual(result["status"], "failed")  # noqa: PT009
+        self.assertIn("Invalid action", result["error"])  # noqa: PT009
 
     def test_put_api_assign_role_enrolls_user(self):
         """PUT API: Assigning a role enrolls user in the course."""
@@ -272,11 +272,11 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "success")
-        self.assertTrue(CourseInstructorRole(course.id).has_user(self.user))
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, course.id))
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "success")  # noqa: PT009
+        self.assertTrue(CourseInstructorRole(course.id).has_user(self.user))  # noqa: PT009
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, course.id))  # noqa: PT009
 
     def test_put_api_revoke_role_removes_user(self):
         """PUT API: Revoking a role removes user from course team."""
@@ -293,10 +293,10 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "success")
-        self.assertFalse(CourseStaffRole(course.id).has_user(self.user))
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "success")  # noqa: PT009
+        self.assertFalse(CourseStaffRole(course.id).has_user(self.user))  # noqa: PT009
 
     def test_put_api_course_instructor_can_manage_own_courses(self):
         """PUT API: Course instructor can assign roles for courses they manage."""
@@ -314,10 +314,10 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "success")
-        self.assertTrue(CourseStaffRole(self.extra_courses[0].id).has_user(self.user))
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "success")  # noqa: PT009
+        self.assertTrue(CourseStaffRole(self.extra_courses[0].id).has_user(self.user))  # noqa: PT009
 
     def test_put_api_non_instructor_user_forbidden(self):
         """PUT API: Non-instructor users receive 403 Forbidden when assigning roles."""
@@ -333,10 +333,10 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 403)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "failed")
-        self.assertIn("do not have permission", resp.data["results"][0]["error"])
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "failed")  # noqa: PT009
+        self.assertIn("do not have permission", resp.data["results"][0]["error"])  # noqa: PT009
 
     def test_put_api_org_level_instructor_can_manage_all_org_courses(self):
         """PUT API: Org-level instructors can manage roles for all courses in their org."""
@@ -357,10 +357,10 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "success")
-        self.assertTrue(CourseStaffRole(self.extra_courses[1].id).has_user(self.user))
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "success")  # noqa: PT009
+        self.assertTrue(CourseStaffRole(self.extra_courses[1].id).has_user(self.user))  # noqa: PT009
 
     def test_put_api_course_instructor_cannot_manage_other_courses(self):
         """PUT API: Course instructor cannot assign roles for courses they don't manage."""
@@ -378,7 +378,7 @@ class CourseTeamManageAPIViewTest(SupportViewTestCase):
             ],
         }
         resp = self.client.put(self.url, data, format="json")
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["email"], self.user.email)
-        self.assertEqual(resp.data["results"][0]["status"], "failed")
-        self.assertIn("do not have instructor access", resp.data["results"][0]["error"])
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertEqual(resp.data["email"], self.user.email)  # noqa: PT009
+        self.assertEqual(resp.data["results"][0]["status"], "failed")  # noqa: PT009
+        self.assertIn("do not have instructor access", resp.data["results"][0]["error"])  # noqa: PT009

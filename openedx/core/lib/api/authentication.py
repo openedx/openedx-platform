@@ -75,7 +75,7 @@ class BearerAuthentication(BaseAuthentication):
         try:
             token = self.get_access_token(access_token)
         except AuthenticationFailed as exc:
-            raise AuthenticationFailed({  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AuthenticationFailed({  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 'error_code': OAUTH2_TOKEN_ERROR,
                 'developer_message': exc.detail
             })
@@ -94,7 +94,7 @@ class BearerAuthentication(BaseAuthentication):
             user = token.user
             has_application = dot_models.Application.objects.filter(user_id=user.id)
             if not user.has_usable_password() and not has_application:
-                msg = 'User disabled by admin: %s' % user.get_username()
+                msg = 'User disabled by admin: %s' % user.get_username()  # noqa: UP031
                 raise AuthenticationFailed({
                     'error_code': OAUTH2_USER_DISABLED_ERROR,
                     'developer_message': msg})
@@ -102,7 +102,7 @@ class BearerAuthentication(BaseAuthentication):
             # Check to make sure the users have activated their account (by confirming their email)
             if not self.allow_inactive_users and not user.is_active:  # lint-amnesty, pylint: disable=no-else-raise
                 set_custom_attribute("BearerAuthentication_user_active", False)
-                msg = 'User inactive or deleted: %s' % user.get_username()
+                msg = 'User inactive or deleted: %s' % user.get_username()  # noqa: UP031
                 raise AuthenticationFailed({
                     'error_code': OAUTH2_USER_NOT_ACTIVE_ERROR,
                     'developer_message': msg})
@@ -124,7 +124,7 @@ class BearerAuthentication(BaseAuthentication):
         Return a string to be used as the value of the `WWW-Authenticate`
         header in a `401 Unauthenticated` response
         """
-        return 'Bearer realm="%s"' % self.www_authenticate_realm
+        return 'Bearer realm="%s"' % self.www_authenticate_realm  # noqa: UP031
 
 
 class BearerAuthenticationAllowInactiveUser(BearerAuthentication):

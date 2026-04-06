@@ -103,7 +103,7 @@ class OverwriteStorage(FileSystemStorage):
         return name
 
 
-@lru_cache()
+@lru_cache()  # noqa: UP011
 def get_storage(storage_class=None, **kwargs):
     """
     Returns a storage instance with the given class name and kwargs. If the

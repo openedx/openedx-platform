@@ -97,7 +97,7 @@ class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
             user=self.user,
         )
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

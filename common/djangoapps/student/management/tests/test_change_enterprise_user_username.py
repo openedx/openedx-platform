@@ -11,7 +11,7 @@ from django.core.management import call_command
 from django.db.models.signals import post_save
 from django.test import TestCase
 from enterprise.models import EnterpriseCustomer, EnterpriseCustomerUser
-from pytest import mark
+from pytest import mark  # noqa: PT013
 
 from common.djangoapps.student.tests.factories import UserFactory
 

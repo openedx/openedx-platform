@@ -18,7 +18,7 @@ from .views import (
 
 urlpatterns = [
     re_path(
-        r"^enrollment/{username},{course_key}$".format(
+        r"^enrollment/{username},{course_key}$".format(  # noqa: UP032
             username=settings.USERNAME_PATTERN, course_key=settings.COURSE_ID_PATTERN
         ),
         EnrollmentView.as_view(),

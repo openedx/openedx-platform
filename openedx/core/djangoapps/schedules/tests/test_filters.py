@@ -61,11 +61,11 @@ class ScheduleQuerySetRequestedFiltersTest(SchedulesResolverTestMixin, ModuleSto
         """Test to verify the schedule queryset was modified by the pipeline step."""
         schedules = self.resolver.get_schedules_with_target_date_by_bin_and_orgs()
 
-        self.assertEqual(TestScheduleQuerySetRequestedPipelineStep.filtered_schedules, schedules)
+        self.assertEqual(TestScheduleQuerySetRequestedPipelineStep.filtered_schedules, schedules)  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_schedule_with_queryset_requested_filter_disabled(self) -> None:
         """Test to verify the schedule queryset was not modified when the pipeline step is not configured."""
         schedules = self.resolver.get_schedules_with_target_date_by_bin_and_orgs()
 
-        self.assertNotEqual(TestScheduleQuerySetRequestedPipelineStep.filtered_schedules, schedules)
+        self.assertNotEqual(TestScheduleQuerySetRequestedPipelineStep.filtered_schedules, schedules)  # noqa: PT009

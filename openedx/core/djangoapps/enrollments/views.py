@@ -226,7 +226,7 @@ class EnrollmentView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "An error occurred while retrieving enrollments for user "
                         "'{username}' in course '{course_id}'"
                     ).format(username=username, course_id=course_id)
@@ -281,7 +281,7 @@ class EnrollmentUserRolesView(APIView):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving roles for user '{username}").format(
+                    "message": ("An error occurred while retrieving roles for user '{username}").format(  # noqa: UP032
                         username=request.user.username
                     )
                 },
@@ -384,7 +384,7 @@ class EnrollmentCourseDetailView(APIView):
         except CourseNotFoundError:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},
+                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032
             )
 
 
@@ -662,7 +662,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(
+                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032
                         username=username
                     )
                 },
@@ -746,7 +746,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data={
-                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(
+                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032
                         mode=mode
                     )
                 },
@@ -771,7 +771,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             if is_active is not None and not isinstance(is_active, bool):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
-                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},
+                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032
                 )
 
             explicit_linked_enterprise = request.data.get("linked_enterprise_customer")
@@ -787,7 +787,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                         username,
                         course_id,
                     )
-                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from
+                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 kwargs = {
                     "username": username,
                     "course_id": str(course_id),
@@ -802,7 +802,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data={
-                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)
+                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032
                     },
                 )
             # Only a staff user role can enroll a user forcefully
@@ -826,7 +826,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"message": msg})
 
                 if missing_attrs:
-                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(
+                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032
                         mode, REQUIRED_ATTRIBUTES.get(mode)
                     )
                     log.warning(msg)
@@ -891,7 +891,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "The [{mode}] course mode is expired or otherwise unavailable for course run [{course_id}]."
                     ).format(mode=mode, course_id=course_id),
                     "course_details": error.data,
@@ -913,7 +913,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": (
+                    "message": (  # noqa: UP032
                         "An error occurred while creating the new course enrollment for user "
                         "'{username}' in course '{course_id}'"
                     ).format(username=username, course_id=course_id)
@@ -924,7 +924,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             log.exception("Missing cohort [%s] in course run [%s]", cohort_name, course_id)
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": "An error occured while adding to cohort [%s]" % cohort_name},
+                data={"message": "An error occured while adding to cohort [%s]" % cohort_name},  # noqa: UP031
             )
         finally:
             # Assumes that the ecommerce service uses an API key to authenticate.

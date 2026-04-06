@@ -413,7 +413,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         params = [("next", "/courses/something/?tpa_hint=oa2-google-oauth2")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         expected_url = '/auth/login/google-oauth2/?auth_entry={}&next=%2Fcourses'\
-                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)
+                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)  # noqa: UP032
         self.assertRedirects(
             response,
             expected_url,
@@ -458,7 +458,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         params = [("next", "/courses/something/")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         expected_url = '/auth/login/google-oauth2/?auth_entry={}&next=%2Fcourses'\
-                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)
+                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)  # noqa: UP032
         self.assertRedirects(
             response,
             expected_url,
@@ -579,7 +579,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             auth_info['providers'] = []
         auth_info = dump_js_escaped_json(auth_info)
 
-        expected_data = '"third_party_auth": {auth_info}'.format(
+        expected_data = '"third_party_auth": {auth_info}'.format(  # noqa: UP032
             auth_info=auth_info
         )
         self.assertContains(response, expected_data)
@@ -608,7 +608,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         }
         auth_info = dump_js_escaped_json(auth_info)
 
-        expected_data = '"third_party_auth": {auth_info}'.format(
+        expected_data = '"third_party_auth": {auth_info}'.format(  # noqa: UP032
             auth_info=auth_info
         )
         self.assertContains(response, expected_data)

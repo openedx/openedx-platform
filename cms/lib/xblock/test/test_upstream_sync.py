@@ -116,7 +116,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         downstream_lib_block.upstream = str(self.upstream_key)
         downstream_lib_block.save()
 
-        with self.assertRaises(BadDownstream):
+        with self.assertRaises(BadDownstream):  # noqa: PT027
             sync_from_upstream_block(downstream_lib_block, self.user)
 
         assert downstream_lib_block.display_name == "Another lib block"
@@ -130,7 +130,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         block.display_name = "Block Title"
         block.data = "Block content"
 
-        with self.assertRaises(NoUpstream):
+        with self.assertRaises(NoUpstream):  # noqa: PT027
             sync_from_upstream_block(block, self.user)
 
         assert block.display_name == "Block Title"
@@ -153,7 +153,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         block.display_name = "Block Title"
         block.data = "Block content"
 
-        with self.assertRaisesRegex(BadUpstream, message_regex):
+        with self.assertRaisesRegex(BadUpstream, message_regex):  # noqa: PT027
             sync_from_upstream_block(block, self.user)
 
         assert block.display_name == "Block Title"
@@ -170,7 +170,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         downstream_block.display_name = "Block Title"
         downstream_block.data = "Block content"
 
-        with self.assertRaisesRegex(BadUpstream, "Content type mismatch.*"):
+        with self.assertRaisesRegex(BadUpstream, "Content type mismatch.*"):  # noqa: PT027
             sync_from_upstream_block(downstream_block, self.user)
 
         assert downstream_block.display_name == "Block Title"
@@ -183,7 +183,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         """
         downstream = BlockFactory.create(category='html', parent=self.unit, upstream=str(self.upstream_key))
         user_who_cannot_read_upstream = UserFactory.create(username="rando", is_staff=False, is_superuser=False)
-        with self.assertRaisesRegex(BadUpstream, ".*could not be loaded.*") as exc:
+        with self.assertRaisesRegex(BadUpstream, ".*could not be loaded.*") as exc:  # noqa: F841, PT027
             sync_from_upstream_block(downstream, user_who_cannot_read_upstream)
 
     def test_sync_updates_happy_path(self):
@@ -291,7 +291,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # Modifing downstream-only fields are "safe" customizations
         downstream.display_name = "Downstream Title Override"
         downstream.attempts_before_showanswer_button = 2
-        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)
+        downstream.due = datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         downstream.force_save_button = True
         downstream.graceperiod = '2d'
         downstream.grading_method = 'last_score'
@@ -319,7 +319,7 @@ class UpstreamTestCase(ModuleStoreTestCase):
         # but "safe" customizations survive
         assert downstream.display_name == "Downstream Title Override"
         assert downstream.attempts_before_showanswer_button == 2
-        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)
+        assert downstream.due == datetime.datetime(2025, 2, 2, tzinfo=datetime.timezone.utc)  # noqa: UP017
         assert downstream.force_save_button
         assert downstream.graceperiod == '2d'
         assert downstream.grading_method == 'last_score'

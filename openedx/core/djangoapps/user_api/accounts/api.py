@@ -180,11 +180,11 @@ def update_account_settings(requesting_user, update, username=None):
         _update_state_if_needed(update, user_profile)
 
     except PreferenceValidationError as err:
-        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except (AccountUpdateError, AccountValidationError) as err:
         raise err
     except Exception as err:
-        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             f"Error thrown when saving account updates: '{str(err)}'"
         )
 
@@ -387,7 +387,7 @@ def _send_email_change_requests_if_needed(data, user):
         try:
             student_views.do_email_change_request(user, new_email)
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -401,7 +401,7 @@ def _send_email_change_requests_if_needed(data, user):
                 secondary_email_change_request=True,
             )
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -563,7 +563,7 @@ def _get_user_and_profile(username):
     try:
         existing_user = User.objects.get(username=username)
     except ObjectDoesNotExist:
-        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from
+        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
 
@@ -615,9 +615,9 @@ def _validate_username(username):
             # message by convention.
             validate_username(username)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as username_err:
-        raise errors.AccountUsernameInvalid(str(username_err))
+        raise errors.AccountUsernameInvalid(str(username_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountUsernameInvalid(validation_err.message)
+        raise errors.AccountUsernameInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_email(email):
@@ -640,9 +640,9 @@ def _validate_email(email):
         validate_email.message = accounts.AUTHN_EMAIL_INVALID_MSG
         validate_email(email)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as invalid_email_err:
-        raise errors.AccountEmailInvalid(str(invalid_email_err))
+        raise errors.AccountEmailInvalid(str(invalid_email_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountEmailInvalid(validation_err.message)
+        raise errors.AccountEmailInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_confirm_email(confirm_email, email):
@@ -682,9 +682,9 @@ def _validate_password(password, username=None, email=None, reset_password_page=
         temp_user = User(username=username, email=email) if username else None
         validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
-        raise errors.AccountPasswordInvalid(str(invalid_password_err))
+        raise errors.AccountPasswordInvalid(str(invalid_password_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
+        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))  # noqa: B904
 
     if (
         (settings.ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY and reset_password_page) or
@@ -818,4 +818,4 @@ def _validate_unicode(data, err="Input not valid unicode"):
         # In some cases we pass the above, but it's still inappropriate utf-8.
         str(data)
     except UnicodeError:
-        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

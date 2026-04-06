@@ -53,7 +53,7 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
         Verify API returns proper response in case ProgramDiscussions is not Configured.
         """
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         expected_data = {
             'tab_view_enabled': True,
             'discussion': {
@@ -61,7 +61,7 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
                 'configured': False
             }
         }
-        self.assertEqual(response.data, expected_data)
+        self.assertEqual(response.data, expected_data)  # noqa: PT009
 
     def test_if_user_is_not_authenticated(self):
         """
@@ -69,7 +69,7 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
         """
         self.client.logout()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_program_discussion_disabled(self):
         """
@@ -91,8 +91,8 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, expected_data)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, expected_data)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_api_returns_discussions_iframe(self, staff):
@@ -116,9 +116,9 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
         )
         discussion_config.save()
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertIsInstance(response.data['discussion']['iframe'], Markup)
-        self.assertIn('iframe', str(response.data['discussion']['iframe']), )
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertIsInstance(response.data['discussion']['iframe'], Markup)  # noqa: PT009
+        self.assertIn('iframe', str(response.data['discussion']['iframe']), )  # noqa: PT009
 
     def test_program_without_enrollment(self):
         """
@@ -134,5 +134,5 @@ class TestProgramDiscussionIframeView(SharedModuleStoreTestCase, ProgramCacheMix
                 'iframe': ''
             }
         }
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, default_response)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, default_response)  # noqa: PT009

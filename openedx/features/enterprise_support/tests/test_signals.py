@@ -187,7 +187,7 @@ class EnterpriseSupportSignals(SharedModuleStoreTestCase):
                     (
                         LOGGER_NAME,
                         log_level,
-                        'Encountered {} from ecommerce while creating refund voucher. '
+                        'Encountered {} from ecommerce while creating refund voucher. '  # noqa: UP032
                         'Order=EDX-000000001, enrollment={}, user={}'.format(
                             mock_error.__name__, enrollment, enrollment.user
                         ),

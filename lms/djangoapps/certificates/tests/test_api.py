@@ -678,7 +678,7 @@ class CertificatesBrandingTest(ModuleStoreTestCase):
         data = get_certificate_header_context(is_secure=True)
 
         # Make sure there are not unexpected keys in dict returned by 'get_certificate_header_context'
-        self.assertCountEqual(list(data.keys()), ["logo_src", "logo_url"])
+        self.assertCountEqual(list(data.keys()), ["logo_src", "logo_url"])  # noqa: PT009
         assert self.configuration["logo_image_url"] in data["logo_src"]
 
         assert self.configuration["SITE_NAME"] in data["logo_url"]
@@ -694,7 +694,7 @@ class CertificatesBrandingTest(ModuleStoreTestCase):
         data = get_certificate_footer_context()
 
         # Make sure there are not unexpected keys in dict returned by 'get_certificate_footer_context'
-        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])
+        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])  # noqa: PT009
         assert self.configuration["urls"]["ABOUT"] in data["company_about_url"]
         assert self.configuration["urls"]["PRIVACY"] in data["company_privacy_url"]
         assert self.configuration["urls"]["TOS_AND_HONOR"] in data["company_tos_url"]
@@ -1306,9 +1306,9 @@ class GetCourseIdsForUsernameTests(TestCase):
         """
         course_ids = get_course_ids_from_certs_for_user(self.user)
 
-        self.assertIn(self.course_key_1, course_ids)
-        self.assertIn(self.course_key_2, course_ids)
-        self.assertEqual(len(course_ids), 2)
+        self.assertIn(self.course_key_1, course_ids)  # noqa: PT009
+        self.assertIn(self.course_key_2, course_ids)  # noqa: PT009
+        self.assertEqual(len(course_ids), 2)  # noqa: PT009
 
     def test_returns_empty_for_unknown_user(self):
         """
@@ -1318,4 +1318,4 @@ class GetCourseIdsForUsernameTests(TestCase):
         errors and returns an empty list as expected.
         """
         course_ids = get_course_ids_from_certs_for_user("nonexistentuser")
-        self.assertEqual(course_ids, [])
+        self.assertEqual(course_ids, [])  # noqa: PT009

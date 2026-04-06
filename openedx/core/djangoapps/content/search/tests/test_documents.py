@@ -54,7 +54,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         super().setUpClass()
         cls.store = modulestore()
         # Create a library and collection with a block
-        cls.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)
+        cls.created_date = datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(cls.created_date):
             # Get references to some blocks in the toy course
             cls.org = Organization.objects.create(name="edX", short_name="edX")
@@ -478,8 +478,8 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         # Verify publish status is set to modified
         library_block_modified = replace(
             self.library_block,
-            modified=datetime(2024, 4, 5, 6, 7, 8, tzinfo=timezone.utc),
-            last_published=datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc),
+            modified=datetime(2024, 4, 5, 6, 7, 8, tzinfo=timezone.utc),  # noqa: UP017
+            last_published=datetime(2023, 4, 5, 6, 7, 8, tzinfo=timezone.utc),  # noqa: UP017
         )
         doc = searchable_doc_for_library_block(library_block_modified)
         doc.update(searchable_doc_tags(library_block_modified.usage_key))

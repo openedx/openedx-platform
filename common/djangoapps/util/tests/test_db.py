@@ -34,11 +34,11 @@ class TransactionManagersTestCase(TransactionTestCase):
         with outer_atomic():
             atomic()(do_nothing)()  # pylint: disable=not-callable
 
-        with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+        with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
             with atomic():
                 outer_atomic()(do_nothing)()  # pylint: disable=not-callable
 
-        with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+        with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
             with outer_atomic():
                 outer_atomic()(do_nothing)()  # pylint: disable=not-callable
 
@@ -59,7 +59,7 @@ class TransactionManagersTestCase(TransactionTestCase):
             with atomic():
                 outer_atomic(name='pqr')(do_nothing)()  # pylint: disable=not-callable  # Not enabled.
 
-            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
                 with atomic():
                     outer_atomic(name='abc')(do_nothing)()  # pylint: disable=not-callable
 
@@ -70,19 +70,19 @@ class TransactionManagersTestCase(TransactionTestCase):
             with atomic():
                 outer_atomic(name='pqr')(do_nothing)()  # pylint: disable=not-callable  # Not enabled.
 
-            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
                 with atomic():
                     outer_atomic(name='def')(do_nothing)()  # pylint: disable=not-callable
 
-            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
                 with outer_atomic():
                     outer_atomic(name='def')(do_nothing)()  # pylint: disable=not-callable
 
-            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
                 with atomic():
                     outer_atomic(name='abc')(do_nothing)()  # pylint: disable=not-callable
 
-            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):
+            with self.assertRaisesRegex(TransactionManagementError, 'Cannot be inside an atomic block.'):  # noqa: PT027
                 with outer_atomic():
                     outer_atomic(name='abc')(do_nothing)()  # pylint: disable=not-callable
 

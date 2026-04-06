@@ -37,11 +37,11 @@ class TestBlockStructure(TestCase, ChildrenMapTestMixin):
 
         # get_children
         for parent, children in enumerate(children_map):
-            self.assertSetEqual(set(block_structure.get_children(parent)), set(children))
+            self.assertSetEqual(set(block_structure.get_children(parent)), set(children))  # noqa: PT009
 
         # get_parents
         for child, parents in enumerate(self.get_parents_map(children_map)):
-            self.assertSetEqual(set(block_structure.get_parents(child)), set(parents))
+            self.assertSetEqual(set(block_structure.get_parents(child)), set(parents))  # noqa: PT009
 
         # __contains__
         for node in range(len(children_map)):
@@ -65,7 +65,7 @@ class TestBlockStructureData(TestCase, ChildrenMapTestMixin):
 
         block_structure = BlockStructureModulestoreData(root_block_usage_key=0)
 
-        with self.assertRaisesRegex(TransformerException, "Version attributes are not set"):
+        with self.assertRaisesRegex(TransformerException, "Version attributes are not set"):  # noqa: PT027
             block_structure._add_transformer(TestNonVersionedTransformer())
 
     def test_transformer_data(self):

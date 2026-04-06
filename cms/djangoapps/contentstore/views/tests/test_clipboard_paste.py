@@ -622,7 +622,7 @@ class ClipboardPasteFromV1LibraryTestCase(ModuleStoreTestCase):
         Creates and returns a legacy content library with 1 problem
         """
         library = LibraryFactory.create(display_name='Library')
-        lib_block = BlockFactory.create(
+        lib_block = BlockFactory.create(  # noqa: F841
             parent_location=library.usage_key,
             category="problem",
             display_name="MCQ",

@@ -193,7 +193,7 @@ def has_access(user, action, obj, course_key=None):
 
     # Passing an unknown object here is a coding error, so rather than
     # returning a default, complain.
-    raise TypeError("Unknown object type in has_access(): '{}'"
+    raise TypeError("Unknown object type in has_access(): '{}'"  # noqa: UP032
                     .format(type(obj)))
 
 
@@ -300,7 +300,7 @@ def _can_enroll_courselike(user, courselike):
             elif cea.valid_for_user(user):
                 return ACCESS_GRANTED
             else:
-                debug("Deny: CEA was already consumed by a different user {} and can't be used again by {}".format(
+                debug("Deny: CEA was already consumed by a different user {} and can't be used again by {}".format(  # noqa: UP032
                     cea.user.id,
                     user.id,
                 ))
@@ -728,7 +728,7 @@ def _dispatch(table, action, user, obj):
               action)
         return result
 
-    raise ValueError("Unknown action for object type '{}': '{}'".format(
+    raise ValueError("Unknown action for object type '{}': '{}'".format(  # noqa: UP032
         type(obj), action))
 
 

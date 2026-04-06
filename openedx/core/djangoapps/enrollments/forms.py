@@ -30,7 +30,7 @@ class CourseEnrollmentsApiListForm(Form):
             try:
                 return CourseKey.from_string(course_id)
             except InvalidKeyError:
-                raise ValidationError(f"'{course_id}' is not a valid course id.")  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ValidationError(f"'{course_id}' is not a valid course id.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return course_id
 
     def clean_username(self):
@@ -42,7 +42,7 @@ class CourseEnrollmentsApiListForm(Form):
             usernames = usernames_csv_string.split(',')
             if len(usernames) > self.MAX_INPUT_COUNT:
                 raise ValidationError(
-                    "Too many usernames in a single request - {}. A maximum of {} is allowed".format(
+                    "Too many usernames in a single request - {}. A maximum of {} is allowed".format(  # noqa: UP032
                         len(usernames),
                         self.MAX_INPUT_COUNT,
                     )
@@ -61,7 +61,7 @@ class CourseEnrollmentsApiListForm(Form):
             course_ids = course_ids_csv_string.split(',')
             if len(course_ids) > self.MAX_INPUT_COUNT:
                 raise ValidationError(
-                    "Too many course_ids in a single request - {}. A maximum of {} is allowed".format(
+                    "Too many course_ids in a single request - {}. A maximum of {} is allowed".format(  # noqa: UP032
                         len(course_ids),
                         self.MAX_INPUT_COUNT,
                     )
@@ -79,7 +79,7 @@ class CourseEnrollmentsApiListForm(Form):
             emails = emails_csv_string.split(',')
             if len(emails) > self.MAX_INPUT_COUNT:
                 raise ValidationError(
-                    "Too many emails in a single request - {}. A maximum of {} is allowed".format(
+                    "Too many emails in a single request - {}. A maximum of {} is allowed".format(  # noqa: UP032
                         len(emails),
                         self.MAX_INPUT_COUNT,
                     )

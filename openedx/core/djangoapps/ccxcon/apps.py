@@ -11,4 +11,4 @@ class CCXConnectorConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-cl
     verbose_name = "CCX Connector"
 
     def ready(self):
-        from . import signals  # lint-amnesty, pylint: disable=unused-import
+        from . import signals  # lint-amnesty, pylint: disable=unused-import  # noqa: F401

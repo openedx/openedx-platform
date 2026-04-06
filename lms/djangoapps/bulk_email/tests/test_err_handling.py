@@ -208,7 +208,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         """
         Tests exception when the to_option in the email doesn't exist
         """
-        with self.assertRaisesRegex(ValueError, "Course email being sent to an unrecognized target: 'IDONTEXIST' *"):
+        with self.assertRaisesRegex(ValueError, "Course email being sent to an unrecognized target: 'IDONTEXIST' *"):  # noqa: PT027
             CourseEmail.create(
                 self.course.id,
                 self.instructor,
@@ -222,7 +222,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         """
         Tests exception when the cohort or course mode doesn't exist
         """
-        with self.assertRaisesRegex(ValueError, '.* IDONTEXIST does not exist .*'):
+        with self.assertRaisesRegex(ValueError, '.* IDONTEXIST does not exist .*'):  # noqa: PT027
             CourseEmail.create(
                 self.course.id,
                 self.instructor,
@@ -244,7 +244,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         )
         entry = InstructorTask.create("bogus/task/id", "task_type", "task_key", "task_input", self.instructor)
         task_input = {"email_id": email.id}
-        with self.assertRaisesRegex(ValueError, 'does not match task value'):
+        with self.assertRaisesRegex(ValueError, 'does not match task value'):  # noqa: PT027
             perform_delegate_email_batches(entry.id, self.course.id, task_input, "action_name")
 
     def test_wrong_course_id_in_email(self):
@@ -260,7 +260,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         )
         entry = InstructorTask.create(self.course.id, "task_type", "task_key", "task_input", self.instructor)
         task_input = {"email_id": email.id}
-        with self.assertRaisesRegex(ValueError, 'does not match email value'):
+        with self.assertRaisesRegex(ValueError, 'does not match email value'):  # noqa: PT027
             perform_delegate_email_batches(entry.id, self.course.id, task_input, "action_name")
 
     def test_send_email_undefined_subtask(self):
@@ -272,7 +272,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         subtask_id = "subtask-id-value"
         subtask_status = SubtaskStatus.create(subtask_id)
         email_id = 1001
-        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find subtasks of instructor task'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find subtasks of instructor task'):  # noqa: PT027
             send_course_email(entry_id, email_id, to_list, global_email_context, subtask_status.to_dict())
 
     def test_send_email_missing_subtask(self):
@@ -286,7 +286,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         different_subtask_id = "bogus-subtask-id-value"
         subtask_status = SubtaskStatus.create(different_subtask_id)
         bogus_email_id = 1001
-        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find status for subtask of instructor task'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find status for subtask of instructor task'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, subtask_status.to_dict())
 
     def test_send_email_completed_subtask(self):
@@ -301,7 +301,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         to_list = ['test@test.com']
         global_email_context = {'course_title': 'dummy course'}
         new_subtask_status = SubtaskStatus.create(subtask_id)
-        with self.assertRaisesRegex(DuplicateTaskException, 'already completed'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'already completed'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, new_subtask_status.to_dict())
 
     def test_send_email_running_subtask(self):
@@ -316,7 +316,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         bogus_email_id = 1001
         to_list = ['test@test.com']
         global_email_context = {'course_title': 'dummy course'}
-        with self.assertRaisesRegex(DuplicateTaskException, 'already being executed'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'already being executed'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, subtask_status.to_dict())
 
     def test_send_email_retried_subtask(self):
@@ -332,11 +332,11 @@ class TestEmailErrors(ModuleStoreTestCase):
         global_email_context = {'course_title': 'dummy course'}
         # try running with a clean subtask:
         new_subtask_status = SubtaskStatus.create(subtask_id)
-        with self.assertRaisesRegex(DuplicateTaskException, 'already retried'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'already retried'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, new_subtask_status.to_dict())
         # try again, with a retried subtask with lower count:
         new_subtask_status = SubtaskStatus.create(subtask_id, state=RETRY, retried_nomax=1)
-        with self.assertRaisesRegex(DuplicateTaskException, 'already retried'):
+        with self.assertRaisesRegex(DuplicateTaskException, 'already retried'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, new_subtask_status.to_dict())
 
     def test_send_email_with_locked_instructor_task(self):

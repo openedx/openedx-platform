@@ -433,7 +433,7 @@ def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, py
     if upgrade_deadline:
         formatted_upgrade_deadline = strftime_localized_html(upgrade_deadline, 'SHORT_DATE')
 
-        bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\
+        bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\  # noqa: UP032
                      You lose all access to this course, including your progress, on {expiration_date}.\
                      <br>Upgrade by {upgrade_deadline} to get unlimited access to the course as long as it exists\
                      on the site. <a id="FBE_banner" href="{upgrade_link}">Upgrade now<span class="sr-only"> to retain access past\
@@ -443,7 +443,7 @@ def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, py
             upgrade_deadline=formatted_upgrade_deadline
         )
     else:
-        bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\
+        bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\  # noqa: UP032
                      You lose all access to this course, including your progress, on {expiration_date}.\
                      '.format(
             expiration_date=formatted_expiration_date

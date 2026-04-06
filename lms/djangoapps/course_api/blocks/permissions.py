@@ -12,7 +12,7 @@ from lms.djangoapps.courseware.access_utils import ACCESS_DENIED, ACCESS_GRANTED
 from lms.djangoapps.courseware.courses import get_course
 from lms.djangoapps.courseware.exceptions import CourseRunNotFound
 from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
-    CourseOverview,
+    CourseOverview,  # noqa: F401
 )
 from xmodule.course_block import COURSE_VISIBILITY_PUBLIC  # lint-amnesty, pylint: disable=wrong-import-order
 

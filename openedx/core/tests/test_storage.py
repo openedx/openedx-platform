@@ -30,13 +30,13 @@ class TestGetStorage(TestCase):
     def test_get_storage_returns_default_storage_when_no_class_specified(self):
         """Test that get_storage returns the default storage when no storage_class is provided."""
         storage = get_storage()
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     def test_get_storage_returns_custom_storage_when_class_specified(self):
         """Test that get_storage returns the specified storage class."""
         storage_class = 'django.core.files.storage.FileSystemStorage'
         storage = get_storage(storage_class=storage_class)
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     def test_get_storage_caching_behavior(self):
         """Test that get_storage caches instances with identical arguments."""
@@ -46,9 +46,9 @@ class TestGetStorage(TestCase):
         storage1 = get_storage(storage_class=storage_class, **kwargs)
         # Second Call
         storage2 = get_storage(storage_class=storage_class, **kwargs)
-        self.assertIs(storage1, storage2)
+        self.assertIs(storage1, storage2)  # noqa: PT009
 
     def test_get_storage_handles_invalid_storage_class(self):
         """Test that get_storage raises appropriate error for invalid storage class."""
-        with self.assertRaises(ImportError):
+        with self.assertRaises(ImportError):  # noqa: PT027
             get_storage(storage_class='nonexistent.storage.InvalidStorage')

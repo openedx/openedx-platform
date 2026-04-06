@@ -78,11 +78,11 @@ class Command(BaseCommand):
             client_id=client_id,
             defaults={
                 "user": service_user,
-                "name": "{service_name}-sso-{site_name}".format(
+                "name": "{service_name}-sso-{site_name}".format(  # noqa: UP032
                     site_name=site_name,
                     service_name=service_name,
                 ),
-                "client_secret": "{service_name}-secret".format(
+                "client_secret": "{service_name}-secret".format(  # noqa: UP032
                     service_name=service_name
                 ),
                 "client_type": Application.CLIENT_CONFIDENTIAL,
@@ -126,7 +126,7 @@ class Command(BaseCommand):
         Matched the given pattern in given path and returns the list of matching files
         """
         result = []
-        for root, dirs, files in os.walk(path):  # pylint: disable=unused-variable
+        for root, dirs, files in os.walk(path):  # pylint: disable=unused-variable  # noqa: B007
             for name in files:
                 if fnmatch.fnmatch(name, pattern):
                     result.append(os.path.join(root, name))
@@ -213,21 +213,21 @@ class Command(BaseCommand):
 
         if options['devstack']:
             configuration_prefix = "devstack"
-            self.discovery_oauth_complete_url = "http://discovery-{}.e2e.devstack:18381/complete/edx-oauth2/".format(
+            self.discovery_oauth_complete_url = "http://discovery-{}.e2e.devstack:18381/complete/edx-oauth2/".format(  # noqa: UP032
                 self.dns_name
             )
             self.discovery_base_url_fmt = "http://discovery-{site_domain}:18381/"
-            self.ecommerce_oauth_complete_url = "http://ecommerce-{}.e2e.devstack:18130/complete/edx-oauth2/".format(
+            self.ecommerce_oauth_complete_url = "http://ecommerce-{}.e2e.devstack:18130/complete/edx-oauth2/".format(  # noqa: UP032
                 self.dns_name
             )
             self.ecommerce_base_url_fmt = "http://ecommerce-{site_domain}:18130/"
         else:
             configuration_prefix = "sandbox"
-            self.discovery_oauth_complete_url = "https://discovery-{}.sandbox.edx.org/complete/edx-oauth2/".format(
+            self.discovery_oauth_complete_url = "https://discovery-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032
                 self.dns_name
             )
             self.discovery_base_url_fmt = "https://discovery-{site_domain}/"
-            self.ecommerce_oauth_complete_url = "https://ecommerce-{}.sandbox.edx.org/complete/edx-oauth2/".format(
+            self.ecommerce_oauth_complete_url = "https://ecommerce-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032
                 self.dns_name
             )
             self.ecommerce_base_url_fmt = "https://ecommerce-{site_domain}/"

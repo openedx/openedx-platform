@@ -653,7 +653,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         reset_request = self.request_factory.get(self.password_reset_confirm_url)
         reset_request.user = UserFactory.create()
 
-        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,
+        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,  # noqa: PT027
                           token=self.token)
 
     @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True}, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
@@ -757,7 +757,7 @@ class PasswordResetViewTest(UserAPITestCase):
         assert form_desc['fields'] ==\
                [{'name': 'email', 'defaultValue': '', 'type': 'email', 'exposed': True,
                  'required': True, 'label': 'Email', 'placeholder': 'username@domain.com',
-                 'instructions': 'The email address you used to register with {platform_name}'
+                 'instructions': 'The email address you used to register with {platform_name}'  # noqa: UP032
                 .format(platform_name=settings.PLATFORM_NAME),
                  'restrictions': {'min_length': EMAIL_MIN_LENGTH,
                                   'max_length': EMAIL_MAX_LENGTH},
@@ -775,7 +775,7 @@ class PasswordResetTokenValidateViewTest(UserAPITestCase):
         self.user = UserFactory.create()
         self.user.is_active = False
         self.user.save()
-        self.token = '{uidb36}-{token}'.format(
+        self.token = '{uidb36}-{token}'.format(  # noqa: UP032
             uidb36=int_to_base36(self.user.id),
             token=default_token_generator.make_token(self.user)
         )

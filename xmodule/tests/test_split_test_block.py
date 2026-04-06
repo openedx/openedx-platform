@@ -146,12 +146,12 @@ class SplitTestBlockLMSTest(SplitTestBlockTest):
         assert child_content in self.course.runtime.render(self.split_test_block, STUDENT_VIEW).content
 
     @ddt.data(0, 1)
-    def test_child_missing_tag_value(self, _user_tag):
+    def test_child_missing_tag_value(self, _user_tag):  # noqa: PT019
         # If user_tag has a missing value, we should still get back a valid child url
         assert self.split_test_block.child_block.url_name in ['split_test_cond0', 'split_test_cond1']
 
     @ddt.data(100, 200, 300, 400, 500, 600, 700, 800, 900, 1000)
-    def test_child_persist_new_tag_value_when_tag_missing(self, _user_tag):
+    def test_child_persist_new_tag_value_when_tag_missing(self, _user_tag):  # noqa: PT019
         # If a user_tag has a missing value, a group should be saved/persisted for that user.
         # So, we check that we get the same url_name when we call on the url_name twice.
         # We run the test ten times so that, if our storage is failing, we'll be most likely to notice it.
@@ -262,13 +262,13 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
         assert SplitTestBlock.display_name not in non_editable_metadata_fields
 
     @patch('xmodule.split_test_block.user_partition_values.values')
-    def test_available_partitions(self, _):
+    def test_available_partitions(self, _):  # noqa: PT019
         """
         Tests that the available partitions are populated correctly when editable_metadata_fields are called
         """
         # user_partitions is empty, only the "Not Selected" item will appear.
         self.split_test_block.user_partition_id = SplitTestFields.no_partition_selected['value']
-        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement
+        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement  # noqa: B018
         partitions = user_partition_values.values
         assert 1 == len(partitions)
         assert SplitTestFields.no_partition_selected['value'] == partitions[0]['value']
@@ -285,7 +285,7 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
                 self.non_random_scheme
             )
         ]
-        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement
+        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement  # noqa: B018
         partitions = user_partition_values.values
         assert 2 == len(partitions)
         assert SplitTestFields.no_partition_selected['value'] == partitions[0]['value']
@@ -294,7 +294,7 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
 
         # Try again with a selected partition and verify that there is no option for "No Selection"
         self.split_test_block.user_partition_id = 0
-        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement
+        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement  # noqa: B018
         partitions = user_partition_values.values
         assert 1 == len(partitions)
         assert 0 == partitions[0]['value']
@@ -302,7 +302,7 @@ class SplitTestBlockStudioTest(SplitTestBlockTest):
 
         # Finally try again with an invalid selected partition and verify that "No Selection" is an option
         self.split_test_block.user_partition_id = 999
-        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement
+        self.split_test_block.editable_metadata_fields  # pylint: disable=pointless-statement  # noqa: B018
         partitions = user_partition_values.values
         assert 2 == len(partitions)
         assert SplitTestFields.no_partition_selected['value'] == partitions[0]['value']
@@ -567,7 +567,7 @@ class SplitTestBlockExportImportTest(MixedSplitTestCase):
         split_test_block.add_xml_to_node(node)
 
         # Read it back
-        with export_fs.open('{dir}/{file_name}.xml'.format(
+        with export_fs.open('{dir}/{file_name}.xml'.format(  # noqa: UP032
             dir=split_test_block.scope_ids.usage_id.block_type,
             file_name=split_test_block.scope_ids.usage_id.block_id
         )) as f:

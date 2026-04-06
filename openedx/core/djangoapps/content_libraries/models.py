@@ -25,7 +25,7 @@ from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESER
 log = logging.getLogger(__name__)
 
 
-warnings.warn(
+warnings.warn(  # noqa: B028
     (
         "ContentLibraryPermission model and related content library authorization "
         "APIs are deprecated. See https://github.com/openedx/openedx-platform/issues/37409."
@@ -40,7 +40,7 @@ class ContentLibraryManager(models.Manager["ContentLibrary"]):
     """
     Custom manager for ContentLibrary class.
     """
-    def get_by_key(self, library_key) -> "ContentLibrary":
+    def get_by_key(self, library_key) -> "ContentLibrary":  # noqa: UP037
         """
         Get the ContentLibrary for the given LibraryLocatorV2 key.
         """
@@ -115,7 +115,7 @@ class ContentLibrary(models.Model):
         """
         return LibraryLocatorV2(org=self.org.short_name, slug=self.slug)
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return f"ContentLibrary ({str(self.library_key)})"
 
 
@@ -161,6 +161,6 @@ class ContentLibraryPermission(models.Model):
             raise ValidationError(_("One and only one of 'user' and 'group' must be set."))
         return super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         who = self.user.username if self.user else self.group.name
         return f"ContentLibraryPermission ({self.access_level} for {who})"

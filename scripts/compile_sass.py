@@ -214,15 +214,15 @@ def main(
         click.secho(f"    Target: {target_root}")
         if not source_root.is_dir():
             if tolerate_missing:
-                click.secho(f"    Skipped because source directory does not exist.", fg="yellow")
+                click.secho(f"    Skipped because source directory does not exist.", fg="yellow")  # noqa: F541
                 return
             else:
                 raise FileNotFoundError(f"missing Sass source dir: {source_root}")
-        click.echo(f"    Include paths:")
+        click.echo(f"    Include paths:")  # noqa: F541
         for include in includes:
             click.echo(f"      {include}")
 
-        click.echo(f"    Files:")
+        click.echo(f"    Files:")  # noqa: F541
         for dirpath, _, filenames in os.walk(str(source_root)):
             for filename in filenames:
                 if filename.startswith('_'):
@@ -253,7 +253,7 @@ def main(
                     with open(target, 'w', encoding="utf-8") as target_file:
                         target_file.write(output_text)
 
-        click.secho(f"    Done.", fg="green")
+        click.secho(f"    Done.", fg="green")  # noqa: F541
         # For Sass files without explicit RTL versions, generate
         # an RTL version of the CSS using the rtlcss library.
         for sass_path in glob.glob(str(source_root) + "/**/*.scss"):
@@ -280,7 +280,7 @@ def main(
     # Information
     click.secho(f"USING ENV: {NORMALIZED_ENVS[env]}", fg="blue")
     if dry:
-        click.secho(f"DRY RUN: Will print compile steps, but will not compile anything.", fg="blue")
+        click.secho(f"DRY RUN: Will print compile steps, but will not compile anything.", fg="blue")  # noqa: F541
     click.echo()
 
     # Warnings
@@ -329,7 +329,7 @@ def main(
     ]
 
     if not skip_default:
-        click.secho(f"Compiling default Sass...", fg="cyan", bold=True)
+        click.secho(f"Compiling default Sass...", fg="cyan", bold=True)  # noqa: F541
         if not skip_lms:
             compile_sass_dir(
                 "Compiling default LMS Sass",
@@ -363,7 +363,7 @@ def main(
                     repo / "cms" / "static" / "sass",
                 ],
             )
-        click.secho(f"Done compiling default Sass!", fg="cyan", bold=True)
+        click.secho(f"Done compiling default Sass!", fg="cyan", bold=True)  # noqa: F541
         click.echo()
 
     for theme in theme_paths:
@@ -441,9 +441,9 @@ def main(
     for theme in theme_paths:
         click.secho(f"  - {theme}", fg="green")
     if skip_lms:
-        click.secho(f"(skipped LMS)", fg="yellow")
+        click.secho(f"(skipped LMS)", fg="yellow")  # noqa: F541
     if skip_cms:
-        click.secho(f"(skipped CMS)", fg="yellow")
+        click.secho(f"(skipped CMS)", fg="yellow")  # noqa: F541
 
 
 if __name__ == "__main__":

@@ -67,7 +67,7 @@ class Command(BaseCommand):
             try:
                 course_key = CourseKey.from_string(course_id)
             except InvalidKeyError:
-                raise CommandError(f'Course ID {course_id} is invalid.')  # lint-amnesty, pylint: disable=raise-missing-from
+                raise CommandError(f'Course ID {course_id} is invalid.')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             if modulestore().get_course(course_key) is None:
                 raise CommandError(f'The given course {course_id} does not exist.')

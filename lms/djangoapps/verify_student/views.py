@@ -916,7 +916,7 @@ class SubmitPhotosView(View):
         # The face image is always required.
         if "face_image" not in params:
             msg = _("Missing required parameter face_image")
-            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))
+            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))  # noqa: UP032
             return None, HttpResponseBadRequest(msg)
 
         return params, None
@@ -942,12 +942,12 @@ class SubmitPhotosView(View):
                 data_type = image_data.split(',')[0]
                 if data_type:
                     log.error(
-                        "Image data for user_id={user_id} was uploaded in an unsupported "
+                        "Image data for user_id={user_id} was uploaded in an unsupported "  # noqa: UP032
                         "format: {data_type}".format(user_id=request.user.id, data_type=data_type)
                     )
                 else:
                     log.error(
-                        "Image data type for user_id={user_id} could not be identified.".format(
+                        "Image data type for user_id={user_id} could not be identified.".format(  # noqa: UP032
                             user_id=request.user.id
                         )
                     )
@@ -967,7 +967,7 @@ class SubmitPhotosView(View):
 
         except InvalidImageData:
             msg = _("Image data is not valid.")
-            log.error(("Image data for user {user_id} is not valid").format(user_id=request.user.id))
+            log.error(("Image data for user {user_id} is not valid").format(user_id=request.user.id))  # noqa: UP032
             return None, None, HttpResponseBadRequest(msg)
 
     def _submit_attempt(self, user, face_image, photo_id_image=None, initial_verification=None, provided_name=None):
@@ -1077,7 +1077,7 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
     # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
     #       COSMO-196 was created to track the cleanup of these logs.
     log.info(
-        "[COSMO-184] Software Secure review received for receipt_id={receipt_id}, "
+        "[COSMO-184] Software Secure review received for receipt_id={receipt_id}, "  # noqa: UP032
         "with result={result} and reason={reason}."
         .format(
             receipt_id=receipt_id,
@@ -1116,7 +1116,7 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
 
         # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
         #       COSMO-196 was created to track the cleanup of these logs.
-        log.info("[COSMO-184] Approved verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))
+        log.info("[COSMO-184] Approved verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))  # noqa: UP032
         attempt.approve()
 
         send_approval_email(attempt)
@@ -1125,7 +1125,7 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
 
         # TODO: These logs must be removed once the investigation in COSMO-184 is complete.
         #       COSMO-196 was created to track the cleanup of these logs.
-        log.info("[COSMO-184] Denied verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))
+        log.info("[COSMO-184] Denied verification for receipt_id={receipt_id}.".format(receipt_id=receipt_id))  # noqa: UP032
 
         attempt.deny(json.dumps(reason), error_code=error_code)
         account_base_url = (

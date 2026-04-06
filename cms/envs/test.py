@@ -25,8 +25,8 @@ from openedx.core.lib.derived import derive_settings
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from xmodule.modulestore.modulestore_settings import update_module_store_settings  # pylint: disable=wrong-import-order
 
-from .common import *
-from openedx.envs.test import *  # must come after .common to override Derived values with literals
+from .common import *  # noqa: F403
+from openedx.envs.test import *  # must come after .common to override Derived values with literals  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -36,36 +36,36 @@ FEATURES = FeaturesProxy(globals())
 STUDIO_NAME = gettext_lazy("Your Platform 𝓢𝓽𝓾𝓭𝓲𝓸")
 STUDIO_SHORT_NAME = gettext_lazy("𝓢𝓽𝓾𝓭𝓲𝓸")
 
-COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"
+COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"  # noqa: F405
 
-COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]
+COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]  # noqa: F405
 
-WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'
+WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'  # noqa: F405
 
-GITHUB_REPO_ROOT = TEST_ROOT / "data"
+GITHUB_REPO_ROOT = TEST_ROOT / "data"  # noqa: F405
 
 # For testing "push to lms"
 ENABLE_EXPORT_GIT = True
-GIT_REPO_EXPORT_DIR = TEST_ROOT / "export_course_repos"
+GIT_REPO_EXPORT_DIR = TEST_ROOT / "export_course_repos"  # noqa: F405
 
 # Avoid having to run collectstatic before the unit test suite
 # If we don't add these settings, then Django templates that can't
 # find pipelined assets will raise a ValueError.
 # http://stackoverflow.com/questions/12816941/unit-testing-with-django-pipeline
-STORAGES['staticfiles']['BACKEND'] = "pipeline.storage.NonPackagingPipelineStorage"
+STORAGES['staticfiles']['BACKEND'] = "pipeline.storage.NonPackagingPipelineStorage"  # noqa: F405
 STATIC_URL = "/static/"
 
 # Update module store settings per defaults for tests
 update_module_store_settings(
-    MODULESTORE,
+    MODULESTORE,  # noqa: F405
     module_store_options={
         "default_class": "xmodule.hidden_block.HiddenBlock",
-        "fs_root": TEST_ROOT / "data",
+        "fs_root": TEST_ROOT / "data",  # noqa: F405
     },
     doc_store_settings={
-        "db": f"test_xmodule_{THIS_UUID}",
-        "host": MONGO_HOST,
-        "port": MONGO_PORT_NUM,
+        "db": f"test_xmodule_{THIS_UUID}",  # noqa: F405
+        "host": MONGO_HOST,  # noqa: F405
+        "port": MONGO_PORT_NUM,  # noqa: F405
         "collection": "test_modulestore",
     },
 )
@@ -73,9 +73,9 @@ update_module_store_settings(
 CONTENTSTORE = {
     "ENGINE": "xmodule.contentstore.mongo.MongoContentStore",
     "DOC_STORE_CONFIG": {
-        "host": MONGO_HOST,
-        "db": f"test_xcontent_{THIS_UUID}",
-        "port": MONGO_PORT_NUM,
+        "host": MONGO_HOST,  # noqa: F405
+        "db": f"test_xcontent_{THIS_UUID}",  # noqa: F405
+        "port": MONGO_PORT_NUM,  # noqa: F405
         "collection": "dont_trip",
     },
     # allow for additional options that can be keyed on a name, e.g. 'trashcan'
@@ -85,7 +85,7 @@ CONTENTSTORE = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": TEST_ROOT / "db" / "cms.db",
+        "NAME": TEST_ROOT / "db" / "cms.db",  # noqa: F405
         "ATOMIC_REQUESTS": True,
     },
 }
@@ -161,7 +161,7 @@ ENABLE_CREATOR_GROUP = False
 ENABLE_TEAMS = True
 
 ######### custom courses #########
-INSTALLED_APPS += [
+INSTALLED_APPS += [  # noqa: F405
     "openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig",
     "common.djangoapps.third_party_auth.apps.ThirdPartyAuthConfig",
 ]
@@ -171,10 +171,10 @@ VIDEO_IMAGE_SETTINGS = dict(
     VIDEO_IMAGE_MAX_BYTES=2 * 1024 * 1024,  # 2 MB
     VIDEO_IMAGE_MIN_BYTES=2 * 1024,  # 2 KB
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=MEDIA_ROOT,  # noqa: F405
     ),
     DIRECTORY_PREFIX="video-images/",
-    BASE_URL=MEDIA_URL,
+    BASE_URL=MEDIA_URL,  # noqa: F405
 )
 VIDEO_IMAGE_DEFAULT_FILENAME = "default_video_image.png"
 
@@ -182,7 +182,7 @@ VIDEO_IMAGE_DEFAULT_FILENAME = "default_video_image.png"
 
 # Most of the JWT_AUTH settings come from cms/envs/common.py (from openedx/envs/common.py),
 # but here we update to use JWKS values from openedx/envs/test.py for testing.
-JWT_AUTH.update(jwt_jwks_values)
+JWT_AUTH.update(jwt_jwks_values)  # noqa: F405
 
 ####################### Plugin Settings ##########################
 
@@ -196,11 +196,11 @@ derive_settings(__name__)
 
 # For the "preview" template engine, the CMS uses the same dirs as the LMS. Here we mutate
 # the DIRS list to match the MAKO_TEMPLATE_DIRS_BASE list produced by lms.envs.test.
-preview_template = next(d for d in TEMPLATES if d["NAME"] == "preview")
+preview_template = next(d for d in TEMPLATES if d["NAME"] == "preview")  # noqa: F405
 preview_template['DIRS'].extend([
-    COMMON_ROOT / 'test' / 'templates',
-    COMMON_ROOT / 'test' / 'test_sites',
-    REPO_ROOT / 'openedx' / 'core' / 'djangolib' / 'tests' / 'templates',
+    COMMON_ROOT / 'test' / 'templates',  # noqa: F405
+    COMMON_ROOT / 'test' / 'test_sites',  # noqa: F405
+    REPO_ROOT / 'openedx' / 'core' / 'djangolib' / 'tests' / 'templates',  # noqa: F405
 ])
 for theme_dir in COMPREHENSIVE_THEME_DIRS:  # pylint: disable=not-an-iterable
     preview_template['DIRS'].insert(0, theme_dir)
@@ -211,30 +211,30 @@ RATELIMIT_RATE = '2/m'
 
 ############## openedx_content config ##############
 OPENEDX_LEARNING = {
-    "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}
+    "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}  # noqa: F405
 }
 
 
 # This value has traditionally been imported from the LMS. Now we modify it to match to avoid dependency
 # on the LMS settings. The default in cms/envs/common.py includes the `marketing_emails_opt_in` field which is not
 # in the dict that was previously imported from the LMS for testing so we remove it here
-REGISTRATION_EXTRA_FIELDS.pop("marketing_emails_opt_in", None)
+REGISTRATION_EXTRA_FIELDS.pop("marketing_emails_opt_in", None)  # noqa: F405
 
 # Course Live
-COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = big_blue_button_credentials
+COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = big_blue_button_credentials  # noqa: F405
 
 # Proctoring
 PROCTORING_SETTINGS = {}
 
 #### Override default production settings for testing purposes
 
-del AUTHORING_API_URL
-del BROKER_HEARTBEAT
-del BROKER_HEARTBEAT_CHECKRATE
-del BROKER_USE_SSL
-del EMAIL_FILE_PATH
-del PARSE_KEYS
-del SESSION_INACTIVITY_TIMEOUT_IN_SECONDS
+del AUTHORING_API_URL  # noqa: F821
+del BROKER_HEARTBEAT  # noqa: F821
+del BROKER_HEARTBEAT_CHECKRATE  # noqa: F821
+del BROKER_USE_SSL  # noqa: F821
+del EMAIL_FILE_PATH  # noqa: F821
+del PARSE_KEYS  # noqa: F821
+del SESSION_INACTIVITY_TIMEOUT_IN_SECONDS  # noqa: F821
 ENTERPRISE_API_URL = "https://localhost:18000/enterprise/api/v1/"
 ENTERPRISE_CONSENT_API_URL = "https://localhost:18000/consent/api/v1/"
 INACTIVE_USER_URL = "http://localhost:18010"

@@ -14,4 +14,4 @@ class EnterpriseSupportConfig(AppConfig):
 
     def ready(self):
         # Import signals to activate signal handler for enterprise.
-        from . import signals  # pylint: disable=unused-import
+        from . import signals  # pylint: disable=unused-import  # noqa: F401

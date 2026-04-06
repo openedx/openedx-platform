@@ -266,7 +266,7 @@ class ScoreChangedSignalRelayTest(TestCase):
         """
         Tests that the disconnect context manager errors when given an invalid signal.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with disconnect_submissions_signal_receiver(PROBLEM_RAW_SCORE_CHANGED):
                 pass
 

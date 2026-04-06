@@ -48,7 +48,7 @@ class BlockRecordListTestCase(TestCase):
         )
 
     def test_empty_block_record_set(self):
-        empty_json = '{{"blocks":[],"course_key":"{}","version":{}}}'.format(
+        empty_json = '{{"blocks":[],"course_key":"{}","version":{}}}'.format(  # noqa: UP032
             str(self.course_key),
             BLOCK_RECORD_LIST_VERSION,
         )
@@ -351,8 +351,8 @@ class PersistentSubsectionGradeTest(GradesModelTestCase):
         deleted = PersistentSubsectionGrade.delete_subsection_grades_for_learner(
             self.user.id, self.course_key
         )
-        self.assertEqual(deleted, 1)
-        self.assertFalse(PersistentSubsectionGrade.objects.filter(
+        self.assertEqual(deleted, 1)  # noqa: PT009
+        self.assertFalse(PersistentSubsectionGrade.objects.filter(  # noqa: PT009
             user_id=self.user.id, course_id=self.course_key).exists()
         )
 
@@ -366,7 +366,7 @@ class PersistentSubsectionGradeTest(GradesModelTestCase):
             feature=GradeOverrideFeatureEnum.gradebook,
         )
         deleted = PersistentSubsectionGrade.delete_subsection_grades_for_learner(self.user.id, self.course_key)
-        self.assertEqual(deleted, 2)
+        self.assertEqual(deleted, 2)  # noqa: PT009
 
 
 @ddt.ddt
@@ -452,7 +452,7 @@ class PersistentCourseGradesTest(GradesModelTestCase):
         with freeze_time(now()):
             grade = PersistentCourseGrade.update_or_create(**self.params)
             assert now() == grade.passed_timestamp
-            self.assertEqual(mock.call_count, 1)
+            self.assertEqual(mock.call_count, 1)  # noqa: PT009
 
     def test_create_and_read_grade(self):
         created_grade = PersistentCourseGrade.update_or_create(**self.params)
@@ -541,12 +541,12 @@ class PersistentCourseGradesTest(GradesModelTestCase):
         )
 
         # assert after deleteing grade for a single user and course
-        with self.assertRaises(PersistentCourseGrade.DoesNotExist):
+        with self.assertRaises(PersistentCourseGrade.DoesNotExist):  # noqa: PT027
             PersistentCourseGrade.read(self.params['user_id'], self.course_key)
 
         another_user_grade = PersistentCourseGrade.read(other_user_params['user_id'], self.course_key)
-        self.assertIsNotNone(another_user_grade)
+        self.assertIsNotNone(another_user_grade)  # noqa: PT009
 
-        self.assertTrue(PersistentCourseGrade.objects.filter(
+        self.assertTrue(PersistentCourseGrade.objects.filter(  # noqa: PT009
             user_id=self.params['user_id'], course_id=other_course_key).exists()
         )

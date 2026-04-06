@@ -80,7 +80,7 @@ def set_credit_requirements(course_key, requirements):
     try:
         credit_course = CreditCourse.get_credit_course(course_key=course_key)
     except CreditCourse.DoesNotExist:
-        raise InvalidCreditCourse()  # lint-amnesty, pylint: disable=raise-missing-from
+        raise InvalidCreditCourse()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     old_requirements = CreditRequirement.get_course_requirements(course_key=course_key)
     requirements_to_disable = _get_requirements_to_disable(old_requirements, requirements)
@@ -430,7 +430,7 @@ def _validate_requirements(requirements):
 
         if invalid_params:
             invalid_requirements.append(
-                "{requirement} has missing/invalid parameters: {params}".format(
+                "{requirement} has missing/invalid parameters: {params}".format(  # noqa: UP032
                     requirement=requirement,
                     params=invalid_params,
                 )

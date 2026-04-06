@@ -538,7 +538,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
         response = self.client.get(reverse('courseenrollments'), {'user': self.user.username}, **kwargs)
         assert response.status_code == status.HTTP_200_OK
         data = json.loads(response.content.decode('utf-8'))
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [(datum['course_details']['course_id'], datum['course_details']['course_name']) for datum in data],
             [(str(course.id), course.display_name_with_default) for course in courses]
         )
@@ -1147,7 +1147,7 @@ class EnrollmentTest(EnrollmentTestMixin, ModuleStoreTestCase, APITestCase, Ente
             assert is_active == old_is_active
             assert course_mode == old_mode
             # error message should contain specific text.  Otto checks for this text in the message.
-            self.assertRegex(
+            self.assertRegex(  # noqa: PT009
                 json.loads(response.content.decode('utf-8'))['message'],
                 'Enrollment mode mismatch'
             )
@@ -1762,7 +1762,7 @@ class UserRoleTest(ModuleStoreTestCase):
             response = self.client.get(reverse('roles'))
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             expected_response = {
-                "message": (
+                "message": (  # noqa: UP032
                     "An error occurred while retrieving roles for user '{username}"
                 ).format(username=self.user.username)
             }
@@ -1925,7 +1925,7 @@ class CourseEnrollmentsApiListTest(APITestCase, ModuleStoreTestCase):
         content = self._assert_list_of_enrollments(query_params, status.HTTP_200_OK)
         results = content['results']
 
-        self.assertCountEqual(results, expected_results)
+        self.assertCountEqual(results, expected_results)  # noqa: PT009
 
 
 @ddt.ddt

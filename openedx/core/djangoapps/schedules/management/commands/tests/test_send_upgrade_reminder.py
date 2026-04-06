@@ -85,7 +85,7 @@ class TestUpgradeReminder(ScheduleSendEmailTestMixin, CacheIsolationTestCase):  
             messages = [Message.from_string(m) for m in sent_messages]
             assert len(messages) == 1
             message = messages[0]
-            self.assertCountEqual(
+            self.assertCountEqual(  # noqa: PT009
                 message.context['course_ids'],
                 [str(schedules[i].enrollment.course.id) for i in (1, 2, 4)]
             )

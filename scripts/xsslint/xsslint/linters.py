@@ -4,7 +4,7 @@ Linter classes containing logic for checking various filetypes.
 
 
 import ast
-import io
+import io  # noqa: F401
 import os
 import re
 import textwrap
@@ -652,7 +652,7 @@ class JavaScriptLinter(BaseLinter):
         )
         # Match quoted HTML strings next to a '+'.
         regex_concat_with_html = re.compile(
-            r"(\+\s*{string_with_html}|{string_with_html}\s*\+)".format(
+            r"(\+\s*{string_with_html}|{string_with_html}\s*\+)".format(  # noqa: UP032
                 string_with_html=regex_string_with_html,
             ),
             re.VERBOSE

@@ -92,7 +92,7 @@ class TestBlocksView(SharedModuleStoreTestCase):
         response = self.client.get(url or self.url, self.query_params)
         assert response.status_code == expected_status_code, str(response.content)
         if cacheable:
-            assert response.get('Cache-Control', None) == 'max-age={}'.format(
+            assert response.get('Cache-Control', None) == 'max-age={}'.format(  # noqa: UP032
                 settings.CACHE_MIDDLEWARE_SECONDS
             )
         else:
@@ -103,7 +103,7 @@ class TestBlocksView(SharedModuleStoreTestCase):
         """
         Verify that the response contains only the expected block ids.
         """
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             {block['id'] for block in response.data},
             self.non_orphaned_block_usage_keys,
         )
@@ -112,7 +112,7 @@ class TestBlocksView(SharedModuleStoreTestCase):
         """
         Verify that the response contains the expected blocks
         """
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             set(response.data['blocks'].keys()),
             self.non_orphaned_block_usage_keys,
         )
@@ -134,7 +134,7 @@ class TestBlocksView(SharedModuleStoreTestCase):
             assert 'not_a_field' not in block_data
 
             if xblock.has_children:
-                self.assertSetEqual(
+                self.assertSetEqual(  # noqa: PT009
                     {str(child.location) for child in xblock.get_children()},
                     set(block_data['children']),
                 )
@@ -519,7 +519,7 @@ class TestBlocksInCourseView(TestBlocksView, CompletionWaffleTestMixin):  # pyli
                     if value.get('type') == 'discussion':
                         return True
             else:
-                for key, value in blocks.items():
+                for key, value in blocks.items():  # noqa: B007
                     if value.get('type') == 'discussion':
                         return True
             return False

@@ -141,7 +141,7 @@ class TestBlockStructureFactory(TestCase, ChildrenMapTestMixin):
         for block_key in block_structure:
             # The block_key should equal its normalized version
             normalized_key = block_key.for_branch(None)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 block_key,
                 normalized_key,
                 f"Block key {block_key} should be normalized (without branch info). "
@@ -149,7 +149,7 @@ class TestBlockStructureFactory(TestCase, ChildrenMapTestMixin):
             )
             # Verify it doesn't have branch information in the course_key
             if hasattr(block_key.course_key, 'branch'):
-                self.assertIsNone(
+                self.assertIsNone(  # noqa: PT009
                     block_key.course_key.branch,
                     f"Block key {block_key} should not have branch information"
                 )

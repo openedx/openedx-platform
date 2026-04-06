@@ -10,4 +10,4 @@ class UserTourConfig(AppConfig):
     def ready(self):
         """ Code to run when getting the app ready. """
         # Connect signal handlers.
-        from lms.djangoapps.user_tours import handlers  # pylint: disable=unused-import
+        from lms.djangoapps.user_tours import handlers  # pylint: disable=unused-import  # noqa: F401

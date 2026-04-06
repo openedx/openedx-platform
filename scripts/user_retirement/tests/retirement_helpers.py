@@ -1,4 +1,4 @@
-# coding=utf-8
+# coding=utf-8  # noqa: UP009
 
 """
 Common functionality for retirement related tests
@@ -32,7 +32,7 @@ FAKE_USERNAME_MAPPING = [
 
 FAKE_ORGS = {
     # Make sure unicode names, as they should come in from the yaml config, work
-    'org1': [unicodedata.normalize('NFKC', u'TéstX')],
+    'org1': [unicodedata.normalize('NFKC', u'TéstX')],  # noqa: UP025
     'org2': ['Org2X'],
     'org3': ['Org3X', 'Org4X'],
 }

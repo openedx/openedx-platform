@@ -45,7 +45,7 @@ class CourseGradeBase:
         self.last_updated = last_updated
 
     def __str__(self):
-        return 'Course Grade: percent: {}, letter_grade: {}, passed: {}'.format(
+        return 'Course Grade: percent: {}, letter_grade: {}, passed: {}'.format(  # noqa: UP032
             str(self.percent),
             self.letter_grade,
             self.passed,

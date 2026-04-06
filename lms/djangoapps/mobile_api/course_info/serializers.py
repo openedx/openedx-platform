@@ -2,7 +2,7 @@
 Course Info serializers
 """
 
-from typing import Dict, Union
+from typing import Dict, Union  # noqa: UP035
 
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -82,7 +82,7 @@ class CourseInfoOverviewSerializer(serializers.ModelSerializer):
             for mode in course_modes
         ]
 
-    def get_course_progress(self, obj: CourseOverview) -> Dict[str, int]:
+    def get_course_progress(self, obj: CourseOverview) -> Dict[str, int]:  # noqa: UP006
         """
         Gets course progress calculated by course completed assignments.
         """
@@ -132,7 +132,7 @@ class CourseAccessSerializer(serializers.Serializer):
         """
         return any(administrative_accesses_to_course_for_user(data.get('user'), data.get('course_id')))
 
-    def get_audit_access_expires(self, data: dict) -> Union[str, None]:
+    def get_audit_access_expires(self, data: dict) -> Union[str, None]:  # noqa: UP007
         """
         Returns expiration date for a course audit expiration, if any or null
         """

@@ -21,7 +21,7 @@ class TestSafeSessionsLogMixin:
         with patch('openedx.core.djangoapps.safe_sessions.middleware.log.' + log_level) as mock_log:
             yield
             assert mock_log.called
-            self.assertRegex(mock_log.call_args_list[0][0][0], log_string)
+            self.assertRegex(mock_log.call_args_list[0][0][0], log_string)  # noqa: PT009
 
     @contextmanager
     def assert_regex_not_logged(self, log_string, log_level):
@@ -135,7 +135,7 @@ class TestSafeSessionsLogMixin:
         """
         session_suffix = 'Session changed.' if session_changed else 'Session did not change.'
         with self.assert_logged_with_message(
-            (
+            (  # noqa: UP032
                 "SafeCookieData user at initial request '{}' does not match user at response time: '{}' "
                 "for request path '{}'.\n{}"
             ).format(
@@ -154,7 +154,7 @@ class TestSafeSessionsLogMixin:
         session_suffix = 'Session changed.' if session_changed else 'Session did not change.'
 
         with self.assert_logged_with_message(
-            (
+            (  # noqa: UP032
                 "SafeCookieData user at initial request '{}' does not match user in session: '{}' "
                 "for request path '{}'.\n{}"
             ).format(
@@ -174,7 +174,7 @@ class TestSafeSessionsLogMixin:
         session_suffix = 'Session changed.' if session_changed else 'Session did not change.'
 
         with self.assert_logged_with_message(
-            (
+            (  # noqa: UP032
                 "SafeCookieData user at initial request '{}' matches neither user in session: '{}' "
                 "nor user at response time: '{}' for request path '{}'.\n{}"
             ).format(

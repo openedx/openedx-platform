@@ -239,7 +239,7 @@ class TestCohorts(ModuleStoreTestCase):
         assert cohorts.get_assignment_type(cohort) == CourseCohort.RANDOM
 
         exception_msg = "There must be one cohort to which students can automatically be assigned."
-        with pytest.raises(ValueError) as context_manager:
+        with pytest.raises(ValueError) as context_manager:  # noqa: PT011
             cohorts.set_assignment_type(cohort, CourseCohort.MANUAL)
 
         assert exception_msg == str(context_manager.value)
@@ -647,7 +647,7 @@ class TestCohorts(ModuleStoreTestCase):
         """
         course = modulestore().get_course(self.toy_course_key)
 
-        with pytest.raises(ValueError) as value_error:
+        with pytest.raises(ValueError) as value_error:  # noqa: PT011
             cohorts.set_course_cohorted(course.id, 'not a boolean')
 
         assert 'Cohorted must be a boolean' == str(value_error.value)

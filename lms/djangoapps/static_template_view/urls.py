@@ -44,4 +44,4 @@ for key, value in settings.MKTG_URL_LINK_MAP.items():
 
     # Make the assumption that the URL we want is the lowercased
     # version of the map key
-    urlpatterns.append(re_path(r'^%s$' % key.lower(), views.render, {'template': template}, name=value))
+    urlpatterns.append(re_path(r'^%s$' % key.lower(), views.render, {'template': template}, name=value))  # noqa: UP031

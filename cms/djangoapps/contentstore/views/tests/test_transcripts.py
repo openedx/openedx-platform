@@ -35,7 +35,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 SRT_TRANSCRIPT_CONTENT = """0
 00:00:10,500 --> 00:00:13,000
@@ -94,7 +94,7 @@ class BaseTranscripts(CourseTestCase):
             'type': 'video'
         }
         resp = self.client.ajax_post('/xblock/', data)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         self.library = lib_api.create_library(
             org=OrganizationFactory.create(short_name="org1"),
@@ -159,8 +159,8 @@ class BaseTranscripts(CourseTestCase):
 
     def assert_response(self, response, expected_status_code, expected_message):
         response_content = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, expected_status_code)
-        self.assertEqual(response_content['status'], expected_message)
+        self.assertEqual(response.status_code, expected_status_code)  # noqa: PT009
+        self.assertEqual(response_content['status'], expected_message)  # noqa: PT009
 
     def set_fields_from_xml(self, item, xml):
         fields_data = VideoBlock.parse_video_xml(xml)
@@ -207,7 +207,7 @@ class TestUploadTranscripts(BaseTranscripts):
         if include_bom:
             wrapped_content = wrapped_content.encode('utf-8-sig')
             # Verify that ufeff(BOM) character is in content.
-            self.assertIn(BOM_UTF8, wrapped_content)
+            self.assertIn(BOM_UTF8, wrapped_content)  # noqa: PT009
             transcript_file.write(wrapped_content)
         else:
             transcript_file.write(wrapped_content.encode('utf-8'))
@@ -274,8 +274,8 @@ class TestUploadTranscripts(BaseTranscripts):
         json_response = json.loads(response.content.decode('utf-8'))
         expected_edx_video_id = edx_video_id if edx_video_id else json_response['edx_video_id']
         video = modulestore().get_item(self.video_usage_key)
-        self.assertEqual(video.edx_video_id, expected_edx_video_id)
-        self.assertDictEqual(video.transcripts, {'en': f'{expected_edx_video_id}-en.srt'})
+        self.assertEqual(video.edx_video_id, expected_edx_video_id)  # noqa: PT009
+        self.assertDictEqual(video.transcripts, {'en': f'{expected_edx_video_id}-en.srt'})  # noqa: PT009
 
         # Verify transcript content
         actual_transcript = get_video_transcript_content(video.edx_video_id, language_code='en')
@@ -285,7 +285,7 @@ class TestUploadTranscripts(BaseTranscripts):
             input_format=Transcript.SRT,
             output_format=Transcript.SJSON
         ))
-        self.assertDictEqual(actual_sjson_content, expected_sjson_content)
+        self.assertDictEqual(actual_sjson_content, expected_sjson_content)  # noqa: PT009
 
     def test_transcript_upload_without_locator(self):
         """
@@ -340,7 +340,7 @@ class TestUploadTranscripts(BaseTranscripts):
             expected_message='There is a problem with this transcript file. Try to upload a different file.'
         )
         video = modulestore().get_item(self.video_usage_key)
-        self.assertDictEqual(video.transcripts, {})
+        self.assertDictEqual(video.transcripts, {})  # noqa: PT009
 
     def test_transcript_upload_unknown_category(self):
         """
@@ -400,7 +400,7 @@ class TestUploadTranscripts(BaseTranscripts):
         self.assert_response(response, expected_status_code=400, expected_message='Invalid Video ID')
 
         # Verify transcript does not exist for non-existant `edx_video_id`
-        self.assertIsNone(get_video_transcript_content(non_existant_edx_video_id, language_code='en'))
+        self.assertIsNone(get_video_transcript_content(non_existant_edx_video_id, language_code='en'))  # noqa: PT009
 
 
 @ddt.ddt
@@ -465,13 +465,13 @@ class TestChooseTranscripts(BaseTranscripts):
         json_response = json.loads(response.content.decode('utf-8'))
         expected_edx_video_id = edx_video_id if edx_video_id else json_response['edx_video_id']
         video = modulestore().get_item(self.video_usage_key)
-        self.assertEqual(video.edx_video_id, expected_edx_video_id)
+        self.assertEqual(video.edx_video_id, expected_edx_video_id)  # noqa: PT009
 
         # Verify transcript content
         actual_transcript = get_video_transcript_content(video.edx_video_id, language_code='en')
         actual_sjson_content = json.loads(actual_transcript['content'].decode('utf-8'))
         expected_sjson_content = json.loads(self.sjson_subs)
-        self.assertDictEqual(actual_sjson_content, expected_sjson_content)
+        self.assertDictEqual(actual_sjson_content, expected_sjson_content)  # noqa: PT009
 
     def test_choose_transcript_fails_without_data(self):
         """
@@ -582,13 +582,13 @@ class TestRenameTranscripts(BaseTranscripts):
         json_response = json.loads(response.content.decode('utf-8'))
         expected_edx_video_id = edx_video_id if edx_video_id else json_response['edx_video_id']
         video = modulestore().get_item(self.video_usage_key)
-        self.assertEqual(video.edx_video_id, expected_edx_video_id)
+        self.assertEqual(video.edx_video_id, expected_edx_video_id)  # noqa: PT009
 
         # Verify transcript content
         actual_transcript = get_video_transcript_content(video.edx_video_id, language_code='en')
         actual_sjson_content = json.loads(actual_transcript['content'].decode('utf-8'))
         expected_sjson_content = json.loads(self.sjson_subs)
-        self.assertDictEqual(actual_sjson_content, expected_sjson_content)
+        self.assertDictEqual(actual_sjson_content, expected_sjson_content)  # noqa: PT009
 
     def test_rename_transcript_fails_without_data(self):
         """
@@ -713,13 +713,13 @@ class TestReplaceTranscripts(BaseTranscripts):
         json_response = json.loads(response.content.decode('utf-8'))
         expected_edx_video_id = edx_video_id if edx_video_id else json_response['edx_video_id']
         video = modulestore().get_item(self.video_usage_key)
-        self.assertEqual(video.edx_video_id, expected_edx_video_id)
+        self.assertEqual(video.edx_video_id, expected_edx_video_id)  # noqa: PT009
 
         # Verify transcript content
         actual_transcript = get_video_transcript_content(video.edx_video_id, language_code='en')
         actual_sjson_content = json.loads(actual_transcript['content'].decode('utf-8'))
         expected_sjson_content = json.loads(SJSON_TRANSCRIPT_CONTENT)
-        self.assertDictEqual(actual_sjson_content, expected_sjson_content)
+        self.assertDictEqual(actual_sjson_content, expected_sjson_content)  # noqa: PT009
 
     def test_replace_transcript_library_content_success(self):
         # Make call to replace transcripts from youtube
@@ -738,7 +738,7 @@ class TestReplaceTranscripts(BaseTranscripts):
         transcript = get_transcript(updated_block, 'en', Transcript.SJSON)
         actual_sjson_content = json.loads(transcript[0])
         expected_sjson_content = json.loads(SJSON_TRANSCRIPT_CONTENT)
-        self.assertDictEqual(actual_sjson_content, expected_sjson_content)
+        self.assertDictEqual(actual_sjson_content, expected_sjson_content)  # noqa: PT009
 
     def test_replace_transcript_fails_without_data(self):
         """
@@ -832,7 +832,7 @@ class TestDownloadTranscripts(BaseTranscripts):
         """
         Verify transcript download response.
         """
-        self.assertEqual(response.status_code, expected_status_code)
+        self.assertEqual(response.status_code, expected_status_code)  # noqa: PT009
         if expected_content:
             assert response.content.decode('utf-8') == expected_content
 
@@ -897,7 +897,7 @@ class TestCheckTranscripts(BaseTranscripts):
                 <source src="http://www.quirksmode.org/html5/videos/big_buck_bunny.webm"/>
                 <source src="http://www.quirksmode.org/html5/videos/big_buck_bunny.ogv"/>
             </video>
-        """.format(subs_id))
+        """.format(subs_id))  # noqa: UP032
         modulestore().update_item(self.item, self.user.id)
 
         subs = {
@@ -921,8 +921,8 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         link = reverse('check_transcripts')
         resp = self.client.get(link, {'data': json.dumps(data)})
-        self.assertEqual(resp.status_code, 200)
-        self.assertDictEqual(
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertDictEqual(  # noqa: PT009
             json.loads(resp.content.decode('utf-8')),
             {
                 'status': 'Success',
@@ -965,8 +965,8 @@ class TestCheckTranscripts(BaseTranscripts):
 
         resp = self.client.get(link, {'data': json.dumps(data)})
 
-        self.assertEqual(resp.status_code, 200)
-        self.assertDictEqual(
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertDictEqual(  # noqa: PT009
             json.loads(resp.content.decode('utf-8')),
             {
                 'status': 'Success',
@@ -1011,13 +1011,13 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
 
-        self.assertEqual(2, len(mock_get.mock_calls))
+        self.assertEqual(2, len(mock_get.mock_calls))  # noqa: PT009
         args, kwargs = mock_get.call_args_list[0]
-        self.assertEqual(args[0], 'https://www.youtube.com/watch?v=good_id_2')
+        self.assertEqual(args[0], 'https://www.youtube.com/watch?v=good_id_2')  # noqa: PT009
 
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             json.loads(resp.content.decode('utf-8')),
             {
                 'status': 'Success',
@@ -1043,8 +1043,8 @@ class TestCheckTranscripts(BaseTranscripts):
             }]
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
 
     def test_fail_data_with_bad_locator(self):
         # Test for raising `InvalidLocationError` exception.
@@ -1058,8 +1058,8 @@ class TestCheckTranscripts(BaseTranscripts):
             }]
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
 
         # Test for raising `ItemNotFoundError` exception.
         data = {
@@ -1071,8 +1071,8 @@ class TestCheckTranscripts(BaseTranscripts):
             }]
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
 
     def test_fail_for_non_video_block(self):
         # Not video block: setup
@@ -1091,7 +1091,7 @@ class TestCheckTranscripts(BaseTranscripts):
                 <source src="http://www.quirksmode.org/html5/videos/big_buck_bunny.webm"/>
                 <source src="http://www.quirksmode.org/html5/videos/big_buck_bunny.ogv"/>
             </problem>
-        """.format(subs_id)))
+        """.format(subs_id)))  # noqa: UP032
         modulestore().update_item(item, self.user.id)
 
         subs = {
@@ -1115,8 +1115,8 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         link = reverse('check_transcripts')
         resp = self.client.get(link, {'data': json.dumps(data)})
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             json.loads(resp.content.decode('utf-8')).get('status'),
             'Transcripts are supported only for "video" blocks.',
         )
@@ -1158,8 +1158,8 @@ class TestCheckTranscripts(BaseTranscripts):
         response = self.client.get(check_transcripts_url, {'data': json.dumps(data)})
 
         # Assert the response
-        self.assertEqual(response.status_code, 200)
-        self.assertDictEqual(
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertDictEqual(  # noqa: PT009
             json.loads(response.content.decode('utf-8')),
             {
                 'status': 'Success',

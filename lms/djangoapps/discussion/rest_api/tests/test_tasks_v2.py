@@ -136,10 +136,10 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
                 parent_id=None
             )
         if is_subscribed:
-            self.assertEqual(handler.call_count, 2)
+            self.assertEqual(handler.call_count, 2)  # noqa: PT009
             args = handler.call_args_list[0][1]['notification_data']
-            self.assertEqual([int(user_id) for user_id in args.user_ids], [self.user_1.id])
-            self.assertEqual(args.notification_type, 'new_response')
+            self.assertEqual([int(user_id) for user_id in args.user_ids], [self.user_1.id])  # noqa: PT009
+            self.assertEqual(args.notification_type, 'new_response')  # noqa: PT009
             expected_context = {
                 'replier_name': self.user_2.username,
                 'post_title': 'test thread',
@@ -152,14 +152,14 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
                 'comment_id': None,
                 'group_by_id': '1'
             }
-            self.assertDictEqual(args.context, expected_context)
-            self.assertEqual(
+            self.assertDictEqual(args.context, expected_context)  # noqa: PT009
+            self.assertEqual(  # noqa: PT009
                 args.content_url,
                 _get_mfe_url(self.course.id, self.thread.id)
             )
-            self.assertEqual(args.app_name, 'discussion')
+            self.assertEqual(args.app_name, 'discussion')  # noqa: PT009
         else:
-            self.assertEqual(handler.call_count, 1)
+            self.assertEqual(handler.call_count, 1)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_no_signal_on_creators_own_thread(self, is_subscribed):
@@ -179,7 +179,7 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
                 self.user_1.id,
                 self.comment.id, parent_id=None
             )
-        self.assertEqual(handler.call_count, 1)
+        self.assertEqual(handler.call_count, 1)  # noqa: PT009
 
     @ddt.data(
         (None, 'response_on_followed_post'), (1, 'comment_on_followed_post')
@@ -207,11 +207,11 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
             comment_id=self.comment.id
         )
         notification_sender.send_response_on_followed_post_notification()
-        self.assertEqual(handler.call_count, 1)
+        self.assertEqual(handler.call_count, 1)  # noqa: PT009
         args = handler.call_args[1]['notification_data']
         # only sent to user_3 because user_2 is the one who created the response
-        self.assertEqual([self.user_3.id], args.user_ids)
-        self.assertEqual(args.notification_type, notification_type)
+        self.assertEqual([self.user_3.id], args.user_ids)  # noqa: PT009
+        self.assertEqual(args.notification_type, notification_type)  # noqa: PT009
         expected_context = {
             'replier_name': self.user_2.username,
             'post_title': 'test thread',
@@ -228,12 +228,12 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
         if parent_id:
             expected_context['author_name'] = 'dummy\'s'
             expected_context['author_pronoun'] = 'dummy\'s'
-        self.assertDictEqual(args.context, expected_context)
-        self.assertEqual(
+        self.assertDictEqual(args.context, expected_context)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             args.content_url,
             _get_mfe_url(self.course.id, self.thread.id)
         )
-        self.assertEqual(args.app_name, 'discussion')
+        self.assertEqual(args.app_name, 'discussion')  # noqa: PT009
 
     @ddt.data(True, False)
     def test_comment_creators_own_response(self, is_subscribed):
@@ -263,12 +263,12 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
             )
         if is_subscribed:
             # check if 1 call is made to the handler i.e. for the thread creator
-            self.assertEqual(handler.call_count, 2)
+            self.assertEqual(handler.call_count, 2)  # noqa: PT009
 
             # check if the notification is sent to the thread creator
             args_comment = handler.call_args_list[0][1]['notification_data']
-            self.assertEqual(args_comment.user_ids, [self.user_1.id])
-            self.assertEqual(args_comment.notification_type, 'new_comment')
+            self.assertEqual(args_comment.user_ids, [self.user_1.id])  # noqa: PT009
+            self.assertEqual(args_comment.notification_type, 'new_comment')  # noqa: PT009
             expected_context = {
                 'replier_name': self.user_3.username,
                 'post_title': self.thread.title,
@@ -282,14 +282,14 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
                 'thread_id': 1,
                 'comment_id': 4,
             }
-            self.assertDictEqual(args_comment.context, expected_context)
-            self.assertEqual(
+            self.assertDictEqual(args_comment.context, expected_context)  # noqa: PT009
+            self.assertEqual(  # noqa: PT009
                 args_comment.content_url,
                 _get_mfe_url(self.course.id, self.thread.id)
             )
-            self.assertEqual(args_comment.app_name, 'discussion')
+            self.assertEqual(args_comment.app_name, 'discussion')  # noqa: PT009
         else:
-            self.assertEqual(handler.call_count, 1)
+            self.assertEqual(handler.call_count, 1)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_send_notification_to_parent_threads(self, is_subscribed):
@@ -321,12 +321,12 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
 
         if is_subscribed:
             # check if 2 calls are made to the handler i.e. one for the response creator and one for the thread creator
-            self.assertEqual(handler.call_count, 2)
+            self.assertEqual(handler.call_count, 2)  # noqa: PT009
             # check if the notification is sent to the thread creator
             args_comment = handler.call_args_list[0][1]['notification_data']
             args_comment_on_response = handler.call_args_list[1][1]['notification_data']
-            self.assertEqual([int(user_id) for user_id in args_comment.user_ids], [self.user_1.id])
-            self.assertEqual(args_comment.notification_type, 'new_comment')
+            self.assertEqual([int(user_id) for user_id in args_comment.user_ids], [self.user_1.id])  # noqa: PT009
+            self.assertEqual(args_comment.notification_type, 'new_comment')  # noqa: PT009
             expected_context = {
                 'replier_name': self.user_3.username,
                 'post_title': self.thread.title,
@@ -340,20 +340,20 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
                 'thread_id': 1,
                 'comment_id': 4,
             }
-            self.assertDictEqual(args_comment.context, expected_context)
-            self.assertEqual(
+            self.assertDictEqual(args_comment.context, expected_context)  # noqa: PT009
+            self.assertEqual(  # noqa: PT009
                 args_comment.content_url,
                 _get_mfe_url(self.course.id, self.thread.id)
             )
-            self.assertEqual(args_comment.app_name, 'discussion')
+            self.assertEqual(args_comment.app_name, 'discussion')  # noqa: PT009
         else:
             # check if 1 call is made to the handler i.e. for the response creator
             # because thread creator is not subscribed
             args_comment_on_response = handler.call_args_list[0][1]['notification_data']
-            self.assertEqual(handler.call_count, 1)
+            self.assertEqual(handler.call_count, 1)  # noqa: PT009
         # check if the notification is sent to the parent response creator
-        self.assertEqual([int(user_id) for user_id in args_comment_on_response.user_ids], [self.user_2.id])
-        self.assertEqual(args_comment_on_response.notification_type, 'new_comment_on_response')
+        self.assertEqual([int(user_id) for user_id in args_comment_on_response.user_ids], [self.user_2.id])  # noqa: PT009
+        self.assertEqual(args_comment_on_response.notification_type, 'new_comment_on_response')  # noqa: PT009
         expected_context = {
             'replier_name': self.user_3.username,
             'post_title': self.thread.title,
@@ -365,12 +365,12 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
             'thread_id': 1,
             'comment_id': 4,
         }
-        self.assertDictEqual(args_comment_on_response.context, expected_context)
-        self.assertEqual(
+        self.assertDictEqual(args_comment_on_response.context, expected_context)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             args_comment_on_response.content_url,
             _get_mfe_url(self.course.id, self.thread.id)
         )
-        self.assertEqual(args_comment_on_response.app_name, 'discussion')
+        self.assertEqual(args_comment_on_response.app_name, 'discussion')  # noqa: PT009
 
     def _register_subscriptions_endpoint(self):
         """
@@ -483,9 +483,9 @@ class TestSendCommentNotification(DiscussionAPIViewTestMixin, ModuleStoreTestCas
         if is_subscribed:
             handler.assert_called_once()
             context = handler.call_args[1]['notification_data'].context
-            self.assertEqual(context['author_name'], 'dummy\'s')
-            self.assertEqual(context['author_pronoun'], 'their')
-            self.assertEqual(context['email_content'], comment.body)
+            self.assertEqual(context['author_name'], 'dummy\'s')  # noqa: PT009
+            self.assertEqual(context['author_pronoun'], 'their')  # noqa: PT009
+            self.assertEqual(context['email_content'], comment.body)  # noqa: PT009
         else:
             handler.assert_not_called()
 
@@ -637,7 +637,7 @@ class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTe
         handler = mock.Mock()
         COURSE_NOTIFICATION_REQUESTED.connect(handler)
         send_thread_created_notification(thread['id'], str(self.course.id), self.author.id)
-        self.assertEqual(handler.call_count, 1)
+        self.assertEqual(handler.call_count, 1)  # noqa: PT009
         course_notification_data = handler.call_args[1]['course_notification_data']
         assert notification_type == course_notification_data.notification_type
         notification_audience_filters = {}
@@ -682,7 +682,7 @@ class TestNewThreadCreatedNotification(DiscussionAPIViewTestMixin, ModuleStoreTe
             'discussion_roles': ['Administrator', 'Moderator', 'Community TA'],
         }
         assert notification_audience_filters == handler.call_args[1]['course_notification_data'].audience_filters
-        self.assertEqual(handler.call_count, 1)
+        self.assertEqual(handler.call_count, 1)  # noqa: PT009
 
 
 class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
@@ -742,13 +742,13 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
         handler = mock.Mock()
         USER_NOTIFICATION_REQUESTED.connect(handler)
         send_response_endorsed_notifications(thread.id, response.id, str(self.course.id), self.user_3.id)
-        self.assertEqual(handler.call_count, 2)
+        self.assertEqual(handler.call_count, 2)  # noqa: PT009
 
         # Test response endorsed on thread notification
         notification_data = handler.call_args_list[0][1]['notification_data']
         # Target only the thread author
-        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(thread.user_id)])
-        self.assertEqual(notification_data.notification_type, 'response_endorsed_on_thread')
+        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(thread.user_id)])  # noqa: PT009
+        self.assertEqual(notification_data.notification_type, 'response_endorsed_on_thread')  # noqa: PT009
 
         expected_context = {
             'replier_name': self.user_2.username,
@@ -761,16 +761,16 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
             'thread_id': 1,
             'comment_id': 2,
         }
-        self.assertDictEqual(notification_data.context, expected_context)
-        self.assertEqual(notification_data.content_url, _get_mfe_url(self.course.id, thread.id))
-        self.assertEqual(notification_data.app_name, 'discussion')
-        self.assertEqual('response_endorsed_on_thread', notification_data.notification_type)
+        self.assertDictEqual(notification_data.context, expected_context)  # noqa: PT009
+        self.assertEqual(notification_data.content_url, _get_mfe_url(self.course.id, thread.id))  # noqa: PT009
+        self.assertEqual(notification_data.app_name, 'discussion')  # noqa: PT009
+        self.assertEqual('response_endorsed_on_thread', notification_data.notification_type)  # noqa: PT009
 
         # Test response endorsed notification
         notification_data = handler.call_args_list[1][1]['notification_data']
         # Target only the response author
-        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(response.user_id)])
-        self.assertEqual(notification_data.notification_type, 'response_endorsed')
+        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(response.user_id)])  # noqa: PT009
+        self.assertEqual(notification_data.notification_type, 'response_endorsed')  # noqa: PT009
 
         expected_context = {
             'replier_name': response.username,
@@ -783,7 +783,7 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
             'thread_id': 1,
             'comment_id': 2,
         }
-        self.assertDictEqual(notification_data.context, expected_context)
-        self.assertEqual(notification_data.content_url, _get_mfe_url(self.course.id, thread.id))
-        self.assertEqual(notification_data.app_name, 'discussion')
-        self.assertEqual('response_endorsed', notification_data.notification_type)
+        self.assertDictEqual(notification_data.context, expected_context)  # noqa: PT009
+        self.assertEqual(notification_data.content_url, _get_mfe_url(self.course.id, thread.id))  # noqa: PT009
+        self.assertEqual(notification_data.app_name, 'discussion')  # noqa: PT009
+        self.assertEqual('response_endorsed', notification_data.notification_type)  # noqa: PT009

@@ -37,7 +37,7 @@ def _get_prerequisite_milestone(prereq_content_key):
     Returns:
         dict: Milestone dict
     """
-    milestones = milestones_api.get_milestones("{usage_key}{qualifier}".format(
+    milestones = milestones_api.get_milestones("{usage_key}{qualifier}".format(  # noqa: UP032
         usage_key=prereq_content_key,
         qualifier=GATING_NAMESPACE_QUALIFIER
     ))
@@ -72,7 +72,7 @@ def _validate_min_score(min_score):
         try:
             min_score = int(min_score)
         except ValueError:
-            raise GatingValidationError(message)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise GatingValidationError(message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if min_score < 0 or min_score > 100:
             raise GatingValidationError(message)
@@ -184,7 +184,7 @@ def add_prerequisite(course_key, prereq_content_key):
     milestone = milestones_api.add_milestone(
         {
             'name': _('Gating milestone for {usage_key}').format(usage_key=str(prereq_content_key)),
-            'namespace': "{usage_key}{qualifier}".format(
+            'namespace': "{usage_key}{qualifier}".format(  # noqa: UP032
                 usage_key=prereq_content_key,
                 qualifier=GATING_NAMESPACE_QUALIFIER
             ),
@@ -206,7 +206,7 @@ def remove_prerequisite(prereq_content_key):
     Returns:
         None
     """
-    milestones = milestones_api.get_milestones("{usage_key}{qualifier}".format(
+    milestones = milestones_api.get_milestones("{usage_key}{qualifier}".format(  # noqa: UP032
         usage_key=prereq_content_key,
         qualifier=GATING_NAMESPACE_QUALIFIER
     ))

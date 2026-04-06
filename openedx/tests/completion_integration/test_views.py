@@ -131,7 +131,7 @@ class CompletionBatchTestCase(CompletionWaffleTestMixin, ModuleStoreTestCase):
             400,
             {
                 "detail": (
-                    "Block with key: 'block-v1:TestX+101+OtherCourse+type@problem+block@other' "
+                    "Block with key: 'block-v1:TestX+101+OtherCourse+type@problem+block@other' "  # noqa: UP032
                     "is not in context {}".format(COURSE_KEY)
                 )
             }

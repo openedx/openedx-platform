@@ -289,10 +289,10 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
                     return definition, []
 
             except ResourceNotFound as err:
-                msg = 'Unable to load file contents at path {}: {} '.format(
+                msg = 'Unable to load file contents at path {}: {} '.format(  # noqa: UP032
                     filepath, err)
                 # add more info and re-raise
-                raise Exception(msg).with_traceback(sys.exc_info()[2])
+                raise Exception(msg).with_traceback(sys.exc_info()[2])  # noqa: B904
 
     @classmethod
     def parse_xml_new_runtime(cls, node, runtime, keys):
@@ -317,7 +317,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
 
         # Write html to file, return an empty tag
         pathname = name_to_pathname(self.url_name)
-        filepath = '{category}/{pathname}.html'.format(
+        filepath = '{category}/{pathname}.html'.format(  # noqa: UP032
             category=self.category,
             pathname=pathname
         )

@@ -213,7 +213,7 @@ class TestPasswordChange(CreateAccountMixin, CacheIsolationTestCase):
             side_effect=UserAPIInternalError,
         ):
             self._change_password()
-            self.assertRaises(UserAPIInternalError)
+            self.assertRaises(UserAPIInternalError)  # noqa: PT027
 
     @patch.dict(settings.FEATURES, {'ENABLE_PASSWORD_RESET_FAILURE_EMAIL': True})
     def test_password_reset_failure_email(self):
@@ -234,7 +234,7 @@ class TestPasswordChange(CreateAccountMixin, CacheIsolationTestCase):
         html_body = sent_message.alternatives[0][0]
 
         for email_body in [text_body, html_body]:
-            msg = 'However, there is currently no user account associated with your email address: {email}'.format(
+            msg = 'However, there is currently no user account associated with your email address: {email}'.format(  # noqa: UP032
                 email=bad_email
             )
 

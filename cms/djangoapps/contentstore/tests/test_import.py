@@ -25,7 +25,7 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.xml_importer import import_course_from_xml
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
@@ -72,7 +72,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         )
         course_id = module_store.make_course_key('edX', 'test_import_course', '2012_Fall')
         course = module_store.get_course(course_id)
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
 
         return module_store, content_store, course
 
@@ -89,7 +89,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             target_id=course.id,
             verbose=True,
         )
-        self.assertEqual(len(course_items), 1)
+        self.assertEqual(len(course_items), 1)  # noqa: PT009
 
     def test_unicode_chars_in_course_name_import(self):
         """
@@ -109,10 +109,10 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             )
 
             course = module_store.get_course(course_id)
-            self.assertIsNotNone(course)
+            self.assertIsNotNone(course)  # noqa: PT009
 
             # test that course 'display_name' same as imported course 'display_name'
-            self.assertEqual(course.display_name, "Φυσικά το όνομα Unicode")
+            self.assertEqual(course.display_name, "Φυσικά το όνομα Unicode")  # noqa: PT009
 
     def test_static_import(self):
         '''
@@ -122,9 +122,9 @@ class ContentStoreImportTest(ModuleStoreTestCase):
 
         # make sure we have ONE asset in our contentstore ("should_be_imported.html")
         all_assets, count = content_store.get_all_content_for_course(course.id)
-        print("len(all_assets)=%d" % len(all_assets))
-        self.assertEqual(len(all_assets), 1)
-        self.assertEqual(count, 1)
+        print("len(all_assets)=%d" % len(all_assets))  # noqa: UP031
+        self.assertEqual(len(all_assets), 1)  # noqa: PT009
+        self.assertEqual(count, 1)  # noqa: PT009
 
         content = None
         try:
@@ -133,11 +133,11 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         except NotFoundError:
             pass
 
-        self.assertIsNotNone(content)
+        self.assertIsNotNone(content)  # noqa: PT009
 
         # make sure course.static_asset_path is correct
         print(f"static_asset_path = {course.static_asset_path}")
-        self.assertEqual(course.static_asset_path, 'test_import_course')
+        self.assertEqual(course.static_asset_path, 'test_import_course')  # noqa: PT009
 
     def test_asset_import_nostatic(self):
         '''
@@ -157,8 +157,8 @@ class ContentStoreImportTest(ModuleStoreTestCase):
 
         # make sure we have NO assets in our contentstore
         all_assets, count = content_store.get_all_content_for_course(course.id)
-        self.assertEqual(all_assets, [])
-        self.assertEqual(count, 0)
+        self.assertEqual(all_assets, [])  # noqa: PT009
+        self.assertEqual(count, 0)  # noqa: PT009
 
     def test_no_static_link_rewrites_on_import(self):
         module_store = modulestore()
@@ -169,15 +169,15 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         course_key = courses[0].id
 
         handouts = module_store.get_item(course_key.make_usage_key('course_info', 'handouts'))
-        self.assertIn('/static/', handouts.data)
+        self.assertIn('/static/', handouts.data)  # noqa: PT009
 
         handouts = module_store.get_item(course_key.make_usage_key('html', 'toyhtml'))
-        self.assertIn('/static/', handouts.data)
+        self.assertIn('/static/', handouts.data)  # noqa: PT009
 
     def test_tab_name_imports_correctly(self):
         _module_store, _content_store, course = self.load_test_import_course()
         print(f"course tabs = {course.tabs}")
-        self.assertEqual(course.tabs[1]['name'], 'Syllabus')
+        self.assertEqual(course.tabs[1]['name'], 'Syllabus')  # noqa: PT009
 
     def test_reimport(self):
         __, __, course = self.load_test_import_course(create_if_not_present=True)
@@ -200,16 +200,16 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         conditional_block = module_store.get_item(
             target_id.make_usage_key('conditional', 'condone')
         )
-        self.assertIsNotNone(conditional_block)
+        self.assertIsNotNone(conditional_block)  # noqa: PT009
         different_course_id = module_store.make_course_key('edX', 'different_course', 'course_run')
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             [
                 target_id.make_usage_key('problem', 'choiceprob'),
                 different_course_id.make_usage_key('html', 'for_testing_import_rewrites')
             ],
             conditional_block.sources_list
         )
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             [
                 target_id.make_usage_key('html', 'congrats'),
                 target_id.make_usage_key('html', 'secret_page')
@@ -253,13 +253,13 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         split_test_block = module_store.get_item(
             target_id.make_usage_key('split_test', split_test_name)
         )
-        self.assertIsNotNone(split_test_block)
+        self.assertIsNotNone(split_test_block)  # noqa: PT009
 
         remapped_verticals = {
             key: target_id.make_usage_key('vertical', value) for key, value in groups_to_verticals.items()
         }
 
-        self.assertEqual(remapped_verticals, split_test_block.group_id_to_child)
+        self.assertEqual(remapped_verticals, split_test_block.group_id_to_child)  # noqa: PT009
 
     def test_video_components_present_while_import(self):
         """
@@ -277,7 +277,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
         vertical = module_store.get_item(re_course.id.make_usage_key('vertical', 'vertical_test'))
 
         video = module_store.get_item(vertical.children[1])
-        self.assertEqual(video.display_name, 'default')
+        self.assertEqual(video.display_name, 'default')  # noqa: PT009
 
     @override_settings(
         COURSE_IMPORT_EXPORT_STORAGE="cms.djangoapps.contentstore.storage.ImportExportS3Storage",
@@ -290,7 +290,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
     def test_default_storage(self):
         """ Ensure the default storage is invoked, even if course export storage is configured """
         storage = storages["default"]
-        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")
+        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")  # noqa: PT009
 
     @override_settings(
         COURSE_IMPORT_EXPORT_STORAGE="cms.djangoapps.contentstore.storage.ImportExportS3Storage",
@@ -307,8 +307,8 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             storage_key="course_import_export",
             legacy_setting_key="COURSE_IMPORT_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "ImportExportS3Storage")
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, "ImportExportS3Storage")  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009
 
     @override_settings()
     def test_resolve_storage_with_no_config(self):
@@ -319,7 +319,7 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             storage_key="course_import_export",
             legacy_setting_key="COURSE_IMPORT_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")
+        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")  # noqa: PT009
 
     @override_settings(
         COURSE_IMPORT_EXPORT_STORAGE=None,
@@ -337,8 +337,8 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             storage_key="course_import_export",
             legacy_setting_key="COURSE_IMPORT_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "ImportExportS3Storage")
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, "ImportExportS3Storage")  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009
 
     @override_settings(
         STORAGES={
@@ -358,5 +358,5 @@ class ContentStoreImportTest(ModuleStoreTestCase):
             storage_key="course_import_export",
             legacy_setting_key="COURSE_IMPORT_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, S3Boto3Storage.__name__)
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, S3Boto3Storage.__name__)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009

@@ -51,7 +51,7 @@ class PurgeReferencesToPDFCertificatesTests(ModuleStoreTestCase):
         """
         Verify command with a missing certificate_ids param.
         """
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command("purge_references_to_pdf_certificates")
 
     def test_management_command(self):
@@ -68,14 +68,14 @@ class PurgeReferencesToPDFCertificatesTests(ModuleStoreTestCase):
         cert1_post = GeneratedCertificate.objects.get(id=self.cert_1.id)
         cert2_post = GeneratedCertificate.objects.get(id=self.cert_2.id)
         cert3_post = GeneratedCertificate.objects.get(id=self.cert_3.id)
-        self.assertEqual(cert1_post.download_url, "http://example.com/1")
-        self.assertNotEqual(cert1_post.download_uuid, "")
+        self.assertEqual(cert1_post.download_url, "http://example.com/1")  # noqa: PT009
+        self.assertNotEqual(cert1_post.download_uuid, "")  # noqa: PT009
 
-        self.assertEqual(cert2_post.download_url, "")
-        self.assertEqual(cert2_post.download_uuid, "")
+        self.assertEqual(cert2_post.download_url, "")  # noqa: PT009
+        self.assertEqual(cert2_post.download_uuid, "")  # noqa: PT009
 
-        self.assertEqual(cert3_post.download_url, "")
-        self.assertEqual(cert3_post.download_uuid, "")
+        self.assertEqual(cert3_post.download_url, "")  # noqa: PT009
+        self.assertEqual(cert3_post.download_uuid, "")  # noqa: PT009
 
     def test_management_command_dry_run(self):
         """
@@ -95,7 +95,7 @@ class PurgeReferencesToPDFCertificatesTests(ModuleStoreTestCase):
             )
 
         cert3_post = GeneratedCertificate.objects.get(id=self.cert_3.id)
-        self.assertEqual(cert3_post.download_url, "http://example.com/3")
-        self.assertNotEqual(cert3_post.download_uuid, "")
+        self.assertEqual(cert3_post.download_url, "http://example.com/3")  # noqa: PT009
+        self.assertNotEqual(cert3_post.download_uuid, "")  # noqa: PT009
 
         assert logger.records[0].msg == expected_log_msg

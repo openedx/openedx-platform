@@ -184,7 +184,7 @@ urlpatterns = oauth2_urlpatterns + [
             contentstore_views.transcript_credentials_handler, name='transcript_credentials_handler'),
     path('transcript_download/', contentstore_views.transcript_download_handler, name='transcript_download_handler'),
     path('transcript_upload/', contentstore_views.transcript_upload_handler, name='transcript_upload_handler'),
-    re_path(r'^transcript_delete/{}(?:/(?P<edx_video_id>[-\w]+))?(?:/(?P<language_code>[^/]*))?$'.format(
+    re_path(r'^transcript_delete/{}(?:/(?P<edx_video_id>[-\w]+))?(?:/(?P<language_code>[^/]*))?$'.format(  # noqa: UP032
         settings.COURSE_KEY_PATTERN
     ), contentstore_views.transcript_delete_handler, name='transcript_delete_handler'),
     path('transcript_upload_api/', contentstore_views.transcript_upload_api, name='transcript_upload_api'),
@@ -193,7 +193,7 @@ urlpatterns = oauth2_urlpatterns + [
     re_path(fr'^group_configurations/{settings.COURSE_KEY_PATTERN}$',
             contentstore_views.group_configurations_list_handler,
             name='group_configurations_list_handler'),
-    re_path(r'^group_configurations/{}/(?P<group_configuration_id>\d+)(/)?(?P<group_id>\d+)?$'.format(
+    re_path(r'^group_configurations/{}/(?P<group_configuration_id>\d+)(/)?(?P<group_id>\d+)?$'.format(  # noqa: UP032
         settings.COURSE_KEY_PATTERN), contentstore_views.group_configurations_detail_handler,
         name='group_configurations_detail_handler'),
     path('api/val/v0/', include('edxval.urls')),
@@ -274,7 +274,7 @@ if settings.FEATURES.get('CERTIFICATES_HTML_VIEW'):
         re_path(fr'^certificates/activation/{settings.COURSE_KEY_PATTERN}/',
                 CertificateActivationAPIView.as_view(),
                 name='certificate_activation_handler'),
-        re_path(r'^certificates/{}/(?P<certificate_id>\d+)/signatories/(?P<signatory_id>\d+)?$'.format(
+        re_path(r'^certificates/{}/(?P<certificate_id>\d+)/signatories/(?P<signatory_id>\d+)?$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN), signatory_detail_handler, name='signatory_detail_handler'),
         re_path(fr'^certificates/{settings.COURSE_KEY_PATTERN}/(?P<certificate_id>\d+)?$',
                 CertificateDetailAPIView.as_view(), name='certificates_detail_handler'),

@@ -69,7 +69,7 @@ class CourseCreatorAdminTest(TestCase):
         def change_state_and_verify_email(state, is_creator):
             """ Changes user state, verifies creator status, and verifies e-mail is sent based on transition """
             self._change_state(state)
-            self.assertEqual(is_creator, auth.user_has_role(self.user, CourseCreatorRole()))
+            self.assertEqual(is_creator, auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
             context = {'studio_request_email': self.studio_request_email}
             if state == CourseCreator.GRANTED:
@@ -87,7 +87,7 @@ class CourseCreatorAdminTest(TestCase):
         with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
 
             # User is initially unrequested.
-            self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))
+            self.assertFalse(auth.user_has_role(self.user, CourseCreatorRole()))  # noqa: PT009
 
             change_state_and_verify_email(CourseCreator.GRANTED, True)
 
@@ -123,20 +123,20 @@ class CourseCreatorAdminTest(TestCase):
             if expect_sent_to_admin:
                 context = {'user_name': 'test_user', 'user_email': 'test_user+courses@edx.org'}
 
-                self.assertEqual(base_num_emails + 1, len(mail.outbox), 'Expected admin message to be sent')
+                self.assertEqual(base_num_emails + 1, len(mail.outbox), 'Expected admin message to be sent')  # noqa: PT009
                 sent_mail = mail.outbox[base_num_emails]
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     mock_render_to_string('emails/course_creator_admin_subject.txt', context),
                     sent_mail.subject
                 )
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     mock_render_to_string('emails/course_creator_admin_user_pending.txt', context),
                     sent_mail.body
                 )
-                self.assertEqual(self.studio_request_email, sent_mail.from_email)
-                self.assertEqual([self.studio_request_email], sent_mail.to)
+                self.assertEqual(self.studio_request_email, sent_mail.from_email)  # noqa: PT009
+                self.assertEqual([self.studio_request_email], sent_mail.to)  # noqa: PT009
             else:
-                self.assertEqual(base_num_emails, len(mail.outbox))
+                self.assertEqual(base_num_emails, len(mail.outbox))  # noqa: PT009
 
         with mock.patch.dict('django.conf.settings.FEATURES', self.enable_creator_group_patch):
             # E-mail message should be sent to admin only when new state is PENDING, regardless of what
@@ -160,19 +160,19 @@ class CourseCreatorAdminTest(TestCase):
         """
         Tests that staff cannot add entries
         """
-        self.assertFalse(self.creator_admin.has_add_permission(self.request))
+        self.assertFalse(self.creator_admin.has_add_permission(self.request))  # noqa: PT009
 
     def test_delete_permission(self):
         """
         Tests that staff cannot delete entries
         """
-        self.assertFalse(self.creator_admin.has_delete_permission(self.request))
+        self.assertFalse(self.creator_admin.has_delete_permission(self.request))  # noqa: PT009
 
     def test_change_permission(self):
         """
         Tests that only staff can change entries
         """
-        self.assertTrue(self.creator_admin.has_change_permission(self.request))
+        self.assertTrue(self.creator_admin.has_change_permission(self.request))  # noqa: PT009
 
         self.request.user = self.user
-        self.assertFalse(self.creator_admin.has_change_permission(self.request))
+        self.assertFalse(self.creator_admin.has_change_permission(self.request))  # noqa: PT009

@@ -42,7 +42,7 @@ class ProgramEnrollment(TimeStampedModel):
         null=True,
         blank=True, on_delete=models.CASCADE
     )
-    external_user_key = models.CharField(
+    external_user_key = models.CharField(  # noqa: DJ001
         db_index=True,
         max_length=255,
         null=True
@@ -84,7 +84,7 @@ class ProgramEnrollment(TimeStampedModel):
         return f'[ProgramEnrollment id={self.id}]'
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
             "<ProgramEnrollment"    # pylint: disable=missing-format-attribute
             " id={self.id}"
             " user={self.user!r}"
@@ -140,7 +140,7 @@ class ProgramCourseEnrollment(TimeStampedModel):
         return f'[ProgramCourseEnrollment id={self.id}]'
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
             "<ProgramCourseEnrollment"  # pylint: disable=missing-format-attribute
             " id={self.id}"
             " program_enrollment={self.program_enrollment!r}"
@@ -167,7 +167,7 @@ class CourseAccessRoleAssignment(TimeStampedModel):
         return f'[CourseAccessRoleAssignment id={self.id}]'
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseAccessRoleAssignment"  # pylint: disable=missing-format-attribute
             " id={self.id}"
             " role={self.role!r}"

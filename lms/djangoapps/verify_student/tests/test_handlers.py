@@ -144,7 +144,7 @@ class PostSavePhotoVerificationTest(ModuleStoreTestCase):
             photo_id_image_url=self.photo_id_image_url,
             photo_id_key=self.photo_id_key
         )
-        self.assertTrue(mock_signal.called)
+        self.assertTrue(mock_signal.called)  # noqa: PT009
         mock_signal.assert_called_with(
             sender='idv_update',
             attempt_id=attempt.id,
@@ -157,7 +157,7 @@ class PostSavePhotoVerificationTest(ModuleStoreTestCase):
 
         attempt.mark_ready()
 
-        self.assertTrue(mock_signal.called)
+        self.assertTrue(mock_signal.called)  # noqa: PT009
         mock_signal.assert_called_with(
             sender='idv_update',
             attempt_id=attempt.id,
@@ -203,10 +203,10 @@ class RetirementHandlerVerificationAttemptsTest(ModuleStoreTestCase):
 
     def test_retirement_signal(self):
         _listen_for_lms_retire_verification_attempts(sender=self.__class__, user=self.user)
-        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.user)), 0)
-        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.other_user)), 1)
+        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.user)), 0)  # noqa: PT009
+        self.assertEqual(len(VerificationAttempt.objects.filter(user=self.other_user)), 1)  # noqa: PT009
 
     def test_retirement_signal_no_attempts(self):
         no_attempt_user = UserFactory.create()
         _listen_for_lms_retire_verification_attempts(sender=self.__class__, user=no_attempt_user)
-        self.assertEqual(len(VerificationAttempt.objects.all()), 2)
+        self.assertEqual(len(VerificationAttempt.objects.all()), 2)  # noqa: PT009

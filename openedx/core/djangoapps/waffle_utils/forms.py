@@ -15,7 +15,7 @@ class WaffleFlagCourseOverrideAdminForm(forms.ModelForm):
     """
     class Meta:
         model = WaffleFlagCourseOverrideModel
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def clean_course_id(self):
         """
@@ -42,7 +42,7 @@ class WaffleFlagOrgOverrideAdminForm(forms.ModelForm):
     """
     class Meta:
         model = WaffleFlagOrgOverrideModel
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def clean_org(self):
         """

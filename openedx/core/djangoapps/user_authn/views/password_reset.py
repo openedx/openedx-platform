@@ -460,7 +460,7 @@ class PasswordResetConfirmWrapper(PasswordResetConfirmView):
                 }
             )
         except ObjectDoesNotExist:
-            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'
+            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'  # noqa: UP032
                       .format(username=updated_user.username))
 
     def _handle_password_creation(self, request, updated_user):
@@ -659,7 +659,7 @@ def password_change_request_handler(request):
                 )
                 ace.send(msg)
         except errors.UserAPIInternalError as err:
-            log.exception('Error occurred during password change for user {email}: {error}'
+            log.exception('Error occurred during password change for user {email}: {error}'  # noqa: UP032
                           .format(email=email, error=err))
             return HttpResponse(_("Some error occurred during password change. Please try again"), status=500)
 

@@ -2,7 +2,7 @@
 """Tests for django comment client views."""
 
 import json
-import logging
+import logging  # noqa: F401
 from contextlib import contextmanager
 from unittest import mock
 from unittest.mock import ANY, Mock, patch
@@ -17,7 +17,7 @@ from eventtracking.processors.exceptions import EventEmissionExit
 from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.signals import (
     FORUM_RESPONSE_COMMENT_CREATED,
-    FORUM_THREAD_CREATED,
+    FORUM_THREAD_CREATED,  # noqa: F401
     FORUM_THREAD_RESPONSE_CREATED,
 )
 
@@ -54,13 +54,13 @@ from openedx.core.djangoapps.django_comment_common.utils import ThreadContext, s
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.teams_config import TeamsConfig
 from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.django import modulestore  # noqa: F401
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls  # noqa: F401
 
 from .event_transformers import ForumThreadViewedEventTransformer
 
@@ -156,7 +156,7 @@ class ThreadActionGroupIdTestCase(
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.call_view("flag_abuse_for_thread", "update_thread_flag")
             self._assert_json_response_contains_group_info(response)
-            self.assertEqual(signal_mock.call_count, 1)
+            self.assertEqual(signal_mock.call_count, 1)  # noqa: PT009
         response = self.call_view("un_flag_abuse_for_thread", "update_thread_flag")
         self._assert_json_response_contains_group_info(response)
 
@@ -1199,7 +1199,7 @@ class CommentActionTestCase(CohortedTestCase, MockForumApiMixin):
         ) as signal_mock:
             with self.captureOnCommitCallbacks(execute=True):
                 self.call_view("flag_abuse_for_comment", "update_comment_flag")
-            self.assertEqual(signal_mock.call_count, 1)
+            self.assertEqual(signal_mock.call_count, 1)  # noqa: PT009
 
 
 @ddt.ddt
@@ -1334,7 +1334,7 @@ class TeamsPermissionsTestCase(
     def setUp(self):
         super().setUp()
 
-    def _setup_mock(self, user, mock_functions=[], data=None):
+    def _setup_mock(self, user, mock_functions=[], data=None):  # noqa: B006
         user = getattr(self, user)
         mock_functions = mock_functions or []
         for mock_func in mock_functions:
@@ -1859,7 +1859,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
     @ddt.data(
         "follow_thread",
@@ -1946,7 +1946,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
     @patch("eventtracking.tracker.emit")
     def test_comment_event(self, mock_emit):
@@ -1990,7 +1990,7 @@ class ForumEventTestCase(
             event_receiver.call_args.kwargs,
         )
 
-        self.assertIn("thread", event_receiver.call_args.kwargs)
+        self.assertIn("thread", event_receiver.call_args.kwargs)  # noqa: PT009
 
 
 @disable_signal(views, "thread_edited")
@@ -2510,7 +2510,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
         event['name'] = 'edx.forum.thread.viewed'
         event['event_type'] = event['name']
         event['event'] = {}
-        self.assertDictEqual(event_trans, event)
+        self.assertDictEqual(event_trans, event)  # noqa: PT009
 
     def test_inner_context(self):
         _, event_trans = _create_and_transform_event(inner_context={})
@@ -2535,7 +2535,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
         )
         event['name'] = 'edx.forum.thread.viewed'
         event['event_type'] = event['name']
-        self.assertDictEqual(event_trans, event)
+        self.assertDictEqual(event_trans, event)  # noqa: PT009
 
     def test_bad_course_id(self):
         event, event_trans = _create_and_transform_event(course_id='non-existent-course-id')
@@ -2605,7 +2605,7 @@ class ForumThreadViewedEventTransformerTestCase(UrlResetMixin, ModuleStoreTestCa
             topic_id=commentable_id,
             thread_id=thread_id,
         )
-        expected_path = '/courses/{}/discussion/forum/{}/threads/{}'.format(
+        expected_path = '/courses/{}/discussion/forum/{}/threads/{}'.format(  # noqa: UP032
             self.course.id, commentable_id, thread_id
         )
         assert event_trans['event'].get('url').endswith(expected_path)

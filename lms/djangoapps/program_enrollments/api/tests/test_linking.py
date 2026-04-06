@@ -123,7 +123,7 @@ class TestLinkProgramEnrollmentsMixin:
             for program_course_enrollment in program_course_enrollments
         ]
         assert all(course_enrollment.is_active for course_enrollment in course_enrollments)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             course_keys,
             [course_enrollment.course.id for course_enrollment in course_enrollments]
         )
@@ -396,7 +396,7 @@ class TestLinkProgramEnrollmentsErrors(TestLinkProgramEnrollmentsMixin, ModuleSt
             )
             logger.check_present((LOG_PATH, 'WARNING', expected_error_msg))
 
-        self.assertDictEqual(errors, {'0002': expected_error_msg})
+        self.assertDictEqual(errors, {'0002': expected_error_msg})  # noqa: PT009
         self._assert_program_enrollment(self.user_1, self.program, '0001')
         self._assert_no_program_enrollment(self.user_2, self.program)
 
@@ -415,7 +415,7 @@ class TestLinkProgramEnrollmentsErrors(TestLinkProgramEnrollmentsMixin, ModuleSt
             expected_error_msg = NO_LMS_USER_TEMPLATE.format('nonexistant-user')
             logger.check_present((LOG_PATH, 'WARNING', expected_error_msg))
 
-        self.assertDictEqual(errors, {'0002': expected_error_msg})
+        self.assertDictEqual(errors, {'0002': expected_error_msg})  # noqa: PT009
         self._assert_program_enrollment(self.user_1, self.program, '0001')
         self._assert_no_user(enrollment_2)
 
@@ -440,7 +440,7 @@ class TestLinkProgramEnrollmentsErrors(TestLinkProgramEnrollmentsMixin, ModuleSt
             expected_error_msg = _user_already_linked_message(program_enrollment, self.user_2)
             logger.check_present((LOG_PATH, 'WARNING', expected_error_msg))
 
-        self.assertDictEqual(errors, {'0002': expected_error_msg})
+        self.assertDictEqual(errors, {'0002': expected_error_msg})  # noqa: PT009
         self._assert_program_enrollment(self.user_1, self.program, '0001')
         self._assert_program_enrollment(self.user_2, self.program, '0002')
 

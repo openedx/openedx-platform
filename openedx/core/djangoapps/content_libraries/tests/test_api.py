@@ -139,7 +139,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
 
     def test_create_library_collection_invalid_library(self) -> None:
         library_key = LibraryLocatorV2.from_string("lib:INVALID:test-lib-does-not-exist")
-        with self.assertRaises(api.ContentLibraryNotFound) as exc:
+        with self.assertRaises(api.ContentLibraryNotFound) as exc:  # noqa: F841, PT027
             api.create_library_collection(
                 library_key,
                 collection_key="COL4",
@@ -176,7 +176,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         )
 
     def test_update_library_collection_wrong_library(self) -> None:
-        with self.assertRaises(api.ContentLibraryCollectionNotFound) as exc:
+        with self.assertRaises(api.ContentLibraryCollectionNotFound) as exc:  # noqa: F841, PT027
             api.update_library_collection(
                 self.lib1.library_key,
                 self.col2.key,
@@ -299,7 +299,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         )
 
     def test_update_collection_components_from_wrong_library(self) -> None:
-        with self.assertRaises(api.ContentLibraryBlockNotFound) as exc:
+        with self.assertRaises(api.ContentLibraryBlockNotFound) as exc:  # noqa: PT027
             api.update_library_collection_items(
                 self.lib2.library_key,
                 self.col2.key,
@@ -451,7 +451,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             "openedx.core.djangoapps.content_libraries.api.containers.get_container_from_key",
             side_effect=Container.DoesNotExist,
         ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
-            with self.assertRaises(Container.DoesNotExist):
+            with self.assertRaises(Container.DoesNotExist):  # noqa: PT027
                 api.delete_container(container_key)
             mock_soft_delete.assert_not_called()
 
@@ -482,7 +482,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             "openedx.core.djangoapps.content_libraries.api.blocks.get_component_from_usage_key",
             side_effect=Component.DoesNotExist,
         ), mock.patch("openedx_content.api.soft_delete_draft") as mock_soft_delete:
-            with self.assertRaises(Component.DoesNotExist):
+            with self.assertRaises(Component.DoesNotExist):  # noqa: PT027
                 api.delete_library_block(usage_key)
             mock_soft_delete.assert_not_called()
 
@@ -1294,7 +1294,7 @@ class ContentLibraryContainersTest(ContentLibrariesRestApiTest):
         with mock.patch(
             "openedx.core.djangoapps.content_libraries.api.blocks.update_container_children",
             side_effect=RuntimeError("Simulated failure"),
-        ), self.assertRaises(RuntimeError):
+        ), self.assertRaises(RuntimeError):  # noqa: PT027
             api.import_staged_content_from_user_clipboard(self.lib1.library_key, self.user)
 
         assert event_receiver.call_count == 0
@@ -1534,7 +1534,7 @@ class ContentLibraryAuthZRoleAssignmentTest(ContentLibrariesRestApiTest):
         # Library creation should still succeed (the exception should be caught/handled)
         # Note: Currently, the code doesn't catch this exception, so we expect it to propagate.
         # This test documents the current behavior and can be updated if error handling is added.
-        with self.assertRaises(Exception) as context:
+        with self.assertRaises(Exception) as context:  # noqa: PT027
             self._create_library("test-lib-role-4", "Test Library Role 4")
 
         assert "AuthZ unavailable" in str(context.exception)

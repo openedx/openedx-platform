@@ -73,7 +73,7 @@ class TestOrphanBase(CourseTestCase):
         Asserts that we have the expected count of orphans
         for a given course_key
         """
-        self.assertEqual(len(self.store.get_orphans(course_key)), number)
+        self.assertEqual(len(self.store.get_orphans(course_key)), number)  # noqa: PT009
 
 
 class TestOrphan(TestOrphanBase):
@@ -94,13 +94,13 @@ class TestOrphan(TestOrphanBase):
                 HTTP_ACCEPT='application/json'
             ).content.decode('utf-8')
         )
-        self.assertEqual(len(orphans), 3, f"Wrong # {orphans}")
+        self.assertEqual(len(orphans), 3, f"Wrong # {orphans}")  # noqa: PT009
         location = course.location.replace(category='chapter', name='OrphanChapter')
-        self.assertIn(str(location), orphans)
+        self.assertIn(str(location), orphans)  # noqa: PT009
         location = course.location.replace(category='vertical', name='OrphanVert')
-        self.assertIn(str(location), orphans)
+        self.assertIn(str(location), orphans)  # noqa: PT009
         location = course.location.replace(category='html', name='OrphanHtml')
-        self.assertIn(str(location), orphans)
+        self.assertIn(str(location), orphans)  # noqa: PT009
 
     def test_delete_orphans(self):
         """
@@ -115,11 +115,11 @@ class TestOrphan(TestOrphanBase):
         orphans = json.loads(
             self.client.get(orphan_url, HTTP_ACCEPT='application/json').content.decode('utf-8')
         )
-        self.assertEqual(len(orphans), 0, f"Orphans not deleted {orphans}")
+        self.assertEqual(len(orphans), 0, f"Orphans not deleted {orphans}")  # noqa: PT009
 
         # make sure that any children with one orphan parent and one non-orphan
         # parent are not deleted
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', "multi_parent_html")))
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', "multi_parent_html")))  # noqa: PT009
 
     def test_not_permitted(self):
         """
@@ -131,9 +131,9 @@ class TestOrphan(TestOrphanBase):
         test_user_client, test_user = self.create_non_staff_authed_user_client()
         CourseEnrollment.enroll(test_user, course.id)
         response = test_user_client.get(orphan_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
         response = test_user_client.delete(orphan_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_path_to_location_for_orphan_vertical(self):
         r"""
@@ -158,16 +158,16 @@ class TestOrphan(TestOrphanBase):
         multi_parent_html = self.store.get_item(BlockUsageLocator(course.id, 'html', 'multi_parent_html'))
 
         # Verify `OrphanVert` is an orphan
-        self.assertIn(orphan_vertical.location, self.store.get_orphans(course.id))
+        self.assertIn(orphan_vertical.location, self.store.get_orphans(course.id))  # noqa: PT009
 
         # Verify `multi_parent_html` is child of both `Vertical1` and `OrphanVert`
-        self.assertIn(multi_parent_html.location, orphan_vertical.children)
-        self.assertIn(multi_parent_html.location, vertical1.children)
+        self.assertIn(multi_parent_html.location, orphan_vertical.children)  # noqa: PT009
+        self.assertIn(multi_parent_html.location, vertical1.children)  # noqa: PT009
 
         # HTML component has `vertical1` as its parent.
         html_parent = self.store.get_parent_location(multi_parent_html.location)
-        self.assertNotEqual(str(html_parent), str(orphan_vertical.location))
-        self.assertEqual(str(html_parent), str(vertical1.location))
+        self.assertNotEqual(str(html_parent), str(orphan_vertical.location))  # noqa: PT009
+        self.assertEqual(str(html_parent), str(vertical1.location))  # noqa: PT009
 
         # Get path of the `multi_parent_html` & verify path_to_location returns a expected path
         path = path_to_location(self.store, multi_parent_html.location)
@@ -179,9 +179,9 @@ class TestOrphan(TestOrphanBase):
             "",
             path[-1]
         )
-        self.assertIsNotNone(path)
-        self.assertEqual(len(path), 6)
-        self.assertEqual(path, expected_path)
+        self.assertIsNotNone(path)  # noqa: PT009
+        self.assertEqual(len(path), 6)  # noqa: PT009
+        self.assertEqual(path, expected_path)  # noqa: PT009
 
     def test_path_to_location_for_orphan_chapter(self):
         r"""
@@ -204,7 +204,7 @@ class TestOrphan(TestOrphanBase):
         vertical1 = self.store.get_item(BlockUsageLocator(course.id, 'vertical', 'Vertical1'))
 
         # Verify `OrhanChapter` is an orphan
-        self.assertIn(orphan_chapter.location, self.store.get_orphans(course.id))
+        self.assertIn(orphan_chapter.location, self.store.get_orphans(course.id))  # noqa: PT009
 
         # Create a vertical (`Vertical0`) in orphan chapter (`OrphanChapter`).
         # OrphanChapter -> Vertical0
@@ -218,7 +218,7 @@ class TestOrphan(TestOrphanBase):
 
         # Verify chapter1 is parent of vertical1.
         vertical1_parent = self.store.get_parent_location(vertical1.location)
-        self.assertEqual(str(vertical1_parent), str(chapter1.location))
+        self.assertEqual(str(vertical1_parent), str(chapter1.location))  # noqa: PT009
 
         # Make `Vertical1` the parent of `HTML0`. So `HTML0` will have to parents (`Vertical0` & `Vertical1`)
         vertical1.children.append(html.location)
@@ -227,7 +227,7 @@ class TestOrphan(TestOrphanBase):
         # Get parent location & verify its either of the two verticals. As both parents are non-orphan,
         # alphabetically least is returned
         html_parent = self.store.get_parent_location(html.location)
-        self.assertEqual(str(html_parent), str(vertical1.location))
+        self.assertEqual(str(html_parent), str(vertical1.location))  # noqa: PT009
 
         # verify path_to_location returns a expected path
         path = path_to_location(self.store, html.location)
@@ -239,6 +239,6 @@ class TestOrphan(TestOrphanBase):
             "",
             path[-1]
         )
-        self.assertIsNotNone(path)
-        self.assertEqual(len(path), 6)
-        self.assertEqual(path, expected_path)
+        self.assertIsNotNone(path)  # noqa: PT009
+        self.assertEqual(len(path), 6)  # noqa: PT009
+        self.assertEqual(path, expected_path)  # noqa: PT009

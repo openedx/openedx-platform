@@ -107,7 +107,7 @@ class Command(BaseCommand):
         file_path = kwargs['file_path']
         v1_to_v2_lib_map = {}
         try:
-            with open(file_path, 'r', encoding='utf-8') as csvfile:
+            with open(file_path, 'r', encoding='utf-8') as csvfile:  # noqa: UP015
 
                 if not file_path.endswith('.csv'):
                     raise CommandError('Invalid file format. Only CSV files are supported.')

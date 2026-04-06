@@ -860,7 +860,7 @@ class TestPayAndVerifyView(UrlResetMixin, ModuleStoreTestCase, XssTestMixin, Tes
             attempt.system_error("Error!")
 
         if status == "expired":
-            days_good_for = settings.VERIFY_STUDENT["DAYS_GOOD_FOR"]  # lint-amnesty, pylint: disable=unused-variable
+            days_good_for = settings.VERIFY_STUDENT["DAYS_GOOD_FOR"]  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             attempt.expiration_date = now() - timedelta(days=1)
             attempt.save()
 
@@ -1183,7 +1183,7 @@ class TestCreateOrderEcommerceService(CheckoutTestMixin, ModuleStoreTestCase):
 
     def _get_checkout_args(self, patched_create_order):
         """ Assuming patched_create_order was called, return a mapping containing the call arguments."""
-        return dict(list(zip(('user', 'course_key', 'course_mode', 'processor'), patched_create_order.call_args[0])))
+        return dict(list(zip(('user', 'course_key', 'course_mode', 'processor'), patched_create_order.call_args[0])))  # noqa: B905
 
 
 class TestCheckoutWithEcommerceService(ModuleStoreTestCase):
@@ -1272,7 +1272,7 @@ class TestSubmitPhotosForVerification(MockS3Boto3Mixin, TestVerificationBase):
         # Since we are giving a full name, it should be written into the attempt
         # whether or not the user name was updated
         attempt = SoftwareSecurePhotoVerification.objects.get(user=self.user)
-        self.assertEqual(attempt.name, self.FULL_NAME)
+        self.assertEqual(attempt.name, self.FULL_NAME)  # noqa: PT009
 
     def test_submit_photos_sends_confirmation_email(self):
         self._submit_photos(
@@ -1584,7 +1584,7 @@ class TestPhotoVerificationResultsCallback(ModuleStoreTestCase, TestVerification
     )
     @patch('lms.djangoapps.verify_student.views.log.error')
     @patch('lms.djangoapps.verify_student.views.segment.track')
-    def test_passed_status_template(self, mock_segment_track, _mock_log_error):
+    def test_passed_status_template(self, mock_segment_track, _mock_log_error):  # noqa: PT019
         """
         Test for verification passed.
         """
@@ -1649,7 +1649,7 @@ class TestPhotoVerificationResultsCallback(ModuleStoreTestCase, TestVerification
     )
     @patch('lms.djangoapps.verify_student.views.log.error')
     @patch('lms.djangoapps.verify_student.views.segment.track')
-    def test_first_time_verification(self, mock_segment_track, _mock_log_error):
+    def test_first_time_verification(self, mock_segment_track, _mock_log_error):  # noqa: PT019
         """
         Test for verification passed if the learner does not have any previous verification
         """
@@ -1683,7 +1683,7 @@ class TestPhotoVerificationResultsCallback(ModuleStoreTestCase, TestVerification
     )
     @patch('lms.djangoapps.verify_student.views.log.error')
     @patch('lms.djangoapps.verify_student.views.segment.track')
-    def test_failed_status_template(self, mock_segment_track, _mock_log_error):
+    def test_failed_status_template(self, mock_segment_track, _mock_log_error):  # noqa: PT019
         """
         Test for failed verification.
         """
@@ -1955,9 +1955,9 @@ class TestPhotoURLView(TestVerificationBase):
         assert response.status_code == 200
         assert response.data['EdX-ID'] == self.receipt_id
         assert response.data['PhotoID'] == 'https://{bucket}/photo_id/{receipt_id}'\
-            .format(bucket=settings.AWS_S3_CUSTOM_DOMAIN, receipt_id=self.receipt_id)
+            .format(bucket=settings.AWS_S3_CUSTOM_DOMAIN, receipt_id=self.receipt_id)  # noqa: UP032
         assert response.data['UserPhoto'] == 'https://{bucket}/face/{receipt_id}'\
-            .format(bucket=settings.AWS_S3_CUSTOM_DOMAIN, receipt_id=self.receipt_id)
+            .format(bucket=settings.AWS_S3_CUSTOM_DOMAIN, receipt_id=self.receipt_id)  # noqa: UP032
 
     def test_photo_url_view_returns_404_if_invalid_receipt_id(self):
         url = reverse('verification_photo_urls',
@@ -2049,7 +2049,7 @@ class TestDecodeImageViews(MockS3Boto3Mixin, TestVerificationBase):
 
     @ddt.data("face", "photo_id")
     @patch.object(SoftwareSecurePhotoVerification, '_get_image_from_storage')
-    def test_download_image_response(self, img_type, _mock_get_storage):
+    def test_download_image_response(self, img_type, _mock_get_storage):  # noqa: PT019
         _mock_get_storage.return_value = encrypt_and_encode(
             b'\xd7m\xf8',
             codecs.decode(settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["FACE_IMAGE_AES_KEY"], "hex")
@@ -2111,7 +2111,7 @@ class TestDecodeImageViews(MockS3Boto3Mixin, TestVerificationBase):
 
     @ddt.data("face", "photo_id")
     @patch.object(SoftwareSecurePhotoVerification, '_get_image_from_storage')
-    def test_404_for_decryption_error(self, img_type, _mock_get_storage):
+    def test_404_for_decryption_error(self, img_type, _mock_get_storage):  # noqa: PT019
         _mock_get_storage.return_value = None
         # create verification with no img data
         attempt = SoftwareSecurePhotoVerification(

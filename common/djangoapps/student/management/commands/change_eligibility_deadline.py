@@ -75,7 +75,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
             logger.exception(f'Invalid or non-existent course id {course_id}')
             raise
         except CourseEnrollment.DoesNotExist:
-            logger.exception('No enrollment found in database for {username} in course {course_id}'
+            logger.exception('No enrollment found in database for {username} in course {course_id}'  # noqa: UP032
                              .format(username=username, course_id=course_id))
             raise
 

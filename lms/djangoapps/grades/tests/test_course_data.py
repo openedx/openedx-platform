@@ -63,7 +63,7 @@ class CourseDataTest(ModuleStoreTestCase):
                         assert expected == actual
 
     def test_properties(self):
-        expected_edited_on = getattr(  # lint-amnesty, pylint: disable=literal-used-as-attribute
+        expected_edited_on = getattr(  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
             self.one_true_structure[self.one_true_structure.root_block_usage_key],
             'subtree_edited_on',
         )
@@ -85,7 +85,7 @@ class CourseDataTest(ModuleStoreTestCase):
             assert 'Course: course_key' in course_data.full_string()
 
     def test_no_data(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             _ = CourseData(self.user)
 
     @patch.dict('django.conf.settings.FEATURES', {'DISABLE_START_DATES': False})

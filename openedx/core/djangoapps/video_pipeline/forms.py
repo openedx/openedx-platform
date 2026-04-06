@@ -23,4 +23,4 @@ class VEMPipelineIntegrationAdminForm(forms.ModelForm):
     """
     class Meta:
         model = VEMPipelineIntegration
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007

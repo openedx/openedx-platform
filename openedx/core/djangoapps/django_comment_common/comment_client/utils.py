@@ -4,7 +4,7 @@
 
 import logging
 
-import requests  # pylint: disable=unused-import
+import requests  # pylint: disable=unused-import  # noqa: F401
 from opaque_keys.edx.keys import CourseKey
 
 log = logging.getLogger(__name__)

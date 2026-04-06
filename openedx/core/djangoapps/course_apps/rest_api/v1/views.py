@@ -1,6 +1,6 @@
 # pylint: disable=missing-module-docstring
 import logging
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 from django.contrib.auth import get_user_model
 from edx_api_doc_tools import path_parameter, schema
@@ -70,7 +70,7 @@ class CourseAppSerializer(serializers.Serializer):  # pylint: disable=abstract-m
         help_text="What all operations are supported by the app.",
     )
 
-    def to_representation(self, instance: CourseApp) -> Dict:
+    def to_representation(self, instance: CourseApp) -> Dict:  # noqa: UP006
         course_key = self.context.get("course_key")
         request = self.context.get("request")
         app_status = self.context.get("app_status")

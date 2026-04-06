@@ -274,7 +274,7 @@ class InstructorTaskModuleTestCase(InstructorTaskCourseTestCase):
             # Note that this is a capa-specific convention.  The form is a version of the problem's
             # URL, modified so that it can be easily stored in html, prepended with "input-" and
             # appended with a sequence identifier for the particular response the input goes to.
-            return 'input_{}_{}'.format(
+            return 'input_{}_{}'.format(  # noqa: UP032
                 problem_url_name,
                 response_id
             )
@@ -367,8 +367,8 @@ class TestReportMixin:
                 assert csv_rows == expected_rows
                 assert numeric_csv_rows == numeric_expected_rows
             else:
-                self.assertCountEqual(csv_rows, expected_rows)
-                self.assertCountEqual(numeric_csv_rows, numeric_expected_rows)
+                self.assertCountEqual(csv_rows, expected_rows)  # noqa: PT009
+                self.assertCountEqual(numeric_csv_rows, numeric_expected_rows)  # noqa: PT009
 
     @staticmethod
     def _extract_and_round_numeric_items(dictionary):

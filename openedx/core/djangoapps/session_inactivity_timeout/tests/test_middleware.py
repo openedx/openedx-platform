@@ -81,7 +81,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
 
         # The middleware should raise an exception when it tries to parse the invalid timestamp
         # in the save delay logic (after already catching it once in the timeout logic)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             self.middleware.process_request(self.request)
 
         mock_log.warning.assert_called_once()

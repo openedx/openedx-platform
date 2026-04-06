@@ -656,7 +656,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_change_object_tag_objectid(self.library_user, str(self.library_key))
 
-        self.assertTrue(result)
+        self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.library_user.username,
             authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
@@ -673,7 +673,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_change_object_tag_objectid(self.org_admin, str(self.library_key))
 
-        self.assertTrue(result)
+        self.assertTrue(result)  # noqa: PT009
 
     @patch("openedx_authz.api.is_user_allowed")
     def test_change_objecttag_objectid_without_permissions(self, mock_is_user_allowed):
@@ -685,7 +685,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_change_object_tag_objectid(self.regular_user, str(self.library_key))
 
-        self.assertFalse(result)
+        self.assertFalse(result)  # noqa: PT009
 
     @patch("openedx_authz.api.is_user_allowed")
     def test_remove_objecttag_objectid_with_manage_library_tags_permission(self, mock_is_user_allowed):
@@ -697,7 +697,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_remove_object_tag_objectid(self.library_user, str(self.library_key))
 
-        self.assertTrue(result)
+        self.assertTrue(result)  # noqa: PT009
         mock_is_user_allowed.assert_called_once_with(
             self.library_user.username,
             authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
@@ -714,7 +714,7 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_remove_object_tag_objectid(self.org_admin, str(self.library_key))
 
-        self.assertTrue(result)
+        self.assertTrue(result)  # noqa: PT009
 
     @patch("openedx_authz.api.is_user_allowed")
     def test_remove_objecttag_objectid_without_permissions(self, mock_is_user_allowed):
@@ -726,20 +726,20 @@ class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
 
         result = can_remove_object_tag_objectid(self.regular_user, str(self.library_key))
 
-        self.assertFalse(result)
+        self.assertFalse(result)  # noqa: PT009
 
     def test_invalid_library_key(self):
         """
         Test that invalid library keys return False.
         """
-        self.assertFalse(can_change_object_tag_objectid(self.library_user, "invalid_key"))
-        self.assertFalse(can_remove_object_tag_objectid(self.library_user, "invalid_key"))
+        self.assertFalse(can_change_object_tag_objectid(self.library_user, "invalid_key"))  # noqa: PT009
+        self.assertFalse(can_remove_object_tag_objectid(self.library_user, "invalid_key"))  # noqa: PT009
 
     def test_empty_object_id(self):
         """
         Test behavior with empty object_id.
         """
-        self.assertTrue(can_change_object_tag_objectid(self.library_user, ""))
+        self.assertTrue(can_change_object_tag_objectid(self.library_user, ""))  # noqa: PT009
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             can_remove_object_tag_objectid(self.library_user, "")

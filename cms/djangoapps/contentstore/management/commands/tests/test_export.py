@@ -24,7 +24,7 @@ class TestArgParsingCourseExport(unittest.TestCase):
         Test export command with no arguments
         """
         errstring = "Error: the following arguments are required: course_id, output_path"
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export')
 
 
@@ -49,13 +49,13 @@ class TestCourseExport(ModuleStoreTestCase):
         """
         course = CourseFactory.create(default_store=ModuleStoreEnum.Type.split)
         course_id = str(course.id)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             modulestore().has_course(course.id),
             f"Could not find course in {ModuleStoreEnum.Type.split}"
         )
         # Test `export` management command with invalid course_id
         errstring = "Invalid course_key: 'InvalidCourseID'."
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export', "InvalidCourseID", self.temp_dir_1)
 
         # Test `export` management command with correct course_id
@@ -67,5 +67,5 @@ class TestCourseExport(ModuleStoreTestCase):
         Test export command with a valid course key that doesn't exist
         """
         errstring = "Course with x/y/z key not found."
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('export', "x/y/z", self.temp_dir_1)

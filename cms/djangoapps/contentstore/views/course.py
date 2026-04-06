@@ -7,7 +7,7 @@ import logging
 import random
 import re
 import string
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 import django.utils
 from ccx_keys.locator import CCXLocator
@@ -334,7 +334,7 @@ def course_handler(request, course_key_string=None):
         else:
             return HttpResponseNotFound()
     except InvalidKeyError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 @login_required
@@ -1137,7 +1137,7 @@ def _create_or_rerun_course(request):
         return JsonResponse({
             "ErrMsg": _("Unable to create course '{name}'.\n\n{err}").format(name=display_name, err=str(error))}
         )
-    except PermissionDenied as error:  # pylint: disable=unused-variable
+    except PermissionDenied as error:  # pylint: disable=unused-variable  # noqa: F841
         log.info(
             "User does not have the permission to create course in this organization"
             "or course creation is disabled."
@@ -1163,7 +1163,7 @@ def create_new_course(user, org, number, run, fields):
     try:
         org_data = ensure_organization(org)
     except InvalidOrganizationException:
-        raise ValidationError(_(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValidationError(_(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             'You must link this course to an organization in order to continue. Organization '
             'you selected does not exist in the system, you will need to add it to the system'
         ))
@@ -1272,7 +1272,7 @@ def course_info_handler(request, course_key_string):
     try:
         course_key = CourseKey.from_string(course_key_string)
     except InvalidKeyError:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     return redirect(get_updates_url(course_key))
 
@@ -1525,7 +1525,7 @@ def advanced_settings_handler(request, course_key_string):
                     return JsonResponseBadRequest(err.detail)
 
 
-def update_course_advanced_settings(course_block: CourseBlock, data: Dict, user: User) -> Dict:
+def update_course_advanced_settings(course_block: CourseBlock, data: Dict, user: User) -> Dict:  # noqa: UP006
     """
     Helper function to update course advanced settings from API data.
 
@@ -1589,7 +1589,7 @@ def validate_textbooks_json(text):
     try:
         textbooks = json.loads(text)
     except ValueError:
-        raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(textbooks, (list, tuple)):
         raise TextbookValidationError("must be JSON list")
     for textbook in textbooks:
@@ -1612,7 +1612,7 @@ def validate_textbook_json(textbook):
         try:
             textbook = json.loads(textbook)
         except ValueError:
-            raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(textbook, dict):
         raise TextbookValidationError("must be JSON object")
     if not textbook.get("tab_title"):

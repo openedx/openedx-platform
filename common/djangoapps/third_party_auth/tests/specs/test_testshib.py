@@ -190,7 +190,7 @@ class TestIndexExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin,
         request, strategy = self.get_request_and_strategy(
             auth_entry=pipeline.AUTH_ENTRY_LOGIN, redirect_uri="social:complete"
         )
-        with self.assertRaises(IncorrectConfigurationException):
+        with self.assertRaises(IncorrectConfigurationException):  # noqa: PT027
             request.backend.auth_complete = MagicMock(return_value=self.fake_auth_complete(strategy))
 
     def get_response_data(self):
@@ -538,7 +538,7 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
             return 500, headers, "Failure!"
 
         fields = ",".join(SapSuccessFactorsIdentityProvider.default_field_mapping.copy())
-        url = "{root_url}User(userId='{user_id}')?$select={fields}".format(
+        url = "{root_url}User(userId='{user_id}')?$select={fields}".format(  # noqa: UP032
             root_url=odata_api_root_url,
             user_id=username,
             fields=fields,

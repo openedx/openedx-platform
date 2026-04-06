@@ -10,7 +10,7 @@ from django.conf import settings
 from django.urls import reverse
 from edx_proctoring.api import create_exam
 from edx_proctoring.backends.tests.test_backend import TestBackendProvider
-from edx_toggles.toggles.testutils import override_waffle_flag  # lint-amnesty, pylint: disable=unused-import
+from edx_toggles.toggles.testutils import override_waffle_flag  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory
@@ -198,8 +198,8 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         self.instructor.is_staff = True
         self.instructor.save()
         response = self.client.get(self.url)
-        self.assertIn('proctoring-mfe-view', response.content.decode('utf-8'))
-        self.assertNotIn('proctoring-accordion', response.content.decode('utf-8'))
+        self.assertIn('proctoring-mfe-view', response.content.decode('utf-8'))  # noqa: PT009
+        self.assertNotIn('proctoring-accordion', response.content.decode('utf-8'))  # noqa: PT009
 
     def test_review_dashboard(self):
         """

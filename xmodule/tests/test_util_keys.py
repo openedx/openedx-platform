@@ -61,7 +61,7 @@ class TestBlockKeyParsing(TestCase):
 
     @ddt.data('chapter:invalid:some-id', 'sectionone-more-id')
     def test_block_key_from_string_error(self, block_key_str):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             BlockKey.from_string(block_key_str)
 
     @ddt.data(

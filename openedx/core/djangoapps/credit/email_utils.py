@@ -249,7 +249,7 @@ def get_credit_provider_attribute_values(course_key, attribute_name):
     attribute_values = None
 
     if credit_config.is_cache_enabled:
-        cache_key = '{key_prefix}.{course_key}.{attribute_name}'.format(
+        cache_key = '{key_prefix}.{course_key}.{attribute_name}'.format(  # noqa: UP032
             key_prefix=credit_config.CACHE_KEY,
             course_key=course_id,
             attribute_name=attribute_name

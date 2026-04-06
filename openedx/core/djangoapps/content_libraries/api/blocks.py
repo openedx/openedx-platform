@@ -233,7 +233,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
         del node.attrib["url_name"]
         new_olx_str = etree.tostring(node, encoding='unicode')
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
         new_content = content_api.get_or_create_text_media(
@@ -421,7 +421,7 @@ def _import_staged_block(
         component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component = content_api.create_component(
+        component = content_api.create_component(  # noqa: F841
             learning_package.id,
             component_type=component_type,
             local_key=usage_key.block_id,
@@ -654,7 +654,7 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
     if olx_str is None:
         raise RuntimeError("olx_str missing")  # Shouldn't happen - mostly here for type checker
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     if _is_container(user_clipboard.content.block_type):
         # This is a container and we can import it as such.
@@ -911,7 +911,7 @@ def add_library_block_static_asset_file(
         component_version = content_api.create_next_component_version(
             component.pk,
             media_to_replace={file_path: file_content},
-            created=datetime.now(tz=timezone.utc),
+            created=datetime.now(tz=timezone.utc),  # noqa: UP017
             created_by=user.id if user else None,
         )
         transaction.on_commit(
@@ -953,10 +953,10 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
         delete_library_block_static_asset_file(video_block, "subtitles-en.srt")
     """
     component = get_component_from_usage_key(usage_key)
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
-        component_version = content_api.create_next_component_version(
+        component_version = content_api.create_next_component_version(  # noqa: F841
             component.pk,
             media_to_replace={file_path: None},
             created=now,
@@ -1032,7 +1032,7 @@ def _create_component_for_block(
     text data like X" goes in xblock.api.
     """
     display_name = xblock_type_display_name(usage_key.block_type)
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
     xml_text = f'<{usage_key.block_type} />'
 
     learning_package = content_lib.learning_package

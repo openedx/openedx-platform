@@ -444,7 +444,7 @@ class ViewsTestCase(BaseViewsTestCase):
         # Construct the link according the following scenarios and verify its presence in the response:
         #      (1) shopping cart is enabled and the user is not logged in
         #      (2) shopping cart is enabled and the user is logged in
-        href = '<a href="{uri_stem}?sku={sku}" class="add-to-cart">'.format(
+        href = '<a href="{uri_stem}?sku={sku}" class="add-to-cart">'.format(  # noqa: UP032
             uri_stem=configuration.basket_checkout_page,
             sku=sku,
         )
@@ -749,12 +749,12 @@ class ViewsTestCase(BaseViewsTestCase):
         assert additional_info['Certify abide by the honor code'] == 'No'
 
         assert ticket_subject == f'Financial assistance request for learner {username} in course {self.course.display_name}'  # pylint: disable=line-too-long
-        self.assertEqual([{'id': 'custom_123', 'value': course}], custom_fields)
+        self.assertEqual([{'id': 'custom_123', 'value': course}], custom_fields)  # noqa: PT009
         assert 'Client IP' in additional_info
         assert group_name == 'Financial Assistance'
 
     @patch.object(views, 'create_zendesk_ticket', return_value=500)
-    def test_zendesk_submission_failed(self, _mock_create_zendesk_ticket):
+    def test_zendesk_submission_failed(self, _mock_create_zendesk_ticket):  # noqa: PT019
         response = self._submit_financial_assistance_form({
             'username': self.user.username,
             'course': str(self.course.id),
@@ -1501,7 +1501,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
             response = self._get_progress_page()
 
-            expected_message = ('You are enrolled in the {mode} track for this course. '
+            expected_message = ('You are enrolled in the {mode} track for this course. '  # noqa: UP032
                                 'The {mode} track does not include a certificate.').format(mode=course_mode)
             self.assertContains(response, expected_message)
 
@@ -1985,7 +1985,7 @@ class VerifyCourseKeyDecoratorTests(TestCase):
     def test_decorator_with_invalid_course_id(self):
         mocked_view = create_autospec(views.course_about)
         view_function = ensure_valid_course_key(mocked_view)
-        self.assertRaises(Http404, view_function, self.request, course_id=self.invalid_course_id)
+        self.assertRaises(Http404, view_function, self.request, course_id=self.invalid_course_id)  # noqa: PT027
         assert not mocked_view.called
 
 
@@ -2088,7 +2088,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
         resp = self.client.post(self.url)
         self.assertContains(
             resp,
-            "You must be signed in to {platform_name} to create a certificate.".format(
+            "You must be signed in to {platform_name} to create a certificate.".format(  # noqa: UP032
                 platform_name=settings.PLATFORM_NAME
             ),
             status_code=HttpResponseBadRequest.status_code,
@@ -2502,7 +2502,7 @@ class TestRenderXBlock(RenderXBlockTestMixin, ModuleStoreTestCase, CompletionWaf
     @patch.dict('django.conf.settings.FEATURES', {'ENABLE_PROCTORED_EXAMS': True})
     @patch('lms.djangoapps.courseware.views.views.unpack_jwt')
     def test_render_descendant_of_exam_gated_by_access_token(self, exam_access_token,
-                                                             expected_response, _mock_unpack_jwt):
+                                                             expected_response, _mock_unpack_jwt):  # noqa: PT019
         """
         Verify blocks inside an exam that requires token access are gated by
         a valid exam access JWT issued for that exam sequence.
@@ -2648,8 +2648,8 @@ class TestRenderPublicVideoXBlock(TestBasePublicVideoXBlock):
         response = self.get_response(usage_key=target_video.location, is_embed=False)
         embed_response = self.get_response(usage_key=target_video.location, is_embed=True)
 
-        self.assertEqual(expected_status_code, response.status_code)
-        self.assertEqual(expected_status_code, embed_response.status_code)
+        self.assertEqual(expected_status_code, response.status_code)  # noqa: PT009
+        self.assertEqual(expected_status_code, embed_response.status_code)  # noqa: PT009
 
 
 class TestRenderXBlockSelfPaced(TestRenderXBlock):  # lint-amnesty, pylint: disable=test-inherits-tests
@@ -2753,7 +2753,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         request.user = staff_user
         request.session = {}
         if setup_enterprise_enrollment:
-            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)
+            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(
@@ -3003,7 +3003,7 @@ class TestBasePublicVideoXBlockView(TestBasePublicVideoXBlock):
             assert course.id == self.course.id
             assert video_block.location == target_video.location
         else:
-            with self.assertRaisesRegex(Http404, "Video not found"):
+            with self.assertRaisesRegex(Http404, "Video not found"):  # noqa: PT027
                 course, video_block = self.base_block.get_course_and_video_block(str(target_video.location))
 
 
@@ -3230,8 +3230,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': expected_enabled})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
     @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
     def test_courseware_mfe_search_staff_access(self):
@@ -3244,8 +3244,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': True})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': True})  # noqa: PT009
 
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
     def test_is_mfe_search_waffle_disabled(self):
@@ -3258,8 +3258,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': False})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': False})  # noqa: PT009
 
     @patch.dict('django.conf.settings.FEATURES', {'COURSEWARE_SEARCH_INCLUSION_DATE': '2020'})
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
@@ -3279,8 +3279,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(api_url, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': expected_enabled})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
 
 class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
@@ -3304,8 +3304,8 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             body,
             {
                 "enable_completion_tracking": False,
@@ -3320,8 +3320,8 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             body,
             {
                 "enable_completion_tracking": True,
@@ -3356,6 +3356,6 @@ class CourseAboutViewTests(ModuleStoreTestCase):
             response = self.client.get(reverse('about_course', args=[str(self.course.id)]))
             if expected_redirect:
                 assert response.status_code == 301
-                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)
+                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032
             else:
                 assert response.status_code == 200

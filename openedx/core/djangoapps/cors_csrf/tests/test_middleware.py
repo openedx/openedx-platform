@@ -271,7 +271,7 @@ class TestCsrfCrossDomainCookieMiddleware(TestCase):
             assert self.COOKIE_NAME in response.cookies
             cookie_header = str(response.cookies[self.COOKIE_NAME])
 
-            expected = 'Set-Cookie: {name}={value}; Domain={domain};'.format(
+            expected = 'Set-Cookie: {name}={value}; Domain={domain};'.format(  # noqa: UP032
                 name=self.COOKIE_NAME,
                 value=self.COOKIE_VALUE,
                 domain=self.COOKIE_DOMAIN

@@ -1,5 +1,5 @@
 """ Serializers for course tabs """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -41,7 +41,7 @@ class CourseTabSerializer(serializers.Serializer):  # pylint: disable=abstract-m
         help_text=_("Additional settings specific to the tab"),
     )
 
-    def to_representation(self, instance: CourseTab) -> Dict:
+    def to_representation(self, instance: CourseTab) -> Dict:  # noqa: UP006
         """
         Returns a dict representation of a ``CourseTab`` that contains more data than its ``to_json`` method.
 
@@ -74,7 +74,7 @@ class TabIDLocatorSerializer(serializers.Serializer):  # pylint: disable=abstrac
     tab_id = serializers.CharField(required=False, help_text=_("ID of tab to update"))
     tab_locator = UsageKeyField(required=False, help_text=_("Location (Usage Key) of tab to update"))
 
-    def validate(self, attrs: Dict) -> Dict:
+    def validate(self, attrs: Dict) -> Dict:  # noqa: UP006
         """
         Validates that either the ``tab_id`` or ``tab_locator`` are specified, but not both.
 

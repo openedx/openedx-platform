@@ -168,7 +168,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
                 # expire every 10 minutes
                 if age.seconds < 600:
                     return table_of_contents
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except, unused-variable
+        except Exception as err:  # lint-amnesty, pylint: disable=broad-except, unused-variable  # noqa: F841
             pass
 
         # Get the table of contents from S3
@@ -178,7 +178,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to retrieve textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # TOC is XML. Parse it
         try:
@@ -186,7 +186,7 @@ class Textbook:  # lint-amnesty, pylint: disable=missing-class-docstring
         except Exception as err:
             msg = f'Error {err}: Unable to parse XML for textbook table of contents at {toc_url}'
             log.error(msg)
-            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Exception(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return table_of_contents
 
@@ -1136,7 +1136,7 @@ class CourseBlock(
             if not getattr(self, "tabs", []):
                 CourseTabList.initialize_default(self)
         except InvalidTabsException as err:
-            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # lint-amnesty, pylint: disable=line-too-long
+            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # lint-amnesty, pylint: disable=line-too-long  # noqa: B904
 
     def set_grading_policy(self, course_policy):
         """
@@ -1671,7 +1671,7 @@ class CourseSummary:
             return course_metadata_utils.has_course_ended(self.end)
         except TypeError as e:
             log.warning(
-                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(
+                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032
                     course_id=str(self.id), end_date=self.end, err=e
                 )
             )

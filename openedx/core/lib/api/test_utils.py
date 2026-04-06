@@ -49,7 +49,7 @@ class ApiTestCase(TestCase):
         allow_header = resp.get("Allow")
         assert allow_header is not None
         allowed_methods = re.split('[^A-Z]+', allow_header)
-        self.assertCountEqual(allowed_methods, expected_methods)
+        self.assertCountEqual(allowed_methods, expected_methods)  # noqa: PT009
 
     def assertSelfReferential(self, obj):
         """Assert that accessing the "url" entry in the given object returns the same object"""

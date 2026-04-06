@@ -36,4 +36,4 @@ class CourseNotificationsTest(TestCase):
         # Check if the sender_id was removed from the user_ids
         expected_user_ids = [1, 2, 4]  # 3 should be removed
         notification_data = mock_send_notifications.delay.call_args[1]
-        self.assertEqual(notification_data['user_ids'], expected_user_ids)
+        self.assertEqual(notification_data['user_ids'], expected_user_ids)  # noqa: PT009

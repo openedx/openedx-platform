@@ -10,7 +10,7 @@ import logging
 from os.path import abspath, dirname, realpath
 from os.path import join as joinpath
 from tarfile import TarFile, TarInfo
-from typing import List, Union
+from typing import List, Union  # noqa: UP035
 from zipfile import ZipFile, ZipInfo
 
 from django.conf import settings
@@ -64,7 +64,7 @@ def _check_tarinfo(finfo: TarInfo, base: str):
         raise SuspiciousOperation("Dev file")
 
 
-def _checkmembers(members: Union[List[ZipInfo], List[TarInfo]], base: str):
+def _checkmembers(members: Union[List[ZipInfo], List[TarInfo]], base: str):  # noqa: UP006, UP007
     """
     Check that all elements of the archive file are safe.
     """

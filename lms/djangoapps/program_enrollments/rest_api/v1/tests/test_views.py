@@ -444,7 +444,7 @@ class ProgramEnrollmentsWriteMixin(EnrollmentsDataMixin):
             url = self.get_url()
             response = self.request(url, json.dumps(enrollments), content_type='application/json')
         assert 200 == response.status_code
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {'learner-01': 'enrolled'}
         )
@@ -476,7 +476,7 @@ class ProgramEnrollmentsPostTests(ProgramEnrollmentsWriteMixin, APITestCase):
                 'status': s,
                 'curriculum_uuid': str(c)
             }
-            for e, s, c in zip(external_user_keys, statuses, curriculum_uuids)
+            for e, s, c in zip(external_user_keys, statuses, curriculum_uuids)  # noqa: B905
         ]
 
         url = self.get_url(program_uuid=0)
@@ -856,7 +856,7 @@ class ProgramCourseEnrollmentsMixin(EnrollmentsDataMixin):
         ):
             response = self.request(self.default_url, request_data)
             assert 200 == response.status_code
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 mock_write_response,
                 response.data,
             )
@@ -877,7 +877,7 @@ class ProgramCourseEnrollmentsMixin(EnrollmentsDataMixin):
         ):
             response = self.request(self.default_url, request_data)
             assert 207 == response.status_code
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 {'learner-1': CourseStatuses.ACTIVE, 'learner-2': CourseStatuses.NOT_IN_PROGRAM},
                 response.data
             )
@@ -1047,7 +1047,7 @@ class ProgramCourseEnrollmentsPostTests(ProgramCourseEnrollmentsMixin, APITestCa
         ) as mock_write:
             response = self.request(self.default_url, post_data)
             assert 200 == response.status_code
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 mock_write_response,
                 response.data,
             )
@@ -1075,7 +1075,7 @@ class ProgramCourseEnrollmentsPostTests(ProgramCourseEnrollmentsMixin, APITestCa
         ):
             response = self.request(self.default_url, post_data)
             assert 422 == response.status_code
-            self.assertDictEqual({'learner-1': CourseStatuses.CONFLICT}, response.data)
+            self.assertDictEqual({'learner-1': CourseStatuses.CONFLICT}, response.data)  # noqa: PT009
 
 
 class ProgramCourseEnrollmentsModifyMixin(ProgramCourseEnrollmentsMixin):
@@ -1092,7 +1092,7 @@ class ProgramCourseEnrollmentsModifyMixin(ProgramCourseEnrollmentsMixin):
         ) as mock_write:
             response = self.request(self.default_url, request_data)
             assert 200 == response.status_code
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 mock_write_response,
                 response.data,
             )
@@ -1280,7 +1280,7 @@ class MultiprogramEnrollmentsTest(EnrollmentsDataMixin, APITestCase):
         )
         assert response.status_code == 422
         mock_log.error.assert_called_with(
-            'Detected conflicting active ProgramCourseEnrollment. This is happening on'
+            'Detected conflicting active ProgramCourseEnrollment. This is happening on'  # noqa: UP032
             ' The program_uuid [{}] with course_key [{}] for external_user_key [{}]'.format(
                 self.another_program_uuid,
                 self.course_id,
@@ -1288,7 +1288,7 @@ class MultiprogramEnrollmentsTest(EnrollmentsDataMixin, APITestCase):
             )
         )
         expected_results = {self.external_user_key: CourseStatuses.CONFLICT}
-        self.assertDictEqual(expected_results, response.data)
+        self.assertDictEqual(expected_results, response.data)  # noqa: PT009
 
 
 class ProgramCourseGradesGetTests(EnrollmentsDataMixin, APITestCase):
@@ -2267,7 +2267,7 @@ class UserProgramCourseEnrollmentViewGetTests(ProgramCourseEnrollmentOverviewGet
         """
         self.log_in()
         no_enrollments = CourseEnrollment.objects.none()
-        with mock.patch.object(
+        with mock.patch.object(  # noqa: PT008
                 views,
                 'get_enrollments_for_courses_in_program',
                 lambda _user, _program: no_enrollments,
@@ -2308,7 +2308,7 @@ class UserProgramCourseEnrollmentViewGetTests(ProgramCourseEnrollmentOverviewGet
             return [
                 {
                     'course_run_id': enrollment.course.id,
-                    'display_name': 'Fake Display Name for {enrollment.course.id}'.format(
+                    'display_name': 'Fake Display Name for {enrollment.course.id}'.format(  # noqa: UP032
                         enrollment=enrollment,
                     ),
                     'course_run_url': 'http://fake.url.example.com/course-run',
@@ -2323,7 +2323,7 @@ class UserProgramCourseEnrollmentViewGetTests(ProgramCourseEnrollmentOverviewGet
         self.log_in(user=self.student_many_enrollments)
         many_enrollments = CourseEnrollment.objects.filter(user=self.student_many_enrollments)
 
-        with mock.patch.object(
+        with mock.patch.object(  # noqa: PT008
                 views,
                 'get_enrollments_for_courses_in_program',
                 lambda _user, _program: many_enrollments,

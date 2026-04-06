@@ -249,7 +249,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(
+        </course>'''.format(  # noqa: UP032
             due=from_date_string, org=ORG, course=COURSE, url_name=url_name, unicorn_color=unicorn_color
         )
         block = system.process_xml(start_xml)
@@ -273,7 +273,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(
+        </library>'''.format(  # noqa: UP032
             due=from_date_string, org=ORG, course=COURSE, url_name=url_name, unicorn_color=unicorn_color
         )
         block = system.process_xml(start_xml)
@@ -296,7 +296,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(org=ORG, course=COURSE, url_name=url_name)
+        </course>'''.format(org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         compute_inherited_metadata(block)
         self.course_block_no_inheritance_check(block)
@@ -316,7 +316,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(org=ORG, course=COURSE, url_name=url_name)
+        </library>'''.format(org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         compute_inherited_metadata(block)
         # Run the checks on the course node instead.
@@ -359,7 +359,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             <chapter url="hi" url_name="ch" display_name="CH">
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
-        </course>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)
+        </course>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         child = block.get_children()[0]
         # pylint: disable=protected-access
@@ -383,7 +383,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
                     <html url_name="h" display_name="H">Two houses, ...</html>
                 </chapter>
             </course>
-        </library>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)
+        </library>'''.format(due=course_due, org=ORG, course=COURSE, url_name=url_name)  # noqa: UP032
         block = system.process_xml(start_xml)
         # Chapter is two levels down here.
         child = block.get_children()[0].get_children()[0]
@@ -599,7 +599,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         bad_xml = '''<sequential display_name="oops"><video url="hi"></sequential>'''
         system = self.get_system(False)
 
-        self.assertRaises(etree.XMLSyntaxError, system.process_xml, bad_xml)
+        self.assertRaises(etree.XMLSyntaxError, system.process_xml, bad_xml)  # noqa: PT027
 
     def test_word_cloud_import(self):
         modulestore = XMLModuleStore(DATA_DIR, source_dirs=['word_cloud'])

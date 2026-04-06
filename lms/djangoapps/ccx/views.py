@@ -78,7 +78,7 @@ def coach_dashboard(view):
             try:
                 ccx = CustomCourseForEdX.objects.get(pk=ccx_id)
             except CustomCourseForEdX.DoesNotExist:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if ccx:
             course_key = ccx.course_id

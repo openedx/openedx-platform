@@ -35,7 +35,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             display_name="Demo Course (Sample)",
             id=archived_course_key,
             org=archived_course_key.org,
-            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),
+            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),  # noqa: UP017
         )
         self.non_staff_client, _ = self.create_non_staff_authed_user_client()
 
@@ -93,8 +93,8 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             ('results', expected_data),
         ])
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     def test_active_only_query_if_passed(self):
         """Get list of active courses only.
@@ -104,8 +104,8 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         """
         response = self.client.get(self.api_v2_url, {"active_only": "true"})
 
-        self.assertEqual(len(response.data["results"]["courses"]), 1)
-        self.assertEqual(response.data["results"]["courses"], [OrderedDict([
+        self.assertEqual(len(response.data["results"]["courses"]), 1)  # noqa: PT009
+        self.assertEqual(response.data["results"]["courses"], [OrderedDict([  # noqa: PT009
             ("course_key", str(self.course.id)),
             ("display_name", self.course.display_name),
             ("lms_link", f'{settings.LMS_ROOT_URL}/courses/{str(self.course.id)}/jump_to/{self.course.location}'),
@@ -117,7 +117,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             ("url", f'/course/{str(self.course.id)}'),
             ("is_active", True),
         ])])
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_archived_only_query_if_passed(self):
         """Get list of archived courses only.
@@ -127,13 +127,13 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         """
         response = self.client.get(self.api_v2_url, {"archived_only": "true"})
 
-        self.assertEqual(len(response.data["results"]["courses"]), 1)
-        self.assertEqual(response.data["results"]["courses"], [OrderedDict([
+        self.assertEqual(len(response.data["results"]["courses"]), 1)  # noqa: PT009
+        self.assertEqual(response.data["results"]["courses"], [OrderedDict([  # noqa: PT009
             ("course_key", str(self.archived_course.id)),
             ("display_name", self.archived_course.display_name),
             (
                 "lms_link",
-                '{url_root}/courses/{course_id}/jump_to/{location}'.format(
+                '{url_root}/courses/{course_id}/jump_to/{location}'.format(  # noqa: UP032
                     url_root=settings.LMS_ROOT_URL,
                     course_id=str(self.archived_course.id),
                     location=self.archived_course.location
@@ -147,7 +147,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             ("url", f'/course/{str(self.archived_course.id)}'),
             ("is_active", False),
         ])])
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_search_query_if_passed(self):
         """Get list of courses when search filter passed as a query param.
@@ -157,13 +157,13 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         """
         response = self.client.get(self.api_v2_url, {"search": "sample"})
 
-        self.assertEqual(len(response.data["results"]["courses"]), 1)
-        self.assertEqual(response.data["results"]["courses"], [OrderedDict([
+        self.assertEqual(len(response.data["results"]["courses"]), 1)  # noqa: PT009
+        self.assertEqual(response.data["results"]["courses"], [OrderedDict([  # noqa: PT009
             ("course_key", str(self.archived_course.id)),
             ("display_name", self.archived_course.display_name),
             (
                 "lms_link",
-                '{url_root}/courses/{course_id}/jump_to/{location}'.format(
+                '{url_root}/courses/{course_id}/jump_to/{location}'.format(  # noqa: UP032
                     url_root=settings.LMS_ROOT_URL,
                     course_id=str(self.archived_course.id),
                     location=self.archived_course.location
@@ -177,7 +177,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             ("url", f'/course/{str(self.archived_course.id)}'),
             ("is_active", False),
         ])])
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_order_query_if_passed(self):
         """Get list of courses when order filter passed as a query param.
@@ -187,9 +187,9 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         """
         response = self.client.get(self.api_v2_url, {"order": "org"})
 
-        self.assertEqual(len(response.data["results"]["courses"]), 2)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["results"]["courses"][0]["org"], "demo-org")
+        self.assertEqual(len(response.data["results"]["courses"]), 2)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data["results"]["courses"][0]["org"], "demo-org")  # noqa: PT009
 
     def test_page_query_if_passed(self):
         """Get list of courses when page filter passed as a query param.
@@ -199,8 +199,8 @@ class HomePageCoursesViewV2Test(CourseTestCase):
         """
         response = self.client.get(self.api_v2_url, {"page": 1})
 
-        self.assertEqual(response.data["count"], 2)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 2)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true"),
@@ -221,8 +221,8 @@ class HomePageCoursesViewV2Test(CourseTestCase):
 
         response = self.client.get(self.api_v2_url, {query_param: value})
 
-        self.assertEqual(len(response.data['results']['courses']), 0)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']['courses']), 0)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true", 2, 0),
@@ -255,7 +255,7 @@ class HomePageCoursesViewV2Test(CourseTestCase):
             display_name="Course (Demo)",
             id=archived_course_key,
             org=archived_course_key.org,
-            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),
+            end=(datetime.now() - timedelta(days=365)).replace(tzinfo=timezone.utc),  # noqa: UP017
         )
         active_course_key = self.store.make_course_key("foo-org", "foo-number", "foo-run")
         CourseOverviewFactory.create(
@@ -266,12 +266,12 @@ class HomePageCoursesViewV2Test(CourseTestCase):
 
         response = self.client.get(self.api_v2_url, {filter_key: filter_value})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             len([course for course in response.data["results"]["courses"] if course["is_active"]]),
             expected_active_length
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             len([course for course in response.data["results"]["courses"] if not course["is_active"]]),
             expected_archived_length
         )
@@ -295,5 +295,5 @@ class HomePageCoursesViewV2Test(CourseTestCase):
 
         response = self.non_staff_client.get(self.api_v2_url, {query_param: value})
 
-        self.assertEqual(len(response.data["results"]["courses"]), 0)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["results"]["courses"]), 0)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009

@@ -88,7 +88,7 @@ class StudentModule(models.Model):
     id = UnsignedBigIntAutoField(primary_key=True)  # pylint: disable=invalid-name
 
     ## The XBlock/XModule type (e.g. "problem")
-    module_type = models.CharField(max_length=32, db_index=True)
+    module_type = models.CharField(max_length=32, db_index=True)  # noqa: DJ012
 
     # Key used to share state. This is the XBlock usage_id
     module_state_key = UsageKeyField(max_length=255, db_column='module_id')
@@ -105,7 +105,7 @@ class StudentModule(models.Model):
         ]
 
     # Internal state of the object
-    state = models.TextField(null=True, blank=True)
+    state = models.TextField(null=True, blank=True)  # noqa: DJ001, DJ012
 
     # Grade, and are we done?
     grade = models.FloatField(null=True, blank=True, db_index=True)
@@ -137,7 +137,7 @@ class StudentModule(models.Model):
         else:
             return queryset
 
-    def __repr__(self):
+    def __repr__(self):  # noqa: DJ012
         return 'StudentModule<{!r}>'.format(
             {
                 'course_id': self.course_id,
@@ -190,11 +190,11 @@ class BaseStudentModuleHistory(models.Model):
     class Meta:
         abstract = True
 
-    version = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    version = models.CharField(max_length=255, null=True, blank=True, db_index=True)  # noqa: DJ001, DJ012
 
     # This should be populated from the modified field in StudentModule
     created = models.DateTimeField(db_index=True)
-    state = models.TextField(null=True, blank=True)
+    state = models.TextField(null=True, blank=True)  # noqa: DJ001
     grade = models.FloatField(null=True, blank=True)
     max_grade = models.FloatField(null=True, blank=True)
 
@@ -251,7 +251,7 @@ class BaseStudentModuleHistory(models.Model):
                     history_entry = history_model_cls.objects.get(id=smh_id)
                 except history_model_cls.DoesNotExist:
                     log.error(
-                        "Cached {} instance does not exist: {}({}) for StudentModule({})".format(
+                        "Cached {} instance does not exist: {}({}) for StudentModule({})".format(  # noqa: UP032
                             history_model_cls.__name__, history_model_cls.__name__, smh_id, student_module.id
                         )
                     )
@@ -284,7 +284,7 @@ class StudentModuleHistory(BaseStudentModuleHistory):
         app_label = "courseware"
         get_latest_by = "created"
 
-    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)
+    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)  # noqa: DJ012
 
     def __repr__(self):
         student_dict = {
@@ -331,7 +331,7 @@ class XBlockFieldBase(models.Model):
         abstract = True
 
     # The name of the field
-    field_name = models.CharField(max_length=64, db_index=True)
+    field_name = models.CharField(max_length=64, db_index=True)  # noqa: DJ012
 
     # The value of the field. Defaults to None dumped as json
     value = models.TextField(default='null')
@@ -372,7 +372,7 @@ class XModuleStudentPrefsField(XBlockFieldBase):  # lint-amnesty, pylint: disabl
     # The type of the block for these preferences
     module_type = BlockTypeKeyField(max_length=64, db_index=True)
 
-    student = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)  # noqa: DJ012
 
 
 class XModuleStudentInfoField(XBlockFieldBase):  # lint-amnesty, pylint: disable=model-no-explicit-unicode
@@ -384,7 +384,7 @@ class XModuleStudentInfoField(XBlockFieldBase):  # lint-amnesty, pylint: disable
         app_label = "courseware"
         unique_together = (('student', 'field_name'),)
 
-    student = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)  # noqa: DJ012
 
 
 class OfflineComputedGrade(models.Model):
@@ -399,7 +399,7 @@ class OfflineComputedGrade(models.Model):
     created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
     updated = models.DateTimeField(auto_now=True, db_index=True)
 
-    gradeset = models.TextField(null=True, blank=True)  # grades, stored as JSON
+    gradeset = models.TextField(null=True, blank=True)  # grades, stored as JSON  # noqa: DJ001
 
     class Meta:
         app_label = "courseware"
@@ -423,7 +423,7 @@ class OfflineComputedGradeLog(models.Model):
         get_latest_by = "created"
 
     course_id = CourseKeyField(max_length=255, db_index=True)
-    created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True, null=True, db_index=True)  # noqa: DJ012
     seconds = models.IntegerField(default=0)  # seconds elapsed for computation
     nstudents = models.IntegerField(default=0)
 
@@ -536,7 +536,7 @@ class OrgDynamicUpgradeDeadlineConfiguration(OptOutDynamicUpgradeDeadlineMixin, 
     )
 
 
-class LastSeenCoursewareTimezone(models.Model):
+class LastSeenCoursewareTimezone(models.Model):  # noqa: DJ008
     """
     The timezone in the user's account is frequently not set.
     This model stores a user's recent timezone that can be used as a fallback

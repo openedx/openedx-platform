@@ -38,7 +38,7 @@ def ensure_valid_course_key(view_func):
             try:
                 CourseKey.from_string(course_key)
             except InvalidKeyError:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         response = view_func(request, *args, **kwargs)
         return response
@@ -58,7 +58,7 @@ def ensure_valid_usage_key(view_func):
             try:
                 UsageKey.from_string(usage_key)
             except InvalidKeyError:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         response = view_func(request, *args, **kwargs)
         return response
@@ -74,7 +74,7 @@ def require_global_staff(func):
             return func(request, *args, **kwargs)
         else:
             return HttpResponseForbidden(
-                "Must be {platform_name} staff to perform this action.".format(
+                "Must be {platform_name} staff to perform this action.".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME
                 )
             )

@@ -330,7 +330,7 @@ def _get_error_if_invalid_parameters(requested_filter):
     if invalid_filters:
         error_message = {
             'error_code': 'invalid_asset_type_filter',
-            'developer_message': 'The asset_type parameter to the request is invalid. '
+            'developer_message': 'The asset_type parameter to the request is invalid. '  # noqa: UP032
                                  'The {} filters are not described in the settings.FILES_AND_UPLOAD_TYPE_FILTERS '
                                  'dictionary.'.format(invalid_filters)
         }
@@ -732,7 +732,7 @@ def _check_existence_and_get_asset_content(asset_key):  # lint-amnesty, pylint: 
         content = contentstore().find(asset_key)
         return content
     except NotFoundError:
-        raise AssetNotFoundException  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AssetNotFoundException  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _delete_thumbnail(thumbnail_location, course_key, asset_key):  # lint-amnesty, pylint: disable=missing-function-docstring

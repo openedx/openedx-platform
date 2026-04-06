@@ -56,7 +56,7 @@ from ..tasks import (
 logging = logging.getLogger(__name__)
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 
 def side_effect_exception(*args, **kwargs):
@@ -79,11 +79,11 @@ class ExportCourseTestCase(CourseTestCase):
         key = str(self.course.location.course_key)
         result = export_olx.delay(self.user.id, key, 'en')
         status = UserTaskStatus.objects.get(task_id=result.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         output = artifacts[0]
-        self.assertEqual(output.name, 'Output')
+        self.assertEqual(output.name, 'Output')  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.export_course_to_xml', side_effect=side_effect_exception)
     def test_exception(self, mock_export):  # pylint: disable=unused-argument
@@ -118,12 +118,12 @@ class ExportCourseTestCase(CourseTestCase):
         Verify that a task failed with the specified error message
         """
         status = UserTaskStatus.objects.get(task_id=task_result.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         error = artifacts[0]
-        self.assertEqual(error.name, 'Error')
-        self.assertEqual(error.text, error_message)
+        self.assertEqual(error.name, 'Error')  # noqa: PT009
+        self.assertEqual(error.text, error_message)  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -139,11 +139,11 @@ class ExportLibraryTestCase(LibraryTestCase):
         key = str(self.lib_key)
         result = export_olx.delay(self.user.id, key, 'en')
         status = UserTaskStatus.objects.get(task_id=result.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         output = artifacts[0]
-        self.assertEqual(output.name, 'Output')
+        self.assertEqual(output.name, 'Output')  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -180,18 +180,18 @@ class RerunCourseTaskTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=
 
         # Verify the new course run exists
         course = modulestore().get_course(new_course_key)
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
 
         # Verify the OrganizationCourse is cloned
-        self.assertEqual(OrganizationCourse.objects.count(), 2)
+        self.assertEqual(OrganizationCourse.objects.count(), 2)  # noqa: PT009
         # This will raise an error if the OrganizationCourse object was not cloned
         OrganizationCourse.objects.get(course_id=new_course_id, organization=organization)
 
         # Verify the RestrictedCourse and related objects are cloned
-        self.assertEqual(RestrictedCourse.objects.count(), 2)
+        self.assertEqual(RestrictedCourse.objects.count(), 2)  # noqa: PT009
         restricted_course = RestrictedCourse.objects.get(course_key=new_course_key)
 
-        self.assertEqual(CountryAccessRule.objects.count(), 2)
+        self.assertEqual(CountryAccessRule.objects.count(), 2)  # noqa: PT009
         CountryAccessRule.objects.get(
             rule_type=CountryAccessRule.BLACKLIST_RULE,
             restricted_course=restricted_course,
@@ -215,7 +215,7 @@ class RerunCourseTaskTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=
         self._rerun_course(old_course_key, new_course_key)
 
         # Verify the OrganizationCourse is cloned with a different org
-        self.assertEqual(OrganizationCourse.objects.count(), 2)
+        self.assertEqual(OrganizationCourse.objects.count(), 2)  # noqa: PT009
         OrganizationCourse.objects.get(course_id=new_course_id, organization__short_name='neworg')
 
 
@@ -224,7 +224,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
 
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
-    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
         """ edx-proctoring interface is called if exam service is not enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_called_once_with(self.course.id)
@@ -233,7 +233,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
     @override_waffle_flag(EXAMS_IDA, active=True)
-    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
         """ exams service interface is called if exam service is enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_not_called()
@@ -241,7 +241,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
 
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
-    def test_register_exams_failure(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_register_exams_failure(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
         """ credit requirements update signal fires even if exam registration fails """
         with mock.patch('openedx.core.djangoapps.credit.signals.handlers.on_course_publish') as course_publish:
             _mock_register_exams_proctoring.side_effect = Exception('boom!')
@@ -363,22 +363,22 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             f'Processed URL list lines = {processed_lines}; expected {original_lines - 2}'
 
     def test_http_url_not_recognized_as_studio_url_scheme(self):
-        self.assertFalse(_is_studio_url('http://www.google.com'))
+        self.assertFalse(_is_studio_url('http://www.google.com'))  # noqa: PT009
 
     def test_https_url_not_recognized_as_studio_url_scheme(self):
-        self.assertFalse(_is_studio_url('https://www.google.com'))
+        self.assertFalse(_is_studio_url('https://www.google.com'))  # noqa: PT009
 
     def test_http_with_studio_base_url_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url(f'http://{settings.CMS_BASE}/testurl'))
+        self.assertTrue(_is_studio_url(f'http://{settings.CMS_BASE}/testurl'))  # noqa: PT009
 
     def test_https_with_studio_base_url_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url(f'https://{settings.CMS_BASE}/testurl'))
+        self.assertTrue(_is_studio_url(f'https://{settings.CMS_BASE}/testurl'))  # noqa: PT009
 
     def test_container_url_without_url_base_is_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url('container/test'))
+        self.assertTrue(_is_studio_url('container/test'))  # noqa: PT009
 
     def test_slash_url_without_url_base_is_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url('/static/test'))
+        self.assertTrue(_is_studio_url('/static/test'))  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.ModuleStoreEnum', autospec=True)
     @mock.patch('cms.djangoapps.contentstore.tasks.modulestore', autospec=True)
@@ -407,7 +407,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
         expected_blocks = self.store.get_items(self.test_course.id)
 
         _scan_course_for_links(self.test_course.id)
-        self.assertEqual(len(expected_blocks), mockextract_content_URLs_from_course.call_count)
+        self.assertEqual(len(expected_blocks), mockextract_content_URLs_from_course.call_count)  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.get_block_info', autospec=True)
     @mock.patch('cms.djangoapps.contentstore.tasks.modulestore', autospec=True)
@@ -443,11 +443,11 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
 
         urls = _scan_course_for_links(self.test_course.id)
         # The drag-and-drop block should not appear in the results
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             any(block_id == str(drag_and_drop_block.usage_key) for block_id, _ in urls),
             "Drag and Drop blocks should be excluded"
         )
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any(block_id == str(text_block.usage_key) for block_id, _ in urls),
             "Text block should be included"
         )
@@ -545,8 +545,8 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
 
         filtered_results, retry_list = _filter_by_status(results)
 
-        self.assertEqual(filtered_results, expected_filtered_results)
-        self.assertEqual(retry_list, expected_retry_list)
+        self.assertEqual(filtered_results, expected_filtered_results)  # noqa: PT009
+        self.assertEqual(retry_list, expected_retry_list)  # noqa: PT009
 
     @patch("cms.djangoapps.contentstore.tasks._validate_user", return_value=MagicMock())
     @patch("cms.djangoapps.contentstore.tasks._scan_course_for_links", return_value=["url1", "url2"])
@@ -615,7 +615,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             logging.exception("Error checking links for course %s", course_key_string, exc_info=True)
             if mock_self.status.state != "FAILED":
                 mock_self.status.fail({"raw_error_msg": str(e)})
-            assert False, "Exception should not occur"
+            assert False, "Exception should not occur"  # noqa: B011, PT015
 
         # Assertions to confirm patched calls were invoked
         mock_validate_user.assert_called_once_with(mock_self, user_id, language)
@@ -647,7 +647,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
         ]
 
         for url, expected in test_cases:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 _convert_to_standard_url(url, course_key),
                 expected,
                 f"Failed for URL: {url}",
@@ -676,7 +676,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             "https://validsite.com",
             "https://another-valid.com"
         ]
-        self.assertEqual(extract_content_URLs_from_course(content), set(expected))
+        self.assertEqual(extract_content_URLs_from_course(content), set(expected))  # noqa: PT009
 
 
 @ddt.ddt

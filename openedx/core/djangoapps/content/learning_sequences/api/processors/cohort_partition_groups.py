@@ -24,8 +24,8 @@ class CohortPartitionGroupsOutlineProcessor(OutlineProcessor):
     """
     def __init__(self, course_key: CourseKey, user: types.User, at_time: datetime):
         super().__init__(course_key, user, at_time)
-        self.user_cohort_group_id: Union[int, None] = None
-        self.cohorted_partition_id: Union[int, None] = None
+        self.user_cohort_group_id: Union[int, None] = None  # noqa: UP007
+        self.cohorted_partition_id: Union[int, None] = None  # noqa: UP007
 
     def load_data(self, full_course_outline) -> None:
         """

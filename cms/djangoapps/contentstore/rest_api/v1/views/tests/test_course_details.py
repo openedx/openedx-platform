@@ -37,8 +37,8 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
         self.client.logout()
         response = self.client.put(self.url)
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "Authentication credentials were not provided.")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(error, "Authentication credentials were not provided.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_put_permissions_unauthorized(self):
         """
@@ -53,8 +53,8 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
             content_type="application/json",
         )
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "You do not have permission to perform this action.")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(error, "You do not have permission to perform this action.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_PREREQUISITE_COURSES": True})
     def test_put_invalid_pre_requisite_course(self):
@@ -65,8 +65,8 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
             data=json.dumps(request_data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["error"], "Invalid prerequisite course key")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertEqual(response.json()["error"], "Invalid prerequisite course key")  # noqa: PT009
 
     def test_put_course_details(self):
         request_data = {
@@ -120,7 +120,7 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
             data=json.dumps(request_data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 
 @ddt.ddt
@@ -189,7 +189,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         client = APIClient()  # no auth
         response = client.put(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_put_permissions_unauthorized(self):
         """
@@ -201,7 +201,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_get_course_details_authorized(self):
         """
@@ -214,28 +214,28 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         )
 
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_get_course_details_unauthorized(self):
         """
         Unauthorized user should receive 403.
         """
         response = self.unauthorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_get_course_details_staff_user(self):
         """
         Django staff user should bypass AuthZ and access course details.
         """
         response = self.staff_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_get_course_details_super_user(self):
         """
         Superuser should bypass AuthZ and access course details.
         """
         response = self.super_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @ddt.data(
         # No changes
@@ -269,7 +269,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
     @ddt.unpack
     def test_classify_update(self, payload, expected):
         result = _classify_update(payload, self.course.id)
-        self.assertEqual(result, expected)
+        self.assertEqual(result, expected)  # noqa: PT009
 
     def test_classyfy_update_with_get_request(self):
         """
@@ -283,7 +283,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             self.course.id
         )
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -292,7 +292,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
 
         expected = (False, False)
         result = _classify_update(current_course_details, self.course.id)
-        self.assertEqual(result, expected)
+        self.assertEqual(result, expected)  # noqa: PT009
 
     def test_course_editor_can_edit_course_details(self):
         """
@@ -309,7 +309,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -327,7 +327,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_course_staff_can_edit_course_schedule(self):
         """
@@ -343,7 +343,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -361,7 +361,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_course_editor_cannot_edit_course_schedule(self):
         """
@@ -377,7 +377,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -395,7 +395,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_course_staff_can_edit_course_schedule_and_details(self):
         """
@@ -411,7 +411,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -430,7 +430,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_course_editor_cannot_edit_course_schedule_and_details(self):
         """
@@ -446,7 +446,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -465,7 +465,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_unauthorized_user_cannot_edit_with_any_change_on_the_payload(self):
         """
@@ -481,7 +481,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
         # Get the current status of the course details to use
         # as the basis for the update request
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         current_course_details = response.json()
         # This field is flagged as a details update because of a type mismatch:
         # the GET response returns an invalid string, while the stored value has a different type.
@@ -494,7 +494,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             data=json.dumps(current_course_details),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_put_user_without_role_then_added_can_update(self):
         """
@@ -506,7 +506,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             data=json.dumps(self.request_data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
         # Assign role dynamically
         self.add_user_to_role_in_course(
@@ -520,7 +520,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             data=json.dumps(self.request_data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_PREREQUISITE_COURSES": True})
     def test_put_invalid_pre_requisite_course_with_authz(self):
@@ -542,8 +542,8 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()["error"], "Invalid prerequisite course key")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertEqual(response.json()["error"], "Invalid prerequisite course key")  # noqa: PT009
 
     def test_staff_user_can_update_without_authz_role(self):
         """
@@ -555,7 +555,7 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_can_update_without_authz_role(self):
         """
@@ -567,4 +567,4 @@ class CourseDetailsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
             content_type="application/json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009

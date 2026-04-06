@@ -1288,14 +1288,14 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         register_url = f'{protocol}://{self.site_name}/register'
 
         assert text_body.startswith('Dear student,')
-        assert 'To finish your registration, please visit {register_url}'.format(
+        assert 'To finish your registration, please visit {register_url}'.format(  # noqa: UP032
             register_url=register_url,
         ) in text_body
         assert 'Please finish your registration and fill out' in html_body
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 course=self.course.display_name
             ) in body
 
@@ -1304,7 +1304,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
 
             assert 'Once you have registered and activated your account,' in body
 
-            assert '{proto}://{site}{about_path}'.format(
+            assert '{proto}://{site}{about_path}'.format(  # noqa: UP032
                 proto=protocol,
                 site=self.site_name,
                 about_path=self.about_path
@@ -1333,11 +1333,11 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'Please finish your registration and fill' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name
             ) in body
 
-            assert '{proto}://{site}/register'.format(
+            assert '{proto}://{site}/register'.format(  # noqa: UP032
                 proto=protocol,
                 site=self.site_name
             ) in body
@@ -1345,7 +1345,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
             assert ('fill out the registration form making sure to use '
                     'robot-not-an-email-yet@robot.org in the Email field') in body
 
-            assert 'You can then enroll in {display_name}.'.format(
+            assert 'You can then enroll in {display_name}.'.format(  # noqa: UP032
                 display_name=self.course.display_name
             ) in body
 
@@ -1370,13 +1370,13 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
 
         text_body = mail.outbox[0].body
         html_body = mail.outbox[0].alternatives[0][0]
-        register_url = '{proto}://{site}/register'.format(
+        register_url = '{proto}://{site}/register'.format(  # noqa: UP032
             proto=protocol,
             site=self.site_name,
         )
 
         assert text_body.startswith('Dear student,')
-        assert 'To finish your registration, please visit {register_url}'.format(
+        assert 'To finish your registration, please visit {register_url}'.format(  # noqa: UP032
             register_url=register_url,
         ) in text_body
         assert 'Please finish your registration and fill out the registration' in html_body
@@ -1384,7 +1384,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name
             ) in body
 
@@ -1392,7 +1392,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
                     'out the registration form making sure to use robot-not-an-email-yet@robot.org '
                     'in the Email field') in body
 
-            assert ('Once you have registered and activated your account, '
+            assert ('Once you have registered and activated your account, '  # noqa: UP032
                     'you will see {display_name} listed on your dashboard.').format(
                 display_name=self.course.display_name
             ) in body
@@ -1492,7 +1492,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Enrolled Student')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1545,7 +1545,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(
+            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1569,20 +1569,20 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
 
         text_body = mail.outbox[0].body
         html_body = mail.outbox[0].alternatives[0][0]
-        course_url = '{proto}://{site}{about_path}'.format(
+        course_url = '{proto}://{site}{about_path}'.format(  # noqa: UP032
             proto=protocol,
             site=self.site_name,
             about_path=self.about_path,
         )
         assert text_body.startswith('Dear student,')
-        assert 'To access this course visit {course_url} and register for this course.'.format(
+        assert 'To access this course visit {course_url} and register for this course.'.format(  # noqa: UP032
             course_url=course_url,
         ) in text_body
         assert 'To access this course visit it and register:' in html_body
         assert course_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1607,7 +1607,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1632,7 +1632,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
 
         text_body = mail.outbox[0].body
         html_body = mail.outbox[0].alternatives[0][0]
-        course_url = '{proto}://{site}{course_path}'.format(
+        course_url = '{proto}://{site}{course_path}'.format(  # noqa: UP032
             proto=protocol, site=self.site_name, course_path=self.course_path,
         )
 
@@ -1642,7 +1642,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'To access this course click on the button below and login:' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -2038,20 +2038,20 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
         assert f'Visit {self.course.display_name}' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(
+            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
             assert 'by a member of the course staff.' in body
             assert 'enroll in this course and begin the beta test' in body
 
-            assert '{proto}://{site}{about_path}'.format(
+            assert '{proto}://{site}{about_path}'.format(  # noqa: UP032
                 proto=protocol,
                 site=self.site_name,
                 about_path=self.about_path,
             ) in body
 
-            assert 'This email was automatically sent from edx.org to {student_email}'.format(
+            assert 'This email was automatically sent from edx.org to {student_email}'.format(  # noqa: UP032
                 student_email=self.notenrolled_student.email,
             ) in body
 
@@ -2090,20 +2090,20 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
         assert text_body.startswith(f'Dear {student_name}')
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(
+            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
             assert 'by a member of the course staff' in body
 
             assert 'To start accessing course materials, please visit' in body
-            assert '{proto}://{site}{course_path}'.format(
+            assert '{proto}://{site}{course_path}'.format(  # noqa: UP032
                 proto=protocol,
                 site=self.site_name,
                 course_path=self.course_path
             )
 
-            assert 'This email was automatically sent from edx.org to {student_email}'.format(
+            assert 'This email was automatically sent from edx.org to {student_email}'.format(  # noqa: UP032
                 student_email=self.notenrolled_student.email,
             ) in body
 
@@ -2121,14 +2121,14 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
         assert text_body.startswith(f'Dear {student_name}')
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(
+            assert 'You have been invited to be a beta tester for {display_name} at edx.org'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
             assert 'by a member of the course staff.' in body
             assert 'Visit edx.org' in body
             assert 'enroll in this course and begin the beta test' in body
-            assert 'This email was automatically sent from edx.org to {student_email}'.format(
+            assert 'This email was automatically sent from edx.org to {student_email}'.format(  # noqa: UP032
                 student_email=self.notenrolled_student.email,
             ) in body
 
@@ -2224,7 +2224,7 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
         assert text_body.startswith(f'Dear {self.beta_tester.profile.name}')
 
         for body in [text_body, html_body]:
-            assert 'You have been removed as a beta tester for {display_name} at edx.org'.format(
+            assert 'You have been removed as a beta tester for {display_name} at edx.org'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -2233,7 +2233,7 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
 
             assert 'Your other courses have not been affected.' in body
 
-            assert 'This email was automatically sent from edx.org to {email_address}'.format(
+            assert 'This email was automatically sent from edx.org to {email_address}'.format(  # noqa: UP032
                 email_address=self.beta_tester.email,
             ) in body
 
@@ -3089,10 +3089,10 @@ class TestInstructorAPILevelsDataDump(SharedModuleStoreTestCase, LoginEnrollment
             # assert that if the integrity signature is enabled, the verification
             # status is not included as a query feature
             args = mock_task_endpoint.call_args.args
-            self.assertEqual(len(args), 3)
+            self.assertEqual(len(args), 3)  # noqa: PT009
             query_features = args[2]
 
-            self.assertNotIn('verification_status', query_features)
+            self.assertNotIn('verification_status', query_features)  # noqa: PT009
 
     def test_get_ora2_responses_success(self):
         url = reverse('export_ora2_data', kwargs={'course_id': str(self.course.id)})
@@ -3173,8 +3173,8 @@ class TestInstructorAPILevelsDataDump(SharedModuleStoreTestCase, LoginEnrollment
         }
 
         for key, value in expected_data.items():
-            self.assertIn(key, res_json)
-            self.assertEqual(res_json[key], value)
+            self.assertIn(key, res_json)  # noqa: PT009
+            self.assertEqual(res_json[key], value)  # noqa: PT009
 
     def test_get_student_progress_url_response_headers(self):
         """
@@ -3196,8 +3196,8 @@ class TestInstructorAPILevelsDataDump(SharedModuleStoreTestCase, LoginEnrollment
         }
 
         for key, value in expected_headers.items():
-            self.assertIn(key, response.headers)
-            self.assertEqual(response.headers[key], value)
+            self.assertIn(key, response.headers)  # noqa: PT009
+            self.assertEqual(response.headers[key], value)  # noqa: PT009
 
     def test_get_student_progress_url_from_uname(self):
         """ Test that progress_url is in the successful response. """
@@ -3213,8 +3213,8 @@ class TestInstructorAPILevelsDataDump(SharedModuleStoreTestCase, LoginEnrollment
         }
 
         for key, value in expected_data.items():
-            self.assertIn(key, res_json)
-            self.assertEqual(res_json[key], value)
+            self.assertIn(key, res_json)  # noqa: PT009
+            self.assertEqual(res_json[key], value)  # noqa: PT009
 
     def test_get_student_progress_url_noparams(self):
         """ Test that the endpoint 404's without the required query params. """
@@ -3317,7 +3317,7 @@ class TestInstructorAPIRegradeTask(SharedModuleStoreTestCase, LoginEnrollmentTes
         assert response.status_code == 400
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_reset_student_attempts_delete(self, _mock_signal):
+    def test_reset_student_attempts_delete(self, _mock_signal):  # noqa: PT019
         """ Test delete single student state. """
         url = reverse('reset_student_attempts', kwargs={'course_id': str(self.course.id)})
         response = self.client.post(url, {
@@ -3974,8 +3974,8 @@ class TestInstructorAPITaskLists(SharedModuleStoreTestCase, LoginEnrollmentTestC
         assert act.called
         expected_tasks = [ftask.to_dict() for ftask in self.tasks]
         actual_tasks = json.loads(response.content.decode('utf-8'))['tasks']
-        for exp_task, act_task in zip(expected_tasks, actual_tasks):
-            self.assertDictEqual(exp_task, act_task)
+        for exp_task, act_task in zip(expected_tasks, actual_tasks):  # noqa: B905
+            self.assertDictEqual(exp_task, act_task)  # noqa: PT009
         assert actual_tasks == expected_tasks
 
     @patch('lms.djangoapps.instructor_task.api.get_instructor_task_history')
@@ -3995,8 +3995,8 @@ class TestInstructorAPITaskLists(SharedModuleStoreTestCase, LoginEnrollmentTestC
         assert act.called
         expected_tasks = [ftask.to_dict() for ftask in self.tasks]
         actual_tasks = json.loads(response.content.decode('utf-8'))['tasks']
-        for exp_task, act_task in zip(expected_tasks, actual_tasks):
-            self.assertDictEqual(exp_task, act_task)
+        for exp_task, act_task in zip(expected_tasks, actual_tasks):  # noqa: B905
+            self.assertDictEqual(exp_task, act_task)  # noqa: PT009
         assert actual_tasks == expected_tasks
 
     @patch('lms.djangoapps.instructor_task.api.get_instructor_task_history')
@@ -4024,8 +4024,8 @@ class TestInstructorAPITaskLists(SharedModuleStoreTestCase, LoginEnrollmentTestC
         assert act.called
         expected_tasks = [ftask.to_dict() for ftask in self.tasks]
         actual_tasks = json.loads(response.content.decode('utf-8'))['tasks']
-        for exp_task, act_task in zip(expected_tasks, actual_tasks):
-            self.assertDictEqual(exp_task, act_task)
+        for exp_task, act_task in zip(expected_tasks, actual_tasks):  # noqa: B905
+            self.assertDictEqual(exp_task, act_task)  # noqa: PT009
         assert actual_tasks == expected_tasks
 
     @patch('lms.djangoapps.instructor_task.api.get_instructor_task_history')
@@ -4055,8 +4055,8 @@ class TestInstructorAPITaskLists(SharedModuleStoreTestCase, LoginEnrollmentTestC
         assert act.called
         expected_tasks = [ftask.to_dict() for ftask in self.tasks]
         actual_tasks = json.loads(response.content.decode('utf-8'))['tasks']
-        for exp_task, act_task in zip(expected_tasks, actual_tasks):
-            self.assertDictEqual(exp_task, act_task)
+        for exp_task, act_task in zip(expected_tasks, actual_tasks):  # noqa: B905
+            self.assertDictEqual(exp_task, act_task)  # noqa: PT009
 
         assert actual_tasks == expected_tasks
 
@@ -4129,8 +4129,8 @@ class TestInstructorEmailContentList(SharedModuleStoreTestCase, LoginEnrollmentT
         actual_email_info = json.loads(response.content.decode('utf-8'))['emails']
 
         assert len(actual_email_info) == num_emails
-        for exp_email, act_email in zip(expected_email_info, actual_email_info):
-            self.assertDictEqual(exp_email, act_email)
+        for exp_email, act_email in zip(expected_email_info, actual_email_info):  # noqa: B905
+            self.assertDictEqual(exp_email, act_email)  # noqa: PT009
 
         assert expected_email_info == actual_email_info
 
@@ -4208,7 +4208,7 @@ class TestInstructorEmailContentList(SharedModuleStoreTestCase, LoginEnrollmentT
         assert len(returned_info_list) == 1
         returned_info = returned_info_list[0]
         expected_info = email_info.to_dict()
-        self.assertDictEqual(expected_info, returned_info)
+        self.assertDictEqual(expected_info, returned_info)  # noqa: PT009
 
 
 class TestInstructorAPIHelpers(TestCase):
@@ -4222,7 +4222,7 @@ class TestInstructorAPIHelpers(TestCase):
         lists.append(['Lorem@ipsum.dolor', 'sit@amet.consectetur', 'adipiscing@elit.Aenean', 'convallis@at.lacus',
                       'ut@lacinia.Sed'])
 
-        for (stng, lst) in zip(strings, lists):
+        for (stng, lst) in zip(strings, lists):  # noqa: B905
             assert _split_input_list(stng) == lst
 
     def test_split_input_list_unicode(self):
@@ -4240,7 +4240,7 @@ class TestInstructorAPIHelpers(TestCase):
 
     def test_msk_from_problem_urlname_error(self):
         args = ('notagoodcourse', 'L2Node1')
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             msk_from_problem_urlname(*args)
 
 
@@ -4486,7 +4486,7 @@ class TestDueDateExtensions(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
                           'Full Name': self.user1.profile.name,
                           'Username': self.user1.username}],
                 'header': ['Username', 'Full Name', 'Extended Due Date'],
-                'title': ('Users with due date extensions for %s' % self.week1.display_name)}
+                'title': ('Users with due date extensions for %s' % self.week1.display_name)}  # noqa: UP031
 
     def test_show_student_extensions(self):
         self.test_change_due_date()
@@ -4615,7 +4615,7 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         """Test error handling for invalid block location"""
         url = reverse('instructor_api_v2:change_due_date', kwargs={'course_id': str(self.course.id)})
         # Invalid block location should cause an exception (500 error)
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017, PT027
             self.client.post(url, json.dumps({
                 'email_or_username': self.user1.username,
                 'block_id': 'i4x://invalid/block/location',
@@ -4632,7 +4632,7 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             'due_datetime': 'invalid-date-format'
         })
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_change_due_date_v2_missing_fields(self):
         """Test error handling for missing required fields"""
@@ -4643,7 +4643,7 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             # Missing 'block_id' and 'due_datetime'
         })
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_change_due_date_v2_unenrolled_user(self):
         """Test error handling for user not enrolled in course"""
@@ -4656,7 +4656,7 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             'due_datetime': '12/30/2013 00:00'
         })
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_change_due_date_v2_json_content_type(self):
         """Test that V2 API works with both JSON and form data"""
@@ -4669,9 +4669,9 @@ class TestChangeDueDateV2(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         })
 
         # The V2 endpoint works with form data and should succeed
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
-        self.assertIn('Successfully changed due date for learner', response_data['message'])
+        self.assertIn('Successfully changed due date for learner', response_data['message'])  # noqa: PT009
 
 
 class TestDueDateExtensionsDeletedDate(ModuleStoreTestCase, LoginEnrollmentTestCase):
@@ -5072,7 +5072,7 @@ class TestInstructorCertificateExceptions(SharedModuleStoreTestCase):
         """
         Test that we receive an expected error when no learner's username or email is entered
         """
-        with pytest.raises(ValueError) as error:
+        with pytest.raises(ValueError) as error:  # noqa: PT011
             _get_student_from_request_data({"user": ""})
 
         assert str(error.value) == (
@@ -5085,7 +5085,7 @@ class TestInstructorCertificateExceptions(SharedModuleStoreTestCase):
         Test to verify an expected error message is returned when attempting to retrieve a learner that does not exist
         in the LMS.
         """
-        with pytest.raises(ValueError) as error:
+        with pytest.raises(ValueError) as error:  # noqa: PT011
             _get_student_from_request_data({"user": "Neo"})
 
         assert str(error.value) == "Neo does not exist in the LMS. Please check your spelling and retry."
@@ -5109,7 +5109,7 @@ class TestInstructorCertificateExceptions(SharedModuleStoreTestCase):
         Test to verify an expected error message is returned when attempting to retrieve a certificate for a learner
         that does not exist yet.
         """
-        with pytest.raises(ValueError) as error:
+        with pytest.raises(ValueError) as error:  # noqa: PT011
             _get_certificate_for_user(self.course.id, self.user)
 
         assert str(error.value) == (

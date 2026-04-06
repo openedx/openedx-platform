@@ -24,7 +24,7 @@ from edx_django_utils import monitoring
 from edx_django_utils.cache import RequestCache
 
 # Import this just to export it
-from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import
+from pymongo.errors import DuplicateKeyError  # pylint: disable=unused-import  # noqa: F401
 
 from common.djangoapps.split_modulestore_django.models import SplitModulestoreCourseIndex
 from openedx.core.lib.cache_utils import request_cached
@@ -94,7 +94,7 @@ class Tagger:
         and also all of the added measurements, bucketed into powers of 2).
         """
         return [
-            '{}:{}'.format(name, round_power_2(size))
+            '{}:{}'.format(name, round_power_2(size))  # noqa: UP032
             for name, size in self.measures
         ] + [
             f'{name}:{value}'
@@ -133,11 +133,11 @@ class QueryTimer:
         tagger = Tagger(self._sample_rate)
         metric_name = f"{self._metric_base}.{metric_name}"
 
-        start = time()  # lint-amnesty, pylint: disable=unused-variable
+        start = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         try:
             yield tagger
         finally:
-            end = time()  # lint-amnesty, pylint: disable=unused-variable
+            end = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             tags = tagger.tags
             tags.append(f'course:{course_context}')
 
@@ -317,7 +317,7 @@ class MongoPersistenceBackend:
             self.database.client.admin.command('ismaster')
             return True
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def check_connection(self):
         """
@@ -419,7 +419,7 @@ class MongoPersistenceBackend:
         with TIMER.timer("get_course_index", key):
             if ignore_case:
                 query = {
-                    key_attr: re.compile('^{}$'.format(re.escape(getattr(key, key_attr))), re.IGNORECASE)
+                    key_attr: re.compile('^{}$'.format(re.escape(getattr(key, key_attr))), re.IGNORECASE)  # noqa: UP032
                     for key_attr in ('org', 'course', 'run')
                 }
             else:

@@ -232,7 +232,7 @@ def check_verify_status_by_course(user, course_enrollments):
                 }
 
     if recent_verification_datetime:
-        for key, value in status_by_course.items():  # pylint: disable=unused-variable
+        for key, value in status_by_course.items():  # pylint: disable=unused-variable  # noqa: B007
             status_by_course[key]['verification_good_until'] = recent_verification_datetime.strftime("%m/%d/%Y")
 
     return status_by_course
@@ -715,13 +715,13 @@ def do_create_account(form, custom_form=None):
         # return "It looks like {username} belongs to an existing account. Try again with a
         # different username.")
         if username_exists_or_retired(user.username):  # lint-amnesty, pylint: disable=no-else-raise
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 USERNAME_EXISTS_MSG_FMT.format(username=proposed_username),
                 field="username",
                 error_code='duplicate-username',
             )
         elif email_exists_or_retired(user.email):
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 _("An account with the Email '{email}' already exists.").format(email=user.email),
                 field="email",
                 error_code='duplicate-email'

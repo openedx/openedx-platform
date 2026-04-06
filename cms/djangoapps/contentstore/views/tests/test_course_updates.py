@@ -71,7 +71,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         course_update_url = self.create_update_url()
         resp = self.client.get_json(course_update_url)
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(len(payload), 2)
+        self.assertEqual(len(payload), 2)  # noqa: PT009
 
         # try json w/o required fields
         self.assertContains(
@@ -123,7 +123,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         url = self.create_update_url(provided_id=this_id)
         resp = self.client.delete(url)
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(len(payload), before_delete - 1)
+        self.assertEqual(len(payload), before_delete - 1)  # noqa: PT009
 
     def test_course_updates_compatibility(self):
         '''
@@ -148,22 +148,22 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         course_update_url = self.create_update_url()
         resp = self.client.get_json(course_update_url)
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(payload, [{'date': update_date, 'content': update_content, 'id': 1}])
-        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
+        self.assertEqual(len(payload), 1)  # noqa: PT009
 
         # test getting single update item
 
         first_update_url = self.create_update_url(provided_id=payload[0]['id'])
         resp = self.client.get_json(first_update_url)
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(payload, {'date': 'January 23, 2014', 'content': 'Hello world!', 'id': 1})
+        self.assertEqual(payload, {'date': 'January 23, 2014', 'content': 'Hello world!', 'id': 1})  # noqa: PT009
         self.assertHTMLEqual(update_date, payload['date'])
         self.assertHTMLEqual(update_content, payload['content'])
 
         # test that while updating it converts old data (with string format in 'data' field)
         # to new data (with list format in 'items' field) and respectively updates 'data' field.
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [])
+        self.assertEqual(course_updates.items, [])  # noqa: PT009
         # now try to update first update item
         update_content = 'Testing'
         payload = {'content': update_content, 'date': update_date}
@@ -172,26 +172,26 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         )
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
         # course_updates 'data' field should not update automatically
-        self.assertEqual(course_updates.data, '')
+        self.assertEqual(course_updates.data, '')  # noqa: PT009
 
         # test delete course update item (soft delete)
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
         # now try to delete first update item
         resp = self.client.delete(course_update_url + '1')
-        self.assertEqual(json.loads(resp.content.decode('utf-8')), [])
+        self.assertEqual(json.loads(resp.content.decode('utf-8')), [])  # noqa: PT009
         # confirm that course update is soft deleted ('status' flag set to 'deleted') in db
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items,
+        self.assertEqual(course_updates.items,  # noqa: PT009
                          [{'date': update_date, 'content': update_content, 'id': 1, 'status': 'deleted'}])
 
         # now try to get deleted update
         resp = self.client.get_json(course_update_url + '1')
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(payload.get('error'), "Course update not found.")
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(payload.get('error'), "Course update not found.")  # noqa: PT009
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
         # now check that course update don't munges html
         update_content = """&lt;problem>
@@ -234,7 +234,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         # now confirm that the bad news and the iframe make up single update
         resp = self.client.get_json(course_update_url)
         payload = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(len(payload), 1)
+        self.assertEqual(len(payload), 1)  # noqa: PT009
 
     def post_course_update(self):
         """
@@ -250,7 +250,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         resp = self.client.ajax_post(course_update_url, payload)
 
         # check that response status is 200 not 400
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         payload = json.loads(resp.content.decode('utf-8'))
         self.assertHTMLEqual(payload['content'], content)
@@ -262,8 +262,8 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         self.post_course_update()
 
         updates_location = self.course.id.make_usage_key('course_info', 'updates')
-        self.assertTrue(isinstance(updates_location, UsageKey))
-        self.assertEqual(updates_location.block_id, 'updates')
+        self.assertTrue(isinstance(updates_location, UsageKey))  # noqa: PT009
+        self.assertEqual(updates_location.block_id, 'updates')  # noqa: PT009
 
         # check posting on handouts
         handouts_location = self.course.id.make_usage_key('course_info', 'handouts')
@@ -274,7 +274,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         resp = self.client.ajax_post(course_handouts_url, payload)
 
         # check that response status is 200 not 500
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         payload = json.loads(resp.content.decode('utf-8'))
         self.assertHTMLEqual(payload['data'], content)
@@ -288,8 +288,8 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         self.post_course_update()
 
         updates_location = self.course.id.make_usage_key('course_info', 'updates')
-        self.assertTrue(isinstance(updates_location, UsageKey))
-        self.assertEqual(updates_location.block_id, 'updates')
+        self.assertTrue(isinstance(updates_location, UsageKey))  # noqa: PT009
+        self.assertEqual(updates_location.block_id, 'updates')  # noqa: PT009
 
         course_updates = modulestore().get_item(updates_location)
         course_update_items = list(reversed(get_course_update_items(course_updates)))
@@ -316,7 +316,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(updates_location)
         del course_updates.items[0]["status"]
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])  # noqa: PT009
 
 
 class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
@@ -358,11 +358,11 @@ class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
 
     def test_authorized_user_can_get(self):
         resp = self.staff_client.get_json(self.create_update_url())
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_authorized_user_can_post(self):
         resp = self._create_update(self.staff_client)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_authorized_user_can_put(self):
         update_id = self._create_update(self.staff_client).json()['id']
@@ -372,22 +372,22 @@ class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
             HTTP_X_HTTP_METHOD_OVERRIDE="PUT",
             REQUEST_METHOD="POST",
         )
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_authorized_user_can_delete(self):
         update_id = self._create_update(self.staff_client).json()['id']
         resp = self.staff_client.delete(self.create_update_url(update_id))
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     # -- View-only user (course_auditor): GET only --
 
     def test_auditor_can_get(self):
         resp = self.auditor_client.get_json(self.create_update_url())
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_auditor_cannot_post(self):
         resp = self._create_update(self.auditor_client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_auditor_cannot_put(self):
         update_id = self._create_update(self.staff_client).json()['id']
@@ -397,22 +397,22 @@ class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
             HTTP_X_HTTP_METHOD_OVERRIDE="PUT",
             REQUEST_METHOD="POST",
         )
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_auditor_cannot_delete(self):
         update_id = self._create_update(self.staff_client).json()['id']
         resp = self.auditor_client.delete(self.create_update_url(update_id))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     # -- Unauthorized user: no access --
 
     def test_unauthorized_user_cannot_get(self):
         resp = self.unauthorized_client.get_json(self.create_update_url())
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_unauthorized_user_cannot_post(self):
         resp = self._create_update(self.unauthorized_client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     # -- Staff/superuser without authz role: access via enforcer admin check --
 
@@ -420,22 +420,22 @@ class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):
         staff_user = UserFactory(is_staff=True, password=self.password)
         client = self._make_client_for_user(staff_user)
         resp = client.get_json(self.create_update_url())
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_django_staff_without_role_can_post(self):
         staff_user = UserFactory(is_staff=True, password=self.password)
         client = self._make_client_for_user(staff_user)
         resp = self._create_update(client)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_superuser_without_role_can_get(self):
         superuser = UserFactory(is_superuser=True, password=self.password)
         client = self._make_client_for_user(superuser)
         resp = client.get_json(self.create_update_url())
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_superuser_without_role_can_post(self):
         superuser = UserFactory(is_superuser=True, password=self.password)
         client = self._make_client_for_user(superuser)
         resp = self._create_update(client)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009

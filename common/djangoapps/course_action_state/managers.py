@@ -35,7 +35,7 @@ class CourseActionStateManager(models.Manager):
         objects = self.find_all(exclude_args=exclude_args, **kwargs)
         if len(objects) == 0:  # lint-amnesty, pylint: disable=no-else-raise
             raise CourseActionStateItemNotFoundError(
-                "No entry found for action {action} with filter {filter}, excluding {exclude}".format(
+                "No entry found for action {action} with filter {filter}, excluding {exclude}".format(  # noqa: UP032
                     action=self.ACTION,
                     filter=kwargs,
                     exclude=exclude_args,
@@ -74,7 +74,7 @@ class CourseActionUIStateManager(CourseActionStateManager):
                 state_object.created_user = user
             else:
                 raise CourseActionStateItemNotFoundError(
-                    "Cannot update non-existent entry for course_key {course_key} and action {action}".format(
+                    "Cannot update non-existent entry for course_key {course_key} and action {action}".format(  # noqa: UP032
                         action=self.ACTION,
                         course_key=course_key,
                     ))

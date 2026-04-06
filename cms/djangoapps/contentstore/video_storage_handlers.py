@@ -232,7 +232,7 @@ def send_zip(zip_file, size=None):
     """
     wrapper = FileWrapper(zip_file, settings.COURSE_EXPORT_DOWNLOAD_CHUNK_SIZE)
     response = StreamingHttpResponse(wrapper, content_type='application/zip')
-    response['Content-Dispositon'] = 'attachment; filename=%s' % os.path.basename(zip_file.name)
+    response['Content-Dispositon'] = 'attachment; filename=%s' % os.path.basename(zip_file.name)  # noqa: UP031
     response['Content-Length'] = size
     return response
 
@@ -811,7 +811,7 @@ def videos_post(course, request):
         try:
             file_name.encode('ascii')
         except UnicodeEncodeError:
-            error_msg = 'The file name for %s must contain only ASCII characters.' % file_name
+            error_msg = 'The file name for %s must contain only ASCII characters.' % file_name  # noqa: UP031
             return {'error': error_msg}, 400
 
         edx_video_id = str(uuid4())
@@ -961,8 +961,8 @@ def get_course_youtube_edx_video_ids(course_id):
     """
     Get a list of youtube edx_video_ids
     """
-    invalid_key_error_msg = "Invalid course_key: '%s'." % course_id
-    unexpected_error_msg = "Unexpected error occurred for course_id: '%s'." % course_id
+    invalid_key_error_msg = "Invalid course_key: '%s'." % course_id  # noqa: UP031
+    unexpected_error_msg = "Unexpected error occurred for course_id: '%s'." % course_id  # noqa: UP031
 
     try:  # lint-amnesty, pylint: disable=too-many-nested-blocks
         course_key = CourseKey.from_string(course_id)

@@ -1,6 +1,6 @@
 """ Utility functions related to django storages """
 import logging
-from typing import List, Optional
+from typing import List, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.core.files.storage import storages
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 def resolve_storage_backend(
         storage_key: str,
         legacy_setting_key: str,
-        legacy_sec_setting_keys: List[str] = None,
-        options: Optional[dict] = None):
+        legacy_sec_setting_keys: List[str] = None,  # noqa: UP006
+        options: Optional[dict] = None):  # noqa: UP045
     """
     Configures and returns a Django `Storage` instance, compatible with both Django 4 and Django 5.
     Params:

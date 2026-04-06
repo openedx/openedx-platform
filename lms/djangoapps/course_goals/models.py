@@ -40,7 +40,7 @@ class CourseGoal(models.Model):
         app_label = 'course_goals'
         unique_together = ('user', 'course_key')
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # noqa: DJ012
     course_key = CourseKeyField(max_length=255, db_index=True)
     # The goal a user has set for the number of days they want to learn per week
     days_per_week = models.PositiveIntegerField(default=0)
@@ -61,7 +61,7 @@ class CourseGoal(models.Model):
     history = HistoricalRecords()
 
     def __str__(self):
-        return 'CourseGoal: {user} set goal to {goal} days per week for course {course}'.format(
+        return 'CourseGoal: {user} set goal to {goal} days per week for course {course}'.format(  # noqa: UP032
             user=self.user.username,
             goal=self.days_per_week,
             course=self.course_key,
@@ -91,7 +91,7 @@ class CourseGoalReminderStatus(TimeStampedModel):
     )
 
 
-class UserActivity(models.Model):
+class UserActivity(models.Model):  # noqa: DJ008
     """
     Tracks the date a user performs an activity in a course for goal purposes.
     To be used in conjunction with the CourseGoal model to establish if a learner is hitting
@@ -107,7 +107,7 @@ class UserActivity(models.Model):
         indexes = [models.Index(fields=['user', 'course_key'], name='user_course_index')]
         verbose_name_plural = 'User activities'
 
-    id = models.BigAutoField(primary_key=True)
+    id = models.BigAutoField(primary_key=True)  # noqa: DJ012
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     course_key = CourseKeyField(max_length=255)
     date = models.DateField()
@@ -144,7 +144,7 @@ class UserActivity(models.Model):
         now = datetime.now(timezone)
         date = now.date()
 
-        cache_key = 'goals_user_activity_{}_{}_{}'.format(str(user.id), str(course_key), str(date))
+        cache_key = 'goals_user_activity_{}_{}_{}'.format(str(user.id), str(course_key), str(date))  # noqa: UP032
 
         cached_value = TieredCache.get_cached_response(cache_key)
         if cached_value.is_found:
@@ -162,7 +162,7 @@ class UserActivity(models.Model):
         # Temporary debugging log for testing mobile app connection
         if request:
             log.info(
-                'Set cached value with request {} for user and course combination {} {}'.format(
+                'Set cached value with request {} for user and course combination {} {}'.format(  # noqa: UP032
                     str(request.build_absolute_uri()), str(user.id), str(course_key)
                 )
             )

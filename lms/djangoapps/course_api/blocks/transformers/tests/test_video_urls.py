@@ -138,4 +138,4 @@ class TestVideoBlockURLTransformer(ModuleStoreTestCase):
         pre_transform_data = self.get_pre_transform_data(video_block_key)
         self.collect_and_transform()
         post_transform_data = self.get_post_transform_data(video_block_key)
-        self.assertDictEqual(pre_transform_data, post_transform_data)
+        self.assertDictEqual(pre_transform_data, post_transform_data)  # noqa: PT009

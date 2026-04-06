@@ -241,12 +241,12 @@ class SafeCookieData:
             raw_cookie_components = str(safe_cookie_string).split(cls.SEPARATOR)
             safe_cookie_data = SafeCookieData(*raw_cookie_components)
         except TypeError:
-            raise SafeCookieError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise SafeCookieError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 f"SafeCookieData BWC parse error: {safe_cookie_string!r}."
             )
         if safe_cookie_data.version != cls.CURRENT_VERSION:
             raise SafeCookieError(
-                "SafeCookieData version {!r} is not supported. Current version is {}.".format(
+                "SafeCookieData version {!r} is not supported. Current version is {}.".format(  # noqa: UP032
                     safe_cookie_data.version,
                     cls.CURRENT_VERSION,
                 ))
@@ -281,7 +281,7 @@ class SafeCookieData:
             log.error("SafeCookieData '%r' is not bound to user '%s'.", str(self), user_id)
         except signing.BadSignature as sig_error:
             log.error(
-                "SafeCookieData signature error for cookie data {!r}: {}".format(  # pylint: disable=logging-format-interpolation
+                "SafeCookieData signature error for cookie data {!r}: {}".format(  # pylint: disable=logging-format-interpolation  # noqa: UP032
                     str(self),
                     str(sig_error),
                 )
@@ -311,7 +311,7 @@ class SafeCookieData:
         if not session_id or session_id == str(None):
             # The session ID should always be valid in the cookie.
             raise SafeCookieError(
-                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(
+                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(  # noqa: UP032
                     session_id,
                     user_id,
                 ))
@@ -539,7 +539,7 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
                             )
                             set_custom_attribute('safe_sessions.headers_logged', True)
 
-            except BaseException as e:
+            except BaseException as e:  # noqa: F841
                 log.exception("SafeCookieData error while logging request headers.")
 
             return True
@@ -607,7 +607,7 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
                         f'Safe session request headers: {SafeSessionMiddleware._get_encrypted_request_headers(request)}'
                     )
 
-        except BaseException as e:
+        except BaseException as e:  # noqa: F841
             log.exception("SafeCookieData error while computing additional logs.")
 
         if request_user_object_mismatch and not session_user_mismatch:
@@ -853,7 +853,7 @@ class EmailChangeMiddleware(MiddlewareMixin):
         set_custom_attribute('is_enforce_session_email_match_enabled', settings.ENFORCE_SESSION_EMAIL_MATCH)
 
 
-def obscure_token(value: Union[str, None]) -> Union[str, None]:
+def obscure_token(value: Union[str, None]) -> Union[str, None]:  # noqa: UP007
     """
     Return a short string that can be used to detect other occurrences
     of this string without revealing the original. Return None if value
@@ -947,7 +947,7 @@ def track_request_user_changes(request):
             if name == 'user':
                 stack = inspect.stack()
                 # Written this way in case you need more of the stack for debugging.
-                location = "\n".join("%30s : %s:%d" % (t[3], t[1], t[2]) for t in stack[0:12])
+                location = "\n".join("%30s : %s:%d" % (t[3], t[1], t[2]) for t in stack[0:12])  # noqa: UP031
 
                 if not hasattr(self, 'debug_user_changes'):
                     # list of string debugging info for each user change (e.g. user id, stack trace, etc.)

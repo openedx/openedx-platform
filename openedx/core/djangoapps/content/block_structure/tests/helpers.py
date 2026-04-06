@@ -62,7 +62,7 @@ class MockXBlock:
         try:
             return self.field_map[attr]
         except KeyError:
-            raise AttributeError  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AttributeError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def get_children(self):
         """
@@ -316,7 +316,7 @@ class ChildrenMapTestMixin:
             # Verify presence
             assert (self.block_key_factory(block_key) in block_structure) == (block_key not in missing_blocks),\
                 'Expected presence in block_structure for block_key {} to match absence in missing_blocks.'\
-                .format(str(block_key))
+                .format(str(block_key))  # noqa: UP032
 
             # Verify children
             if block_key not in missing_blocks:

@@ -75,7 +75,7 @@ class CourseAuthorizationAdminForm(forms.ModelForm):
 
     class Meta:
         model = CourseAuthorization
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def clean_course_id(self):
         """

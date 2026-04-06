@@ -128,7 +128,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         try:
             with open(course_data_path / 'policies/assets.json') as f:
                 self.policy = json.load(f)
-        except (OSError, ValueError) as err:  # lint-amnesty, pylint: disable=unused-variable
+        except (OSError, ValueError) as err:  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             # xml backed courses won't have this file, only exported courses;
             # so, its absence is not really an exception.
             self.policy = {}
@@ -141,7 +141,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         remap_dict = {}
 
         static_dir = self.course_data_path / content_subdir
-        for dirname, _, filenames in os.walk(static_dir):
+        for dirname, _, filenames in os.walk(static_dir):  # noqa: F402
             for filename in filenames:
 
                 file_path = os.path.join(dirname, filename)
@@ -400,7 +400,7 @@ class ImportManager:
             if self.raise_on_failure:  # lint-amnesty, pylint: disable=no-else-raise
                 monitor_import_failure(course_id, 'Updating', exception=exc)
                 logging.exception(f'Course import {course_id}: Error while parsing {assets_filename}.')
-                raise ErrorReadingFileException(assets_filename)  # pylint: disable=raise-missing-from
+                raise ErrorReadingFileException(assets_filename)  # pylint: disable=raise-missing-from  # noqa: B904
             else:
                 return
 
@@ -524,7 +524,7 @@ class ImportManager:
                         log.exception(
                             f'Course import {dest_id}: failed to import block location {child.location}'
                         )
-                        raise BlockFailedToImport(child.display_name, child.location)  # pylint: disable=raise-missing-from
+                        raise BlockFailedToImport(child.display_name, child.location)  # pylint: disable=raise-missing-from  # noqa: B904
 
                     depth_first(child)
 
@@ -549,7 +549,7 @@ class ImportManager:
                     f'Course import {dest_id}: failed to import block location {leftover}'
                 )
                 # pylint: disable=raise-missing-from
-                raise BlockFailedToImport(leftover.display_name, leftover.location)
+                raise BlockFailedToImport(leftover.display_name, leftover.location)  # noqa: B904
 
     def post_course_import(self, dest_id):
         """
@@ -666,13 +666,13 @@ class CourseImportManager(ImportManager):
         # If we are importing into a course with a different course_id and wiki_slug is equal to either of these default
         # values then remap it so that the wiki does not point to the old wiki.
         if courselike_key != course.id:
-            original_unique_wiki_slug = '{}.{}.{}'.format(
+            original_unique_wiki_slug = '{}.{}.{}'.format(  # noqa: UP032
                 courselike_key.org,
                 courselike_key.course,
                 courselike_key.run
             )
             if course.wiki_slug in (original_unique_wiki_slug, courselike_key.course):
-                course.wiki_slug = '{}.{}.{}'.format(
+                course.wiki_slug = '{}.{}.{}'.format(  # noqa: UP032
                     course.id.org,
                     course.id.course,
                     course.id.run,
@@ -733,7 +733,7 @@ class CourseImportManager(ImportManager):
         # .. event_implemented_name: COURSE_IMPORT_COMPLETED
         # .. event_type: org.openedx.content_authoring.course.import.completed.v1
         COURSE_IMPORT_COMPLETED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             course=CourseData(
                 course_key=dest_id
             )
@@ -1132,7 +1132,7 @@ def check_block_metadata_editability(block):
     if len(illegal_keys) > 0:
         err_cnt = err_cnt + 1
         print(
-            ": found non-editable metadata on {url}. "
+            ": found non-editable metadata on {url}. "  # noqa: UP032
             "These metadata keys are not supported = {keys}".format(
                 url=str(block.location), keys=illegal_keys
             )
@@ -1216,7 +1216,7 @@ def validate_category_hierarchy(  # lint-amnesty, pylint: disable=missing-functi
             if child_loc.block_type != expected_child_category:
                 err_cnt += 1
                 print(
-                    "ERROR: child {child} of parent {parent} was expected to be "
+                    "ERROR: child {child} of parent {parent} was expected to be "  # noqa: UP032
                     "category of {expected} but was {actual}".format(
                         child=child_loc, parent=parent.location,
                         expected=expected_child_category,
@@ -1362,7 +1362,7 @@ def perform_xlint(  # lint-amnesty, pylint: disable=missing-function-docstring
 
     print("\n")
     print("------------------------------------------")
-    print("VALIDATION SUMMARY: {err} Errors   {warn} Warnings".format(
+    print("VALIDATION SUMMARY: {err} Errors   {warn} Warnings".format(  # noqa: UP032
         err=err_cnt,
         warn=warn_cnt
     ))

@@ -15,4 +15,4 @@ class CCXConfig(AppConfig):
         """
         Connect signal handlers.
         """
-        from . import tasks  # pylint: disable=unused-import
+        from . import tasks  # pylint: disable=unused-import  # noqa: F401

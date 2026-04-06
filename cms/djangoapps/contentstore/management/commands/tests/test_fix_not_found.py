@@ -20,7 +20,7 @@ class TestFixNotFound(ModuleStoreTestCase):
         """
         msg = "Error: the following arguments are required: course_id"
 
-        with self.assertRaisesRegex(CommandError, msg):
+        with self.assertRaisesRegex(CommandError, msg):  # noqa: PT027
             call_command('fix_not_found')
 
     def test_fix_not_found(self):
@@ -38,13 +38,13 @@ class TestFixNotFound(ModuleStoreTestCase):
 
         # the course block should now point to two children, one of which
         # doesn't actually exist
-        self.assertEqual(len(course.children), 2)
-        self.assertIn(dangling_pointer, course.children)
+        self.assertEqual(len(course.children), 2)  # noqa: PT009
+        self.assertIn(dangling_pointer, course.children)  # noqa: PT009
 
         call_command("fix_not_found", str(course.id))
 
         # make sure the dangling pointer was removed from
         # the course block's children
         course = self.store.get_course(course.id)
-        self.assertEqual(len(course.children), 1)
-        self.assertNotIn(dangling_pointer, course.children)
+        self.assertEqual(len(course.children), 1)  # noqa: PT009
+        self.assertNotIn(dangling_pointer, course.children)  # noqa: PT009

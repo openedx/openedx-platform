@@ -31,7 +31,7 @@ class PercentValidatorTestCase(TestCase):
 
     def test_invalid_percent(self):
         for value in [-0.00000000001, 1.0000000001, 47.1, 1000, None, float('inf'), float('nan')]:
-            self.assertRaises(ValidationError, models.validate_percent, value)
+            self.assertRaises(ValidationError, models.validate_percent, value)  # noqa: PT027
 
 
 class CompletionSetUpMixin(CompletionWaffleTestMixin):
@@ -166,7 +166,7 @@ class SubmitBatchCompletionTestCase(CompletionWaffleTestMixin, TestCase):
 
     def test_submit_batch_completion_without_waffle(self):
         with override_waffle_switch(ENABLE_COMPLETION_TRACKING_SWITCH, False):
-            with pytest.raises(RuntimeError):
+            with pytest.raises(RuntimeError):  # noqa: PT012
                 blocks = [(self.block_key, 1.0)]
                 models.BlockCompletion.objects.submit_batch_completion(self.user, blocks)
 
@@ -213,7 +213,7 @@ class BatchCompletionMethodTests(CompletionWaffleTestMixin, TestCase):
     def test_get_learning_context_completions_missing_runs(self):
         actual_completions = models.BlockCompletion.get_learning_context_completions(self.user, self.course_key)
         expected_block_keys = self.block_keys_with_runs[:3]
-        expected_completions = dict(list(zip(expected_block_keys, [1.0, 0.8, 0.6])))
+        expected_completions = dict(list(zip(expected_block_keys, [1.0, 0.8, 0.6])))  # noqa: B905
         assert expected_completions == actual_completions
 
     def test_get_learning_context_completions_empty_result_set(self):

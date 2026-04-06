@@ -56,7 +56,7 @@ def _get_variables_from_context(context, tag_name):
 
     if request is None:
         raise template.VariableDoesNotExist(
-            'The {} template tag requires a "request" to be present in the template context. Consider using '
+            'The {} template tag requires a "request" to be present in the template context. Consider using '  # noqa: UP032
             '"emulate_http_request" if you are rendering the template in a celery task.'.format(tag_name)
         )
 
@@ -102,7 +102,7 @@ def _get_google_analytics_tracking_url(context):
         campaign_source=message.app_label,
         campaign_name=message.name,
         campaign_content=message.uuid,
-        document_path='/email/{}/{}/{}/{}'.format(
+        document_path='/email/{}/{}/{}/{}'.format(  # noqa: UP032
             message.app_label,
             message.name,
             message.send_uuid,

@@ -320,7 +320,7 @@ class OutlineTabView(RetrieveAPIView):
         # so this is a tiny first step in that migration.
         if course_blocks:
             user_course_outline = get_user_course_outline(
-                course_key, request.user, datetime.now(tz=timezone.utc)
+                course_key, request.user, datetime.now(tz=timezone.utc)  # noqa: UP017
             )
             available_seq_ids = {str(usage_key) for usage_key in user_course_outline.sequences}
 
@@ -510,7 +510,7 @@ class CourseNavigationBlocksView(RetrieveAPIView):
         Filter out sections and subsections that are not accessible to the current user.
         """
         if course_blocks:
-            user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))
+            user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))  # noqa: UP017
             course_sections = course_blocks.get('children', [])
             course_blocks['children'] = self.get_accessible_sections(user_course_outline, course_sections)
 
@@ -674,7 +674,7 @@ def dismiss_welcome_message(request):  # pylint: disable=missing-function-docstr
         dismiss_current_update_for_user(request, course)
         return Response({'message': _('Welcome message successfully dismissed.')})
     except Exception:
-        raise UnableToDismissWelcomeMessage  # pylint: disable=raise-missing-from
+        raise UnableToDismissWelcomeMessage  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 # Another version of this endpoint exists in ../course_goals/views.py

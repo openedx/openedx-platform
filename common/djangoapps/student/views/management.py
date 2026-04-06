@@ -19,16 +19,19 @@ from django.contrib.sites.models import Site
 from django.core.validators import ValidationError, validate_email
 from django.db import transaction
 from django.db.models.signals import post_save
-from django.dispatch import Signal, receiver  # lint-amnesty, pylint: disable=unused-import
+from django.dispatch import Signal, receiver  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.template.context_processors import csrf
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie  # lint-amnesty, pylint: disable=unused-import
+from django.views.decorators.csrf import (  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+    csrf_exempt,
+    ensure_csrf_cookie,
+)
 from django.views.decorators.http import (  # lint-amnesty, pylint: disable=unused-import
     require_GET,
-    require_http_methods,
+    require_http_methods,  # noqa: F401
     require_POST,
 )
 from edx_ace import ace
@@ -50,7 +53,7 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import (  # lint-amnesty, pylint: disable=unused-import
     marketing_link,
     render_to_response,
-    render_to_string,
+    render_to_string,  # noqa: F401
 )
 from common.djangoapps.entitlements.models import CourseEntitlement
 from common.djangoapps.student.email_helpers import generate_activation_email_context
@@ -73,14 +76,14 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     PendingEmailChange,  # unimport:skip
     PendingSecondaryEmailChange,
     Registration,
-    RegistrationCookieConfiguration,
+    RegistrationCookieConfiguration,  # noqa: F401
     UnenrollmentNotAllowed,
-    UserAttribute,
+    UserAttribute,  # noqa: F401
     UserProfile,
     UserSignupSource,
     UserStanding,
-    create_comments_service_user,
-    email_exists_or_retired,
+    create_comments_service_user,  # noqa: F401
+    email_exists_or_retired,  # noqa: F401
 )
 from common.djangoapps.student.signals import REFUND_ORDER, USER_EMAIL_CHANGED
 from common.djangoapps.student.toggles import should_redirect_to_courseware_after_enrollment
@@ -93,7 +96,11 @@ from openedx.core.djangoapps.ace_common.template_context import get_base_templat
 from openedx.core.djangoapps.catalog.utils import get_programs_with_type
 from openedx.core.djangoapps.embargo import api as embargo_api
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
-from openedx.core.djangoapps.programs.models import ProgramsApiConfig  # lint-amnesty, pylint: disable=unused-import
+
+# pylint: disable-next=unused-import
+from openedx.core.djangoapps.programs.models import (
+    ProgramsApiConfig,  # noqa: F401
+)
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming import helpers as theming_helpers
 from openedx.core.djangoapps.user_api.preferences import api as preferences_api
@@ -145,7 +152,7 @@ def csrf_token(context):
 # branding/views.py:index(), which is cached for anonymous users.
 # This means that it should always return the same thing for anon
 # users. (in particular, no switching based on query params allowed)
-def index(request, extra_context=None, user=AnonymousUser()):
+def index(request, extra_context=None, user=AnonymousUser()):  # noqa: B008
     """
     Render the edX main page.
 
@@ -259,7 +266,7 @@ def _get_activation_confirmation_link(activation_key, redirect_url=None):
     is not null.
     """
     root_url = configuration_helpers.get_value('LMS_ROOT_URL', settings.LMS_ROOT_URL)
-    confirmation_link = '{root_url}/activate/{activation_key}'.format(
+    confirmation_link = '{root_url}/activate/{activation_key}'.format(  # noqa: UP032
         root_url=root_url,
         activation_key=activation_key,
     )
@@ -698,7 +705,7 @@ def activate_account(request, key):
         params = {'account_activation_status': activation_message_type}
         if redirect_url:
             params['next'] = redirect_url
-        url_path = '/login?{}'.format(urllib.parse.urlencode(params))
+        url_path = '/login?{}'.format(urllib.parse.urlencode(params))  # noqa: UP032
         return redirect(settings.AUTHN_MICROFRONTEND_URL + url_path)
 
     response = redirect(redirect_url) if redirect_url and is_enterprise_learner(request.user) else redirect('dashboard')
@@ -747,7 +754,7 @@ def validate_new_email(user, new_email):
     try:
         validate_email(new_email)
     except ValidationError:
-        raise ValueError(_('Valid e-mail address required.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('Valid e-mail address required.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     if new_email == user.email:
         raise ValueError(_('Old email is the same as the new email.'))
@@ -843,7 +850,7 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
     except Exception:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

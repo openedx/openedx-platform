@@ -50,7 +50,7 @@ class UserTourView(RetrieveUpdateAPIView):
         try:
             user_tour = UserTour.objects.get(user__username=username)
         # Should never really happen, but better safe than sorry.
-        except UserTour.DoesNotExist as e:
+        except UserTour.DoesNotExist as e:  # noqa: F841
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         return Response(self.get_serializer_class()(user_tour).data, status=status.HTTP_200_OK)

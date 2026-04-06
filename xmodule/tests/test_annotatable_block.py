@@ -58,7 +58,7 @@ class _AnnotatableBlockTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=
         actual_attr = self.annotatable._get_annotation_data_attr(0, el)  # lint-amnesty, pylint: disable=protected-access
 
         assert isinstance(actual_attr, dict)
-        self.assertDictEqual(expected_attr, actual_attr)
+        self.assertDictEqual(expected_attr, actual_attr)  # noqa: PT009
 
     def test_annotation_class_attr_default(self):
         xml = '<annotation title="x" body="y" problem="0">test</annotation>'
@@ -68,7 +68,7 @@ class _AnnotatableBlockTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=
         actual_attr = self.annotatable._get_annotation_class_attr(0, el)  # lint-amnesty, pylint: disable=protected-access
 
         assert isinstance(actual_attr, dict)
-        self.assertDictEqual(expected_attr, actual_attr)
+        self.assertDictEqual(expected_attr, actual_attr)  # noqa: PT009
 
     def test_annotation_class_attr_with_valid_highlight(self):
         xml = '<annotation title="x" body="y" problem="0" highlight="{highlight}">test</annotation>'
@@ -86,7 +86,7 @@ class _AnnotatableBlockTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=
             actual_attr = self.annotatable._get_annotation_class_attr(0, el)  # lint-amnesty, pylint: disable=protected-access
 
             assert isinstance(actual_attr, dict)
-            self.assertDictEqual(expected_attr, actual_attr)
+            self.assertDictEqual(expected_attr, actual_attr)  # noqa: PT009
 
     def test_annotation_class_attr_with_invalid_highlight(self):
         xml = '<annotation title="x" body="y" problem="0" highlight="{highlight}">test</annotation>'
@@ -102,7 +102,7 @@ class _AnnotatableBlockTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=
             actual_attr = self.annotatable._get_annotation_class_attr(0, el)  # lint-amnesty, pylint: disable=protected-access
 
             assert isinstance(actual_attr, dict)
-            self.assertDictEqual(expected_attr, actual_attr)
+            self.assertDictEqual(expected_attr, actual_attr)  # noqa: PT009
 
     def test_render_annotation(self):
         expected_html = '<span class="annotatable-span highlight highlight-yellow" data-comment-title="x" data-comment-body="y" data-problem-id="0">z</span>'  # lint-amnesty, pylint: disable=line-too-long
@@ -113,7 +113,7 @@ class _AnnotatableBlockTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=
 
         assert expected_el.tag == actual_el.tag
         assert expected_el.text == actual_el.text
-        self.assertDictEqual(dict(expected_el.attrib), dict(actual_el.attrib))
+        self.assertDictEqual(dict(expected_el.attrib), dict(actual_el.attrib))  # noqa: PT009
 
     def test_render_content(self):
         content = self.annotatable._render_content()  # lint-amnesty, pylint: disable=protected-access

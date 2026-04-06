@@ -147,7 +147,7 @@ class ProgressTabTestViews(BaseCourseHomeTests):
                 for subsection in chapter['subsections']:
                     if subsection['display_name'] == subsection_name:
                         return subsection['show_grades']
-            assert False, f'Subsection {subsection_name} not found in section_scores'
+            assert False, f'Subsection {subsection_name} not found in section_scores'  # noqa: B011, PT015
 
         # Staff can see grades even when show_correctness is `past_due` and the due date has not passed.
         response = self.client.get(self.url)

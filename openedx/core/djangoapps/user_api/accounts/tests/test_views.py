@@ -890,7 +890,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # Note that language_proficiencies is tested below as there are multiple error and success conditions.
     )
     @ddt.unpack
-    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):
+    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):  # noqa: PT028
         """
         Test the behavior of patch, when using the correct content_type.
         """
@@ -914,7 +914,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
 
             assert expected_user_message == error_response.data['field_errors'][field]['user_message']
 
-            assert "Value '{value}' is not valid for field '{field}': {messages}".format(
+            assert "Value '{value}' is not valid for field '{field}': {messages}".format(  # noqa: UP032
                 value=fails_validation_value,
                 field=field,
                 messages=[developer_validation_message]
@@ -946,7 +946,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
             Internal helper to check the error messages returned
             """
             assert 'This field is not editable via this API' == data['field_errors'][field_name]['developer_message']
-            assert "The '{}' field cannot be edited.".format(
+            assert "The '{}' field cannot be edited.".format(  # noqa: UP032
                 field_name
             ) == data['field_errors'][field_name]['user_message']
 
@@ -1171,7 +1171,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # than django model id.
         for proficiencies in ([{"code": "en"}, {"code": "fr"}, {"code": "es"}], [{"code": "fr"}], [{"code": "aa"}], []):
             response = self.send_patch(client, {"language_proficiencies": proficiencies})
-            self.assertCountEqual(response.data["language_proficiencies"], proficiencies)
+            self.assertCountEqual(response.data["language_proficiencies"], proficiencies)  # noqa: PT009
 
     @ddt.data(
         (
@@ -1224,11 +1224,11 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # so it returns the default storage.
         storage = get_profile_image_storage()
         storage_class = storage.__class__
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             settings.PROFILE_IMAGE_BACKEND['class'],
             f"{storage_class.__module__}.{storage_class.__name__}",
         )
-        self.assertEqual(storage.base_url, settings.PROFILE_IMAGE_BACKEND['options']['base_url'])
+        self.assertEqual(storage.base_url, settings.PROFILE_IMAGE_BACKEND['options']['base_url'])  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND={
         'class': 'storages.backends.s3boto3.S3Boto3Storage',
@@ -1240,15 +1240,15 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     })
     def test_profile_backend_with_params(self):
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, S3Boto3Storage)
-        self.assertEqual(storage.bucket_name, "test")
-        self.assertEqual(storage.default_acl, 'public')
-        self.assertEqual(storage.location, "abc/def")
+        self.assertIsInstance(storage, S3Boto3Storage)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "test")  # noqa: PT009
+        self.assertEqual(storage.default_acl, 'public')  # noqa: PT009
+        self.assertEqual(storage.location, "abc/def")  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND={'class': None, 'options': {}})
     def test_profile_backend_without_backend(self):
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     @override_settings(PROFILE_IMAGE_BACKEND=TEST_PROFILE_IMAGE_BACKEND)
     def test_convert_relative_profile_url(self):
@@ -1280,10 +1280,10 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
     def test_profile_backend_with_profile_image_settings(self):
         """ It will use the storages dict with profile_images backend"""
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, S3Boto3Storage)
-        self.assertEqual(storage.bucket_name, "profiles")
-        self.assertEqual(storage.default_acl, 'public')
-        self.assertEqual(storage.location, "profile/images")
+        self.assertIsInstance(storage, S3Boto3Storage)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "profiles")  # noqa: PT009
+        self.assertEqual(storage.default_acl, 'public')  # noqa: PT009
+        self.assertEqual(storage.location, "profile/images")  # noqa: PT009
 
     @override_settings(
         PROFILE_IMAGE_BACKEND={},
@@ -1292,7 +1292,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         """ In case of empty storages scenario uses the hardcoded backend."""
         del settings.STORAGES
         storage = get_profile_image_storage()
-        self.assertIsInstance(storage, FileSystemStorage)
+        self.assertIsInstance(storage, FileSystemStorage)  # noqa: PT009
 
     @ddt.data(
         ("client", "user", True),
@@ -1403,14 +1403,14 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': 'New Name'})
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 201)  # noqa: PT009
 
     def test_create_unauthenticated(self):
         """
         Test that a name change request fails for an unauthenticated user.
         """
         response = self._send_create(self.client, {'name': 'New Name'})
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 401)  # noqa: PT009
 
     def test_create_empty_request(self):
         """
@@ -1418,7 +1418,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_create_blank_name(self):
         """
@@ -1426,7 +1426,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': ''})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     @ddt.data('<html>invalid name</html>', 'https://invalid.com')
     def test_create_fails_validation(self, invalid_name):
@@ -1435,7 +1435,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         response = self._send_create(self.client, {'name': invalid_name})
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
 
     def test_confirm_succeeds(self):
         """
@@ -1444,8 +1444,8 @@ class NameChangeViewTests(UserAPITestCase):
         self.staff_client.login(username=self.staff_user.username, password=TEST_PASSWORD)
         do_name_change_request(self.user, 'New Name', 'test')
         response = self._send_confirm(self.staff_client, self.user.username)
-        self.assertEqual(response.status_code, 204)
-        self.assertIsNone(get_pending_name_change(self.user))
+        self.assertEqual(response.status_code, 204)  # noqa: PT009
+        self.assertIsNone(get_pending_name_change(self.user))  # noqa: PT009
 
     def test_confirm_non_staff(self):
         """
@@ -1454,8 +1454,8 @@ class NameChangeViewTests(UserAPITestCase):
         self.client.login(username=self.user.username, password=TEST_PASSWORD)
         do_name_change_request(self.user, 'New Name', 'test')
         response = self._send_confirm(self.client, self.user.username)
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(get_pending_name_change(self.user).new_name, 'New Name')
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
+        self.assertEqual(get_pending_name_change(self.user).new_name, 'New Name')  # noqa: PT009
 
     def test_confirm_no_pending_name_change(self):
         """
@@ -1463,7 +1463,7 @@ class NameChangeViewTests(UserAPITestCase):
         """
         self.staff_client.login(username=self.staff_user.username, password=TEST_PASSWORD)
         response = self._send_confirm(self.staff_client, self.user.username)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
 
 @ddt.ddt

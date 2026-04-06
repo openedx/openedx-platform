@@ -60,7 +60,7 @@ class Command(BaseCommand):
         try:
             result = CourseKey.from_string(raw_value)
         except InvalidKeyError:
-            raise CommandError("Invalid course_key: '%s'." % raw_value)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("Invalid course_key: '%s'." % raw_value)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
 
         if not isinstance(result, CourseLocator):
             raise CommandError(f"Argument {raw_value} is not a course key")
@@ -83,7 +83,7 @@ class Command(BaseCommand):
         course_option_flag_option = index_all_courses_option or active_option or inclusion_date_option
 
         if (not course_ids and not course_option_flag_option) or (course_ids and course_option_flag_option):
-            raise CommandError((
+            raise CommandError((  # noqa: UP034
                 "reindex_course requires one or more <course_id>s"
                 " OR the --all, --active, --setup, or --from_inclusion_date flags."
             ))

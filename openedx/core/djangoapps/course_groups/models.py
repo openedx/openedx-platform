@@ -51,7 +51,7 @@ class CourseUserGroup(models.Model):
     class Meta:
         unique_together = (('name', 'course_id'), )
 
-    name = models.CharField(max_length=255,
+    name = models.CharField(max_length=255,  # noqa: DJ012
                             help_text=("What is the name of this group?  "
                                        "Must be unique within a course."))
     users = models.ManyToManyField(User, db_index=True, related_name='course_groups',
@@ -87,11 +87,11 @@ class CourseUserGroup(models.Model):
             name=name
         )
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return self.name
 
 
-class CohortMembership(models.Model):
+class CohortMembership(models.Model):  # noqa: DJ008
     """
     Used internally to enforce our particular definition of uniqueness.
 
@@ -142,7 +142,7 @@ class CohortMembership(models.Model):
                 membership.course_user_group.users.add(user)
                 previous_cohort = None
             elif membership.course_user_group == cohort:
-                raise ValueError("User {user_name} already present in cohort {cohort_name}".format(
+                raise ValueError("User {user_name} already present in cohort {cohort_name}".format(  # noqa: UP032
                     user_name=user.username,
                     cohort_name=cohort.name))
             else:
@@ -164,7 +164,7 @@ class CohortMembership(models.Model):
                 membership.save()
         return membership, previous_cohort
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         self.full_clean(validate_unique=False)
 
         # .. event_implemented_name: COHORT_MEMBERSHIP_CHANGED
@@ -202,7 +202,7 @@ def remove_user_from_cohort(sender, instance, **kwargs):  # pylint: disable=unus
     instance.course_user_group.save()
 
 
-class CourseUserGroupPartitionGroup(models.Model):
+class CourseUserGroupPartitionGroup(models.Model):  # noqa: DJ008
     """
     Create User Partition Info.
 
@@ -219,7 +219,7 @@ class CourseUserGroupPartitionGroup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class CourseCohortsSettings(models.Model):
+class CourseCohortsSettings(models.Model):  # noqa: DJ008
     """
     This model represents cohort settings for courses.
     The only non-deprecated fields are `is_cohorted` and `course_id`.
@@ -235,7 +235,7 @@ class CourseCohortsSettings(models.Model):
         help_text="Which course are these settings associated with?",
     )
 
-    _cohorted_discussions = models.TextField(db_column='cohorted_discussions', null=True, blank=True)  # JSON list
+    _cohorted_discussions = models.TextField(db_column='cohorted_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001
 
     # Note that although a default value is specified here for always_cohort_inline_discussions (False),
     # in reality the default value at the time that cohorting is enabled for a course comes from
@@ -260,7 +260,7 @@ class CourseCohortsSettings(models.Model):
         self._cohorted_discussions = json.dumps(value)
 
 
-class CourseCohort(models.Model):
+class CourseCohort(models.Model):  # noqa: DJ008
     """
     This model represents cohort related info.
 
@@ -296,7 +296,7 @@ class CourseCohort(models.Model):
         return course_cohort
 
 
-class UnregisteredLearnerCohortAssignments(DeletableByUserValue, models.Model):
+class UnregisteredLearnerCohortAssignments(DeletableByUserValue, models.Model):  # noqa: DJ008
     """
     Tracks the assignment of an unregistered learner to a course's cohort.
 
@@ -308,6 +308,6 @@ class UnregisteredLearnerCohortAssignments(DeletableByUserValue, models.Model):
     class Meta:
         unique_together = (('course_id', 'email'), )
 
-    course_user_group = models.ForeignKey(CourseUserGroup, on_delete=models.CASCADE)
+    course_user_group = models.ForeignKey(CourseUserGroup, on_delete=models.CASCADE)  # noqa: DJ012
     email = models.CharField(blank=True, max_length=255, db_index=True)
     course_id = CourseKeyField(max_length=255)

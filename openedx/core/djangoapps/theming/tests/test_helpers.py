@@ -48,7 +48,7 @@ class TestHelpers(TestCase):
             Theme('empty-theme', 'empty-theme', get_theme_base_dir('empty-theme'), settings.PROJECT_ROOT),
         ]
         actual_themes = get_themes()
-        self.assertCountEqual(expected_themes, actual_themes)
+        self.assertCountEqual(expected_themes, actual_themes)  # noqa: PT009
 
     @override_settings(COMPREHENSIVE_THEME_DIRS=[settings.TEST_THEME.dirname()])
     def test_get_themes_2(self):
@@ -59,7 +59,7 @@ class TestHelpers(TestCase):
             Theme('test-theme', 'test-theme', get_theme_base_dir('test-theme'), settings.PROJECT_ROOT),
         ]
         actual_themes = get_themes()
-        self.assertCountEqual(expected_themes, actual_themes)
+        self.assertCountEqual(expected_themes, actual_themes)  # noqa: PT009
 
     def test_get_value_returns_override(self):
         """

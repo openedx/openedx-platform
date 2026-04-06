@@ -435,7 +435,7 @@ class AccountLegacyProfileSerializer(serializers.HyperlinkedModelSerializer, Rea
 
         except ValueError as err:
             # If we have encountered any validation errors, return them to the user.
-            raise errors.AccountValidationError({
+            raise errors.AccountValidationError({  # noqa: B904
                 'social_links': {
                     "developer_message": f"Error when adding new social link: '{str(err)}'",
                     "user_message": str(err)

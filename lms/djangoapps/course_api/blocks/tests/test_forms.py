@@ -88,7 +88,7 @@ class TestBlockListGetForm(FormTestMixin, SharedModuleStoreTestCase):
         Check that the form returns the expected data
         """
         form = self.get_form(expected_valid=True)
-        self.assertDictEqual(form.cleaned_data, self.cleaned_data)
+        self.assertDictEqual(form.cleaned_data, self.cleaned_data)  # noqa: PT009
 
     def test_basic(self):
         self.assert_equals_cleaned_data()

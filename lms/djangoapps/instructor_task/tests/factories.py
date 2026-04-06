@@ -41,4 +41,4 @@ class InstructorTaskScheduleFactory(DjangoModelFactory):
 
     task = factory.SubFactory(InstructorTaskFactory)
     task_args = "{}"
-    task_due = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(days=1)
+    task_due = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc) - datetime.timedelta(days=1)  # noqa: UP017

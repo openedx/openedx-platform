@@ -64,7 +64,7 @@ class _TestLTIBase(BaseTestXmodule):
         hostname = settings.LMS_BASE
         resource_link_id = str(urllib.parse.quote(f'{hostname}-{self.block.location.html_id()}'))
 
-        sourcedId = "{context}:{resource_link}:{user_id}".format(
+        sourcedId = "{context}:{resource_link}:{user_id}".format(  # noqa: UP032
             context=urllib.parse.quote(context_id),
             resource_link=resource_link_id,
             user_id=user_id

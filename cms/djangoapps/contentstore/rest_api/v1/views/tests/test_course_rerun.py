@@ -32,5 +32,5 @@ class CourseRerunViewTest(CourseTestCase, PermissionAccessMixin):
             "run": self.course.id.run,
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009

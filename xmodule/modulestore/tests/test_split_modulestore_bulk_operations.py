@@ -168,7 +168,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_structure(self.course_key.replace(branch='b'), other_structure)
         self.assertConnCalls()
         self.bulk._end_bulk_operation(self.course_key)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [
                 call.insert_structure(self.structure, self.course_key),
                 call.insert_structure(other_structure, self.course_key)
@@ -204,7 +204,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_definition(self.course_key.replace(branch='b'), other_definition)
         self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.definition['_id'], 'b': other_definition['_id']}})  # lint-amnesty, pylint: disable=line-too-long
         self.bulk._end_bulk_operation(self.course_key)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [
                 call.insert_definition(self.definition, self.course_key),
                 call.insert_definition(other_definition, self.course_key),
@@ -235,7 +235,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_definition(self.course_key.replace(branch='b'), other_definition)
         self.assertConnCalls()
         self.bulk._end_bulk_operation(self.course_key)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [
                 call.insert_definition(self.definition, self.course_key),
                 call.insert_definition(other_definition, self.course_key)
@@ -271,7 +271,7 @@ class TestBulkWriteMixinClosed(TestBulkWriteMixin):
         self.bulk.update_structure(self.course_key.replace(branch='b'), other_structure)
         self.bulk.insert_course_index(self.course_key, {'versions': {'a': self.structure['_id'], 'b': other_structure['_id']}})  # lint-amnesty, pylint: disable=line-too-long
         self.bulk._end_bulk_operation(self.course_key)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [
                 call.insert_structure(self.structure, self.course_key),
                 call.insert_structure(other_structure, self.course_key),
@@ -388,7 +388,7 @@ class TestBulkWriteMixinFindMethods(TestBulkWriteMixin):
         expected = matching + db_indexes
         self.conn.find_matching_course_indexes.return_value = db_indexes
         result = self.bulk.find_matching_course_indexes(branch, search_targets)
-        self.assertCountEqual(result, expected)
+        self.assertCountEqual(result, expected)  # noqa: PT009
         for item in unmatching:
             assert item not in result
 

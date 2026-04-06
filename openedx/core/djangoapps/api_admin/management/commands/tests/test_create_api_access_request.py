@@ -55,7 +55,7 @@ class TestCreateApiAccessRequest(TestCase):
         self.assert_models_exist(True, True)
 
     def test_user_not_found(self):
-        with self.assertRaisesRegex(CommandError, r'User .*? not found'):
+        with self.assertRaisesRegex(CommandError, r'User .*? not found'):  # noqa: PT027
             call_command(self.command, 'not-a-user-notfound-nope')
 
     @patch('openedx.core.djangoapps.api_admin.models.ApiAccessRequest.objects.create')
@@ -64,7 +64,7 @@ class TestCreateApiAccessRequest(TestCase):
 
         self.assert_models_exist(False, False)
 
-        with self.assertRaisesRegex(CommandError, r'Unable to create ApiAccessRequest .*'):
+        with self.assertRaisesRegex(CommandError, r'Unable to create ApiAccessRequest .*'):  # noqa: PT027
             call_command(self.command, self.user.username)
 
         self.assert_models_exist(False, False)
@@ -92,7 +92,7 @@ class TestCreateApiAccessRequest(TestCase):
 
         self.assert_models_exist(False, False)
 
-        with self.assertRaisesRegex(CommandError, 'out of disk space'):
+        with self.assertRaisesRegex(CommandError, 'out of disk space'):  # noqa: PT027
             call_command(self.command, self.user.username)
 
         self.assert_models_exist(False, False)
@@ -102,7 +102,7 @@ class TestCreateApiAccessRequest(TestCase):
         mocked_method.side_effect = Exception()
         self.assert_models_exist(False, False)
 
-        with self.assertRaisesRegex(CommandError, r'Unable to create ApiAccessConfig\. .*'):
+        with self.assertRaisesRegex(CommandError, r'Unable to create ApiAccessConfig\. .*'):  # noqa: PT027
             call_command(self.command, self.user.username, create_config=True)
 
         self.assert_models_exist(False, False)

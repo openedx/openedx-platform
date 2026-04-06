@@ -30,7 +30,7 @@ class MockCommentServiceRequestHandler(BaseHTTPRequestHandler):
         # Log the request
         # pylint: disable=logging-format-interpolation
         logger.debug(
-            "Comment Service received POST request {} to path {}"
+            "Comment Service received POST request {} to path {}"  # noqa: UP032
             .format(json.dumps(post_dict), self.path)
         )
 
@@ -68,7 +68,7 @@ class MockCommentServiceRequestHandler(BaseHTTPRequestHandler):
         # Log the request
         # pylint: disable=logging-format-interpolation
         logger.debug(
-            "Comment Service received PUT request {} to path {}"
+            "Comment Service received PUT request {} to path {}"  # noqa: UP032
             .format(json.dumps(post_dict), self.path)
         )
 
@@ -98,7 +98,7 @@ class MockCommentServiceServer(HTTPServer):
     to POST requests to localhost.
     '''
     def __init__(self, port_num,
-                 response={'username': 'new', 'external_id': 1}):
+                 response={'username': 'new', 'external_id': 1}):  # noqa: B006
         '''
         Initialize the mock Comment Service server instance.
         *port_num* is the localhost port to listen to

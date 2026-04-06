@@ -138,7 +138,7 @@ class CourseAccessRoleForm(forms.ModelForm):
 
     class Meta:
         model = CourseAccessRole
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     email = forms.EmailField(required=True)
     COURSE_ACCESS_ROLES = [(role_name, role_name) for role_name in REGISTERED_ACCESS_ROLES.keys()]  # lint-amnesty, pylint: disable=consider-iterating-dictionary
@@ -160,7 +160,7 @@ class CourseAccessRoleForm(forms.ModelForm):
             org_name = self.cleaned_data.get('course_id').org
             if org.lower() != org_name.lower():
                 raise forms.ValidationError(
-                    "Org name {} is not valid. Valid name is {}.".format(
+                    "Org name {} is not valid. Valid name is {}.".format(  # noqa: UP032
                         org, org_name
                     )
                 )
@@ -175,8 +175,8 @@ class CourseAccessRoleForm(forms.ModelForm):
         try:
             user = User.objects.get(email=email)
         except Exception:
-            raise forms.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
-                "Email does not exist. Could not find {email}. Please re-enter email address".format(
+            raise forms.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                "Email does not exist. Could not find {email}. Please re-enter email address".format(  # noqa: UP032
                     email=email
                 )
             )
@@ -373,7 +373,7 @@ class CourseEnrollmentForm(forms.ModelForm):
             try:
                 args_copy['course'] = CourseKey.from_string(args_copy['course'])
             except InvalidKeyError:
-                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from
+                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             args = [args_copy]
 
         super().__init__(*args, **kwargs)
@@ -392,7 +392,7 @@ class CourseEnrollmentForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(f"Cannot find course with id {course_id} in the modulestore")
@@ -410,7 +410,7 @@ class CourseEnrollmentForm(forms.ModelForm):
 
     class Meta:
         model = CourseEnrollment
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 @admin.register(CourseEnrollment)
@@ -494,7 +494,7 @@ class UserProfileInlineForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

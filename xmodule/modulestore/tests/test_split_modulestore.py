@@ -534,7 +534,7 @@ class TestHasChildrenAtDepth(SplitModuleTest):
         )
         block = modulestore().get_item(block_locator)
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             ValueError, block.has_children_at_depth, -1,
         )
         assert block.has_children_at_depth(0)
@@ -578,7 +578,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert len(course.children) == 4, 'children'
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})  # noqa: PT009
 
     def test_get_courses_with_same_course_index(self):
         """
@@ -664,7 +664,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert course.definition_locator.definition_id != head_course.definition_locator.definition_id
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.55})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.55})  # noqa: PT009
 
         locator = CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT)
         course = modulestore().get_course(locator)
@@ -678,7 +678,7 @@ class SplitModuleCourseTests(SplitModuleTest):
         assert len(course.children) == 4
         # check dates and graders--forces loading of block
         assert course.edited_by == TEST_ASSISTANT_USER_ID
-        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})
+        self.assertDictEqual(course.grade_cutoffs, {"Pass": 0.45})  # noqa: PT009
 
         locator = CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED)
         course = modulestore().get_course(locator)
@@ -899,7 +899,7 @@ class SplitModuleItemTests(SplitModuleTest):
         previous_version = course.previous_version
         # positive tests of various forms
         locator = course.location.map_into_course(CourseLocator(version_guid=previous_version))
-        assert modulestore().has_item(locator), ("couldn't find in %s" % previous_version)
+        assert modulestore().has_item(locator), ("couldn't find in %s" % previous_version)  # noqa: UP031
 
         locator = course.location.version_agnostic()
         assert modulestore().has_item(locator)
@@ -963,7 +963,7 @@ class SplitModuleItemTests(SplitModuleTest):
             assert len(block.children) == 4
             # check dates and graders--forces loading of block
             assert block.edited_by == TEST_ASSISTANT_USER_ID
-            self.assertDictEqual(
+            self.assertDictEqual(  # noqa: PT009
                 block.grade_cutoffs, {"Pass": 0.45},
             )
 
@@ -1515,7 +1515,7 @@ class TestItemCrud(SplitModuleTest):
 
     def test_delete_item(self):
         course = self.create_course_for_deletion()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             modulestore().delete_item(course.location, self.user_id)
         reusable_location = course.id.version_agnostic().for_branch(BRANCH_NAME_DRAFT)
 
@@ -1527,7 +1527,7 @@ class TestItemCrud(SplitModuleTest):
         assert not modulestore().has_item(deleted)
         with pytest.raises(VersionConflictError):
             modulestore().has_item(locn_to_del)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             modulestore().delete_item(deleted, self.user_id)
 
         assert modulestore().has_item(locn_to_del.course_agnostic())
@@ -1641,7 +1641,7 @@ class TestCourseCreation(SplitModuleTest):
         assert len(new_course.children) == 0
         assert new_course.edited_by == TEST_USER_ID
         assert len(new_course.grading_policy['GRADER']) == 4
-        self.assertDictEqual(new_course.grade_cutoffs, {"Pass": 0.5})
+        self.assertDictEqual(new_course.grade_cutoffs, {"Pass": 0.5})  # noqa: PT009
 
     def test_cloned_course(self):
         """
@@ -1653,7 +1653,7 @@ class TestCourseCreation(SplitModuleTest):
             'best', 'leech', 'leech_run', TEST_OTHER_USER_ID, BRANCH_NAME_DRAFT,
             versions_dict=original_index['versions'])
         new_draft_locator = new_draft.location
-        self.assertRegex(new_draft_locator.org, 'best')
+        self.assertRegex(new_draft_locator.org, 'best')  # noqa: PT009
         # the edited_by and other meta fields on the new course will be the original author not this one
         assert new_draft.edited_by == TEST_USER_ID
         assert new_draft_locator.version_guid == original_index['versions'][BRANCH_NAME_DRAFT]
@@ -1703,7 +1703,7 @@ class TestCourseCreation(SplitModuleTest):
             fields=fields
         )
         new_draft_locator = new_draft.location
-        self.assertRegex(new_draft_locator.org, 'counter')
+        self.assertRegex(new_draft_locator.org, 'counter')  # noqa: PT009
         # the edited_by and other meta fields on the new course will be the original author not this one
         assert new_draft.edited_by == TEST_OTHER_USER_ID
         assert new_draft_locator.version_guid != original_index['versions'][BRANCH_NAME_DRAFT]
@@ -1711,7 +1711,7 @@ class TestCourseCreation(SplitModuleTest):
         new_index = modulestore().get_course_index_info(new_draft_locator.course_key)
         assert new_index['edited_by'] == TEST_OTHER_USER_ID
         assert new_draft.display_name == fields['display_name']
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             new_draft.grading_policy['GRADE_CUTOFFS'],
             fields['grading_policy']['GRADE_CUTOFFS']
         )
@@ -1765,7 +1765,7 @@ class TestCourseCreation(SplitModuleTest):
         """
         user = random.getrandbits(32)
         courses = modulestore().get_courses(BRANCH_NAME_DRAFT)
-        with pytest.raises(DuplicateCourseError):
+        with pytest.raises(DuplicateCourseError):  # noqa: PT012
             dupe_course_key = courses[0].location.course_key
             modulestore().create_course(
                 dupe_course_key.org, dupe_course_key.course, dupe_course_key.run, user, BRANCH_NAME_DRAFT
@@ -1875,7 +1875,7 @@ class TestInheritance(SplitModuleTest):
 
         orphan_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)
+        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 

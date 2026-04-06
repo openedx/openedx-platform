@@ -28,7 +28,7 @@ class TestDeleteNotifications(ModuleStoreTestCase):
         default_dict.pop(param)
         try:
             call_command('delete_notifications', **default_dict)
-            assert False
+            assert False  # noqa: B011, PT015
         except Exception:    # pylint: disable=broad-except
             pass
 

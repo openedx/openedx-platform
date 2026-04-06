@@ -274,6 +274,6 @@ class TestUpdatePreferenceFromPatch(ModuleStoreTestCase):
         """
         encrypted_username = encrypt_string(self.user.username)
         update_user_preferences_from_patch(encrypted_username)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             UserPreference.objects.filter(user=self.user, key=ONE_CLICK_EMAIL_UNSUB_KEY).exists()
         )

@@ -292,7 +292,7 @@ def signatory_detail_handler(request, course_key_string, certificate_id, signato
 
         match_cert = None
         # pylint: disable=unused-variable
-        for index, cert in enumerate(certificates_list):
+        for index, cert in enumerate(certificates_list):  # noqa: B007
             if certificate_id is not None:
                 if int(cert['id']) == int(certificate_id):
                     match_cert = cert

@@ -47,7 +47,7 @@ class _PollBlockTestBase(TestCase):
     def test_bad_ajax_request(self):
         # Make sure that answer for incorrect request is error json.
         response = self.ajax_request('bad_answer', {})
-        self.assertDictEqual(response, {'error': 'Unknown Command!'})
+        self.assertDictEqual(response, {'error': 'Unknown Command!'})  # noqa: PT009
 
     def test_good_ajax_request(self):
         # Make sure that ajax request works correctly.
@@ -57,9 +57,9 @@ class _PollBlockTestBase(TestCase):
         total = response['total']
         callback = response['callback']
 
-        self.assertDictEqual(poll_answers, {'Yes': 1, 'Dont_know': 0, 'No': 1})
+        self.assertDictEqual(poll_answers, {'Yes': 1, 'Dont_know': 0, 'No': 1})  # noqa: PT009
         assert total == 2
-        self.assertDictEqual(callback, {'objectName': 'Conditional'})
+        self.assertDictEqual(callback, {'objectName': 'Conditional'})  # noqa: PT009
         assert self.xblock.poll_answer == 'No'
 
     def test_poll_export_with_unescaped_characters_xml(self):

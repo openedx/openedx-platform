@@ -73,7 +73,7 @@ class TestLinkCheckProvider(CourseTestCase):
             self.mock_block, 'example_link', LinkState.LOCKED, {}, {}
         )
 
-        self.assertEqual(expected_tree, result_tree)
+        self.assertEqual(expected_tree, result_tree)  # noqa: PT009
 
     def test_update_node_tree_and_dictionary_returns_dictionary(self):
         """
@@ -104,7 +104,7 @@ class TestLinkCheckProvider(CourseTestCase):
             self.mock_block, 'example_link', LinkState.LOCKED, {}, {}
         )
 
-        self.assertEqual(expected_dictionary, result_dictionary)
+        self.assertEqual(expected_dictionary, result_dictionary)  # noqa: PT009
 
     def test_create_dto_recursive_returns_for_empty_node(self):
         """
@@ -112,7 +112,7 @@ class TestLinkCheckProvider(CourseTestCase):
         Function should return None when given empty node tree and empty dictionary.
         """
         expected = _create_dto_recursive({}, {})
-        self.assertEqual(None, expected)
+        self.assertEqual(None, expected)  # noqa: PT009
 
     def test_create_dto_recursive_returns_for_leaf_node(self):
         """
@@ -159,7 +159,7 @@ class TestLinkCheckProvider(CourseTestCase):
             }
         }
         expected = _create_dto_recursive(mock_node_tree, mock_dictionary)
-        self.assertEqual(expected_result, expected)
+        self.assertEqual(expected_result, expected)  # noqa: PT009
 
     def test_create_dto_recursive_returns_for_full_tree(self):
         """
@@ -231,7 +231,7 @@ class TestLinkCheckProvider(CourseTestCase):
         }
         expected = _create_dto_recursive(mock_node_tree, mock_dictionary)
 
-        self.assertEqual(expected_result, expected)
+        self.assertEqual(expected_result, expected)  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.core.course_optimizer_provider.modulestore', autospec=True)
     def test_returns_unchanged_data_if_no_course_blocks(self, mock_modulestore):
@@ -306,7 +306,7 @@ class TestLinkCheckProvider(CourseTestCase):
             {"id": "section3", "name": "Bonus"},
             {"id": "section1", "name": "Intro"},
         ]
-        self.assertEqual(result["LinkCheckOutput"]["sections"], expected_sections)
+        self.assertEqual(result["LinkCheckOutput"]["sections"], expected_sections)  # noqa: PT009
 
     def test_prev_run_link_detection(self):
         """Test the core logic of separating previous run links from regular links."""
@@ -330,7 +330,7 @@ class TestLinkCheckProvider(CourseTestCase):
         for url, expected_match in test_cases:
             with self.subTest(url=url, expected=expected_match):
                 result = contains_course_reference(url, previous_course_key)
-                self.assertEqual(
+                self.assertEqual(  # noqa: PT009
                     result,
                     expected_match,
                     f"URL '{url}' should {'match' if expected_match else 'not match'} previous course",
@@ -362,7 +362,7 @@ class TestLinkCheckProvider(CourseTestCase):
             with self.subTest(content=content):
                 urls = extract_content_URLs_from_course(content)
                 for expected_url in expected_urls:
-                    self.assertIn(
+                    self.assertIn(  # noqa: PT009
                         expected_url,
                         urls,
                         f"Should find '{expected_url}' in content: {content}",
@@ -459,19 +459,19 @@ class TestLinkCheckProvider(CourseTestCase):
             )
 
             # Verify top-level structure
-            self.assertIn("sections", result)
-            self.assertIn("course_updates", result)
-            self.assertIn("custom_pages", result)
-            self.assertNotIn("handouts", result)
+            self.assertIn("sections", result)  # noqa: PT009
+            self.assertIn("course_updates", result)  # noqa: PT009
+            self.assertIn("custom_pages", result)  # noqa: PT009
+            self.assertNotIn("handouts", result)  # noqa: PT009
 
             # Course updates should include both updates and handouts
-            self.assertGreaterEqual(
+            self.assertGreaterEqual(  # noqa: PT009
                 len(result["course_updates"]),
                 1,
                 "Should have course updates/handouts",
             )
 
             # Custom pages should have custom pages data
-            self.assertGreaterEqual(
+            self.assertGreaterEqual(  # noqa: PT009
                 len(result["custom_pages"]), 1, "Should have custom pages"
             )

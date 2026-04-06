@@ -26,7 +26,7 @@ def _url_replace_regex(prefix):
         (?P<prefix>{prefix})      # the prefix
         (?P<rest>.*?)             # everything else in the url
         (?P=quote)                # the first matching closing quote
-        """.format(prefix=prefix)
+        """.format(prefix=prefix)  # noqa: UP032
 
 
 def try_staticfiles_lookup(path):
@@ -37,7 +37,7 @@ def try_staticfiles_lookup(path):
     try:
         url = staticfiles_storage.url(path)
     except Exception as err:  # lint-amnesty, pylint: disable=broad-except
-        log.warning("staticfiles_storage couldn't find path {}: {}".format(
+        log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
             path, str(err)))
         # Just return the original path; don't kill everything.
         url = path
@@ -121,7 +121,7 @@ def process_static_urls(text, replacement_function, data_dir=None):
         return replacement_function(original, prefix, quote, rest)
 
     return re.sub(
-        _url_replace_regex('(?:{static_url}|/static/)(?!{data_dir})'.format(
+        _url_replace_regex('(?:{static_url}|/static/)(?!{data_dir})'.format(  # noqa: UP032
             static_url=settings.STATIC_URL,
             data_dir=data_dir
         )),
@@ -204,7 +204,7 @@ def replace_static_urls(
             try:
                 exists_in_staticfiles_storage = staticfiles_storage.exists(rest)
             except Exception as err:  # lint-amnesty, pylint: disable=broad-except
-                log.warning("staticfiles_storage couldn't find path {}: {}".format(
+                log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
                     rest, str(err)))
 
             if exists_in_staticfiles_storage:
@@ -232,7 +232,7 @@ def replace_static_urls(
                     url = staticfiles_storage.url(course_path)
             # And if that fails, assume that it's course content, and add manually data directory
             except Exception as err:  # lint-amnesty, pylint: disable=broad-except
-                log.warning("staticfiles_storage couldn't find path {}: {}".format(
+                log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
                     rest, str(err)))
                 url = "".join([prefix, course_path])
 

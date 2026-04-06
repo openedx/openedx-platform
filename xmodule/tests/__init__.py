@@ -3,14 +3,14 @@ unittests for xmodule
 """
 
 
-import inspect
-import json
-import os
-import sys
-import traceback
+import inspect  # noqa: F401
+import json  # noqa: F401
+import os  # noqa: F401
+import sys  # noqa: F401
+import traceback  # noqa: F401
 import unittest
-from contextlib import contextmanager
-from functools import wraps
+from contextlib import contextmanager  # noqa: F401
+from functools import wraps  # noqa: F401
 from unittest.mock import Mock
 
 from django.test import TransactionTestCase
@@ -18,7 +18,7 @@ from opaque_keys.edx.keys import CourseKey
 from path import Path as path
 from xblock.core import XBlock
 from xblock.field_data import DictFieldData
-from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
+from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds  # noqa: F401
 
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
 from openedx.core.djangoapps.video_config.services import VideoConfigService
@@ -41,7 +41,7 @@ DATA_DIR = MODULE_DIR.parent.parent / "common" / "test" / "data"
 
 
 def handler_url(block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
-    return '{usage_id}/{handler}{suffix}?{query}'.format(
+    return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
         usage_id=str(block.scope_ids.usage_id),
         handler=handler,
         suffix=suffix,
@@ -50,7 +50,7 @@ def handler_url(block, handler, suffix='', query='', thirdparty=False):  # lint-
 
 
 def local_resource_url(block, uri):
-    return 'resource/{usage_id}/{uri}'.format(
+    return 'resource/{usage_id}/{uri}'.format(  # noqa: UP032
         usage_id=str(block.scope_ids.usage_id),
         uri=uri,
     )
@@ -71,7 +71,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
     ModuleStore-based XBlock Runtime for testing
     """
     def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
-        return '{usage_id}/{handler}{suffix}?{query}'.format(
+        return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
             usage_id=str(block.scope_ids.usage_id),
             handler=handler,
             suffix=suffix,
@@ -79,7 +79,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
         )
 
     def local_resource_url(self, block, uri):
-        return 'resource/{usage_id}/{uri}'.format(
+        return 'resource/{usage_id}/{uri}'.format(  # noqa: UP032
             usage_id=str(block.scope_ids.usage_id),
             uri=uri,
         )
@@ -108,7 +108,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
 
 
 def get_test_system(
-    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),
+    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),  # noqa: B008
     user=None,
     user_is_staff=False,
     user_location=None,
@@ -172,7 +172,7 @@ def get_test_system(
 
 def prepare_block_runtime(
     runtime,
-    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),
+    course_id=CourseKey.from_string('/'.join(['org', 'course', 'run'])),  # noqa: B008
     user=None,
     user_is_staff=False,
     user_location=None,
@@ -443,7 +443,7 @@ class CourseComparisonTest(TransactionTestCase):
         }
         # Split Mongo and Old-Mongo disagree about what the block_id of courses is, so skip those in
         # this comparison
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             [map_key(item.location) for item in expected_items if item.scope_ids.block_type != 'course'],
             [key for key in actual_item_map.keys() if key[0] != 'course'],
         )

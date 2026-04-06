@@ -356,7 +356,7 @@ class TestCoachDashboard(CcxTestCase, LoginEnrollmentTestCase):
         )
         assert re.search(error_message, response.content.decode('utf-8'))
 
-    def test_create_ccx(self, ccx_name='New CCX'):
+    def test_create_ccx(self, ccx_name='New CCX'):  # noqa: PT028
         """
         Create CCX. Follow redirect to coach dashboard, confirm we see
         the coach dashboard for the new CCX.
@@ -831,7 +831,7 @@ class TestCoachDashboardSchedule(CcxTestCase, LoginEnrollmentTestCase, ModuleSto
         # Trying to wrap the whole thing in a bulk operation fails because it
         # doesn't find the parents. But we can at least wrap this part...
         with self.store.bulk_operations(course.id, emit_signals=False):
-            blocks = flatten([  # pylint: disable=unused-variable
+            blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
                 [
                     BlockFactory.create(parent=vertical) for _ in range(2)
                 ] for vertical in self.verticals
@@ -1055,7 +1055,7 @@ class TestCCXGrades(FieldOverrideTestMixin, SharedModuleStoreTestCase, LoginEnro
         rows = response.content.decode('utf-8').strip().split('\r')
         headers = rows[0]
         # picking first student records
-        data = dict(list(zip(headers.strip().split(','), rows[1].strip().split(','))))
+        data = dict(list(zip(headers.strip().split(','), rows[1].strip().split(','))))  # noqa: B905
         assert 'HW 04' not in data
         assert data['HW 01'] == '0.75'
         assert data['HW 02'] == '0.5'

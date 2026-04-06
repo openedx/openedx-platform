@@ -55,7 +55,7 @@ class AccessTokenLoginMixin:
 
         return self.client.post(
             self.login_with_access_token_url,
-            HTTP_AUTHORIZATION=f"Bearer {access_token if access_token else self.access_token}".encode('utf-8')
+            HTTP_AUTHORIZATION=f"Bearer {access_token if access_token else self.access_token}".encode('utf-8')  # noqa: UP012
         )
 
     def _assert_access_token_is_valid(self, access_token=None):
@@ -709,7 +709,7 @@ class TestViewDispatch(TestCase):
         _msg_base = '{view} is not a view: {reason}'
         msg_not_callable = _msg_base.format(view=view_candidate, reason='it is not callable')
         msg_no_request = _msg_base.format(view=view_candidate, reason='it has no request argument')
-        assert hasattr(view_candidate, '__call__'), msg_not_callable
+        assert hasattr(view_candidate, '__call__'), msg_not_callable  # noqa: B004
         args = view_candidate.__code__.co_varnames
         assert args, msg_no_request
         assert args[0] == 'request'
@@ -748,7 +748,7 @@ class TestViewDispatch(TestCase):
 
     def test_get_view_for_no_backend(self):
         view_object = views.AccessTokenView()
-        self.assertRaises(KeyError, view_object.get_view_for_backend, None)
+        self.assertRaises(KeyError, view_object.get_view_for_backend, None)  # noqa: PT027
 
 
 class TestRevokeTokenView(AccessTokenLoginMixin, _DispatchingViewTestCase):  # pylint: disable=abstract-method

@@ -61,7 +61,7 @@ class TestGenerateAndStoreAppleIds(TestCase):
         mock_generate_access_token.return_value = None
 
         error_string = 'Failed to create access token.'
-        with self.assertRaisesRegex(CommandError, error_string):
+        with self.assertRaisesRegex(CommandError, error_string):  # noqa: PT027
             call_command(self.command)
 
     @mock.patch('common.djangoapps.third_party_auth.management.commands.'
@@ -82,9 +82,9 @@ class TestGenerateAndStoreAppleIds(TestCase):
         with mock.patch.object(AppleIdAuth, 'name', self.slug):
             call_command(self.command)
 
-        self.assertTrue(AppleMigrationUserIdInfo.objects.filter(
+        self.assertTrue(AppleMigrationUserIdInfo.objects.filter(  # noqa: PT009
             transfer_id='sample_transfer_sub').exists())
         expected_new_apple_id = 'sample_new_apple_id'
         actual_new_apple_id = AppleMigrationUserIdInfo.objects.get(
             transfer_id='sample_transfer_sub').new_apple_id
-        self.assertEqual(expected_new_apple_id, actual_new_apple_id)
+        self.assertEqual(expected_new_apple_id, actual_new_apple_id)  # noqa: PT009

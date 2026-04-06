@@ -36,7 +36,7 @@ urlpatterns = [
         name='program_enrollments'
     ),
     re_path(
-        r'^programs/{program_uuid}/courses/{course_id}/enrollments/'.format(
+        r'^programs/{program_uuid}/courses/{course_id}/enrollments/'.format(  # noqa: UP032
             program_uuid=PROGRAM_UUID_PATTERN,
             course_id=COURSE_ID_PATTERN
         ),
@@ -44,7 +44,7 @@ urlpatterns = [
         name="program_course_enrollments"
     ),
     re_path(
-        r'^programs/{program_uuid}/courses/{course_id}/grades/'.format(
+        r'^programs/{program_uuid}/courses/{course_id}/grades/'.format(  # noqa: UP032
             program_uuid=PROGRAM_UUID_PATTERN,
             course_id=COURSE_ID_PATTERN
         ),
@@ -52,14 +52,14 @@ urlpatterns = [
         name="program_course_grades"
     ),
     re_path(
-        r'^programs/{program_uuid}/overview/'.format(
+        r'^programs/{program_uuid}/overview/'.format(  # noqa: UP032
             program_uuid=PROGRAM_UUID_PATTERN,
         ),
         ProgramCourseEnrollmentOverviewView.as_view(),
         name="program_course_enrollments_overview"
     ),
     re_path(
-        r'^users/{username}/programs/{program_uuid}/courses'.format(
+        r'^users/{username}/programs/{program_uuid}/courses'.format(  # noqa: UP032
             username=settings.USERNAME_PATTERN,
             program_uuid=PROGRAM_UUID_PATTERN,
         ),

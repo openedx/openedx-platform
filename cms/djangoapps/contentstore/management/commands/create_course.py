@@ -52,7 +52,7 @@ class Command(BaseCommand):
         try:
             user_object = user_from_str(user)
         except User.DoesNotExist:
-            raise CommandError(f"No user {user} found.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(f"No user {user} found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return user_object
 
     def handle(self, *args, **options):

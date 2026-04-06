@@ -437,7 +437,7 @@ class EditableMetadataFieldsTest(unittest.TestCase):
         value,
         default_value,
         type="Generic",  # pylint: disable=redefined-builtin
-        options=[],
+        options=[],  # noqa: B006
     ):
         """Assert correctness of field values, type, options, and explicitness."""
         test_field = editable_fields[name]

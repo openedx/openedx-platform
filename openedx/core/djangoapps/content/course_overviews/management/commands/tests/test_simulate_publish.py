@@ -152,7 +152,7 @@ class TestSimulatePublish(SharedModuleStoreTestCase):
     def test_args_from_database(self):
         """Test management command arguments injected from config model."""
         # Nothing in the database, should default to disabled
-        with self.assertRaisesRegex(CommandError, 'SimulateCourseConfigPublish is disabled.*'):
+        with self.assertRaisesRegex(CommandError, 'SimulateCourseConfigPublish is disabled.*'):  # noqa: PT027
             call_command('simulate_publish', '--args-from-database')
 
         # Add a config

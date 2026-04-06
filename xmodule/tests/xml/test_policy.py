@@ -18,11 +18,11 @@ class TestPolicy(XModuleXmlImportTest):
         # Policy files are json, and thus the values aren't passed through 'deserialize_field'
         # Therefor, the string 'null' is passed unchanged to the Float field, which will trigger
         # a ValueError
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011, PT012
             course = self.process_xml(CourseFactory.build(policy={'days_early_for_beta': 'null'}))
 
             # Trigger the exception by looking at the imported data
-            course.days_early_for_beta  # pylint: disable=pointless-statement
+            course.days_early_for_beta  # pylint: disable=pointless-statement  # noqa: B018
 
     def test_course_policy(self):
         course = self.process_xml(CourseFactory.build(policy={'days_early_for_beta': None}))

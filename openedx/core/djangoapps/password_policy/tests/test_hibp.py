@@ -34,7 +34,7 @@ class PwnedPasswordsAPITest(TestCase):
         mock_get.return_value = response
         response = PwnedPasswordsAPI.range('7ecd7')
 
-        self.assertEqual(response, pwned_password)
+        self.assertEqual(response, pwned_password)  # noqa: PT009
 
     @override_waffle_switch(ENABLE_PWNED_PASSWORD_API, True)
     @patch('requests.get', side_effect=ReadTimeout)
@@ -50,14 +50,14 @@ class PwnedPasswordsAPITest(TestCase):
                 (
                     log.name,
                     'WARNING',
-                    'Request timed out for {}'.format(password_hash_hex)
+                    'Request timed out for {}'.format(password_hash_hex)  # noqa: UP032
                 )
             )
-        assert 'Request timed out for {}'.format(password_hash_hex) in log_capture.records[0].getMessage()
+        assert 'Request timed out for {}'.format(password_hash_hex) in log_capture.records[0].getMessage()  # noqa: UP032
 
     def test_provided_string_is_sha1_or_not(self):
         hashed_password = '8BB6118F8FD6935AD0876A3BE34A717D32708FFD'
-        self.assertTrue(PwnedPasswordsAPI.is_sha1(hashed_password))
+        self.assertTrue(PwnedPasswordsAPI.is_sha1(hashed_password))  # noqa: PT009
 
         raw_password = 'testpassword'
-        self.assertFalse(PwnedPasswordsAPI.is_sha1(raw_password))
+        self.assertFalse(PwnedPasswordsAPI.is_sha1(raw_password))  # noqa: PT009

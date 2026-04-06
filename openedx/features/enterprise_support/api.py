@@ -185,7 +185,7 @@ class EnterpriseApiClient:
             response = self.client.post(api_url, data=data)
             response.raise_for_status()
         except HTTPError:
-            message = (
+            message = (  # noqa: UP032
                 "An error occured while posting EnterpriseCourseEnrollment for user {username} and "
                 "course run {course_id}."
             ).format(
@@ -193,7 +193,7 @@ class EnterpriseApiClient:
                 course_id=course_id,
             )
             LOGGER.exception(message)
-            raise EnterpriseApiException(message)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise EnterpriseApiException(message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def fetch_enterprise_learner_data(self, user):
         """
@@ -605,7 +605,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     data sharing permissions before accessing a course.
     """
     LOGGER.info(
-        "[ENTERPRISE DSC] Determining if user [{username}] must consent to data sharing for course"
+        "[ENTERPRISE DSC] Determining if user [{username}] must consent to data sharing for course"  # noqa: UP032
         " [{course_id}]".format(
             username=user.username,
             course_id=course_id
@@ -616,7 +616,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     if not active_enterprise_learner_info:
         # user is not linked to any enterprise so return False
         LOGGER.info(
-            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]."
+            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]."  # noqa: UP032
             " The user is not linked to an enterprise.".format(
                 username=user.username,
                 course_id=course_id
@@ -631,7 +631,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     data_sharing_consent_needed_cache = TieredCache.get_cached_response(consent_cache_key)
     if data_sharing_consent_needed_cache.is_found and data_sharing_consent_needed_cache.value == 0:
         LOGGER.info(
-            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. "
+            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. "  # noqa: UP032
             "The DSC cache was checked and the value was 0.".format(
                 username=user.username,
                 course_id=course_id
@@ -674,7 +674,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     enterprise_and_learner_have_same_domain = enterprise_domain == request.site
     if not enterprise_and_learner_have_same_domain:
         LOGGER.info(
-            '[ENTERPRISE DSC] Site mismatch. USER: [{username}], RequestSite: [{request_site}], '
+            '[ENTERPRISE DSC] Site mismatch. USER: [{username}], RequestSite: [{request_site}], '  # noqa: UP032
             'LearnerEnterpriseDomain: [{enterprise_domain}]'.format(
                 username=user.username,
                 request_site=request.site,
@@ -694,7 +694,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     )
     if not consent_required:
         LOGGER.info(
-            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. The user's current"
+            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. The user's current"  # noqa: UP032
             " enterprise does not require data sharing consent.".format(
                 username=user.username,
                 course_id=course_id
@@ -704,7 +704,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
         return False
 
     LOGGER.info(
-        "[ENTERPRISE DSC] Consent from user [{username}] is needed for course [{course_id}]. The user's "
+        "[ENTERPRISE DSC] Consent from user [{username}] is needed for course [{course_id}]. The user's "  # noqa: UP032
         "current enterprise requires data sharing consent, and it has not been given.".format(
             username=user.username,
             course_id=course_id
@@ -752,7 +752,7 @@ def get_enterprise_consent_url(request, course_id, user=None, return_to=None, en
     user = user or request.user
 
     LOGGER.info(
-        'Getting enterprise consent url for user [{username}] and course [{course_id}].'.format(
+        'Getting enterprise consent url for user [{username}] and course [{course_id}].'.format(  # noqa: UP032
             username=user.username,
             course_id=course_id
         )
@@ -818,7 +818,7 @@ def get_active_enterprise_customer_user(user):
             enterprise_customer_user = EnterpriseCustomerUser.objects.get(user_id=user.id, active=True)
         except EnterpriseCustomerUser.DoesNotExist:
             LOGGER.info(
-                "Active EnterpriseCustomerUser for user [{username}] does not exist".format(username=user.username)
+                "Active EnterpriseCustomerUser for user [{username}] does not exist".format(username=user.username)  # noqa: UP032
             )
             return None
         return EnterpriseCustomerUserReadOnlySerializer(instance=enterprise_customer_user).data

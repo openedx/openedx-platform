@@ -86,12 +86,12 @@ class _TestWordCloudBase(TestCase):
         if settings.USE_EXTRACTED_WORD_CLOUD_BLOCK:
             # The extracted Word Cloud XBlock uses @XBlock.json_handler for handling AJAX requests,
             # which requires a different way of method invocation.
-            with self.assertRaises(AttributeError) as context:
+            with self.assertRaises(AttributeError) as context:  # noqa: PT027
                 json.loads(block.bad_dispatch('bad_dispatch', {}))
-            self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))
+            self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))  # noqa: PT009
         else:
             response = json.loads(block.handle_ajax('bad_dispatch', {}))
-            self.assertDictEqual(response, {
+            self.assertDictEqual(response, {  # noqa: PT009
                 'status': 'fail',
                 'error': 'Unknown Command!'
             })
@@ -114,12 +114,12 @@ class _TestWordCloudBase(TestCase):
         assert response['status'] == 'success'
         assert response['submitted'] is True
         assert response['total_count'] == 22
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response['student_words'],
             {'sun': 1, 'dog': 6, 'cat': 12}
         )
 
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             response['top_words'],
             [{'text': 'cat', 'size': 12, 'percent': 55.0},
              {'text': 'dad', 'size': 2, 'percent': 9.0},

@@ -105,7 +105,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
 
     def assertXmlEqual(self, xml_str_a: str, xml_str_b: str) -> None:
         """ Assert that the given XML strings are equal, ignoring attribute order and some whitespace variations. """
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             ElementTree.canonicalize(xml_str_a, strip_text=True),
             ElementTree.canonicalize(xml_str_b, strip_text=True),
         )
@@ -131,8 +131,8 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ]]></html>
             """
         )
-        self.assertIn("CDATA", serialized.olx_str)
-        self.assertEqual(serialized.static_files, [
+        self.assertIn("CDATA", serialized.olx_str)  # noqa: PT009
+        self.assertEqual(serialized.static_files, [  # noqa: PT009
             api.StaticFile(
                 name="foo_bar.jpg",
                 url="/asset-v1:edX+toy+2012_Fall+type@asset+block@foo_bar.jpg",
@@ -158,9 +158,9 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ]]></html>
             """
         )
-        self.assertIn("CDATA", serialized.olx_str)
+        self.assertIn("CDATA", serialized.olx_str)  # noqa: PT009
         # Static files should be identical:
-        self.assertEqual(serialized.static_files, serialized_openedx_content.static_files)
+        self.assertEqual(serialized.static_files, serialized_openedx_content.static_files)  # noqa: PT009
 
     def test_html_with_fields(self):
         """ Test an HTML Block with non-default fields like editor='raw' """
@@ -292,7 +292,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         serialized = api.serialize_xblock_to_olx(jsinput_problem)
         assert len(serialized.static_files) == 5
         for file in serialized.static_files:
-            self.assertIn(file.name, list(map(lambda f: f[0], jsinput_files)))
+            self.assertIn(file.name, list(map(lambda f: f[0], jsinput_files)))  # noqa: PT009
 
         self.assertXmlEqual(
             serialized.olx_str,
@@ -342,7 +342,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             />
             """
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             serialized.tags, {
                 str(unit.location): {
                     self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
@@ -395,7 +395,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             ]]></html>
             """
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             serialized.tags, {
                 str(html_block.location): {
                     self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
@@ -469,7 +469,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             </problem>
             """
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             serialized.tags, {
                 str(regular_problem.location): {
                     self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
@@ -491,7 +491,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             </problem>
             """
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             serialized.tags, {
                 str(python_problem.location): {
                     self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
@@ -535,7 +535,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             />
             """
         )
-        self.assertEqual(serialized.tags, {
+        self.assertEqual(serialized.tags, {  # noqa: PT009
             str(lc_block.location): {
                 self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }
@@ -572,7 +572,7 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
             />
             """
         )
-        self.assertEqual(serialized.tags, {
+        self.assertEqual(serialized.tags, {  # noqa: PT009
             str(video_block.location): {
                 self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }
@@ -599,11 +599,11 @@ class XBlockSerializationTestCase(SharedModuleStoreTestCase):
         # Check that the tags data is serialized and omitted from the OLX
         serialized = api.serialize_xblock_to_olx(openassessment_block)
 
-        self.assertNotIn("normal tag", serialized.olx_str)
-        self.assertNotIn("<special \"'-=,. |= chars> tag", serialized.olx_str)
-        self.assertNotIn("anotherTag", serialized.olx_str)
+        self.assertNotIn("normal tag", serialized.olx_str)  # noqa: PT009
+        self.assertNotIn("<special \"'-=,. |= chars> tag", serialized.olx_str)  # noqa: PT009
+        self.assertNotIn("anotherTag", serialized.olx_str)  # noqa: PT009
 
-        self.assertEqual(serialized.tags, {
+        self.assertEqual(serialized.tags, {  # noqa: PT009
             str(openassessment_block.location): {
                 self.taxonomy1.id: ["normal tag", "<special \"'-=,. |= chars> tag", "anotherTag"],
             }

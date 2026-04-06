@@ -207,7 +207,7 @@ class CourseGradingPolicyTests(GradingPolicyTestMixin, SharedModuleStoreTestCase
                 "dropped": 0
             }
         ]
-        self.assertListEqual(response.data, expected)
+        self.assertListEqual(response.data, expected)  # noqa: PT009
 
 
 class CourseGradingPolicyMissingFieldsTests(GradingPolicyTestMixin, SharedModuleStoreTestCase):
@@ -262,4 +262,4 @@ class CourseGradingPolicyMissingFieldsTests(GradingPolicyTestMixin, SharedModule
                 "dropped": 0
             }
         ]
-        self.assertListEqual(response.data, expected)
+        self.assertListEqual(response.data, expected)  # noqa: PT009

@@ -301,7 +301,7 @@ def send_tarball(tarball, size):
     """
     wrapper = FileWrapper(tarball, settings.COURSE_EXPORT_DOWNLOAD_CHUNK_SIZE)
     response = StreamingHttpResponse(wrapper, content_type='application/x-tgz')
-    response['Content-Disposition'] = 'attachment; filename=%s' % os.path.basename(tarball.name)
+    response['Content-Disposition'] = 'attachment; filename=%s' % os.path.basename(tarball.name)  # noqa: UP031
     response['Content-Length'] = size
     return response
 
@@ -468,7 +468,7 @@ def export_output_handler(request, course_key_string):
             tarball = course_import_export_storage.open(artifact.file.name)
             return send_tarball(tarball, artifact.file.storage.size(artifact.file.name))
         except UserTaskArtifact.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         finally:
             if artifact:
                 artifact.file.close()

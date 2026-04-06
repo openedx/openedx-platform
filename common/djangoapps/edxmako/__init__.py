@@ -14,10 +14,10 @@
 LOOKUP = {}
 
 from .paths import (  # lint-amnesty, pylint: disable=wrong-import-position
-    add_lookup,
-    clear_lookups,
-    lookup_template,
-    save_lookups,
+    add_lookup,  # noqa: F401
+    clear_lookups,  # noqa: F401
+    lookup_template,  # noqa: F401
+    save_lookups,  # noqa: F401
 )
 
 

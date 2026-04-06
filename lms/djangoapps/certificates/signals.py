@@ -49,7 +49,7 @@ def _update_cert_settings_on_pacing_change(sender, updated_course_overview, **kw
         updated_course_overview.id,
         updated_course_overview.self_paced,
     )
-    log.info('Certificate Generation Setting Toggled for {course_id} via pacing change'.format(
+    log.info('Certificate Generation Setting Toggled for {course_id} via pacing change'.format(  # noqa: UP032
         course_id=updated_course_overview.id
     ))
 
@@ -87,7 +87,7 @@ def listen_for_passing_grade(sender, user, course_id, **kwargs):  # pylint: disa
              f'was received.')
     try:
         return generate_certificate_task(user, course_id)
-    except CertificateGenerationNotAllowed as e:
+    except CertificateGenerationNotAllowed as e:  # noqa: F841
         log.exception(
             "Certificate generation not allowed for user %s in course %s",
             str(user),
@@ -132,7 +132,7 @@ def _handle_id_verification_approved(user):
                  f'verification status is {expected_verification_status}')
         try:
             generate_certificate_task(user, enrollment.course_id)
-        except CertificateGenerationNotAllowed as e:
+        except CertificateGenerationNotAllowed as e:  # noqa: F841
             log.exception(
                 "Certificate generation not allowed for user %s in course %s",
                 str(user),
@@ -172,7 +172,7 @@ def _listen_for_enrollment_mode_change(sender, user, course_key, mode, **kwargs)
                  f'enrollment mode is now {mode}.')
         try:
             return generate_certificate_task(user, course_key)
-        except CertificateGenerationNotAllowed as e:
+        except CertificateGenerationNotAllowed as e:  # noqa: F841
             log.exception(
                 "Certificate generation not allowed for user %s in course %s",
                 str(user),

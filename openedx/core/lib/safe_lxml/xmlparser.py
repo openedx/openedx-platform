@@ -2,7 +2,7 @@
 #
 """lxml.etree protection"""
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, print_function  # noqa: UP010
 
 import threading
 
@@ -41,12 +41,12 @@ class RestrictedElement(_etree.ElementBase):
 
     def iter(self, tag=None, *tags):  # pylint: disable=keyword-arg-before-vararg
         """Iterate over the element tree excluding blacklisted nodes."""
-        iterator = super().iter(tag=tag, *tags)
+        iterator = super().iter(tag=tag, *tags)  # noqa: B026
         return self._filter(iterator)
 
     def iterdescendants(self, tag=None, *tags):  # pylint: disable=keyword-arg-before-vararg
         """Iterate over descendants while filtering out blacklisted nodes."""
-        iterator = super().iterdescendants(tag=tag, *tags)
+        iterator = super().iterdescendants(tag=tag, *tags)  # noqa: B026
         return self._filter(iterator)
 
     def itersiblings(self, tag=None, preceding=False):

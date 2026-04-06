@@ -83,7 +83,7 @@ class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
         self.client.post(self.url, self.user_info)
 
         user = User.objects.get(username=self.user_info.get("username"))
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -166,7 +166,7 @@ class LoginSessionEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
         self.client.post(self.url, data)
 
         user = User.objects.get(username=self.user.username)
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

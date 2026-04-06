@@ -96,7 +96,7 @@ def profile_distribution(course_id, feature):
 
     if feature not in AVAILABLE_PROFILE_FEATURES:
         raise ValueError(
-            "unsupported feature requested for distribution u'{}'".format(
+            "unsupported feature requested for distribution u'{}'".format(  # noqa: UP032
                 feature)
         )
 
@@ -129,7 +129,7 @@ def profile_distribution(course_id, feature):
             ).count()
 
         distribution = {}
-        for (short, full) in choices:  # lint-amnesty, pylint: disable=unused-variable
+        for (short, full) in choices:  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
             # handle no data case
             if short == 'no_data':
                 distribution['no_data'] = 0

@@ -15,7 +15,7 @@ file and check it in at the same time as your model changes. To do that,
 import ipaddress
 import json
 import logging
-from typing import List, Optional
+from typing import List, Optional  # noqa: UP035
 
 from config_models.models import ConfigurationModel
 from django.core.cache import cache
@@ -51,7 +51,7 @@ class EmbargoedCourse(models.Model):
     course_id = CourseKeyField(max_length=255, db_index=True, unique=True)
 
     # Whether or not to embargo
-    embargoed = models.BooleanField(default=False)
+    embargoed = models.BooleanField(default=False)  # noqa: DJ012
 
     @classmethod
     def is_embargoed(cls, course_id):
@@ -66,7 +66,7 @@ class EmbargoedCourse(models.Model):
         except cls.DoesNotExist:
             return False
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         not_em = "Not "
         if self.embargoed:
             not_em = ""
@@ -244,7 +244,7 @@ class RestrictedCourse(models.Model):
             ]
         }
 
-    def message_key_for_access_point(self, access_point: str) -> Optional[str]:
+    def message_key_for_access_point(self, access_point: str) -> Optional[str]:  # noqa: UP045
         """Determine which message to show the user.
 
         The message can be configured per-course and depends
@@ -263,7 +263,7 @@ class RestrictedCourse(models.Model):
         elif access_point == 'courseware':
             return self.access_msg_key
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return str(self.course_key)
 
     @classmethod
@@ -381,12 +381,12 @@ class Country(models.Model):
     )
 
     def __str__(self):
-        return "{name} ({code})".format(
+        return "{name} ({code})".format(  # noqa: UP032
             name=str(self.country.name),
             code=str(self.country)
         )
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         """Default ordering is ascending by country code """
         ordering = ['country']
 
@@ -475,7 +475,7 @@ class CountryAccessRule(models.Model):
         return country == '' or country in allowed_countries
 
     @classmethod
-    def _get_country_access_list(cls, course_key: CourseKey) -> List[str]:
+    def _get_country_access_list(cls, course_key: CourseKey) -> List[str]:  # noqa: UP006
         """
         if a course is blacklist for two countries then course can be accessible from
         any where except these two countries.
@@ -510,7 +510,7 @@ class CountryAccessRule(models.Model):
         # that have access to the course.
         return list(whitelist_countries - blacklist_countries)
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         if self.rule_type == self.WHITELIST_RULE:
             return _("Whitelist {country} for {course}").format(
                 course=str(self.restricted_course.course_key),
@@ -529,7 +529,7 @@ class CountryAccessRule(models.Model):
         cache.delete(cache_key)
         log.info("Invalidated country access list for course %s", course_key)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         """a course can be added with either black or white list.  """
         unique_together = (
             # This restriction ensures that a country is on
@@ -580,7 +580,7 @@ post_delete.connect(invalidate_country_rule_cache, sender=CountryAccessRule)
 post_delete.connect(invalidate_country_rule_cache, sender=RestrictedCourse)
 
 
-class CourseAccessRuleHistory(models.Model):
+class CourseAccessRuleHistory(models.Model):  # noqa: DJ008
     """
     History of course access rule changes.
 
@@ -590,7 +590,7 @@ class CourseAccessRuleHistory(models.Model):
 
     timestamp = models.DateTimeField(db_index=True, auto_now_add=True)
     course_key = CourseKeyField(max_length=255, db_index=True)
-    snapshot = models.TextField(null=True, blank=True)
+    snapshot = models.TextField(null=True, blank=True)  # noqa: DJ001
 
     DELETED_PLACEHOLDER = "DELETED"
 
@@ -658,7 +658,7 @@ class CourseAccessRuleHistory(models.Model):
             else:
                 CourseAccessRuleHistory.save_snapshot(restricted_course)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         get_latest_by = 'timestamp'
 
 
@@ -715,7 +715,7 @@ class GlobalRestrictedCountry(models.Model):
         """
         cache.set(cls.CACHE_KEY, cls._fetch_restricted_countries())
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         """
         Override save method to update cache on insert/update.
         """
@@ -729,10 +729,10 @@ class GlobalRestrictedCountry(models.Model):
         super().delete(*args, **kwargs)
         self.update_cache()
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return f"{self.country.country.name} ({self.country.country})"
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         verbose_name = "Global Restricted Country"
         verbose_name_plural = "Global Restricted Countries"
 

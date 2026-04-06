@@ -2,7 +2,7 @@
 LTI Providers for course live module
 """
 from abc import ABC
-from typing import Dict, List
+from typing import Dict, List  # noqa: UP035
 
 from django.conf import settings
 
@@ -13,10 +13,10 @@ class LiveProvider(ABC):
     """
     id: str
     name: str
-    features: List[str] = []
+    features: List[str] = []  # noqa: UP006
     requires_username: bool = False
     requires_email: bool = False
-    additional_parameters: List[str] = []
+    additional_parameters: List[str] = []  # noqa: UP006
 
     @property
     def has_free_tier(self) -> bool:
@@ -67,7 +67,7 @@ class HasGlobalCredentials(ABC):
     url: str
 
     @staticmethod
-    def get_global_keys() -> Dict:
+    def get_global_keys() -> Dict:  # noqa: UP006
         """
         Get keys from settings
         """
@@ -122,7 +122,7 @@ class BigBlueButton(LiveProvider, HasGlobalCredentials):
         return True
 
     @staticmethod
-    def get_global_keys() -> Dict:
+    def get_global_keys() -> Dict:  # noqa: UP006
         """
         Get keys from settings
         """
@@ -148,13 +148,13 @@ class ProviderManager:
     """
     This class provides access to all available provider objects
     """
-    providers: Dict[str, LiveProvider]
+    providers: Dict[str, LiveProvider]  # noqa: UP006
 
     def __init__(self):
         # auto detect live providers.
         self.providers = {provider.id: provider() for provider in LiveProvider.__subclasses__()}
 
-    def get_enabled_providers(self) -> Dict[str, LiveProvider]:
+    def get_enabled_providers(self) -> Dict[str, LiveProvider]:  # noqa: UP006
         """
         Get Enabled providers
         """

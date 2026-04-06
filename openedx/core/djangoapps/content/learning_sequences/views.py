@@ -161,7 +161,7 @@ class CourseOutlineView(APIView):
         # Translate input params and do course key validation (will cause HTTP
         # 400 error if an invalid CourseKey was entered, instead of 404).
         course_key = validate_course_key(course_key_str)
-        at_time = datetime.now(timezone.utc)
+        at_time = datetime.now(timezone.utc)  # noqa: UP017
 
         # Get target user (and override request user for the benefit of any waffle checks)
         request.user = self._determine_user(request, course_key)

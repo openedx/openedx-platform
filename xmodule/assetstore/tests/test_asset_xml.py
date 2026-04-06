@@ -27,7 +27,7 @@ class TestAssetXml(unittest.TestCase):
 
         self.course_assets = []
         for asset in AssetStoreTestData.all_asset_data:
-            asset_dict = dict(list(zip(AssetStoreTestData.asset_fields[1:], asset[1:])))
+            asset_dict = dict(list(zip(AssetStoreTestData.asset_fields[1:], asset[1:])))  # noqa: B905
             asset_md = AssetMetadata(self.course_id.make_asset_key('asset', asset[0]), **asset_dict)
             self.course_assets.append(asset_md)
 

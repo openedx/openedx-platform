@@ -4,7 +4,7 @@ Export course metadata for all courses
 
 from django.core.management.base import BaseCommand
 
-from cms.djangoapps.export_course_metadata.signals import export_course_metadata  # pylint: disable=unused-import
+from cms.djangoapps.export_course_metadata.signals import export_course_metadata  # pylint: disable=unused-import  # noqa: F401
 from cms.djangoapps.export_course_metadata.tasks import export_course_metadata_task
 from xmodule.modulestore.django import modulestore
 

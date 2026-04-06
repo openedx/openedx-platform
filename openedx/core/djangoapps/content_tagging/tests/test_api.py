@@ -447,18 +447,18 @@ class TestExportImportTags(TaggedCourseMixin):
 
         file_path = os.path.join(file_dir_name, file_name)
 
-        self.assertTrue(os.path.exists(file_path))
+        self.assertTrue(os.path.exists(file_path))  # noqa: PT009
 
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r') as f:  # noqa: UP015
             content = f.read()
 
         cleaned_content = content.replace('\r\n', '\n')
         cleaned_expected_csv = self.expected_csv.replace('\r\n', '\n')
-        self.assertEqual(cleaned_content, cleaned_expected_csv)
+        self.assertEqual(cleaned_content, cleaned_expected_csv)  # noqa: PT009
 
     def test_import_tags_invalid_format(self) -> None:
         csv_path = self._create_csv_file('invalid format, Invalid\r\ntest1, test2')
-        with self.assertRaises(ValueError) as exc:
+        with self.assertRaises(ValueError) as exc:  # noqa: PT027
             api.import_course_tags_from_csv(csv_path, self.course.id)
             assert "Invalid format of csv in" in str(exc.exception)
 

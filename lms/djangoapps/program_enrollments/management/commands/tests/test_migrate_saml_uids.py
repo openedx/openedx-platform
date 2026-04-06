@@ -29,7 +29,7 @@ class TestMigrateSamlUids(TestCase):
         return f'{{"email":"{email}","student_key":"{uid}"}}'
 
     def _format_single_email_uid_pair_json(self, email, uid):
-        return '[{obj}]'.format(
+        return '[{obj}]'.format(  # noqa: UP032
             obj=self._format_email_uid_pair(email, uid)
         )
 
@@ -109,7 +109,7 @@ class TestMigrateSamlUids(TestCase):
 
         self._call_command(self._format_single_email_uid_pair_json(email, new_urn))
         mock_info.assert_any_call(
-            'Number of users identified in the mapping file without'
+            'Number of users identified in the mapping file without'  # noqa: UP032
             ' {slug} UserSocialAuth records: 1'.format(
                 slug=self.provider_slug
             )
@@ -126,7 +126,7 @@ class TestMigrateSamlUids(TestCase):
 
         self._call_command(self._format_single_email_uid_pair_json('different' + email, new_urn))
         mock_info.assert_any_call(
-            'Number of users with {slug} UserSocialAuth records '
+            'Number of users with {slug} UserSocialAuth records '  # noqa: UP032
             'for which there was no mapping in the provided file: 1'.format(
                 slug=self.provider_slug
             )

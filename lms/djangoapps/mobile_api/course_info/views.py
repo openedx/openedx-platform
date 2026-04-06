@@ -3,7 +3,7 @@ Views for course info API
 """
 
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union  # noqa: UP035
 
 import django
 from django.contrib.auth import get_user_model
@@ -39,7 +39,7 @@ from .utils import get_user_certificate_download_url
 User = get_user_model()
 log = logging.getLogger(__name__)
 
-UserType = Union[django.contrib.auth.models.User, django.contrib.auth.models.AnonymousUser, StudentUser]
+UserType = Union[django.contrib.auth.models.User, django.contrib.auth.models.AnonymousUser, StudentUser]  # noqa: UP007
 
 
 @mobile_view()
@@ -178,7 +178,7 @@ class CourseGoalsRecordUserActivity(APIView):
             )
 
         if not ENABLE_COURSE_GOALS.is_enabled(course_key):
-            log.warning('For this mobile request, user activity is not enabled for this user {} and course {}'.format(
+            log.warning('For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032
                 str(user_id), str(course_key))
             )
             return Response(status=(200))
@@ -291,7 +291,7 @@ class BlocksInfoInCourseView(BlocksInCourseView):
         * 404 if the course is not available or cannot be seen.
     """
 
-    def get_requested_user(self, user: UserType, username: Optional[str] = None) -> Union[UserType, None]:
+    def get_requested_user(self, user: UserType, username: Optional[str] = None) -> Union[UserType, None]:  # noqa: UP007, UP045
         """
         Return a user for whom the course blocks are fetched.
 
@@ -387,7 +387,7 @@ class BlocksInfoInCourseView(BlocksInCourseView):
         self,
         requested_user: User,
         course_id: CourseKey,
-        blocks_info_data: Dict[str, Dict],
+        blocks_info_data: Dict[str, Dict],  # noqa: UP006
     ) -> None:
         """
         Extends sequential xblock info with assignment's name and progress.
@@ -422,7 +422,7 @@ class BlocksInfoInCourseView(BlocksInCourseView):
                 )
 
     @staticmethod
-    def _id_to_label(section_breakdown: List[Dict]) -> Dict[str, str]:
+    def _id_to_label(section_breakdown: List[Dict]) -> Dict[str, str]:  # noqa: UP006
         """
         Get `sequential_id` to assignment `label` mapping.
         """

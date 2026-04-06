@@ -177,7 +177,7 @@ class SurveyViewsTests(LoginEnrollmentTestCase, SharedModuleStoreTestCase, XssTe
         )
 
         assert resp.status_code == 200
-        expected = '<input type="hidden" name="course_id" value="{course_id}" />'.format(
+        expected = '<input type="hidden" name="course_id" value="{course_id}" />'.format(  # noqa: UP032
             course_id=str(self.course.id)
         )
 

@@ -34,4 +34,4 @@ def decode_image_data(data):
         return base64.b64decode(data.split(",")[1])
     except (IndexError, UnicodeEncodeError):
         log.exception("Could not decode image data")
-        raise InvalidImageData  # lint-amnesty, pylint: disable=raise-missing-from
+        raise InvalidImageData  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

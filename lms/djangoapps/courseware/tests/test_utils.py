@@ -51,7 +51,7 @@ class TestAccessUtils(TestCase):
             instance = role_mock.return_value
             instance.has_user.return_value = is_beta_user
             adjusted_date = adjust_start_date(user, days_early_for_beta, start, course_key)
-            self.assertEqual(expected, adjusted_date)
+            self.assertEqual(expected, adjusted_date)  # noqa: PT009
 
 
 @ddt.ddt

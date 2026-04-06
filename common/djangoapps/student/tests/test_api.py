@@ -87,7 +87,7 @@ class TestStudentApi(SharedModuleStoreTestCase):
 
         result = get_course_enrollments(self.user)
 
-        self.assertEqual(list(expected), list(result))
+        self.assertEqual(list(expected), list(result))  # noqa: PT009
 
     def test_get_filtered_course_enrollments(self):
         """Verify a filtered subset of enrollments can be retrieved"""
@@ -98,4 +98,4 @@ class TestStudentApi(SharedModuleStoreTestCase):
 
         result = get_course_enrollments(self.user, True, course_ids=[course_2.id])
 
-        self.assertEqual(list(expected), list(result))
+        self.assertEqual(list(expected), list(result))  # noqa: PT009

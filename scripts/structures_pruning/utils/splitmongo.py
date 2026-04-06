@@ -367,18 +367,18 @@ class ChangePlan(namedtuple('ChangePlan', 'delete update_parents')):
             if notes:
                 return "{} {} {}".format(action, s_id, " ".join(notes))
 
-            return "{} {}".format(action, s_id)
+            return "{} {}".format(action, s_id)  # noqa: UP032
 
         print("== Summary ==", file=details_file)
-        print("Active Version Branches: {}".format(len(branches)), file=details_file)
-        print("Total Structures: {}".format(len(structures)), file=details_file)
-        print("Structures to Save: {}".format(len(structure_ids_to_save)), file=details_file)
-        print("Structures to Delete: {}".format(len(structures) - len(structure_ids_to_save)), file=details_file)
-        print("Structures to Rewrite Parent Link: {}".format(len(set_parent_to_original)), file=details_file)
+        print("Active Version Branches: {}".format(len(branches)), file=details_file)  # noqa: UP032
+        print("Total Structures: {}".format(len(structures)), file=details_file)  # noqa: UP032
+        print("Structures to Save: {}".format(len(structure_ids_to_save)), file=details_file)  # noqa: UP032
+        print("Structures to Delete: {}".format(len(structures) - len(structure_ids_to_save)), file=details_file)  # noqa: UP032
+        print("Structures to Rewrite Parent Link: {}".format(len(set_parent_to_original)), file=details_file)  # noqa: UP032
         print("\n== Active Versions ==", file=details_file)
 
         for branch in branches:
-            print("{}".format(branch), file=details_file)
+            print("{}".format(branch), file=details_file)  # noqa: UP032
             for structure_id in structures_graph.traverse_ids(branch.structure_id, include_start=True):
                 print(text_for(structure_id), file=details_file)
             print("", file=details_file)

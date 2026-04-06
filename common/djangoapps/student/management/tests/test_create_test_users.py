@@ -228,7 +228,7 @@ class CreateTestUsersTestCase(SharedModuleStoreTestCase):
         self.call_command([test_username])
         assert self.user_model.objects.filter(username=test_username).exists()
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError):  # noqa: PT027
             self.call_command([test_username], ignore_user_already_exists=False)
 
         self.call_command([test_username], ignore_user_already_exists=True)

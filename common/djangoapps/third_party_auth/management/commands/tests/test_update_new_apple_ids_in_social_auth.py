@@ -51,11 +51,11 @@ class TestGenerateAndStoreAppleIds(TestCase):
         )
 
     def test_new_apple_id_updated_in_social_auth(self):
-        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())
-        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())
+        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())  # noqa: PT009
+        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())  # noqa: PT009
 
         with mock.patch.object(AppleIdAuth, 'name', self.slug):
             call_command(self.command)
 
-        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())
-        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())
+        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())  # noqa: PT009
+        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())  # noqa: PT009

@@ -181,7 +181,7 @@ class SiteConfigurationHistory(TimeStampedModel):
 
     def __str__(self):
         # pylint: disable=line-too-long
-        return "<SiteConfigurationHistory: {site}, Last Modified: {modified} >".format(  # xss-lint: disable=python-wrap-html
+        return "<SiteConfigurationHistory: {site}, Last Modified: {modified} >".format(  # xss-lint: disable=python-wrap-html  # noqa: UP032
             modified=self.modified,
             site=self.site,
         )

@@ -535,7 +535,7 @@ class RegistrationFormFactory:
                             FormDescription.FIELD_TYPE_MAP.get(field.__class__))
                         if not field_type:
                             raise ImproperlyConfigured(
-                                "Field type '{}' not recognized for registration extension field '{}'.".format(
+                                "Field type '{}' not recognized for registration extension field '{}'.".format(  # noqa: UP032
                                     field_type,
                                     field_name
                                 )

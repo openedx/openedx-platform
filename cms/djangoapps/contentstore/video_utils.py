@@ -87,7 +87,7 @@ def download_youtube_video_thumbnail(youtube_id):
     thumbnail_content = thumbnail_content_type = None
     # Download highest resolution thumbnail available.
     for thumbnail_quality in YOUTUBE_THUMBNAIL_SIZES:
-        thumbnail_url = urljoin('https://img.youtube.com', '/vi/{youtube_id}/{thumbnail_quality}.jpg'.format(
+        thumbnail_url = urljoin('https://img.youtube.com', '/vi/{youtube_id}/{thumbnail_quality}.jpg'.format(  # noqa: UP032
             youtube_id=youtube_id, thumbnail_quality=thumbnail_quality
         ))
         response = requests.get(thumbnail_url)

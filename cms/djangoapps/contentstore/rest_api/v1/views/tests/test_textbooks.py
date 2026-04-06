@@ -42,8 +42,8 @@ class CourseTextbooksViewTest(CourseTestCase, PermissionAccessMixin):
         self.save_course()
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["textbooks"], expected_textbook)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data["textbooks"], expected_textbook)  # noqa: PT009
 
 
 class CourseTextbooksAuthzTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
