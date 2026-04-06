@@ -18,4 +18,7 @@ class VerifyStudentConfig(AppConfig):
         Connect signal handlers.
         """
         from lms.djangoapps.verify_student import tasks  # pylint: disable=unused-import  # noqa: F401
-        from lms.djangoapps.verify_student.signals import handlers, signals  # pylint: disable=unused-import  # noqa: F401
+        from lms.djangoapps.verify_student.signals import (  # pylint: disable=unused-import  # noqa: F401
+            handlers,
+            signals,
+        )

@@ -43,13 +43,21 @@ from lms.djangoapps.discussion.django_comment_client.tests.utils import (
 )
 from lms.djangoapps.discussion.django_comment_client.utils import strip_none
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
-from lms.djangoapps.discussion.views import _get_discussion_default_topic_id, course_discussions_settings_handler  # noqa: F401
+from lms.djangoapps.discussion.views import (  # noqa: F401
+    _get_discussion_default_topic_id,
+    course_discussions_settings_handler,
+)
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
 from openedx.core.djangoapps.course_groups.tests.helpers import config_course_cohorts  # noqa: F401
 from openedx.core.djangoapps.course_groups.tests.test_views import CohortViewsTestCase  # noqa: F401
-from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientPaginatedResult  # noqa: F401
-from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_STUDENT, CourseDiscussionSettings  # noqa: F401
+from openedx.core.djangoapps.django_comment_common.comment_client.utils import (
+    CommentClientPaginatedResult,  # noqa: F401
+)
+from openedx.core.djangoapps.django_comment_common.models import (  # noqa: F401
+    FORUM_ROLE_STUDENT,
+    CourseDiscussionSettings,
+)
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext, seed_permissions_roles
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES

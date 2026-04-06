@@ -6,5 +6,9 @@ from .assets import AssetSerializer  # noqa: F401
 from .authoring_grading import CourseGradingModelSerializer  # noqa: F401
 from .course_optimizer import LinkCheckSerializer  # noqa: F401
 from .tabs import CourseTabSerializer, CourseTabUpdateSerializer, TabIDLocatorSerializer  # noqa: F401
-from .transcripts import TranscriptSerializer, YoutubeTranscriptCheckSerializer, YoutubeTranscriptUploadSerializer  # noqa: F401
+from .transcripts import (  # noqa: F401
+    TranscriptSerializer,
+    YoutubeTranscriptCheckSerializer,
+    YoutubeTranscriptUploadSerializer,
+)
 from .xblock import XblockSerializer  # noqa: F401

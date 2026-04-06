@@ -2,9 +2,12 @@
 
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
-from edx_django_utils.plugins import PluginSignals  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from edx_django_utils.plugins import PluginSignals  # pylint: disable=unused-import  # noqa: F401
 
-from openedx.core.djangoapps.plugins.constants import ProjectType  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+# pylint: disable-next=unused-import
+from openedx.core.djangoapps.plugins.constants import (
+    ProjectType,  # noqa: F401
+)
 
 
 class SchedulesConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-docstring

@@ -29,7 +29,10 @@ from rest_framework.response import Response
 from xblock.fields import Scope
 from xblock.runtime import KeyValueStore
 
-from common.djangoapps.student.models import CourseEnrollment, User  # lint-amnesty, pylint: disable=reimported  # noqa: F811
+from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=reimported  # noqa: F811
+    CourseEnrollment,
+    User,
+)
 from lms.djangoapps.courseware.access import is_mobile_available_for_user
 from lms.djangoapps.courseware.access_utils import ACCESS_GRANTED
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor

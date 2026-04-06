@@ -58,7 +58,10 @@ from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
+from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F401
+    mock_render_template,
+    override_descriptor_system,
+)
 from xmodule.tests.test_import import DummyModuleStoreRuntime
 from xmodule.tests.test_video import VideoBlockTestBase
 from xmodule.video_block import VideoBlock, video_utils

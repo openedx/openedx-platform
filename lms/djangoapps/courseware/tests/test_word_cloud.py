@@ -15,7 +15,10 @@ from common.djangoapps.student.tests.factories import RequestFactoryNoCsrf
 from xmodule import word_cloud_block
 
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
+from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F401
+    mock_render_template,
+    override_descriptor_system,
+)
 from xmodule.x_module import STUDENT_VIEW
 
 from .helpers import BaseTestXmodule
