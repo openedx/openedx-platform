@@ -5,7 +5,6 @@ import datetime
 import json
 import unittest
 from unittest import mock
-from unittest.mock import Mock, patch  # noqa: F401
 
 import ddt
 import pytest
@@ -41,7 +40,6 @@ from openedx.core.djangoapps.discussions.utils import (
     get_group_names_by_id,
     has_required_keys,
 )
-from openedx.core.djangoapps.django_comment_common.comment_client.utils import CommentClientMaintenanceError  # noqa: F401
 from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
     DiscussionsIdMapping,
