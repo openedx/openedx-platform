@@ -1,9 +1,13 @@
 """
 Tests related to XBlock support API.
 """
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from common.djangoapps.xblock_django.api import authorable_xblocks, deprecated_xblocks, disabled_xblocks
-from common.djangoapps.xblock_django.models import XBlockConfiguration, XBlockStudioConfiguration, XBlockStudioConfigurationFlag  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.xblock_django.models import (  # lint-amnesty, pylint: disable=line-too-long
+    XBlockConfiguration,
+    XBlockStudioConfiguration,
+    XBlockStudioConfigurationFlag,
+)
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 
 
 class XBlockSupportTestCase(CacheIsolationTestCase):

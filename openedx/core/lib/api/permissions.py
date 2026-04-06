@@ -6,13 +6,13 @@ API library for Django REST Framework permissions-oriented workflows
 from django.conf import settings
 from django.http import Http404
 from edx_django_utils.monitoring import set_custom_attribute
+from edx_rest_framework_extensions.permissions import IsStaff, IsUserInUrl
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions
 
-from edx_rest_framework_extensions.permissions import IsStaff, IsUserInUrl
-from openedx.core.lib.log_utils import audit_log
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
+from openedx.core.lib.log_utils import audit_log
 
 
 class ApiKeyHeaderPermission(permissions.BasePermission):

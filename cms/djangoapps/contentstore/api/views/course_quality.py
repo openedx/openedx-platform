@@ -4,16 +4,16 @@ import time
 
 import numpy as np
 from edxval.api import get_course_videos_qset
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from scipy import stats
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.graph_traversals import traverse_pre_order
-from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .utils import get_bool_param

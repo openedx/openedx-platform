@@ -7,7 +7,9 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.teams.services import TeamsService
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 class TeamsServiceTests(ModuleStoreTestCase):

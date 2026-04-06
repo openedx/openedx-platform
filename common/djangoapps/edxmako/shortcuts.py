@@ -16,14 +16,14 @@
 import logging
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.http import HttpResponse  # lint-amnesty, pylint: disable=unused-import
 from django.template import engines
-from django.urls import reverse, NoReverseMatch
-from six.moves.urllib.parse import urljoin
-from django.core.validators import URLValidator
-from django.core.exceptions import ValidationError
-
+from django.urls import NoReverseMatch, reverse
 from edx_django_utils.monitoring import set_custom_attribute
+from six.moves.urllib.parse import urljoin
+
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.util.xmodule_django import get_current_request_hostname  # lint-amnesty, pylint: disable=wrong-import-order
 

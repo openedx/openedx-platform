@@ -5,15 +5,12 @@ from unittest import mock
 
 from django.test import TestCase
 from edx_django_utils.cache import RequestCache
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import (
-    CourseFactory,
-    BlockFactory
-)
 
 from lms.djangoapps.discussion.signals.handlers import ENABLE_FORUM_NOTIFICATIONS_FOR_SITE_KEY
 from openedx.core.djangoapps.django_comment_common import models, signals
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory, SiteFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class SendMessageHandlerTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring

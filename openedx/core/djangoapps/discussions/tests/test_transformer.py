@@ -2,16 +2,12 @@
 Tests for discussions course block transformer
 """
 
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.course_blocks.transformers.tests.helpers import TransformerRegistryTestMixin
-from openedx.core.djangoapps.discussions.models import (
-    DiscussionTopicLink,
-    get_default_provider_type,
-)
+from openedx.core.djangoapps.discussions.models import DiscussionTopicLink, get_default_provider_type
 from openedx.core.djangoapps.discussions.transformers import DiscussionsTopicLinkTransformer
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class DiscussionsTopicLinkTransformerTestCase(TransformerRegistryTestMixin, ModuleStoreTestCase):

@@ -9,10 +9,12 @@ from unittest.mock import patch
 import pytest
 from django.test import TestCase
 
-from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme, UserPartitionError
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme, UserPartitionError
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.tests.test_partitions import PartitionTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.tests.test_partitions import (
+    PartitionTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 class MemoryCourseTagAPI:

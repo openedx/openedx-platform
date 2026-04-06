@@ -6,16 +6,15 @@ import logging
 
 from django.conf import settings
 from django.utils.translation import gettext as _
-
-from common.djangoapps.course_modes.models import CourseMode
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import AssetKey
-from .assets import delete_asset
 
+from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.util.db import MYSQL_MAX_INT, generate_int_id
 
 from ..exceptions import AssetNotFoundException
+from .assets import delete_asset
 
 CERTIFICATE_SCHEMA_VERSION = 1
 CERTIFICATE_MINIMUM_ID = 100

@@ -8,11 +8,12 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import InstructorFactory, UserFactory
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import delete_user_preference, set_user_preference
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

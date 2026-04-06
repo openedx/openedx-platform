@@ -3,8 +3,8 @@ Tests for the expire_waiting_enrollments management command.
 """
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from django.core.management import call_command
 from django.test import TestCase
 

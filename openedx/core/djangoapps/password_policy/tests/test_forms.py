@@ -8,11 +8,12 @@ from django.forms import ValidationError
 from django.test import TestCase
 from django.test.utils import override_settings
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.password_policy.compliance import (
-    NonCompliantPasswordException, NonCompliantPasswordWarning
+    NonCompliantPasswordException,
+    NonCompliantPasswordWarning,
 )
 from openedx.core.djangoapps.password_policy.forms import PasswordPolicyAwareAdminAuthForm
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 class PasswordPolicyAwareAdminAuthFormTests(TestCase):

@@ -14,9 +14,9 @@ from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.features.course_experience.api.v1.utils import (
-    reset_deadlines_for_course,
+    reset_bulk_course_deadlines,
     reset_course_deadlines_for_user,
-    reset_bulk_course_deadlines
+    reset_deadlines_for_course,
 )
 from xmodule.modulestore.tests.factories import CourseFactory
 

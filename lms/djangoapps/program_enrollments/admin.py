@@ -8,7 +8,7 @@ from django.utils.html import format_html
 from lms.djangoapps.program_enrollments.models import (
     CourseAccessRoleAssignment,
     ProgramCourseEnrollment,
-    ProgramEnrollment
+    ProgramEnrollment,
 )
 
 

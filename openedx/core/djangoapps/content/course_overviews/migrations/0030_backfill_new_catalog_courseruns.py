@@ -7,7 +7,8 @@ import logging
 
 from django.conf import settings
 from django.db import migrations
-from organizations.api import ensure_organization, exceptions as org_exceptions
+from organizations.api import ensure_organization
+from organizations.api import exceptions as org_exceptions
 
 log = logging.getLogger(__name__)
 

@@ -9,17 +9,18 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.utils.translation import gettext as _, override as translation_override
+from django.utils.translation import gettext as _
+from django.utils.translation import override as translation_override
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
-from openedx.core.djangoapps.notifications.models import (
-    Notification,
-    NotificationPreference,
-)
+from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference
+
+from ..base_notification import COURSE_NOTIFICATION_APPS
+from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
 from .events import send_immediate_email_digest_sent_event, send_user_email_digest_sent_event
 from .message_type import EmailNotificationMessageType
 from .utils import (
@@ -33,8 +34,6 @@ from .utils import (
     get_start_end_date,
     get_text_for_notification_type,
 )
-from ..base_notification import COURSE_NOTIFICATION_APPS
-from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
 
 User = get_user_model()
 logger = get_task_logger(__name__)

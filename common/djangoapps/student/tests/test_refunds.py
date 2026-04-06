@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
+
 # Explicitly import the cache from ConfigurationModel so we can reset it after each test
 from config_models.models import cache
 from django.test.client import Client
@@ -26,7 +27,9 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from openedx.core.djangoapps.commerce.utils import ECOMMERCE_DATE_FORMAT
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)

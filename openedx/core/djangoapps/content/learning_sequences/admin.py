@@ -1,17 +1,18 @@
 """
 Read-only Django Admin for viewing Learning Sequences and Outline data.
 """
+import json
 from datetime import datetime
 from enum import Enum
-import json
 
+import attr
 from django.contrib import admin
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 from opaque_keys import OpaqueKey
-import attr
 
 from openedx.core import types
+
 from .api import get_content_errors, get_course_outline
 from .models import CourseContext, CourseSectionSequence
 

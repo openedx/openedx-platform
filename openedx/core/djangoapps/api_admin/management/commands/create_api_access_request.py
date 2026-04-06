@@ -13,7 +13,7 @@ from openedx.core.djangoapps.api_admin.models import (
     ApiAccessConfig,
     ApiAccessRequest,
     send_decision_email,
-    send_request_email
+    send_request_email,
 )
 
 logger = logging.getLogger(__name__)

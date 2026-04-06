@@ -11,8 +11,10 @@ from django.test.client import RequestFactory
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.keys import UsageKey
 
+from cms.djangoapps.contentstore.helpers import GRADER_TYPES
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_url
+from cms.djangoapps.contentstore.xblock_storage_handlers.create_xblock import create_xblock
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.tests.factories import UserFactory
@@ -24,10 +26,8 @@ from ..entrance_exam import (
     create_entrance_exam,
     delete_entrance_exam,
     remove_entrance_exam_milestone_reference,
-    update_entrance_exam
+    update_entrance_exam,
 )
-from cms.djangoapps.contentstore.helpers import GRADER_TYPES
-from cms.djangoapps.contentstore.xblock_storage_handlers.create_xblock import create_xblock
 
 
 @override_settings(ENTRANCE_EXAMS=True)

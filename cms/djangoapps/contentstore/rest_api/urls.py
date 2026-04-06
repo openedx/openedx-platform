@@ -2,8 +2,7 @@
 Contentstore API URLs.
 """
 
-from django.urls import path
-from django.urls import include
+from django.urls import include, path
 
 from .v0 import urls as v0_urls
 from .v1 import urls as v1_urls

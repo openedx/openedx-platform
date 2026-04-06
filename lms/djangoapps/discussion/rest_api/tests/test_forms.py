@@ -11,11 +11,7 @@ import ddt
 from django.http import QueryDict
 from opaque_keys.edx.locator import CourseLocator
 
-from lms.djangoapps.discussion.rest_api.forms import (
-    UserCommentListGetForm,
-    CommentListGetForm,
-    ThreadListGetForm,
-)
+from lms.djangoapps.discussion.rest_api.forms import CommentListGetForm, ThreadListGetForm, UserCommentListGetForm
 from openedx.core.djangoapps.util.test_forms import FormTestMixin
 
 

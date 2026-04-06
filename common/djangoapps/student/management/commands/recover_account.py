@@ -4,14 +4,14 @@ Management command to recover learners accounts
 
 import logging
 from os import path
-import unicodecsv
 
-from django.db.models import Q
+import unicodecsv
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.auth import get_user_model
-from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.http import int_to_base36
 from edx_ace import ace
@@ -19,12 +19,12 @@ from edx_ace.recipient import Recipient
 from eventtracking import tracker
 
 from common.djangoapps.student.models import AccountRecoveryConfiguration
-from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.djangoapps.user_authn.message_types import PasswordReset
+from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
 from openedx.core.lib.celery.task_utils import emulate_http_request
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name

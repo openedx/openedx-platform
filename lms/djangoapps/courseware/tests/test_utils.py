@@ -14,9 +14,9 @@ from requests.models import Response
 from rest_framework import status
 
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, UserFactory
+from lms.djangoapps.courseware.access_utils import adjust_start_date
 from lms.djangoapps.courseware.constants import UNEXPECTED_ERROR_IS_ELIGIBLE
 from lms.djangoapps.courseware.tests.factories import FinancialAssistanceConfigurationFactory
-from lms.djangoapps.courseware.access_utils import adjust_start_date
 from lms.djangoapps.courseware.utils import (
     create_financial_assistance_application,
     get_financial_assistance_application_status,

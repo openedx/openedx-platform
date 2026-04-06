@@ -3,6 +3,7 @@ Defines URLs for Calendar Sync.
 """
 
 from django.urls import path
+
 from .views.calendar_sync import CalendarSyncView
 
 urlpatterns = [

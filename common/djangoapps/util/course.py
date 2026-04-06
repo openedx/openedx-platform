@@ -8,10 +8,10 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_filters.learning.filters import CourseAboutPageURLRequested
 
 from lms.djangoapps.branding.toggles import use_catalog_mfe
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx_filters.learning.filters import CourseAboutPageURLRequested
 
 log = logging.getLogger(__name__)
 

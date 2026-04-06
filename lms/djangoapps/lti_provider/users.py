@@ -4,7 +4,6 @@ that an individual has in the campus LMS platform and on edX.
 """
 
 import logging
-
 import random
 import string
 import uuid

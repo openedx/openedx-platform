@@ -17,7 +17,7 @@ from xblock.fields import Date, Integer, Scope, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
 from xmodule.modulestore.inheritance import InheritanceMixin, compute_inherited_metadata
-from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
+from xmodule.modulestore.xml import LibraryXMLModuleStore, XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.tests import DATA_DIR
 from xmodule.x_module import XModuleMixin
 from xmodule.xml_block import is_pointer_tag

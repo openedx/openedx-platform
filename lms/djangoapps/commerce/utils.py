@@ -11,18 +11,18 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from edx_django_utils.plugins import pluggable_override
 
 from common.djangoapps.course_modes.models import CourseMode
 from openedx.core.djangoapps.commerce.utils import (
     get_ecommerce_api_base_url,
     get_ecommerce_api_client,
-    is_commerce_service_configured
+    is_commerce_service_configured,
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming import helpers as theming_helpers
 
 from .models import CommerceConfiguration
-from edx_django_utils.plugins import pluggable_override
 
 log = logging.getLogger(__name__)
 

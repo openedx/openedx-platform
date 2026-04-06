@@ -25,7 +25,7 @@ from lms.djangoapps.mobile_api.course_info.serializers import (
     CourseAccessSerializer,
     CourseDetailSerializer,
     CourseInfoOverviewSerializer,
-    MobileCourseEnrollmentSerializer
+    MobileCourseEnrollmentSerializer,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE

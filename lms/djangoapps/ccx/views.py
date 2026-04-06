@@ -31,7 +31,7 @@ from lms.djangoapps.ccx.overrides import (
     bulk_delete_ccx_override_fields,
     clear_ccx_field_info_from_ccx_map,
     get_override_for_ccx,
-    override_field_for_ccx
+    override_field_for_ccx,
 )
 from lms.djangoapps.ccx.permissions import VIEW_CCX_COACH_DASHBOARD
 from lms.djangoapps.ccx.utils import (
@@ -44,7 +44,7 @@ from lms.djangoapps.ccx.utils import (
     get_ccx_for_coach,
     get_date,
     get_enrollment_action_and_identifiers,
-    parse_date
+    parse_date,
 )
 from lms.djangoapps.courseware.field_overrides import disable_overrides
 from lms.djangoapps.grades.api import CourseGradeFactory

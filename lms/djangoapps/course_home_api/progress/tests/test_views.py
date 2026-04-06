@@ -11,20 +11,19 @@ from django.urls import reverse
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_flag
 from pytz import UTC
-from xmodule.modulestore.tests.factories import BlockFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.course_home_api.models import DisableProgressPageStackedConfig
+from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
 from lms.djangoapps.course_home_api.toggles import COURSE_HOME_MICROFRONTEND_PROGRESS_TAB
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.tests.utils import answer_problem
 from lms.djangoapps.verify_student.models import ManualVerification
@@ -34,6 +33,7 @@ from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID, CONTENT_TYPE_GATE_GROUP_IDS
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.factories import BlockFactory
 
 
 @ddt.ddt

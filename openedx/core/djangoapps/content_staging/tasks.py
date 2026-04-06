@@ -2,6 +2,7 @@
 Celery tasks for Content Staging.
 """
 from __future__ import annotations  # for list[int] type
+
 import logging
 
 from celery import shared_task

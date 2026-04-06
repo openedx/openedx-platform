@@ -29,6 +29,7 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
     def _create_request(self):
         """Create a test request with session support."""
         from importlib import import_module
+
         from django.conf import settings
 
         request = self.factory.get('/register')

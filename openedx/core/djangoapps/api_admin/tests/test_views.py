@@ -11,15 +11,15 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from oauth2_provider.models import get_application_model
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.api_admin.models import ApiAccessConfig, ApiAccessRequest
 from openedx.core.djangoapps.api_admin.tests.factories import (
     ApiAccessRequestFactory,
     ApplicationFactory,
-    CatalogFactory
+    CatalogFactory,
 )
 from openedx.core.djangoapps.api_admin.tests.utils import VALID_DATA
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 Application = get_application_model()  # pylint: disable=invalid-name
 

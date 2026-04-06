@@ -10,13 +10,13 @@ from completion.test_utils import CompletionWaffleTestMixin
 from django.conf import settings
 from django.test import override_settings
 from opaque_keys.edx.keys import CourseKey
+
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, LibraryFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory
 from xmodule.tests import prepare_block_runtime
-
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @ddt.ddt

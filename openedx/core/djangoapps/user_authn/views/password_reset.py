@@ -21,33 +21,33 @@ from django.utils.http import base36_to_int, int_to_base36, urlsafe_base64_encod
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
+from django_ratelimit.decorators import ratelimit
 from edx_ace import ace
 from edx_ace.recipient import Recipient
 from eventtracking import tracker
-from django_ratelimit.decorators import ratelimit
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
+from common.djangoapps.student.forms import send_account_recovery_email_for_user
+from common.djangoapps.student.models import AccountRecovery, LoginFailures
+from common.djangoapps.util.json_request import JsonResponse
+from common.djangoapps.util.password_policy_validators import normalize_password, validate_password
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.oauth_dispatch.api import destroy_oauth_tokens
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming.helpers import get_current_request, get_current_site
 from openedx.core.djangoapps.user_api import accounts, errors, helpers
-from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
 from openedx.core.djangoapps.user_api.accounts.utils import is_secondary_email_feature_enabled
 from openedx.core.djangoapps.user_api.helpers import FormDescription
 from openedx.core.djangoapps.user_api.models import UserRetirementRequest
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.djangoapps.user_authn.message_types import PasswordReset, PasswordResetSuccess
+from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangolib.markup import HTML
-from common.djangoapps.student.forms import send_account_recovery_email_for_user
-from common.djangoapps.student.models import AccountRecovery, LoginFailures
-from common.djangoapps.util.json_request import JsonResponse
-from common.djangoapps.util.password_policy_validators import normalize_password, validate_password
 
 POST_EMAIL_KEY = 'openedx.core.djangoapps.util.ratelimit.request_post_email'
 REAL_IP_KEY = 'openedx.core.djangoapps.util.ratelimit.real_ip'

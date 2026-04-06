@@ -11,6 +11,7 @@ from django.utils.timezone import now
 from edx_django_utils.cache import TieredCache
 from opaque_keys.edx.keys import CourseKey
 from slumber.exceptions import HttpClientError, HttpServerError
+
 # from requests.exceptions import HTTPError
 from testfixtures import LogCapture
 
@@ -25,10 +26,12 @@ from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_E
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from openedx.features.enterprise_support.utils import get_data_consent_share_cache_key
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)

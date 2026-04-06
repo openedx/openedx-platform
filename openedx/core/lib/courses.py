@@ -5,10 +5,10 @@ Common utility functions related to courses.
 from django import forms
 from django.conf import settings
 from django.http import Http404
-
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import CourseKey
 from organizations.models import Organization
+
 from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore

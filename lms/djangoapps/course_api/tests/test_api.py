@@ -17,11 +17,22 @@ from rest_framework.test import APIRequestFactory
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import BlockFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    check_mongo_calls,
+)
 
 from ..api import (
-    UNKNOWN_BLOCK_DISPLAY_NAME, course_detail, get_due_dates, list_courses, get_course_members, get_course_run_url,
+    UNKNOWN_BLOCK_DISPLAY_NAME,
+    course_detail,
+    get_course_members,
+    get_course_run_url,
+    get_due_dates,
+    list_courses,
 )
 from ..exceptions import OverEnrollmentLimitException
 from .mixins import CourseApiFactoryMixin

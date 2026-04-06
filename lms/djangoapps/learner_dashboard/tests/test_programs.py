@@ -14,10 +14,8 @@ from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse, reverse_lazy
 from edx_toggles.toggles.testutils import override_waffle_flag
-
 from lti_consumer.models import LtiConfiguration
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.learner_dashboard.config.waffle import ENABLE_PROGRAM_TAB_VIEW
 from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import ProgramCacheMixin
@@ -27,12 +25,14 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     CourseFactory,
     CourseRunFactory,
     PathwayFactory,
-    ProgramFactory
+    ProgramFactory,
 )
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.programs.models import ProgramDiscussionsConfiguration
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
 
 PROGRAMS_UTILS_MODULE = 'openedx.core.djangoapps.programs.utils'
 PROGRAMS_MODULE = 'lms.djangoapps.learner_dashboard.programs'

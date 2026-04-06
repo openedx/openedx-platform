@@ -21,7 +21,7 @@ from common.djangoapps.student.models import (
     User,
     UserProfile,
     email_exists_or_retired,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.model_utils import emit_settings_changed_event
 from common.djangoapps.util.password_policy_validators import validate_password
@@ -33,7 +33,7 @@ from openedx.core.djangoapps.user_api import accounts, errors, helpers
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
-    PreferenceValidationError
+    PreferenceValidationError,
 )
 from openedx.core.djangoapps.user_api.preferences.api import update_user_preferences
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
@@ -193,10 +193,11 @@ def update_account_settings(requesting_user, update, username=None):
 
 def _validate_read_only_fields(user, data, field_errors):
     # Check for fields that are not editable. Marking them read-only causes them to be ignored, but we wish to 400.
-    plugin_readonly_fields = AccountSettingsReadOnlyFieldsRequested.run_filter(
+    plugin_readonly_fields, __ = AccountSettingsReadOnlyFieldsRequested.run_filter(
         readonly_fields=set(),
         user=user,
-    ) or set()
+    )
+    plugin_readonly_fields = plugin_readonly_fields or set()
 
     read_only_fields = set(data.keys()).intersection(
         # Remove email since it is handled separately below when checking for changing_email.

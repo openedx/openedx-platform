@@ -1,9 +1,10 @@
 # pylint: disable=missing-docstring,protected-access
 """ User model wrapper for comment service"""
 
-from . import models, settings, utils
 from forum import api as forum_api
 from forum.utils import ForumV2RequestError, str_to_bool
+
+from . import models, settings, utils
 
 
 class User(models.Model):

@@ -32,9 +32,9 @@ from typing import Optional
 
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
-from django.shortcuts import redirect
 from edx_django_utils import ip
 from rest_framework.request import Request
 from rest_framework.response import Response

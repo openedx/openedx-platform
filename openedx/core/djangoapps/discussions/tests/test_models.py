@@ -6,18 +6,20 @@ from unittest.mock import patch
 
 import ddt
 import pytest
-
 from django.test import TestCase
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 from organizations.models import Organization
 
 from ..config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
-from ..models import DEFAULT_CONFIG_ENABLED, Provider, get_default_provider_type
-from ..models import DiscussionsConfiguration
-from ..models import ProviderFilter
-from ..models import PostingRestriction
-
+from ..models import (
+    DEFAULT_CONFIG_ENABLED,
+    DiscussionsConfiguration,
+    PostingRestriction,
+    Provider,
+    ProviderFilter,
+    get_default_provider_type,
+)
 
 SUPPORTED_PROVIDERS = [
     'legacy',

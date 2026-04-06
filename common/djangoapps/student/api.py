@@ -4,33 +4,27 @@ Python APIs exposed by the student app to other in-process apps.
 """
 
 
-from typing import TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING
 
-from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models_api import ALLOWEDTOENROLL_TO_ENROLLED as _ALLOWEDTOENROLL_TO_ENROLLED
+from common.djangoapps.student.models_api import ALLOWEDTOENROLL_TO_UNENROLLED as _ALLOWEDTOENROLL_TO_UNENROLLED
+from common.djangoapps.student.models_api import DEFAULT_TRANSITION_STATE as _DEFAULT_TRANSITION_STATE
+from common.djangoapps.student.models_api import ENROLLED_TO_ENROLLED as _ENROLLED_TO_ENROLLED
+from common.djangoapps.student.models_api import ENROLLED_TO_UNENROLLED as _ENROLLED_TO_UNENROLLED
+from common.djangoapps.student.models_api import UNENROLLED_TO_ALLOWEDTOENROLL as _UNENROLLED_TO_ALLOWEDTOENROLL
+from common.djangoapps.student.models_api import UNENROLLED_TO_ENROLLED as _UNENROLLED_TO_ENROLLED
+from common.djangoapps.student.models_api import UNENROLLED_TO_UNENROLLED as _UNENROLLED_TO_UNENROLLED
 from common.djangoapps.student.models_api import create_manual_enrollment_audit as _create_manual_enrollment_audit
 from common.djangoapps.student.models_api import get_course_access_role
 from common.djangoapps.student.models_api import get_course_enrollment as _get_course_enrollment
-from common.djangoapps.student.models_api import (
-    ENROLLED_TO_ENROLLED as _ENROLLED_TO_ENROLLED,
-    ENROLLED_TO_UNENROLLED as _ENROLLED_TO_UNENROLLED,
-    UNENROLLED_TO_ENROLLED as _UNENROLLED_TO_ENROLLED,
-    UNENROLLED_TO_UNENROLLED as _UNENROLLED_TO_UNENROLLED,
-    UNENROLLED_TO_ALLOWEDTOENROLL as _UNENROLLED_TO_ALLOWEDTOENROLL,
-    ALLOWEDTOENROLL_TO_ENROLLED as _ALLOWEDTOENROLL_TO_ENROLLED,
-    ALLOWEDTOENROLL_TO_UNENROLLED as _ALLOWEDTOENROLL_TO_UNENROLLED,
-    DEFAULT_TRANSITION_STATE as _DEFAULT_TRANSITION_STATE,
-)
-from common.djangoapps.student.roles import (
-    CourseInstructorRole,
-    CourseStaffRole,
-    GlobalStaff,
-    REGISTERED_ACCESS_ROLES as _REGISTERED_ACCESS_ROLES,
-)
+from common.djangoapps.student.roles import REGISTERED_ACCESS_ROLES as _REGISTERED_ACCESS_ROLES
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 if TYPE_CHECKING:

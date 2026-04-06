@@ -8,14 +8,14 @@ from django.db import transaction
 from django.http import Http404
 from django.utils.cache import patch_response_headers
 from django.utils.decorators import method_decorator
-from rest_framework.exceptions import PermissionDenied
-from lms.djangoapps.courseware.access import has_access
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from lms.djangoapps.course_goals.models import UserActivity
+from lms.djangoapps.courseware.access import has_access
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order

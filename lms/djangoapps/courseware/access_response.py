@@ -184,7 +184,7 @@ class MilestoneAccessError(AccessError):
 
 class VisibilityError(AccessError):
     """
-    Access denied because the user does have the correct role to view this
+    Access denied because the user does not have the correct role to view this
     course.
     """
     def __init__(self, display_error_to_user=True):
@@ -201,6 +201,22 @@ class VisibilityError(AccessError):
             developer_message,
             user_message if display_error_to_user else None
         )
+
+
+class CatalogVisibilityError(AccessError):
+    """
+    Access denied because the course's catalog_visibility setting prevents
+    the user from seeing this course.
+    """
+    def __init__(self):
+        error_code = "not_visible_in_catalog"
+        developer_message = "Course catalog visibility setting prevents access"
+        user_message = _(
+            "This course is not currently accessible. "
+            "The course team has restricted access to this content. "
+            "Please contact the course team for further assistance."
+        )
+        super().__init__(error_code, developer_message, user_message)
 
 
 class MobileAvailabilityError(AccessError):

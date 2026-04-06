@@ -4,7 +4,6 @@ Waffle flags for instructor dashboard.
 
 from edx_toggles.toggles import WaffleFlag
 
-
 # Namespace for instructor waffle flags.
 WAFFLE_FLAG_NAMESPACE = 'instructor'
 

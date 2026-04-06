@@ -11,7 +11,7 @@ from cms.djangoapps.contentstore.core.course_optimizer_provider import (
     _create_dto_recursive,
     _update_node_tree_and_dictionary,
     generate_broken_links_descriptor,
-    sort_course_sections
+    sort_course_sections,
 )
 from cms.djangoapps.contentstore.tasks import LinkState, extract_content_URLs_from_course
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase

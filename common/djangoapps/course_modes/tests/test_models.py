@@ -21,11 +21,13 @@ from common.djangoapps.course_modes.models import (
     CourseMode,
     Mode,
     get_cosmetic_display_price,
-    invalidate_course_mode_cache
+    invalidate_course_mode_cache,
 )
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

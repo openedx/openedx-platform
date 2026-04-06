@@ -14,11 +14,11 @@ from lti_consumer.models import LtiConfiguration
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
+from common.djangoapps.student.models import anonymous_id_for_user
 from lms.djangoapps.courseware.access import get_user_role
 from lms.djangoapps.courseware.tabs import EnrolledTab
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangolib.markup import HTML
-from common.djangoapps.student.models import anonymous_id_for_user
 from xmodule.course_block import CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tabs import TabFragmentViewMixin, key_checker  # lint-amnesty, pylint: disable=wrong-import-order
 

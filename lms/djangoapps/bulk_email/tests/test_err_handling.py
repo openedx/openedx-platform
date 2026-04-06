@@ -8,8 +8,8 @@ from itertools import cycle
 from smtplib import SMTPConnectError, SMTPDataError, SMTPServerDisconnected
 from unittest.mock import Mock, patch
 
-import pytest
 import ddt
+import pytest
 from celery.states import RETRY, SUCCESS
 from django.conf import settings
 from django.core.management import call_command
@@ -28,9 +28,11 @@ from lms.djangoapps.instructor_task.subtasks import (
     SubtaskStatus,
     check_subtask_is_valid,
     initialize_subtask_info,
-    update_subtask_status
+    update_subtask_status,
 )
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

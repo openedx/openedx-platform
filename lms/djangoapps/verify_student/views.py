@@ -26,7 +26,6 @@ from opaque_keys.edx.keys import CourseKey
 from requests.exceptions import RequestException
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response
@@ -46,6 +45,7 @@ from openedx.core.djangoapps.commerce.utils import get_ecommerce_api_base_url, g
 from openedx.core.djangoapps.embargo import api as embargo_api
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.log_utils import audit_log
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .services import IDVerificationService
 

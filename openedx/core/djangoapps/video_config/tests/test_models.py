@@ -2,17 +2,18 @@
 Tests for the models that configures HLS Playback feature.
 """
 
-import ddt
 import itertools  # lint-amnesty, pylint: disable=wrong-import-order
-
 from contextlib import contextmanager  # lint-amnesty, pylint: disable=wrong-import-order
 
+import ddt
 from django.test import TestCase
-
 from opaque_keys.edx.locator import CourseLocator
+
 from openedx.core.djangoapps.video_config.models import (
-    CourseHLSPlaybackEnabledFlag, HLSPlaybackEnabledFlag,
-    CourseVideoTranscriptEnabledFlag, VideoTranscriptEnabledFlag,
+    CourseHLSPlaybackEnabledFlag,
+    CourseVideoTranscriptEnabledFlag,
+    HLSPlaybackEnabledFlag,
+    VideoTranscriptEnabledFlag,
 )
 
 

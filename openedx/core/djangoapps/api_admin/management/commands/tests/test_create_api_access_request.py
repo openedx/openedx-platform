@@ -7,9 +7,10 @@ from django.contrib.sites.models import Site
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase
+
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.api_admin.models import ApiAccessConfig, ApiAccessRequest
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @skip_unless_lms

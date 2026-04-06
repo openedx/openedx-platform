@@ -13,16 +13,13 @@ from opaque_keys.edx.locator import BlockUsageLocator
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES, UnsupportedRevisionError
-from xmodule.modulestore.exceptions import (
-    InvalidBranchSetting,
-    ItemNotFoundError
-)
+from xmodule.modulestore.exceptions import InvalidBranchSetting, ItemNotFoundError
 from xmodule.modulestore.mongo.base import (
     SORT_REVISION_FAVOR_DRAFT,
     MongoModuleStore,
     MongoRevisionKey,
     as_draft,
-    as_published
+    as_published,
 )
 
 log = logging.getLogger(__name__)

@@ -15,8 +15,4 @@ from .proctoring import ProctoredExamSettingsView, ProctoringErrorsView
 from .settings import CourseSettingsView
 from .textbooks import CourseTextbooksView
 from .vertical_block import ContainerHandlerView, vertical_container_children_redirect_view
-from .videos import (
-    CourseVideosView,
-    VideoDownloadView,
-    VideoUsageView,
-)
+from .videos import CourseVideosView, VideoDownloadView, VideoUsageView

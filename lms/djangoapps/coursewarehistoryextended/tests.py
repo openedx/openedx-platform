@@ -15,9 +15,7 @@ from django.db import connections
 from django.test import TestCase
 
 from lms.djangoapps.courseware.models import BaseStudentModuleHistory, StudentModule, StudentModuleHistory
-from lms.djangoapps.courseware.tests.factories import COURSE_KEY
-from lms.djangoapps.courseware.tests.factories import LOCATION
-from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
+from lms.djangoapps.courseware.tests.factories import COURSE_KEY, LOCATION, StudentModuleFactory
 
 
 @skipUnless(settings.FEATURES["ENABLE_CSMH_EXTENDED"], "CSMH Extended needs to be enabled")

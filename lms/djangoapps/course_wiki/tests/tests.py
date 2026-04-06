@@ -4,12 +4,15 @@ Tests for course wiki
 
 
 from unittest.mock import patch
+
 from django.urls import reverse
 
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

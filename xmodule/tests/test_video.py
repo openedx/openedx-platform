@@ -18,11 +18,11 @@ import json
 import shutil
 import unittest
 from tempfile import mkdtemp
-from uuid import uuid4
 from unittest.mock import ANY, MagicMock, Mock, patch
+from uuid import uuid4
 
-import pytest
 import ddt
+import pytest
 from django.conf import settings
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -30,16 +30,16 @@ from fs.osfs import OSFS
 from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
+from xblock.core import XBlockAside
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds
 
+from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
+from xmodule.modulestore.tests.test_asides import AsideTestType
 from xmodule.tests import get_test_descriptor_system
 from xmodule.validation import StudioValidationMessage
 from xmodule.video_block import EXPORT_IMPORT_STATIC_DIR, create_youtube_string
 from xmodule.video_block.video_block import _BuiltInVideoBlock as VideoBlock
-from openedx.core.djangoapps.video_config.transcripts_utils import save_to_store
-from xblock.core import XBlockAside
-from xmodule.modulestore.tests.test_asides import AsideTestType
 
 from .test_import import DummyModuleStoreRuntime
 

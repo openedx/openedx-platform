@@ -10,12 +10,12 @@ from common.djangoapps.student.tests.factories import (  # lint-amnesty, pylint:
     ContentTypeFactory,
     PermissionFactory,
     SuperuserFactory,
-    UserFactory
+    UserFactory,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import (
     CanCancelUserRetirement,
     CanDeactivateUser,
-    CanRetireUser
+    CanRetireUser,
 )
 
 

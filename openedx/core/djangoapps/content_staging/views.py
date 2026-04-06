@@ -3,19 +3,19 @@ REST API views for content staging
 """
 from __future__ import annotations
 
+import edx_api_doc_tools as apidocs
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-import edx_api_doc_tools as apidocs
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from common.djangoapps.student.auth import has_studio_read_access
 
+from common.djangoapps.student.auth import has_studio_read_access
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import modulestore
@@ -24,7 +24,7 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from . import api
 from .data import StagedContentStatus
 from .models import StagedContent
-from .serializers import UserClipboardSerializer, PostToClipboardSerializer
+from .serializers import PostToClipboardSerializer, UserClipboardSerializer
 
 
 @view_auth_classes(is_authenticated=True)

@@ -19,7 +19,7 @@ from openedx.features.calendar_sync.api import (
     SUBSCRIBE,
     UNSUBSCRIBE,
     subscribe_user_to_calendar,
-    unsubscribe_user_to_calendar
+    unsubscribe_user_to_calendar,
 )
 from openedx.features.course_experience import course_home_url
 

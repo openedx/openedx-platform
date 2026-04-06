@@ -8,6 +8,7 @@ import logging
 import os
 from unittest import skip
 from unittest.mock import MagicMock, patch
+from urllib.parse import parse_qs, quote, urlparse
 
 import ddt
 import httpretty
@@ -26,12 +27,11 @@ from common.djangoapps.third_party_auth.saml import SapSuccessFactorsIdentityPro
 from common.djangoapps.third_party_auth.saml import log as saml_log
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
 from common.djangoapps.third_party_auth.tests import testutil, utils
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerFactory
 
 from .base import IntegrationTestMixin
-from common.test.utils import assert_dict_contains_subset
-from urllib.parse import urlparse, parse_qs, quote
 
 TESTSHIB_ENTITY_ID = "https://idp.testshib.org/idp/shibboleth"
 TESTSHIB_METADATA_URL = "https://mock.testshib.org/metadata/testshib-providers.xml"

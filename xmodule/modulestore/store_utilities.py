@@ -6,7 +6,6 @@ from collections import namedtuple
 
 from xblock.core import XBlock
 
-
 DETACHED_XBLOCK_TYPES = {name for name, __ in XBlock.load_tagged_classes("detached")}
 
 

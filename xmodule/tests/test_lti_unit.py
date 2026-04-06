@@ -8,7 +8,6 @@ from unittest.mock import Mock, PropertyMock, patch
 from urllib import parse
 from zoneinfo import ZoneInfo
 
-
 import pytest
 from django.conf import settings
 from django.test import TestCase, override_settings
@@ -18,16 +17,14 @@ from opaque_keys.edx.locator import BlockUsageLocator
 from webob.request import Request
 from xblock.field_data import DictFieldData
 from xblock.fields import ScopeIds, Timedelta
-
+from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID
 from xmodule import lti_block
+from xmodule.lti_2_util import LTIError as BuiltInLTIError
 from xmodule.tests.helpers import StubUserService
 
 from . import get_test_system
-
-from xmodule.lti_2_util import LTIError as BuiltInLTIError
-from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
 
 
 @override_settings(LMS_BASE="edx.org")

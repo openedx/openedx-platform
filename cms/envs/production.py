@@ -1,3 +1,4 @@
+# ruff: noqa: I001 - settings file: star-import order is semantically significant
 """
 Override common.py with key-value pairs from YAML (plus some extra defaults & post-processing).
 
@@ -13,8 +14,8 @@ https://github.com/openedx/edx-platform/blob/master/docs/decisions/0022-settings
 import codecs
 import os
 import warnings
-import yaml
 
+import yaml
 from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse_lazy
 from edx_django_utils.plugins import add_plugins
@@ -22,14 +23,13 @@ from openedx_events.event_bus import merge_producer_configs
 from path import Path as path
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
+from openedx.core.lib.derived import derive_settings  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.core.lib.logsettings import get_logger_config  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.modulestore_settings import \
+    convert_module_store_setting_if_needed  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .common import *
-
-from openedx.core.lib.derived import derive_settings  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.lib.logsettings import get_logger_config  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.modulestore_settings import convert_module_store_setting_if_needed  # lint-amnesty, pylint: disable=wrong-import-order
-
-from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())

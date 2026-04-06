@@ -14,7 +14,7 @@ from openedx.core.djangoapps.discussions.tasks import (
     update_unit_discussion_state_from_discussion_blocks,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class DiscussionConfigUpdateMixin:

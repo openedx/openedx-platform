@@ -1,9 +1,9 @@
 """
 Tests of API module.
 """
+from datetime import datetime, timezone
 from unittest.mock import patch
 
-from datetime import datetime, timezone
 import ddt
 from django.conf import settings
 from django.core import mail

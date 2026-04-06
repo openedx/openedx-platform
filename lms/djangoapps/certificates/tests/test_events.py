@@ -12,13 +12,14 @@ from openedx_events.learning.signals import CERTIFICATE_CHANGED, CERTIFICATE_CRE
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import UserFactory
+from common.test.utils import assert_dict_contains_subset
+from lms.djangoapps.certificates.models import CertificateStatuses, GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
-from lms.djangoapps.certificates.models import GeneratedCertificate, CertificateStatuses
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from common.test.utils import assert_dict_contains_subset
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_lms

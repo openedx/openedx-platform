@@ -2,27 +2,27 @@
 
 
 import itertools
+import sys
 import unittest
 from datetime import datetime, timedelta
-import sys
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 import ddt
+import pytest
 from dateutil import parser
 from django.conf import settings
 from django.test import override_settings
 from fs.memoryfs import MemoryFS
 from opaque_keys.edx.keys import CourseKey
-import pytest
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
-from openedx.core.lib.teams_config import TeamsConfig, DEFAULT_COURSE_RUN_MAX_TEAM_SIZE
 import xmodule.course_block
+from openedx.core.lib.teams_config import DEFAULT_COURSE_RUN_MAX_TEAM_SIZE, TeamsConfig
 from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.modulestore.exceptions import InvalidProctoringProvider
+from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, XMLModuleStore
 
 ORG = 'test_org'
 COURSE = 'test_course'

@@ -6,17 +6,20 @@ import json
 import pickle
 from datetime import datetime
 from importlib import import_module
-from unittest.mock import patch
-import pytest
-import ddt
 from operator import itemgetter  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import patch
+
+import ddt
+import pytest
 from django.conf import settings
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from pytz import UTC
 from xblock.runtime import DictKeyValueStore
-
 from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
+
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from lms.djangoapps.courseware.masquerade import (
     MASQUERADE_SETTINGS_KEY,
     CourseMasquerade,
@@ -24,19 +27,18 @@ from lms.djangoapps.courseware.masquerade import (
     get_masquerading_user_group,
     setup_masquerade,
 )
-
-from lms.djangoapps.courseware.tests.helpers import (
-    LoginEnrollmentTestCase, MasqueradeMixin, masquerade_as_group_member
-)
+from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, MasqueradeMixin, masquerade_as_group_member
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference, set_user_preference
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
 

@@ -11,7 +11,9 @@ from django.test.utils import override_settings
 from common.djangoapps.course_modes.models import CourseMode
 from openedx.core.djangoapps.enrollments import api
 from openedx.core.djangoapps.enrollments.errors import (
-    CourseModeNotFoundError, EnrollmentApiLoadError, EnrollmentNotFoundError,
+    CourseModeNotFoundError,
+    EnrollmentApiLoadError,
+    EnrollmentNotFoundError,
 )
 from openedx.core.djangoapps.enrollments.tests import fake_data_api
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms

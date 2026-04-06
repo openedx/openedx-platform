@@ -10,8 +10,8 @@ not other discounts like coupons or enterprise/program offers configured in ecom
 
 
 from datetime import datetime, timedelta
-
 from zoneinfo import ZoneInfo
+
 from crum import get_current_request, impersonate
 from django.conf import settings
 from django.utils import timezone
@@ -20,14 +20,13 @@ from edx_toggles.toggles import WaffleFlag
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.entitlements.models import CourseEntitlement
-from lms.djangoapps.courseware.utils import is_mode_upsellable
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.track import segment
 from lms.djangoapps.courseware.toggles import COURSEWARE_MFE_MILESTONES_STREAK_DISCOUNT
+from lms.djangoapps.courseware.utils import is_mode_upsellable
 from lms.djangoapps.experiments.models import ExperimentData
 from lms.djangoapps.experiments.stable_bucketing import stable_bucketing_hash_group
 from openedx.features.discounts.models import DiscountPercentageConfig, DiscountRestrictionConfig
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.track import segment
-
 
 # .. toggle_name: discounts.enable_first_purchase_discount_override
 # .. toggle_implementation: WaffleFlag
@@ -127,6 +126,7 @@ def can_show_streak_discount_coupon(user, course):
 
     # We can't import this at Django load time within the openedx tests settings context
     from openedx.features.enterprise_support.utils import is_enterprise_learner
+
     # Don't give discount to enterprise users
     if is_enterprise_learner(user):
         return False
@@ -181,6 +181,7 @@ def can_receive_discount(user, course, discount_expiration_date=None):
 
     # We can't import this at Django load time within the openedx tests settings context
     from openedx.features.enterprise_support.utils import is_enterprise_learner
+
     # Don't give discount to enterprise users
     if is_enterprise_learner(user):
         return False

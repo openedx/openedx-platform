@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 from urllib.parse import quote
+
 import ddt
 from django.conf import settings
 from django.test import TestCase

@@ -49,7 +49,6 @@ from pathlib import Path
 
 import click
 
-
 # Accept both long- and short-forms of these words, but normalize to long form.
 # We accept both because edx-platform asset build scripts historically use the short form,
 # but NODE_ENV uses the long form, so to make them integrate more seamlessly we accept both.

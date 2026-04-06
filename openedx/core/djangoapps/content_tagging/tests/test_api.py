@@ -2,17 +2,18 @@
 import io
 import os
 import tempfile
+
 import ddt
 from django.test.testcases import TestCase
 from fs.osfs import OSFS
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryCollectionLocator, LibraryContainerLocator
+from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_tagging.models import ObjectTag
 from organizations.models import Organization
-from .test_objecttag_export_helpers import TestGetAllObjectTagsMixin, TaggedCourseMixin
 
 from .. import api
 from ..utils import rules_cache
+from .test_objecttag_export_helpers import TaggedCourseMixin, TestGetAllObjectTagsMixin
 
 
 class TestTaxonomyMixin:

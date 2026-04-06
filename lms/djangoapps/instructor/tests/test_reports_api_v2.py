@@ -9,11 +9,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 
 from common.djangoapps.student.roles import CourseDataResearcherRole
-from common.djangoapps.student.tests.factories import (
-    InstructorFactory,
-    StaffFactory,
-    UserFactory,
-)
+from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 

@@ -4,18 +4,15 @@ in the verify_student module
 """
 
 
+from unittest.mock import ANY, call, patch  # lint-amnesty, pylint: disable=wrong-import-order
+
 from django.conf import settings
 from django.core.management import call_command
-
 from freezegun import freeze_time
-from unittest.mock import call, patch, ANY  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.test.utils import MockS3Boto3Mixin
 from lms.djangoapps.verify_student.tests import TestVerificationBase
-from lms.djangoapps.verify_student.tests.test_models import (
-    FAKE_SETTINGS,
-    mock_software_secure_post,
-)
+from lms.djangoapps.verify_student.tests.test_models import FAKE_SETTINGS, mock_software_secure_post
 
 
 # Lots of patching to stub in our own settings, and HTTP posting

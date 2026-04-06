@@ -2,11 +2,10 @@
 
 
 from functools import wraps
-from dal_select2.views import Select2ListView
-from dal_select2.widgets import ListSelect2
-from django_countries import countries
 
 from config_models.admin import ConfigurationModelAdmin
+from dal_select2.views import Select2ListView
+from dal_select2.widgets import ListSelect2
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -20,15 +19,16 @@ from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 from django.db import models, router, transaction
 from django.http import HttpResponseRedirect
 from django.http.request import QueryDict
-from django.urls import reverse, path
+from django.urls import path, reverse
 from django.utils.decorators import method_decorator
-from django.utils.translation import ngettext
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
+from django_countries import countries
+from edx_toggles.toggles import WaffleSwitch
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
-from edx_toggles.toggles import WaffleSwitch
-from openedx.core.lib.courses import clean_course_id
+from common.djangoapps.student.constants import LANGUAGE_CHOICES
 from common.djangoapps.student.models import (
     AccountRecovery,
     AccountRecoveryConfiguration,
@@ -49,10 +49,10 @@ from common.djangoapps.student.models import (
     UserAttribute,
     UserCelebration,
     UserProfile,
-    UserTestGroup
+    UserTestGroup,
 )
-from common.djangoapps.student.constants import LANGUAGE_CHOICES
 from common.djangoapps.student.roles import REGISTERED_ACCESS_ROLES
+from openedx.core.lib.courses import clean_course_id
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 User = get_user_model()  # pylint:disable=invalid-name

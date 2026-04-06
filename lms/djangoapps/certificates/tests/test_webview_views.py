@@ -3,7 +3,7 @@
 
 import datetime
 from unittest import skipUnless
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -27,20 +27,20 @@ from lms.djangoapps.certificates.models import (
     CertificateStatuses,
     CertificateTemplate,
     CertificateTemplateAsset,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.tests.factories import (
     CertificateDateOverrideFactory,
     CertificateHtmlViewConfigurationFactory,
     GeneratedCertificateFactory,
-    LinkedInAddToProfileConfigurationFactory
+    LinkedInAddToProfileConfigurationFactory,
 )
-from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from lms.djangoapps.certificates.utils import get_certificate_url
+from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
-    with_site_configuration_context
+    with_site_configuration_context,
 )
 from openedx.core.djangolib.js_utils import js_escaped_string
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase

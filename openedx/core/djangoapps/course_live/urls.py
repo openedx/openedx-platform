@@ -9,7 +9,7 @@ from django.urls import re_path
 from openedx.core.djangoapps.course_live.views import (
     CourseLiveConfigurationView,
     CourseLiveIframeView,
-    CourseLiveProvidersView
+    CourseLiveProvidersView,
 )
 
 urlpatterns = [

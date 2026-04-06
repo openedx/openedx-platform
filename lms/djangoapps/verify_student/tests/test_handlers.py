@@ -4,28 +4,30 @@ Unit tests for the VerificationDeadline signals
 
 
 from datetime import timedelta
+from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 
 from django.utils.timezone import now
-from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models_api import do_name_change_request
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.models import (
     SoftwareSecurePhotoVerification,
+    VerificationAttempt,
     VerificationDeadline,
-    VerificationAttempt
 )
 from lms.djangoapps.verify_student.signals.handlers import (
     _listen_for_course_publish,
     _listen_for_lms_retire,
-    _listen_for_lms_retire_verification_attempts
+    _listen_for_lms_retire_verification_attempts,
 )
 from lms.djangoapps.verify_student.tests.factories import (
     SoftwareSecurePhotoVerificationFactory,
-    VerificationAttemptFactory
+    VerificationAttemptFactory,
 )
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import fake_completed_retirement
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

@@ -75,13 +75,12 @@ import json
 import time
 
 import jwt
+import social_django
+from django.apps import apps
 from jwt.algorithms import RSAAlgorithm
 from jwt.exceptions import PyJWTError
-
-from django.apps import apps
 from social_core.backends.oauth import BaseOAuth2
 from social_core.exceptions import AuthFailed
-import social_django
 
 from common.djangoapps.third_party_auth.toggles import is_apple_user_migration_enabled
 

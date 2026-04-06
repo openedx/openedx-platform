@@ -2,9 +2,11 @@
 
 
 from xsslint.linters import (
-    JavaScriptLinter, MakoTemplateLinter,
-    PythonLinter, UnderscoreTemplateLinter,
-    DjangoTemplateLinter
+    DjangoTemplateLinter,
+    JavaScriptLinter,
+    MakoTemplateLinter,
+    PythonLinter,
+    UnderscoreTemplateLinter,
 )
 
 # Define the directories that should be ignored by the script.

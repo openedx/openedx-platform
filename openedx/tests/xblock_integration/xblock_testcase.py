@@ -37,24 +37,23 @@ Our next steps would be to:
 
 
 import collections
+import html
 import json
 import sys
 import unittest
 from datetime import datetime, timedelta
-import html
-
 from unittest import mock
 from zoneinfo import ZoneInfo
+
 from bs4 import BeautifulSoup
 from django.conf import settings
 from django.urls import reverse
 from xblock.plugin import Plugin
 
 import xmodule.services
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class XBlockEventTestMixin:

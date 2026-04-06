@@ -15,12 +15,10 @@ from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
-from xmodule.modulestore.django import (
-    modulestore,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     ModuleStoreTestCase,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from ...mixins import PermissionAccessMixin
 

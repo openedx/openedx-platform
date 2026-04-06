@@ -51,10 +51,10 @@ from openedx.core.djangoapps.content_staging import api as staging_api
 from xmodule.modulestore import exceptions as modulestore_exceptions
 from xmodule.modulestore.django import modulestore
 
-from . import models, data
+from . import data, models
+from .api.read_api import get_migration_blocks, get_migrations
 from .constants import CONTENT_STAGING_PURPOSE_TEMPLATE
 from .data import CompositionLevel, RepeatHandlingStrategy, SourceContextKey
-from .api.read_api import get_migrations, get_migration_blocks
 
 log = get_task_logger(__name__)
 

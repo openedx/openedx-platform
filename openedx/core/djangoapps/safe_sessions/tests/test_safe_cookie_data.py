@@ -8,9 +8,9 @@ import itertools
 from time import time
 from unittest.mock import patch
 
-import pytest
 import ddt
 import django
+import pytest
 from django.test import TestCase
 
 from ..middleware import SafeCookieData, SafeCookieError

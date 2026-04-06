@@ -2,11 +2,11 @@
 
 
 from unittest import TestCase
-from pytest import mark
 
 from celery import shared_task
 from django.test.utils import override_settings
 from edx_django_utils.cache import RequestCache
+from pytest import mark
 
 
 @mark.django_db

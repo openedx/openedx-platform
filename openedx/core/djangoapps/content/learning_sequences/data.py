@@ -27,6 +27,7 @@ from typing import Dict, FrozenSet, List, Optional
 
 import attr
 from opaque_keys.edx.keys import CourseKey, UsageKey
+
 from openedx.core import types
 
 log = logging.getLogger(__name__)

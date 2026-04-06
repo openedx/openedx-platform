@@ -12,7 +12,7 @@ from openedx.core.djangoapps.content.course_overviews.tasks import (
     DEFAULT_ALL_COURSES,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_FORCE_UPDATE,
-    enqueue_async_course_overview_update_tasks
+    enqueue_async_course_overview_update_tasks,
 )
 
 log = logging.getLogger(__name__)

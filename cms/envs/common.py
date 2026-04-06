@@ -40,22 +40,19 @@ When refering to XBlocks, we use the entry-point name. For example,
 
 import importlib.util
 import os
-
-from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
 
+from corsheaders.defaults import default_headers as corsheaders_default_headers
 from django.utils.translation import gettext_lazy as _
 from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
-
-from openedx.envs.common import *  # pylint: disable=wildcard-import
-
 from path import Path as path
 
 from cms.lib.xblock.authoring_mixin import AuthoringMixin
 from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
-from xmodule.x_module import ResourceTemplates
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.common import *  # pylint: disable=wildcard-import
+from xmodule.x_module import ResourceTemplates
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -1080,7 +1077,8 @@ ZENDESK_API_KEY = ''
 
 ############## Installed Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
+
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.CMS))

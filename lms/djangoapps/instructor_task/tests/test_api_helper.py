@@ -7,8 +7,8 @@ import json
 from unittest.mock import patch
 from uuid import uuid4
 
-from testfixtures import LogCapture
 from celery.states import FAILURE
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.bulk_email.api import create_course_email

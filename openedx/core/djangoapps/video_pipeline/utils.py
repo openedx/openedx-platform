@@ -2,7 +2,6 @@
 Utils for video_pipeline app.
 """
 from django.conf import settings
-
 from edx_rest_api_client.client import OAuthAPIClient
 
 

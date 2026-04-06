@@ -6,6 +6,7 @@ import uuid
 from collections import namedtuple
 from copy import deepcopy
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
@@ -15,7 +16,6 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
-from zoneinfo import ZoneInfo
 from testfixtures import LogCapture
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -33,7 +33,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
     EntitlementFactory,
     ProgramFactory,
     SeatFactory,
-    generate_course_run_key
+    generate_course_run_key,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.programs import ALWAYS_CALCULATE_PROGRAM_PRICE_AS_ANONYMOUS_USER
@@ -45,7 +45,7 @@ from openedx.core.djangoapps.programs.utils import (
     ProgramProgressMeter,
     get_certificates,
     get_logged_in_program_certificate_url,
-    is_user_enrolled_in_program_type
+    is_user_enrolled_in_program_type,
 )
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms

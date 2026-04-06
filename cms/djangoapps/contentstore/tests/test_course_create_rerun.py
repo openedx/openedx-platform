@@ -17,17 +17,17 @@ from opaque_keys.edx.keys import CourseKey
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
-from xmodule.course_block import CourseFields
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, parse_json
+from cms.djangoapps.contentstore.views.course import get_allowed_organizations, user_can_create_organizations
 from cms.djangoapps.course_creators.admin import CourseCreatorAdmin
 from cms.djangoapps.course_creators.models import CourseCreator
-from cms.djangoapps.contentstore.views.course import get_allowed_organizations, user_can_create_organizations
 from common.djangoapps.student.auth import update_org_role
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgContentCreatorRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from xmodule.course_block import CourseFields
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 def mock_render_to_string(template_name, context):

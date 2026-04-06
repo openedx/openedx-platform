@@ -2,8 +2,7 @@
 Features Proxy Implementation
 """
 import warnings
-
-from collections.abc import MutableMapping, Mapping
+from collections.abc import Mapping, MutableMapping
 
 
 class FeaturesProxy(MutableMapping):

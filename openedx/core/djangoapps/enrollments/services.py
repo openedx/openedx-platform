@@ -7,8 +7,8 @@ from operator import or_
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-
 from opaque_keys.edx.keys import CourseKey
+
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none

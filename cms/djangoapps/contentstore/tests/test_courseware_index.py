@@ -5,7 +5,7 @@ import json
 import time
 from datetime import datetime
 from unittest import skip
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import ddt
 import pytest
@@ -18,7 +18,7 @@ from cms.djangoapps.contentstore.courseware_index import (
     CourseAboutSearchIndexer,
     CoursewareSearchIndexer,
     LibrarySearchIndexer,
-    SearchIndexingError
+    SearchIndexingError,
 )
 from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish, listen_for_library_update
 from cms.djangoapps.contentstore.tasks import update_search_index
@@ -31,11 +31,15 @@ from xmodule.library_tools import normalize_key_for_search  # lint-amnesty, pyli
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
-    ModuleStoreTestCase,
     TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+    LibraryFactory,
+)
 from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
 COURSE_CHILD_STRUCTURE = {

@@ -6,13 +6,12 @@ Utilities related to caching.
 import collections
 import functools
 import itertools
-import zlib
 import pickle
+import zlib
 
 import wrapt
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.utils.encoding import force_str
-
 from edx_django_utils.cache import RequestCache, TieredCache
 
 

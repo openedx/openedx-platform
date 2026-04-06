@@ -2,6 +2,7 @@
 Test the OLX serialization utils
 """
 from __future__ import annotations
+
 import unittest
 
 import ddt

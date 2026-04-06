@@ -4,15 +4,15 @@ Tests for block_structure_factory.py
 
 import pytest
 from django.test import TestCase
-
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from ..exceptions import BlockStructureNotFound
 from ..factory import BlockStructureFactory
 from ..store import BlockStructureStore
-from .helpers import ChildrenMapTestMixin, MockCache, MockModulestoreFactory, MockXBlock, MockModulestore
+from .helpers import ChildrenMapTestMixin, MockCache, MockModulestore, MockModulestoreFactory, MockXBlock
 
 
 class TestBlockStructureFactory(TestCase, ChildrenMapTestMixin):

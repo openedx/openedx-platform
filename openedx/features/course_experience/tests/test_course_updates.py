@@ -6,7 +6,9 @@ from django.test.client import RequestFactory
 
 from openedx.core.djangoapps.user_api.course_tag.api import get_course_tag, set_course_tag
 from openedx.features.course_experience.course_updates import (
-    dismiss_current_update_for_user, get_current_update_for_user, get_ordered_updates,
+    dismiss_current_update_for_user,
+    get_current_update_for_user,
+    get_ordered_updates,
 )
 from openedx.features.course_experience.tests import BaseCourseUpdatesTestCase
 

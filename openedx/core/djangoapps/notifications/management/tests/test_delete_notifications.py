@@ -1,10 +1,9 @@
 """
 Tests delete_notifications management command
 """
-import ddt
-
 from unittest import mock
 
+import ddt
 from django.core.management import call_command
 
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

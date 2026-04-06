@@ -3,8 +3,8 @@ Tests for the `clean_stale_certificate_available_dates` management command.
 """
 from datetime import datetime, timedelta
 
-from django.core.management import CommandError, call_command
 import pytz
+from django.core.management import CommandError, call_command
 
 from cms.djangoapps.contentstore.models import CleanStaleCertificateAvailabilityDatesConfig
 from openedx.core.lib.courses import get_course_by_id

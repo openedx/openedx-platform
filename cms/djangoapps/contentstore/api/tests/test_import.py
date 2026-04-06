@@ -12,11 +12,10 @@ from path import Path as path
 from rest_framework import status
 from rest_framework.test import APITestCase
 from user_tasks.models import UserTaskStatus
+
+from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 class CourseImportViewTest(SharedModuleStoreTestCase, APITestCase):

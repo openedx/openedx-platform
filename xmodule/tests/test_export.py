@@ -11,9 +11,9 @@ from textwrap import dedent
 from unittest import mock
 from zoneinfo import ZoneInfo
 
-import pytest
 import ddt
 import lxml.etree
+import pytest
 from django.utils.translation import gettext_lazy
 from fs.osfs import OSFS
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator

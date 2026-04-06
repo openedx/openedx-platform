@@ -8,12 +8,12 @@ from unittest.mock import ANY, MagicMock, patch
 from django.test import TestCase
 from lxml import etree
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 import lms.djangoapps.lti_provider.outcomes as outcomes
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.lti_provider.models import GradedAssignment, LtiConsumer, OutcomeService
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class StoreOutcomeParametersTest(TestCase):

@@ -1,28 +1,30 @@
 # pylint: disable=missing-docstring
 
 
-from datetime import date, datetime
 import json
-from pytz import UTC
+from datetime import date, datetime
 from unittest.mock import MagicMock, patch
 from urllib.parse import urljoin
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from edx_rest_framework_extensions.auth.jwt.decoder import jwt_decode_handler
 from edx_rest_framework_extensions.auth.jwt.middleware import JwtAuthCookieMiddleware
+from pytz import UTC
 
+from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory, UserProfileFactory
+from openedx.core.djangoapps.profile_images.images import create_profile_images
+from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
+from openedx.core.djangoapps.user_api.accounts.image_helpers import (
+    get_profile_image_names,
+    get_profile_image_urls_for_user,
+)
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangoapps.user_authn import cookies as cookies_api
 from openedx.core.djangoapps.user_authn.tests.utils import setup_login_oauth_client
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory, UserProfileFactory
-from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
-from openedx.core.djangoapps.profile_images.images import create_profile_images
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_names
-from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_image_urls_for_user
-
 
 TEST_PROFILE_IMAGE_UPLOAD_DT = datetime(2002, 1, 9, 15, 43, 1, tzinfo=UTC)
 

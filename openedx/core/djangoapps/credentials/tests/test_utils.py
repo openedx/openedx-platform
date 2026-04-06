@@ -7,10 +7,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.credentials.models import CredentialsApiConfig
 from openedx.core.djangoapps.credentials.tests import factories
 from openedx.core.djangoapps.credentials.tests.mixins import CredentialsApiConfigMixin
-from openedx.core.djangoapps.credentials.utils import (
-    get_credentials,
-    get_credentials_records_url,
-)
+from openedx.core.djangoapps.credentials.utils import get_credentials, get_credentials_records_url
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 

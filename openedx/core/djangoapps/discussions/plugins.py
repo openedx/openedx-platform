@@ -9,6 +9,7 @@ from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
+
 from .models import DiscussionsConfiguration
 
 User = get_user_model()

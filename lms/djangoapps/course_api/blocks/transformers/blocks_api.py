@@ -10,8 +10,8 @@ from .block_depth import BlockDepthTransformer
 from .extra_fields import ExtraFieldsTransformer
 from .navigation import BlockNavigationTransformer
 from .student_view import StudentViewTransformer
-from .video_urls import VideoBlockURLTransformer
 from .video_stream_priority import VideoBlockStreamPriorityTransformer
+from .video_urls import VideoBlockURLTransformer
 
 
 class BlocksAPITransformer(BlockStructureTransformer):

@@ -1,14 +1,12 @@
 # pylint: skip-file
 import json
 import logging
-
 import re
+from collections import defaultdict
+from datetime import datetime
 from typing import Set
 
 import regex
-from collections import defaultdict
-from datetime import datetime
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import connection
@@ -18,16 +16,13 @@ from django.utils.deprecation import MiddlewareMixin
 from opaque_keys.edx.keys import CourseKey, UsageKey, i4xEncoder
 from pytz import UTC
 
+import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.student.roles import GlobalStaff
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
-from lms.djangoapps.discussion.django_comment_client.permissions import (
-    check_permissions_by_view,
-    get_team
-)
+from lms.djangoapps.discussion.django_comment_client.permissions import check_permissions_by_view, get_team
 from lms.djangoapps.discussion.django_comment_client.settings import MAX_COMMENT_DEPTH
-from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort_id
 from openedx.core.djangoapps.discussions.utils import (
     get_accessible_discussion_xblocks,
@@ -37,14 +32,17 @@ from openedx.core.djangoapps.discussions.utils import (
     get_group_names_by_id,
     has_required_keys,
 )
-import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from openedx.core.djangoapps.django_comment_common.models import (
+    FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
     CourseDiscussionSettings,
     DiscussionsIdMapping,
     Role,
-    FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_GROUP_MODERATOR)
+    has_permission,
+)
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore

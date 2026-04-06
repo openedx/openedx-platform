@@ -11,7 +11,6 @@ import sys
 import types
 import typing as t
 
-
 Settings: t.TypeAlias = types.ModuleType
 
 

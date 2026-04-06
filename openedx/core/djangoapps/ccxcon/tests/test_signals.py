@@ -4,6 +4,7 @@ Test for contentstore signals receiver
 
 
 from unittest import mock
+
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 

@@ -10,11 +10,11 @@ from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from freezegun import freeze_time
 
-from openedx.core.djangoapps.catalog.tests.factories import ProgramFactory, CourseFactory, CourseRunFactory
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.catalog.tests.factories import CourseFactory, CourseRunFactory, ProgramFactory
 from openedx.core.djangoapps.credentials.models import NotifyCredentialsConfig
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 from ..notify_credentials import Command
 

@@ -2,12 +2,11 @@
 Test cases for catalog_integrations command.
 """
 import pytest
-from django.core.management import call_command, CommandError
-
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from django.core.management import CommandError, call_command
 
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 
 
 class TestCreateCatalogIntegrations(CatalogIntegrationMixin, CacheIsolationTestCase):

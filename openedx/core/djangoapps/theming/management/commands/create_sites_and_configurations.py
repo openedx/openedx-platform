@@ -14,11 +14,11 @@ from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from oauth2_provider.models import Application
 
+from common.djangoapps.student.models import UserProfile
 from lms.djangoapps.commerce.models import CommerceConfiguration
 from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
 from openedx.core.djangoapps.theming.models import SiteTheme
-from common.djangoapps.student.models import UserProfile
 
 LOG = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ from common.djangoapps.student.models import (
     AccountRecovery,
     PendingEmailChange,
     PendingSecondaryEmailChange,
-    UserProfile
+    UserProfile,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.student.tests.tests import UserSettingsEventTestMixin
@@ -34,18 +34,18 @@ from openedx.core.djangoapps.user_api.accounts import PRIVATE_VISIBILITY
 from openedx.core.djangoapps.user_api.accounts.api import (
     get_account_settings,
     get_name_validation_error,
-    update_account_settings
+    update_account_settings,
 )
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     fake_requested_retirement,
-    setup_retirement_states
+    setup_retirement_states,
 )
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
     UserNotAuthorized,
-    UserNotFound
+    UserNotFound,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerUserFactory
@@ -104,7 +104,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
 
         filter_patcher = patch(
             'openedx.core.djangoapps.user_api.accounts.api.AccountSettingsReadOnlyFieldsRequested.run_filter',
-            return_value=set(),
+            return_value=(set(), None),
         )
         filter_patcher.start()
         self.addCleanup(filter_patcher.stop)
@@ -250,7 +250,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
 
     @patch(
         'openedx.core.djangoapps.user_api.accounts.api.AccountSettingsReadOnlyFieldsRequested.run_filter',
-        return_value={'country'},
+        return_value=({'country'}, None),
     )
     def test_readonly_field_from_filter_is_rejected(self, mock_run_filter):  # pylint: disable=unused-argument
         """

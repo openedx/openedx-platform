@@ -3,31 +3,31 @@ Test the openedx_content-based XBlock runtime and content libraries together.
 """
 import json
 
+import django.utils.translation
 from completion.test_utils import CompletionWaffleTestMixin
 from django.db import connections, transaction
 from django.test import TestCase, override_settings
 from django.utils.text import slugify
-import django.utils.translation
 from organizations.models import Organization
 from rest_framework.test import APIClient
 from xblock.core import XBlock
 
-from lms.djangoapps.courseware.model_data import get_score
-from openedx.core.djangoapps.content_libraries import api as library_api
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    URL_BLOCK_RENDER_VIEW,
-    URL_BLOCK_GET_HANDLER_URL,
-    URL_BLOCK_METADATA_URL,
-    URL_BLOCK_FIELDS_URL,
-)
-from openedx.core.djangoapps.content_libraries.tests.user_state_block import UserStateTestBlock
-from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED
-from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
-from openedx.core.djangoapps.xblock import api as xblock_api
-from openedx.core.djangolib.testing.utils import skip_unless_lms, skip_unless_cms
-from openedx.core.lib.xblock_serializer import api as serializer_api
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import assert_dict_contains_subset
+from lms.djangoapps.courseware.model_data import get_score
+from openedx.core.djangoapps.content_libraries import api as library_api
+from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED
+from openedx.core.djangoapps.content_libraries.tests.base import (
+    URL_BLOCK_FIELDS_URL,
+    URL_BLOCK_GET_HANDLER_URL,
+    URL_BLOCK_METADATA_URL,
+    URL_BLOCK_RENDER_VIEW,
+)
+from openedx.core.djangoapps.content_libraries.tests.user_state_block import UserStateTestBlock
+from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
+from openedx.core.djangoapps.xblock import api as xblock_api
+from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
+from openedx.core.lib.xblock_serializer import api as serializer_api
 
 
 class ContentLibraryContentTestMixin:

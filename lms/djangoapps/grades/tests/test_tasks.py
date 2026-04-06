@@ -32,7 +32,7 @@ from lms.djangoapps.grades.tasks import (
     compute_all_grades_for_course,
     compute_grades_for_course,
     compute_grades_for_course_v2,
-    recalculate_subsection_grade_v3
+    recalculate_subsection_grade_v3,
 )
 from openedx.core.djangoapps.content.block_structure.exceptions import BlockStructureNotFound
 from xmodule.modulestore import ModuleStoreEnum

@@ -3,14 +3,14 @@
 Course Experience API utilities.
 """
 import logging
+
 from eventtracking import tracker
 
+from lms.djangoapps.course_api.api import course_detail
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import is_masquerading, setup_masquerade
-from lms.djangoapps.course_api.api import course_detail
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
 from openedx.features.course_experience.utils import dates_banner_should_display
-
 
 logger = logging.getLogger(__name__)
 

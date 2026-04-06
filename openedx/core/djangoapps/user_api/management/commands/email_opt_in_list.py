@@ -23,10 +23,11 @@ The command will always use the read replica database if one is configured.
 
 import contextlib
 import csv
-from datetime import datetime, timezone as dt_timezone
 import logging
 import os.path
 import time
+from datetime import datetime
+from datetime import timezone as dt_timezone
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError

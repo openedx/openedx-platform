@@ -16,18 +16,18 @@ from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, U
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preferences
+    get_default_values_of_preferences,
 )
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_preference_unsubscribe_event
 from openedx.core.djangoapps.notifications.models import NotificationPreference
-from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.models import UserPreference
 from xmodule.modulestore.django import modulestore
 
-from .notification_icons import NotificationTypeIcons
 from ..utils import create_account_notification_pref_if_not_exists
+from .notification_icons import NotificationTypeIcons
 
 User = get_user_model()
 

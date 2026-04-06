@@ -5,19 +5,18 @@ These transfer identifiers are used in the event of migrating an app from one te
 
 
 import logging
-import requests
 import time
 
+import jwt
+import requests
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models import Q
-import jwt
 from social_django.models import UserSocialAuth
 from social_django.utils import load_strategy
 
-
-from common.djangoapps.third_party_auth.models import AppleMigrationUserIdInfo
 from common.djangoapps.third_party_auth.appleid import AppleIdAuth
+from common.djangoapps.third_party_auth.models import AppleMigrationUserIdInfo
 
 log = logging.getLogger(__name__)
 

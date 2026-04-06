@@ -28,7 +28,7 @@
       padding: 5%;
     }
 
-    .title {
+    .title:not(.deprecated-title) {
       @extend %t-title5;
       @extend %t-demi-strong;
 

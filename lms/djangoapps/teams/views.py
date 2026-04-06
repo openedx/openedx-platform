@@ -33,14 +33,14 @@ from common.djangoapps.util.model_utils import truncate_fields
 from lms.djangoapps.courseware.courses import get_course_with_access, has_access
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
-from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser, BearerAuthentication
+from openedx.core.lib.api.authentication import BearerAuthentication, BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import IsCourseStaffInstructor, IsStaffOrReadOnly
 from openedx.core.lib.api.view_utils import (
     ExpandableFieldViewMixin,
     RetrievePatchAPIView,
     add_serializer_errors,
-    build_api_error
+    build_api_error,
 )
 from openedx.core.lib.teams_config import TeamsetType
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -56,7 +56,7 @@ from .api import (
     has_specific_team_access,
     has_specific_teamset_access,
     has_team_api_access,
-    user_organization_protection_status
+    user_organization_protection_status,
 )
 from .csv import TeamMembershipImportManager, load_team_membership_csv
 from .errors import AlreadyOnTeamInTeamset, ElasticSearchConnectionError, NotEnrolledInCourseForTeam
@@ -66,7 +66,7 @@ from .serializers import (
     CourseTeamCreationSerializer,
     CourseTeamSerializer,
     MembershipSerializer,
-    TopicSerializer
+    TopicSerializer,
 )
 from .toggles import are_team_submissions_enabled
 from .utils import emit_team_event

@@ -14,8 +14,8 @@ from rest_framework import status
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 
-from common.djangoapps.course_modes.rest_api.serializers import CourseModeSerializer
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.course_modes.rest_api.serializers import CourseModeSerializer
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.parsers import MergePatchParser
 

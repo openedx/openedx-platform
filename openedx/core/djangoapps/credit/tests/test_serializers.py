@@ -4,9 +4,9 @@ import pytest
 from django.test import TestCase
 from rest_framework.exceptions import PermissionDenied
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.credit import serializers, signature
 from openedx.core.djangoapps.credit.tests.factories import CreditEligibilityFactory, CreditProviderFactory
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 class CreditProviderSerializerTests(TestCase):

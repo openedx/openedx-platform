@@ -2,12 +2,12 @@
 
 
 import logging
+from datetime import date, datetime
 from textwrap import dedent
 from time import time
-from datetime import date, datetime
 
-from django.core.management import BaseCommand, CommandError
 from django.conf import settings
+from django.core.management import BaseCommand, CommandError
 from elasticsearch import exceptions
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey

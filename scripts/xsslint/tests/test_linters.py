@@ -7,11 +7,12 @@ import textwrap
 from unittest import TestCase
 
 from ddt import data, ddt
-
 from xsslint.linters import (
-    JavaScriptLinter, MakoTemplateLinter,
-    PythonLinter, UnderscoreTemplateLinter,
-    DjangoTemplateLinter
+    DjangoTemplateLinter,
+    JavaScriptLinter,
+    MakoTemplateLinter,
+    PythonLinter,
+    UnderscoreTemplateLinter,
 )
 from xsslint.reporting import FileResults
 from xsslint.utils import ParseString

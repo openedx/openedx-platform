@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import ddt
 import pytest
 from django import test
-from django.contrib.auth import models, REDIRECT_FIELD_NAME
+from django.contrib.auth import REDIRECT_FIELD_NAME, models
 from django.core import mail
 from social_django import models as social_models
 

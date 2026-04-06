@@ -13,7 +13,7 @@ MAX_ATTEMPTS = int(os.environ.get("RETRY_MAX_ATTEMPTS", 5))
 from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import (
     AmplitudeApi,
     AmplitudeException,
-    AmplitudeRecoverableException
+    AmplitudeRecoverableException,
 )
 
 

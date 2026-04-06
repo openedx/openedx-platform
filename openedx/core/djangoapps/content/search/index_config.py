@@ -1,7 +1,6 @@
 """Configuration for the search index."""
 from .documents import Fields
 
-
 INDEX_DISTINCT_ATTRIBUTE = "usage_key"
 
 # Mark which attributes can be used for filtering/faceted search:

@@ -2,8 +2,9 @@
 
 import datetime
 import logging
+from importlib import import_module
 
-from celery import shared_task, current_app
+from celery import current_app, shared_task
 from celery_utils.logged_task import LoggedTask
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask
 from django.conf import settings
@@ -17,17 +18,16 @@ from edx_ace.utils.date import deserialize, serialize
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
-    set_custom_attribute
+    set_custom_attribute,
 )
 from eventtracking import tracker
-from importlib import import_module
 from opaque_keys.edx.keys import CourseKey
 
+from common.djangoapps.track import segment
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.schedules import message_types, resolvers
 from openedx.core.djangoapps.schedules.models import Schedule, ScheduleConfig
 from openedx.core.lib.celery.task_utils import emulate_http_request
-from common.djangoapps.track import segment
 
 LOG = logging.getLogger(__name__)
 

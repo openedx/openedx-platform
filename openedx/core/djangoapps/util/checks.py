@@ -4,7 +4,6 @@ Miscellaneous system checks
 from django.conf import settings
 from django.core import checks
 
-
 _DEVSTACK_SETTINGS_MODULES = [
     "lms.envs.devstack",
     "cms.envs.devstack",

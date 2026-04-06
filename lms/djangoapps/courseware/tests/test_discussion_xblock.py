@@ -9,9 +9,9 @@ functionalities.
 
 import json
 import uuid
-
 from unittest import mock
 from unittest.mock import patch
+
 import ddt
 from django.conf import settings
 from django.test.utils import override_settings
@@ -19,17 +19,17 @@ from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 from xblock.field_data import DictFieldData
-from xmodule.discussion_block import DiscussionXBlock
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
-from xmodule.tests.helpers import mock_render_template
 
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_api.blocks.tests.helpers import deserialize_usage_key
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.tests.helpers import XModuleRenderingTestBase
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from xmodule.discussion_block import DiscussionXBlock
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
+from xmodule.tests.helpers import mock_render_template
 
 
 @ddt.ddt

@@ -3,18 +3,20 @@ Test the retire_user management command
 """
 
 
+import csv
+import os
+
 import pytest
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.management import CommandError, call_command
 
-from ...models import UserRetirementStatus
+from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # lint-amnesty, pylint: disable=unused-import, wrong-import-order
-    setup_retirement_states
+    setup_retirement_states,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms  # lint-amnesty, pylint: disable=wrong-import-order
-from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
-import csv
-import os
+
+from ...models import UserRetirementStatus
 
 pytestmark = pytest.mark.django_db
 user_file = 'userfile.csv'

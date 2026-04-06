@@ -4,30 +4,32 @@ Test for lms courseware app, module data (runtime data storage for XBlocks)
 import json
 from functools import partial
 from unittest.mock import Mock, patch
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, FilteredQueryCountMixin
-import pytest
 
-from django.db import connections, DatabaseError
+import pytest
+from django.db import DatabaseError, connections
 from django.test import TestCase
 from xblock.core import XBlock
 from xblock.exceptions import KeyValueMultiSaveError
 from xblock.fields import BlockScope, Scope, ScopeIds
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache, InvalidScopeError
 from lms.djangoapps.courseware.models import (
     StudentModule,
     XModuleStudentInfoField,
     XModuleStudentPrefsField,
-    XModuleUserStateSummaryField
+    XModuleUserStateSummaryField,
 )
-from lms.djangoapps.courseware.tests.factories import COURSE_KEY
-from lms.djangoapps.courseware.tests.factories import LOCATION
-from lms.djangoapps.courseware.tests.factories import StudentInfoFactory
+from lms.djangoapps.courseware.tests.factories import (
+    COURSE_KEY,
+    LOCATION,
+    StudentInfoFactory,
+    StudentPrefsFactory,
+    UserStateSummaryFactory,
+)
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory as cmfStudentModuleFactory
-from lms.djangoapps.courseware.tests.factories import StudentPrefsFactory
-from lms.djangoapps.courseware.tests.factories import UserStateSummaryFactory
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, FilteredQueryCountMixin
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 

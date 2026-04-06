@@ -12,12 +12,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID, Group, UserPartition
 from xmodule.partitions.tests.test_partitions import MockPartitionService, MockUserPartitionScheme, PartitionTestCase
-from xmodule.split_test_block import (
-    SplitTestBlock,
-    SplitTestFields,
-    get_split_user_partitions,
-    user_partition_values,
-)
+from xmodule.split_test_block import SplitTestBlock, SplitTestFields, get_split_user_partitions, user_partition_values
 from xmodule.tests import prepare_block_runtime
 from xmodule.tests.test_course_block import DummyModuleStoreRuntime
 from xmodule.tests.xml import XModuleXmlImportTest

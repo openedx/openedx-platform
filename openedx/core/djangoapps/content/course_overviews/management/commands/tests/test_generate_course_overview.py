@@ -8,7 +8,9 @@ from django.core.management.base import CommandError
 
 from openedx.core.djangoapps.content.course_overviews.management.commands import generate_course_overview
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

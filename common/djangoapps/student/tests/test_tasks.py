@@ -1,16 +1,13 @@
 """
 Celery task tests
 """
-from unittest.mock import patch, Mock, PropertyMock
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 from django.conf import settings
 from django.test.utils import override_settings
 
-from common.djangoapps.student.tasks import (
-    MAX_RETRIES,
-    send_course_enrollment_email
-)
+from common.djangoapps.student.tasks import MAX_RETRIES, send_course_enrollment_email
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

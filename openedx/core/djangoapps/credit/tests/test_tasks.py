@@ -4,16 +4,21 @@ Tests for credit course tasks.
 
 
 from datetime import datetime
-
 from unittest import mock
+
 from edx_proctoring.api import create_exam
 
 from openedx.core.djangoapps.credit.api import get_credit_requirements
 from openedx.core.djangoapps.credit.exceptions import InvalidCreditRequirements
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.credit.signals.handlers import on_course_publish
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 
 class TestTaskExecution(ModuleStoreTestCase):

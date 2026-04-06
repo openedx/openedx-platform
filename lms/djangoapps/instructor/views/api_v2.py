@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Tuple
 
-
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.db import transaction
@@ -21,6 +20,7 @@ from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
+from django_filters.rest_framework import DjangoFilterBackend
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -31,42 +31,40 @@ from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.roles import CourseBetaTesterRole
+from common.djangoapps.util.json_request import JsonResponseBadRequest
+from lms.djangoapps.courseware.tabs import get_course_tab_list
+from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.constants import ReportType
+from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
+from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
+from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
+from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
+from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
+from lms.djangoapps.instructor_task import api as task_api
+from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
+from lms.djangoapps.instructor_task.models import ReportStore
+from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
+from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
-from common.djangoapps.util.json_request import JsonResponseBadRequest
-from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-
-from lms.djangoapps.courseware.tabs import get_course_tab_list
-from lms.djangoapps.instructor import permissions
-from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
-from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
-from lms.djangoapps.instructor_task import api as task_api
-from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
-from lms.djangoapps.instructor.constants import ReportType
-from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
-from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
-from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
-from lms.djangoapps.instructor_task.models import ReportStore
-from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
-from openedx.core.lib.courses import get_course_by_id
+from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
-    InstructorTaskListSerializer,
-    CourseInformationSerializerV2,
     BlockDueDateSerializerV2,
-    UnitExtensionSerializer,
+    CourseEnrollmentSerializerV2,
+    CourseInformationSerializerV2,
+    InstructorTaskListSerializer,
     ORASerializer,
     ORASummarySerializer,
+    UnitExtensionSerializer,
 )
-from .tools import (
-    find_unit,
-    get_units_with_due_date,
-    keep_field_private,
-    set_due_date_extension,
-    title_or_url,
-)
+from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
 log = logging.getLogger(__name__)
 
@@ -1097,3 +1095,77 @@ class ORASummaryView(GenericAPIView):
 
         serializer = self.get_serializer(items)
         return Response(serializer.data)
+
+
+class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List all active enrollments for a course with optional search, filtering, and pagination.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/enrollments
+        GET /api/instructor/v2/courses/{course_id}/enrollments?search=john
+        GET /api/instructor/v2/courses/{course_id}/enrollments?is_beta_tester=true
+        GET /api/instructor/v2/courses/{course_id}/enrollments?page=2&page_size=50
+
+    **Response Values**
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "count": 150,
+            "num_pages": 15,
+            "current_page": 1,
+            "start": 0,
+            "next": "http://example.com/api/instructor/v2/courses/.../enrollments?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "username": "learner1",
+                    "full_name": "Jane Doe",
+                    "email": "jane@example.com",
+                    "mode": "audit",
+                    "is_beta_tester": false
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course.
+        search (optional): Filter by username, email, first name, or last name.
+        is_beta_tester (optional): Filter by beta tester status (true/false).
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page (default: 10, max: 100).
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of active enrollments
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+    serializer_class = CourseEnrollmentSerializerV2
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CourseEnrollmentFilter
+
+    def get_queryset(self):
+        course_key = CourseKey.from_string(self.kwargs['course_id'])
+        return CourseEnrollment.objects.filter(
+            course_id=course_key,
+            is_active=True
+        ).select_related('user', 'user__profile').order_by('user__username')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        course_key = CourseKey.from_string(self.kwargs['course_id'])
+        context['beta_tester_ids'] = set(
+            CourseBetaTesterRole(course_key).users_with_role().values_list('id', flat=True)
+        )
+        return context
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data['course_id'] = self.kwargs['course_id']
+        return response

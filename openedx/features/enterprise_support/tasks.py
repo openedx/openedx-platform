@@ -7,8 +7,8 @@ import logging
 
 from celery import shared_task
 from edx_django_utils.monitoring import set_code_owner_attribute
-
 from enterprise.models import EnterpriseCourseEnrollment
+
 from openedx.features.enterprise_support.utils import clear_data_consent_share_cache
 
 log = logging.getLogger('edx.celery.task')

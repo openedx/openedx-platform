@@ -3,11 +3,10 @@
 import contextlib
 from unittest.mock import MagicMock, patch
 
+import geoip2.database
 import maxminddb
 from django.core.cache import cache
 from django.urls import reverse
-
-import geoip2.database
 
 from .models import Country, CountryAccessRule, RestrictedCourse
 

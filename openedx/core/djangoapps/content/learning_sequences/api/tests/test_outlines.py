@@ -2,10 +2,13 @@
 Top level API tests. Tests API public contracts only. Do not import/create/mock
 models for this app.
 """
-from datetime import datetime, timezone
-from unittest.mock import patch, MagicMock
 import unittest
+from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
+import attr
+import ddt
+import pytest
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import signals
@@ -14,25 +17,21 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from edx_when.api import set_dates_for_course
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
-import attr
-import ddt
-from lms.djangoapps.teams.tests.factories import CourseTeamFactory
-from openedx.core.djangoapps.content.learning_sequences.api.processors.team_partition_groups import (
-    TeamPartitionGroupsOutlineProcessor,
-)
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-import pytest
 
-from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
-from openedx.core.djangoapps.course_groups.models import CourseCohortsSettings, CourseUserGroupPartitionGroup
-from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.signals import update_masters_access_course
 from common.djangoapps.student.auth import user_has_role
 from common.djangoapps.student.roles import CourseBetaTesterRole
 from common.djangoapps.student.tests.factories import BetaTesterFactory, UserFactory
+from lms.djangoapps.teams.tests.factories import CourseTeamFactory
+from openedx.core.djangoapps.content.learning_sequences.api.processors.team_partition_groups import (
+    TeamPartitionGroupsOutlineProcessor,
+)
+from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from openedx.core.djangoapps.course_groups.models import CourseCohortsSettings, CourseUserGroupPartitionGroup
+from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
     ENROLLMENT_TRACK_PARTITION_ID,
 )
@@ -45,7 +44,6 @@ from ...data import (
     CourseVisibility,
     ExamData,
     VisibilityData,
-
 )
 from ..outlines import (
     get_content_errors,

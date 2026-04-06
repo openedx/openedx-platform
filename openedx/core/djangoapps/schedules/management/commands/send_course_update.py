@@ -5,7 +5,6 @@ Management command to send Schedule course updates
 
 from textwrap import dedent
 
-
 from openedx.core.djangoapps.schedules.management.commands import SendEmailBaseCommand
 from openedx.core.djangoapps.schedules.tasks import ScheduleCourseUpdate
 

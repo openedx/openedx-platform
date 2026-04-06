@@ -7,18 +7,19 @@ Tests for course group views
 
 import json
 from collections import namedtuple
+
 import pytest
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.http import Http404
 from django.test.client import RequestFactory
 from opaque_keys.edx.locator import CourseLocator
 
-from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..cohorts import DEFAULT_COHORT_NAME, get_cohort, get_cohort_by_id, get_cohort_by_name, get_group_info_for_cohort
@@ -29,7 +30,7 @@ from ..views import (
     course_cohort_settings_handler,
     link_cohort_to_partition_group,
     remove_user_from_cohort,
-    users_in_cohort
+    users_in_cohort,
 )
 from .helpers import CohortFactory, CourseCohortFactory, config_course_cohorts, config_course_cohorts_legacy
 

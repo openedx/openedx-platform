@@ -3,8 +3,8 @@ Feature toggles used across the platform. Toggles should only be added to this m
 for them. Generally speaking, they should be added to the most appropriate app or repo.
 """
 from edx_toggles.toggles import SettingToggle
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 # .. toggle_name: ENTRANCE_EXAMS
 # .. toggle_implementation: SettingToggle

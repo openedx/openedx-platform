@@ -16,7 +16,7 @@ from .models import (
     RetirementState,
     UserRetirementPartnerReportingStatus,
     UserRetirementRequest,
-    UserRetirementStatus
+    UserRetirementStatus,
 )
 
 

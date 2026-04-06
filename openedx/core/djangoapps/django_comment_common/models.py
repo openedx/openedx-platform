@@ -10,17 +10,16 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
 from django.utils.translation import gettext_noop
+from edx_django_utils.cache import DEFAULT_REQUEST_CACHE
 from jsonfield.fields import JSONField
 from opaque_keys.edx.django.models import CourseKeyField
-from edx_django_utils.cache import DEFAULT_REQUEST_CACHE
 from opaque_keys.edx.keys import CourseKey
 
-from openedx.core.djangoapps.xmodule_django.models import NoneToEmptyManager
-from openedx.core.lib.cache_utils import request_cached
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import GlobalStaff
+from openedx.core.djangoapps.xmodule_django.models import NoneToEmptyManager
+from openedx.core.lib.cache_utils import request_cached
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 

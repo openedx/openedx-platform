@@ -2,6 +2,7 @@
 
 
 from django.core.management import BaseCommand, CommandError
+
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 
 

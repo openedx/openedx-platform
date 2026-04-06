@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from ddt import data, ddt
-
 from xsslint.utils import StringLines
 
 

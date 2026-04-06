@@ -4,8 +4,8 @@ Common utilities for tests in block_structure module
 
 
 from contextlib import contextmanager
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
 
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 

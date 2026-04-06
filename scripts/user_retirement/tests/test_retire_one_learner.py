@@ -13,7 +13,7 @@ from scripts.user_retirement.retire_one_learner import (
     ERR_UNKNOWN_STATE,
     ERR_USER_AT_END_STATE,
     ERR_USER_IN_WORKING_STATE,
-    retire_learner
+    retire_learner,
 )
 from scripts.user_retirement.tests.retirement_helpers import fake_config_file, get_fake_user_retirement
 from scripts.user_retirement.utils.exception import HttpDoesNotExistException

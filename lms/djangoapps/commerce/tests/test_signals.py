@@ -8,25 +8,25 @@ import json
 from unittest import mock
 from urllib.parse import urljoin
 
-import pytest
 import ddt
 import httpretty
+import pytest
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.test.utils import override_settings
 from opaque_keys.edx.keys import CourseKey
 from requests import Timeout
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.signals import REFUND_ORDER
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from common.test.utils import assert_dict_contains_subset
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from ..models import CommerceConfiguration
 from ..utils import _generate_refund_notification_body, _send_refund_notification, create_zendesk_ticket
 from . import JSON
 from .mocks import mock_create_refund, mock_process_refund
-from common.test.utils import assert_dict_contains_subset
 
 ZENDESK_URL = 'http://zendesk.example.com/'
 ZENDESK_USER = 'test@example.com'

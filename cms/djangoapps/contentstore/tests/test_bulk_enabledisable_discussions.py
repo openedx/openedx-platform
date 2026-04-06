@@ -5,12 +5,12 @@ import json
 
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
 from common.djangoapps.student.tests.factories import UserFactory
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class BulkEnableDisableDiscussionsTestCase(ModuleStoreTestCase):

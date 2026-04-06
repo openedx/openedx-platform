@@ -9,8 +9,9 @@ paths actually work.
 import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
-import pytest
+
 import ddt
+import pytest
 from celery.states import FAILURE, SUCCESS
 from django.utils.translation import gettext_noop
 from opaque_keys.edx.keys import i4xEncoder
@@ -28,7 +29,7 @@ from lms.djangoapps.instructor_task.tasks import (
     generate_certificates,
     override_problem_score,
     rescore_problem,
-    reset_problem_attempts
+    reset_problem_attempts,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.tests.test_base import InstructorTaskModuleTestCase

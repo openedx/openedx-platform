@@ -2,8 +2,9 @@
 Classes for Django Template Linting.
 """
 import re
-from xsslint.utils import Expression, StringLines
+
 from xsslint.reporting import ExpressionRuleViolation
+from xsslint.utils import Expression, StringLines
 
 
 class TransExpression(Expression):

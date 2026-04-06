@@ -6,9 +6,7 @@ Tests for main.py
 import json
 import re
 from io import StringIO
-from unittest import TestCase
-
-from unittest import mock
+from unittest import TestCase, mock
 
 from xsslint.linters import JavaScriptLinter, MakoTemplateLinter, PythonLinter, UnderscoreTemplateLinter
 from xsslint.main import _build_ruleset, _lint

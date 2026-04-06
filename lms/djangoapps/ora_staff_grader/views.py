@@ -9,25 +9,18 @@ Views for Enhanced Staff Grader
 import logging
 
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
-from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,
-)
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
-from openassessment.xblock.config_mixin import WAFFLE_NAMESPACE, ENHANCED_STAFF_GRADER
+from openassessment.xblock.config_mixin import ENHANCED_STAFF_GRADER, WAFFLE_NAMESPACE
 from rest_framework.decorators import action
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import ItemNotFoundError
 
-from lms.djangoapps.ora_staff_grader.constants import (
-    PARAM_ORA_LOCATION,
-    PARAM_SUBMISSION_ID,
-)
+from lms.djangoapps.ora_staff_grader.constants import PARAM_ORA_LOCATION, PARAM_SUBMISSION_ID
 from lms.djangoapps.ora_staff_grader.errors import (
     BadOraLocationResponse,
     GradeContestedResponse,
@@ -44,26 +37,26 @@ from lms.djangoapps.ora_staff_grader.ora_api import (
     claim_submission_lock,
     delete_submission_lock,
     get_assessment_info,
+    get_assessments,
     get_submission_info,
     get_submissions,
-    get_assessments,
     submit_grade,
 )
 from lms.djangoapps.ora_staff_grader.serializers import (
+    AssessmentFeedbackSerializer,
     FileListSerializer,
     InitializeSerializer,
-    AssessmentFeedbackSerializer,
     LockStatusSerializer,
     StaffAssessSerializer,
     SubmissionFetchSerializer,
     SubmissionStatusFetchSerializer,
 )
 from lms.djangoapps.ora_staff_grader.utils import require_params
-from openedx.core.djangoapps.content.course_overviews.api import (
-    get_course_overview_or_none,
-)
+from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 log = logging.getLogger(__name__)
 

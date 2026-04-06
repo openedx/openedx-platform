@@ -49,13 +49,13 @@ from common.djangoapps.student.models import (
     ManualEnrollmentAudit,
     NonExistentCourseError,
     get_retired_email_by_email,
-    get_retired_username_by_username
+    get_retired_username_by_username,
 )
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseDataResearcherRole,
     CourseFinanceAdminRole,
-    CourseInstructorRole
+    CourseInstructorRole,
 )
 from common.djangoapps.student.tests.factories import (
     BetaTesterFactory,
@@ -64,9 +64,8 @@ from common.djangoapps.student.tests.factories import (
     GlobalStaffFactory,
     InstructorFactory,
     StaffFactory,
-    UserFactory
+    UserFactory,
 )
-
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, CourseEmail, CourseEmailTemplate
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -79,12 +78,12 @@ from lms.djangoapps.instructor.views.api import (
     _split_input_list,
     common_exceptions_400,
     generate_unique_password,
-    require_finance_admin
+    require_finance_admin,
 )
 from lms.djangoapps.instructor_task.api_helper import (
     AlreadyRunningError,
     QueueConnectionError,
-    generate_already_running_error_message
+    generate_already_running_error_message,
 )
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
 from lms.djangoapps.instructor_task.models import InstructorTask, InstructorTaskSchedule
@@ -107,7 +106,7 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -2425,7 +2424,10 @@ class TestInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTe
                     'first_name': self.other_staff.first_name,
                     'last_name': self.other_staff.last_name,
                 }
-            ]
+            ],
+            'count': 1,
+            'num_pages': 1,
+            'current_page': 1,
         }
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json == expected
@@ -2440,7 +2442,10 @@ class TestInstructorAPILevelsAccess(SharedModuleStoreTestCase, LoginEnrollmentTe
         # check response content
         expected = {
             'course_id': str(self.course.id),
-            'beta': []
+            'beta': [],
+            'count': 0,
+            'num_pages': 1,
+            'current_page': 1,
         }
         res_json = json.loads(response.content.decode('utf-8'))
         assert res_json == expected

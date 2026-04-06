@@ -4,6 +4,7 @@ Test helpers for Comprehensive Theming.
 
 
 from unittest.mock import Mock, patch
+
 from django.conf import settings
 from django.test import TestCase, override_settings
 
@@ -14,7 +15,7 @@ from openedx.core.djangoapps.theming.helpers import (
     get_template_path_with_theme,
     get_theme_base_dir,
     get_themes,
-    strip_site_theme_templates_path
+    strip_site_theme_templates_path,
 )
 from openedx.core.djangoapps.theming.helpers_dirs import get_theme_dirs
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme

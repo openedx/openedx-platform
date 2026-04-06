@@ -8,10 +8,10 @@ import logging
 from collections import namedtuple
 from copy import deepcopy
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import attr
 import ddt
-from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.db.models import Max
@@ -23,8 +23,10 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from lms.djangoapps.courseware.models import DynamicUpgradeDeadlineConfiguration
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.commerce.models import CommerceConfiguration
+from lms.djangoapps.courseware.models import DynamicUpgradeDeadlineConfiguration
 from openedx.core.djangoapps.schedules import resolvers, tasks
 from openedx.core.djangoapps.schedules.resolvers import _get_datetime_beginning_of_day
 from openedx.core.djangoapps.schedules.tests.factories import ScheduleConfigFactory, ScheduleFactory
@@ -32,8 +34,6 @@ from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfi
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import FilteredQueryCountMixin
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import UserFactory
 
 SITE_QUERY = 1  # django_site
 SITE_CONFIG_QUERY = 1  # site_configuration_siteconfiguration

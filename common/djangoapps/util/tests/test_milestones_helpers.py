@@ -12,7 +12,9 @@ from milestones.exceptions import InvalidCourseKeyException, InvalidUserExceptio
 from milestones.models import MilestoneRelationshipType
 
 from common.djangoapps.util import milestones_helpers
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

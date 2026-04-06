@@ -10,7 +10,9 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.user_api.partition_schemes import RandomUserPartitionScheme
 from xmodule.modulestore.tests.factories import check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions_service import get_user_partition_groups  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions_service import (
+    get_user_partition_groups,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from ...api import get_course_blocks
 from ..user_partitions import UserPartitionTransformer

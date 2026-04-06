@@ -22,16 +22,21 @@ from oauth2_provider.models import Application
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, SuperuserFactory, UserFactory
-from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
+from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory
 from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tests.helpers import StubUserService  # lint-amnesty, pylint: disable=wrong-import-order
 

@@ -9,14 +9,14 @@ from urllib.parse import quote
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.urls import reverse
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.test.utils import XssTestMixin
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.survey.models import SurveyAnswer, SurveyForm
 from openedx.features.course_experience import course_home_url
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class SurveyViewsTests(LoginEnrollmentTestCase, SharedModuleStoreTestCase, XssTestMixin):

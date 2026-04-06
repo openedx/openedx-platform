@@ -32,11 +32,17 @@ from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollment
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_COMMUNITY_TA, Role
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from .factories import CourseTeamFactory, LAST_ACTIVITY_AT
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+
 from ..models import CourseTeamMembership
 from ..search_indexes import CourseTeam, CourseTeamIndexer, course_team_post_save_callback
+from .factories import LAST_ACTIVITY_AT, CourseTeamFactory
 
 
 @ddt.ddt

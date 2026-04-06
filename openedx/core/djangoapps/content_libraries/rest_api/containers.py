@@ -8,16 +8,15 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db.transaction import non_atomic_requests
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryContainerLocator
+from drf_yasg.utils import swagger_auto_schema
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
 from openedx_content import api as content_api
 from openedx_content import models_api as content_models
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from rest_framework.status import HTTP_204_NO_CONTENT, HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
 
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.lib.api.view_utils import view_auth_classes

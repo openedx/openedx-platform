@@ -52,7 +52,7 @@ from xmodule.modulestore.django import ASSET_IGNORE_REGEX
 from xmodule.modulestore.exceptions import DuplicateCourseError
 from xmodule.modulestore.mongo.base import MongoRevisionKey
 from xmodule.modulestore.store_utilities import draft_node_constructor, get_draft_subtree_roots
-from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime, LibraryXMLModuleStore, XMLModuleStore
+from xmodule.modulestore.xml import LibraryXMLModuleStore, XMLImportingModuleStoreRuntime, XMLModuleStore
 from xmodule.tabs import CourseTabList
 from xmodule.util.misc import escape_invalid_characters
 from xmodule.x_module import XModuleMixin

@@ -1,5 +1,6 @@
-from openedx.core.lib.hash_utils import short_token
 from django.db import migrations, models
+
+from openedx.core.lib.hash_utils import short_token
 
 
 class Migration(migrations.Migration):

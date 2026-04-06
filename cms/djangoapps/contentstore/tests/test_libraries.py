@@ -8,15 +8,9 @@ from unittest.mock import Mock, patch
 import ddt
 from django.test.utils import override_settings
 from opaque_keys.edx.locator import CourseKey, LibraryLocator
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import TEST_DATA_MONGO_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.x_module import STUDIO_VIEW
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, parse_json
-from cms.djangoapps.contentstore.utils import reverse_library_url, reverse_url, \
-    reverse_usage_url, duplicate_block
+from cms.djangoapps.contentstore.utils import duplicate_block, reverse_library_url, reverse_url, reverse_usage_url
 from cms.djangoapps.contentstore.views.preview import _load_preview_block
 from cms.djangoapps.contentstore.views.tests.test_library import LIBRARY_REST_URL
 from cms.djangoapps.course_creators.views import add_user_with_status_granted
@@ -28,10 +22,15 @@ from common.djangoapps.student.roles import (
     LibraryUserRole,
     OrgInstructorRole,
     OrgLibraryUserRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import TEST_DATA_MONGO_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.x_module import STUDIO_VIEW
 
 
 class LibraryTestCase(ModuleStoreTestCase):

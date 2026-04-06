@@ -17,12 +17,13 @@ from lazy import lazy
 from lxml import etree
 from path import Path as path
 from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String
-from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
+
 from openedx.core.djangoapps.video_config.sharing import (
     COURSE_VIDEO_SHARING_ALL_VIDEOS,
     COURSE_VIDEO_SHARING_NONE,
     COURSE_VIDEO_SHARING_PER_VIDEO,
 )
+from openedx.core.djangoapps.video_pipeline.models import VideoUploadsEnabledByDefault
 from openedx.core.lib.license import LicenseMixin
 from openedx.core.lib.teams_config import TeamsConfig  # lint-amnesty, pylint: disable=unused-import
 from xmodule import course_metadata_utils

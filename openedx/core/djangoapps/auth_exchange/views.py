@@ -8,8 +8,8 @@ The following are currently implemented:
 """
 import logging
 
-import jwt
 import django.contrib.auth as auth
+import jwt
 import social_django.utils as social_utils
 from django.conf import settings
 from django.contrib.auth import login
@@ -34,7 +34,6 @@ from openedx.core.djangoapps.oauth_dispatch import adapters
 from openedx.core.djangoapps.oauth_dispatch.api import create_dot_access_token
 from openedx.core.djangoapps.safe_sessions.middleware import mark_user_change_as_expected
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-
 
 logger = logging.getLogger(__name__)
 

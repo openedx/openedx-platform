@@ -13,10 +13,10 @@ import ddt
 from django.test import RequestFactory
 from django.test.utils import override_settings
 from django.utils.timezone import now
+from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
 from web_fragments.fragment import Fragment
 
-from edx_toggles.toggles.testutils import override_waffle_flag
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from xmodule.seq_block import TIMED_EXAM_GATING_WAFFLE_FLAG, SequenceBlock
 from xmodule.tests import get_test_system, prepare_block_runtime

@@ -3,21 +3,24 @@ Black-box tests of the DjangoUserStateClient against the semantics
 defined in edx_user_state_client.
 """
 
-import pytz
-from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
-from xblock.fields import Scope
+from collections import defaultdict
 from datetime import datetime
 from unittest import TestCase
-from collections import defaultdict
+
+import pytz
 from django.db import connections
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+from xblock.fields import Scope
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.user_state_client import (
     DjangoXBlockUserStateClient,
+    XBlockUserState,
     XBlockUserStateClient,
-    XBlockUserState
 )
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 class _UserStateClientTestUtils(TestCase):

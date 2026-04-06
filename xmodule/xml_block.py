@@ -322,9 +322,7 @@ class XmlMixin:
 
         """
 
-        from xmodule.modulestore.xml import (  # pylint: disable=import-outside-toplevel
-            XMLImportingModuleStoreRuntime,
-        )
+        from xmodule.modulestore.xml import XMLImportingModuleStoreRuntime  # pylint: disable=import-outside-toplevel
 
         if keys is None:
             # Passing keys=None is against the XBlock API but some platform tests do it.

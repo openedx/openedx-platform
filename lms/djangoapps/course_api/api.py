@@ -20,7 +20,7 @@ from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import (
     get_course_overview_with_access,
     get_courses,
-    get_permission_for_course_about
+    get_permission_for_course_about,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.learning_sequences.api import get_course_outline

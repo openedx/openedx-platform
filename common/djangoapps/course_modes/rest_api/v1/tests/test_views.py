@@ -10,14 +10,16 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from common.djangoapps.course_modes.rest_api.v1.views import CourseModesView
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.course_modes.rest_api.v1.views import CourseModesView
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.user_authn.tests.utils import JWT_AUTH_TYPES, AuthAndScopesTestMixin, AuthType
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @ddt.ddt

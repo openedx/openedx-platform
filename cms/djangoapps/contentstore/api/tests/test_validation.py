@@ -7,23 +7,21 @@ from uuid import uuid4
 
 import ddt
 import factory
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test.utils import override_settings
 from django.urls import reverse
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
-from rest_framework.test import APITestCase
-from rest_framework.test import APIClient
-from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from openedx_authz.constants.roles import COURSE_STAFF, COURSE_DATA_RESEARCHER
+from rest_framework.test import APIClient, APITestCase
 
+from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
-from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 
 User = get_user_model()
 

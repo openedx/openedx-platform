@@ -37,6 +37,7 @@ def safe_cookie_test_session_patch():
         """
         from django.conf import settings
         from django.contrib.auth import SESSION_KEY
+
         from .middleware import SafeSessionMiddleware
 
         if not patched_client_login(self, **credentials):
@@ -58,9 +59,11 @@ def safe_cookie_test_session_patch():
         access the session_id before it's actually converted,
         we use a try-except clause here to check both cases.
         """
+        from importlib import import_module
+
         from django.apps import apps
         from django.conf import settings
-        from importlib import import_module
+
         from .middleware import SafeCookieData, SafeCookieError, SafeSessionMiddleware
 
         if apps.is_installed('django.contrib.sessions'):

@@ -1,18 +1,20 @@
 """Tests for the user API at the HTTP request level. """
 
-import pytest
 import ddt
+import pytest
 from django.test.utils import override_settings
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
-from pytz import common_timezones_set, common_timezones, country_timezones
+from pytz import common_timezones, common_timezones_set, country_timezones
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.django_comment_common import models
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.core.lib.api.test_utils import TEST_API_KEY, ApiTestCase
 from openedx.core.lib.time_zone_utils import get_display_time_zone
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import

@@ -11,18 +11,23 @@ from django.conf import settings
 from django.core import mail
 from edx_ace.utils.date import serialize
 
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.schedules import resolvers, tasks
 from openedx.core.djangoapps.schedules.management.commands import send_course_update as nudge
 from openedx.core.djangoapps.schedules.management.commands.tests.send_email_base import (
     ExperienceTest,
-    ScheduleSendEmailTestMixin
+    ScheduleSendEmailTestMixin,
 )
 from openedx.core.djangoapps.schedules.management.commands.tests.upsell_base import ScheduleUpsellTestMixin
 from openedx.core.djangoapps.schedules.models import ScheduleExperience
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 
 @ddt.ddt

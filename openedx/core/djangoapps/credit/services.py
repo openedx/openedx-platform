@@ -1,8 +1,8 @@
 """
 Implementation of "credit" XBlock service
 """
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +10,6 @@ from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-
 
 log = logging.getLogger(__name__)
 
@@ -40,9 +39,7 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
-        from openedx.core.djangoapps.credit.api.eligibility import (
-            is_credit_course,
-        )
+        from openedx.core.djangoapps.credit.api.eligibility import is_credit_course
 
         course_key = _get_course_key(course_key_or_id)
 
@@ -72,10 +69,7 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
-        from openedx.core.djangoapps.credit.api.eligibility import (
-            is_credit_course,
-            get_credit_requirement_status,
-        )
+        from openedx.core.djangoapps.credit.api.eligibility import get_credit_requirement_status, is_credit_course
 
         # since we have to do name matching during various
         # verifications, User must have a UserProfile
@@ -138,9 +132,9 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
+        from openedx.core.djangoapps.credit.api.eligibility import is_credit_course
         from openedx.core.djangoapps.credit.api.eligibility import (
-            is_credit_course,
-            set_credit_requirement_status as api_set_credit_requirement_status
+            set_credit_requirement_status as api_set_credit_requirement_status,
         )
 
         course_key = _get_course_key(course_key_or_id)
@@ -194,9 +188,9 @@ class CreditService:
 
         # This seems to need to be here otherwise we get
         # circular references when starting up the app
+        from openedx.core.djangoapps.credit.api.eligibility import is_credit_course
         from openedx.core.djangoapps.credit.api.eligibility import (
-            is_credit_course,
-            remove_credit_requirement_status as api_remove_credit_requirement_status
+            remove_credit_requirement_status as api_remove_credit_requirement_status,
         )
 
         course_key = _get_course_key(course_key_or_id)

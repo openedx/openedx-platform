@@ -9,29 +9,28 @@ from unittest import mock
 
 import pytest
 from django import test
-from django.conf import settings
+from django.conf import settings  # lint-amnesty, pylint: disable=reimported
+from django.conf import settings as django_settings  # pylint: disable=reimported
 from django.contrib import auth, messages
 from django.contrib.auth import models as auth_models
 from django.contrib.messages.storage import fallback
 from django.contrib.sessions.backends import cache
-from django.urls import reverse
 from django.test import utils as django_utils
-from django.conf import settings as django_settings  # lint-amnesty, pylint: disable=reimported
+from django.urls import reverse
 from social_core import actions, exceptions
 from social_django import utils as social_utils
 from social_django import views as social_views
 
+from common.djangoapps.student import models as student_models
+from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth import middleware, pipeline
+from common.djangoapps.third_party_auth.tests import testutil
 from lms.djangoapps.commerce.tests import TEST_API_URL
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.core.djangoapps.user_authn.views.login_form import login_and_registration_form
 from openedx.core.djangoapps.user_authn.views.register import RegistrationView
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from common.djangoapps.student import models as student_models
-from common.djangoapps.student.tests.factories import UserFactory
-
-from common.djangoapps.third_party_auth import middleware, pipeline
-from common.djangoapps.third_party_auth.tests import testutil
 
 
 def create_account(request):

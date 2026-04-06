@@ -9,15 +9,15 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from opaque_keys import InvalidKeyError, OpaqueKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content.api import get_components, get_containers
+from openedx_content.models_api import Collection, CollectionPublishableEntity, PublishableEntity
 from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
-    LIBRARY_COLLECTION_UPDATED
+    LIBRARY_COLLECTION_UPDATED,
 )
-from openedx_content.api import get_components, get_containers
-from openedx_content.models_api import Collection, CollectionPublishableEntity, PublishableEntity
 
 from lms.djangoapps.grades.api import signals as grades_signals
 

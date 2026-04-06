@@ -2,8 +2,7 @@
 
 from datetime import datetime, timedelta
 from tempfile import NamedTemporaryFile
-from unittest.mock import call
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 import six
 from django.conf import settings

@@ -8,8 +8,8 @@ from urllib.parse import parse_qs, urlparse
 from django.http import HttpRequest
 from edx_ace import Message, Recipient
 
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 
 
 class QueryStringAssertionMixin:

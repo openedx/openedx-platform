@@ -4,8 +4,8 @@ Views to allow modification of the current coverage context during test runs.
 
 import coverage
 from django.http import HttpResponse
-from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 
 @require_POST

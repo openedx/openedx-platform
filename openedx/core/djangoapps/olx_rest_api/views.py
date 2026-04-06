@@ -11,9 +11,8 @@ from rest_framework.response import Response
 
 from common.djangoapps.student.auth import has_studio_read_access
 from openedx.core.lib.api.view_utils import view_auth_classes
-from xmodule.modulestore.django import modulestore
-
 from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
+from xmodule.modulestore.django import modulestore
 
 
 @api_view(['GET'])

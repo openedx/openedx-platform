@@ -2,6 +2,7 @@
 Tests for CourseTabsListTestCase.
 """
 from unittest import TestCase
+
 import ddt
 
 from xmodule.tabs import CourseTabList, InvalidTabsException

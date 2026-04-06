@@ -31,7 +31,7 @@ from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
     CourseInstructorRole,
     CourseSalesAdminRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
 from common.djangoapps.util.json_request import JsonResponse
 from common.djangoapps.util.proctoring import requires_escalation_email
@@ -56,9 +56,10 @@ from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
-from .tools import get_units_with_due_date, title_or_url
+
 from .. import permissions
 from ..toggles import data_download_v2_is_enabled
+from .tools import get_units_with_due_date, title_or_url
 
 log = logging.getLogger(__name__)
 

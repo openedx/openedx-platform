@@ -9,8 +9,6 @@ from django.urls import reverse
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CertificateCreationRequested
 from rest_framework import status as status_code
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.roles import SupportStaffRole
@@ -18,17 +16,19 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.certificates.generation_handler import (
     CertificateGenerationNotAllowed,
     generate_allowlist_certificate_task,
-    generate_certificate_task
+    generate_certificate_task,
 )
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.signals import (
-    _listen_for_enrollment_mode_change,
     _handle_id_verification_approved,
-    listen_for_passing_grade
+    _listen_for_enrollment_mode_change,
+    listen_for_passing_grade,
 )
 from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFactory
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class TestCertificatePipelineStep(PipelineStep):

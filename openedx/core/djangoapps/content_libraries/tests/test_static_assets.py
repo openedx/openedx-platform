@@ -6,9 +6,7 @@ from uuid import UUID
 from opaque_keys.edx.keys import UsageKey
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest,
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 

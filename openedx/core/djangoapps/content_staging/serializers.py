@@ -6,6 +6,7 @@ from rest_framework import serializers
 from common.djangoapps.student.auth import has_studio_read_access
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
+
 from .models import StagedContent
 
 

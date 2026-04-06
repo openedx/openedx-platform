@@ -3,17 +3,21 @@ Django ORM model specifications for the User API application
 """
 
 
+from config_models.models import ConfigurationModel
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
-
-from config_models.models import ConfigurationModel
-
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
+
+# pylint: disable=unused-import
+from common.djangoapps.student.models import get_retired_email_by_email, get_retired_username_by_username
+from common.djangoapps.util.model_utils import emit_settings_changed_event, get_changed_fields_dict
+from openedx.core.djangolib.model_mixins import DeletableByUserValue
+from openedx.core.lib.cache_utils import request_cached
 
 # Currently, the "student" app is responsible for
 # accounts, profiles, enrollments, and the student dashboard.
@@ -22,18 +26,6 @@ from opaque_keys.edx.django.models import CourseKeyField
 # certain models.  For now we will leave the models in "student" and
 # create an alias in "user_api".
 
-from openedx.core.djangolib.model_mixins import DeletableByUserValue
-from openedx.core.lib.cache_utils import request_cached
-# pylint: disable=unused-import
-from common.djangoapps.student.models import (
-    get_retired_email_by_email,
-    get_retired_username_by_username
-)
-from common.djangoapps.util.model_utils import (
-    emit_settings_changed_event,
-    get_changed_fields_dict,
-
-)
 
 
 class RetirementStateError(Exception):

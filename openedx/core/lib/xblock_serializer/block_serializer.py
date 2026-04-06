@@ -2,17 +2,18 @@
 Code for serializing a modulestore XBlock to OLX.
 """
 from __future__ import annotations
+
 import logging
 import os
 
 from lxml import etree
 from opaque_keys.edx.locator import LibraryLocatorV2
 
-from openedx.core.djangoapps.content_tagging.api import get_all_object_tags, TagValuesByObjectIdDict
+from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict, get_all_object_tags
 from xmodule.xml_block import serialize_field
 
-from .data import StaticFile
 from . import utils
+from .data import StaticFile
 
 log = logging.getLogger(__name__)
 

@@ -8,9 +8,9 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import Signal
 from django.dispatch.dispatcher import receiver
-
 from openedx_catalog import api as catalog_api
 from openedx_catalog.models_api import CourseRun
+
 from openedx.core.djangoapps.signals.signals import COURSE_CERT_DATE_CHANGE
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.django import SignalHandler

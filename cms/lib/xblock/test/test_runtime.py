@@ -4,9 +4,8 @@ Tests of edX Studio runtime functionality
 
 
 from unittest import TestCase
-from urllib.parse import urlparse
-
 from unittest.mock import Mock
+from urllib.parse import urlparse
 
 from cms.lib.xblock.runtime import handler_url
 

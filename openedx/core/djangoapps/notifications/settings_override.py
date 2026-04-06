@@ -5,7 +5,8 @@ This module provides functionality to override notification configurations
 via Django settings.
 """
 from copy import deepcopy
-from typing import Dict, Set, Any
+from typing import Any, Dict, Set
+
 from django.conf import settings
 
 

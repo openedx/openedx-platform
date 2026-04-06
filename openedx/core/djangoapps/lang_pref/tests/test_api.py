@@ -5,6 +5,7 @@ import ddt
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 from django.utils import translation
+
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.lang_pref import api as language_api
 from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context

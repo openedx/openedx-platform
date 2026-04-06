@@ -2,13 +2,11 @@
 from datetime import datetime, timezone
 from unittest import TestCase
 
+import attr
 import pytest
 from opaque_keys.edx.keys import CourseKey
-import attr
 
-from ...data import (
-    CourseOutlineData, CourseSectionData, CourseLearningSequenceData, VisibilityData, CourseVisibility
-)
+from ...data import CourseLearningSequenceData, CourseOutlineData, CourseSectionData, CourseVisibility, VisibilityData
 
 
 class TestCourseOutlineData(TestCase):

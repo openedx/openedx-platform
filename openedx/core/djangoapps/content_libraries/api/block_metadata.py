@@ -2,14 +2,13 @@
 Content libraries data classes related to XBlocks/Components.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 from django.utils.translation import gettext as _
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
-from .libraries import (
-    library_component_usage_key,
-    PublishableItem,
-)
+
+from .libraries import PublishableItem, library_component_usage_key
 
 # The public API is only the following symbols:
 __all__ = [

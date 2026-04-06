@@ -7,6 +7,7 @@ import ddt
 from organizations.api import ensure_organization
 from organizations.models import Organization
 
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import save_xblock_with_callback
 from cms.lib.xblock.upstream_sync import (
     BadDownstream,
     BadUpstream,
@@ -15,8 +16,7 @@ from cms.lib.xblock.upstream_sync import (
     decline_sync,
     sever_upstream_link,
 )
-from cms.lib.xblock.upstream_sync_block import sync_from_upstream_block, fetch_customizable_fields_from_block
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import save_xblock_with_callback
+from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block, sync_from_upstream_block
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as libs
 from openedx.core.djangoapps.content_tagging import api as tagging_api

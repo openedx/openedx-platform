@@ -16,11 +16,8 @@ from lxml import etree
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from requests import exceptions
 from social_core.pipeline.social_auth import associate_by_email
-from common.djangoapps.student.models import (
-    email_exists_or_retired,
-    username_exists_or_retired
-)
 
+from common.djangoapps.student.models import email_exists_or_retired, username_exists_or_retired
 from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig, SAMLProviderData
 from openedx.core.djangolib.markup import Text
 

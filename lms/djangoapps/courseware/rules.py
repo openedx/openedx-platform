@@ -15,13 +15,12 @@ from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.enrollments.api import is_enrollment_valid_for_proctoring
 from common.djangoapps.student.models import CourseAccessRole
 from common.djangoapps.student.roles import CourseRole, OrgRole, strict_role_checking
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.enrollments.api import is_enrollment_valid_for_proctoring
 from xmodule.course_block import CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-
 
 from .access import has_access
 

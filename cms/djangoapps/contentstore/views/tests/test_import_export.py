@@ -26,15 +26,15 @@ from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.locator import LibraryLocator
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from path import Path as path
-from storages.backends.s3boto3 import S3Boto3Storage
-from user_tasks.models import UserTaskStatus
 from rest_framework import status
 from rest_framework.test import APIClient
+from storages.backends.s3boto3 import S3Boto3Storage
+from user_tasks.models import UserTaskStatus
 
-
-from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore import errors as import_error
+from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
@@ -47,7 +47,6 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 from openedx.core.lib.extract_archive import safe_extractall
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import LIBRARY_ROOT, ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -60,7 +59,7 @@ from xmodule.modulestore.xml_importer import (
     CourseImportManager,
     ErrorReadingFileException,
     import_course_from_xml,
-    import_library_from_xml
+    import_library_from_xml,
 )
 
 TASK_LOGGER = 'cms.djangoapps.contentstore.tasks.LOGGER'

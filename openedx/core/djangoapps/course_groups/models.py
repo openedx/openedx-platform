@@ -11,14 +11,19 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
-
 from opaque_keys.edx.django.models import CourseKeyField
+from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CohortData,
+    CourseData,
+    UserData,
+    UserPersonalData,
+)
+from openedx_events.learning.signals import (
+    COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from openedx_filters.learning.filters import CohortAssignmentRequested, CohortChangeRequested
 
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
-
-from openedx_events.learning.data import CohortData, CourseData, UserData, UserPersonalData  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx_events.learning.signals import COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

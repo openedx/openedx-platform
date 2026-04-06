@@ -4,12 +4,12 @@ Signal handlers for the bulk_email app
 import logging
 
 from django.dispatch import receiver
+from edx_ace.signals import ACE_MESSAGE_SENT
 from eventtracking import tracker
 
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.user_api.accounts.signals import USER_RETIRE_MAILINGS
-from edx_ace.signals import ACE_MESSAGE_SENT
 
 from .models import Optout
 

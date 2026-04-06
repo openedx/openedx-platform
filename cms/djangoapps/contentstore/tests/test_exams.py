@@ -3,7 +3,7 @@ Test the exams service integration into Studio
 """
 import itertools
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
@@ -14,7 +14,7 @@ from pytz import utc
 from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt

@@ -16,9 +16,9 @@ from edxval.api import (
 )
 from rest_framework import status
 
-from cms.djangoapps.contentstore.video_storage_handlers import get_all_transcript_languages
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
+from cms.djangoapps.contentstore.video_storage_handlers import get_all_transcript_languages
 
 from ...mixins import PermissionAccessMixin
 

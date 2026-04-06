@@ -1,31 +1,32 @@
 """Tests for the goal_reminder_email command"""
 import uuid
 from datetime import datetime
-
-from botocore.exceptions import NoCredentialsError
-from django.contrib.sites.models import Site
-from edx_ace import Recipient, Message
-from pytz import UTC
 from unittest import mock  # lint-amnesty, pylint: disable=wrong-import-order
 
 import ddt
+from botocore.exceptions import NoCredentialsError
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
+from edx_ace import Message, Recipient
 from edx_toggles.toggles.testutils import override_waffle_flag
 from freezegun import freeze_time
+from pytz import UTC
 from waffle import get_waffle_flag_model  # pylint: disable=invalid-django-waffle-import
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from lms.djangoapps.course_goals.management.commands.goal_reminder_email import send_email_using_ses, send_ace_message
-from lms.djangoapps.course_goals.models import CourseGoalReminderStatus
-from lms.djangoapps.course_goals.tests.factories import (
-    CourseGoalFactory, CourseGoalReminderStatusFactory, UserActivityFactory,
-)
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
+from lms.djangoapps.course_goals.management.commands.goal_reminder_email import send_ace_message, send_email_using_ses
+from lms.djangoapps.course_goals.models import CourseGoalReminderStatus
+from lms.djangoapps.course_goals.tests.factories import (
+    CourseGoalFactory,
+    CourseGoalReminderStatusFactory,
+    UserActivityFactory,
+)
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.celery.task_utils import emulate_http_request

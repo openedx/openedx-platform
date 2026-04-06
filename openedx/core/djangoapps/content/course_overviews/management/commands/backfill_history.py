@@ -6,9 +6,9 @@ import csv
 import logging
 import os
 import time
+
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
-
 
 log = logging.getLogger(__name__)
 

@@ -6,11 +6,11 @@ from collections import defaultdict  # lint-amnesty, pylint: disable=unused-impo
 from datetime import datetime, timedelta
 
 from edx_when.api import get_dates_for_course
-from opaque_keys.edx.keys import UsageKey, CourseKey  # lint-amnesty, pylint: disable=unused-import
-from openedx.core import types
+from opaque_keys.edx.keys import CourseKey, UsageKey  # lint-amnesty, pylint: disable=unused-import
 
 from common.djangoapps.student.auth import user_has_role
 from common.djangoapps.student.roles import CourseBetaTesterRole
+from openedx.core import types
 
 from ...data import ScheduleData, ScheduleItemData, UserCourseOutlineData
 from .base import OutlineProcessor

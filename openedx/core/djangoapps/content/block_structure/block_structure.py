@@ -14,9 +14,8 @@ from copy import deepcopy
 from functools import partial
 from logging import getLogger
 
-from xmodule.block_metadata_utils import get_datetime_field
-
 from openedx.core.lib.graph_traversals import traverse_post_order, traverse_topologically
+from xmodule.block_metadata_utils import get_datetime_field
 
 from .exceptions import TransformerException
 

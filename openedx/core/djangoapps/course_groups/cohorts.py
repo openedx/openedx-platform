@@ -18,10 +18,10 @@ from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
 from eventtracking import tracker
 
+from common.djangoapps.student.models import get_user_by_username_or_email
 from lms.djangoapps.courseware import courses
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
-from common.djangoapps.student.models import get_user_by_username_or_email
 
 from .models import (
     CohortMembership,
@@ -29,7 +29,7 @@ from .models import (
     CourseCohortsSettings,
     CourseUserGroup,
     CourseUserGroupPartitionGroup,
-    UnregisteredLearnerCohortAssignments
+    UnregisteredLearnerCohortAssignments,
 )
 from .signals.signals import COHORT_MEMBERSHIP_UPDATED
 

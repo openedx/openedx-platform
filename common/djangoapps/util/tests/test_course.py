@@ -7,10 +7,12 @@ import ddt
 from django.conf import settings
 from django.test import override_settings
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from common.djangoapps.util.course import get_link_for_about_page
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

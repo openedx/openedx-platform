@@ -20,7 +20,6 @@ from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, py
 # handled separately; its value maps to an alternate key name.
 ABOUT_ATTRIBUTES = [
     'syllabus',
-    'title',
     'subtitle',
     'duration',
     'description',

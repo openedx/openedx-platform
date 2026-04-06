@@ -9,12 +9,11 @@ from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.features.survey_report.queries import (
     get_course_enrollments,
-    get_recently_active_users,
     get_generated_certificates,
+    get_recently_active_users,
     get_registered_learners,
-    get_unique_courses_offered
+    get_unique_courses_offered,
 )
-
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order

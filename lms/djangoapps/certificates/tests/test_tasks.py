@@ -14,10 +14,7 @@ from opaque_keys.edx.keys import CourseKey
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.tasks import (
-    generate_certificate,
-    get_changed_cert_templates,
-)
+from lms.djangoapps.certificates.tasks import generate_certificate, get_changed_cert_templates
 from lms.djangoapps.certificates.tests.factories import CertificateTemplateFactory
 
 

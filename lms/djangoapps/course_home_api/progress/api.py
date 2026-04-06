@@ -4,14 +4,15 @@ Python APIs exposed for the progress tracking functionality of the course home A
 
 from __future__ import annotations
 
-from django.contrib.auth import get_user_model
-from opaque_keys.edx.keys import CourseKey
-from openedx.core.lib.grade_utils import round_away_from_zero
-from xblock.scorable import ShowCorrectness
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from django.contrib.auth import get_user_model
+from opaque_keys.edx.keys import CourseKey
+from xblock.scorable import ShowCorrectness
+
 from lms.djangoapps.courseware.courses import get_course_blocks_completion_summary
-from dataclasses import dataclass, field
+from openedx.core.lib.grade_utils import round_away_from_zero
 
 User = get_user_model()
 

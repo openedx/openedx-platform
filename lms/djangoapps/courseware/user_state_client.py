@@ -6,11 +6,10 @@ data in a Django ORM model.
 
 import itertools
 import logging
-from operator import attrgetter
-from time import time
-
 from abc import abstractmethod
 from collections import namedtuple
+from operator import attrgetter
+from time import time
 
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user

@@ -25,12 +25,7 @@ from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.studio_editable import StudioEditableBlock
 from xmodule.util.builtin_assets import add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.x_module import (
-    STUDENT_VIEW,
-    ResourceTemplates,
-    XModuleMixin,
-    shim_xmodule_js,
-)
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 _ = lambda text: text

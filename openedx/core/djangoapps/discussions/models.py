@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 from collections import namedtuple
+from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
 from typing import List, Type, TypeVar
 
 from django.conf import settings
@@ -12,7 +13,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_mysql.models import ListCharField
-from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
 from jsonfield import JSONField
 from lti_consumer.models import LtiConfiguration
 from model_utils.models import TimeStampedModel
@@ -20,10 +20,10 @@ from opaque_keys.edx.django.models import LearningContextKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey
 from simple_history.models import HistoricalRecords
 
-from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.config_model_utils.models import StackedConfigurationModel
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 log = logging.getLogger(__name__)

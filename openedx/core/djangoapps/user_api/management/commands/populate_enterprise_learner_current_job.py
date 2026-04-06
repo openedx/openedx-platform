@@ -1,13 +1,12 @@
 """ Management command for populaing current job of learners in learner profile. """
 
 import logging
-
-from edx_rest_api_client.client import OAuthAPIClient
 from urllib.parse import urljoin
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.management.base import BaseCommand
+from edx_rest_api_client.client import OAuthAPIClient
 
 from common.djangoapps.student.models import User, UserProfile
 from openedx.core.djangoapps.user_api import errors

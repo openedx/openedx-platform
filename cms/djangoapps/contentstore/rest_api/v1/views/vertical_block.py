@@ -10,12 +10,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from cms.djangoapps.contentstore.rest_api.v1.mixins import ContainerHandlerMixin
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    ContainerHandlerSerializer,
-)
-from cms.djangoapps.contentstore.utils import (
-    get_container_handler_context,
-)
+from cms.djangoapps.contentstore.rest_api.v1.serializers import ContainerHandlerSerializer
+from cms.djangoapps.contentstore.utils import get_container_handler_context
 from cms.djangoapps.contentstore.views.component import _get_item_in_course
 from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

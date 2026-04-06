@@ -2,13 +2,15 @@
 Tests for SAML configuration signal handlers.
 """
 
-import ddt
 from unittest import mock
 from unittest.mock import call
-from django.test import TestCase
+
+import ddt
 from django.contrib.sites.models import Site
-from common.djangoapps.third_party_auth.tests.factories import SAMLConfigurationFactory, SAMLProviderConfigFactory
+from django.test import TestCase
+
 from common.djangoapps.third_party_auth.models import SAMLProviderConfig
+from common.djangoapps.third_party_auth.tests.factories import SAMLConfigurationFactory, SAMLProviderConfigFactory
 
 
 @ddt.ddt

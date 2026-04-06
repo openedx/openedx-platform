@@ -4,6 +4,7 @@ Tests for logout
 
 import urllib
 from unittest import mock
+
 import ddt
 import nh3
 from django.conf import settings
@@ -11,10 +12,10 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.urls import reverse
 
-from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import assert_dict_contains_subset
+from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 @skip_unless_lms

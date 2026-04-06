@@ -5,25 +5,22 @@ import logging
 
 from django.utils.html import format_html
 from django.utils.translation import gettext as _
-
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from rest_framework.exceptions import APIException, ParseError
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.generics import RetrieveAPIView
-
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from opaque_keys.edx.keys import CourseKey
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.exceptions import APIException, ParseError
+from rest_framework.generics import RetrieveAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.courseware.courses import get_course_with_access
-
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.features.course_experience.api.v1.serializers import CourseDeadlinesMobileSerializer
+from openedx.features.course_experience.api.v1.utils import reset_bulk_course_deadlines, reset_deadlines_for_course
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
-from openedx.features.course_experience.api.v1.utils import reset_deadlines_for_course, reset_bulk_course_deadlines
 
 log = logging.getLogger(__name__)
 

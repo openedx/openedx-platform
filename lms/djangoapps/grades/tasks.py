@@ -12,7 +12,7 @@ from django.db.utils import DatabaseError
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_custom_attribute,
-    set_custom_attributes_for_course_key
+    set_custom_attributes_for_course_key,
 )
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
@@ -26,8 +26,9 @@ from lms.djangoapps.courseware.model_data import get_score
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyNotInBlockStructure
-from openedx.core.djangoapps.content.course_overviews.models import \
-    CourseOverview  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+    CourseOverview,
+)
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE

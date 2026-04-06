@@ -12,7 +12,7 @@ from django.test.utils import override_settings
 from common.djangoapps.util.password_policy_validators import (
     create_validator_config,
     password_validators_instruction_texts,
-    validate_password
+    validate_password,
 )
 
 

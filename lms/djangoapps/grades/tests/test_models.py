@@ -30,7 +30,7 @@ from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
     PersistentSubsectionGradeOverride,
-    VisibleBlocks
+    VisibleBlocks,
 )
 
 

@@ -5,14 +5,14 @@ Model specific tests for user_api
 
 import pytest
 
+from common.djangoapps.student.models import get_retired_email_by_email, get_retired_username_by_username
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
     RetirementStateError,
     UserRetirementRequest,
-    UserRetirementStatus
+    UserRetirementStatus,
 )
-from common.djangoapps.student.models import get_retired_email_by_email, get_retired_username_by_username
-from common.djangoapps.student.tests.factories import UserFactory
 
 from .retirement_helpers import setup_retirement_states  # pylint: disable=unused-import
 

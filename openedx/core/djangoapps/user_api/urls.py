@@ -8,24 +8,22 @@ from django.urls import include, path, re_path
 from rest_framework import routers
 
 from ..profile_images.views import ProfileImageView
+from . import views as user_api_views
 from .accounts.views import (
     AccountDeactivationView,
     AccountRetirementPartnerReportView,
     AccountRetirementStatusView,
     AccountRetirementView,
     AccountViewSet,
+    CancelAccountRetirementStatusView,
     DeactivateLogoutView,
     LMSAccountRetirementView,
     NameChangeView,
-    UsernameReplacementView, CancelAccountRetirementStatusView
+    UsernameReplacementView,
 )
-from . import views as user_api_views
 from .models import UserPreference
 from .preferences.views import PreferencesDetailView, PreferencesView
-from .verification_api.views import (
-    IDVerificationStatusView,
-    IDVerificationStatusDetailsView,
-)
+from .verification_api.views import IDVerificationStatusDetailsView, IDVerificationStatusView
 
 ME = AccountViewSet.as_view({
     'get': 'get',

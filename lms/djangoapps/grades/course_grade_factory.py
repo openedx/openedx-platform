@@ -7,8 +7,9 @@ from logging import getLogger
 from openedx.core.djangoapps.signals.signals import (
     COURSE_GRADE_CHANGED,
     COURSE_GRADE_NOW_FAILED,
-    COURSE_GRADE_NOW_PASSED
+    COURSE_GRADE_NOW_PASSED,
 )
+
 from .course_data import CourseData
 from .course_grade import CourseGrade, ZeroCourseGrade
 from .models import PersistentCourseGrade

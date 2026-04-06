@@ -14,7 +14,6 @@ import sys
 
 from jwt.algorithms import RSAAlgorithm
 
-
 print("Paste the key's JSON, followed by a new line and Ctrl-D:\n", file=sys.stderr)
 old_jwk_data = json.loads(sys.stdin.read())
 

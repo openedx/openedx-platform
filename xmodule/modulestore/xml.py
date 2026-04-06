@@ -7,8 +7,8 @@ import json
 import logging
 import os
 import re
-import warnings
 import sys
+import warnings
 from collections import defaultdict
 from contextlib import contextmanager
 from importlib import import_module
@@ -20,12 +20,7 @@ from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLoc
 from path import Path as path
 from xblock.core import XBlockAside
 from xblock.field_data import DictFieldData
-from xblock.fields import (
-    Reference,
-    ReferenceList,
-    ReferenceValueDict,
-    ScopeIds,
-)
+from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
 from xblock.runtime import DictKeyValueStore
 
 from common.djangoapps.util.monitoring import monitor_import_failure
@@ -34,12 +29,7 @@ from xmodule.errortracker import exc_info_to_str, make_error_tracker
 from xmodule.modulestore import COURSE_ROOT, LIBRARY_ROOT, ModuleStoreEnum, ModuleStoreReadBase
 from xmodule.modulestore.xml_exporter import DEFAULT_CONTENT_FIELDS
 from xmodule.tabs import CourseTabList
-from xmodule.x_module import (
-    AsideKeyGenerator,
-    OpaqueKeyReader,
-    ModuleStoreRuntime,
-    policy_key
-)
+from xmodule.x_module import AsideKeyGenerator, ModuleStoreRuntime, OpaqueKeyReader, policy_key
 
 from .exceptions import ItemNotFoundError
 from .inheritance import compute_inherited_metadata, inheriting_field_data

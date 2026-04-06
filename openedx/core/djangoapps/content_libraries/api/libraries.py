@@ -58,14 +58,14 @@ from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.api import assign_role_to_user_in_scope
 from openedx_authz.constants import permissions as authz_permissions
+from openedx_content import api as content_api
+from openedx_content.models_api import Component, LearningPackage
 from openedx_events.content_authoring.data import ContentLibraryData
 from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_CREATED,
     CONTENT_LIBRARY_DELETED,
     CONTENT_LIBRARY_UPDATED,
 )
-from openedx_content import api as content_api
-from openedx_content.models_api import Component, LearningPackage
 from organizations.models import Organization
 from user_tasks.models import UserTaskArtifact, UserTaskStatus
 from xblock.core import XBlock

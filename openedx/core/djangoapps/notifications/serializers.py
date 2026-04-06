@@ -8,7 +8,7 @@ from rest_framework import serializers
 from openedx.core.djangoapps.notifications.models import (
     Notification,
     get_additional_notification_channel_settings,
-    get_notification_channels
+    get_notification_channels,
 )
 
 from .base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES, EmailCadence

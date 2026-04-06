@@ -19,18 +19,16 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils.translation import get_language_info
 from lxml import etree
 from opaque_keys.edx.keys import UsageKeyV2
+from opaque_keys.edx.locator import LibraryLocatorV2
 from pysrt import SubRipFile, SubRipItem, SubRipTime
 from pysrt.srtexc import Error
-from opaque_keys.edx.locator import LibraryLocatorV2
+from xblocks_contrib.video.bumper_utils import get_bumper_settings
+from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
-
-from xblocks_contrib.video.bumper_utils import get_bumper_settings
-from xblocks_contrib.video.exceptions import TranscriptsGenerationException
-
 
 try:
     from edxval import api as edxval_api

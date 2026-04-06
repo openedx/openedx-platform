@@ -1,8 +1,8 @@
 """
 Certificates utilities
 """
-from datetime import datetime
 import logging
+from datetime import datetime
 
 from django.conf import settings
 from django.urls import reverse

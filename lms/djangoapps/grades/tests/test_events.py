@@ -13,23 +13,23 @@ from openedx_events.learning.data import (
     CoursePassingStatusData,
     PersistentCourseGradeData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import (
     CCX_COURSE_PASSING_STATUS_UPDATED,
     COURSE_PASSING_STATUS_UPDATED,
-    PERSISTENT_GRADE_SUMMARY_CHANGED
+    PERSISTENT_GRADE_SUMMARY_CHANGED,
 )
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from lms.djangoapps.grades.tests.utils import mock_passing_grade
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from common.test.utils import assert_dict_contains_subset
 
 
 class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):

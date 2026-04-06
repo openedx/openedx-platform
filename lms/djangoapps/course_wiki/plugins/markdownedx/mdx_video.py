@@ -131,7 +131,6 @@ from xml.etree import ElementTree
 
 import markdown
 
-
 version = "0.1.6"
 
 

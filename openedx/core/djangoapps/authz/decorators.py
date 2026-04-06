@@ -1,16 +1,16 @@
 """Decorators for AuthZ-based permissions enforcement."""
 import logging
-from functools import wraps
 from collections.abc import Callable
+from functools import wraps
 
 from django.contrib.auth.models import AbstractUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx_authz import api as authz_api
 from rest_framework import status
 
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
 log = logging.getLogger(__name__)

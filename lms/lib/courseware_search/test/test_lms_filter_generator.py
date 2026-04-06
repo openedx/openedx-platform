@@ -3,12 +3,17 @@ Tests for the lms_filter_generator
 """
 from unittest.mock import Mock, patch
 
-from lms.lib.courseware_search.lms_filter_generator import LmsSearchFilterGenerator
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
+from lms.lib.courseware_search.lms_filter_generator import LmsSearchFilterGenerator
 from xmodule.course_block import CATALOG_VISIBILITY_ABOUT, CATALOG_VISIBILITY_NONE
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 
 class LmsSearchFilterGeneratorTestCase(ModuleStoreTestCase):

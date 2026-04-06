@@ -8,8 +8,11 @@ from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
 from openedx.core.djangoapps.programs.forms import ProgramDiscussionsConfigurationForm, ProgramLiveConfigurationForm
-from openedx.core.djangoapps.programs.models import ProgramsApiConfig, ProgramDiscussionsConfiguration, \
-    ProgramLiveConfiguration
+from openedx.core.djangoapps.programs.models import (
+    ProgramDiscussionsConfiguration,
+    ProgramLiveConfiguration,
+    ProgramsApiConfig,
+)
 
 
 class ProgramsApiConfigAdmin(ConfigurationModelAdmin):

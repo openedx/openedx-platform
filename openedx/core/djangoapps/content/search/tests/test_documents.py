@@ -1,10 +1,10 @@
 """
 Tests for the Studio content search documents (what gets stored in the index)
 """
-import ddt
 from dataclasses import replace
 from datetime import datetime, timezone
 
+import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
 from openedx_content import api as content_api

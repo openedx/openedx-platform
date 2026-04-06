@@ -8,7 +8,9 @@ from django.conf import settings
 from lms.djangoapps.edxnotes.plugins import EdxNotesCourseApp
 from openedx.core.djangoapps.course_apps.tests.utils import TabBasedCourseAppTestMixin
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_cms

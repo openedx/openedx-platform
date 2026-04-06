@@ -3,6 +3,7 @@
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from openedx.core.lib.api.view_utils import view_auth_classes
 
 from ....utils import get_help_urls

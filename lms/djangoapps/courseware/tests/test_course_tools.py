@@ -4,19 +4,21 @@ Unit tests for course tools.
 
 
 import datetime
-
 from unittest.mock import patch
+
 import crum
 import pytz
 from django.test import RequestFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from lms.djangoapps.courseware.course_tools import FinancialAssistanceTool
 from lms.djangoapps.courseware.models import DynamicUpgradeDeadlineConfiguration
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

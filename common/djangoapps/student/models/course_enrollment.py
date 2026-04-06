@@ -602,9 +602,9 @@ class CourseEnrollment(models.Model):
         """
         Emits an event to explicitly track course enrollment and unenrollment.
         """
-        from openedx.core.djangoapps.schedules.config import set_up_external_updates_for_enrollment
-        from common.djangoapps.student.toggles import should_send_enrollment_email
         from common.djangoapps.student.tasks import send_course_enrollment_email
+        from common.djangoapps.student.toggles import should_send_enrollment_email
+        from openedx.core.djangoapps.schedules.config import set_up_external_updates_for_enrollment
 
         segment_properties = {
             'category': 'conversion',

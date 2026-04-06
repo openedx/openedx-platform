@@ -6,11 +6,11 @@ Platform plugins to support Calendar Sync toggle.
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
+from common.djangoapps.student.models import CourseEnrollment
 from openedx.features.calendar_sync.api import SUBSCRIBE, UNSUBSCRIBE
 from openedx.features.calendar_sync.models import UserCalendarSyncConfig
 from openedx.features.course_experience import CALENDAR_SYNC_FLAG, RELATIVE_DATES_FLAG
 from openedx.features.course_experience.course_tools import CourseTool, HttpMethod
-from common.djangoapps.student.models import CourseEnrollment
 
 
 class CalendarSyncToggleTool(CourseTool):

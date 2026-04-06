@@ -5,8 +5,8 @@ Test the use cases of the views of the mfe api.
 from unittest.mock import call, patch
 
 import ddt
-from django.core.cache import cache
 from django.conf import settings
+from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status

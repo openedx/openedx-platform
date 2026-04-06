@@ -6,6 +6,7 @@ from collections import defaultdict
 from copy import deepcopy
 from itertools import chain
 from urllib.parse import urljoin, urlparse, urlunparse
+from zoneinfo import ZoneInfo
 
 from dateutil.parser import parse
 from django.conf import settings
@@ -14,7 +15,6 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.utils.functional import cached_property
 from opaque_keys.edx.keys import CourseKey
-from zoneinfo import ZoneInfo
 from requests.exceptions import RequestException
 
 from common.djangoapps.course_modes.api import get_paid_modes_for_course

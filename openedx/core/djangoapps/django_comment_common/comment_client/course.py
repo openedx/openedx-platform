@@ -5,9 +5,8 @@ from __future__ import annotations
 from typing import Dict, Optional
 
 from edx_django_utils.monitoring import function_trace
-from opaque_keys.edx.keys import CourseKey
-
 from forum import api as forum_api
+from opaque_keys.edx.keys import CourseKey
 
 
 def get_course_commentable_counts(course_key: CourseKey) -> Dict[str, Dict[str, int]]:

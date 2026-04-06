@@ -4,6 +4,7 @@ created during migration.
 """
 
 import logging
+
 from django.core.management.base import BaseCommand
 
 from openedx.core.djangoapps.notifications.models import NotificationPreference

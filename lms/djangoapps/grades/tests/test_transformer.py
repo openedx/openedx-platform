@@ -9,15 +9,15 @@ from copy import deepcopy
 
 import ddt
 import pytz
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import check_mongo_calls_range
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.course_blocks.transformers.tests.helpers import CourseStructureTestCase
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import check_mongo_calls_range
 
 from ..transformer import GradesTransformer
 

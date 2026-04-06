@@ -7,7 +7,9 @@ import ddt
 
 # pylint: disable=protected-access
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..student_view import StudentViewTransformer

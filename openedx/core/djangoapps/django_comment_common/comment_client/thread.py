@@ -5,12 +5,10 @@ import logging
 import time
 
 from eventtracking import tracker
-
 from forum import api as forum_api
 from forum.backends.mongodb.threads import CommentThread as ForumThread
 
 from . import models, settings, utils
-
 
 log = logging.getLogger(__name__)
 

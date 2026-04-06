@@ -3,8 +3,7 @@ URLs for the Studio API app
 """
 
 
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
 
 app_name = 'cms.djangoapps.api'
 

@@ -1,3 +1,4 @@
+# ruff: noqa: I001 - settings file: star-import order is semantically significant
 """
 Specific overrides to the base prod settings to make development easier.
 """
@@ -13,7 +14,6 @@ from urllib.parse import urlparse
 from edx_django_utils.plugins import add_plugins
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
-
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
 from .production import *  # pylint: disable=wildcard-import, unused-wildcard-import

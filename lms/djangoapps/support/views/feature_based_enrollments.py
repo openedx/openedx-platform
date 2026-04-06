@@ -4,8 +4,8 @@ Support tool for viewing course duration information
 
 from django.utils.decorators import method_decorator
 from django.views.generic import View
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.util.json_request import JsonResponse

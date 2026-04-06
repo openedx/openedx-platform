@@ -11,8 +11,8 @@ import unittest
 from importlib import import_module
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from ccx_keys.locator import CCXBlockUsageLocator
 from django.core.cache import InvalidCacheBackendError, caches
 from opaque_keys.edx.locator import BlockUsageLocator, CourseKey, CourseLocator, LocalId
@@ -29,7 +29,7 @@ from xmodule.modulestore.exceptions import (
     DuplicateItemError,
     InsufficientSpecificationError,
     ItemNotFoundError,
-    VersionConflictError
+    VersionConflictError,
 )
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.split_mongo import BlockKey

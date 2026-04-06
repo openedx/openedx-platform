@@ -13,13 +13,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 from rest_framework import serializers
 
-
 from common.djangoapps.student.models import (
     LanguageProficiency,
     PendingNameChange,
     SocialLink,
     UserPasswordToggleHistory,
-    UserProfile
+    UserProfile,
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api import errors
@@ -36,7 +35,7 @@ from . import (
     CUSTOM_VISIBILITY,
     NAME_MIN_LENGTH,
     PRIVATE_VISIBILITY,
-    VISIBILITY_PREFIX
+    VISIBILITY_PREFIX,
 )
 from .image_helpers import get_profile_image_urls_for_user
 from .utils import format_social_link, validate_social_link

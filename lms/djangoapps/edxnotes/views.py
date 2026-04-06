@@ -18,9 +18,9 @@ from rest_framework.views import APIView
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.edxnotes.exceptions import EdxNotesParseError, EdxNotesServiceUnavailable
 from lms.djangoapps.edxnotes.helpers import (
     DEFAULT_PAGE,
@@ -30,7 +30,7 @@ from lms.djangoapps.edxnotes.helpers import (
     get_course_position,
     get_edxnotes_id_token,
     get_notes,
-    is_feature_enabled
+    is_feature_enabled,
 )
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
 from openedx.core.djangoapps.user_api.models import RetirementStateError, UserRetirementStatus

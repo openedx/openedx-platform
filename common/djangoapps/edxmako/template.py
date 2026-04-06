@@ -14,11 +14,11 @@
 
 
 from django.conf import settings
-from django.template import Context, engines, Origin
+from django.template import Context, Origin, engines
 from edx_django_utils.cache import RequestCache
 from mako.template import Template as MakoTemplate
 
-from . import Engines, LOOKUP
+from . import LOOKUP, Engines
 from .request_context import get_template_request_context
 from .shortcuts import is_any_marketing_link_set, is_marketing_link_set, marketing_link
 

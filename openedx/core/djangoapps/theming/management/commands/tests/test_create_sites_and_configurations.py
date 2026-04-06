@@ -3,16 +3,17 @@ Test cases for create_sites_and_configurations command.
 """
 
 from unittest import mock
+
 import pytest
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.management import CommandError, call_command
 from django.test import TestCase
-
 from oauth2_provider.models import Application
+
+from common.djangoapps.student.models import UserProfile
 from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 from openedx.core.djangoapps.theming.models import SiteTheme
-from common.djangoapps.student.models import UserProfile
 
 SITES = ["site_a", "site_b"]
 MANAGEMENT_COMMAND_PATH = "openedx.core.djangoapps.theming.management.commands.create_sites_and_configurations."

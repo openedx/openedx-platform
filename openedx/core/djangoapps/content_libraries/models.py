@@ -43,26 +43,19 @@ from typing import ClassVar
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
-from django.db import models
-from django.db import transaction
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
-
-from opaque_keys.edx.django.models import CourseKeyField
+from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 from opaque_keys.edx.locator import LibraryLocatorV2
-from pylti1p3.contrib.django import DjangoDbToolConf
-from pylti1p3.contrib.django import DjangoMessageLaunch
+from openedx_content.models_api import LearningPackage
+from organizations.models import Organization  # lint-amnesty, pylint: disable=wrong-import-order
+from pylti1p3.contrib.django import DjangoDbToolConf, DjangoMessageLaunch
 from pylti1p3.contrib.django.lti1p3_tool_config.models import LtiTool
 from pylti1p3.grade import Grade
 
-from opaque_keys.edx.django.models import UsageKeyField
-from openedx.core.djangoapps.content_libraries.constants import (
-    LICENSE_OPTIONS, ALL_RIGHTS_RESERVED,
-)
-from openedx_content.models_api import LearningPackage
-from organizations.models import Organization  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 
 from .apps import ContentLibrariesConfig
-
 
 log = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 
 from unittest.mock import patch
+
 from django.test import TestCase
 
 from common.djangoapps.track.backends.mongodb import MongoBackend

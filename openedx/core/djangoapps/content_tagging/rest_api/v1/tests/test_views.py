@@ -22,8 +22,7 @@ from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
 from organizations.models import Organization
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
-
+from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import (
@@ -32,16 +31,16 @@ from common.djangoapps.student.roles import (
     OrgContentCreatorRole,
     OrgInstructorRole,
     OrgLibraryUserRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 from openedx.core.djangoapps.content_libraries.api import AccessLevel, create_library, set_library_user_permissions
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.content_tagging.models import TaxonomyOrg
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from ....tests.test_objecttag_export_helpers import TaggedCourseMixin
 

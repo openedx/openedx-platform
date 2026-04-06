@@ -96,6 +96,9 @@
 }
 
 .xmodule_display.xmodule_VideoBlock .video .wrapper-downloads .wrapper-download-video .video-sources {
+    /* Match it with Transcipts */
+    font-size: 16px !important;
+    font-weight: unset;
     margin: 0;
 }
 

@@ -2,9 +2,9 @@
 Tabs for courseware.
 """
 
-from edx_django_utils.plugins import PluginManager
 from functools import cmp_to_key  # lint-amnesty, pylint: disable=wrong-import-order
 
+from edx_django_utils.plugins import PluginManager
 
 # Stevedore extension point namespaces
 COURSE_TAB_NAMESPACE = 'openedx.course_tab'

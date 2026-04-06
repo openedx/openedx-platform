@@ -8,6 +8,7 @@ from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from openedx.core.djangoapps.user_api.accounts.permissions import CanRetireUser
 from openedx.core.djangoapps.user_api.accounts.utils import create_retirement_request_and_deactivate_account
 

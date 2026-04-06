@@ -14,13 +14,15 @@ from functools import wraps
 from unittest.mock import Mock
 
 from django.test import TransactionTestCase
-
 from opaque_keys.edx.keys import CourseKey
 from path import Path as path
 from xblock.core import XBlock
 from xblock.field_data import DictFieldData
 from xblock.fields import Reference, ReferenceList, ReferenceValueDict, ScopeIds
 
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.lib.cache_utils import CacheService
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore import ModuleStoreEnum
@@ -28,12 +30,9 @@ from xmodule.modulestore.draft_and_published import ModuleStoreDraftAndPublished
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.xml import CourseLocationManager
 from xmodule.services import XQueueService
-from xmodule.tests.helpers import StubReplaceURLService, mock_render_template, StubMakoService, StubUserService
+from xmodule.tests.helpers import StubMakoService, StubReplaceURLService, StubUserService, mock_render_template
 from xmodule.util.sandboxing import SandboxService
-from xmodule.x_module import DoNothingCache, XModuleMixin, ModuleStoreRuntime
-from openedx.core.djangoapps.video_config.services import VideoConfigService
-from openedx.core.lib.cache_utils import CacheService
-from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+from xmodule.x_module import DoNothingCache, ModuleStoreRuntime, XModuleMixin
 
 MODULE_DIR = path(__file__).dirname()
 # Location of common test DATA directory

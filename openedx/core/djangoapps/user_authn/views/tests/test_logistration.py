@@ -2,8 +2,8 @@
 
 
 from http.cookies import SimpleCookie
-from urllib.parse import urlencode
 from unittest import mock
+from urllib.parse import urlencode
 
 import ddt
 from django.conf import settings
@@ -19,6 +19,8 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
+from common.djangoapps.util.testing import UrlResetMixin
 from lms.djangoapps.branding.api import get_privacy_url
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme_context
@@ -28,9 +30,9 @@ from openedx.core.djangoapps.user_authn.views.login_form import login_and_regist
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
-from common.djangoapps.util.testing import UrlResetMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_lms

@@ -4,6 +4,7 @@ Separate integration test for Twitter which is an OAuth1 provider.
 
 
 from unittest.mock import patch
+
 from common.djangoapps.third_party_auth.tests.specs import base
 
 

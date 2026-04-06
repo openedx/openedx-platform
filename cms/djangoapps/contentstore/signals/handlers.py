@@ -50,9 +50,9 @@ from ..models import ComponentLink, ContainerLink
 from ..tasks import (
     create_or_update_upstream_links,
     handle_create_xblock_upstream_link,
-    handle_update_xblock_upstream_link,
     handle_unlink_upstream_block,
     handle_unlink_upstream_container,
+    handle_update_xblock_upstream_link,
 )
 from .signals import GRADING_POLICY_CHANGED
 
@@ -132,7 +132,7 @@ def listen_for_course_publish(sender, course_key, **kwargs):  # pylint: disable=
     from cms.djangoapps.contentstore.tasks import (
         update_outline_from_modulestore_task,
         update_search_index,
-        update_special_exams_and_publish
+        update_special_exams_and_publish,
     )
 
     # DEVELOPER README: probably all tasks here should use transaction.on_commit

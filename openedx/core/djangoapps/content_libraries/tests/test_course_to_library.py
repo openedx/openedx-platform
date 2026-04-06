@@ -4,11 +4,11 @@ Tests for Imports from Courses to openedx_content-based Content Libraries
 import ddt
 from opaque_keys.edx.locator import LibraryContainerLocator
 
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import ToyCourseFactory
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import ToyCourseFactory
 
 
 @skip_unless_cms

@@ -9,10 +9,14 @@ from ddt import data, ddt, unpack
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.utils import override_settings
 
-from openedx.core.lib.tests.assertions.events import assert_event_matches
 from common.djangoapps.track.middleware import TrackMiddleware
 from common.djangoapps.track.views import segmentio
-from common.djangoapps.track.views.tests.base import SEGMENTIO_TEST_ENDPOINT, SEGMENTIO_TEST_USER_ID, SegmentIOTrackingTestCaseBase  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.track.views.tests.base import (  # lint-amnesty, pylint: disable=line-too-long
+    SEGMENTIO_TEST_ENDPOINT,
+    SEGMENTIO_TEST_USER_ID,
+    SegmentIOTrackingTestCaseBase,
+)
+from openedx.core.lib.tests.assertions.events import assert_event_matches
 
 
 def expect_failure_with_message(message):

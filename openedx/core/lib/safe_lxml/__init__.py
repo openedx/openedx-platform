@@ -10,6 +10,7 @@ def defuse_xml_libs():
 
     import lxml
     import lxml.etree
+
     from . import etree as safe_etree
 
     lxml.etree = safe_etree

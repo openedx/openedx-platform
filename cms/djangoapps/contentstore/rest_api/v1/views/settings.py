@@ -12,8 +12,8 @@ from lms.djangoapps.certificates.api import can_show_certificate_available_date_
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
-from ..serializers import CourseSettingsSerializer
 from ....utils import get_course_settings
+from ..serializers import CourseSettingsSerializer
 
 
 @view_auth_classes(is_authenticated=True)

@@ -9,13 +9,8 @@ import ddt
 from django.http import QueryDict
 from django.urls import reverse
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.factories import BlockFactory
 
+import lms.djangoapps.ora_staff_grader.tests.test_data as test_data
 from common.djangoapps.student.tests.factories import StaffFactory
 from lms.djangoapps.ora_staff_grader.constants import (
     ERR_BAD_ORA_LOCATION,
@@ -27,14 +22,10 @@ from lms.djangoapps.ora_staff_grader.constants import (
     PARAM_ORA_LOCATION,
     PARAM_SUBMISSION_ID,
 )
-from lms.djangoapps.ora_staff_grader.errors import (
-    LockContestedError,
-    XBlockInternalError,
-)
-import lms.djangoapps.ora_staff_grader.tests.test_data as test_data
-from openedx.core.djangoapps.content.course_overviews.tests.factories import (
-    CourseOverviewFactory,
-)
+from lms.djangoapps.ora_staff_grader.errors import LockContestedError, XBlockInternalError
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class BaseViewTest(SharedModuleStoreTestCase, APITestCase):

@@ -4,9 +4,10 @@ general helper functions for xblocks
 
 from opaque_keys.edx.keys import UsageKey
 from xblock.core import XBlock
+
+from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from xmodule.modulestore.django import modulestore
 from xmodule.util.keys import BlockKey
-from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 
 
 def usage_key_with_run(usage_key_string: str) -> UsageKey:

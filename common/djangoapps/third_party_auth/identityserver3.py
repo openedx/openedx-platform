@@ -5,8 +5,8 @@
     docs for adding a new backend to python-social-auth:
     https://python-social-auth.readthedocs.io/en/latest/backends/implementation.html#oauth
 """
-from social_core.backends.oauth import BaseOAuth2
 from django.utils.functional import cached_property
+from social_core.backends.oauth import BaseOAuth2
 
 
 class IdentityServer3(BaseOAuth2):
