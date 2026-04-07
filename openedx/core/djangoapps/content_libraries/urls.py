@@ -2,7 +2,7 @@
 URL configuration for Studio's Content Libraries REST API
 """
 
-from django.urls import include, path, re_path, register_converter
+from django.urls import include, path, register_converter
 from rest_framework import routers
 
 from .rest_api import blocks, collections, containers, libraries, url_converters
@@ -14,11 +14,6 @@ app_name = 'openedx.core.djangoapps.content_libraries'
 # URL converters
 
 register_converter(url_converters.LibraryContainerLocatorConverter, "lib_container_key")
-
-# Router for importing blocks from courseware.
-
-import_blocks_router = routers.DefaultRouter()
-import_blocks_router.register(r'tasks', libraries.LibraryImportTaskViewSet, basename='import-block-task')
 
 library_collections_router = routers.DefaultRouter()
 library_collections_router.register(
@@ -51,8 +46,6 @@ urlpatterns = [
             path('team/user/<str:username>/', libraries.LibraryTeamUserView.as_view()),
             # Add/Edit (PUT) or remove (DELETE) a group's permission to use this library
             path('team/group/<str:group_name>/', libraries.LibraryTeamGroupView.as_view()),
-            # Import blocks into this library.
-            path('import_blocks/', include(import_blocks_router.urls)),
             # Paste contents of clipboard into library
             path('paste_clipboard/', libraries.LibraryPasteClipboardView.as_view()),
             # Start a backup task for this library
@@ -69,8 +62,6 @@ urlpatterns = [
             path('collections/', blocks.LibraryBlockCollectionsView.as_view(), name='update-collections'),
             # Get the full hierarchy that the block belongs to
             path('hierarchy/', blocks.LibraryBlockHierarchy.as_view()),
-            # Get the LTI URL of a specific XBlock
-            path('lti/', blocks.LibraryBlockLtiUrlView.as_view(), name='lti-url'),
             # Get the OLX source code of the specified block:
             path('olx/', blocks.LibraryBlockOlxView.as_view()),
             # CRUD for static asset files associated with a block in the library:
@@ -94,11 +85,6 @@ urlpatterns = [
             # Publish a container (or reset to last published)
             path('publish/', containers.LibraryContainerPublishView.as_view()),
             path('copy/', containers.LibraryContainerCopyView.as_view()),
-        ])),
-        re_path(r'^lti/1.3/', include([
-            path('login/', libraries.LtiToolLoginView.as_view(), name='lti-login'),
-            path('launch/', libraries.LtiToolLaunchView.as_view(), name='lti-launch'),
-            path('pub/jwks/', libraries.LtiToolJwksView.as_view(), name='lti-pub-jwks'),
         ])),
     ])),
     path('library_assets/', include([

@@ -121,16 +121,6 @@ ENABLE_OTHER_COURSE_SETTINGS = False
 # only supported in courses using split mongo.
 ENABLE_CONTENT_LIBRARIES = True
 
-# .. toggle_name: settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: When set to True, Content Libraries in
-#    Studio can be used as an LTI 1.3 tool by external LTI platforms.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2021-08-17
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/27411
-ENABLE_CONTENT_LIBRARIES_LTI_TOOL = False
-
 # Toggle course entrance exams feature
 ENTRANCE_EXAMS = False
 
@@ -320,7 +310,6 @@ AWS_SECURITY_TOKEN = None
 
 # use the ratelimit backend to prevent brute force attacks
 AUTHENTICATION_BACKENDS.insert(0, 'auth_backends.backends.EdXOAuth2')
-AUTHENTICATION_BACKENDS.insert(2, 'openedx.core.djangoapps.content_libraries.auth.LtiAuthenticationBackend')
 
 LMS_BASE = None
 

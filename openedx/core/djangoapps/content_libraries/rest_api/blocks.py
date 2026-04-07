@@ -6,7 +6,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
-from django.urls import reverse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
@@ -280,28 +279,6 @@ class LibraryBlockCollectionsView(APIView):
         )
 
         return Response({'count': len(collection_keys)})
-
-
-@method_decorator(non_atomic_requests, name="dispatch")
-@view_auth_classes()
-class LibraryBlockLtiUrlView(APIView):
-    """
-    Views to generate LTI URL for existing XBlocks in a content library.
-
-    Returns 404 in case the block not found by the given key.
-    """
-    @convert_exceptions
-    def get(self, request, usage_key_str):
-        """
-        Get the LTI launch URL for the XBlock.
-        """
-        key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
-
-        # Get the block to validate its existence
-        api.get_library_block(key)
-        lti_login_url = f"{reverse('content_libraries:lti-launch')}?id={key}"
-        return Response({"lti_url": lti_login_url})
 
 
 @method_decorator(non_atomic_requests, name="dispatch")

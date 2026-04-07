@@ -38,7 +38,6 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute_from_module,
     set_custom_attribute,
 )
-from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import (
     BlockUsageLocator,
     LibraryCollectionLocator,
@@ -75,7 +74,6 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
 from . import api
-from .models import ContentLibraryBlockImportTask
 
 log = logging.getLogger(__name__)
 TASK_LOGGER = get_task_logger(__name__)
@@ -312,33 +310,6 @@ def wait_for_post_revert_events(draft_change_log: DraftChangeLog, library_key: L
         # already *did* succeed, and the events will continue to be processed in
         # the background by the celery worker until everything is updated.
 
-
-@shared_task(base=LoggedTask)
-@set_code_owner_attribute
-def import_blocks_from_course(import_task_id, course_key_str, use_course_key_as_block_id_suffix=True):
-    """
-    A Celery task to import blocks from a course through modulestore.
-    """
-    ensure_cms("import_blocks_from_course may only be executed in a CMS context")
-
-    course_key = CourseKey.from_string(course_key_str)
-
-    with ContentLibraryBlockImportTask.execute(import_task_id) as import_task:
-
-        def on_progress(block_key, block_num, block_count, exception=None):
-            if exception:
-                log.exception('Import block failed: %s', block_key)
-            else:
-                log.info('Import block succesful: %s', block_key)
-            import_task.save_progress(block_num / block_count)
-
-        edx_client = api.EdxModulestoreImportClient(
-            library=import_task.library,
-            use_course_key_as_block_id_suffix=use_course_key_as_block_id_suffix
-        )
-        edx_client.import_blocks_from_course(
-            course_key, on_progress
-        )
 
 
 def _filter_child(store, usage_key, capa_type):
