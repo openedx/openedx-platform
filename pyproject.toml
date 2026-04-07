@@ -276,9 +276,6 @@ ignore_imports = [
     # cms.djangoapps.export_course_metadata.tasks
     #  -> openedx.core.djangoapps.schedules.content_highlights
     #  -> lms.djangoapps.courseware.block_render & lms.djangoapps.courseware.model_data
-    "openedx.core.djangoapps.content_libraries.* -> lms.djangoapps.*.*",
-    # cms.djangoapps.contentstore.tasks -> openedx.core.djangoapps.content_libraries.[various]
-    # -> lms.djangoapps.grades.api
     "openedx.core.djangoapps.xblock.*.* -> lms.djangoapps.*.*",
     # cms.djangoapps.contentstore.tasks -> openedx.core.djangoapps.content_libraries.[various] -> openedx.core.djangoapps.xblock.[various]
     # -> lms.djangoapps.courseware & lms.djangoapps.courseware.grades
