@@ -4,6 +4,8 @@ Tests for ContentLibraryTransformer.
 
 from unittest import mock
 
+from ddt import data, ddt
+
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
@@ -26,6 +28,7 @@ class MockedModule:
         self.state = state
 
 
+@ddt
 class ContentLibraryTransformerTestCase(CourseStructureTestCase):
     """
     ContentLibraryTransformer Test
@@ -37,9 +40,14 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
         Setup course structure and create user for content library transformer test.
         """
         super().setUp()
+        self._initialize_course_hierarchy()
 
+    def _initialize_course_hierarchy(self, block_type='library_content'):
+        """
+        Initialize course hierarchy with the given block type.
+        """
         # Build course.
-        self.course_hierarchy = self.get_course_hierarchy()
+        self.course_hierarchy = self.get_course_hierarchy(block_type)
         self.blocks = self.build_course(self.course_hierarchy)
         self.course = self.blocks['course']
         # Do this manually because publish signals are not fired by default in tests.
@@ -49,14 +57,14 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
         # Enroll user in course.
         CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)
 
-    def get_course_hierarchy(self):
+    def get_course_hierarchy(self, block_type='library_content'):
         """
         Get a course hierarchy to test with.
         """
         return [{
             'org': 'ContentLibraryTransformer',
             'course': 'CL101F',
-            'run': 'test_run',
+            'run': f'test_run_{block_type}',
             '#type': 'course',
             '#ref': 'course',
             '#children': [
@@ -73,8 +81,8 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
                                     '#ref': 'vertical1',
                                     '#children': [
                                         {
-                                            '#type': 'library_content',
-                                            '#ref': 'library_content1',
+                                            '#type': block_type,
+                                            '#ref': f'{block_type}1',
                                             '#children': [
                                                 {
                                                     'metadata': {'display_name': "CL Vertical 2"},
@@ -111,13 +119,18 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
             ]
         }]
 
-    def test_content_library(self):
+    @data('library_content', 'itembank')
+    def test_content_library(self, block_type):
         """
         Test when course has content library section.
         First test user can't see any content library section,
         and after that mock response from MySQL db.
         Check user can see mocked sections in content library.
         """
+        # Re-initialize if testing with a different block type
+        if block_type != 'library_content':
+            self._initialize_course_hierarchy(block_type)
+
         raw_block_structure = get_course_blocks(
             self.user,
             self.course.location,
@@ -136,7 +149,7 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
         # Should dynamically assign a block to student
         trans_keys = set(trans_block_structure.get_block_keys())
         block_key_set = self.get_block_key_set(
-            self.blocks, 'course', 'chapter1', 'lesson1', 'vertical1', 'library_content1'
+            self.blocks, 'course', 'chapter1', 'lesson1', 'vertical1', f'{block_type}1'
         )
         for key in block_key_set:
             assert key in trans_keys
@@ -160,11 +173,12 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
             assert set(trans_block_structure.get_block_keys()) == self.get_block_key_set(self.blocks, 'course',
                                                                                          'chapter1', 'lesson1',
                                                                                          'vertical1',
-                                                                                         'library_content1',
+                                                                                         f'{block_type}1',
                                                                                          selected_vertical,
                                                                                          selected_child), f"Expected 'selected' equality failed in iteration {i}."  # pylint: disable=line-too-long
 
 
+@ddt
 class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
     """
     ContentLibraryOrderTransformer Test
@@ -176,7 +190,13 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
         Setup course structure and create user for content library order transformer test.
         """
         super().setUp()
-        self.course_hierarchy = self.get_course_hierarchy()
+        self._initialize_course_hierarchy()
+
+    def _initialize_course_hierarchy(self, block_type='library_content'):
+        """
+        Initialize course hierarchy with the given block type.
+        """
+        self.course_hierarchy = self.get_course_hierarchy(block_type)
         self.blocks = self.build_course(self.course_hierarchy)
         self.course = self.blocks['course']
         bs_api.update_course_in_cache(self.course.id)
@@ -185,14 +205,14 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
         # Enroll user in course.
         CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)
 
-    def get_course_hierarchy(self):
+    def get_course_hierarchy(self, block_type='library_content'):
         """
         Get a course hierarchy to test with.
         """
         return [{
             'org': 'ContentLibraryTransformer',
             'course': 'CL101F',
-            'run': 'test_run',
+            'run': f'test_run_{block_type}',
             '#type': 'course',
             '#ref': 'course',
             '#children': [
@@ -209,8 +229,8 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
                                     '#ref': 'vertical1',
                                     '#children': [
                                         {
-                                            '#type': 'library_content',
-                                            '#ref': 'library_content1',
+                                            '#type': block_type,
+                                            '#ref': f'{block_type}1',
                                             '#children': [
                                                 {
                                                     'metadata': {'display_name': "CL Vertical 2"},
@@ -260,11 +280,15 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
         }]
 
     @mock.patch('lms.djangoapps.course_blocks.transformers.library_content.get_student_module_as_dict')
-    def test_content_library_randomize(self, mocked):
+    @data('library_content', 'itembank')
+    def test_content_library_randomize(self, block_type, mocked):
         """
         Test whether the order of the children blocks matches the order of the selected blocks when
         course has content library section
         """
+        # Re-initialize if testing with a different block type
+        if block_type != 'library_content':
+            self._initialize_course_hierarchy(block_type)
         mocked.return_value = {
             'selected': [
                 ['vertical', 'vertical_vertical3'],
@@ -280,7 +304,7 @@ class ContentLibraryOrderTransformerTestCase(CourseStructureTestCase):
             )
             children = []
             for block_key in trans_block_structure.topological_traversal():
-                if block_key.block_type == 'library_content':
+                if block_key.block_type == block_type:
                     children = trans_block_structure.get_children(block_key)
                     break
 
