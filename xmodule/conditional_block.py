@@ -215,9 +215,9 @@ class ConditionalBlock(
         return fragment
 
     def get_html(self):
-        required_html_ids = [block.location.html_id() for block in self.get_required_blocks]
+        required_html_ids = [block.usage_key.html_id() for block in self.get_required_blocks]
         return self.runtime.service(self, 'mako').render_lms_template('conditional_ajax.html', {
-            'element_id': self.location.html_id(),
+            'element_id': self.usage_key.html_id(),
             'ajax_url': self.ajax_url,
             'depends': ';'.join(required_html_ids)
         })
