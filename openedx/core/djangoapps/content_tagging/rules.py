@@ -7,6 +7,9 @@ from typing import Union
 import django.contrib.auth.models
 import openedx_tagging.rules as oel_tagging
 import rules
+from opaque_keys.edx.locator import LibraryLocatorV2
+from openedx_authz import api as authz_api
+from openedx_authz.constants import permissions as authz_permissions
 from organizations.models import Organization
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
@@ -217,7 +220,13 @@ def can_change_taxonomy(user: UserType, taxonomy: oel_tagging.Taxonomy) -> bool:
 @rules.predicate
 def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
     """
-    Everyone that has permission to edit the object should be able to tag it.
+    Return True if the user may add or modify tags on the given object.
+
+    For Content Libraries V2, this requires either explicit library tagging permission
+    (MANAGE_LIBRARY_TAGS) or org-level admin access for the library's org.
+
+    For other contexts (courses, xblocks, etc.), this requires studio write access or
+    org-level admin access for the object's org.
     """
     if not object_id:
         return True
@@ -228,6 +237,16 @@ def can_change_object_tag_objectid(user: UserType, object_id: str) -> bool:
     except (ValueError, AssertionError):
         return False
 
+    # For Content Libraries V2, prefer explicit library tagging permission,
+    # however, org-level admins are also allowed to perform these operations.
+    if isinstance(context_key, LibraryLocatorV2) and authz_api.is_user_allowed(
+        user.username,
+        authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+        str(context_key),
+    ):
+        return True
+
+    # For other contexts (courses, xblocks, etc.), use general write or org-admin access
     if has_studio_write_access(user, context_key):
         return True
 
@@ -275,7 +294,13 @@ def can_view_object_tag_objectid(user: UserType, object_id: str) -> bool:
 @rules.predicate
 def can_remove_object_tag_objectid(user: UserType, object_id: str) -> bool:
     """
-    Everyone that has permission to edit the object should be able remove tags from it.
+    Return True if the user may remove tags from the given object.
+
+    For Content Libraries V2, this requires either explicit library tagging permission
+    (MANAGE_LIBRARY_TAGS) or org-level admin access for the library's org.
+
+    For other contexts (courses, xblocks, etc.), this requires studio write access or
+    org-level admin access for the object's org.
     """
     if not object_id:
         raise ValueError("object_id must be provided")
@@ -289,6 +314,16 @@ def can_remove_object_tag_objectid(user: UserType, object_id: str) -> bool:
     except (ValueError, AssertionError):
         return False
 
+    # For Content Libraries V2, prefer explicit library tagging permission,
+    # however, org-level admins are also allowed to perform these operations.
+    if isinstance(context_key, LibraryLocatorV2) and authz_api.is_user_allowed(
+        user.username,
+        authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+        str(context_key),
+    ):
+        return True
+
+    # For other contexts (courses, xblocks, etc.), use general write or org-admin access
     if has_studio_write_access(user, context_key):
         return True
 

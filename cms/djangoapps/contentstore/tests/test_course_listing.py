@@ -10,6 +10,8 @@ import ddt
 from ccx_keys.locator import CCXLocator
 from django.test import RequestFactory
 from opaque_keys.edx.locations import CourseLocator
+from openedx_authz.api.users import assign_role_to_user_in_scope
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient
 from cms.djangoapps.contentstore.utils import delete_course
@@ -32,6 +34,8 @@ from common.djangoapps.student.roles import (
     UserBasedRole,
 )
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
@@ -407,3 +411,307 @@ class TestCourseListing(ModuleStoreTestCase):
         self.assertSetEqual(
             _set_of_course_keys(courses_in_progress), _set_of_course_keys(unsucceeded_course_actions, 'course_key')
         )
+
+
+class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase):
+    """
+    Tests course listing using the new AuthZ authorization framework.
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.factory = RequestFactory()
+
+    def _create_course(self, course_key):
+        """Helper method to create a course and its overview."""
+        course = CourseFactory.create(
+            org=course_key.org,
+            number=course_key.course,
+            run=course_key.run,
+        )
+
+        return CourseOverviewFactory.create(id=course.id, org=course_key.org)
+
+    def _mock_authz_toggle(self, enabled_keys):
+        def _is_enabled(course_key=None, **_):
+            return str(course_key) in enabled_keys
+        return _is_enabled
+
+    def _make_request(self, user):
+        request = self.factory.get("/course")
+        request.user = user
+        return request
+
+    def _create_courses(self):
+        """Helper method to create multiple courses for testing."""
+        authz_keys = [
+            CourseLocator("Org1", "Course1", "AuthzRun"),
+            CourseLocator("Org1", "Course2", "AuthzRun"),
+            CourseLocator("Org1", "Course3", "AuthzRun"),
+        ]
+
+        legacy_keys = [
+            CourseLocator("Org1", "Course1", "LegacyRun"),
+            CourseLocator("Org1", "Course2", "LegacyRun"),
+            CourseLocator("Org1", "Course3", "LegacyRun"),
+        ]
+
+        authz_courses = [self._create_course(k) for k in authz_keys]
+        legacy_courses = [self._create_course(k) for k in legacy_keys]
+
+        return authz_keys, legacy_keys, authz_courses, legacy_courses
+
+    def test_course_listing_with_course_staff_authz_permission(self):
+        """
+        Create courses and assign access to only some of them to the user.
+        Verify that only those courses are returned in the course listing.
+        Using COURSE_STAFF role here.
+        """
+        course_key_1 = CourseLocator("Org1", "Course1", "Run1")
+        course1 = self._create_course(course_key_1)
+
+        course_key_2 = CourseLocator("Org1", "Course2", "Run1")
+        course2 = self._create_course(course_key_2)
+
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            str(course_key_1),
+        )
+
+        request = self.factory.get("/course")
+        request.user = self.authorized_user
+
+        courses_list, _ = get_courses_accessible_to_user(request)
+
+        courses = list(courses_list)
+
+        self.assertEqual(len(courses), 1)
+        self.assertEqual(courses[0].id, course1.id)
+        self.assertNotIn(course_key_2, {c.id for c in courses})
+
+    def test_course_listing_with_course_editor_authz_permission(self):
+        """
+        Create courses and assign access to only some of them to the user.
+        Verify that only those courses are returned in the course listing.
+        Using COURSE_EDITOR role here.
+        """
+        course_key_1 = CourseLocator("Org1", "Course1", "Run1")
+        course1 = self._create_course(course_key_1)
+
+        course_key_2 = CourseLocator("Org1", "Course2", "Run1")
+        course2 = self._create_course(course_key_2)
+
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_EDITOR.external_key,
+            str(course_key_1),
+        )
+
+        request = self.factory.get("/course")
+        request.user = self.authorized_user
+
+        courses_list, _ = get_courses_accessible_to_user(request)
+
+        courses = list(courses_list)
+
+        self.assertEqual(len(courses), 1)
+        self.assertEqual(courses[0].id, course1.id)
+        self.assertNotIn(course_key_2, {c.id for c in courses})
+
+    def test_course_listing_without_permissions(self):
+        """
+        Create a course but do not assign access to the user.
+        Verify that no courses are returned in the course listing.
+        """
+        course_key = CourseLocator("Org1", "Course1", "Run1")
+
+        self._create_course(course_key)
+
+        request = self.factory.get("/course")
+        request.user = self.unauthorized_user
+
+        courses_list, _ = get_courses_accessible_to_user(request)
+
+        self.assertEqual(len(list(courses_list)), 0)
+
+    def test_non_staff_user_cannot_access(self):
+        """
+        Create a course and assign a non-staff role to the user.
+        Verify that the course is not returned in the course listing.
+        """
+        non_staff_user = UserFactory()
+        course_key = CourseLocator("Org1", "Course1", "Run1")
+        self._create_course(course_key)
+        self.add_user_to_role_in_course(non_staff_user, COURSE_DATA_RESEARCHER.external_key, course_key)
+
+        request = self.factory.get("/course")
+        request.user = non_staff_user
+
+        courses_list, _ = get_courses_accessible_to_user(request)
+
+        self.assertEqual(len(list(courses_list)), 0)
+
+    def test_authz_and_legacy_basic(self):
+        """
+        AuthZ roles should only apply when toggle is enabled.
+        Legacy roles should still grant access.
+        """
+        authz_keys, legacy_keys, authz_courses, legacy_courses = self._create_courses()
+
+        enabled_keys = {str(authz_keys[0]), str(authz_keys[2])}
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            user = UserFactory()
+
+            # AuthZ roles
+            assign_role_to_user_in_scope(
+                user.username,
+                COURSE_STAFF.external_key,
+                str(authz_keys[0]),  # toggle ON → valid
+            )
+            assign_role_to_user_in_scope(
+                user.username,
+                COURSE_EDITOR.external_key,
+                str(authz_keys[1]),  # toggle OFF → ignored
+            )
+
+            # Legacy role
+            CourseInstructorRole(legacy_keys[0]).add_users(user)
+
+            courses, _ = get_courses_accessible_to_user(self._make_request(user))
+
+            result_ids = {c.id for c in courses}
+
+            expected_ids = {
+                authz_courses[0].id,
+                legacy_courses[0].id,
+            }
+
+            self.assertEqual(result_ids, expected_ids)
+
+    def test_authz_role_ignored_when_toggle_off(self):
+        """
+        AuthZ role should not grant access if toggle is disabled for that course.
+        """
+        authz_keys, _, authz_courses, _ = self._create_courses()
+
+        enabled_keys = {str(authz_keys[2])}  # only Course3 enabled
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            user = UserFactory()
+
+            assign_role_to_user_in_scope(
+                user.username,
+                COURSE_EDITOR.external_key,
+                str(authz_keys[1]),  # toggle OFF → ignored
+            )
+
+            courses, _ = get_courses_accessible_to_user(self._make_request(user))
+
+            result_ids = {c.id for c in courses}
+            expected_ids = set()  # no access since toggle is off
+
+            self.assertEqual(result_ids, expected_ids)
+
+    def test_multiple_roles_mixed_authz_and_legacy(self):
+        """
+        User should receive:
+        - AuthZ courses when toggle is enabled
+        - Legacy courses independently
+        """
+        authz_keys, legacy_keys, authz_courses, legacy_courses = self._create_courses()
+
+        enabled_keys = {str(k) for k in authz_keys}  # all enabled
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            user = UserFactory()
+
+            # AuthZ roles
+            assign_role_to_user_in_scope(
+                user.username,
+                COURSE_STAFF.external_key,
+                str(authz_keys[0]),
+            )
+            assign_role_to_user_in_scope(
+                user.username,
+                COURSE_EDITOR.external_key,
+                str(authz_keys[1]),
+            )
+
+            # Legacy role
+            CourseInstructorRole(legacy_keys[2]).add_users(user)
+
+            courses, _ = get_courses_accessible_to_user(self._make_request(user))
+
+            result_ids = {c.id for c in courses}
+
+            expected_ids = {
+                authz_courses[0].id,
+                authz_courses[1].id,
+                legacy_courses[2].id,
+            }
+
+            self.assertEqual(result_ids, expected_ids)
+
+    def test_staff_gets_all_courses(self):
+        """
+        Global staff should bypass AuthZ/legacy restrictions and get all courses.
+        """
+        authz_keys, legacy_keys, authz_courses, legacy_courses = self._create_courses()
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=False,  # irrelevant for staff
+        ):
+            user = UserFactory()
+            GlobalStaff().add_users(user)
+
+            courses, _ = get_courses_accessible_to_user(self._make_request(user))
+
+            result_ids = {c.id for c in courses}
+
+            expected_ids = {
+                *(c.id for c in authz_courses),
+                *(c.id for c in legacy_courses),
+            }
+
+            self.assertEqual(result_ids, expected_ids)
+
+    def test_superuser_gets_all_courses(self):
+        """
+        Superuser should bypass all permission checks and get all courses.
+        """
+        _, _, authz_courses, legacy_courses = self._create_courses()
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=False,  # irrelevant for superuser
+        ):
+            user = UserFactory(is_superuser=True)
+
+            courses, _ = get_courses_accessible_to_user(self._make_request(user))
+
+            result_ids = {c.id for c in courses}
+
+            expected_ids = {
+                *(c.id for c in authz_courses),
+                *(c.id for c in legacy_courses),
+            }
+
+            self.assertEqual(result_ids, expected_ids)

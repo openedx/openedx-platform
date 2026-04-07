@@ -1,9 +1,12 @@
 """Tests content_tagging rules-based permissions"""
 
+from unittest.mock import patch
+
 import ddt
 from django.contrib.auth import get_user_model
 from django.test import TestCase
-from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocatorV2
+from openedx_authz.constants import permissions as authz_permissions
 from openedx_tagging.models import Tag, UserSystemDefinedTaxonomy
 from openedx_tagging.rules import ObjectTagPermissionItem
 
@@ -11,6 +14,7 @@ from common.djangoapps.student.auth import add_users, update_org_role
 from common.djangoapps.student.roles import CourseStaffRole, OrgStaffRole
 
 from .. import api
+from ..rules import can_change_object_tag_objectid, can_remove_object_tag_objectid
 from .test_api import TestTaxonomyMixin
 
 User = get_user_model()
@@ -605,3 +609,137 @@ class TestRulesTaxonomy(TestTaxonomyMixin, TestCase):
         assert not self.user_both_orgs.has_perm(perm, self.disabled_course_tag)
         assert not self.user_org2.has_perm(perm, self.disabled_course_tag)
         assert not self.learner.has_perm(perm, self.disabled_course_tag)
+
+
+class TestRulesLibraryV2Permissions(TestTaxonomyMixin, TestCase):
+    """
+    Tests for Content Library V2 permissions with MANAGE_LIBRARY_TAGS.
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.library_user = User.objects.create(
+            username="library_user",
+            email="library_user@example.com",
+        )
+        self.org_admin = User.objects.create(
+            username="org_admin",
+            email="org_admin@example.com",
+        )
+        self.regular_user = User.objects.create(
+            username="regular_user",
+            email="regular_user@example.com",
+        )
+        self.superuser = User.objects.create(
+            username="superuser",
+            email="superuser@example.com",
+            is_superuser=True,
+        )
+
+        # Make org_admin an OrgStaffRole for org1
+        update_org_role(
+            self.superuser,
+            OrgStaffRole,
+            self.org_admin,
+            [self.org1.short_name],
+        )
+
+        self.library_key = LibraryLocatorV2.from_string(f"lib:{self.org1.short_name}:test_library")
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_change_objecttag_objectid_with_manage_library_tags_permission(self, mock_is_user_allowed):
+        """
+        Test that a user with MANAGE_LIBRARY_TAGS permission can change tags on a library.
+        """
+        mock_is_user_allowed.return_value = True
+
+        result = can_change_object_tag_objectid(self.library_user, str(self.library_key))
+
+        self.assertTrue(result)
+        mock_is_user_allowed.assert_called_once_with(
+            self.library_user.username,
+            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            str(self.library_key),
+        )
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_change_objecttag_objectid_without_manage_library_tags_but_org_admin(self, mock_is_user_allowed):
+        """
+        Test that an org admin can change tags on a library even without
+        explicit MANAGE_LIBRARY_TAGS permission.
+        """
+        mock_is_user_allowed.return_value = False
+
+        result = can_change_object_tag_objectid(self.org_admin, str(self.library_key))
+
+        self.assertTrue(result)
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_change_objecttag_objectid_without_permissions(self, mock_is_user_allowed):
+        """
+        Test that a regular user without MANAGE_LIBRARY_TAGS permission and
+        without org admin access cannot change tags.
+        """
+        mock_is_user_allowed.return_value = False
+
+        result = can_change_object_tag_objectid(self.regular_user, str(self.library_key))
+
+        self.assertFalse(result)
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_remove_objecttag_objectid_with_manage_library_tags_permission(self, mock_is_user_allowed):
+        """
+        Test that a user with MANAGE_LIBRARY_TAGS permission can remove tags
+        from a library.
+        """
+        mock_is_user_allowed.return_value = True
+
+        result = can_remove_object_tag_objectid(self.library_user, str(self.library_key))
+
+        self.assertTrue(result)
+        mock_is_user_allowed.assert_called_once_with(
+            self.library_user.username,
+            authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
+            str(self.library_key),
+        )
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_remove_objecttag_objectid_without_manage_library_tags_but_org_admin(self, mock_is_user_allowed):
+        """
+        Test that an org admin can remove tags from a library even without
+        explicit MANAGE_LIBRARY_TAGS permission.
+        """
+        mock_is_user_allowed.return_value = False
+
+        result = can_remove_object_tag_objectid(self.org_admin, str(self.library_key))
+
+        self.assertTrue(result)
+
+    @patch("openedx_authz.api.is_user_allowed")
+    def test_remove_objecttag_objectid_without_permissions(self, mock_is_user_allowed):
+        """
+        Test that a regular user without MANAGE_LIBRARY_TAGS permission and
+        without org admin access cannot remove tags.
+        """
+        mock_is_user_allowed.return_value = False
+
+        result = can_remove_object_tag_objectid(self.regular_user, str(self.library_key))
+
+        self.assertFalse(result)
+
+    def test_invalid_library_key(self):
+        """
+        Test that invalid library keys return False.
+        """
+        self.assertFalse(can_change_object_tag_objectid(self.library_user, "invalid_key"))
+        self.assertFalse(can_remove_object_tag_objectid(self.library_user, "invalid_key"))
+
+    def test_empty_object_id(self):
+        """
+        Test behavior with empty object_id.
+        """
+        self.assertTrue(can_change_object_tag_objectid(self.library_user, ""))
+
+        with self.assertRaises(ValueError):
+            can_remove_object_tag_objectid(self.library_user, "")

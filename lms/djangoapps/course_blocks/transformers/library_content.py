@@ -1,5 +1,8 @@
 """
-Content Library Transformer.
+Item Bank Transformer.
+
+Transformers for handling item bank blocks (library_content, itembank, etc.)
+that use ItemBankMixin for randomized content selection.
 """
 
 
@@ -7,6 +10,7 @@ import json
 import logging
 
 from eventtracking import tracker
+from xblock.core import XBlock
 
 from common.djangoapps.track import contexts
 from lms.djangoapps.courseware.models import StudentModule
@@ -14,7 +18,7 @@ from openedx.core.djangoapps.content.block_structure.transformer import (
     BlockStructureTransformer,
     FilteringTransformerMixin,
 )
-from xmodule.library_content_block import LegacyLibraryContentBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.item_bank_block import ItemBankMixin  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..utils import get_student_module_as_dict
@@ -25,10 +29,13 @@ logger = logging.getLogger(__name__)
 class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransformer):
     """
     A transformer that manipulates the block structure by removing all
-    blocks within a library_content block to which a user should not
-    have access.
+    blocks within item bank blocks (library_content, itembank, etc.)
+    to which a user should not have access.
 
-    Staff users are not to be exempted from library content pathways.
+    This transformer works with any XBlock that inherits from ItemBankMixin,
+    filtering children based on the selection logic defined by each block type.
+
+    Staff users are not to be exempted from item bank pathways.
     """
     WRITE_VERSION = 1
     READ_VERSION = 1
@@ -61,10 +68,10 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
                 "original_usage_version": str(orig_version) if orig_version else None,
             }
 
-        # For each block check if block is library_content.
-        # If library_content add children array to content_library_children field
+        # For each block check if block uses ItemBankMixin (e.g., library_content, itembank).
+        # If so add block analytics summary for each of its children.
         for block_key in block_structure.topological_traversal(
-                filter_func=lambda block_key: block_key.block_type == 'library_content',
+                filter_func=lambda block_key: issubclass(XBlock.load_class(block_key.block_type), ItemBankMixin),
                 yield_descendants_of_unyielded=True,
         ):
             xblock = block_structure.get_xblock(block_key)
@@ -76,7 +83,9 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
         all_library_children = set()
         all_selected_children = set()
         for block_key in block_structure:
-            if block_key.block_type != 'library_content':
+            block_class = XBlock.load_class(block_key.block_type)
+
+            if block_class is None or not issubclass(block_class, ItemBankMixin):
                 continue
             library_children = block_structure.get_children(block_key)
             if library_children:
@@ -98,7 +107,12 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
 
                 # Update selected
                 previous_count = len(selected)
-                block_keys = LegacyLibraryContentBlock.make_selection(selected, library_children, max_count)
+                # Get the cached block class to call make_selection
+                block_class = XBlock.load_class(block_key.block_type)
+                if block_class is None:
+                    logger.error('Failed to load block class for %s', block_key)
+                    continue
+                block_keys = block_class.make_selection(selected, library_children, max_count)
                 selected = block_keys['selected']
 
                 # Save back any changes
@@ -128,7 +142,7 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
             """
             Return True if selected block should be removed.
 
-            Block is removed if it is part of library_content, but has
+            Block is removed if it is a child of an item bank block, but has
             not been selected for current user.
             """
             if block_key not in all_library_children:
@@ -156,6 +170,12 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
                 json_result.append(info)
             return json_result
 
+        # Get the cached block class to call publish_selected_children_events
+        block_class = XBlock.load_class(location.block_type)
+        if block_class is None:
+            logger.error('Failed to load block class for publishing events: %s', location)
+            return
+
         def publish_event(event_name, result, **kwargs):
             """
             Helper function to publish an event for analytics purposes
@@ -170,11 +190,12 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
             context = contexts.course_context_from_course_id(location.course_key)
             if user_id:
                 context['user_id'] = user_id
-            full_event_name = f"edx.librarycontentblock.content.{event_name}"
+            event_prefix = block_class.get_selected_event_prefix()
+            full_event_name = f"{event_prefix}.{event_name}"
             with tracker.get_tracker().context(full_event_name, context):
                 tracker.emit(full_event_name, event_data)
 
-        LegacyLibraryContentBlock.publish_selected_children_events(
+        block_class.publish_selected_children_events(
             block_keys,
             format_block_keys,
             publish_event,
@@ -184,12 +205,14 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
 class ContentLibraryOrderTransformer(BlockStructureTransformer):
     """
     A transformer that manipulates the block structure by modifying the order of the
-    selected blocks within a library_content block to match the order of the selections
-    made by the ContentLibraryTransformer or the corresponding XBlock. So this transformer
-    requires the selections for the randomized content block to be already
-    made either by the ContentLibraryTransformer or the XBlock.
+    selected blocks within item bank blocks (library_content, itembank, etc.)
+    to match the order of the selections made by the ContentLibraryTransformer or the
+    corresponding XBlock. This transformer requires the selections for the item bank block
+    to be already made either by the ContentLibraryTransformer or the XBlock.
 
-    Staff users are *not* exempted from library content pathways.
+    This transformer works with any XBlock that inherits from ItemBankMixin.
+
+    Staff users are *not* exempted from item bank pathways.
     """
     WRITE_VERSION = 1
     READ_VERSION = 1
@@ -217,7 +240,8 @@ class ContentLibraryOrderTransformer(BlockStructureTransformer):
         to match the order of the selections made and stored in the XBlock 'selected' field.
         """
         for block_key in block_structure:
-            if block_key.block_type != 'library_content':
+            block_class = XBlock.load_class(block_key.block_type)
+            if block_class is None or not issubclass(block_class, ItemBankMixin):
                 continue
 
             library_children = block_structure.get_children(block_key)
@@ -228,7 +252,7 @@ class ContentLibraryOrderTransformer(BlockStructureTransformer):
                 current_selected_blocks = {item[1] for item in state_dict.get('selected', [])}
 
                 # As the selections should have already been made by the ContentLibraryTransformer,
-                # the current children of the library_content block should be the same as the stored
+                # the current children of the item bank block should be the same as the stored
                 # selections. If they aren't, some other transformer that ran before this transformer
                 # has modified those blocks (for example, content gating may have affected this). So do not
                 # transform the order in that case.

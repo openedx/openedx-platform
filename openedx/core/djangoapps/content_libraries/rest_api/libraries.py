@@ -572,7 +572,7 @@ class LibraryPasteClipboardView(GenericAPIView):
         Import the contents of the user's clipboard and paste them into the Library
         """
         library_key = LibraryLocatorV2.from_string(lib_key_str)
-        api.require_permission_for_library_key(library_key, request.user, permissions.CAN_EDIT_THIS_CONTENT_LIBRARY)
+        api.require_permission_for_library_key(library_key, request.user, authz_permissions.EDIT_LIBRARY_CONTENT)
 
         try:
             result = api.import_staged_content_from_user_clipboard(library_key, request.user)

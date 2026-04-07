@@ -105,6 +105,23 @@ def use_new_video_editor(course_key):
     return not LEGACY_STUDIO_VIDEO_EDITOR.is_enabled(course_key)
 
 
+# .. toggle_name: legacy_studio.pdf_editor
+# .. toggle_implementation: WaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Use the PDF XBlock's studio_view instead of the new React-based editor. You may wish to do
+#      this if you run a custom PDF block.
+# .. toggle_use_cases: opt_out
+# .. toggle_creation_date: 2026-03-10
+LEGACY_STUDIO_PDF_EDITOR = WaffleFlag('legacy_studio.pdf_editor', __name__)
+
+
+def use_new_pdf_editor():
+    """
+    Returns a boolean = true if new video editor is enabled
+    """
+    return not LEGACY_STUDIO_PDF_EDITOR.is_enabled()
+
+
 # .. toggle_name: new_core_editors.use_video_gallery_flow
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False

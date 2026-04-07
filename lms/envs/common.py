@@ -3074,6 +3074,25 @@ MFE_CONFIG = {}
 # .. setting_creation_date: 2022-08-05
 MFE_CONFIG_OVERRIDES = {}
 
+# .. setting_name: FRONTEND_SITE_CONFIG
+# .. setting_implementation: DjangoSetting
+# .. setting_default: {}
+# .. setting_description: Frontend site configuration in frontend-base's native camelCase
+#   format.  Unlike MFE_CONFIG, values here require no translation and are passed through
+#   to the /api/frontend_site_config/v1/ endpoint as-is, at the highest precedence (overriding any
+#   values translated from MFE_CONFIG).
+#   See https://github.com/openedx/frontend-base/blob/main/types.ts for the expected
+#   SiteConfig schema.
+#   Example: {
+#     "externalRoutes": [
+#       {"role": "learnerDashboard", "url": "https://courses.example.com/dashboard"}
+#     ],
+#     "logoutUrl": "https://courses.example.com/logout"
+#   }
+# .. setting_use_cases: open_edx
+# .. setting_creation_date: 2026-04-04
+FRONTEND_SITE_CONFIG = {}
+
 # .. setting_name: MFE_CONFIG_API_CACHE_TIMEOUT
 # .. setting_default: 60*5
 # .. setting_description: The MFE Config API response will be cached during the

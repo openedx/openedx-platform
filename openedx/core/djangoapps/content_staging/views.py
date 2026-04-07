@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
+from openedx_authz.constants import permissions as authz_permissions
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -114,7 +115,7 @@ class ClipboardEndpoint(APIView):
                 lib_api.require_permission_for_library_key(
                     course_key,
                     request.user,
-                    lib_api.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY
+                    authz_permissions.REUSE_LIBRARY_CONTENT
                 )
                 block = xblock_api.load_block(usage_key, user=None)
                 version_num = lib_api.get_library_block(usage_key).draft_version_num

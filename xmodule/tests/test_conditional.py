@@ -84,6 +84,7 @@ class ConditionalFactory:
         else:
             source_block = Mock(name='source_block')
             source_block.location = source_location
+            source_block.usage_key = source_location
 
         source_block.visible_to_staff_only = source_visible_to_staff_only
         source_block.runtime = system
@@ -97,6 +98,7 @@ class ConditionalFactory:
         child_block.runtime = system
         child_block.render = lambda view, context=None: system.render(child_block, view, context)
         child_block.location = source_location.replace(category='html', name='child')
+        child_block.usage_key = child_block.location
 
         def visible_to_nonstaff_users(desc):
             """
@@ -121,7 +123,7 @@ class ConditionalFactory:
             'conditional_attr': 'attempted',
             'conditional_value': 'true',
             'xml_attributes': {'attempted': 'true'},
-            'children': [child_block.location],
+            'children': [child_block.usage_key],
         })
 
         cond_block = ConditionalBlock(
