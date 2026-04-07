@@ -9,14 +9,16 @@ from common.djangoapps.student.roles import CourseBetaTesterRole, CourseCcxCoach
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.instructor.access import (
     allow_access,
-    list_with_level,
     is_beta_tester,
+    list_with_level,
     revoke_access,
-    update_forum_role
+    update_forum_role,
 )
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_MODERATOR, Role
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

@@ -2,14 +2,16 @@
 tests for the sharing sites
 """
 
-import ddt
 from unittest import TestCase
 from unittest.mock import patch
 from urllib.parse import parse_qsl
+
+import ddt
+
 from openedx.core.djangoapps.video_config.sharing_sites import (
-    sharing_url,
-    sharing_sites_info_for_video,
     SharingSiteConfig,
+    sharing_sites_info_for_video,
+    sharing_url,
 )
 
 TEST_SHARING_SITE_NAME = "test_site_name"

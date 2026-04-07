@@ -29,7 +29,7 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
     set_custom_attribute,
-    set_custom_attributes_for_course_key
+    set_custom_attributes_for_course_key,
 )
 from olxcleaner.exceptions import ErrorLevel
 from olxcleaner.reporting import report_error_summary, report_errors
@@ -50,7 +50,7 @@ import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
     LibrarySearchIndexer,
-    SearchIndexingError
+    SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
@@ -63,7 +63,7 @@ from cms.djangoapps.contentstore.utils import (
     get_previous_run_course_key,
     initialize_permissions,
     reverse_usage_url,
-    translation_language
+    translation_language,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_block_info
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -94,12 +94,12 @@ from xmodule.modulestore.xml_importer import CourseImportException, import_cours
 from xmodule.tabs import StaticTab
 from xmodule.util.keys import BlockKey
 
+from .api import get_ready_to_migrate_legacy_library_content_blocks
 from .models import ComponentLink, ContainerLink, LearningContextLinksStatus, LearningContextLinksStatusChoices
 from .outlines import update_outline_from_modulestore
 from .outlines_regenerate import CourseOutlineRegenerate
 from .toggles import bypass_olx_failure_enabled
 from .utils import course_import_olx_validation_is_enabled
-from .api import get_ready_to_migrate_legacy_library_content_blocks
 
 User = get_user_model()
 
@@ -523,8 +523,14 @@ def sync_discussion_settings(course_key, user):
 
             discussion_config.provider_type = Provider.OPEN_EDX
 
-        discussion_config.enable_graded_units = discussion_settings['enable_graded_units']
-        discussion_config.unit_level_visibility = discussion_settings['unit_level_visibility']
+        fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
+        # Plugin configuration is stored in the course settings under the provider name.
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}
+
+        for attr_name, settings_key in field_mappings.items():
+            if settings_key in discussion_settings:
+                setattr(discussion_config, attr_name, discussion_settings[settings_key])
+
         discussion_config.save()
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration synced as per course')
     except Exception as exc:  # pylint: disable=broad-except

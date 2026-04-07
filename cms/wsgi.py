@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 WSGI config for CMS.
 
@@ -8,7 +9,6 @@ It exposes a module-level variable named ``application``. Django's
 ``WSGI_APPLICATION`` setting.
 
 Import sorting is intentionally disabled in this module.
-isort:skip_file
 """
 
 # Patch the xml libs before anything else.

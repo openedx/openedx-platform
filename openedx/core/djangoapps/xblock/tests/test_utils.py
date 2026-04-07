@@ -8,9 +8,9 @@ from django.test import override_settings
 from freezegun import freeze_time
 
 from openedx.core.djangoapps.xblock.utils import (  # lint-amnesty, pylint: disable=reimported
-    get_secure_token_for_xblock_handler,
     _get_secure_token_for_xblock_handler,
-    validate_secure_token_for_xblock_handler
+    get_secure_token_for_xblock_handler,
+    validate_secure_token_for_xblock_handler,
 )
 
 REFERENCE_PARAMS = {

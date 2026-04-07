@@ -2,8 +2,8 @@
 The views.py for this app is intentionally thin, and only exists to translate
 user input/output to and from the business logic in the `api` package.
 """
-from datetime import datetime, timezone
 import logging
+from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth import get_user_model

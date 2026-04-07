@@ -39,17 +39,17 @@ memory instead of working on subsets of the data. As a practical matter, this
 means that it will work for databases with up to about 10 million Structures
 before RAM usage starts to become a problem.
 """
-from collections import deque, namedtuple
-from itertools import count, takewhile
 import json
 import logging
 import os
 import sys
 import time
+from collections import deque, namedtuple
+from itertools import count, takewhile
 
 from bson.objectid import ObjectId
-from pymongo import MongoClient, UpdateOne
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
+from pymongo import MongoClient, UpdateOne
 
 LOG = logging.getLogger('structures')
 

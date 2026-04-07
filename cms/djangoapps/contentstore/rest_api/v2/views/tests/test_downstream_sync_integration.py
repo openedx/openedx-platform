@@ -7,13 +7,13 @@ from typing import Any
 from xml.etree import ElementTree
 
 import ddt
-from opaque_keys.edx.keys import UsageKey
 from freezegun import freeze_time
+from opaque_keys.edx.keys import UsageKey
 
-from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
 from cms.djangoapps.contentstore.xblock_storage_handlers.xblock_helpers import get_block_key_string
+from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, ImmediateOnCommitMixin
+from xmodule.modulestore.tests.django_utils import ImmediateOnCommitMixin, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 

@@ -13,7 +13,6 @@ from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig
 from common.djangoapps.third_party_auth.tests import testutil
 from common.djangoapps.third_party_auth.tests.utils import skip_unless_thirdpartyauth
 
-
 TEST_PASSWORD = 'Password1234'
 
 

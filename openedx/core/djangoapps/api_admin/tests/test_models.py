@@ -4,17 +4,17 @@
 from smtplib import SMTPException
 from unittest import mock
 
-import pytest
 import ddt
+import pytest
 from django.db import IntegrityError
 from django.test import TestCase
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.api_admin.models import ApiAccessConfig, ApiAccessRequest
 from openedx.core.djangoapps.api_admin.models import log as model_log
 from openedx.core.djangoapps.api_admin.tests.factories import ApiAccessRequestFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @ddt.ddt

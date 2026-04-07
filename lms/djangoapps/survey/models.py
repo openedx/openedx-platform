@@ -8,7 +8,6 @@ from collections import OrderedDict
 
 from django.core.exceptions import ValidationError
 from django.db import models
-
 from lxml import etree
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField

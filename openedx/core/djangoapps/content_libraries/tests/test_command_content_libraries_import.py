@@ -3,8 +3,8 @@ Unit tests for content_libraries_import command.
 """
 
 
-from unittest import mock
 from io import StringIO
+from unittest import mock
 
 from django.core.management import call_command
 from django.core.management.base import CommandError

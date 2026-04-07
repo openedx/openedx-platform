@@ -14,7 +14,7 @@ from .views import (
     ProgramCourseGradesView,
     ProgramEnrollmentsView,
     UserProgramCourseEnrollmentView,
-    UserProgramReadOnlyAccessView
+    UserProgramReadOnlyAccessView,
 )
 
 app_name = 'v1'

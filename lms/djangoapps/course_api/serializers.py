@@ -5,15 +5,16 @@ Course API Serializers.  Representing course catalog data
 
 import urllib
 
-from common.djangoapps.student.models import CourseEnrollment
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from edx_django_utils import monitoring as monitoring_utils
 from rest_framework import serializers
 
+from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.api import can_show_certificate_available_date_field
-from openedx.core.djangoapps.content.course_overviews.models import \
-    CourseOverview  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+    CourseOverview,
+)
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.api.fields import AbsoluteURLField
 

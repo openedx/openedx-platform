@@ -10,48 +10,36 @@ from uuid import uuid4
 
 import ddt
 from django.conf import settings
-from django.urls import reverse
 from django.test import TestCase
+from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
-
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.entitlements.tests.factories import CourseEntitlementFactory
-from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
-    UserFactory,
-)
-from openedx.core.djangoapps.catalog.tests.factories import (
-    CourseRunFactory as CatalogCourseRunFactory,
-    ProgramFactory,
-)
-from openedx.core.djangoapps.content.course_overviews.tests.factories import (
-    CourseOverviewFactory,
-)
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.learner_home.serializers import (
     CertificateSerializer,
     CourseProviderSerializer,
     CourseRunSerializer,
     CourseSerializer,
+    CoursewareAccessSerializer,
     CreditSerializer,
     EmailConfirmationSerializer,
     EnrollmentSerializer,
     EnterpriseDashboardSerializer,
     EntitlementSerializer,
     GradeDataSerializer,
-    CoursewareAccessSerializer,
+    LearnerDashboardSerializer,
     LearnerEnrollmentSerializer,
     PlatformSettingsSerializer,
     ProgramsSerializer,
-    LearnerDashboardSerializer,
     RelatedProgramSerializer,
     SocialMediaSiteSettingsSerializer,
     SocialShareSettingsSerializer,
     SuggestedCourseSerializer,
     UnfulfilledEntitlementSerializer,
 )
-from lms.djangoapps.learner_home.utils import course_progress_url
 from lms.djangoapps.learner_home.test_utils import (
     datetime_to_django_format,
     random_bool,
@@ -59,6 +47,10 @@ from lms.djangoapps.learner_home.test_utils import (
     random_string,
     random_url,
 )
+from lms.djangoapps.learner_home.utils import course_progress_url
+from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory as CatalogCourseRunFactory
+from openedx.core.djangoapps.catalog.tests.factories import ProgramFactory
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

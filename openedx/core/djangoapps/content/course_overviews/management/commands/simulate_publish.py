@@ -19,12 +19,13 @@ import sys
 import textwrap
 import time
 
-from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
-from openedx.core.djangoapps.content.course_overviews.models import SimulateCoursePublishConfig
+
 from lms.djangoapps.ccx.tasks import course_published_handler as ccx_receiver_fn
+from openedx.core.djangoapps.content.course_overviews.models import SimulateCoursePublishConfig
 from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger('simulate_publish')

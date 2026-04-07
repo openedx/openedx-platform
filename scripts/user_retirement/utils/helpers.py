@@ -17,17 +17,25 @@ import unicodedata
 import yaml
 from six import text_type
 
-from scripts.user_retirement.utils.edx_api import LmsApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.edx_api import CredentialsApi, EcommerceApi, LicenseManagerApi
-from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import \
-    AmplitudeApi  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.edx_api import (
+    CredentialsApi,
+    EcommerceApi,
+    LicenseManagerApi,
+    LmsApi,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.amplitude_api import (
+    AmplitudeApi,  # pylint: disable=wrong-import-position
+)
 from scripts.user_retirement.utils.thirdparty_apis.braze_api import BrazeApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import \
-    HubspotAPI  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.salesforce_api import \
-    SalesforceApi  # pylint: disable=wrong-import-position
-from scripts.user_retirement.utils.thirdparty_apis.segment_api import \
-    SegmentApi  # pylint: disable=wrong-import-position
+from scripts.user_retirement.utils.thirdparty_apis.hubspot_api import (
+    HubspotAPI,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.salesforce_api import (
+    SalesforceApi,  # pylint: disable=wrong-import-position
+)
+from scripts.user_retirement.utils.thirdparty_apis.segment_api import (
+    SegmentApi,  # pylint: disable=wrong-import-position
+)
 
 
 def _log(kind, message):

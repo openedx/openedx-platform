@@ -5,11 +5,11 @@ from django.test import TestCase, override_settings
 
 from openedx.core.djangoapps.notifications.base_notification import (
     _COURSE_NOTIFICATION_APPS,
-    _COURSE_NOTIFICATION_TYPES
+    _COURSE_NOTIFICATION_TYPES,
 )
 from openedx.core.djangoapps.notifications.settings_override import (
     get_notification_apps_config,
-    get_notification_types_config
+    get_notification_types_config,
 )
 
 

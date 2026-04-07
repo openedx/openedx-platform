@@ -11,7 +11,7 @@ import gridfs
 import pymongo
 from bson.son import SON
 from fs.osfs import OSFS
-from gridfs.errors import NoFile, FileExists
+from gridfs.errors import FileExists, NoFile
 from opaque_keys.edx.keys import AssetKey
 
 from xmodule.contentstore.content import XASSET_LOCATION_TAG

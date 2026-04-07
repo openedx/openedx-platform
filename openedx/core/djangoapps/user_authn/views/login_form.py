@@ -16,28 +16,28 @@ from django_ratelimit.decorators import ratelimit
 
 from common.djangoapps import third_party_auth
 from common.djangoapps.edxmako.shortcuts import render_to_response
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.user_api import accounts
-from openedx.core.djangoapps.user_api.accounts.utils import (
-    is_secondary_email_feature_enabled
-)
-from openedx.core.djangoapps.user_api.helpers import FormDescription
-from openedx.core.djangoapps.user_authn.cookies import set_logged_in_cookies
-from openedx.core.djangoapps.user_authn.toggles import should_redirect_to_authn_microfrontend
-from openedx.core.djangoapps.user_authn.views.password_reset import get_password_reset_form
-from openedx.core.djangoapps.user_authn.views.registration_form import RegistrationFormFactory
-from openedx.core.djangoapps.user_authn.views.utils import third_party_auth_context
-from openedx.core.djangoapps.user_authn.toggles import is_require_third_party_auth_enabled
-from openedx.features.enterprise_support.api import enterprise_customer_for_request, enterprise_enabled
-from openedx.features.enterprise_support.utils import (
-    get_enterprise_slug_login_url,
-    handle_enterprise_cookies_for_logistration,
-    update_logistration_context_for_enterprise
-)
 from common.djangoapps.student.helpers import get_next_url_for_login_page
 from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.decorators import xframe_allow_whitelisted
 from common.djangoapps.util.password_policy_validators import DEFAULT_MAX_PASSWORD_LENGTH
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api import accounts
+from openedx.core.djangoapps.user_api.accounts.utils import is_secondary_email_feature_enabled
+from openedx.core.djangoapps.user_api.helpers import FormDescription
+from openedx.core.djangoapps.user_authn.cookies import set_logged_in_cookies
+from openedx.core.djangoapps.user_authn.toggles import (
+    is_require_third_party_auth_enabled,
+    should_redirect_to_authn_microfrontend,
+)
+from openedx.core.djangoapps.user_authn.views.password_reset import get_password_reset_form
+from openedx.core.djangoapps.user_authn.views.registration_form import RegistrationFormFactory
+from openedx.core.djangoapps.user_authn.views.utils import third_party_auth_context
+from openedx.features.enterprise_support.api import enterprise_customer_for_request, enterprise_enabled
+from openedx.features.enterprise_support.utils import (
+    get_enterprise_slug_login_url,
+    handle_enterprise_cookies_for_logistration,
+    update_logistration_context_for_enterprise,
+)
 
 log = logging.getLogger(__name__)
 

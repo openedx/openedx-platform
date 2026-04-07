@@ -2,9 +2,9 @@
 Django admin commands related to verify_student
 """
 
-from datetime import datetime
 import logging
 import time
+from datetime import datetime
 
 from django.core.management.base import BaseCommand
 

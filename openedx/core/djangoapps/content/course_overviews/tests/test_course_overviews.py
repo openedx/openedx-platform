@@ -1,18 +1,17 @@
 """
 Tests for course_overviews app.
 """
+import datetime  # lint-amnesty, pylint: disable=wrong-import-order
+import itertools  # lint-amnesty, pylint: disable=wrong-import-order
 import json
+import math  # lint-amnesty, pylint: disable=wrong-import-order
 import os
 from io import BytesIO
 from unittest import mock
-
-import pytest
-import datetime  # lint-amnesty, pylint: disable=wrong-import-order
-import itertools  # lint-amnesty, pylint: disable=wrong-import-order
-import math  # lint-amnesty, pylint: disable=wrong-import-order
 from zoneinfo import ZoneInfo
 
 import ddt
+import pytest
 from django.conf import settings
 from django.db.utils import IntegrityError
 from django.test.utils import override_settings
@@ -20,27 +19,32 @@ from django.utils import timezone
 from opaque_keys.edx.keys import CourseKey
 from PIL import Image
 
+from common.djangoapps.static_replace.models import AssetBaseUrlConfig
 from lms.djangoapps.certificates.api import get_active_web_certificate
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.core.lib.courses import course_image_url
-from common.djangoapps.static_replace.models import AssetBaseUrlConfig
 from xmodule.assetstore.assetmgr import AssetManager  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.course_metadata_utils import DEFAULT_START_DATE  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-    CATALOG_VISIBILITY_NONE
+    CATALOG_VISIBILITY_NONE,
 )
+from xmodule.course_metadata_utils import DEFAULT_START_DATE  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls_range  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseFactory,
+    check_mongo_calls_range,
+)
 
 from ..models import CourseOverview, CourseOverviewImageConfig, CourseOverviewImageSet, CourseOverviewTab
 from .factories import CourseOverviewFactory

@@ -6,6 +6,7 @@ Module for the Storage of BlockStructure objects.
 
 from logging import getLogger
 
+from edx_django_utils import monitoring
 
 from openedx.core.lib.cache_utils import zpickle, zunpickle
 
@@ -15,8 +16,6 @@ from .exceptions import BlockStructureNotFound
 from .factory import BlockStructureFactory
 from .models import BlockStructureModel
 from .transformer_registry import TransformerRegistry
-
-from edx_django_utils import monitoring
 
 logger = getLogger(__name__)  # pylint: disable=C0103
 

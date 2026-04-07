@@ -3,8 +3,7 @@ URL definitions for api access request API.
 """
 
 
-from django.urls import include
-from django.urls import path
+from django.urls import include, path
 
 app_name = 'api_admin'
 urlpatterns = [

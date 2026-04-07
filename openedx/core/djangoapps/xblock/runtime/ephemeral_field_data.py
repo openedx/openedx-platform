@@ -21,7 +21,6 @@ from django.conf import settings
 from django.core.cache import caches
 from xblock.runtime import KeyValueStore
 
-
 FIELD_DATA_TIMEOUT = None  # keep in cache indefinitely, until cache needs pruning
 
 

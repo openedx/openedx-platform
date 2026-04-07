@@ -4,15 +4,16 @@ Test for split test XModule
 
 
 from unittest.mock import MagicMock
-from django.urls import reverse
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.partitions.partitions import Group, UserPartition
 
-from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
-from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
+from django.urls import reverse
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
+from lms.djangoapps.courseware.model_data import FieldDataCache
+from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.partitions.partitions import Group, UserPartition
 
 
 class SplitTestBase(ModuleStoreTestCase):

@@ -8,9 +8,9 @@ from .views import (
     MarkNotificationsSeenAPIView,
     NotificationCountView,
     NotificationListAPIView,
+    NotificationPreferencesViewV3,
     NotificationReadAPIView,
     preference_update_from_encrypted_username_view,
-    NotificationPreferencesViewV3,
 )
 
 router = routers.DefaultRouter()

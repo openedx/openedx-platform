@@ -10,10 +10,7 @@ from django.forms import CharField, Form
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
-from openedx.core.djangoapps.util.forms import (
-    ExtendedNullBooleanField,
-    MultiValueField
-)
+from openedx.core.djangoapps.util.forms import ExtendedNullBooleanField, MultiValueField
 
 
 class UsernameValidatorMixin:

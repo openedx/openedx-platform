@@ -7,9 +7,9 @@ from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.cache import cache
-from django.conf import settings
 from django.db.models.functions import Lower
 from django.test import TestCase, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -29,7 +29,7 @@ from common.djangoapps.student.models import (
     PendingNameChange,
     UserAttribute,
     UserCelebration,
-    UserProfile
+    UserProfile,
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_name
 from common.djangoapps.student.tests.factories import AccountRecoveryFactory, CourseEnrollmentFactory, UserFactory
@@ -44,7 +44,10 @@ from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

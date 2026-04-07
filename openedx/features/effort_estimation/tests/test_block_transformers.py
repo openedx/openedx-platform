@@ -8,13 +8,14 @@ from edx_toggles.toggles.testutils import override_waffle_flag
 from edxval.api import create_video, remove_video_for_course
 
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import SampleCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.sample_courses import BlockInfo  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..block_transformers import EffortEstimationTransformer
 from ..toggles import EFFORT_ESTIMATION_DISABLED_FLAG
-
 
 # Copied here, rather than used directly from class, just to catch any accidental changes
 DISABLE_ESTIMATION = 'disable_estimation'

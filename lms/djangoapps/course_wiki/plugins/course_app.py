@@ -1,5 +1,5 @@
 """Module with the course app configuration for the Wiki."""
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Optional
 
 from django.conf import settings
 from django.utils.translation import gettext_noop as _

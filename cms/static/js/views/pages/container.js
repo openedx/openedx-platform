@@ -491,14 +491,14 @@ function($, _, Backbone, gettext, BasePage,
             if ($target.closest('button, a, input, label, .actions-list').length) {
                 return;
             }
-            
+
             var $wrapper = $target.closest('.studio-xblock-wrapper');
 
             // Deselect all other xblocks
             this.$('.studio-xblock-wrapper.is-selected').not($wrapper).removeClass('is-selected');
 
             $wrapper.toggleClass('is-selected');
-           
+
             if (this.options.isIframeEmbed) {
                 const contentId = this.findXBlockElement(event.target).data('locator');
                 this.postMessageToParent({
@@ -539,11 +539,13 @@ function($, _, Backbone, gettext, BasePage,
                 const primaryHeader = $(event.target).closest('.xblock-header-primary, .nav-actions');
 
                 var useNewVideoEditor = primaryHeader.attr('use-new-editor-video'),
-                    blockType = primaryHeader.attr('data-block-type');
+                    blockType = primaryHeader.attr('data-block-type'),
+                    useNewPdfEditor = primaryHeader.attr('use-new-editor-pdf');
 
                 if((blockType === 'html')
                         || (useNewVideoEditor === 'True' && blockType === 'video')
                         || (blockType === 'problem')
+                        || (useNewPdfEditor === 'True' && blockType === 'pdf')
                 ) {
                     var destinationUrl = primaryHeader.attr('authoring_MFE_base_url')
                         + '/' + blockType

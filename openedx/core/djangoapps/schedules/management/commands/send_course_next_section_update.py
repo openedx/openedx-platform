@@ -3,8 +3,8 @@ Management command to send Schedule course updates
 """
 
 import datetime
-from zoneinfo import ZoneInfo
 from textwrap import dedent  # lint-amnesty, pylint: disable=wrong-import-order
+from zoneinfo import ZoneInfo
 
 from django.contrib.sites.models import Site
 

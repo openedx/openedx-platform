@@ -8,10 +8,10 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from xmodule.partitions.partitions import (
-    get_partition_from_id,
     ENROLLMENT_TRACK_PARTITION_ID,
     UserPartition,
-    UserPartitionError
+    UserPartitionError,
+    get_partition_from_id,
 )
 
 log = logging.getLogger(__name__)

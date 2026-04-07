@@ -11,19 +11,18 @@ from uuid import uuid4
 
 import ddt
 from django.conf import settings
+from django.core.files.storage import storages
 from django.test.client import Client
 from django.test.utils import override_settings
-from django.core.files.storage import storages
+from storages.backends.s3boto3 import S3Boto3Storage
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.xml_importer import import_course_from_xml
-
-from common.djangoapps.util.storage import resolve_storage_backend
-from storages.backends.s3boto3 import S3Boto3Storage
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
 TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex

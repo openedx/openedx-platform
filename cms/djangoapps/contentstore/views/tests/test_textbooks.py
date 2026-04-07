@@ -4,7 +4,6 @@
 import json
 from unittest import TestCase
 
-
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
 

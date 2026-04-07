@@ -5,14 +5,13 @@ Models for bulk email
 
 import logging
 from datetime import datetime
-from dateutil.relativedelta import relativedelta
 
 import markupsafe
 from config_models.models import ConfigurationModel
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.conf import settings
-
 from opaque_keys.edx.django.models import CourseKeyField
 
 from common.djangoapps.course_modes.models import CourseMode

@@ -3,11 +3,11 @@ Unit tests for bulk-email-related models.
 """
 
 import datetime
-from dateutil.relativedelta import relativedelta
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
 
-import pytest
 import ddt
+import pytest
+from dateutil.relativedelta import relativedelta
 from django.core.management import call_command
 from django.test import TestCase
 from django.test.utils import override_settings
@@ -15,7 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 from pytz import UTC
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory, StaffFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, StaffFactory, UserFactory
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.bulk_email.models import (
     SEND_TO_COHORT,
@@ -33,7 +33,9 @@ from lms.djangoapps.bulk_email.models import (
 from lms.djangoapps.bulk_email.models_api import is_bulk_email_disabled_for_course
 from lms.djangoapps.bulk_email.tests.factories import TargetFactory
 from openedx.core.djangoapps.course_groups.models import CourseCohort
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

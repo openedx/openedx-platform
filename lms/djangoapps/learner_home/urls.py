@@ -2,12 +2,11 @@
 Learner Home URL routing configuration
 """
 
-from django.urls import path
-from django.urls import include, re_path
+from django.urls import include, path, re_path
 
 from lms.djangoapps.learner_home import views
-from .rest_api import urls as rest_api_urls
 
+from .rest_api import urls as rest_api_urls
 
 app_name = "learner_home"
 

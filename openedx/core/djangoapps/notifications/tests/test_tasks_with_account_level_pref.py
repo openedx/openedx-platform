@@ -14,13 +14,10 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from ..config.waffle import DISABLE_NOTIFICATIONS
 
+from ..config.waffle import DISABLE_NOTIFICATIONS
 from ..models import Notification, NotificationPreference
-from ..tasks import (
-    delete_notifications,
-    send_notifications,
-)
+from ..tasks import delete_notifications, send_notifications
 from .utils import create_notification
 
 

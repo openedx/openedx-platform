@@ -7,12 +7,11 @@ from django.urls import path
 
 from lms.djangoapps.ora_staff_grader.mock.views import (
     InitializeView,
-    SubmissionStatusFetchView,
-    SubmissionLockView,
-    UpdateGradeView,
     SubmissionFetchView,
+    SubmissionLockView,
+    SubmissionStatusFetchView,
+    UpdateGradeView,
 )
-
 
 urlpatterns = []
 app_name = "mock-ora-staff-grader"

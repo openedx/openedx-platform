@@ -5,20 +5,17 @@ import datetime
 import logging
 from zoneinfo import ZoneInfo
 
-
+from common.djangoapps.student.models import ALLOWEDTOENROLL_TO_ENROLLED as _ALLOWEDTOENROLL_TO_ENROLLED
+from common.djangoapps.student.models import ALLOWEDTOENROLL_TO_UNENROLLED as _ALLOWEDTOENROLL_TO_UNENROLLED
+from common.djangoapps.student.models import DEFAULT_TRANSITION_STATE as _DEFAULT_TRANSITION_STATE
+from common.djangoapps.student.models import ENROLLED_TO_ENROLLED as _ENROLLED_TO_ENROLLED
+from common.djangoapps.student.models import ENROLLED_TO_UNENROLLED as _ENROLLED_TO_UNENROLLED
+from common.djangoapps.student.models import UNENROLLED_TO_ALLOWEDTOENROLL as _UNENROLLED_TO_ALLOWEDTOENROLL
+from common.djangoapps.student.models import UNENROLLED_TO_ENROLLED as _UNENROLLED_TO_ENROLLED
+from common.djangoapps.student.models import UNENROLLED_TO_UNENROLLED as _UNENROLLED_TO_UNENROLLED
 from common.djangoapps.student.models import CourseAccessRole as _CourseAccessRole
 from common.djangoapps.student.models import CourseEnrollment as _CourseEnrollment
 from common.djangoapps.student.models import ManualEnrollmentAudit as _ManualEnrollmentAudit
-from common.djangoapps.student.models import (
-    ENROLLED_TO_ENROLLED as _ENROLLED_TO_ENROLLED,
-    ENROLLED_TO_UNENROLLED as _ENROLLED_TO_UNENROLLED,
-    UNENROLLED_TO_ENROLLED as _UNENROLLED_TO_ENROLLED,
-    UNENROLLED_TO_UNENROLLED as _UNENROLLED_TO_UNENROLLED,
-    UNENROLLED_TO_ALLOWEDTOENROLL as _UNENROLLED_TO_ALLOWEDTOENROLL,
-    ALLOWEDTOENROLL_TO_ENROLLED as _ALLOWEDTOENROLL_TO_ENROLLED,
-    ALLOWEDTOENROLL_TO_UNENROLLED as _ALLOWEDTOENROLL_TO_UNENROLLED,
-    DEFAULT_TRANSITION_STATE as _DEFAULT_TRANSITION_STATE,
-)
 from common.djangoapps.student.models import PendingNameChange as _PendingNameChange
 from common.djangoapps.student.models import UserProfile as _UserProfile
 

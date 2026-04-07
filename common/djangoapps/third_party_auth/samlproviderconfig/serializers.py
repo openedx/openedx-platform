@@ -3,9 +3,10 @@ Serializer for SAMLProviderConfig
 """
 
 import logging
+
 from rest_framework import serializers
 
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration
+from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 
 log = logging.getLogger(__name__)
 

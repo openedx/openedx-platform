@@ -3,6 +3,7 @@ Content Library REST APIs related to XBlocks/Components and their static assets
 """
 import edx_api_doc_tools as apidocs
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.urls import reverse
@@ -18,6 +19,7 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+import openedx.core.djangoapps.site_configuration.helpers as configuration_helpers
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.rest_api import serializers
 from openedx.core.djangoapps.xblock import api as xblock_api
@@ -434,6 +436,13 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
     # streaming response. It's not included in the redirect headers because it's
     # not needed there (the reverse-proxy would have direct access to the file).
     headers['Content-Length'] = media.size
+
+    # Some assets, such as PDFs, need to be embedded in an iFrame in the MFE
+    # studio. Permit this, so long as the file is in the cors_origin_whitelist.
+    cors_origin_whitelist = configuration_helpers.get_value(
+        'CORS_ORIGIN_WHITELIST', getattr(settings, 'CORS_ORIGIN_WHITELIST', []),
+    )
+    headers["Content-Security-Policy"] = f"frame-ancestors 'self' {' '.join(cors_origin_whitelist)};"
 
     if request.method == "HEAD":
         return HttpResponse(headers=headers)

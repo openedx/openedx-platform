@@ -6,9 +6,9 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.generic import View
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from social_django.models import UserSocialAuth
 
 from common.djangoapps.edxmako.shortcuts import render_to_response
@@ -19,12 +19,12 @@ from lms.djangoapps.program_enrollments.api import (
 )
 from lms.djangoapps.program_enrollments.exceptions import (
     BadOrganizationShortNameException,
-    ProviderDoesNotExistException
+    ProviderDoesNotExistException,
 )
 from lms.djangoapps.support.decorators import require_support_permission
 from lms.djangoapps.support.serializers import ProgramEnrollmentSerializer, serialize_user_info
-from lms.djangoapps.verify_student.services import IDVerificationService
 from lms.djangoapps.support.views.utils import validate_and_link_program_enrollments
+from lms.djangoapps.verify_student.services import IDVerificationService
 
 TEMPLATE_PATH = 'support/link_program_enrollments.html'
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'

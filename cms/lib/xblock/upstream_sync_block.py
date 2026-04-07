@@ -96,7 +96,11 @@ def _load_upstream_block(downstream: XBlock, user: User) -> XBlock:
     If `downstream` lacks a valid+supported upstream link, this raises an UpstreamLinkException.
     """
     # We import load_block here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
-    from openedx.core.djangoapps.xblock.api import load_block, CheckPerm, LatestVersion  # pylint: disable=wrong-import-order
+    from openedx.core.djangoapps.xblock.api import (  # pylint: disable=wrong-import-order
+        CheckPerm,
+        LatestVersion,
+        load_block,
+    )
     try:
         lib_block: XBlock = load_block(
             LibraryUsageLocatorV2.from_string(downstream.upstream),
@@ -190,6 +194,7 @@ def _update_tags(*, upstream: XBlock, downstream: XBlock) -> None:
     Update tags from `upstream` to `downstream`
     """
     from openedx.core.djangoapps.content_tagging.api import copy_tags_as_read_only
+
     # For any block synced with an upstream, copy the tags as read_only
     # This keeps tags added locally.
     copy_tags_as_read_only(

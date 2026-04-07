@@ -12,13 +12,13 @@ import ddt
 from freezegun import freeze_time
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
+
+from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
-
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 from .. import DEFAULT_FIELDS, OPTIONAL_FIELDS, PathItem
 from ..models import Bookmark, XBlockCache, parse_path_data

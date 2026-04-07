@@ -2,19 +2,19 @@
 Viewset for auth/saml/v0/samlproviderconfig
 """
 
-from django.shortcuts import get_list_or_404
 from django.db.utils import IntegrityError
+from django.shortcuts import get_list_or_404
 from edx_rbac.mixins import PermissionRequiredMixin
-from rest_framework import permissions, viewsets, status
-from rest_framework.response import Response
+from enterprise.models import EnterpriseCustomer, EnterpriseCustomerIdentityProvider
+from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import ParseError, ValidationError
+from rest_framework.response import Response
 
-from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomer
 from common.djangoapps.third_party_auth.utils import validate_uuid4_string
 
 from ..models import SAMLProviderConfig
-from .serializers import SAMLProviderConfigSerializer
 from ..utils import convert_saml_slug_provider_id
+from .serializers import SAMLProviderConfigSerializer
 
 
 class SAMLProviderMixin:

@@ -7,8 +7,8 @@ from unittest.mock import patch
 from xml.etree import ElementTree
 
 from web_fragments.fragment import Fragment
-from xblock.core import XBlock
 from xblock.completable import XBlockCompletionMode
+from xblock.core import XBlock
 from xblock.test.test_parsing import XmlTest
 
 from xmodule.unit_block import UnitBlock

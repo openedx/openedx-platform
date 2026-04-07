@@ -4,19 +4,19 @@ Tests for the course_overviews app's signal functionality.
 
 
 import datetime
-from unittest.mock import patch
 from collections import namedtuple
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-import pytest
 import ddt
+import pytest
 
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED,
-    ModuleStoreTestCase,
     ImmediateOnCommitMixin,
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls
 

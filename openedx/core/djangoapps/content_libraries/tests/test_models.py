@@ -5,20 +5,13 @@ Unit tests for Content Libraries models.
 
 from unittest import mock
 
-from django.test import TestCase
-from django.test import RequestFactory
 from django.contrib.auth import get_user_model
-
+from django.test import RequestFactory, TestCase
+from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from organizations.models import Organization
 from pylti1p3.contrib.django.lti1p3_tool_config.models import LtiToolKey
 
-from organizations.models import Organization
-from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
-
-from ..models import ALL_RIGHTS_RESERVED
-from ..models import ContentLibrary
-from ..models import LtiGradedResource
-from ..models import LtiProfile
-from ..models import LtiTool
+from ..models import ALL_RIGHTS_RESERVED, ContentLibrary, LtiGradedResource, LtiProfile, LtiTool
 
 
 class ContentLibraryTest(TestCase):

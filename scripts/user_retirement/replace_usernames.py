@@ -25,7 +25,7 @@ from scripts.user_retirement.utils.edx_api import (  # pylint: disable=wrong-imp
     CredentialsApi,
     DiscoveryApi,
     EcommerceApi,
-    LmsApi
+    LmsApi,
 )
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)

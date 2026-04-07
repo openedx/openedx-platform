@@ -1,8 +1,8 @@
 """
 REST API utilities for content libraries
 """
-from functools import wraps
 import logging
+from functools import wraps
 
 from opaque_keys import InvalidKeyError
 from rest_framework.exceptions import NotFound, ValidationError

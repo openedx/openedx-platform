@@ -11,8 +11,8 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.test import TestCase
 from django.test.client import RequestFactory
 
-from openedx.core.djangoapps.geoinfo.middleware import CountryMiddleware
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
+from openedx.core.djangoapps.geoinfo.middleware import CountryMiddleware
 
 
 class CountryMiddlewareTests(TestCase):

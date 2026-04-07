@@ -31,7 +31,7 @@ from common.djangoapps.student.models import (
     UserAttribute,
     anonymous_id_for_user,
     unique_id_for_user,
-    user_by_anonymous_id
+    user_by_anonymous_id,
 )
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.student.toggles import REDIRECT_TO_COURSEWARE_AFTER_ENROLLMENT
@@ -46,12 +46,18 @@ from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory, Pr
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
+from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration_context
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseFactory,
+    check_mongo_calls,
+)
 
 log = logging.getLogger(__name__)
 

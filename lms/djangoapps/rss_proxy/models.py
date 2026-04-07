@@ -2,7 +2,6 @@
 Models for the rss_proxy djangoapp.
 """
 from django.db import models
-
 from model_utils.models import TimeStampedModel
 
 

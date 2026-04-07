@@ -65,13 +65,7 @@ from zoneinfo import ZoneInfo
 from bson.objectid import ObjectId
 from ccx_keys.locator import CCXBlockUsageLocator, CCXLocator
 from opaque_keys.edx.keys import CourseKey
-from opaque_keys.edx.locator import (
-    BlockUsageLocator,
-    CourseLocator,
-    DefinitionLocator,
-    LibraryLocator,
-    LocalId,
-)
+from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, DefinitionLocator, LibraryLocator, LocalId
 from path import Path as path
 from xblock.core import XBlock
 from xblock.fields import Reference, ReferenceList, ReferenceValueDict, Scope
@@ -88,7 +82,7 @@ from xmodule.modulestore import (
     ModuleStoreEnum,
     ModuleStoreWriteBase,
     SortedAssetList,
-    inheritance
+    inheritance,
 )
 from xmodule.modulestore.exceptions import (
     DuplicateCourseError,
@@ -96,14 +90,14 @@ from xmodule.modulestore.exceptions import (
     InsufficientSpecificationError,
     MultipleCourseBlocksFound,
     MultipleLibraryBlocksFound,
-    VersionConflictError
+    VersionConflictError,
 )
 from xmodule.modulestore.split_mongo import CourseEnvelope
-from xmodule.modulestore.split_mongo.mongo_connection import DuplicateKeyError, DjangoFlexPersistenceBackend
+from xmodule.modulestore.split_mongo.mongo_connection import DjangoFlexPersistenceBackend, DuplicateKeyError
 from xmodule.modulestore.store_utilities import DETACHED_XBLOCK_TYPES
 from xmodule.partitions.partitions_service import PartitionService
-from xmodule.util.misc import get_library_or_course_attribute
 from xmodule.util.keys import BlockKey, derive_key
+from xmodule.util.misc import get_library_or_course_attribute
 
 from ..exceptions import ItemNotFoundError
 from .runtime import SplitModuleStoreRuntime

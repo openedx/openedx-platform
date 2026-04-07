@@ -1,7 +1,8 @@
 """Constants used by the Open edX Authorization (AuthZ) framework."""
 
-from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from enum import Enum
+
+from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 
 
 class LegacyAuthoringPermission(Enum):

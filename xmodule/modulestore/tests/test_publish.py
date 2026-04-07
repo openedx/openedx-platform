@@ -13,17 +13,14 @@ from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
-import pytest
 import ddt
+import pytest
 
 from xmodule.exceptions import InvalidVersionError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.exceptions import ItemNotFoundError
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.modulestore.tests.utils import (
-    SPLIT_MODULESTORE_SETUP,
-    MongoContentstoreBuilder,
-)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.modulestore.tests.utils import SPLIT_MODULESTORE_SETUP, MongoContentstoreBuilder
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 
 

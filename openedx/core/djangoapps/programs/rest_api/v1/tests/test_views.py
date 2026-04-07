@@ -11,13 +11,8 @@ from django.urls import reverse_lazy
 from enterprise.models import EnterpriseCourseEnrollment
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
-    UserFactory,
-)
-from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import (
-    ProgramCacheMixin,
-)
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import ProgramCacheMixin
 from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollmentFactory
 from openedx.core.djangoapps.catalog.cache import SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
 from openedx.core.djangoapps.catalog.constants import PathwayType
@@ -29,9 +24,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
 )
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from openedx.core.djangoapps.site_configuration.tests.test_util import (
-    with_site_configuration,
-)
+from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.api import enterprise_is_enabled
 from openedx.features.enterprise_support.tests.factories import (
@@ -40,9 +33,7 @@ from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerUserFactory,
 )
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import (
-    CourseFactory as ModuleStoreCourseFactory,
-)
+from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
 
 PROGRAMS_UTILS_MODULE = "openedx.core.djangoapps.programs.utils"
 

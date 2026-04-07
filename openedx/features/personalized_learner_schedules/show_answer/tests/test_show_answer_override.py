@@ -3,15 +3,16 @@
 import ddt
 from django.test import RequestFactory
 from django.test.utils import override_settings
-
 from edx_toggles.toggles.testutils import override_waffle_flag
 
 from lms.djangoapps.ccx.tests.test_overrides import inject_field_overrides
-from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.block_render import get_block
+from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.features.course_experience import RELATIVE_DATES_FLAG
 from xmodule.capa_block import SHOWANSWER  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

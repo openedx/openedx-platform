@@ -4,17 +4,18 @@ Tests for EmbargoMiddleware with CountryAccessRules
 
 
 from unittest.mock import patch
+
 import ddt
 from config_models.models import cache as config_cache
 from django.conf import settings
 from django.core.cache import cache as django_cache
 from django.urls import reverse
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..models import IPFilter, RestrictedCourse
 from ..test_utils import restrict_course

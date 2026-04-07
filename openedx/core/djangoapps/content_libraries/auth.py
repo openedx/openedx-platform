@@ -12,7 +12,6 @@ from django.contrib.auth.backends import ModelBackend
 
 from .models import LtiProfile
 
-
 log = logging.getLogger(__name__)
 
 

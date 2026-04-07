@@ -15,8 +15,9 @@ from openedx_events.learning.signals import EXAM_ATTEMPT_REJECTED, EXAM_ATTEMPT_
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.grades.signals.handlers import (
     exam_attempt_rejected_event_handler,
-    exam_attempt_verified_event_handler
+    exam_attempt_verified_event_handler,
 )
+
 from ..constants import GradeOverrideFeatureEnum
 
 

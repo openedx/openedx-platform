@@ -7,8 +7,8 @@ import io  # lint-amnesty, pylint: disable=unused-import
 import os
 import tempfile
 from contextlib import contextmanager
-
 from unittest import mock
+
 import pytest
 from django.core.management import call_command
 

@@ -6,7 +6,6 @@ from edx_toggles.toggles import WaffleFlag
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
-
 # .. toggle_name: content_tagging.auto
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False

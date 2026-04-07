@@ -8,7 +8,6 @@ from config_models.models import ConfigurationModel
 from django.contrib import admin
 from django.core.cache import cache
 from django.db import models
-
 from opaque_keys.edx.django.models import CourseKeyField
 
 from openedx.core.djangolib.markup import HTML

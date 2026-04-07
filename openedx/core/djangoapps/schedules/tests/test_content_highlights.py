@@ -3,19 +3,19 @@ import datetime
 from unittest.mock import patch
 
 import pytest
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.schedules.content_highlights import (
     course_has_highlights_from_store,
     get_all_course_highlights,
     get_next_section_highlights,
-    get_week_highlights
+    get_week_highlights,
 )
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import UserFactory
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @skip_unless_lms

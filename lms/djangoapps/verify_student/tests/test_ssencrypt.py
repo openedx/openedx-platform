@@ -12,7 +12,7 @@ from lms.djangoapps.verify_student.ssencrypt import (
     decode_and_decrypt,
     encrypt_and_encode,
     rsa_decrypt,
-    rsa_encrypt
+    rsa_encrypt,
 )
 
 AES_KEY_BYTES = binascii.unhexlify(b'32fe72aaf2abb44de9e161131b5435c8d37cbdb6f5df242ae860b283115f2dae')

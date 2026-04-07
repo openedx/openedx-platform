@@ -4,6 +4,7 @@ Tests for block_structure.py
 
 
 import itertools
+
 # pylint: disable=protected-access
 from collections import namedtuple
 from copy import deepcopy

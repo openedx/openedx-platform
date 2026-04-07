@@ -20,7 +20,7 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
     CourseEntitlement,
     CourseEntitlementPolicy,
-    CourseEntitlementSupportDetail
+    CourseEntitlementSupportDetail,
 )
 from common.djangoapps.entitlements.rest_api.v1.filters import CourseEntitlementFilter
 from common.djangoapps.entitlements.rest_api.v1.permissions import IsAdminOrSupportOrAuthenticatedReadOnly

@@ -4,11 +4,7 @@ Supports replacement of static/course/jump-to-id URLs to absolute URLs in XBlock
 
 from xblock.reference.plugins import Service
 
-from common.djangoapps.static_replace import (
-    replace_course_urls,
-    replace_jump_to_id_urls,
-    replace_static_urls
-)
+from common.djangoapps.static_replace import replace_course_urls, replace_jump_to_id_urls, replace_static_urls
 
 
 class ReplaceURLService(Service):

@@ -18,16 +18,15 @@ from organizations.exceptions import InvalidOrganizationException
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase, parse_json
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_library_url
-from cms.djangoapps.course_creators.views import add_user_with_status_granted as grant_course_creator_status
-from common.djangoapps.student.roles import LibraryUserRole, CourseStaffRole, CourseInstructorRole
-from xmodule.modulestore.tests.factories import LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from cms.djangoapps.course_creators.models import CourseCreator
-
+from cms.djangoapps.course_creators.views import add_user_with_status_granted as grant_course_creator_status
 from common.djangoapps.student import auth
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, LibraryUserRole
+from xmodule.modulestore.tests.factories import LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..component import get_component_templates
-from ..library import user_can_create_library
 from ..course import get_allowed_organizations_for_libraries
+from ..library import user_can_create_library
 
 LIBRARY_REST_URL = '/library/'  # URL for GET/POST requests involving libraries
 

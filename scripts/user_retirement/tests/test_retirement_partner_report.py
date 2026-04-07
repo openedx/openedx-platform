@@ -13,10 +13,6 @@ from unittest.mock import DEFAULT, patch
 from click.testing import CliRunner
 from six import PY2, itervalues
 
-from scripts.user_retirement.retirement_partner_report import \
-    _generate_report_files_or_exit  # pylint: disable=protected-access
-from scripts.user_retirement.retirement_partner_report import \
-    _get_orgs_and_learners_or_exit  # pylint: disable=protected-access
 from scripts.user_retirement.retirement_partner_report import (
     DEFAULT_FIELD_HEADINGS,
     ERR_BAD_CONFIG,
@@ -39,14 +35,16 @@ from scripts.user_retirement.retirement_partner_report import (
     ORGS_KEY,
     REPORTING_FILENAME_PREFIX,
     SETUP_LMS_OR_EXIT,
-    generate_report
+    _generate_report_files_or_exit,  # pylint: disable=protected-access
+    _get_orgs_and_learners_or_exit,  # pylint: disable=protected-access
+    generate_report,
 )
 from scripts.user_retirement.tests.retirement_helpers import (
     FAKE_ORGS,
     TEST_PLATFORM_NAME,
     fake_config_file,
     fake_google_secrets_file,
-    flatten_partner_list
+    flatten_partner_list,
 )
 
 TEST_CONFIG_YML_NAME = 'test_config.yml'

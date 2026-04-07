@@ -18,7 +18,10 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.tests.utils import ThirdPartyOAuthTestMixin, ThirdPartyOAuthTestMixinGoogle
 from openedx.core.djangoapps.oauth_dispatch.toggles import DISABLE_JWT_FOR_MOBILE
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+
+from .. import adapters, models, views
 from . import mixins
+from .constants import DUMMY_REDIRECT_URL
 
 # NOTE (CCB): We use this feature flag in a roundabout way to determine if the oauth_dispatch app is installed
 # in the current service--LMS or Studio. Normally we would check if settings.ROOT_URLCONF == 'lms.urls'; however,
@@ -29,10 +32,6 @@ from . import mixins
 # these imports conditional except mixins, which doesn't currently import forbidden models, and is needed at test
 # discovery time.
 
-from .constants import DUMMY_REDIRECT_URL
-from .. import adapters
-from .. import models
-from .. import views
 
 
 class AccessTokenLoginMixin:

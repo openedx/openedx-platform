@@ -7,7 +7,7 @@ These tests follow the following nomenclature:
  - among the fields found in a track descriptor is a caption URL (aka caption link)
         - use this link to obtain the track's caption data
 '''
-from unittest import mock, TestCase
+from unittest import TestCase, mock
 
 import ddt
 

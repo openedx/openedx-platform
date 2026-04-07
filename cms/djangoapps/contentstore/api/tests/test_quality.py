@@ -2,12 +2,13 @@
 Tests for the course import API views
 """
 
-from rest_framework.test import APIClient
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
-from openedx_authz.constants.roles import COURSE_STAFF, COURSE_DATA_RESEARCHER
+from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+
 from .base import BaseCourseViewTest
 
 

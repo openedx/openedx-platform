@@ -6,10 +6,15 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError
 from django.http import (
-    Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseNotFound, HttpResponseServerError, JsonResponse
+    Http404,
+    HttpResponse,
+    HttpResponseNotAllowed,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse

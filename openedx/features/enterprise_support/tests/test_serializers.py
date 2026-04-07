@@ -9,7 +9,7 @@ from enterprise.models import LicensedEnterpriseCourseEnrollment
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 

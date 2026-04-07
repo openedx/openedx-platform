@@ -4,8 +4,9 @@ Tests for failing old tasks
 
 
 from datetime import datetime
-import pytest
+
 import ddt
+import pytest
 import pytz
 from celery.states import FAILURE
 from django.core.management import call_command

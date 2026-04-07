@@ -7,14 +7,13 @@ import json
 from unittest.mock import patch
 
 import ddt
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
-from xmodule.modulestore.tests.factories import BlockFactory
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_usage_url
-from openedx.core.lib.gating.api import GATING_NAMESPACE_QUALIFIER
-
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import VisibilityState
+from openedx.core.lib.gating.api import GATING_NAMESPACE_QUALIFIER
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
+from xmodule.modulestore.tests.factories import BlockFactory
 
 
 @ddt.ddt

@@ -10,8 +10,8 @@ import threading
 import traceback
 from collections import defaultdict
 from contextlib import contextmanager
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import pymongo.message
@@ -26,7 +26,6 @@ from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.mixed import strip_key
 from xmodule.modulestore.tests.sample_courses import TOY_BLOCK_INFO_TREE, default_block_info_tree
 from xmodule.tabs import CourseTab
-
 
 LOG = logging.getLogger(__name__)
 

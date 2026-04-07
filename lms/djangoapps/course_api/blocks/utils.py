@@ -3,10 +3,7 @@
 """
 from rest_framework.utils.serializer_helpers import ReturnList
 
-from openedx.core.djangoapps.discussions.models import (
-    DiscussionsConfiguration,
-    Provider,
-)
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 
 
 def filter_discussion_xblocks_from_response(response, course_key):

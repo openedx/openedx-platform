@@ -2,29 +2,27 @@
 Audience based filters for notifications and Notification filters
 """
 
-from abc import abstractmethod
-
-from opaque_keys.edx.keys import CourseKey
-
 import logging
+from abc import abstractmethod
 from typing import List
 
 from django.utils import timezone
+from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment
-from openedx.core.djangoapps.course_date_signals.utils import get_expected_duration
-from common.djangoapps.student.roles import CourseStaffRole, CourseInstructorRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from lms.djangoapps.discussion.django_comment_client.utils import get_users_with_roles
 from lms.djangoapps.teams.models import CourseTeam
+from openedx.core.djangoapps.course_date_signals.utils import get_expected_duration
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
-    FORUM_ROLE_MODERATOR,
-    FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    Role
+    Role,
 )
 from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_TYPES
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig

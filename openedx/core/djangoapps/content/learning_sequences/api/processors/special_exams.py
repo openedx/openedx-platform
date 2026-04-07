@@ -12,16 +12,16 @@ https://github.com/openedx/edx-platform/pull/24545#discussion_r501738511
 
 import logging
 
-from edx_proctoring.api import get_attempt_status_summary
-from edx_proctoring.exceptions import ProctoredExamNotFoundException
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext as _
+from edx_proctoring.api import get_attempt_status_summary
+from edx_proctoring.exceptions import ProctoredExamNotFoundException
+
+from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
 
 from ...data import SpecialExamAttemptData, UserCourseOutlineData
 from .base import OutlineProcessor
-from openedx.core.djangoapps.course_apps.toggles import exams_ida_enabled
-
 
 User = get_user_model()
 log = logging.getLogger(__name__)

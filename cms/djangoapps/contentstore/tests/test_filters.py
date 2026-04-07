@@ -4,12 +4,12 @@ Unit tests for the asset upload endpoint.
 from datetime import datetime
 from urllib.parse import urljoin
 
-from pytz import UTC
-
 from django.test import override_settings
-from cms.djangoapps.contentstore import asset_storage_handlers
 from opaque_keys.edx.locator import CourseLocator
 from openedx_filters import PipelineStep
+from pytz import UTC
+
+from cms.djangoapps.contentstore import asset_storage_handlers
 from xmodule.contentstore.content import StaticContent
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 

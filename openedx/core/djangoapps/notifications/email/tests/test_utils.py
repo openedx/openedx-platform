@@ -2,19 +2,17 @@
 Test utils.py
 """
 import datetime
+from unittest.mock import patch
+
 import ddt
 import pytest
-
-from django.http.response import Http404
 from django.conf import settings
+from django.http.response import Http404
 from django.test.utils import override_settings
-from unittest.mock import patch
 from pytz import utc
 
 from common.djangoapps.student.tests.factories import UserFactory
-
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
-from openedx.core.djangoapps.notifications.models import Notification
 from openedx.core.djangoapps.notifications.email.utils import (
     add_additional_attributes_to_notifications,
     create_app_notifications_dict,
@@ -28,6 +26,7 @@ from openedx.core.djangoapps.notifications.email.utils import (
     get_unsubscribe_link,
     update_user_preferences_from_patch,
 )
+from openedx.core.djangoapps.notifications.models import Notification
 from openedx.core.djangoapps.user_api.models import UserPreference
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

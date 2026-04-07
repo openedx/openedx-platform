@@ -10,13 +10,13 @@ from opaque_keys.edx.locator import CourseLocator
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 from xblock.core import XBlock
-from xmodule.course_block import DEFAULT_START_DATE
-from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import check_mongo_calls
 
 from lms.djangoapps.certificates.api import can_show_certificate_available_date_field
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.models.course_details import CourseDetails
+from xmodule.course_block import DEFAULT_START_DATE
+from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import check_mongo_calls
 
 from ..serializers import CourseDetailSerializer, CourseKeySerializer, CourseSerializer
 from .mixins import CourseApiFactoryMixin

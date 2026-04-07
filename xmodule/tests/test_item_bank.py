@@ -1,8 +1,8 @@
 """
 Unit tests for ItemBankBlock.
 """
-from unittest.mock import MagicMock, Mock, patch
 from random import Random
+from unittest.mock import MagicMock, Mock, patch
 
 import ddt
 from fs.memoryfs import MemoryFS
@@ -11,14 +11,14 @@ from rest_framework import status
 from web_fragments.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms, skip_unless_cms
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
+from xmodule.capa_block import ProblemBlock
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.tests import prepare_block_runtime
 from xmodule.validation import StudioValidationMessage
 from xmodule.x_module import AUTHOR_VIEW
-from xmodule.capa_block import ProblemBlock
-from common.djangoapps.student.tests.factories import UserFactory
 
 from ..item_bank_block import ItemBankBlock
 from .test_course_block import DummyModuleStoreRuntime

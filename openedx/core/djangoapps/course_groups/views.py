@@ -24,8 +24,10 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 
-from lms.djangoapps.courseware.courses import get_course, get_course_with_access
 from common.djangoapps.edxmako.shortcuts import render_to_response
+from common.djangoapps.student.auth import has_course_author_access
+from common.djangoapps.util.json_request import JsonResponse, expect_json
+from lms.djangoapps.courseware.courses import get_course, get_course_with_access
 from openedx.core.djangoapps.course_groups.models import (
     CohortAssignmentNotAllowed,
     CohortChangeNotAllowed,
@@ -34,8 +36,6 @@ from openedx.core.djangoapps.course_groups.models import (
 from openedx.core.djangoapps.course_groups.permissions import IsStaffOrAdmin
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
-from common.djangoapps.student.auth import has_course_author_access
-from common.djangoapps.util.json_request import JsonResponse, expect_json
 
 from . import api, cohorts
 from .models import CourseUserGroup, CourseUserGroupPartitionGroup

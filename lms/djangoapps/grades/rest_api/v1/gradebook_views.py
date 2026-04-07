@@ -27,28 +27,33 @@ from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
     get_event_transaction_type,
-    set_event_transaction_type
+    set_event_transaction_type,
 )
 from common.djangoapps.util.date_utils import to_timestamp
 from lms.djangoapps.course_blocks.api import get_course_blocks
-from lms.djangoapps.grades.api import CourseGradeFactory, clear_prefetched_course_and_subsection_grades
+from lms.djangoapps.grades.api import (
+    CourseGradeFactory,
+    clear_prefetched_course_and_subsection_grades,
+    gradebook_bulk_management_enabled,
+    is_writable_gradebook_enabled,
+    prefetch_course_and_subsection_grades,
+)
 from lms.djangoapps.grades.api import constants as grades_constants
 from lms.djangoapps.grades.api import context as grades_context
 from lms.djangoapps.grades.api import events as grades_events
-from lms.djangoapps.grades.api import gradebook_bulk_management_enabled
-from lms.djangoapps.grades.api import is_writable_gradebook_enabled, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.course_data import CourseData
 from lms.djangoapps.grades.grade_utils import are_grades_frozen
+
 # TODO these imports break abstraction of the core Grades layer. This code needs
 # to be refactored so Gradebook views only access public Grades APIs.
 from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.rest_api.serializers import (
     StudentGradebookEntrySerializer,
-    SubsectionGradeResponseSerializer
+    SubsectionGradeResponseSerializer,
 )
 from lms.djangoapps.grades.rest_api.v1.utils import USER_MODEL, CourseEnrollmentPagination, GradeViewMixin
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
@@ -63,7 +68,7 @@ from openedx.core.lib.api.view_utils import (
     PaginatedAPIView,
     get_course_key,
     verify_course_exists,
-    view_auth_classes
+    view_auth_classes,
 )
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id

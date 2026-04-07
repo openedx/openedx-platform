@@ -64,15 +64,15 @@ import hmac
 import json
 from collections import OrderedDict
 from logging import getLogger
+from random import randint
 from smtplib import SMTPException
 from uuid import uuid4
-from random import randint
 
 import six
 import social_django
 from django.conf import settings
+from django.contrib.auth import REDIRECT_FIELD_NAME, logout
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.contrib.auth import logout, REDIRECT_FIELD_NAME
 from django.core.mail.message import EmailMessage
 from django.http import HttpResponseBadRequest
 from django.shortcuts import redirect
@@ -84,15 +84,6 @@ from social_core.utils import module_member, slugify
 
 from common.djangoapps import third_party_auth
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from lms.djangoapps.verify_student.models import SSOVerification
-from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.user_api import accounts
-from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_generator
-from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
-from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
-from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
-from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 from common.djangoapps.third_party_auth.utils import (
     get_associated_user_by_email_response,
     get_user_from_email,
@@ -103,6 +94,15 @@ from common.djangoapps.third_party_auth.utils import (
 )
 from common.djangoapps.track import segment
 from common.djangoapps.util.json_request import JsonResponse
+from lms.djangoapps.verify_student.models import SSOVerification
+from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api import accounts
+from openedx.core.djangoapps.user_api.accounts.utils import username_suffix_generator
+from openedx.core.djangoapps.user_authn import cookies as user_authn_cookies
+from openedx.core.djangoapps.user_authn.toggles import is_auto_generated_username_enabled
+from openedx.core.djangoapps.user_authn.utils import is_safe_login_or_logout_redirect
+from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username
 
 from . import provider
 

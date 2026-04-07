@@ -19,6 +19,7 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
 # I'm not super happy about this since the function is protected with a leading
 # underscore, but the next best thing is literally copying this ~40 line
 # function verbatim.

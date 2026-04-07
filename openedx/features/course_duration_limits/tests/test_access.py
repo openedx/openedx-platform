@@ -3,13 +3,12 @@
 
 import itertools
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
 from django.test import RequestFactory
 from django.utils import timezone
-from zoneinfo import ZoneInfo
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -23,9 +22,10 @@ from openedx.features.course_duration_limits.access import (
     generate_course_expired_message,
     get_access_expiration_data,
     get_user_course_duration,
-    get_user_course_expiration_date
+    get_user_course_expiration_date,
 )
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 @ddt.ddt

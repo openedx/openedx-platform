@@ -13,7 +13,6 @@ from opaque_keys.edx.keys import CourseKey
 from organizations.tests.factories import OrganizationFactory
 from social_django.models import UserSocialAuth
 from testfixtures import LogCapture
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollmentException
@@ -29,6 +28,7 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import fake_completed_retirement
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 class ProgramEnrollmentRetireSignalTests(ModuleStoreTestCase):

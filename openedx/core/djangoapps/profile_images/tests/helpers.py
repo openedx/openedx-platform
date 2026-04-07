@@ -2,12 +2,12 @@
 Helper methods for use in profile image tests.
 """
 
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
 
-from django.core.files.uploadedfile import UploadedFile
 import piexif
+from django.core.files.uploadedfile import UploadedFile
 from PIL import Image
 
 

@@ -6,10 +6,10 @@ too.
 
 import unittest
 from datetime import datetime, timedelta
-import pytest
-import ddt
 from zoneinfo import ZoneInfo
 
+import ddt
+import pytest
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
@@ -19,11 +19,7 @@ from xmodule.assetstore import AssetMetadata
 from xmodule.modulestore import IncorrectlySortedList, ModuleStoreEnum, SortedAssetList
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.tests.factories import CourseFactory
-from xmodule.modulestore.tests.utils import (
-    SPLIT_MODULESTORE_SETUP,
-    MixedModulestoreBuilder,
-    XmlModulestoreBuilder
-)
+from xmodule.modulestore.tests.utils import SPLIT_MODULESTORE_SETUP, MixedModulestoreBuilder, XmlModulestoreBuilder
 
 
 class AssetStoreTestData:

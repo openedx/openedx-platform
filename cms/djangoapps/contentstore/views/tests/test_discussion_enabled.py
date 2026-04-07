@@ -5,10 +5,9 @@ Test module to test the discussion enabled flag.
 
 import json
 
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_usage_url
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class TestDiscussionEnabled(CourseTestCase):

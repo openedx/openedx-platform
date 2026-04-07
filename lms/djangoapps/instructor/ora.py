@@ -1,8 +1,7 @@
 """Utilities for retrieving Open Response Assessments (ORAs) data for instructor dashboards."""
 
-from django.utils.translation import gettext as _
 from django.conf import settings
-
+from django.utils.translation import gettext as _
 from openassessment.data import OraAggregateData
 
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

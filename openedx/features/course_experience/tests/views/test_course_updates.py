@@ -3,9 +3,9 @@ Tests for the course updates page.
 """
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.urls import reverse
-from zoneinfo import ZoneInfo
 
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES

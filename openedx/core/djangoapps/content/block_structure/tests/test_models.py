@@ -4,8 +4,8 @@ Unit tests for Block Structure models.
 # pylint: disable=protected-access
 import errno
 from itertools import product
-from uuid import uuid4
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import ddt
 import pytest

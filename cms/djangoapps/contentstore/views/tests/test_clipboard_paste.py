@@ -5,7 +5,6 @@ APIs.
 """
 import ddt
 from opaque_keys.edx.keys import UsageKey
-from rest_framework.test import APIClient
 from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     XBLOCK_CREATED,
@@ -15,13 +14,14 @@ from openedx_events.content_authoring.signals import (
 from openedx_events.tests.utils import OpenEdxEventsTestMixin
 from openedx_tagging.models import Tag
 from organizations.models import Organization
-from xmodule.modulestore.django import contentstore, modulestore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course, ImmediateOnCommitMixin
-from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, LibraryFactory
+from rest_framework.test import APIClient
 
 from cms.djangoapps.contentstore.utils import reverse_usage_url
 from openedx.core.djangoapps.content_libraries import api as library_api
 from openedx.core.djangoapps.content_tagging import api as tagging_api
+from xmodule.modulestore.django import contentstore, modulestore
+from xmodule.modulestore.tests.django_utils import ImmediateOnCommitMixin, ModuleStoreTestCase, upload_file_to_course
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory, ToyCourseFactory
 
 CLIPBOARD_ENDPOINT = "/api/content-staging/v1/clipboard/"
 XBLOCK_ENDPOINT = "/xblock/"

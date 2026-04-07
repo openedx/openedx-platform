@@ -2,9 +2,7 @@
 Mocking/testing utils for ESG
 """
 import json
-
 from os import path
-
 
 DATA_ROOT = "/edx/app/edxapp/edx-platform/lms/djangoapps/ora_staff_grader/mock/data"
 

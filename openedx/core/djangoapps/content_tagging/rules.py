@@ -17,12 +17,11 @@ from common.djangoapps.student.roles import (
     OrgContentCreatorRole,
     OrgInstructorRole,
     OrgLibraryUserRole,
-    OrgStaffRole
+    OrgStaffRole,
 )
 
 from .models import TaxonomyOrg
 from .utils import check_taxonomy_context_key_org, get_context_key_from_key_string, rules_cache
-
 
 UserType = Union[django.contrib.auth.models.User, django.contrib.auth.models.AnonymousUser]
 

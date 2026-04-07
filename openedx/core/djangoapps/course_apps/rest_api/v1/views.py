@@ -18,6 +18,7 @@ from common.djangoapps.student.auth import has_studio_write_access
 from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, validate_course_key, verify_course_exists
+
 from ...api import is_course_app_enabled, set_course_app_enabled
 from ...plugins import CourseApp, CourseAppsPluginManager
 

@@ -13,7 +13,6 @@ from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import COURSES_MANAGE_ADVANCED_SETTINGS
 
-from openedx.core import toggles as core_toggles
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseCreatorRole,
@@ -29,6 +28,7 @@ from common.djangoapps.student.roles import (
     OrgStaffRole,
     strict_role_checking,
 )
+from openedx.core import toggles as core_toggles
 
 # Studio permissions:
 STUDIO_EDIT_ROLES = 8

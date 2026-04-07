@@ -4,6 +4,7 @@ Tests for the django management command `change_enterprise_user_username`.
 
 
 from unittest import mock
+
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.management import call_command

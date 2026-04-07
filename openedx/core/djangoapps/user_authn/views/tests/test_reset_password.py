@@ -7,6 +7,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.conf import settings
@@ -24,25 +25,27 @@ from django.urls import reverse
 from django.utils.http import int_to_base36
 from freezegun import freeze_time
 from oauth2_provider import models as dot_models
-from zoneinfo import ZoneInfo
 
-from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.core.djangoapps.user_api.models import UserRetirementRequest
-from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
-from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
-from openedx.core.djangoapps.user_authn.views.password_reset import (
-    SETTING_CHANGE_INITIATED, PASSWORD_RESET_INITIATED, password_reset, LogistrationPasswordResetView,
-    PasswordResetConfirmWrapper, password_change_request_handler)
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from common.djangoapps.student.models import AccountRecovery, LoginFailures
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from common.djangoapps.student.tests.test_configuration_overrides import fake_get_value
 from common.djangoapps.student.tests.test_email import mock_render_to_string
-from common.djangoapps.student.models import AccountRecovery, LoginFailures
-
 from common.djangoapps.util.password_policy_validators import create_validator_config
 from common.djangoapps.util.testing import EventTestMixin
+from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
+from openedx.core.djangoapps.user_api.models import UserRetirementRequest
+from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
+from openedx.core.djangoapps.user_authn.views.password_reset import (
+    PASSWORD_RESET_INITIATED,
+    SETTING_CHANGE_INITIATED,
+    LogistrationPasswordResetView,
+    PasswordResetConfirmWrapper,
+    password_change_request_handler,
+    password_reset,
+)
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 
 ENABLE_AUTHN_MICROFRONTEND = settings.FEATURES.copy()
 ENABLE_AUTHN_MICROFRONTEND['ENABLE_AUTHN_MICROFRONTEND'] = True

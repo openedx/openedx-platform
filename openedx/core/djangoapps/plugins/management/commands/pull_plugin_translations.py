@@ -9,10 +9,7 @@ from django.conf import settings
 from openedx.core.djangoapps.plugins.i18n_api import BaseAtlasPullCommand
 
 from ...constants import plugins_locale_root
-
-from ...i18n_api import (
-    plugin_translations_atlas_pull,
-)
+from ...i18n_api import plugin_translations_atlas_pull
 
 
 class Command(BaseAtlasPullCommand):

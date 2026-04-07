@@ -1,16 +1,22 @@
 """ Tests for course reindex command """
 
 
+from datetime import datetime, timedelta
 from unittest import mock
 
 import ddt
 from django.core.management import CommandError, call_command
+
 from cms.djangoapps.contentstore.management.commands.reindex_course import Command as ReindexCommand
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from datetime import datetime, timedelta
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseFactory,
+    LibraryFactory,
+)
 
 
 @ddt.ddt

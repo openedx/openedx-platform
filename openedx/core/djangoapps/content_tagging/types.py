@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Union
 
-from opaque_keys.edx.keys import CourseKey, UsageKey, CollectionKey, ContainerKey
+from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_tagging.models import Taxonomy
 

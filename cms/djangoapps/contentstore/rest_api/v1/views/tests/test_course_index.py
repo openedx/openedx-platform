@@ -4,9 +4,8 @@ Unit tests for course index outline.
 from django.conf import settings
 from django.test import RequestFactory
 from django.urls import reverse
-from rest_framework import status
-
 from edx_toggles.toggles.testutils import override_waffle_flag
+from rest_framework import status
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from cms.djangoapps.contentstore.rest_api.v1.mixins import PermissionAccessMixin

@@ -5,9 +5,9 @@ the new XBlock runtime.
 
 
 from django.utils.translation import gettext as _
+from web_fragments.fragment import Fragment
 from xblock.core import XBlock, XBlockMixin
 from xblock.exceptions import JsonHandlerError
-from web_fragments.fragment import Fragment
 
 from openedx.core.djangolib.markup import HTML
 

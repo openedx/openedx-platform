@@ -6,7 +6,7 @@ from typing import Dict, List
 from common.djangoapps.student.models import CourseAccessRole
 from openedx.core.djangoapps.django_comment_common.models import Role
 from openedx.core.djangoapps.notifications.config.waffle import DISABLE_NOTIFICATIONS
-from openedx.core.djangoapps.notifications.models import create_notification_preference, NotificationPreference
+from openedx.core.djangoapps.notifications.models import NotificationPreference, create_notification_preference
 from openedx.core.lib.cache_utils import request_cached
 
 

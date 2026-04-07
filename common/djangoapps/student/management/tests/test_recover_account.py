@@ -3,20 +3,18 @@ Test cases for recover account management command
 """
 import re
 from tempfile import NamedTemporaryFile
-import pytest
 
-from django.core import mail
+import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.management import call_command, CommandError
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, RequestFactory, override_settings
-
-
+from django.core.management import CommandError, call_command
+from django.test import RequestFactory, TestCase, override_settings
 from testfixtures import LogCapture
-from common.djangoapps.student.tests.factories import UserFactory
-from common.djangoapps.student.models import AccountRecoveryConfiguration
 
+from common.djangoapps.student.models import AccountRecoveryConfiguration
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.recover_account'

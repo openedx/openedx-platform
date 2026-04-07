@@ -17,20 +17,29 @@ from django.utils.timezone import now
 from xblock.field_data import DictFieldData
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
-from lms.djangoapps.courseware.access import has_access
-from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link
-from lms.djangoapps.courseware.masquerade import MasqueradeView
-from lms.djangoapps.courseware.masquerade import setup_masquerade
-from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.lib.url_utils import quote_slashes
 from common.djangoapps.student.models import CourseEnrollment, Registration
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.date_utils import strftime_localized_html
+from lms.djangoapps.courseware.access import has_access
+from lms.djangoapps.courseware.masquerade import MasqueradeView, setup_masquerade
+from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link
+from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.lib.url_utils import quote_slashes
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tests import get_test_descriptor_system, get_test_system, prepare_block_runtime  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+from xmodule.tests import (  # lint-amnesty, pylint: disable=wrong-import-order
+    get_test_descriptor_system,
+    get_test_system,
+    prepare_block_runtime,
+)
 
 
 class BaseTestXmodule(ModuleStoreTestCase):

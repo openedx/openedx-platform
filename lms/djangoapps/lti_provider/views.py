@@ -9,12 +9,12 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
-from common.djangoapps.edxmako.shortcuts import render_to_response
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_events.learning.data import LtiProviderLaunchData, LtiProviderLaunchParamsData, UserData, UserPersonalData
 from openedx_events.learning.signals import LTI_PROVIDER_LAUNCH_SUCCESS
 
+from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.util.views import add_p3p_header
 from lms.djangoapps.lti_provider.models import LtiConsumer
 from lms.djangoapps.lti_provider.outcomes import store_outcome_parameters

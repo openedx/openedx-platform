@@ -33,7 +33,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import IntegrityError, models
 from django.db.models import Q
-from django.db.models.signals import post_save, pre_save, post_delete
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.db.utils import ProgrammingError
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -45,7 +45,6 @@ from eventtracking import tracker
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField, LearningContextKeyField
 from pytz import UTC, timezone
-from openedx.core.lib import user_util
 
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from common.djangoapps.util.model_utils import emit_field_changed_events, get_changed_fields_dict
@@ -54,6 +53,7 @@ from openedx.core.djangoapps.signals.signals import USER_ACCOUNT_ACTIVATED
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.xmodule_django.models import NoneToEmptyManager
 from openedx.core.djangolib.model_mixins import DeletableByUserValue
+from openedx.core.lib import user_util
 from openedx.core.toggles import ENTRANCE_EXAMS
 
 from .course_enrollment import (
@@ -62,7 +62,7 @@ from .course_enrollment import (
     CourseEnrollmentAllowed,
     CourseOverview,
     ManualEnrollmentAudit,
-    segment
+    segment,
 )
 
 User = get_user_model()

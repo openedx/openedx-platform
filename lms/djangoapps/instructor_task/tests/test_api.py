@@ -7,19 +7,18 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
+import ddt
 import pytest
 import pytz
-import ddt
-from testfixtures import LogCapture
 from celery.states import FAILURE, SUCCESS
-from xmodule.modulestore.exceptions import ItemNotFoundError
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from lms.djangoapps.bulk_email.api import create_course_email
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
-from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.api import get_certificate_generation_history
+from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.instructor_task.api import (
     SpecificStudentIdMissingError,
     generate_anonymous_ids,
@@ -59,8 +58,9 @@ from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
     InstructorTaskTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 LOG_PATH = 'lms.djangoapps.instructor_task.api'
 

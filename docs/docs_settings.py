@@ -4,22 +4,21 @@ Basically the LMS devstack settings plus a few items needed to successfully
 import all the Studio code.
 """
 
-from textwrap import dedent
 import os
+from textwrap import dedent
 
-from openedx.core.lib.derived import derive_settings
-
-from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import
 from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
     ADVANCED_PROBLEM_TYPES,
     COURSE_IMPORT_EXPORT_STORAGE,
+    ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,
+    FRONTEND_REGISTER_URL,
     GIT_EXPORT_DEFAULT_IDENT,
     SCRAPE_YOUTUBE_THUMBNAILS_JOB_QUEUE,
-    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,
     UPDATE_SEARCH_INDEX_JOB_QUEUE,
-    FRONTEND_REGISTER_URL,
-    ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,
+    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,
 )
+from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import
+from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included
 # API endpoints will be found.

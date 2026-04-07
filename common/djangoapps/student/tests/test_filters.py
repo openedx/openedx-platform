@@ -6,14 +6,14 @@ from django.http import HttpResponse
 from django.test import override_settings
 from django.urls import reverse
 from openedx_filters import PipelineStep
-from openedx_filters.learning.filters import DashboardRenderStarted, CourseEnrollmentStarted, CourseUnenrollmentStarted
+from openedx_filters.learning.filters import CourseEnrollmentStarted, CourseUnenrollmentStarted, DashboardRenderStarted
 from rest_framework import status
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.student.models import CourseEnrollment, EnrollmentNotAllowed, UnenrollmentNotAllowed
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class TestEnrollmentPipelineStep(PipelineStep):

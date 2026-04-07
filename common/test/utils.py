@@ -1,12 +1,10 @@
 """
 General testing utilities.
 """
-from unittest.mock import Mock, patch
-
-
 import functools
 import sys
 from contextlib import contextmanager
+from unittest.mock import Mock, patch
 
 from django.dispatch import Signal
 from markupsafe import escape

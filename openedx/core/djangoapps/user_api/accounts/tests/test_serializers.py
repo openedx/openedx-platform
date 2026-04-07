@@ -9,9 +9,9 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from testfixtures import LogCapture
 
-from openedx.core.djangoapps.user_api.accounts.serializers import UserReadOnlySerializer
 from common.djangoapps.student.models import UserProfile
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.accounts.serializers import UserReadOnlySerializer
 
 LOGGER_NAME = "openedx.core.djangoapps.user_api.accounts.serializers"
 

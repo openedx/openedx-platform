@@ -2,13 +2,11 @@
 Compile the translation files for the edx_django_utils.plugins.
 """
 
-from django.core.management.base import BaseCommand
 from django.conf import settings
-
-
-from ...constants import plugins_locale_root
+from django.core.management.base import BaseCommand
 
 from ... import i18n_api
+from ...constants import plugins_locale_root
 
 
 class Command(BaseCommand):

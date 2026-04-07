@@ -12,7 +12,10 @@ from cms.djangoapps.contentstore.utils import reverse_course_url
 from common.djangoapps.student.models import CourseEnrollment
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.search import path_to_location  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls_range  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseFactory,
+    check_mongo_calls_range,
+)
 
 
 class TestOrphanBase(CourseTestCase):

@@ -3,13 +3,12 @@ Authn API Views
 """
 
 from django.conf import settings
-
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 
 from common.djangoapps.student.helpers import get_next_url_for_login_page
 from common.djangoapps.student.views import compose_and_send_activation_email

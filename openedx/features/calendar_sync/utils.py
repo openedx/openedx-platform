@@ -1,13 +1,14 @@
 # lint-amnesty, pylint: disable=missing-module-docstring
 import logging
+import os  # lint-amnesty, pylint: disable=wrong-import-order
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import boto3
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-import os  # lint-amnesty, pylint: disable=wrong-import-order
-import boto3
 
 logger = logging.getLogger(__name__)
 

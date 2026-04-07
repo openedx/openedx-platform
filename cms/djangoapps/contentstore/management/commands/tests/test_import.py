@@ -12,7 +12,9 @@ from path import Path as path
 
 from openedx.core.djangoapps.django_comment_common.utils import are_permissions_roles_seeded
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 class TestImport(ModuleStoreTestCase):

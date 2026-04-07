@@ -3,7 +3,7 @@ from django.db import migrations
 from lms.djangoapps.grades.config.waffle import (
     ENFORCE_FREEZE_GRADE_AFTER_COURSE_END,
     REJECTED_EXAM_OVERRIDES_GRADE,
-    WRITABLE_GRADEBOOK,
+    WRITABLE_GRADEBOOK
 )
 
 

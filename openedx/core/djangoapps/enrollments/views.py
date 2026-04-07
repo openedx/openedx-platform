@@ -13,12 +13,12 @@ from django.core.exceptions import (  # lint-amnesty, pylint: disable=wrong-impo
 from django.db import IntegrityError  # lint-amnesty, pylint: disable=wrong-import-order
 from django.db.models import Q  # lint-amnesty, pylint: disable=wrong-import-order
 from django.utils.decorators import method_decorator  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.jwt.authentication import (
+from edx_rest_framework_extensions.auth.jwt.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
     JwtAuthentication,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_rest_framework_extensions.auth.session.authentication import (
+)
+from edx_rest_framework_extensions.auth.session.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
     SessionAuthenticationAllowInactiveUser,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from opaque_keys import InvalidKeyError  # lint-amnesty, pylint: disable=wrong-import-order
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework import permissions, status  # lint-amnesty, pylint: disable=wrong-import-order

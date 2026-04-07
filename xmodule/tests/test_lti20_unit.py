@@ -3,21 +3,19 @@
 
 import datetime
 import textwrap
-from django.conf import settings
-from django.test import TestCase, override_settings
 from unittest.mock import Mock
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
+from django.test import TestCase, override_settings
 from xblock.field_data import DictFieldData
+from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
 
 from xmodule import lti_block
+from xmodule.lti_2_util import LTIError as BuiltInLTIError
 from xmodule.tests.helpers import StubUserService
 
 from . import get_test_system
-
-
-from xmodule.lti_2_util import LTIError as BuiltInLTIError
-from xblocks_contrib.lti.lti_2_util import LTIError as ExtractedLTIError
 
 
 class _LTI20RESTResultServiceTestBase(TestCase):

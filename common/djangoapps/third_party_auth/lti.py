@@ -10,11 +10,11 @@ import time
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from oauthlib.common import Request
 from oauthlib.oauth1.rfc5849.signature import (
-    collect_parameters,
-    signature_base_string,
     base_string_uri,
+    collect_parameters,
     normalize_parameters,
-    sign_hmac_sha1
+    sign_hmac_sha1,
+    signature_base_string,
 )
 from social_core.backends.base import BaseAuth
 from social_core.exceptions import AuthFailed

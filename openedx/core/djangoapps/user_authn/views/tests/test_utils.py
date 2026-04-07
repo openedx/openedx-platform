@@ -1,11 +1,13 @@
 """
 Tests for user utils functionality.
 """
-from django.test import TestCase
 from datetime import datetime
-from openedx.core.djangoapps.user_authn.views.utils import get_auto_generated_username, _get_username_prefix
-import ddt
 from unittest.mock import patch
+
+import ddt
+from django.test import TestCase
+
+from openedx.core.djangoapps.user_authn.views.utils import _get_username_prefix, get_auto_generated_username
 
 
 @ddt.ddt

@@ -4,8 +4,8 @@ Unit tests for course rerun.
 from django.urls import reverse
 from rest_framework import status
 
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.rest_api.v1.mixins import PermissionAccessMixin
+from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 
 
 class CourseRerunViewTest(CourseTestCase, PermissionAccessMixin):

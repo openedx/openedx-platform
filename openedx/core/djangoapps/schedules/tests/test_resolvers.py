@@ -5,17 +5,15 @@ Tests for schedules resolvers
 
 import datetime
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import crum
 import ddt
-from zoneinfo import ZoneInfo
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_switch
 from testfixtures import LogCapture
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
@@ -36,6 +34,8 @@ from openedx.core.djangoapps.schedules.tests.factories import ScheduleConfigFact
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory, SiteFactory
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin, skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 

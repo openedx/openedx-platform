@@ -2,12 +2,14 @@
 Test for course live app views
 """
 import json
+
 import ddt
 from django.test import RequestFactory
 from django.urls import reverse
 from lti_consumer.models import CourseAllowPIISharingInLTIFlag, LtiConfiguration
 from markupsafe import Markup
 from rest_framework.test import APITestCase
+
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import CourseUserType, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

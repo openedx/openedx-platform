@@ -2,8 +2,8 @@
 Course Goals Models
 """
 
-import uuid
 import logging
+import uuid
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
@@ -14,8 +14,8 @@ from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
 from simple_history.models import HistoricalRecords
 
-from lms.djangoapps.courseware.masquerade import is_masquerading
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
+from lms.djangoapps.courseware.masquerade import is_masquerading
 from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.course_experience import ENABLE_COURSE_GOALS
 

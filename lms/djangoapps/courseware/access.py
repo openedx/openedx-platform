@@ -20,13 +20,37 @@ from edx_django_utils.monitoring import function_trace
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from xblock.core import XBlock
 
+from common.djangoapps.student import auth
+from common.djangoapps.student.models import CourseEnrollmentAllowed
+from common.djangoapps.student.roles import (
+    CourseBetaTesterRole,
+    CourseCcxCoachRole,
+    CourseInstructorRole,
+    CourseLimitedStaffRole,
+    CourseStaffRole,
+    GlobalStaff,
+    OrgInstructorRole,
+    OrgStaffRole,
+    SupportStaffRole,
+)
+from common.djangoapps.util import (  # lint-amnesty, pylint: disable=useless-import-alias
+    milestones_helpers as milestones_helpers,
+)
+from common.djangoapps.util.milestones_helpers import (
+    any_unfulfilled_milestones,
+    get_pre_requisite_courses_not_completed,
+    is_prerequisite_courses_enabled,
+)
+from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
+from lms.djangoapps.ccx.models import CustomCourseForEdX
 from lms.djangoapps.courseware.access_response import (
+    CatalogVisibilityError,
     IncorrectPartitionGroupError,
     MilestoneAccessError,
     MobileAvailabilityError,
     NoAllowedPartitionGroupsError,
     OldMongoAccessError,
-    VisibilityError
+    VisibilityError,
 )
 from lms.djangoapps.courseware.access_utils import (
     ACCESS_DENIED,
@@ -36,34 +60,20 @@ from lms.djangoapps.courseware.access_utils import (
     debug,
 )
 from lms.djangoapps.courseware.masquerade import get_masquerade_role, is_masquerading_as_student
-from lms.djangoapps.ccx.custom_exception import CCXLocatorValidationException
-from lms.djangoapps.ccx.models import CustomCourseForEdX
-from lms.djangoapps.mobile_api.models import IgnoreMobileAvailableFlagConfig
 from lms.djangoapps.courseware.toggles import course_is_invitation_only
+from lms.djangoapps.mobile_api.models import IgnoreMobileAvailableFlagConfig
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_duration_limits.access import check_course_expired
-from common.djangoapps.student import auth
-from common.djangoapps.student.models import CourseEnrollmentAllowed
-from common.djangoapps.student.roles import (
-    CourseBetaTesterRole,
-    CourseCcxCoachRole,
-    CourseInstructorRole,
-    CourseStaffRole,
-    GlobalStaff,
-    OrgInstructorRole,
-    OrgStaffRole,
-    SupportStaffRole,
-    CourseLimitedStaffRole,
+from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CATALOG_VISIBILITY_ABOUT,
+    CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
+    CourseBlock,
 )
-from common.djangoapps.util import milestones_helpers as milestones_helpers  # lint-amnesty, pylint: disable=useless-import-alias
-from common.djangoapps.util.milestones_helpers import (
-    any_unfulfilled_milestones,
-    get_pre_requisite_courses_not_completed,
-    is_prerequisite_courses_enabled
-)
-from xmodule.course_block import CATALOG_VISIBILITY_ABOUT, CATALOG_VISIBILITY_CATALOG_AND_ABOUT, CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import NoSuchUserPartitionError, NoSuchUserPartitionGroupError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    NoSuchUserPartitionError,
+    NoSuchUserPartitionGroupError,
+)
 
 log = logging.getLogger(__name__)
 
@@ -412,10 +422,14 @@ def _has_access_course(user, action, courselike):
         In this case we use the catalog_visibility property on the course block
         but also allow course staff to see this.
         """
-        return (
-            _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
-            or _has_staff_access_to_block(user, courselike, courselike.id)
-        )
+        catalog_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
+        if catalog_response:
+            return ACCESS_GRANTED
+        if _has_staff_access_to_block(user, courselike, courselike.id):
+            return ACCESS_GRANTED
+        # Return the typed CatalogVisibilityError so downstream handlers
+        # can provide a meaningful error message instead of a generic 404.
+        return catalog_response
 
     @function_trace('can_see_about_page')
     def can_see_about_page():
@@ -424,11 +438,17 @@ def _has_access_course(user, action, courselike):
         In this case we use the catalog_visibility property on the course block
         but also allow course staff to see this.
         """
-        return (
-            _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
-            or _has_catalog_visibility(courselike, CATALOG_VISIBILITY_ABOUT)
-            or _has_staff_access_to_block(user, courselike, courselike.id)
-        )
+        both_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
+        if both_response:
+            return ACCESS_GRANTED
+        about_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_ABOUT)
+        if about_response:
+            return ACCESS_GRANTED
+        if _has_staff_access_to_block(user, courselike, courselike.id):
+            return ACCESS_GRANTED
+        # Return the typed CatalogVisibilityError so downstream handlers
+        # can provide a meaningful error message instead of a generic 404.
+        return both_response
 
     checkers = {
         'load': can_load,
@@ -876,7 +896,9 @@ def _has_catalog_visibility(course, visibility_type):
     """
     Returns whether the given course has the given visibility type
     """
-    return ACCESS_GRANTED if course.catalog_visibility == visibility_type else ACCESS_DENIED
+    if course.catalog_visibility == visibility_type:
+        return ACCESS_GRANTED
+    return CatalogVisibilityError()
 
 
 def _is_block_mobile_available(block):

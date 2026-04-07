@@ -2,18 +2,22 @@
 Tests for notification grouping module
 """
 
-import ddt
 import unittest
-from unittest.mock import MagicMock, patch
 from datetime import datetime
+from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
+
+import ddt
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.notifications.grouping_notifications import (
     BaseNotificationGrouper,
+    NewPostGrouper,
+    NewResponseGrouper,
+    NewResponseOnFollowedPostGrouper,
     NotificationRegistry,
+    get_user_existing_notifications,
     group_user_notifications,
-    get_user_existing_notifications, NewPostGrouper, NewResponseGrouper, NewResponseOnFollowedPostGrouper
 )
 from openedx.core.djangoapps.notifications.models import Notification
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase

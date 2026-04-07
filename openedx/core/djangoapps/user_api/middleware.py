@@ -4,7 +4,6 @@ Adds user's tags to tracking event context.
 """
 
 from django.utils.deprecation import MiddlewareMixin
-
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey

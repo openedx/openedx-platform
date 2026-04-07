@@ -4,8 +4,7 @@ Unit tests for video utils.
 
 
 from datetime import datetime
-from unittest import TestCase
-from unittest import mock
+from unittest import TestCase, mock
 
 import ddt
 import pytz
@@ -23,7 +22,7 @@ from cms.djangoapps.contentstore.video_utils import (
     YOUTUBE_THUMBNAIL_SIZES,
     download_youtube_video_thumbnail,
     scrape_youtube_thumbnail,
-    validate_video_image
+    validate_video_image,
 )
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
 

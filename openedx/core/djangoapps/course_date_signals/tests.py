@@ -3,17 +3,17 @@ from datetime import timedelta
 from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
 
 from edx_toggles.toggles.testutils import override_waffle_flag
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
 from openedx.core.djangoapps.course_date_signals.handlers import (
     _gather_graded_items,
     _get_custom_pacing_children,
     _has_assignment_blocks,
-    extract_dates_from_course
+    extract_dates_from_course,
 )
 from openedx.core.djangoapps.course_date_signals.models import SelfPacedRelativeDatesConfig
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from . import utils
 

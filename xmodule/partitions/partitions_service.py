@@ -9,11 +9,12 @@ from typing import Dict
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey
+
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.dynamic_partitions_generators import DynamicPartitionGeneratorsPluginManager
-
 from xmodule.modulestore.django import modulestore
 from xmodule.partitions.partitions import get_partition_from_id
+
 from .partitions import Group
 
 User = get_user_model()

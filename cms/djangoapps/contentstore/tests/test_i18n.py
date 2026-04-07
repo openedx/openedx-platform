@@ -5,15 +5,14 @@ import gettext
 from unittest import mock
 
 from django.utils import translation
-
 from django.utils.translation import get_language
 from xblock.core import XBlock
-from xmodule.modulestore.django import XBlockI18nService
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.tests.test_export import PureXBlock
 
 from cms.djangoapps.contentstore.views.preview import _prepare_runtime_for_preview
+from xmodule.modulestore.django import XBlockI18nService
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.tests.test_export import PureXBlock
 
 
 class FakeTranslations(XBlockI18nService):

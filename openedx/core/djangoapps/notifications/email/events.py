@@ -8,7 +8,6 @@ from eventtracking import tracker
 from common.djangoapps.track import segment
 from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_APPS
 
-
 EMAIL_DIGEST_SENT = "edx.notifications.email_digest"
 
 

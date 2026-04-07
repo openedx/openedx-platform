@@ -3,8 +3,8 @@ Tests for `generate_and_store_new_apple_ids` management command
 """
 
 import json
-
 from unittest import mock
+
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase

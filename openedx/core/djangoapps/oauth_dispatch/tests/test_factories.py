@@ -4,8 +4,8 @@
 from django.test import TestCase
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 
-from openedx.core.djangoapps.oauth_dispatch.tests import factories
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.oauth_dispatch.tests import factories
 
 
 class TestClientFactory(TestCase):

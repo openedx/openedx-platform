@@ -2,17 +2,13 @@
 Tests for the pull_xblock_translations management command.
 """
 
-from path import Path
 from unittest.mock import patch
 
 from django.core.management import call_command
-
 from done import DoneXBlock
+from path import Path
 
-from xmodule.modulestore.api import (
-    get_python_locale_root,
-    get_javascript_i18n_file_path,
-)
+from xmodule.modulestore.api import get_javascript_i18n_file_path, get_python_locale_root
 from xmodule.modulestore.tests.conftest import tmp_translations_dir
 
 

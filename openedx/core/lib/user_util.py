@@ -1,7 +1,6 @@
 """Main module."""
 import hashlib
 
-
 RETIRED_USERNAME_DEFAULT_FMT = 'retired_username_{}'
 RETIRED_EMAIL_DEFAULT_FMT = 'retired_email_{}@retired.edx.org'
 RETIRED_EXTERNAL_KEY_DEFAULT_FMT = 'retired_external_key_{}'

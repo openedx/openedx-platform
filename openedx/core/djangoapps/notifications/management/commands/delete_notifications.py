@@ -6,12 +6,8 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from openedx.core.djangoapps.notifications.base_notification import (
-    COURSE_NOTIFICATION_APPS,
-    COURSE_NOTIFICATION_TYPES
-)
+from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES
 from openedx.core.djangoapps.notifications.tasks import delete_notifications
-
 
 logger = logging.getLogger(__name__)
 

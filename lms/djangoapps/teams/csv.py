@@ -14,7 +14,7 @@ from lms.djangoapps.teams.api import (
     ORGANIZATION_PROTECTED_MODES,
     OrganizationProtectionStatus,
     user_organization_protection_status,
-    user_protection_status_matches_team
+    user_protection_status_matches_team,
 )
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
 

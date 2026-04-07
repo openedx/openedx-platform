@@ -93,7 +93,7 @@ def check_catalog_integration_and_get_user(error_message_field):
             return None, catalog_integration
         return user, catalog_integration
     else:
-        logger.error(
+        logger.info(
             "Unable to retrieve details about {field} because Catalog Integration is not enabled".format(
                 field=error_message_field,
             )

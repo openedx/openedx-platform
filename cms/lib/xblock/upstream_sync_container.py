@@ -13,6 +13,7 @@ from opaque_keys.edx.locator import LibraryContainerLocator
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_libraries import api as lib_api
+
 from .upstream_sync import UpstreamLink
 
 if t.TYPE_CHECKING:
@@ -131,6 +132,7 @@ def _update_tags(*, upstream: lib_api.ContainerMetadata, downstream: XBlock) -> 
     Update tags from `upstream` to `downstream`
     """
     from openedx.core.djangoapps.content_tagging.api import copy_tags_as_read_only
+
     # For any block synced with an upstream, copy the tags as read_only
     # This keeps tags added locally.
     copy_tags_as_read_only(

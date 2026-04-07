@@ -19,8 +19,8 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 
 import xmodule.graders as xmgraders
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
-from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.api import get_certificates_by_course_and_status
+from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.grades.api import context as grades_context
 from lms.djangoapps.program_enrollments.api import fetch_program_enrollments_by_students

@@ -1,8 +1,8 @@
 """Signal handlers for writing course dates into edx_when."""
 
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 from django.dispatch import receiver
 from edx_when.api import FIELDS_TO_EXTRACT, set_dates_for_course

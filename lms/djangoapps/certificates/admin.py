@@ -14,8 +14,8 @@ from organizations.api import get_organizations
 
 from lms.djangoapps.certificates.models import (
     CertificateDateOverride,
-    CertificateGenerationConfiguration,
     CertificateGenerationCommandConfiguration,
+    CertificateGenerationConfiguration,
     CertificateGenerationCourseSetting,
     CertificateHtmlViewConfiguration,
     CertificateTemplate,

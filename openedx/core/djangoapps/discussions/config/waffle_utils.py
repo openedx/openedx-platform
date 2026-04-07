@@ -4,7 +4,7 @@ Utils methods for Discussion app waffle flags.
 
 from openedx.core.djangoapps.discussions.config.waffle import (
     ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
-    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
+    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG,
 )
 
 

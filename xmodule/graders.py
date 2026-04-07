@@ -14,7 +14,6 @@ from django.utils.translation import gettext_lazy as _
 
 from xmodule.util.misc import get_short_labeler
 
-
 log = logging.getLogger("edx.courseware")
 
 

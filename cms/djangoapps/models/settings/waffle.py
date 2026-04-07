@@ -3,7 +3,6 @@ Togglable settings for Course Grading behavior
 """
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
-
 WAFFLE_NAMESPACE = 'grades'
 
 # edx/edx-platform feature

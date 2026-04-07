@@ -14,16 +14,17 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from pyquery import PyQuery as pq
 from pytz import UTC
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import AdminFactory, CourseAccessRoleFactory, CourseEnrollmentFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import (
+    AdminFactory,
+    CourseAccessRoleFactory,
+    CourseEnrollmentFactory,
+    StaffFactory,
+    UserFactory,
+)
 from common.test.utils import XssTestMixin
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.courseware.masquerade import CourseMasquerade
@@ -36,9 +37,12 @@ from lms.djangoapps.instructor.views.gradebook_api import calculate_page_info
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle import (
     ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
-    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
+    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG,
 )
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 
 def intercept_renderer(path, context):

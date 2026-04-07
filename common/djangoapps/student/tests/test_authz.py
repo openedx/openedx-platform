@@ -11,21 +11,21 @@ from django.core.exceptions import PermissionDenied
 from django.test import TestCase, override_settings
 from opaque_keys.edx.locator import CourseLocator
 
-from common.djangoapps.student.models.user import CourseAccessRole
 from common.djangoapps.student.auth import (
     add_users,
     has_studio_read_access,
     has_studio_write_access,
     remove_users,
     update_org_role,
-    user_has_role
+    user_has_role,
 )
+from common.djangoapps.student.models.user import CourseAccessRole
 from common.djangoapps.student.roles import (
     CourseCreatorRole,
     CourseInstructorRole,
     CourseLimitedStaffRole,
     CourseStaffRole,
-    OrgContentCreatorRole
+    OrgContentCreatorRole,
 )
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 

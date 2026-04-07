@@ -3,27 +3,28 @@ Test cases for cache_programs command.
 """
 
 import json
-import pytest
+
 import httpretty
+import pytest
 from django.core.cache import cache
 from django.core.management import call_command
 
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.catalog.cache import (
     COURSE_PROGRAMS_CACHE_KEY_TPL,
-    PROGRAMS_BY_ORGANIZATION_CACHE_KEY_TPL,
     PATHWAY_CACHE_KEY_TPL,
     PROGRAM_CACHE_KEY_TPL,
+    PROGRAMS_BY_ORGANIZATION_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_SLUG_CACHE_KEY_TPL,
     SITE_PATHWAY_IDS_CACHE_KEY_TPL,
-    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
+    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
 )
-from openedx.core.djangoapps.catalog.utils import normalize_program_type
 from openedx.core.djangoapps.catalog.tests.factories import OrganizationFactory, PathwayFactory, ProgramFactory
 from openedx.core.djangoapps.catalog.tests.mixins import CatalogIntegrationMixin
+from openedx.core.djangoapps.catalog.utils import normalize_program_type
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @skip_unless_lms

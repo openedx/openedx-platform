@@ -4,8 +4,8 @@ Django model to store the "course index" data
 from bson.objectid import ObjectId
 from django.contrib.auth import get_user_model
 from django.db import models
-from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from opaque_keys.edx.django.models import LearningContextKeyField
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from simple_history.models import HistoricalRecords
 
 from xmodule.modulestore import ModuleStoreEnum

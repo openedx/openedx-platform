@@ -8,16 +8,15 @@ to the templates without having to append every view file.
 import string
 
 from django.utils.translation import get_language
+from edx_django_utils.cache import TieredCache
 from pytz import timezone
 from pytz.exceptions import UnknownTimeZoneError
 
-from edx_django_utils.cache import TieredCache
 from lms.djangoapps.courseware.models import LastSeenCoursewareTimezone
 from openedx.core.djangoapps.site_configuration.helpers import get_value
 from openedx.core.djangoapps.user_api.errors import UserAPIInternalError, UserNotFound
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference, get_user_preferences
 from openedx.core.lib.cache_utils import get_cache
-
 
 RETRIEVABLE_PREFERENCES = {
     'user_timezone': 'time_zone',

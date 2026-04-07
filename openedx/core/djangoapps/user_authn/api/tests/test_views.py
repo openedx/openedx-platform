@@ -1,15 +1,16 @@
 """
 Logistration API View Tests
 """
-import ddt
 import socket
+from unittest.mock import patch
+from urllib.parse import urlencode
+
+import ddt
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from unittest.mock import patch
-from urllib.parse import urlencode
 
 from common.djangoapps.student.models import Registration
 from common.djangoapps.student.tests.factories import UserFactory

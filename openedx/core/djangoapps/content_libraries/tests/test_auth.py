@@ -5,10 +5,8 @@ Unit tests for Content Libraries authentication module.
 
 from django.test import TestCase
 
-
-from ..models import LtiProfile
-from ..models import get_user_model
 from ..auth import LtiAuthenticationBackend
+from ..models import LtiProfile, get_user_model
 
 
 class LtiAuthenticationBackendTest(TestCase):

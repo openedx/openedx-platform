@@ -5,10 +5,10 @@ Tests for course access
 
 import datetime
 import itertools
-
 from unittest import mock
-import pytest
+
 import ddt
+import pytest
 import pytz
 from completion.models import BlockCompletion
 from completion.test_utils import CompletionWaffleTestMixin
@@ -19,13 +19,9 @@ from django.test.utils import override_settings
 from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import _get_modulestore_branch_setting, modulestore
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, ToyCourseFactory, BlockFactory, check_mongo_calls
-from xmodule.tests.xml import XModuleXmlImportTest
-from xmodule.tests.xml import factories as xml
 
+from common.djangoapps.student.tests.factories import UserFactory
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courses import (
     course_open_for_self_enrollment,
     get_cms_block_link,
@@ -37,14 +33,19 @@ from lms.djangoapps.courseware.courses import (
     get_course_overview_with_access,
     get_course_with_access,
     get_courses,
-    get_current_child
+    get_current_child,
 )
-from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
+from lms.djangoapps.courseware.model_data import FieldDataCache
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.courses import course_image_url
-from common.djangoapps.student.tests.factories import UserFactory
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import _get_modulestore_branch_setting, modulestore
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory, check_mongo_calls
+from xmodule.tests.xml import XModuleXmlImportTest
+from xmodule.tests.xml import factories as xml
 
 CMS_BASE_TEST = 'testcms'
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
@@ -86,6 +87,23 @@ class CoursesTest(ModuleStoreTestCase):
         assert str(error.value) == 'Course not found.'
         assert error.value.access_response.error_code == 'not_visible_to_user'
         assert not error.value.access_response.has_access
+
+    @ddt.data(GET_COURSE_WITH_ACCESS, GET_COURSE_OVERVIEW_WITH_ACCESS)
+    def test_get_course_func_with_catalog_visibility_error(self, course_access_func_name):
+        """
+        Test that accessing a course with catalog_visibility='none' via
+        'see_about_page' action raises CourseAccessRedirect with a
+        CatalogVisibilityError, not a generic CoursewareAccessException.
+        """
+        course_access_func = self.COURSE_ACCESS_FUNCS[course_access_func_name]
+        user = UserFactory.create()
+        course = CourseFactory.create(catalog_visibility='none', emit_signals=True)
+
+        with pytest.raises(CourseAccessRedirect) as error:
+            course_access_func(user, 'see_about_page', course.id)
+        assert error.value.access_error is not None
+        assert error.value.access_error.error_code == 'not_visible_in_catalog'
+        assert not error.value.access_error.has_access
 
     @ddt.data(
         (GET_COURSE_WITH_ACCESS, 1),

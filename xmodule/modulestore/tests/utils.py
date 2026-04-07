@@ -2,7 +2,7 @@
 Helper classes and methods for running modulestore tests without Django.
 """
 import os
-from contextlib import contextmanager, ExitStack
+from contextlib import ExitStack, contextmanager
 from importlib import import_module
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -17,7 +17,7 @@ from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.mongo.base import ModuleStoreEnum
 from xmodule.modulestore.mongo.draft import DraftModuleStore
 from xmodule.modulestore.split_mongo.split_draft import DraftVersioningModuleStore
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED
+from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory
 from xmodule.modulestore.tests.mongo_connection import MONGO_HOST, MONGO_PORT_NUM
 from xmodule.modulestore.xml import XMLModuleStore

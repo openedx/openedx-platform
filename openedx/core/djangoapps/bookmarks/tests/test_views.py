@@ -4,16 +4,16 @@ Tests for bookmark views.
 
 
 import json
-from urllib.parse import quote
 from unittest.mock import patch
+from urllib.parse import quote
 
 import ddt
 from django.conf import settings
 from django.urls import reverse
 from rest_framework.test import APIClient
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 
 from .test_api import BookmarkApiEventTestMixin
 from .test_models import BookmarksTestsBase

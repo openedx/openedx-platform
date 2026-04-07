@@ -7,8 +7,8 @@ import logging
 
 from django.core.management.base import BaseCommand, CommandError
 
+from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig, SAMLConfiguration
 
 
 class Command(BaseCommand):

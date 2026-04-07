@@ -12,14 +12,15 @@ from urllib.parse import quote_plus, urlencode, urljoin, urlparse, urlunparse
 
 import nh3
 import requests
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q, prefetch_related_objects
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
-from django.http import JsonResponse, Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.template.context_processors import csrf
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -34,37 +35,25 @@ from django.views.generic import View
 from edx_django_utils.monitoring import set_custom_attribute, set_custom_attributes_for_course_key
 from edx_django_utils.plugins import pluggable_override
 from ipware.ip import get_client_ip
-from xblock.core import XBlock
-
-from lms.djangoapps.static_template_view.views import render_500
 from markupsafe import escape
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_filters.learning.filters import CourseAboutRenderStarted, RenderXBlockStarted
-from requests.exceptions import ConnectionError, Timeout  # pylint: disable=redefined-builtin
 from pytz import UTC
+from requests.exceptions import ConnectionError, Timeout  # pylint: disable=redefined-builtin
 from rest_framework import status
 from rest_framework.decorators import api_view, throttle_classes
+from rest_framework.fields import BooleanField
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
-from rest_framework.fields import BooleanField
 from web_fragments.fragment import Fragment
-from xmodule.course_block import (
-    COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE,
-    CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-)
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
-from xmodule.tabs import CourseTabList
-from xmodule.x_module import STUDENT_VIEW
+from xblock.core import XBlock
 
 from common.djangoapps.course_modes.models import CourseMode, get_course_prices
 from common.djangoapps.edxmako.shortcuts import marketing_link, render_to_response, render_to_string
 from common.djangoapps.student import auth
-from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.models import CourseEnrollment, UserTestGroup
+from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.util.cache import cache, cache_if_anonymous
 from common.djangoapps.util.course import course_location_from_key, get_link_for_about_page
 from common.djangoapps.util.db import outer_atomic
@@ -90,7 +79,7 @@ from lms.djangoapps.courseware.courses import (
     get_permission_for_course_about,
     get_studio_url,
     sort_by_announcement,
-    sort_by_start_date
+    sort_by_start_date,
 )
 from lms.djangoapps.courseware.date_summary import verified_upgrade_deadline_link
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect, Redirect
@@ -98,35 +87,32 @@ from lms.djangoapps.courseware.masquerade import is_masquerading_as_specific_stu
 from lms.djangoapps.courseware.model_data import FieldDataCache
 from lms.djangoapps.courseware.models import BaseStudentModuleHistory, StudentModule
 from lms.djangoapps.courseware.permissions import MASQUERADE_AS_STUDENT, VIEW_COURSE_HOME, VIEW_COURSEWARE
-from lms.djangoapps.courseware.toggles import (
-    course_is_invitation_only,
-    courseware_mfe_search_is_enabled,
-)
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
+from lms.djangoapps.courseware.toggles import course_is_invitation_only, courseware_mfe_search_is_enabled
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
 from lms.djangoapps.courseware.utils import (
     _use_new_financial_assistance_flow,
     create_financial_assistance_application,
-    is_eligible_for_financial_aid
+    is_eligible_for_financial_aid,
 )
 from lms.djangoapps.edxnotes.helpers import is_feature_enabled
 from lms.djangoapps.experiments.utils import get_experiment_user_metadata_context
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor.enrollment import uses_shib
 from lms.djangoapps.instructor.views.api import require_global_staff
+from lms.djangoapps.static_template_view.views import render_500
 from lms.djangoapps.survey import views as survey_views
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.catalog.utils import (
     get_course_data,
     get_course_uuid_for_course,
     get_programs,
-    get_programs_with_type
+    get_programs_with_type,
 )
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.api import (
     get_credit_requirement_status,
     is_credit_course,
-    is_user_eligible_for_credit
+    is_user_eligible_for_credit,
 )
 from openedx.core.djangoapps.enrollments.api import add_enrollment
 from openedx.core.djangoapps.enrollments.permissions import ENROLL_IN_COURSE
@@ -135,8 +121,8 @@ from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.core.djangoapps.programs.utils import ProgramMarketingDataExtender
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
-from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.djangoapps.video_config.sharing import is_public_sharing_enabled
+from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.djangoapps.zendesk_proxy.utils import create_zendesk_ticket
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.courses import get_course_by_id
@@ -147,18 +133,25 @@ from openedx.features.course_experience import course_home_url
 from openedx.features.course_experience.url_helpers import (
     get_courseware_url,
     get_learning_mfe_home_url,
-    is_request_from_learning_mfe
+    is_request_from_learning_mfe,
 )
 from openedx.features.course_experience.utils import dates_banner_should_display
 from openedx.features.course_experience.waffle import ENABLE_COURSE_ABOUT_SIDEBAR_HTML
 from openedx.features.enterprise_support.api import data_sharing_consent_required
+from xmodule.course_block import (
+    CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
+    COURSE_VISIBILITY_PUBLIC,
+    COURSE_VISIBILITY_PUBLIC_OUTLINE,
+)
+from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError, NoPathToItem
+from xmodule.tabs import CourseTabList
+from xmodule.x_module import STUDENT_VIEW
 
 from ..block_render import get_block, get_block_by_usage_id, get_block_for_descriptor
 from ..tabs import _get_dynamic_tabs
-from ..toggles import (
-    COURSEWARE_OPTIMIZED_RENDER_XBLOCK,
-    ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER,
-)
+from ..toggles import COURSEWARE_OPTIMIZED_RENDER_XBLOCK, ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER
 
 log = logging.getLogger("edx.courseware")
 

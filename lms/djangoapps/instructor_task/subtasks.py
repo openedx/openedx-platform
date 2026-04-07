@@ -15,7 +15,6 @@ from celery.states import READY_STATES, RETRY, SUCCESS
 from django.core.cache import cache
 from django.db import DatabaseError, transaction
 
-
 from common.djangoapps.util.db import outer_atomic
 
 from .exceptions import DuplicateTaskException

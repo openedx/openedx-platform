@@ -7,8 +7,8 @@ In this way, courses can be served up via either SplitMongoModuleStore or MongoM
 import functools
 import itertools
 import logging
-from datetime import datetime, timezone
 from contextlib import contextmanager
+from datetime import datetime, timezone
 
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
@@ -19,7 +19,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_CREATED,
     XBLOCK_DELETED,
     XBLOCK_PUBLISHED,
-    XBLOCK_UPDATED
+    XBLOCK_UPDATED,
 )
 
 from xmodule.assetstore import AssetMetadata

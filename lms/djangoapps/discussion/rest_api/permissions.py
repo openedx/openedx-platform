@@ -7,19 +7,15 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions
 
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment
-from common.djangoapps.student.roles import (
-    CourseInstructorRole,
-    CourseStaffRole,
-    GlobalStaff,
-)
-from lms.djangoapps.discussion.django_comment_client.utils import (
-    get_user_role_names,
-    has_discussion_privileges,
-)
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
+from lms.djangoapps.discussion.django_comment_client.utils import get_user_role_names, has_discussion_privileges
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.django_comment_common.models import (
-    Role, FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_MODERATOR
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_MODERATOR,
+    Role,
 )
 
 

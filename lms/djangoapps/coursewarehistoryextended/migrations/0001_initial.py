@@ -1,9 +1,11 @@
 import datetime
 
-from django.db import migrations, models
 import django.db.models.deletion
-from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
 from django.conf import settings
+from django.db import migrations, models
+
+from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
+
 
 def bump_pk_start(apps, schema_editor):
     if not schema_editor.connection.alias == 'student_module_history':

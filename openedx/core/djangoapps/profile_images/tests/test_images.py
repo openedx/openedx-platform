@@ -1,30 +1,30 @@
 """
 Test cases for image processing functions in the profile image package.
 """
+import os  # lint-amnesty, pylint: disable=wrong-import-order
 from contextlib import closing
+from itertools import product  # lint-amnesty, pylint: disable=wrong-import-order
+from tempfile import NamedTemporaryFile  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest import mock
 
+import ddt
+import piexif
 import pytest
-from itertools import product  # lint-amnesty, pylint: disable=wrong-import-order
-import os  # lint-amnesty, pylint: disable=wrong-import-order
-from tempfile import NamedTemporaryFile  # lint-amnesty, pylint: disable=wrong-import-order
-
 from django.core.files.uploadedfile import UploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
-import ddt
-import piexif
 from PIL import Image
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+
 from ..exceptions import ImageValidationError
 from ..images import (
+    _get_exif_orientation,
+    _get_valid_file_types,
+    _update_exif_orientation,
     create_profile_images,
     remove_profile_images,
     validate_uploaded_image,
-    _get_exif_orientation,
-    _get_valid_file_types,
-    _update_exif_orientation
 )
 from .helpers import make_image_file, make_uploaded_file
 

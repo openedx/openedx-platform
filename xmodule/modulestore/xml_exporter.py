@@ -13,11 +13,8 @@ from edx_django_utils.monitoring import set_custom_attribute
 from fs.osfs import OSFS
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from xblock.fields import Reference, ReferenceList, ReferenceValueDict, Scope
-from openedx.core.djangoapps.content_tagging.api import (
-    export_tags_in_csv_file,
-    get_object_tag_counts
-)
 
+from openedx.core.djangoapps.content_tagging.api import export_tags_in_csv_file, get_object_tag_counts
 from xmodule.assetstore import AssetMetadata
 from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import NotFoundError

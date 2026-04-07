@@ -5,8 +5,9 @@ Grading tests
 
 import unittest
 from datetime import datetime
-import pytest
+
 import ddt
+import pytest
 
 from lms.djangoapps.grades.scores import compute_percent
 from xmodule import graders

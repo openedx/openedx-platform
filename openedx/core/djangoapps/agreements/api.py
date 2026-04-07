@@ -19,8 +19,8 @@ from openedx.core.djangoapps.agreements.models import (
     IntegritySignature,
     LTIPIISignature,
     LTIPIITool,
-    UserAgreementRecord,
     UserAgreement,
+    UserAgreementRecord,
 )
 
 log = logging.getLogger(__name__)

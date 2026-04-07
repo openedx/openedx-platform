@@ -12,21 +12,22 @@ from django.test.client import RequestFactory
 from opaque_keys.edx.asides import AsideUsageKeyV1, AsideUsageKeyV2
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.modulestore.tests.test_asides import AsideTestType
 
 from openedx.core.lib.url_utils import quote_slashes
-from openedx.core.lib.xblock_utils import get_css_dependencies, get_js_dependencies
 from openedx.core.lib.xblock_utils import (
     get_aside_from_xblock,
+    get_css_dependencies,
+    get_js_dependencies,
     is_xblock_aside,
     request_token,
     sanitize_html_id,
     wrap_fragment,
-    wrap_xblock
+    wrap_xblock,
 )
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.modulestore.tests.test_asides import AsideTestType
 
 
 @ddt.ddt

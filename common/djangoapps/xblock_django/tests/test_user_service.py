@@ -7,13 +7,11 @@ import pytest
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 
-from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
-from openedx.core.djangoapps.external_user_ids.models import ExternalIdType
 from common.djangoapps.student.models import anonymous_id_for_user
 from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
 from common.djangoapps.xblock_django.user_service import (
-    ATTR_KEY_IS_AUTHENTICATED,
     ATTR_KEY_ANONYMOUS_USER_ID,
+    ATTR_KEY_IS_AUTHENTICATED,
     ATTR_KEY_REQUEST_COUNTRY_CODE,
     ATTR_KEY_USER_ID,
     ATTR_KEY_USER_IS_BETA_TESTER,
@@ -23,8 +21,10 @@ from common.djangoapps.xblock_django.user_service import (
     ATTR_KEY_USER_ROLE,
     ATTR_KEY_USERNAME,
     USER_PREFERENCES_WHITE_LIST,
-    DjangoXBlockUserService
+    DjangoXBlockUserService,
 )
+from openedx.core.djangoapps.external_user_ids.models import ExternalIdType
+from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 
 
 @ddt.ddt

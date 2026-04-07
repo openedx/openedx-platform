@@ -12,7 +12,7 @@ from common.djangoapps.track import contexts
 from lms.djangoapps.courseware.models import StudentModule
 from openedx.core.djangoapps.content.block_structure.transformer import (
     BlockStructureTransformer,
-    FilteringTransformerMixin
+    FilteringTransformerMixin,
 )
 from xmodule.library_content_block import LegacyLibraryContentBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

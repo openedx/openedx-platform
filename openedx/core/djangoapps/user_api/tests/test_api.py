@@ -7,11 +7,7 @@ from django.test import TestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.api import get_retired_user_ids
-from openedx.core.djangoapps.user_api.models import (
-    RetirementState,
-    UserRetirementRequest,
-    UserRetirementStatus,
-)
+from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementRequest, UserRetirementStatus
 from openedx.core.djangoapps.user_api.tests.factories import (
     RetirementStateFactory,
     UserRetirementRequestFactory,

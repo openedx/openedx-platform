@@ -4,8 +4,9 @@ Management command for enrolling a user into a course via the enrollment api
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand
-from openedx.core.djangoapps.enrollments.data import CourseEnrollmentExistsError
+
 from openedx.core.djangoapps.enrollments.api import add_enrollment
+from openedx.core.djangoapps.enrollments.data import CourseEnrollmentExistsError
 
 
 class Command(BaseCommand):

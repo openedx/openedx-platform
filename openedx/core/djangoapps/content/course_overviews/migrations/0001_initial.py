@@ -1,6 +1,6 @@
-from django.db import migrations, models
 import django.utils.timezone
 import model_utils.fields
+from django.db import migrations, models
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 
 

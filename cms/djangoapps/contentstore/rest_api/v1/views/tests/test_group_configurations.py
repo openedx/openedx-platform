@@ -2,21 +2,16 @@
 Unit tests for the course's setting group configuration.
 """
 from django.urls import reverse
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
-from cms.djangoapps.contentstore.course_group_config import (
-    CONTENT_GROUP_CONFIGURATION_NAME,
-)
+from cms.djangoapps.contentstore.course_group_config import CONTENT_GROUP_CONFIGURATION_NAME
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from xmodule.partitions.partitions import (
-    Group,
-    UserPartition,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ...mixins import PermissionAccessMixin
 

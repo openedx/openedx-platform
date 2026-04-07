@@ -20,14 +20,15 @@ from common.djangoapps.util.course import get_link_for_about_page
 from lms.djangoapps.course_api.blocks.tests.test_views import TestBlocksInCourseView
 from lms.djangoapps.mobile_api.course_info.views import BlocksInfoInCourseView
 from lms.djangoapps.mobile_api.testutils import MobileAPITestCase, MobileAuthTestMixin, MobileCourseAccessTestMixin
-from lms.djangoapps.mobile_api.utils import API_V1, API_V05
+from lms.djangoapps.mobile_api.utils import API_V05, API_V1
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_experience import ENABLE_COURSE_GOALS
 from xmodule.html_block import CourseInfoBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
 

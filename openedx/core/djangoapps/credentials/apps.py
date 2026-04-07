@@ -44,4 +44,6 @@ class CredentialsConfig(AppConfig):
 
     def ready(self):
         # Register celery workers
-        from openedx.core.djangoapps.credentials.tasks.v1 import tasks  # lint-amnesty, pylint: disable=unused-import, unused-variable
+        from openedx.core.djangoapps.credentials.tasks.v1 import (  # lint-amnesty, pylint: disable=unused-import, unused-variable
+            tasks,
+        )

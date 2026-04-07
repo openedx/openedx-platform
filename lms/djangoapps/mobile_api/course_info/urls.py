@@ -11,7 +11,7 @@ from .views import (
     CourseEnrollmentDetailsView,
     CourseGoalsRecordUserActivity,
     CourseHandoutsList,
-    CourseUpdatesList
+    CourseUpdatesList,
 )
 
 urlpatterns = [

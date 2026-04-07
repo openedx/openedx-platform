@@ -7,11 +7,10 @@ import logging
 
 from django.conf import settings
 from django.core.management import BaseCommand, CommandError
-
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx.core.djangoapps.content_libraries import api as contentlib_api
 
+from openedx.core.djangoapps.content_libraries import api as contentlib_api
 
 log = logging.getLogger(__name__)
 

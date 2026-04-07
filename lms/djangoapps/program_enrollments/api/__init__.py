@@ -30,7 +30,7 @@ from .reading import (
     get_saml_providers_for_organization,
     get_users_by_external_keys,
     get_users_by_external_keys_and_org_key,
-    is_course_staff_enrollment
+    is_course_staff_enrollment,
 )
 from .writing import (
     change_program_course_enrollment_status,
@@ -39,5 +39,5 @@ from .writing import (
     create_program_enrollment,
     enroll_in_masters_track,
     write_program_course_enrollments,
-    write_program_enrollments
+    write_program_enrollments,
 )

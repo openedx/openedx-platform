@@ -1,9 +1,9 @@
 """
 Module to put all pytest hooks that modify pytest behaviour
 """
-import os
 import io  # lint-amnesty, pylint: disable=unused-import
 import json
+import os
 
 
 def pytest_json_modifyreport(json_report):

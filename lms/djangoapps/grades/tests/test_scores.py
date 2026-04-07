@@ -5,9 +5,9 @@ Tests for grades.scores module.
 # pylint: disable=protected-access
 import itertools
 from collections import namedtuple
-import pytest
 
 import ddt
+import pytest
 from django.test import TestCase
 from django.utils.timezone import now
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator

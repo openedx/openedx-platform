@@ -43,29 +43,30 @@ Conventions
 import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
-from path import Path as path
 from django.utils.translation import gettext_lazy as _
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
 from enterprise.constants import (
+    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
     ENTERPRISE_ADMIN_ROLE,
-    ENTERPRISE_LEARNER_ROLE,
     ENTERPRISE_CATALOG_ADMIN_ROLE,
     ENTERPRISE_DASHBOARD_ADMIN_ROLE,
     ENTERPRISE_ENROLLMENT_API_ADMIN_ROLE,
     ENTERPRISE_FULFILLMENT_OPERATOR_ROLE,
+    ENTERPRISE_LEARNER_ROLE,
+    ENTERPRISE_OPERATOR_ROLE,
     ENTERPRISE_REPORTING_CONFIG_ADMIN_ROLE,
     ENTERPRISE_SSO_ORCHESTRATOR_OPERATOR_ROLE,
-    ENTERPRISE_OPERATOR_ROLE,
-    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
     PROVISIONING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
-    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
+    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
 )
 from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
+from path import Path as path
 
+from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import Derived
-from openedx.envs.common import *  # pylint: disable=wildcard-import
-
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.common import *  # pylint: disable=wildcard-import
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -2940,6 +2941,7 @@ ENFORCE_SESSION_EMAIL_MATCH = False
 # Note that all settings are actually defined by the plugin
 # pylint: disable=wrong-import-position
 from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings
+
 ACE_ROUTING_KEY = ace_common_settings.ACE_ROUTING_KEY
 
 ############### Settings for facebook ##############################
@@ -2953,8 +2955,6 @@ USER_STATE_BATCH_SIZE = 5000
 
 ############## Plugin Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
-from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
 

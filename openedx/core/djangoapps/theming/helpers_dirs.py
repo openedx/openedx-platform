@@ -5,9 +5,9 @@ as the discovery happens during the initial setup of Django settings.
 
 
 import os
+from functools import lru_cache
 
 from path import Path
-from functools import lru_cache
 
 
 def get_theme_base_dirs_from_settings(theme_base_dirs=None):

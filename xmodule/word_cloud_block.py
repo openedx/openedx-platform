@@ -6,8 +6,6 @@ If student does not yet answered - `num_inputs` numbers of text inputs.
 If student have answered - words he entered and cloud.
 """
 
-from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
-
 import json
 import logging
 import warnings
@@ -16,16 +14,12 @@ from django.conf import settings
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock
 from xblock.fields import Boolean, Dict, Integer, List, Scope, String
+from xblocks_contrib.word_cloud import WordCloudBlock as _ExtractedWordCloudBlock
 
 from xmodule.editing_block import EditingMixin
 from xmodule.raw_block import EmptyDataRawMixin
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 log = logging.getLogger(__name__)

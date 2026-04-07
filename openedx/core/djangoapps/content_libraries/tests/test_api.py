@@ -9,14 +9,12 @@ from unittest import mock
 
 from django.db import transaction
 from django.test import TestCase
-from user_tasks.models import UserTaskStatus
-
-from opaque_keys.edx.keys import (
-    CourseKey,
-    UsageKey,
-    UsageKeyV2,
-)
+from opaque_keys.edx.keys import CourseKey, UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.api.users import get_user_role_assignments_in_scope
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
+from openedx_content.models_api import Component, Container
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
@@ -35,12 +33,10 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
-from openedx_content.models_api import Component, Container
-from openedx_authz.api.users import get_user_role_assignments_in_scope
-from openedx_content import api as content_api
-from openedx_content import models_api as content_models
+from user_tasks.models import UserTaskStatus
 
 from common.djangoapps.student.tests.factories import UserFactory
+
 from .. import api
 from ..models import ContentLibrary
 from .base import ContentLibrariesRestApiTest

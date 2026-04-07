@@ -15,24 +15,23 @@ from collections import defaultdict, namedtuple
 from hashlib import sha1
 
 from django.apps import apps
-from django.db import models, IntegrityError, transaction
-from openedx_events.learning.data import CourseData, PersistentCourseGradeData
-from openedx_events.learning.signals import PERSISTENT_GRADE_SUMMARY_CHANGED
-
+from django.db import IntegrityError, models, transaction
 from django.utils.timezone import now
 from lazy import lazy
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_events.learning.data import CourseData, PersistentCourseGradeData
+from openedx_events.learning.signals import PERSISTENT_GRADE_SUMMARY_CHANGED
 from simple_history.models import HistoricalRecords
 
 from lms.djangoapps.courseware.fields import UnsignedBigIntAutoField
 from lms.djangoapps.grades import events  # lint-amnesty, pylint: disable=unused-import
-from openedx.core.lib.cache_utils import get_cache
 from lms.djangoapps.grades.signals.signals import (
     COURSE_GRADE_PASSED_FIRST_TIME,
-    COURSE_GRADE_PASSED_UPDATE_IN_LEARNER_PATHWAY
+    COURSE_GRADE_PASSED_UPDATE_IN_LEARNER_PATHWAY,
 )
+from openedx.core.lib.cache_utils import get_cache
 
 log = logging.getLogger(__name__)
 

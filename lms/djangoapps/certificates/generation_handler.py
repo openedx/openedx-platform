@@ -7,6 +7,7 @@ cannot be generated, a message is logged and no further action is taken.
 """
 
 import logging
+
 from django.conf import settings
 from openedx_filters.learning.filters import CertificateCreationRequested
 
@@ -14,11 +15,7 @@ from common.djangoapps.course_modes import api as modes_api
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.models import (
-    CertificateAllowlist,
-    CertificateInvalidation,
-    GeneratedCertificate
-)
+from lms.djangoapps.certificates.models import CertificateAllowlist, CertificateInvalidation, GeneratedCertificate
 from lms.djangoapps.certificates.tasks import CERTIFICATE_DELAY_SECONDS, generate_certificate
 from lms.djangoapps.certificates.utils import has_html_certificates_enabled
 from lms.djangoapps.grades.api import CourseGradeFactory

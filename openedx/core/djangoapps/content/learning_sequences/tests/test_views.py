@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 
 import ddt
 from opaque_keys.edx.keys import CourseKey
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole

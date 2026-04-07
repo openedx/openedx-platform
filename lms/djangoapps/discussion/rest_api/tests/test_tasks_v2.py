@@ -15,7 +15,7 @@ from lms.djangoapps.discussion.django_comment_client.tests.factories import Role
 from lms.djangoapps.discussion.rest_api.tasks import (
     send_response_endorsed_notifications,
     send_response_notifications,
-    send_thread_created_notification
+    send_thread_created_notification,
 )
 from lms.djangoapps.discussion.rest_api.tests.utils import ThreadMock, make_minimal_cs_thread
 from openedx.core.djangoapps.course_groups.models import CohortMembership, CourseCohortsSettings
@@ -26,7 +26,7 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    CourseDiscussionSettings
+    CourseDiscussionSettings,
 )
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

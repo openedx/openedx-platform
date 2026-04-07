@@ -12,10 +12,7 @@ import logging
 from django.core.management.base import BaseCommand
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.content.learning_sequences.api import (
-    get_course_keys_with_outlines,
-    key_supports_outlines,
-)
+from openedx.core.djangoapps.content.learning_sequences.api import get_course_keys_with_outlines, key_supports_outlines
 
 from ...tasks import update_outline_from_modulestore_task
 

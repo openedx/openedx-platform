@@ -25,7 +25,7 @@ from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_E
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerBrandingConfigurationFactory,
     EnterpriseCustomerFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 from openedx.features.enterprise_support.utils import (
     ENTERPRISE_HEADER_LINKS,
@@ -45,10 +45,15 @@ from openedx.features.enterprise_support.utils import (
     is_enterprise_learner,
     update_account_settings_context_for_enterprise,
     update_logistration_context_for_enterprise,
-    update_third_party_auth_context_for_enterprise
+    update_third_party_auth_context_for_enterprise,
 )
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 TEST_PASSWORD = 'test'
 

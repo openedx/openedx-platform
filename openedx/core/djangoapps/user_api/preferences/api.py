@@ -13,9 +13,9 @@ from django.utils.translation import gettext_noop
 from django_countries import countries
 from pytz import common_timezones, common_timezones_set, country_timezones
 
-from openedx.core.lib.time_zone_utils import get_display_time_zone
 from common.djangoapps.student.models import User, UserProfile
 from common.djangoapps.track import segment
+from openedx.core.lib.time_zone_utils import get_display_time_zone
 
 from ..errors import (  # lint-amnesty, pylint: disable=unused-import
     CountryCodeError,
@@ -24,7 +24,7 @@ from ..errors import (  # lint-amnesty, pylint: disable=unused-import
     UserAPIInternalError,
     UserAPIRequestError,
     UserNotAuthorized,
-    UserNotFound
+    UserNotFound,
 )
 from ..helpers import intercept_errors, serializer_is_dirty
 from ..models import UserOrgTag, UserPreference

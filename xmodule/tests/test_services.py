@@ -13,10 +13,10 @@ from django.test.utils import override_settings
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from xblock.fields import ScopeIds
 from xblock.runtime import Mixologist
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.teams_config import TeamsConfig
-from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 from xmodule.services import ConfigurationService, SettingsService, TeamsConfigurationService, XQueueService
 
 

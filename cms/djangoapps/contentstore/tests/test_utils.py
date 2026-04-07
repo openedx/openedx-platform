@@ -32,10 +32,7 @@ from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: di
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (
-    BlockFactory,
-    CourseFactory,
-)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.partitions.partitions import Group, UserPartition
 
 

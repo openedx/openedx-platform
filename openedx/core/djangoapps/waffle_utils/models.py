@@ -2,12 +2,12 @@
 Models for configuring waffle utils.
 """
 
-from django.db.models import CharField, TextField, Index
+from config_models.models import ConfigurationModel
+from django.db.models import CharField, Index, TextField
 from django.utils.translation import gettext_lazy as _
 from model_utils import Choices
 from opaque_keys.edx.django.models import CourseKeyField
 
-from config_models.models import ConfigurationModel
 from openedx.core.lib.cache_utils import request_cached
 
 

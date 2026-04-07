@@ -5,25 +5,27 @@ import re
 from unittest import mock
 
 import ddt
-from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID, ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID
 from django.test.client import Client, RequestFactory
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock, XBlockAside
 
-from xmodule.contentstore.django import contentstore
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase, upload_file_to_course,
-)
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.modulestore.tests.test_asides import AsideTestType
-from cms.djangoapps.contentstore.utils import reverse_usage_url
 from cms.djangoapps.contentstore.toggles import INDIVIDUALIZE_ANONYMOUS_USER_ID
+from cms.djangoapps.contentstore.utils import reverse_usage_url
 from cms.djangoapps.xblock_config.models import StudioConfig
 from common.djangoapps import static_replace
 from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID, ATTR_KEY_DEPRECATED_ANONYMOUS_USER_ID
+from xmodule.contentstore.django import contentstore
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import (
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+    upload_file_to_course,
+)
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.modulestore.tests.test_asides import AsideTestType
 
 from ..preview import _prepare_runtime_for_preview, get_preview_fragment
 

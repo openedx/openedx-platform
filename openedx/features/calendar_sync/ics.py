@@ -1,8 +1,8 @@
 """ Generate .ics files from a user schedule """
 
 from datetime import datetime, timedelta
-
 from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.utils.translation import gettext as _
 from icalendar import Calendar, Event, vCalAddress, vText

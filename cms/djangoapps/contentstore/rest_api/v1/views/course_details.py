@@ -2,18 +2,19 @@
 
 import edx_api_doc_tools as apidocs
 from django.core.exceptions import ValidationError
-from common.djangoapps.util.json_request import JsonResponseBadRequest
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from common.djangoapps.student.auth import has_studio_read_access
+from common.djangoapps.util.json_request import JsonResponseBadRequest
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
-from ..serializers import CourseDetailsSerializer
 from ....utils import update_course_details
+from ..serializers import CourseDetailsSerializer
 
 
 @view_auth_classes(is_authenticated=True)

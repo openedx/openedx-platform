@@ -29,10 +29,12 @@ from openedx.core.djangoapps.django_comment_common.signals import (
     thread_created,
     thread_deleted,
     thread_edited,
-    thread_voted
+    thread_voted,
 )
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 COURSE_KEY1 = CourseKey.from_string('edx/history/1')

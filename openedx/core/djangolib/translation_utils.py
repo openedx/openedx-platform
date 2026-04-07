@@ -3,8 +3,8 @@ i18n utility functions
 """
 
 
-from django.utils.translation import override
 from django.utils.formats import dateformat, get_format
+from django.utils.translation import override
 
 
 def translate_date(date, language, date_format='DATE_FORMAT'):

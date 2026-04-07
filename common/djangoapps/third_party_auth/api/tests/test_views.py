@@ -20,7 +20,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.api.permissions import (
     JwtHasScope,
     JwtHasTpaProviderFilterForRequestedProvider,
-    JwtRestrictedApplication
+    JwtRestrictedApplication,
 )
 from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms

@@ -2,11 +2,11 @@
 Tests for experimentation views
 """
 
+from datetime import timedelta
 from unittest.mock import patch
 
-import six.moves.urllib.parse
-from datetime import timedelta
 import django
+import six.moves.urllib.parse
 from django.conf import settings
 from django.core.handlers.wsgi import WSGIRequest
 from django.test.utils import override_settings
@@ -15,13 +15,13 @@ from django.utils.timezone import now
 from rest_framework.test import APITestCase
 
 from common.djangoapps.student.tests.factories import UserFactory
+from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.course_blocks.transformers.tests.helpers import ModuleStoreTestCase
 from lms.djangoapps.experiments.factories import ExperimentDataFactory, ExperimentKeyValueFactory
 from lms.djangoapps.experiments.models import ExperimentData  # lint-amnesty, pylint: disable=unused-import
 from lms.djangoapps.experiments.serializers import ExperimentDataSerializer
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from common.test.utils import assert_dict_contains_subset
 
 CROSS_DOMAIN_REFERER = 'https://ecommerce.edx.org'
 

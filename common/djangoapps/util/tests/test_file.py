@@ -9,8 +9,9 @@ from io import StringIO
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
-import pytest
 import ddt
+import pytest
+from ccx_keys.locator import CCXLocator
 from django.core import exceptions
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpRequest
@@ -19,15 +20,13 @@ from django.test.utils import override_settings
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locations import CourseLocator
 
-from ccx_keys.locator import CCXLocator
-
 import common.djangoapps.util.file
 from common.djangoapps.util.file import (
     FileValidationException,
     UniversalNewlineIterator,
     course_and_time_based_filename_generator,
     course_filename_prefix_generator,
-    store_uploaded_file
+    store_uploaded_file,
 )
 
 

@@ -11,9 +11,11 @@ scripts_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(scripts_dir, 'xsslint'))
 # pylint: disable=import-error,wrong-import-position
 from xsslint.linters import (
-    JavaScriptLinter, MakoTemplateLinter,
-    PythonLinter, UnderscoreTemplateLinter,
-    DjangoTemplateLinter
+    DjangoTemplateLinter,
+    JavaScriptLinter,
+    MakoTemplateLinter,
+    PythonLinter,
+    UnderscoreTemplateLinter,
 )
 
 # Define the directories that should be ignored by the script.

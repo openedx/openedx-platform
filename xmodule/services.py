@@ -11,24 +11,22 @@ from typing import TYPE_CHECKING
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.urls import reverse
-from eventtracking import tracker
 from edx_when.field_data import DateLookupFieldData
+from eventtracking import tracker
 from requests.auth import HTTPBasicAuth
 from xblock.reference.plugins import Service
 from xblock.runtime import KvsFieldData
+from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
 
 from common.djangoapps.track import contexts
-from lms.djangoapps.courseware.masquerade import is_masquerading_as_specific_student
-from xmodule.modulestore.django import modulestore
-
 from lms.djangoapps.courseware.field_overrides import OverrideFieldData
+from lms.djangoapps.courseware.masquerade import is_masquerading_as_specific_student
 from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
+from lms.djangoapps.grades.api import signals as grades_signals
 from lms.djangoapps.lms_xblock.field_data import LmsFieldData
 from lms.djangoapps.lms_xblock.models import XBlockAsidesConfig
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
-from xblocks_contrib.problem.capa.xqueue_interface import XQueueInterface
-
-from lms.djangoapps.grades.api import signals as grades_signals
+from xmodule.modulestore.django import modulestore
 
 if TYPE_CHECKING:
     from xmodule.capa_block import ProblemBlock

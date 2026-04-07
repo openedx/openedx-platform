@@ -8,8 +8,8 @@ from django import forms
 
 from openedx.core.djangoapps.video_config.models import (
     CourseHLSPlaybackEnabledFlag,
-    CourseYoutubeBlockedFlag,
     CourseVideoTranscriptEnabledFlag,
+    CourseYoutubeBlockedFlag,
 )
 from openedx.core.lib.courses import clean_course_id
 

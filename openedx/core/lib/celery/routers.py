@@ -8,7 +8,6 @@ import logging
 
 from django.conf import settings
 
-
 log = logging.getLogger(__name__)
 
 

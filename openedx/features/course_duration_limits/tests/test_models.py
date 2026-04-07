@@ -5,10 +5,10 @@ Tests of CourseDurationLimitConfig.
 import itertools
 from datetime import datetime, timedelta
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import ddt
 import pytest
-from zoneinfo import ZoneInfo
 from django.utils import timezone
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import CourseLocator

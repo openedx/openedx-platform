@@ -15,13 +15,13 @@ from openedx_events.learning.signals import (
     EXAM_ATTEMPT_REJECTED,
     EXAM_ATTEMPT_RESET,
     EXAM_ATTEMPT_SUBMITTED,
-    EXAM_ATTEMPT_VERIFIED
+    EXAM_ATTEMPT_VERIFIED,
 )
 
 from openedx.core.djangoapps.credit.api.eligibility import (
     is_credit_course,
     remove_credit_requirement_status,
-    set_credit_requirement_status
+    set_credit_requirement_status,
 )
 from openedx.core.djangoapps.signals.signals import COURSE_GRADE_CHANGED
 

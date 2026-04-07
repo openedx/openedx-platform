@@ -3,21 +3,20 @@ Tests for the public Python API functions of the Bulk Email app.
 """
 from testfixtures import LogCapture
 
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
-
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.tests.factories import InstructorFactory
 from lms.djangoapps.bulk_email.api import (
     create_course_email,
     determine_targets_for_course_email,
     get_course_email,
-    update_course_email
+    update_course_email,
 )
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
 from lms.djangoapps.bulk_email.models import CourseEmail
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
 from openedx.core.lib.html_to_text import html_to_text
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 LOG_PATH = "lms.djangoapps.bulk_email.api"
 

@@ -3,16 +3,17 @@ Tests for signals.py
 """
 
 from unittest.mock import patch
-from django.test.utils import override_settings
-from django.conf import settings
 
+from django.conf import settings
+from django.core.files.storage import storages
+from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
+from storages.backends.s3boto3 import S3Boto3Storage
+
+from common.djangoapps.util.storage import resolve_storage_backend
 from xmodule.modulestore.django import SignalHandler
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from common.djangoapps.util.storage import resolve_storage_backend
-from storages.backends.s3boto3 import S3Boto3Storage
-from django.core.files.storage import storages
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from .signals import export_course_metadata
 from .toggles import EXPORT_COURSE_METADATA_FLAG

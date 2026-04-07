@@ -16,7 +16,7 @@ from openedx.core.djangoapps.content.learning_sequences.data import (
     CourseSectionData,
     CourseVisibility,
     ExamData,
-    VisibilityData
+    VisibilityData,
 )
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

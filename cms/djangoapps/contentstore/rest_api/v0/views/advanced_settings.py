@@ -1,20 +1,21 @@
 """ API Views for course advanced settings """
 
-from django import forms
 import edx_api_doc_tools as apidocs
+from django import forms
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from xmodule.modulestore.django import modulestore
 
-from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from cms.djangoapps.contentstore.api.views.utils import get_bool_param
+from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.auth import check_course_advanced_settings_access
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from ..serializers import CourseAdvancedSettingsSerializer
+from xmodule.modulestore.django import modulestore
+
 from ....views.course import update_course_advanced_settings
+from ..serializers import CourseAdvancedSettingsSerializer
 
 
 @view_auth_classes(is_authenticated=True)

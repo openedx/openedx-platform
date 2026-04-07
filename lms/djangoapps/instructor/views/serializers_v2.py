@@ -22,9 +22,7 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
 )
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
-from lms.djangoapps.certificates.models import (
-    CertificateGenerationConfiguration
-)
+from lms.djangoapps.certificates.models import CertificateGenerationConfiguration
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
@@ -33,7 +31,7 @@ from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_d
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from xmodule.modulestore.django import modulestore
 
-from .tools import get_student_from_identifier, parse_datetime, DashboardError
+from .tools import DashboardError, get_student_from_identifier, parse_datetime
 
 log = logging.getLogger(__name__)
 
@@ -563,3 +561,28 @@ class ORASummarySerializer(serializers.Serializer):
     waiting = serializers.IntegerField()
     staff = serializers.IntegerField()
     final_grade_received = serializers.IntegerField()
+
+
+class CourseEnrollmentSerializerV2(serializers.Serializer):
+    """
+    Serializer for course enrollment data.
+
+    Serializes CourseEnrollment instances with derived fields for
+    the user's full name and beta tester status.
+    """
+    username = serializers.CharField(source='user.username')
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    mode = serializers.CharField()
+    is_beta_tester = serializers.SerializerMethodField()
+
+    def get_full_name(self, enrollment):
+        """Get the user's full name from their profile."""
+        user = enrollment.user
+        profile = getattr(user, 'profile', None)
+        return profile.name if profile else ''
+
+    def get_is_beta_tester(self, enrollment):
+        """Check if the user is a beta tester for this course."""
+        beta_tester_ids = self.context.get('beta_tester_ids', set())
+        return enrollment.user_id in beta_tester_ids

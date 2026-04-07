@@ -2,12 +2,12 @@
 XBlock translations pulling and compilation logic.
 """
 
-import os
 import gettext
+import os
 
 from django.utils.encoding import force_str
+from django.utils.translation import get_language, override, to_locale
 from django.views.i18n import JavaScriptCatalog
-from django.utils.translation import override, to_locale, get_language
 from statici18n.management.commands.compilejsi18n import Command as CompileI18NJSCommand
 from xblock.core import XBlock
 

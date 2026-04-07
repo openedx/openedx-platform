@@ -1,12 +1,11 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-from datetime import datetime, timezone
 import textwrap
+from datetime import datetime, timezone
 
 import ddt
 from freezegun import freeze_time
-
 from opaque_keys.edx.locator import LibraryLocatorV2
 
 from common.djangoapps.student.tests.factories import UserFactory

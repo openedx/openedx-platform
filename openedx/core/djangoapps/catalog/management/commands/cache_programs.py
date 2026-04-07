@@ -20,7 +20,7 @@ from openedx.core.djangoapps.catalog.cache import (
     PROGRAMS_BY_TYPE_CACHE_KEY_TPL,
     PROGRAMS_BY_TYPE_SLUG_CACHE_KEY_TPL,
     SITE_PATHWAY_IDS_CACHE_KEY_TPL,
-    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
+    SITE_PROGRAM_UUIDS_CACHE_KEY_TPL,
 )
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.utils import (
@@ -28,7 +28,7 @@ from openedx.core.djangoapps.catalog.utils import (
     course_uuids_for_program,
     get_catalog_api_base_url,
     get_catalog_api_client,
-    normalize_program_type
+    normalize_program_type,
 )
 
 logger = logging.getLogger(__name__)

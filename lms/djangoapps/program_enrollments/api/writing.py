@@ -16,9 +16,8 @@ from common.djangoapps.student.models import CourseEnrollment, NonExistentCourse
 from common.djangoapps.student.roles import CourseStaffRole
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 
-from ..constants import ProgramCourseEnrollmentRoles, ProgramCourseEnrollmentStatuses
+from ..constants import ProgramCourseEnrollmentRoles, ProgramCourseEnrollmentStatuses, ProgramEnrollmentStatuses
 from ..constants import ProgramCourseOperationStatuses as ProgramCourseOpStatuses
-from ..constants import ProgramEnrollmentStatuses
 from ..constants import ProgramOperationStatuses as ProgramOpStatuses
 from ..exceptions import ProviderDoesNotExistException
 from ..models import CourseAccessRoleAssignment, ProgramCourseEnrollment, ProgramEnrollment

@@ -9,12 +9,12 @@ from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.courseware.masquerade import (
     get_course_masquerade,
     get_masquerading_user_group,
-    is_masquerading_as_specific_student
+    is_masquerading_as_specific_student,
 )
-from common.djangoapps.student.models import CourseEnrollment
 from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
 LOGGER = logging.getLogger(__name__)

@@ -9,15 +9,17 @@ import io
 import json
 import logging
 import os
-import requests
-import shutil
 import pathlib
+import shutil
 import zipfile
-import boto3
-
 from contextlib import closing
 from datetime import datetime, timedelta
+from tempfile import NamedTemporaryFile, mkdtemp
 from uuid import uuid4
+from wsgiref.util import FileWrapper
+
+import boto3
+import requests
 from django.conf import settings
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import FileResponse, HttpResponseNotFound, StreamingHttpResponse
@@ -32,13 +34,13 @@ from edxval.api import (
     create_video,
     get_3rd_party_transcription_plans,
     get_available_transcript_languages,
-    get_video_transcript_url,
     get_transcript_preferences,
+    get_video_transcript_url,
     get_videos_for_course,
     remove_transcript_preferences,
     remove_video_for_course,
     update_video_image,
-    update_video_status
+    update_video_status,
 )
 from fs.osfs import OSFS
 from opaque_keys import InvalidKeyError
@@ -47,16 +49,11 @@ from path import Path as path
 from pytz import UTC
 from rest_framework import status as rest_status
 from rest_framework.response import Response
-from tempfile import NamedTemporaryFile, mkdtemp
-from wsgiref.util import FileWrapper
 
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
-from openedx.core.djangoapps.video_pipeline.config.waffle import (
-    DEPRECATE_YOUTUBE,
-    ENABLE_DEVSTACK_VIDEO_UPLOADS,
-)
+from openedx.core.djangoapps.video_pipeline.config.waffle import DEPRECATE_YOUTUBE, ENABLE_DEVSTACK_VIDEO_UPLOADS
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 

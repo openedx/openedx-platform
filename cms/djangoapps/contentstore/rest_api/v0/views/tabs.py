@@ -7,13 +7,14 @@ from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from ..serializers import CourseTabSerializer, CourseTabUpdateSerializer, TabIDLocatorSerializer
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import ItemNotFoundError
+
 from ....views.tabs import edit_tab_handler, get_course_tabs, reorder_tabs_handler
+from ..serializers import CourseTabSerializer, CourseTabUpdateSerializer, TabIDLocatorSerializer
 
 
 @view_auth_classes(is_authenticated=True)

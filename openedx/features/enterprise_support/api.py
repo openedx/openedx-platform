@@ -34,14 +34,14 @@ try:
     from consent.models import DataSharingConsent, DataSharingConsentTextOverrides
     from enterprise.api.v1.serializers import (
         EnterpriseCustomerUserReadOnlySerializer,
-        EnterpriseCustomerUserWriteSerializer
+        EnterpriseCustomerUserWriteSerializer,
     )
     from enterprise.models import (
         EnterpriseCourseEnrollment,
         EnterpriseCustomer,
         EnterpriseCustomerIdentityProvider,
         EnterpriseCustomerUser,
-        PendingEnterpriseCustomerUser
+        PendingEnterpriseCustomerUser,
     )
 except ImportError:  # pragma: no cover
     pass

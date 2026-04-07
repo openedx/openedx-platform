@@ -253,8 +253,9 @@ class UpstreamLink:
         Otherwise, raises an UpstreamLinkException.
         """
         # We import these here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
-        from openedx.core.djangoapps.content_libraries import api as lib_api
         from openedx_content import api as content_api
+
+        from openedx.core.djangoapps.content_libraries import api as lib_api
 
         if not isinstance(downstream, UpstreamSyncMixin):
             raise BadDownstream(_("Downstream is not an XBlock or is missing required UpstreamSyncMixin"))

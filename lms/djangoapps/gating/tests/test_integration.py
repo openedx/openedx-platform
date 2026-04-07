@@ -10,9 +10,6 @@ from edx_django_utils.cache import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_switch
 from milestones import api as milestones_api
 from milestones.tests.utils import MilestonesTestCaseMixin
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.access import has_access
@@ -20,6 +17,9 @@ from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.grades.tests.utils import answer_problem
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.gating import api as gating_api
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt

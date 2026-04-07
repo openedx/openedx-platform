@@ -10,9 +10,9 @@ import html
 import json
 import logging
 import warnings
+from collections import OrderedDict
 from copy import deepcopy
 
-from collections import OrderedDict
 from django.conf import settings
 from lxml import etree
 from web_fragments.fragment import Fragment
@@ -20,16 +20,11 @@ from xblock.core import XBlock
 from xblock.fields import Boolean, Dict, List, Scope, String  # lint-amnesty, pylint: disable=wrong-import-order
 from xblocks_contrib.poll import PollBlock as _ExtractedPollBlock
 
-from openedx.core.djangolib.markup import Text, HTML
+from openedx.core.djangolib.markup import HTML, Text
 from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.stringify import stringify_children
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 from xmodule.xml_block import XmlMixin
 
 log = logging.getLogger(__name__)

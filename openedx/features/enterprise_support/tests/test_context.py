@@ -4,13 +4,13 @@ Test the enterprise support APIs.
 from django.conf import settings
 from django.test.utils import override_settings
 
-from common.djangoapps.student.tests.factories import UserFactory, CourseEnrollmentFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 from openedx.features.enterprise_support.context import get_enterprise_event_context
 from openedx.features.enterprise_support.tests import FEATURES_WITH_ENTERPRISE_ENABLED
 from openedx.features.enterprise_support.tests.factories import (
+    EnterpriseCourseEnrollmentFactory,
     EnterpriseCustomerUserFactory,
-    EnterpriseCourseEnrollmentFactory
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseServiceMockMixin
 

@@ -1,11 +1,10 @@
 """ Utility functions related to django storages """
 import logging
+from typing import List, Optional
 
-from typing import Optional, List
 from django.conf import settings
 from django.core.files.storage import storages
 from django.utils.module_loading import import_string
-
 
 logger = logging.getLogger(__name__)
 

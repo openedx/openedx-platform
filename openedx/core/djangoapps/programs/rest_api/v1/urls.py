@@ -4,10 +4,7 @@ REST APIs for Programs.
 
 from django.urls import re_path
 
-from openedx.core.djangoapps.programs.rest_api.v1.views import (
-    ProgramProgressDetailView,
-    Programs,
-)
+from openedx.core.djangoapps.programs.rest_api.v1.views import ProgramProgressDetailView, Programs
 
 ENTERPRISE_UUID_PATTERN = r"[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?4[0-9a-fA-F]{3}-?[89abAB][0-9a-fA-F]{3}-?[0-9a-fA-F]{12}"
 PROGRAM_UUID_PATTERN = r"[0-9a-f-]+"

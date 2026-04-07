@@ -20,7 +20,7 @@ from common.djangoapps.third_party_auth.models import (
     LTIProviderConfig,
     OAuth2ProviderConfig,
     SAMLConfiguration,
-    SAMLProviderConfig
+    SAMLProviderConfig,
 )
 from common.djangoapps.third_party_auth.models import cache as config_cache
 from openedx.core.djangolib.testing.utils import CacheIsolationMixin

@@ -16,10 +16,7 @@ from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTaskStatus
 
 from cms.djangoapps.modulestore_migrator.data import CompositionLevel, RepeatHandlingStrategy
-from cms.djangoapps.modulestore_migrator.models import (
-    ModulestoreMigration,
-    ModulestoreSource,
-)
+from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration, ModulestoreSource
 from cms.djangoapps.modulestore_migrator.tasks import (
     MigrationStep,
     _BulkMigrationTask,
@@ -33,7 +30,7 @@ from cms.djangoapps.modulestore_migrator.tasks import (
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory
 
 from .. import api as migrator_api
 

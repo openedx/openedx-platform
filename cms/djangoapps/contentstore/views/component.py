@@ -21,24 +21,16 @@ from xblock.exceptions import NoSuchHandlerError
 from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
+from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
+from cms.djangoapps.contentstore.toggles import libraries_v1_enabled, libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.xblock_django.api import authorable_xblocks, disabled_xblocks
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
-from cms.djangoapps.contentstore.helpers import (
-    get_parent_if_split_test,
-    is_unit,
-    is_library_content,
-)
-from cms.djangoapps.contentstore.toggles import (
-    libraries_v1_enabled,
-    libraries_v2_enabled,
-    use_new_unit_page,
-)
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
-from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
-from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.content_tagging.api import get_object_tags
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
+from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 

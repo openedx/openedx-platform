@@ -6,12 +6,11 @@ from textwrap import dedent
 from xml.etree import ElementTree
 
 from rest_framework.test import APIClient
+
+from openedx.core.djangoapps.content_staging import api as python_api
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, upload_file_to_course
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory
-
-from openedx.core.djangoapps.content_staging import api as python_api
-
 
 CLIPBOARD_ENDPOINT = "/api/content-staging/v1/clipboard/"
 

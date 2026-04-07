@@ -1,7 +1,7 @@
 """Views for the Programs REST API v1."""
 
-from typing import Any, TYPE_CHECKING
 import logging
+from typing import TYPE_CHECKING, Any
 
 from django.db.models.query import EmptyQuerySet
 from rest_framework.permissions import IsAuthenticated
@@ -16,13 +16,14 @@ from openedx.core.djangoapps.programs.utils import (
     get_program_and_course_data,
     get_program_urls,
 )
-from openedx.features.enterprise_support.api import get_enterprise_course_enrollments, enterprise_is_enabled
+from openedx.features.enterprise_support.api import enterprise_is_enabled, get_enterprise_course_enrollments
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest, HttpResponse
     from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
     from django.contrib.sites.models import Site
     from django.db.models.query import QuerySet
+    from django.http import HttpRequest, HttpResponse
+
     from common.djangoapps.student.models import CourseEnrollment
 
 logger = logging.getLogger(__name__)

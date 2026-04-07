@@ -7,7 +7,6 @@ from datetime import timedelta
 
 import ddt
 from django.utils.timezone import now
-
 from edx_when.api import get_dates_for_course, set_date_for_block
 from edx_when.field_data import DateOverrideTransformer
 

@@ -3,9 +3,8 @@ Test helpers for Site Configuration.
 """
 
 
-from functools import wraps
 import contextlib
-
+from functools import wraps
 from unittest.mock import patch
 
 from django.contrib.sites.models import Site

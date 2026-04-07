@@ -7,9 +7,8 @@ import logging
 from abc import ABCMeta
 
 from django.utils.module_loading import import_string
-from xblock.fields import List
-
 from edx_django_utils.plugins import PluginError
+from xblock.fields import List
 
 log = logging.getLogger("edx.courseware")
 

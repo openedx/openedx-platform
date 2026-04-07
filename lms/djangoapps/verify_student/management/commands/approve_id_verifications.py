@@ -16,7 +16,6 @@ from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification
 from lms.djangoapps.verify_student.utils import earliest_allowed_verification_date
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
 
-
 log = logging.getLogger(__name__)
 
 

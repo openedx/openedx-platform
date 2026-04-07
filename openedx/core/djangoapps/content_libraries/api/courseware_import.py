@@ -9,20 +9,17 @@ there are Celery-based interfaces suitable for background processing controlled
 through RESTful APIs (see :mod:`.views`).
 """
 import abc
-import collections
 import base64
+import collections
 import hashlib
 import logging
 
-from django.conf import settings
 import requests
-
-from opaque_keys.edx.locator import (
-    LibraryUsageLocatorV2,
-    LibraryLocator as LibraryLocatorV1,
-)
-from opaque_keys.edx.keys import UsageKey
+from django.conf import settings
 from edx_rest_api_client.client import OAuthAPIClient
+from opaque_keys.edx.keys import UsageKey
+from opaque_keys.edx.locator import LibraryLocator as LibraryLocatorV1
+from opaque_keys.edx.locator import LibraryUsageLocatorV2
 
 from openedx.core.lib.xblock_serializer.api import serialize_modulestore_block_for_openedx_content
 from xmodule.modulestore.django import modulestore
@@ -33,8 +30,8 @@ from .blocks import (
     LibraryBlockAlreadyExists,
     add_library_block_static_asset_file,
     create_library_block,
-    get_library_block_static_asset_files,
     get_library_block,
+    get_library_block_static_asset_files,
     set_library_block_olx,
 )
 from .libraries import publish_changes

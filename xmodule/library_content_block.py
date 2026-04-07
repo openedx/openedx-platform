@@ -22,8 +22,8 @@ from web_fragments.fragment import Fragment
 from webob import Response
 from xblock.core import XBlock
 from xblock.fields import Boolean, Scope, String
-
 from xblocks_contrib.problem.capa.responsetypes import registry
+
 from xmodule.item_bank_block import ItemBankMixin
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -141,6 +141,20 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
         Returns whether the block can be migrated to v2.
         """
         return self.is_source_lib_migrated_to_v2 and not self.is_migrated_to_v2
+
+    def get_context(self):
+        """
+        Extend context adding `show_deprecated_warning` flag
+        """
+        from cms.djangoapps.contentstore.utils import get_libraries_list_url
+
+        library_url = get_libraries_list_url()
+
+        context = super().get_context()
+        context["show_deprecated_warning"] = True
+        context["library_url"] = library_url
+
+        return context
 
     def author_view(self, context):
         """

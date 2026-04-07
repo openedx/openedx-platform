@@ -11,15 +11,19 @@ from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from common.djangoapps.track.event_transaction_utils import create_new_event_transaction_id, set_event_transaction_type
+
 # Public Grades Modules
 from lms.djangoapps.grades import constants, context, course_data, events
+
 # Grades APIs that should NOT belong within the Grades subsystem
 # TODO move Gradebook to be an external feature outside of core Grades
 from lms.djangoapps.grades.config.waffle import gradebook_bulk_management_enabled, is_writable_gradebook_enabled
+
 # Public Grades Factories
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from lms.djangoapps.grades.models_api import *
 from lms.djangoapps.grades.signals import signals
+
 # TODO exposing functionality from Grades handlers seems fishy.
 from lms.djangoapps.grades.signals.handlers import disconnect_submissions_signal_receiver
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
@@ -146,8 +150,9 @@ def _create_subsection_grade(user_id, course_key, usage_key):
     Given a user_id, course_key, and subsection usage_key,
     creates a new ``PersistentSubsectionGrade``.
     """
-    from lms.djangoapps.courseware.courses import get_course
     from django.contrib.auth import get_user_model
+
+    from lms.djangoapps.courseware.courses import get_course
     course = get_course(course_key, depth=None)
     subsection = course.get_child(usage_key)
     if not subsection:

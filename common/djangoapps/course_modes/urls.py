@@ -2,8 +2,8 @@
 
 
 from django.conf import settings
-
 from django.urls import re_path
+
 from common.djangoapps.course_modes import views
 
 urlpatterns = [
