@@ -2,8 +2,8 @@
 Content Library REST APIs related to XBlocks/Components and their static assets
 """
 import edx_api_doc_tools as apidocs
-from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
 from django.urls import reverse
