@@ -4,7 +4,6 @@ Unit tests for Content Libraries models.
 
 
 from django.test import TestCase
-from opaque_keys.edx.locator import LibraryLocatorV2
 from organizations.models import Organization
 
 from ..models import ALL_RIGHTS_RESERVED, ContentLibrary
@@ -28,4 +27,3 @@ class ContentLibraryTest(TestCase):
             license=ALL_RIGHTS_RESERVED,
             **kwds,
         )
-

@@ -83,7 +83,6 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
 from user_tasks.models import UserTaskStatus
 
 from cms.djangoapps.contentstore.storage import course_import_export_storage
@@ -113,7 +112,6 @@ from openedx.core.djangoapps.content_libraries.rest_api.serializers import (
 from openedx.core.djangoapps.content_libraries.tasks import backup_library, restore_library
 from openedx.core.lib.api.view_utils import view_auth_classes
 
-from ..models import ContentLibrary
 from .utils import convert_exceptions
 
 User = get_user_model()
@@ -855,5 +853,3 @@ class LibraryRestoreView(APIView):
         # serialize and return result
         result_serializer = LibraryRestoreTaskResultSerializer.from_task_status(task_status, request)
         return Response(result_serializer.data)
-
-

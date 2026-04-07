@@ -6,7 +6,6 @@ import uuid
 from unittest import mock
 
 from django.db import transaction
-from django.test import TestCase
 from opaque_keys.edx.keys import UsageKeyV2
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_authz.api.users import get_user_role_assignments_in_scope

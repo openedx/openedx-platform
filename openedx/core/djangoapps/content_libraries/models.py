@@ -164,5 +164,3 @@ class ContentLibraryPermission(models.Model):
     def __str__(self):
         who = self.user.username if self.user else self.group.name
         return f"ContentLibraryPermission ({self.access_level} for {who})"
-
-
