@@ -589,7 +589,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.8.4
+edx-enterprise==6.8.6
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1078,6 +1078,7 @@ openedx-events==11.1.0
 openedx-filters==2.1.0
     # via
     #   -r requirements/edx/base.txt
+    #   edx-enterprise
     #   lti-consumer-xblock
     #   ora2
 openedx-forum==0.4.0
@@ -1521,6 +1522,7 @@ social-auth-app-django==5.4.1
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
     #   edx-auth-backends
+    #   edx-enterprise
 social-auth-core==4.8.5
     # via
     #   -r requirements/edx/base.txt
