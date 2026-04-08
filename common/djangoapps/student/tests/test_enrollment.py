@@ -30,7 +30,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 @ddt.ddt
 @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
 @skip_unless_lms
-class EnrollmentTest(UrlResetMixin, ModuleStoreTestCase, OpenEdxEventsTestMixin):
+class EnrollmentTest(OpenEdxEventsTestMixin, UrlResetMixin, ModuleStoreTestCase):
     """
     Test student enrollment, especially with different course modes.
     """
@@ -41,17 +41,6 @@ class EnrollmentTest(UrlResetMixin, ModuleStoreTestCase, OpenEdxEventsTestMixin)
     EMAIL = "bob@example.com"
     PASSWORD = "edx"
     URLCONF_MODULES = ['openedx.core.djangoapps.embargo']
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     @patch.dict(settings.FEATURES, {'EMBARGO': True})
     def setUp(self):

@@ -22,7 +22,7 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 @skip_unless_lms
-class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
+class RegistrationEventTest(OpenEdxEventsTestMixin, UserAPITestCase):
     """
     Tests for the Open edX Events associated with the registration process through
     the registration view.
@@ -35,19 +35,6 @@ class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
     """
 
     ENABLED_OPENEDX_EVENTS = ["org.openedx.learning.student.registration.completed.v1"]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        So the Open edX Events Isolation starts, the setUpClass must be explicitly
-        called with the method that executes the isolation. We do this to avoid
-        MRO resolution conflicts with other sibling classes while ensuring the
-        isolation process begins.
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -104,7 +91,7 @@ class RegistrationEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
 
 
 @skip_unless_lms
-class LoginSessionEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
+class LoginSessionEventTest(OpenEdxEventsTestMixin, UserAPITestCase):
     """
     Tests for the Open edX Events associated with the login process through the
     login_user view.
@@ -117,17 +104,6 @@ class LoginSessionEventTest(UserAPITestCase, OpenEdxEventsTestMixin):
     """
 
     ENABLED_OPENEDX_EVENTS = ["org.openedx.learning.auth.session.login.completed.v1"]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()

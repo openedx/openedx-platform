@@ -211,7 +211,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
 
 
 @skip_unless_lms
-class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class EnrollmentEventsTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the Open edX Events associated with the enrollment process through the enroll method.
 
@@ -228,17 +228,6 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         "org.openedx.learning.course.enrollment.changed.v1",
         "org.openedx.learning.course.unenrollment.completed.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -391,7 +380,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
 @skip_unless_lms
 @ddt.ddt
-class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
+class TestCourseAccessRoleEvents(OpenEdxEventsTestMixin, TestCase):
     """
     Tests for the events associated with the CourseAccessRole model.
     """
@@ -399,11 +388,6 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         'org.openedx.learning.user.course_access_role.added.v1',
         'org.openedx.learning.user.course_access_role.removed.v1',
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         self.course_key = CourseKey.from_string("course-v1:test+blah+blah")

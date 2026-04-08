@@ -743,7 +743,7 @@ class DuplicateHelper:
         return self.response_usage_key(resp)
 
 
-class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
+class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
     """
     Test the duplicate method.
     """
@@ -751,22 +751,6 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.content_authoring.xblock.duplicated.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):
         """Creates the test course structure and a few components to 'duplicate'."""

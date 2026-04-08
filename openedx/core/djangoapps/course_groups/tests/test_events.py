@@ -29,7 +29,7 @@ from xmodule.modulestore.tests.django_utils import (
 
 
 @skip_unless_lms
-class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CohortEventTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the Open edX Events associated with the cohort update process.
 
@@ -42,23 +42,6 @@ class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.learning.cohort_membership.changed.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()

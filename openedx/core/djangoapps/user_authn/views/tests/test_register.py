@@ -74,7 +74,7 @@ ENABLE_AUTO_GENERATED_USERNAME['ENABLE_AUTO_GENERATED_USERNAME'] = True
 @ddt.ddt
 @skip_unless_lms
 class RegistrationViewValidationErrorTest(
-    ThirdPartyAuthTestMixin, UserAPITestCase, RetirementTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyAuthTestMixin, UserAPITestCase, RetirementTestCase
 ):
     """
     Tests for catching duplicate email and username validation errors within
@@ -95,17 +95,6 @@ class RegistrationViewValidationErrorTest(
     CITY = "Springfield"
     COUNTRY = "US"
     GOALS = "Learn all the things!"
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -497,7 +486,7 @@ class RegistrationViewValidationErrorTest(
 @ddt.ddt
 @skip_unless_lms
 class RegistrationViewTestV1(
-    ThirdPartyAuthTestMixin, UserAPITestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyAuthTestMixin, UserAPITestCase
 ):
     """Tests for the registration end-points of the User API. """
 
@@ -562,17 +551,6 @@ class RegistrationViewTestV1(
         }
     ]
     link_template = "<a href='/honor' rel='noopener' target='_blank'>{link_label}</a>"
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -2077,17 +2055,6 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
 
     # pylint: disable=test-inherits-tests
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
     def setUp(self):  # pylint: disable=arguments-differ
         super(RegistrationViewTestV1, self).setUp()  # lint-amnesty, pylint: disable=bad-super-call
         self.url = reverse("user_api_registration_v2")
@@ -2513,7 +2480,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
 @httpretty.activate
 @ddt.ddt
 class ThirdPartyRegistrationTestMixin(
-    ThirdPartyOAuthTestMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyOAuthTestMixin, CacheIsolationTestCase
 ):
     """
     Tests for the User API registration endpoint with 3rd party authentication.
@@ -2525,17 +2492,6 @@ class ThirdPartyRegistrationTestMixin(
     ENABLED_CACHES = ['default']
 
     __test__ = False
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -2731,24 +2687,13 @@ class ThirdPartyRegistrationTestMixin(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestFacebookRegistrationView(
-    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Facebook authentication."""
 
     ENABLED_OPENEDX_EVENTS = []
 
     __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def test_social_auth_exception(self):
         """
@@ -2763,7 +2708,7 @@ class TestFacebookRegistrationView(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestGoogleRegistrationView(
-    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Google authentication."""
 
@@ -2771,20 +2716,9 @@ class TestGoogleRegistrationView(
 
     __test__ = True
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
 
 @ddt.ddt
-class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestMixin):
+class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTestCase):
     """
     Tests for validity of user data in registration forms.
     """
@@ -2793,17 +2727,6 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
 
     endpoint_name = 'registration_validation'
     path = reverse(endpoint_name)
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()

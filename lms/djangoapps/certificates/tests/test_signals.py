@@ -300,16 +300,11 @@ class FailingGradeCertsTest(ModuleStoreTestCase):
         assert cert.status == CertificateStatuses.downloadable
 
 
-class LearnerIdVerificationTest(ModuleStoreTestCase, OpenEdxEventsTestMixin):
+class LearnerIdVerificationTest(OpenEdxEventsTestMixin, ModuleStoreTestCase):
     """
     Tests for certificate generation task firing on learner id verification
     """
     ENABLED_OPENEDX_EVENTS = ['org.openedx.learning.idv_attempt.approved.v1']
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()

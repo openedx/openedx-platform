@@ -23,7 +23,7 @@ from xmodule.modulestore.tests.django_utils import (
 
 
 @skip_unless_lms
-class CertificateEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CertificateEventTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the Open edX Events associated with the student's certification
     process.
@@ -42,17 +42,6 @@ class CertificateEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         "org.openedx.learning.certificate.changed.v1",
         "org.openedx.learning.certificate.revoked.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
