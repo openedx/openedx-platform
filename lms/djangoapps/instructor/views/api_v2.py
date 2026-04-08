@@ -7,6 +7,7 @@ These APIs are designed to be consumed by MFEs and other API clients.
 
 import csv
 import io
+import json
 import logging
 import re
 from dataclasses import dataclass
@@ -15,7 +16,9 @@ from typing import Optional, Tuple
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
@@ -33,8 +36,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models.user import get_user_by_username_or_email
 from common.djangoapps.student.roles import CourseBetaTesterRole
 from common.djangoapps.util.json_request import JsonResponseBadRequest
+from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
+from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.constants import ReportType
@@ -45,12 +51,13 @@ from lms.djangoapps.instructor_analytics import basic as instructor_analytics_ba
 from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
 from lms.djangoapps.instructor_task import api as task_api
 from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
-from lms.djangoapps.instructor_task.models import ReportStore
+from lms.djangoapps.instructor_task.models import InstructorTask, ReportStore
 from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
 from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
+from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
@@ -59,9 +66,13 @@ from .serializers_v2 import (
     BlockDueDateSerializerV2,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
+    GradingConfigSerializer,
     InstructorTaskListSerializer,
+    LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
+    ProblemSerializer,
+    TaskStatusSerializer,
     UnitExtensionSerializer,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
@@ -1169,3 +1180,428 @@ class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
         response = super().list(request, *args, **kwargs)
         response.data['course_id'] = self.kwargs['course_id']
         return response
+
+
+
+class LearnerView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving learner information.
+
+    **GET Example Response:**
+    ```json
+    {
+        "username": "john_harvard",
+        "email": "john@example.com",
+        "full_name": "John Harvard",
+        "progress_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/progress/john_harvard/"
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'email_or_username',
+                apidocs.ParameterLocation.PATH,
+                description="Learner's username or email address",
+            ),
+        ],
+        responses={
+            200: 'Learner information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Learner not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, email_or_username):
+        """
+        Retrieve comprehensive learner information including profile, enrollment status,
+        progress URLs, and current grading data.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        UserModel = get_user_model()
+        try:
+            student = get_user_by_username_or_email(email_or_username)
+        except UserModel.DoesNotExist:
+            return Response(
+                {'error': 'Learner not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except UserModel.MultipleObjectsReturned:
+            return Response(
+                {'error': 'Multiple learners found for the given identifier'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Build progress URL (MFE or legacy depending on feature flag)
+        if course_home_mfe_progress_tab_is_active(course_key):
+            progress_url = get_learning_mfe_home_url(course_key, url_fragment='progress')
+            progress_url += f'/{student.id}/'
+        else:
+            progress_url = reverse(
+                'student_progress',
+                kwargs={'course_id': str(course_key), 'student_id': student.id}
+            )
+
+        learner_data = {
+            'username': student.username,
+            'email': student.email,
+            'full_name': student.profile.name,
+            'progress_url': progress_url,
+        }
+
+        serializer = LearnerSerializer(learner_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProblemView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving problem metadata.
+
+    **GET Example Response:**
+    ```json
+    {
+        "id": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem",
+        "name": "Sample Problem",
+        "breadcrumbs": [
+            {"display_name": "Demonstration Course"},
+            {
+                "display_name": "Week 1",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@chapter+block@week1"
+            },
+            {
+                "display_name": "Homework",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@sequential+block@hw1"
+            },
+            {
+                "display_name": "Sample Problem",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem"
+            }
+        ],
+        "current_score": {
+            "score": 7.0,
+            "total": 10.0
+        },
+        "attempts": {
+            "current": 3,
+            "total": null
+        }
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'location',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key",
+            ),
+        ],
+        responses={
+            200: 'Problem information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Problem not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, location):
+        """
+        Retrieve problem metadata including display name, location in course hierarchy,
+        and usage key.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            problem_key = UsageKey.from_string(location)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid problem location'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        store = modulestore()
+
+        try:
+            problem = store.get_item(problem_key)
+        except ItemNotFoundError:
+            return Response(
+                {'error': 'Problem not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Build breadcrumbs by walking up the parent chain
+        breadcrumbs = []
+        current = problem
+        while current:
+            breadcrumbs.insert(0, {
+                'display_name': current.display_name,
+                'usage_key': str(current.location) if current.location.block_type != 'course' else None
+            })
+            parent = current.get_parent() if hasattr(current, 'get_parent') else None
+            if not parent:
+                break
+            current = parent
+
+        problem_data = {
+            'id': str(problem.location),
+            'name': problem.display_name,
+            'breadcrumbs': breadcrumbs,
+            'current_score': None,
+            'attempts': None,
+        }
+
+        learner_identifier = request.query_params.get('email_or_username')
+        if learner_identifier:
+            UserModel = get_user_model()
+            try:
+                student = get_user_by_username_or_email(learner_identifier)
+            except UserModel.DoesNotExist:
+                return Response(
+                    {'error': 'Learner not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except UserModel.MultipleObjectsReturned:
+                return Response(
+                    {'error': 'Multiple learners found for the given identifier'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                student_module = StudentModule.objects.get(
+                    course_id=course_key,
+                    module_state_key=problem_key,
+                    student=student,
+                )
+                problem_data['current_score'] = {
+                    'score': student_module.grade,
+                    'total': student_module.max_grade,
+                }
+                state = json.loads(student_module.state) if student_module.state else {}
+                problem_data['attempts'] = {
+                    'current': state.get('attempts', 0),
+                    'total': problem.max_attempts,
+                }
+            except StudentModule.DoesNotExist:
+                pass  # Leave current_score and attempts as None
+
+        serializer = ProblemSerializer(problem_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TaskStatusView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for checking background task status.
+
+    **GET Example Response:**
+    ```json
+    {
+        "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "state": "completed",
+        "progress": {
+            "current": 150,
+            "total": 150
+        },
+        "result": {
+            "success": true,
+            "message": "Reset attempts for 150 learners"
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:35:23Z"
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.SHOW_TASKS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'task_id',
+                apidocs.ParameterLocation.PATH,
+                description="Task identifier returned from async operation",
+            ),
+        ],
+        responses={
+            200: 'Task status retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Task not found.",
+        },
+    )
+    def get(self, request, course_id, task_id):
+        """
+        Check the status of a background task.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get task from InstructorTask model
+        try:
+            task = InstructorTask.objects.get(task_id=task_id, course_id=course_key)
+        except InstructorTask.DoesNotExist:
+            return Response(
+                {'error': 'Task not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Map task state
+        state_map = {
+            'PENDING': 'pending',
+            'QUEUING': 'pending',
+            'SCHEDULED': 'pending',
+            'RECEIVED': 'pending',
+            'STARTED': 'running',
+            'PROGRESS': 'running',
+            'RETRY': 'running',
+            'SUCCESS': 'completed',
+            'FAILURE': 'failed',
+            'REVOKED': 'failed',
+        }
+
+        task_data = {
+            'task_id': str(task.task_id),
+            'state': state_map.get(task.task_state, 'pending'),
+            'created_at': task.created,
+            'updated_at': task.updated,
+        }
+
+        # Add progress if available
+        if hasattr(task, 'task_output') and task.task_output:
+            try:
+                output = json.loads(task.task_output)
+                if 'current' in output and 'total' in output:
+                    task_data['progress'] = {
+                        'current': output['current'],
+                        'total': output['total']
+                    }
+                if task.task_state == 'SUCCESS' and 'message' in output:
+                    task_data['result'] = {
+                        'success': True,
+                        'message': output['message']
+                    }
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+        # Add error if failed
+        if task.task_state in ['FAILURE', 'REVOKED']:
+            task_data['error'] = {
+                'code': 'TASK_FAILED',
+                'message': str(task.task_output) if task.task_output else 'Task failed'
+            }
+
+        serializer = TaskStatusSerializer(task_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GradingConfigView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving course grading configuration.
+
+    **GET Example Response:**
+    ```json
+    {
+        "graders": [
+            {
+                "type": "Homework",
+                "short_label": "HW",
+                "min_count": 12,
+                "drop_count": 2,
+                "weight": 0.15
+            },
+            {
+                "type": "Final Exam",
+                "short_label": "Final",
+                "min_count": 1,
+                "drop_count": 0,
+                "weight": 0.40
+            }
+        ],
+        "grade_cutoffs": {
+            "A": 0.9,
+            "B": 0.8,
+            "C": 0.7
+        }
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: 'Grading configuration retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Course does not exist.",
+        },
+    )
+    def get(self, request, course_id):
+        """
+        Retrieve the grading configuration for a course, including assignment type
+        weights and grade cutoff thresholds.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_course_by_id(course_key)
+        grading_policy = course.grading_policy
+        config_data = {
+            'graders': grading_policy.get('GRADER', []),
+            'grade_cutoffs': grading_policy.get('GRADE_CUTOFFS', {}),
+        }
+        serializer = GradingConfigSerializer(config_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
