@@ -284,7 +284,7 @@ class StudentModuleHistory(BaseStudentModuleHistory):
         app_label = "courseware"
         get_latest_by = "created"
 
-    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)  # noqa: DJ012
+    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
 
     def __repr__(self):
         student_dict = {

@@ -656,7 +656,7 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # register anew via SSO. See SOL-1324 in JIRA.
             # However, we will log a warning for this case:
             logger.warning(
-                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032
+                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
                 'Username: {username}'.format(username=user.username)
             )
 
@@ -826,7 +826,7 @@ def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *ar
 
                 if not user_is_active:
                     logger.info(
-                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032
+                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032  # pylint: disable=line-too-long
                         ' active: User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
                         ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
                             email=current_user.email,
@@ -940,7 +940,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                 try:
                     email.send()
                 except SMTPException:
-                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032
+                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032  # pylint: disable=line-too-long
                                      'notification email. Username: {username}'.format(username=user.username))
 
 

@@ -72,7 +72,7 @@ class WikiCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: UP006
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: UP006  # pylint: disable=line-too-long
         """
         Returns the operations you can perform on the wiki.
         """

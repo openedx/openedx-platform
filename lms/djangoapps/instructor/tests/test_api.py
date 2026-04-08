@@ -1295,7 +1295,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 course=self.course.display_name
             ) in body
 
@@ -1333,7 +1333,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'Please finish your registration and fill' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name
             ) in body
 
@@ -1384,7 +1384,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name
             ) in body
 
@@ -1492,7 +1492,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Enrolled Student')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name,
             ) in body
 
@@ -1545,7 +1545,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name,
             ) in body
 
@@ -1582,7 +1582,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert course_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name,
             ) in body
 
@@ -1607,7 +1607,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name,
             ) in body
 
@@ -1642,7 +1642,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'To access this course click on the button below and login:' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 display_name=self.course.display_name,
             ) in body
 

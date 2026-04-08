@@ -55,7 +55,7 @@ class UserAPITestCase(ApiTestCase):
 
     def assertUserIsValid(self, user):
         """Assert that the given user result is valid"""
-        self.assertCountEqual(list(user.keys()), ["email", "id", "name", "username", "preferences", "url"])  # noqa: PT009
+        self.assertCountEqual(list(user.keys()), ["email", "id", "name", "username", "preferences", "url"])  # noqa: PT009  # pylint: disable=line-too-long
         self.assertCountEqual(  # noqa: PT009
             list(user["preferences"].items()),
             [(pref.key, pref.value) for pref in self.prefs if pref.user.id == user["id"]]  # lint-amnesty, pylint: disable=no-member

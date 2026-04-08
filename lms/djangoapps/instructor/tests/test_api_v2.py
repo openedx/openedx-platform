@@ -546,7 +546,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         )
         # Tab URLs should use empty string as base, not "None"
         for tab in tabs:
-            self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")  # noqa: PT009
+            self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")  # noqa: PT009  # pylint: disable=line-too-long
             self.assertTrue(  # noqa: PT009
                 tab['url'].startswith('/instructor/'),
                 f"Tab URL should start with '/instructor/': {tab['url']}"
@@ -610,7 +610,7 @@ class BuildTabUrlTest(SimpleTestCase):
                 'COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email'
             )
 
-        self.assertTrue(any('COMMUNICATIONS_MICROFRONTEND_URL is not configured' in msg for msg in cm.output))  # noqa: PT009
+        self.assertTrue(any('COMMUNICATIONS_MICROFRONTEND_URL is not configured' in msg for msg in cm.output))  # noqa: PT009  # pylint: disable=line-too-long
         self.assertFalse(result.startswith('None'))  # noqa: PT009
         self.assertEqual(result, '/courses/course-v1:edX+DemoX+Demo/bulk_email')  # noqa: PT009
 
@@ -626,7 +626,7 @@ class BuildTabUrlTest(SimpleTestCase):
     def test_base_with_subpath_and_trailing_slash(self):
         """Base URL with a subpath and trailing slash is joined cleanly."""
         result = self._build('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email')
-        self.assertEqual(result, 'http://localhost:1984/communications/courses/course-v1:edX+DemoX+Demo/bulk_email')  # noqa: PT009
+        self.assertEqual(result, 'http://localhost:1984/communications/courses/course-v1:edX+DemoX+Demo/bulk_email')  # noqa: PT009  # pylint: disable=line-too-long
 
 
 @ddt.ddt
@@ -711,7 +711,7 @@ class InstructorTaskListViewTest(SharedModuleStoreTestCase):
         response = self.client.get(self._get_url())
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
-        self.assertIn('You do not have permission to perform this action.', response.data['developer_message'])  # noqa: PT009
+        self.assertIn('You do not have permission to perform this action.', response.data['developer_message'])  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_get_instructor_tasks_unauthenticated(self):
         """
@@ -729,7 +729,7 @@ class InstructorTaskListViewTest(SharedModuleStoreTestCase):
         response = self.client.get(self._get_url(course_id=nonexistent_course_id))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
-        self.assertEqual('Course not found: course-v1:edX+NonExistent+2024.', response.data['developer_message'])  # noqa: PT009
+        self.assertEqual('Course not found: course-v1:edX+NonExistent+2024.', response.data['developer_message'])  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_filter_by_problem_location(self):
         """
@@ -1031,7 +1031,7 @@ class GradedSubsectionsViewTest(SharedModuleStoreTestCase):
         items = response_data['items']
         self.assertEqual(len(items), 1)  # noqa: PT009
         self.assertEqual(items[0]['display_name'], 'Mocked Assignment')  # noqa: PT009
-        self.assertEqual(items[0]['subsection_id'], 'block-v1:Test+Course+2024+type@sequential+block@mock')  # noqa: PT009
+        self.assertEqual(items[0]['subsection_id'], 'block-v1:Test+Course+2024+type@sequential+block@mock')  # noqa: PT009  # pylint: disable=line-too-long
 
     @patch('lms.djangoapps.instructor.views.api_v2.title_or_url')
     @patch('lms.djangoapps.instructor.views.api_v2.get_units_with_due_date')
@@ -1053,8 +1053,8 @@ class GradedSubsectionsViewTest(SharedModuleStoreTestCase):
         response_data = json.loads(response.content)
         items = response_data['items']
         self.assertEqual(len(items), 1)  # noqa: PT009
-        self.assertEqual(items[0]['display_name'], 'block-v1:Test+Course+2024+type@sequential+block@fallback')  # noqa: PT009
-        self.assertEqual(items[0]['subsection_id'], 'block-v1:Test+Course+2024+type@sequential+block@fallback')  # noqa: PT009
+        self.assertEqual(items[0]['display_name'], 'block-v1:Test+Course+2024+type@sequential+block@fallback')  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(items[0]['subsection_id'], 'block-v1:Test+Course+2024+type@sequential+block@fallback')  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_get_graded_subsections_response_format(self):
         """
@@ -1548,7 +1548,7 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIn('Robot', extension['full_name'])  # noqa: PT009
         self.assertEqual(extension['email'], 'student1@example.com')  # noqa: PT009
         self.assertEqual(extension['unit_title'], 'Homework 1')  # Should be the top-level unit  # noqa: PT009
-        self.assertEqual(extension['unit_location'], 'block-v1:edX+TestX+Test_Course+type@sequential+block@Homework_1')  # noqa: PT009
+        self.assertEqual(extension['unit_location'], 'block-v1:edX+TestX+Test_Course+type@sequential+block@Homework_1')  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(extension['extended_due_date'], '2025-10-31T23:59:59Z')  # noqa: PT009
 
         # Student 2's extension
@@ -1557,7 +1557,7 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIn('Robot', extension['full_name'])  # noqa: PT009
         self.assertEqual(extension['email'], 'student2@example.com')  # noqa: PT009
         self.assertEqual(extension['unit_title'], 'Homework 1')  # Should be the top-level unit  # noqa: PT009
-        self.assertEqual(extension['unit_location'], 'block-v1:edX+TestX+Test_Course+type@sequential+block@Homework_1')  # noqa: PT009
+        self.assertEqual(extension['unit_location'], 'block-v1:edX+TestX+Test_Course+type@sequential+block@Homework_1')  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(extension['extended_due_date'], '2025-12-31T23:59:59Z')  # noqa: PT009
 
     @ddt.data(

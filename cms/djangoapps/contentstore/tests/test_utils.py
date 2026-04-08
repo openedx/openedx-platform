@@ -44,7 +44,7 @@ class LMSLinksTestCase(TestCase):
         course_key = CourseLocator('mitX', '101', 'test')
         location = course_key.make_usage_key('vertical', 'contacting_us')
         link = utils.get_lms_link_for_item(location, False)
-        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009
+        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009  # pylint: disable=line-too-long
                                "@vertical+block@contacting_us")
 
         # test preview
@@ -58,7 +58,7 @@ class LMSLinksTestCase(TestCase):
         # now test with the course' location
         location = course_key.make_usage_key('course', 'test')
         link = utils.get_lms_link_for_item(location)
-        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009
+        self.assertEqual(link, "//localhost:8000/courses/course-v1:mitX+101+test/jump_to/block-v1:mitX+101+test+type"  # noqa: PT009  # pylint: disable=line-too-long
                                "@course+block@test")
 
     def lms_link_for_certificate_web_view_test(self):
@@ -159,7 +159,7 @@ class XBlockVisibilityTestCase(SharedModuleStoreTestCase):
         with and without visible_to_staff_only set.
         """
         no_staff_lock = self._create_xblock_with_start_date(name, start_date, publish, visible_to_staff_only=False)
-        self.assertEqual(expected_visible_without_lock, utils.is_currently_visible_to_students(no_staff_lock))  # noqa: PT009
+        self.assertEqual(expected_visible_without_lock, utils.is_currently_visible_to_students(no_staff_lock))  # noqa: PT009  # pylint: disable=line-too-long
 
         # any xblock with visible_to_staff_only set to True should not be visible to students.
         staff_lock = self._create_xblock_with_start_date(

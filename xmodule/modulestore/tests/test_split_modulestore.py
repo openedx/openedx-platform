@@ -1875,7 +1875,7 @@ class TestInheritance(SplitModuleTest):
 
         orphan_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841
+        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841  # pylint: disable=line-too-long
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 

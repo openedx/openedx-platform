@@ -178,9 +178,9 @@ class TestCourseLiveConfigurationView(ModuleStoreTestCase, APITestCase):
         self.assertEqual(updated_data['enabled'], live_configurations.enabled)  # noqa: PT009
         self.assertEqual(updated_data['provider_type'], live_configurations.provider_type)  # noqa: PT009
 
-        self.assertEqual(updated_lti_config.get('lti_1p1_client_key'), lti_configuration.lti_1p1_client_key)  # noqa: PT009
-        self.assertEqual(lti_config.get('lti_1p1_client_secret'), lti_configuration.lti_1p1_client_secret)  # noqa: PT009
-        self.assertEqual(updated_lti_config.get('lti_1p1_launch_url'), lti_configuration.lti_1p1_launch_url)  # noqa: PT009
+        self.assertEqual(updated_lti_config.get('lti_1p1_client_key'), lti_configuration.lti_1p1_client_key)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(lti_config.get('lti_1p1_client_secret'), lti_configuration.lti_1p1_client_secret)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(updated_lti_config.get('lti_1p1_launch_url'), lti_configuration.lti_1p1_launch_url)  # noqa: PT009  # pylint: disable=line-too-long
 
         provider_instance = ProviderManager().get_enabled_providers().get(provider)
         additional_param = {'additional_parameters': {}}
@@ -460,4 +460,4 @@ class TestCourseLiveIFrameView(ModuleStoreTestCase, APITestCase):
             provider_type="zoom",
         )
         response = self.client.get(self.url)
-        self.assertEqual(response.data['developer_message'], 'Course live is not enabled for this course.')  # noqa: PT009
+        self.assertEqual(response.data['developer_message'], 'Course live is not enabled for this course.')  # noqa: PT009  # pylint: disable=line-too-long

@@ -705,7 +705,7 @@ class TestNotificationPreferencesViewV3(ModuleStoreTestCase):
             self.assertIn(app, notification_apps, msg=f"{app} should be visible for role: {role_type}")  # noqa: PT009
 
         for app in hidden_apps:
-            self.assertNotIn(app, notification_apps, msg=f"{app} should NOT be visible for role: {role_type}")  # noqa: PT009
+            self.assertNotIn(app, notification_apps, msg=f"{app} should NOT be visible for role: {role_type}")  # noqa: PT009  # pylint: disable=line-too-long
 
         if role_type == "forum":
             role_instance.users.clear()

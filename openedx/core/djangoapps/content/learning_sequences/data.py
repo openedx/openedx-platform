@@ -285,7 +285,7 @@ class CourseOutlineData:
         """
         if value is not None and value < 0:
             raise ValueError(
-                "Provided value {} for days_early_for_beta is invalid. The value must be positive or zero. "  # noqa: UP032
+                "Provided value {} for days_early_for_beta is invalid. The value must be positive or zero. "  # noqa: UP032  # pylint: disable=line-too-long
                 "A positive value will shift back the starting date for Beta users by that many days.".format(value)
             )
 

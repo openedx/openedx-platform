@@ -694,7 +694,7 @@ class CertificatesBrandingTest(ModuleStoreTestCase):
         data = get_certificate_footer_context()
 
         # Make sure there are not unexpected keys in dict returned by 'get_certificate_footer_context'
-        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])  # noqa: PT009
+        self.assertCountEqual(list(data.keys()), ["company_about_url", "company_privacy_url", "company_tos_url"])  # noqa: PT009  # pylint: disable=line-too-long
         assert self.configuration["urls"]["ABOUT"] in data["company_about_url"]
         assert self.configuration["urls"]["PRIVACY"] in data["company_privacy_url"]
         assert self.configuration["urls"]["TOS_AND_HONOR"] in data["company_tos_url"]

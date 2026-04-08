@@ -172,13 +172,13 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         )
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009  # pylint: disable=line-too-long
         # course_updates 'data' field should not update automatically
         self.assertEqual(course_updates.data, '')  # noqa: PT009
 
         # test delete course update item (soft delete)
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009  # pylint: disable=line-too-long
         # now try to delete first update item
         resp = self.client.delete(course_update_url + '1')
         self.assertEqual(json.loads(resp.content.decode('utf-8')), [])  # noqa: PT009
@@ -316,7 +316,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(updates_location)
         del course_updates.items[0]["status"]
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])  # noqa: PT009
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])  # noqa: PT009  # pylint: disable=line-too-long
 
 
 class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):

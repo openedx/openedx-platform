@@ -174,7 +174,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
         If this feature is enabled, only Django Staff/Superuser should be able to access the "Advanced Settings" page.
         For non-staff users the "Advanced Settings" tab link should not be visible.
         """
-        advanced_settings_link_html = f"<a href=\"{self.course_setting_url}\">Advanced Settings</a>".encode('utf-8')  # noqa: UP012
+        advanced_settings_link_html = f"<a href=\"{self.course_setting_url}\">Advanced Settings</a>".encode('utf-8')  # noqa: UP012  # pylint: disable=line-too-long
 
         with override_settings(FEATURES={
             'DISABLE_ADVANCED_SETTINGS': disable_advanced_settings,
@@ -280,9 +280,9 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
             details['about_sidebar_html'], encoded['about_sidebar_html'], context + " about_sidebar_html not =="
         )
         self.assertEqual(details['overview'], encoded['overview'], context + " overviews not ==")  # noqa: PT009
-        self.assertEqual(details['intro_video'], encoded.get('intro_video', None), context + " intro_video not ==")  # noqa: PT009
+        self.assertEqual(details['intro_video'], encoded.get('intro_video', None), context + " intro_video not ==")  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(details['effort'], encoded['effort'], context + " efforts not ==")  # noqa: PT009
-        self.assertEqual(details['course_image_name'], encoded['course_image_name'], context + " images not ==")  # noqa: PT009
+        self.assertEqual(details['course_image_name'], encoded['course_image_name'], context + " images not ==")  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(details['language'], encoded['language'], context + " languages not ==")  # noqa: PT009
 
     def compare_date_fields(self, details, encoded, context, field):
@@ -323,7 +323,7 @@ class CourseDetailsViewTest(CourseTestCase, MilestonesTestCaseMixin):
 
         settings_details_url = get_url(self.course.id)
         response = self.client.get_html(settings_details_url)
-        self.assertEqual(b"Upgrade Deadline Date" in response.content, has_expiration_date and has_verified_mode)  # noqa: PT009
+        self.assertEqual(b"Upgrade Deadline Date" in response.content, has_expiration_date and has_verified_mode)  # noqa: PT009  # pylint: disable=line-too-long
 
     @mock.patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
@@ -906,7 +906,7 @@ class CourseGradingTest(CourseTestCase):
         test_grader.grade_cutoffs['Pass'] = 0.75
         CourseGradingModel.update_cutoffs_from_json(self.course.id, test_grader.grade_cutoffs, self.user)
         altered_grader = CourseGradingModel.fetch(self.course.id)
-        self.assertDictEqual(test_grader.grade_cutoffs, altered_grader.grade_cutoffs, "cutoff change 'Pass'")  # noqa: PT009
+        self.assertDictEqual(test_grader.grade_cutoffs, altered_grader.grade_cutoffs, "cutoff change 'Pass'")  # noqa: PT009  # pylint: disable=line-too-long
         grading_policy_3 = self._grading_policy_hash_for_course()
 
         # one for each of the calls to update_cutoffs_from_json()
@@ -936,7 +936,7 @@ class CourseGradingTest(CourseTestCase):
         CourseGradingModel.update_grace_period_from_json(
             self.course.id, test_grader.grace_period, self.user)
         altered_grader = CourseGradingModel.fetch(self.course.id)
-        self.assertDictEqual(test_grader.grace_period, altered_grader.grace_period, "Adding in a grace period")  # noqa: PT009
+        self.assertDictEqual(test_grader.grace_period, altered_grader.grace_period, "Adding in a grace period")  # noqa: PT009  # pylint: disable=line-too-long
 
         test_grader.grace_period = {'hours': 1, 'minutes': 10, 'seconds': 0}
         # Now delete the grace period
@@ -1346,7 +1346,7 @@ class CourseMetadataEditingTest(CourseTestCase):
 
         # Tab gets tested in test_advanced_settings_munge_tabs
         self.assertIn('advanced_modules', test_model, 'Missing advanced_modules')  # noqa: PT009
-        self.assertEqual(test_model['advanced_modules']['value'], ['notes'], 'advanced_module is not updated')  # noqa: PT009
+        self.assertEqual(test_model['advanced_modules']['value'], ['notes'], 'advanced_module is not updated')  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_validate_from_json_wrong_inputs(self):
         # input incorrectly formatted data
@@ -1417,7 +1417,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('display_name', test_model, 'Missing editable metadata field')  # noqa: PT009
         self.assertEqual(test_model['display_name']['value'], 'jolly roger', "not expected value")  # noqa: PT009
         self.assertIn('advertised_start', test_model, 'Missing revised advertised_start metadata field')  # noqa: PT009
-        self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009
+        self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009  # pylint: disable=line-too-long
 
     def update_check(self, test_model):
         """
@@ -1426,9 +1426,9 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('display_name', test_model, 'Missing editable metadata field')  # noqa: PT009
         self.assertEqual(test_model['display_name']['value'], self.course.display_name)  # noqa: PT009
         self.assertIn('advertised_start', test_model, 'Missing new advertised_start metadata field')  # noqa: PT009
-        self.assertEqual(test_model['advertised_start']['value'], 'start A', "advertised_start not expected value")  # noqa: PT009
+        self.assertEqual(test_model['advertised_start']['value'], 'start A', "advertised_start not expected value")  # noqa: PT009  # pylint: disable=line-too-long
         self.assertIn('days_early_for_beta', test_model, 'Missing days_early_for_beta metadata field')  # noqa: PT009
-        self.assertEqual(test_model['days_early_for_beta']['value'], 2, "days_early_for_beta not expected value")  # noqa: PT009
+        self.assertEqual(test_model['days_early_for_beta']['value'], 2, "days_early_for_beta not expected value")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_http_fetch_initial_fields(self):
         response = self.client.get_json(self.course_setting_url)
@@ -1465,7 +1465,7 @@ class CourseMetadataEditingTest(CourseTestCase):
         self.assertIn('display_name', test_model, 'Missing editable metadata field')  # noqa: PT009
         self.assertEqual(test_model['display_name']['value'], 'jolly roger', "not expected value")  # noqa: PT009
         self.assertIn('advertised_start', test_model, 'Missing revised advertised_start metadata field')  # noqa: PT009
-        self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009
+        self.assertEqual(test_model['advertised_start']['value'], 'start B', "advertised_start not expected value")  # noqa: PT009  # pylint: disable=line-too-long
 
     @patch.dict(settings.FEATURES, {'ENABLE_EDXNOTES': True})
     @patch('xmodule.util.xmodule_django.get_current_request')

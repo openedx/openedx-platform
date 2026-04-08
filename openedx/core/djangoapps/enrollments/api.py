@@ -324,7 +324,7 @@ def update_enrollment(
         }
 
     """
-    log.info('Starting Update Enrollment process for user {user} in course {course} to mode {mode}'.format(  # noqa: UP032
+    log.info('Starting Update Enrollment process for user {user} in course {course} to mode {mode}'.format(  # noqa: UP032  # pylint: disable=line-too-long
         user=username,
         course=course_id,
         mode=mode,
@@ -406,7 +406,7 @@ def get_course_enrollment_details(course_id, include_expired=False):
     except Exception:
         # Catch any unexpected errors during caching.
         log.exception("Error occurred while caching course enrollment details for course %s", course_id)
-        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return course_enrollment_details
 

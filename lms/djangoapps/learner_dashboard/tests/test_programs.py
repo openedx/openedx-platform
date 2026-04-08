@@ -88,7 +88,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         Verify that the dict superset contains the dict subset.
         """
         for key, value in subset.items():
-            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"  # noqa: PT018
+            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"  # noqa: PT018  # pylint: disable=line-too-long
 
     def test_login_required(self, mock_get_programs):
         """

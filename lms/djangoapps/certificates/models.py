@@ -616,7 +616,7 @@ class CertificateGenerationHistory(TimeStampedModel):
 
     def __str__(self):
         return "certificates %s by %s on %s for %s" % \
-               ("regenerated" if self.is_regeneration else "generated", self.generated_by, self.created, self.course_id)  # noqa: UP031
+               ("regenerated" if self.is_regeneration else "generated", self.generated_by, self.created, self.course_id)  # noqa: UP031  # pylint: disable=line-too-long
 
 
 class CertificateInvalidation(TimeStampedModel):

@@ -107,7 +107,7 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
                 # the requested user, then we should sever the link to the existing edX user before
                 # linking the ProgramEnrollment to the new user.
                 if program_enrollment.user and program_enrollment.user != user:
-                    message = ('Unlinking user with username={old_username} from program enrollment with '  # noqa: UP032
+                    message = ('Unlinking user with username={old_username} from program enrollment with '  # noqa: UP032  # pylint: disable=line-too-long
                                'program uuid={program_uuid} with external_student_key={external_user_key} '
                                'and linking user with username={new_username} '
                                'to program enrollment.').format(

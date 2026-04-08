@@ -272,7 +272,7 @@ class CourseDiscussionSettings(models.Model):  # noqa: DJ008
     )
     always_divide_inline_discussions = models.BooleanField(default=False)
     reported_content_email_notifications = models.BooleanField(default=False)
-    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001
+    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001  # pylint: disable=line-too-long
 
     COHORT = 'cohort'
     ENROLLMENT_TRACK = 'enrollment_track'

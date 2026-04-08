@@ -499,10 +499,10 @@ class TestLibraries(LibraryTestCase):
         self._create_library(library="l3", display_name="Library-Title-3", org='org-test1')
         self._create_library(library="l4", display_name="Library-Title-4", org='org-test2')
 
-        self.assertEqual(len(self.client.get_json(LIBRARY_REST_URL).json()), 5)  # 1 more from self.setUp()  # noqa: PT009
+        self.assertEqual(len(self.client.get_json(LIBRARY_REST_URL).json()), 5)  # 1 more from self.setUp()  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?org=org-test1').json()), 2)  # noqa: PT009
         self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?text_search=test-lib').json()), 2)  # noqa: PT009
-        self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?text_search=library-title').json()), 3)  # noqa: PT009
+        self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?text_search=library-title').json()), 3)  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?text_search=library-').json()), 3)  # noqa: PT009
         self.assertEqual(len(self.client.get_json(f'{LIBRARY_REST_URL}?text_search=org-test').json()), 3)  # noqa: PT009
 

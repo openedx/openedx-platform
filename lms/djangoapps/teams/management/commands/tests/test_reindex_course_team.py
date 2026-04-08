@@ -40,14 +40,14 @@ class ReindexCourseTeamTest(SharedModuleStoreTestCase):
         """
         Test that raises CommandError for incorrect arguments.
         """
-        with self.assertRaisesRegex(CommandError, '.*At least one course_team_id or --all needs to be specified.*'):  # noqa: PT027
+        with self.assertRaisesRegex(CommandError, '.*At least one course_team_id or --all needs to be specified.*'):  # noqa: PT027  # pylint: disable=line-too-long
             call_command('reindex_course_team')
 
     def test_given_conflicting_arguments_raises_command_error(self):
         """
         Test that raises CommandError for incorrect arguments.
         """
-        with self.assertRaisesRegex(CommandError, '.*Course teams cannot be specified when --all is also specified.*'):  # noqa: PT027
+        with self.assertRaisesRegex(CommandError, '.*Course teams cannot be specified when --all is also specified.*'):  # noqa: PT027  # pylint: disable=line-too-long
             call_command('reindex_course_team', self.team1.team_id, all=True)
 
     @patch.dict('django.conf.settings.FEATURES', {'ENABLE_TEAMS': False})

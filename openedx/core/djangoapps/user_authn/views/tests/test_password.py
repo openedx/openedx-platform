@@ -234,7 +234,7 @@ class TestPasswordChange(CreateAccountMixin, CacheIsolationTestCase):
         html_body = sent_message.alternatives[0][0]
 
         for email_body in [text_body, html_body]:
-            msg = 'However, there is currently no user account associated with your email address: {email}'.format(  # noqa: UP032
+            msg = 'However, there is currently no user account associated with your email address: {email}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 email=bad_email
             )
 

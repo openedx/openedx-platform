@@ -437,7 +437,7 @@ class UserProfile(models.Model):  # noqa: DJ008
     # CRITICAL TODO/SECURITY
     # Sanitize all fields.
     # This is not visible to other users, but could introduce holes later
-    user = models.OneToOneField(User, unique=True, db_index=True, related_name='profile', on_delete=models.CASCADE)  # noqa: DJ012
+    user = models.OneToOneField(User, unique=True, db_index=True, related_name='profile', on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
     name = models.CharField(blank=True, max_length=255, db_index=True)
 
     # How meta field works: meta will only store those fields which are available in extended_profile configuration,

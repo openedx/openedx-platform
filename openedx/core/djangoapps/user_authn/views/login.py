@@ -800,4 +800,4 @@ def _parse_analytics_param_for_course_id(request):
                 modified_request["course_id"] = analytics.get("enroll_course_id")
         except (ValueError, TypeError):
             set_custom_attribute("shim_analytics_course_id", "parse-error")
-            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032
+            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032  # pylint: disable=line-too-long

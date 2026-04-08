@@ -157,7 +157,7 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, three_days.date()) == (None, None)
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, four_days.date()) ==\
                (['final week!'], 4)
-        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'  # noqa: F841
+        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'  # noqa: F841  # pylint: disable=line-too-long
         with pytest.raises(CourseUpdateDoesNotExist):
             get_next_section_highlights(self.user, self.course_key, two_days_ago, six_days.date())
 

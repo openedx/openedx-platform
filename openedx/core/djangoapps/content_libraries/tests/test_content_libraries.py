@@ -1650,7 +1650,7 @@ class ContentLibrariesAuthZTestCase(ContentLibrariesRestApiTest):
             slugs = set(filtered.values_list('slug', flat=True))
             self.assertIn('comb-lib1', slugs, "lib1 should be accessible via AuthZ permission")  # noqa: PT009
             self.assertIn('comb-lib2', slugs, "lib2 should be accessible via legacy permission")  # noqa: PT009
-            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")  # noqa: PT009
+            self.assertIn('comb-lib3', slugs, "lib3 should be accessible via BOTH AuthZ and legacy permissions")  # noqa: PT009  # pylint: disable=line-too-long
             self.assertNotIn('comb-lib4', slugs, "lib4 should NOT be accessible (no permissions)")  # noqa: PT009
 
             # TEST: Verify lib3 doesn't get duplicated despite having both permission types

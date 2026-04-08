@@ -1689,7 +1689,7 @@ class GetStudentsFeatures(DeveloperErrorViewMixin, APIView):
                 )
                 success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
             except Exception as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904  # pylint: disable=line-too-long
 
             return JsonResponse({"status": success_status})
 
@@ -4028,7 +4028,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return data
 
@@ -4045,7 +4045,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             user=username_or_email
         ))
 

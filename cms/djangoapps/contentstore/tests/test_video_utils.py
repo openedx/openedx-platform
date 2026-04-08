@@ -49,7 +49,7 @@ class ValidateVideoImageTestCase(TestCase):
                 size=settings.VIDEO_IMAGE_SETTINGS['VIDEO_IMAGE_MIN_BYTES']
             )
             error = validate_video_image(uploaded_image_file)
-            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')  # noqa: PT009
+            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')  # noqa: PT009  # pylint: disable=line-too-long
 
 
 @ddt.ddt
@@ -320,14 +320,14 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
         (
             b'dummy-content',
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),
         (
             None,
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),

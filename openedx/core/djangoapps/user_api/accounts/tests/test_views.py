@@ -890,7 +890,7 @@ class TestAccountsAPI(FilteredQueryCountMixin, CacheIsolationTestCase, UserAPITe
         # Note that language_proficiencies is tested below as there are multiple error and success conditions.
     )
     @ddt.unpack
-    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):  # noqa: PT028
+    def test_patch_account(self, field, value, fails_validation_value=None, developer_validation_message=None):  # noqa: PT028  # pylint: disable=line-too-long
         """
         Test the behavior of patch, when using the correct content_type.
         """

@@ -719,7 +719,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         # Assert that the session and cookies are not affected
         self.assertEqual(self.request.session.get('email'), self.user.email)  # noqa: PT009
         self.assertEqual(len(self.client.response.cookies), 1)  # noqa: PT009
-        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009
+        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Assert that _mark_cookie_for_deletion not called
         mock_mark_cookie_for_deletion.assert_not_called()
@@ -762,7 +762,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         # Assert that the session and cookies are not affected
         self.assertEqual(self.request.session.get('email'), self.user.email)  # noqa: PT009
         self.assertEqual(len(self.client.response.cookies), 1)  # noqa: PT009
-        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009
+        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Assert that _mark_cookie_for_deletion not called
         mock_mark_cookie_for_deletion.assert_not_called()
@@ -851,7 +851,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
         # Assert that the session and cookies are not affected
         self.assertNotEqual(self.request.session.get('email'), self.user.email)  # noqa: PT009
         self.assertEqual(len(self.client.response.cookies), 1)  # noqa: PT009
-        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009
+        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Assert that _mark_cookie_for_deletion not called
         mock_mark_cookie_for_deletion.assert_not_called()
@@ -887,7 +887,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
 
         # Assert that the session and cookies are not affected
         self.assertEqual(len(self.client.response.cookies), 1)  # noqa: PT009
-        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009
+        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Assert that _mark_cookie_for_deletion not called
         mock_mark_cookie_for_deletion.assert_not_called()
@@ -923,7 +923,7 @@ class TestEmailChangeMiddleware(TestSafeSessionsLogMixin, TestCase):
 
         # Assert that the session and cookies are not affected
         self.assertEqual(len(self.client.response.cookies), 1)  # noqa: PT009
-        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009
+        self.assertEqual(self.client.response.cookies[settings.SESSION_COOKIE_NAME].value, 'authenticated')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Assert that _mark_cookie_for_deletion not called
         mock_mark_cookie_for_deletion.assert_not_called()

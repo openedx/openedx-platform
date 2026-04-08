@@ -1330,7 +1330,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
             assert parent_location.for_branch(None) if parent_location else parent_location == \
                 self.store.get_parent_location(child_location, revision=revision)
 
-    def verify_item_parent(self, item_location: BlockUsageLocator, expected_parent_location, old_parent_location, is_reverted=False):
+    def verify_item_parent(self, item_location: BlockUsageLocator, expected_parent_location, old_parent_location, is_reverted=False):  # pylint: disable=line-too-long
         """
         Verifies that item is placed under expected parent.
 

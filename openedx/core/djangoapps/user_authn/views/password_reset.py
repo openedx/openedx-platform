@@ -460,7 +460,7 @@ class PasswordResetConfirmWrapper(PasswordResetConfirmView):
                 }
             )
         except ObjectDoesNotExist:
-            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'  # noqa: UP032
+            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'  # noqa: UP032  # pylint: disable=line-too-long
                       .format(username=updated_user.username))
 
     def _handle_password_creation(self, request, updated_user):

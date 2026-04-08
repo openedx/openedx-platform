@@ -229,7 +229,7 @@ class Command(BaseCommand):
             offset += enrollments_query_batch_size
 
         self.stdout.write(
-            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(  # noqa: UP032
+            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 successfully_synced_enrollments, new_created_orders, failed_to_synced_enrollments, invalid_enrollments,
                 non_paid_enrollments
             )

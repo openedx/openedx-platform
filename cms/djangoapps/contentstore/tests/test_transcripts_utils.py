@@ -361,7 +361,7 @@ class TestGenerateSubsFromSource(TestDownloadYoutubeSubs):  # lint-amnesty, pyli
         with self.assertRaises(TranscriptsGenerationException) as cm:  # noqa: PT027
             transcripts_utils.generate_subs_from_source(youtube_subs, 'srt', srt_filedata, self.course)
         exception_message = str(cm.exception)
-        self.assertEqual(exception_message, "Something wrong with SubRip transcripts file during parsing.")  # noqa: PT009
+        self.assertEqual(exception_message, "Something wrong with SubRip transcripts file during parsing.")  # noqa: PT009  # pylint: disable=line-too-long
 
 
 class TestGenerateSrtFromSjson(TestDownloadYoutubeSubs):  # lint-amnesty, pylint: disable=test-inherits-tests

@@ -57,7 +57,7 @@ def stylesheet(parser, token):  # pylint: disable=unused-argument
         _, name = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-            '%r requires exactly one argument: the name of a group in the PIPELINE["STYLESHEETS"] setting' %  # noqa: UP031
+            '%r requires exactly one argument: the name of a group in the PIPELINE["STYLESHEETS"] setting' %  # noqa: UP031  # pylint: disable=line-too-long
             token.split_contents()[0]
         )
     return ThemeStylesheetNode(name)
@@ -72,7 +72,7 @@ def javascript(parser, token):  # pylint: disable=unused-argument
         _, name = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-            '%r requires exactly one argument: the name of a group in the PIPELINE["JAVASCRIPT"] setting' %  # noqa: UP031
+            '%r requires exactly one argument: the name of a group in the PIPELINE["JAVASCRIPT"] setting' %  # noqa: UP031  # pylint: disable=line-too-long
             token.split_contents()[0]
         )
     return ThemeJavascriptNode(name)

@@ -747,7 +747,7 @@ class PersistentSubsectionGradeOverride(models.Model):
     class Meta:
         app_label = "grades"
 
-    grade = models.OneToOneField(PersistentSubsectionGrade, related_name='override', on_delete=models.CASCADE)  # noqa: DJ012
+    grade = models.OneToOneField(PersistentSubsectionGrade, related_name='override', on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
 
     # Created/modified timestamps prevent race-conditions when using with async rescoring tasks
     created = models.DateTimeField(auto_now_add=True, db_index=True)

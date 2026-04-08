@@ -297,7 +297,7 @@ class CourseGradingView(BaseCourseView):
         master's track or is enabled with the grades.bulk_management course waffle flag.
         """
         course_modes = get_course_enrollment_details(str(course_key), include_expired=True).get('course_modes', [])
-        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))  # noqa: UP034
+        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))  # noqa: UP034  # pylint: disable=line-too-long
         return course_has_masters_track or gradebook_bulk_management_enabled(course_key)
 
     def _get_assignment_types(self, course):

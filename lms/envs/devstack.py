@@ -238,7 +238,7 @@ ENABLE_ENROLLMENT_RESET = True
 if ENABLE_THIRD_PARTY_AUTH and (  # noqa: F405
         'common.djangoapps.third_party_auth.dummy.DummyBackend' not in AUTHENTICATION_BACKENDS  # noqa: F405
 ):
-    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)  # noqa: F405
+    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)  # noqa: F405  # pylint: disable=line-too-long
 
 ########################## Authn MFE Context API #######################
 ENABLE_DYNAMIC_REGISTRATION_FIELDS = True

@@ -300,7 +300,7 @@ def _can_enroll_courselike(user, courselike):
             elif cea.valid_for_user(user):
                 return ACCESS_GRANTED
             else:
-                debug("Deny: CEA was already consumed by a different user {} and can't be used again by {}".format(  # noqa: UP032
+                debug("Deny: CEA was already consumed by a different user {} and can't be used again by {}".format(  # noqa: UP032  # pylint: disable=line-too-long
                     cea.user.id,
                     user.id,
                 ))

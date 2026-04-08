@@ -32,7 +32,7 @@ def get_course_commentable_counts(course_key: CourseKey) -> Dict[str, Dict[str, 
 
 
 @function_trace("get_course_user_stats")
-def get_course_user_stats(course_key: CourseKey, params: Optional[Dict] = None) -> Dict[str, Dict[str, int]]:  # noqa: UP006, UP045
+def get_course_user_stats(course_key: CourseKey, params: Optional[Dict] = None) -> Dict[str, Dict[str, int]]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Get stats about a user's participation in a course.
 

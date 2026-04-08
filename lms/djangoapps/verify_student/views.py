@@ -916,7 +916,7 @@ class SubmitPhotosView(View):
         # The face image is always required.
         if "face_image" not in params:
             msg = _("Missing required parameter face_image")
-            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))  # noqa: UP032
+            log.error(("User {user_id} missing required parameter face_image").format(user_id=request.user.id))  # noqa: UP032  # pylint: disable=line-too-long
             return None, HttpResponseBadRequest(msg)
 
         return params, None

@@ -413,7 +413,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
         if not all(var in self.conf for var in self.required_variables):
             missing = [var for var in self.required_variables if var not in self.conf]
             log.warning(
-                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '  # noqa: UP032
+                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '  # noqa: UP032  # pylint: disable=line-too-long
                 'the following keys in other_settings are required, but were missing. MissingKeys: {keys}'.format(
                     keys=missing
                 )

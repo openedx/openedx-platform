@@ -93,7 +93,7 @@ class TeamsCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Return allowed operations for teams app.
         """

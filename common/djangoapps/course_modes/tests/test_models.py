@@ -347,7 +347,7 @@ class CourseModeModelTest(TestCase):
             assert not is_error_expected, 'Expected a ValidationError to be thrown.'
         except ValidationError as exc:
             assert is_error_expected, 'Did not expect a ValidationError to be thrown.'
-            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']  # noqa: PT017
+            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']  # noqa: PT017  # pylint: disable=line-too-long
 
     @ddt.data(
         "verified",

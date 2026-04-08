@@ -30,7 +30,7 @@ class XBlockHandlerPermissionsTest(CourseTestCase):
         self.assertEqual(self.client.get_json(f'/xblock/{self.html_block.location}').status_code, 200)  # noqa: PT009
 
     def test_get_block_fields_non_staff_forbidden(self):
-        self.assertEqual(self.non_staff_client.get_json(f'/xblock/{self.html_block.location}').status_code, 403)  # noqa: PT009
+        self.assertEqual(self.non_staff_client.get_json(f'/xblock/{self.html_block.location}').status_code, 403)  # noqa: PT009  # pylint: disable=line-too-long
 
     # --- POST /xblock/{blockId} metadata ---
 

@@ -88,7 +88,7 @@ def check_and_get_upgrade_link_and_date(user, enrollment=None, course=None):
 
     if enrollment:
         if course and enrollment.course_id != course.id:
-            logger.warning('{} refers to a different course than {} which was supplied. Enrollment course id={}, '  # noqa: UP032
+            logger.warning('{} refers to a different course than {} which was supplied. Enrollment course id={}, '  # noqa: UP032  # pylint: disable=line-too-long
                            'repr={!r}, deprecated={}. Course id={}, repr={!r}, deprecated={}.'
                            .format(enrollment,
                                    course,

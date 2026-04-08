@@ -407,7 +407,7 @@ class TestCourseListing(ModuleStoreTestCase):
             return {getattr(c, key_attribute_name) for c in course_list}
 
         found_courses, unsucceeded_course_actions = _accessible_courses_iter_for_tests(self.request)
-        self.assertSetEqual(_set_of_course_keys(courses + courses_in_progress), _set_of_course_keys(found_courses))  # noqa: PT009
+        self.assertSetEqual(_set_of_course_keys(courses + courses_in_progress), _set_of_course_keys(found_courses))  # noqa: PT009  # pylint: disable=line-too-long
         self.assertSetEqual(  # noqa: PT009
             _set_of_course_keys(courses_in_progress), _set_of_course_keys(unsucceeded_course_actions, 'course_key')
         )

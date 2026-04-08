@@ -389,7 +389,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
             self.do_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()
@@ -679,7 +679,7 @@ class SecondaryEmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, Ca
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
             self.do_secondary_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()

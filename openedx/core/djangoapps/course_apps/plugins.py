@@ -75,7 +75,7 @@ class CourseApp(ABC):
 
     @classmethod
     @abstractmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: F821, UP006
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional['User'] = None) -> Dict[str, bool]:  # noqa: F821, UP006  # pylint: disable=line-too-long
         """
         Returns a dictionary of available operations for this app.
 

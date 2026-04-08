@@ -658,7 +658,7 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 200
 
         results = response.data
-        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None  # noqa: PT018
+        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None  # noqa: PT018  # pylint: disable=line-too-long
 
     def test_get_expired_entitlement_by_uuid(self):
         past_datetime = now() - timedelta(days=365 * 2)

@@ -235,7 +235,7 @@ class CourseCohortsSettings(models.Model):  # noqa: DJ008
         help_text="Which course are these settings associated with?",
     )
 
-    _cohorted_discussions = models.TextField(db_column='cohorted_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001
+    _cohorted_discussions = models.TextField(db_column='cohorted_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001  # pylint: disable=line-too-long
 
     # Note that although a default value is specified here for always_cohort_inline_discussions (False),
     # in reality the default value at the time that cohorting is enabled for a course comes from

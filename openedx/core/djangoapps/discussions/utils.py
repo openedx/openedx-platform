@@ -46,7 +46,7 @@ def get_divided_discussions(
     return divided_course_wide_discussions, divided_inline_discussions
 
 
-def get_discussion_categories_ids(course: CourseBlock, user: Optional[User], include_all: bool = False) -> List[str]:  # noqa: UP006, UP045
+def get_discussion_categories_ids(course: CourseBlock, user: Optional[User], include_all: bool = False) -> List[str]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Returns a list of available ids of categories for the course that
     are accessible to the given user.

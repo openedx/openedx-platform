@@ -373,7 +373,7 @@ class CourseEnrollmentForm(forms.ModelForm):
             try:
                 args_copy['course'] = CourseKey.from_string(args_copy['course'])
             except InvalidKeyError:
-                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             args = [args_copy]
 
         super().__init__(*args, **kwargs)

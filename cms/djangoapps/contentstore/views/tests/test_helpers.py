@@ -56,7 +56,7 @@ class HelpersTestCase(CourseTestCase):
                                     display_name="My Video")
         self.assertIsNone(xblock_studio_url(video))  # noqa: PT009
         # Verify video URL with find_parent=True
-        self.assertEqual(xblock_studio_url(video, find_parent=True), f'/container/{child_vertical.location}')  # noqa: PT009
+        self.assertEqual(xblock_studio_url(video, find_parent=True), f'/container/{child_vertical.location}')  # noqa: PT009  # pylint: disable=line-too-long
 
         # Verify library URL
         library = LibraryFactory.create()
@@ -99,7 +99,7 @@ class HelpersTestCase(CourseTestCase):
         sequential = BlockFactory.create(
             parent_location=chapter.location, category='sequential', display_name="Lesson 1"
         )
-        self.assertEqual(xblock_embed_lms_url(sequential), f"lms.example.com/xblock/{sequential.location}")  # noqa: PT009
+        self.assertEqual(xblock_embed_lms_url(sequential), f"lms.example.com/xblock/{sequential.location}")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_xblock_type_display_name(self):
 

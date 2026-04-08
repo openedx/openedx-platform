@@ -88,7 +88,7 @@ class _TestWordCloudBase(TestCase):
             # which requires a different way of method invocation.
             with self.assertRaises(AttributeError) as context:  # noqa: PT027
                 json.loads(block.bad_dispatch('bad_dispatch', {}))
-            self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))  # noqa: PT009
+            self.assertIn("'WordCloudBlock' object has no attribute 'bad_dispatch'", str(context.exception))  # noqa: PT009  # pylint: disable=line-too-long
         else:
             response = json.loads(block.handle_ajax('bad_dispatch', {}))
             self.assertDictEqual(response, {  # noqa: PT009

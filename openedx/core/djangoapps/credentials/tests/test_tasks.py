@@ -338,8 +338,8 @@ class TestHandleNotifyCredentialsTask(TestCase):
         self.options['user_ids'] = [str(self.user.id), str(self.user2.id)]
         tasks.handle_notify_credentials(options=self.options, course_keys=[])
         assert mock_send.called
-        self.assertListEqual(list(mock_send.call_args[0][0]), [self.cert1, self.cert2, self.cert4, self.cert3])  # noqa: PT009
-        self.assertListEqual(list(mock_send.call_args[0][1]), [self.grade1, self.grade2, self.grade4, self.grade3])  # noqa: PT009
+        self.assertListEqual(list(mock_send.call_args[0][0]), [self.cert1, self.cert2, self.cert4, self.cert3])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertListEqual(list(mock_send.call_args[0][1]), [self.grade1, self.grade2, self.grade4, self.grade3])  # noqa: PT009  # pylint: disable=line-too-long
         mock_send.reset_mock()
 
     @mock.patch(TASKS_MODULE + '.send_notifications')
@@ -494,14 +494,14 @@ class TestSendGradeIfInteresting(TestCase):
         tasks.send_grade_if_interesting(self.user, self.key, None, None, 'A', 1.0)
         assert mock_send_grade_to_credentials.delay.called is called
 
-    def test_send_grade_missing_cert(self, _, mock_send_grade_to_credentials, _mock_is_learner_issuance_enabled):  # noqa: PT019
+    def test_send_grade_missing_cert(self, _, mock_send_grade_to_credentials, _mock_is_learner_issuance_enabled):  # noqa: PT019  # pylint: disable=line-too-long
         tasks.send_grade_if_interesting(self.user, self.key, None, None, 'A', 1.0)
         assert not mock_send_grade_to_credentials.delay.called
 
     @ddt.data([True], [False])
     @ddt.unpack
     def test_send_grade_if_in_a_program(self, in_program, mock_is_course_run_in_a_program,
-                                        mock_send_grade_to_credentials, _mock_is_learner_issuance_enabled):  # noqa: PT019
+                                        mock_send_grade_to_credentials, _mock_is_learner_issuance_enabled):  # noqa: PT019  # pylint: disable=line-too-long
         mock_is_course_run_in_a_program.return_value = in_program
         tasks.send_grade_if_interesting(self.user, self.key, 'verified', 'downloadable', 'A', 1.0)
         assert mock_send_grade_to_credentials.delay.called is in_program
@@ -526,8 +526,8 @@ class TestSendGradeIfInteresting(TestCase):
         assert mock_is_learner_issuance_enabled.called
         assert not mock_send_grade_to_credentials.delay.called
 
-    def test_send_grade_records_enabled(self, _mock_is_course_run_in_a_program, mock_send_grade_to_credentials,  # noqa: PT019
-                                        _mock_is_learner_issuance_enabled):  # noqa: PT019
+    def test_send_grade_records_enabled(self, _mock_is_course_run_in_a_program, mock_send_grade_to_credentials,  # noqa: PT019  # pylint: disable=line-too-long
+                                        _mock_is_learner_issuance_enabled):  # noqa: PT019  # pylint: disable=line-too-long
         site_config = SiteConfigurationFactory.create(
             site_values={'course_org_filter': [self.key.org]}
         )

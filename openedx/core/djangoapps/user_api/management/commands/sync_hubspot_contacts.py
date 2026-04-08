@@ -145,7 +145,7 @@ class Command(BaseCommand):
             response.raise_for_status()
             return len(contacts)
         except HTTPError as ex:
-            message = 'An error occurred while syncing batch of contacts for site {domain}, {message}'.format(  # noqa: UP032
+            message = 'An error occurred while syncing batch of contacts for site {domain}, {message}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 domain=site_conf.site.domain, message=str(ex)
             )
             self.stderr.write(message)

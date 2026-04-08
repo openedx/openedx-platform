@@ -247,7 +247,7 @@ class Command(BaseCommand):
                 else:
                     filtered_count += 1
             if (sent_count + filtered_count) % 10000 == 0:
-                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032
+                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     sent_count,
                     filtered_count,
                     total_goals,

@@ -1183,7 +1183,7 @@ class TestCreateOrderEcommerceService(CheckoutTestMixin, ModuleStoreTestCase):
 
     def _get_checkout_args(self, patched_create_order):
         """ Assuming patched_create_order was called, return a mapping containing the call arguments."""
-        return dict(list(zip(('user', 'course_key', 'course_mode', 'processor'), patched_create_order.call_args[0])))  # noqa: B905
+        return dict(list(zip(('user', 'course_key', 'course_mode', 'processor'), patched_create_order.call_args[0])))  # noqa: B905  # pylint: disable=line-too-long
 
 
 class TestCheckoutWithEcommerceService(ModuleStoreTestCase):

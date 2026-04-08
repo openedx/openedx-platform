@@ -311,7 +311,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
         status = UserTaskStatus.objects.get(task_id=task.id)
         self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
-        self.assertEqual(self._get_task_status_fail_message(status), "ModulestoreSource matching query does not exist.")  # noqa: PT009
+        self.assertEqual(self._get_task_status_fail_message(status), "ModulestoreSource matching query does not exist.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_bulk_migrate_invalid_collection(self):
         """
@@ -336,7 +336,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
         status = UserTaskStatus.objects.get(task_id=task.id)
         self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
-        self.assertEqual(self._get_task_status_fail_message(status), "Collection matching query does not exist.")  # noqa: PT009
+        self.assertEqual(self._get_task_status_fail_message(status), "Collection matching query does not exist.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_bulk_migration_task_calculate_total_steps(self):
         """
@@ -803,7 +803,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 container_version = result.containerversion
                 self.assertEqual(container_version.title, f"Test {block_type.title()}")  # noqa: PT009
                 # The container is published
-                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009
+                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_migrate_container_same_title(self):
         """

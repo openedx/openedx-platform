@@ -265,7 +265,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
     )
     @ddt.unpack
     @mock.patch('openedx.core.djangoapps.embargo.api.check_course_access', return_value=False)
-    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):  # noqa: PT019
+    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):  # noqa: PT019  # pylint: disable=line-too-long
         self.restricted_course.disable_access_check = check_disabled
         self.restricted_course.save()
 

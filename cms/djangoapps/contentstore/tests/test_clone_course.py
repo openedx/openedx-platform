@@ -136,7 +136,7 @@ class CloneCourseTest(CourseTestCase):
             result = rerun_course.delay(str(split_course3_id), str(split_course4_id), self.user.id,
                                         json.dumps(fields, cls=EdxJSONEncoder))
             self.assertIn("exception: ", result.get())  # noqa: PT009
-            self.assertIsNone(self.store.get_course(split_course4_id), "Didn't delete course after error")  # noqa: PT009
+            self.assertIsNone(self.store.get_course(split_course4_id), "Didn't delete course after error")  # noqa: PT009  # pylint: disable=line-too-long
             CourseRerunState.objects.find_first(
                 course_key=split_course4_id,
                 state=CourseRerunUIStateManager.State.FAILED

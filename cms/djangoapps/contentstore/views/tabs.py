@@ -179,7 +179,7 @@ def edit_tab_handler(course_item: CourseBlock, tabs_data: Dict, user: User):  # 
         raise NotImplementedError(f"Unsupported request to edit tab: {tabs_data}")
 
 
-def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[str, str]) -> Optional[CourseTab]:  # noqa: UP006, UP045
+def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[str, str]) -> Optional[CourseTab]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Look for a tab with the specified tab_id or locator.  Returns the first matching tab.
     """
@@ -191,7 +191,7 @@ def get_tab_by_tab_id_locator(tab_list: List[CourseTab], tab_id_locator: Dict[st
     return tab
 
 
-def get_tab_by_locator(tab_list: List[CourseTab], tab_location: Union[str, UsageKey]) -> Optional[CourseTab]:  # noqa: UP006, UP007, UP045
+def get_tab_by_locator(tab_list: List[CourseTab], tab_location: Union[str, UsageKey]) -> Optional[CourseTab]:  # noqa: UP006, UP007, UP045  # pylint: disable=line-too-long
     """
     Look for a tab with the specified locator.  Returns the first matching tab.
     """

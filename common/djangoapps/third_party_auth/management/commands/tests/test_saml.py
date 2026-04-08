@@ -230,7 +230,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
         )
 
         expected = '\n4 provider(s) found in database.\n1 skipped and 3 attempted.\n2 updated and 1 failed.\n'
-        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027
+        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -253,7 +253,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         # Four test configurations plus setUp -- two will be skipped and three attempted, with similar results.
         expected = '\nDone.\n5 provider(s) found in database.\n2 skipped and 3 attempted.\n0 updated and 1 failed.\n'
-        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027
+        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -306,7 +306,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
 
-        with self.assertRaisesRegex(CommandError, "MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027
+        with self.assertRaisesRegex(CommandError, "MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -359,7 +359,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
         )
         self.assertIn(expected_warning, output)  # noqa: PT009
         self.assertIn('Missing configs: 0', output)  # No missing configs from setUp  # noqa: PT009
-        self.assertIn('Disabled configs: 1', output)  # From setUp: provider_config with disabled saml_config  # noqa: PT009
+        self.assertIn('Disabled configs: 1', output)  # From setUp: provider_config with disabled saml_config  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_run_checks_outdated_configs(self):
         """
@@ -456,8 +456,8 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'has no direct SAML configuration and no matching default configuration was found.'
         )
         self.assertIn(expected_warning, output)  # noqa: PT009
-        self.assertIn('Missing configs: 1', output)  # 1 from this test (provider with no config and no default)  # noqa: PT009
-        self.assertIn('Disabled configs: 1', output)  # 1 from setUp data  # noqa: PT009
+        self.assertIn('Missing configs: 1', output)  # 1 from this test (provider with no config and no default)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertIn('Disabled configs: 1', output)  # 1 from setUp data  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_run_checks_null_config_id(self):
         """

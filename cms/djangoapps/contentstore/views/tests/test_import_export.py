@@ -1186,7 +1186,7 @@ class TestCourseExportImport(LibraryTestCase):
 
         self.assertEqual(len(source_course_lib_children), len(dest_course_lib_children))  # noqa: PT009
 
-        for source_child_location, dest_child_location in zip(source_course_lib_children, dest_course_lib_children):  # noqa: B905
+        for source_child_location, dest_child_location in zip(source_course_lib_children, dest_course_lib_children):  # noqa: B905  # pylint: disable=line-too-long
             # Assert problem names on draft branch.
             with self.store.branch_setting(branch_setting=ModuleStoreEnum.Branch.draft_preferred):
                 self.assert_names(source_child_location, dest_child_location)

@@ -412,7 +412,7 @@ def validate_user_preference_serializer(serializer, preference_key, preference_v
         # messages into the strings only.
         for key in errors:
             errors[key] = [str(el) for el in errors[key]]
-        developer_message = "Value '{preference_value}' not valid for preference '{preference_key}': {error}".format(  # noqa: UP032
+        developer_message = "Value '{preference_value}' not valid for preference '{preference_key}': {error}".format(  # noqa: UP032  # pylint: disable=line-too-long
             preference_key=preference_key, preference_value=preference_value, error=errors
         )
         if "key" in serializer.errors:

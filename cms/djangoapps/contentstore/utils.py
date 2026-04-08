@@ -996,7 +996,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032
+            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032  # pylint: disable=line-too-long
                 section=section.location,
                 subsection=subsection.location
             ))

@@ -62,7 +62,7 @@ class LtiCourseLaunchMixin:
             pii_config['person_contact_email_primary'] = request.user.email
         return pii_config
 
-    def _get_additional_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:  # noqa: UP006
+    def _get_additional_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:  # noqa: UP006  # pylint: disable=line-too-long
         """
         Get additional misc LTI parameters.
 

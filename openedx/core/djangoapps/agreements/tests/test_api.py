@@ -149,7 +149,7 @@ class TestLTIPIISignatureApi(SharedModuleStoreTestCase):
         s1 = get_lti_pii_signature(self.user.username, self.course_id)  # retrieve the database entry
         create_lti_pii_signature(self.user.username, self.course_id, self.lti_tools_2)  # signature with updated tools
         s2 = get_lti_pii_signature(self.user.username, self.course_id)  # retrieve the updated database entry
-        self.assertNotEqual(s1, s2)  # the signatue retrieved from the database should be the updated version  # noqa: PT009
+        self.assertNotEqual(s1, s2)  # the signatue retrieved from the database should be the updated version  # noqa: PT009  # pylint: disable=line-too-long
 
     def _assert_lti_pii_signature(self, signature):
         """

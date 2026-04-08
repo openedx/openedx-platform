@@ -74,7 +74,7 @@ class CourseActionUIStateManager(CourseActionStateManager):
                 state_object.created_user = user
             else:
                 raise CourseActionStateItemNotFoundError(
-                    "Cannot update non-existent entry for course_key {course_key} and action {action}".format(  # noqa: UP032
+                    "Cannot update non-existent entry for course_key {course_key} and action {action}".format(  # noqa: UP032  # pylint: disable=line-too-long
                         action=self.ACTION,
                         course_key=course_key,
                     ))

@@ -445,7 +445,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 # on get_or_create to be able to see rows created in another
                 # process. This seems to happen frequently, and ignoring it is the
                 # best course of action for now
-                log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032
+                log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032  # pylint: disable=line-too-long
                     user, repr(str(usage_key.context_key)), usage_key
                 ))
                 return
@@ -468,7 +468,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 except IntegrityError:
                     # The UPDATE above failed. Log information - but ignore the error.
                     # See https://openedx.atlassian.net/browse/TNL-5365
-                    log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032
+                    log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032  # pylint: disable=line-too-long
                         user, repr(str(usage_key.context_key)), usage_key
                     ))
                     log.warning("set_many: All {} block keys: {}".format(  # noqa: UP032

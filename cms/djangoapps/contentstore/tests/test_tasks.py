@@ -224,7 +224,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
 
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
-    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
+    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019  # pylint: disable=line-too-long
         """ edx-proctoring interface is called if exam service is not enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_called_once_with(self.course.id)
@@ -233,7 +233,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
     @override_waffle_flag(EXAMS_IDA, active=True)
-    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
+    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019  # pylint: disable=line-too-long
         """ exams service interface is called if exam service is enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_not_called()

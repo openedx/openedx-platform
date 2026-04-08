@@ -352,7 +352,7 @@ def get_topic_ids_from_topics(topics: List[Dict[str, str]]) -> List[str]:  # noq
     return [topic['id'] for topic in topics]
 
 
-def get_archived_topics(filtered_topic_ids: List[str], topics: List[Dict[str, str]]) -> List[Dict[str, str]]:  # noqa: UP006
+def get_archived_topics(filtered_topic_ids: List[str], topics: List[Dict[str, str]]) -> List[Dict[str, str]]:  # noqa: UP006  # pylint: disable=line-too-long
     """
     This function takes a list of topic ids and a list of topics, and returns the list of archived topics.
 

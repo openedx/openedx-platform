@@ -352,7 +352,7 @@ class TestSendResponseNotifications(DiscussionAPIViewTestMixin, ModuleStoreTestC
             args_comment_on_response = handler.call_args_list[0][1]['notification_data']
             self.assertEqual(handler.call_count, 1)  # noqa: PT009
         # check if the notification is sent to the parent response creator
-        self.assertEqual([int(user_id) for user_id in args_comment_on_response.user_ids], [self.user_2.id])  # noqa: PT009
+        self.assertEqual([int(user_id) for user_id in args_comment_on_response.user_ids], [self.user_2.id])  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(args_comment_on_response.notification_type, 'new_comment_on_response')  # noqa: PT009
         expected_context = {
             'replier_name': self.user_3.username,
@@ -769,7 +769,7 @@ class TestResponseEndorsedNotifications(DiscussionAPIViewTestMixin, ModuleStoreT
         # Test response endorsed notification
         notification_data = handler.call_args_list[1][1]['notification_data']
         # Target only the response author
-        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(response.user_id)])  # noqa: PT009
+        self.assertEqual([int(user_id) for user_id in notification_data.user_ids], [int(response.user_id)])  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(notification_data.notification_type, 'response_endorsed')  # noqa: PT009
 
         expected_context = {

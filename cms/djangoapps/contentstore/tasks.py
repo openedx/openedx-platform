@@ -525,7 +525,7 @@ def sync_discussion_settings(course_key, user):
 
         fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
         # Plugin configuration is stored in the course settings under the provider name.
-        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905  # pylint: disable=line-too-long
 
         for attr_name, settings_key in field_mappings.items():
             if settings_key in discussion_settings:

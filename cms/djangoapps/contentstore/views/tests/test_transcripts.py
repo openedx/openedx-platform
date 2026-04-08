@@ -1044,7 +1044,7 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
         self.assertEqual(resp.status_code, 400)  # noqa: PT009
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_fail_data_with_bad_locator(self):
         # Test for raising `InvalidLocationError` exception.
@@ -1059,7 +1059,7 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
         self.assertEqual(resp.status_code, 400)  # noqa: PT009
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009  # pylint: disable=line-too-long
 
         # Test for raising `ItemNotFoundError` exception.
         data = {
@@ -1072,7 +1072,7 @@ class TestCheckTranscripts(BaseTranscripts):
         }
         resp = self.client.get(link, {'data': json.dumps(data)})
         self.assertEqual(resp.status_code, 400)  # noqa: PT009
-        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009
+        self.assertEqual(json.loads(resp.content.decode('utf-8')).get('status'), "Can't find item by locator.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_fail_for_non_video_block(self):
         # Not video block: setup

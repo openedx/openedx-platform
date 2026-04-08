@@ -55,7 +55,7 @@ class AccessTokenLoginMixin:
 
         return self.client.post(
             self.login_with_access_token_url,
-            HTTP_AUTHORIZATION=f"Bearer {access_token if access_token else self.access_token}".encode('utf-8')  # noqa: UP012
+            HTTP_AUTHORIZATION=f"Bearer {access_token if access_token else self.access_token}".encode('utf-8')  # noqa: UP012  # pylint: disable=line-too-long
         )
 
     def _assert_access_token_is_valid(self, access_token=None):

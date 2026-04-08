@@ -131,7 +131,7 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         runtime = TestRuntime(services={'field-data': field_data})
         xblock_aside = StructuredTagsAside(scope_ids=sids, runtime=runtime)
         available_tags = xblock_aside.get_available_tags()
-        self.assertEqual(len(available_tags), 2, "StructuredTagsAside should contains two tag categories")  # noqa: PT009
+        self.assertEqual(len(available_tags), 2, "StructuredTagsAside should contains two tag categories")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_preview_html(self):
         """
@@ -184,7 +184,7 @@ class StructuredTagsAsideTestCase(ModuleStoreTestCase):
         self.assertEqual(len(option_nodes2), 3)  # noqa: PT009
 
         option_values2 = [opt_elem.text for opt_elem in option_nodes2 if opt_elem.text]
-        self.assertEqual(option_values2, ['Learned a few things', 'Learned everything', 'Learned nothing'])  # noqa: PT009
+        self.assertEqual(option_values2, ['Learned a few things', 'Learned everything', 'Learned nothing'])  # noqa: PT009  # pylint: disable=line-too-long
 
         # Now ensure the acid_aside is not in the result
         self.assertNotRegex(problem_html, r"data-block-type=[\"\']acid_aside[\"\']")  # noqa: PT009

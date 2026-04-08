@@ -53,7 +53,7 @@ class PwnedPasswordsAPITest(TestCase):
                     'Request timed out for {}'.format(password_hash_hex)  # noqa: UP032
                 )
             )
-        assert 'Request timed out for {}'.format(password_hash_hex) in log_capture.records[0].getMessage()  # noqa: UP032
+        assert 'Request timed out for {}'.format(password_hash_hex) in log_capture.records[0].getMessage()  # noqa: UP032  # pylint: disable=line-too-long
 
     def test_provided_string_is_sha1_or_not(self):
         hashed_password = '8BB6118F8FD6935AD0876A3BE34A717D32708FFD'

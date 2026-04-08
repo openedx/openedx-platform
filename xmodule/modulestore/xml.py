@@ -532,7 +532,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         '''
         String representation - for debugging
         '''
-        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html  # noqa: UP031
+        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html  # noqa: UP031  # pylint: disable=line-too-long
             self.__class__.__name__, self.data_dir, len(self.courses), len(self.modules)
         )
 

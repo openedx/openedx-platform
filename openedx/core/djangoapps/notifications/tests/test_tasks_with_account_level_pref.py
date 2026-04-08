@@ -405,7 +405,7 @@ class NotificationCreationOnChannelsTests(ModuleStoreTestCase):
                 'username': 'user name',
             },
         }
-        with patch('openedx.core.djangoapps.notifications.tasks.notification_generated_event') as event_mock:  # noqa: F841
+        with patch('openedx.core.djangoapps.notifications.tasks.notification_generated_event') as event_mock:  # noqa: F841  # pylint: disable=line-too-long
             send_notifications(**kwargs)
             notifications = Notification.objects.all()
             assert len(notifications) == generated_count

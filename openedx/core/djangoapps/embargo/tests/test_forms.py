@@ -122,5 +122,5 @@ class IPFilterFormTest(TestCase):
                " Please fix the error(s) and try again."
         assert bmsg == form._errors['blacklist'][0]  # pylint: disable=protected-access
 
-        with self.assertRaisesRegex(ValueError, "The IPFilter could not be created because the data didn't validate."):  # noqa: PT027
+        with self.assertRaisesRegex(ValueError, "The IPFilter could not be created because the data didn't validate."):  # noqa: PT027  # pylint: disable=line-too-long
             form.save()

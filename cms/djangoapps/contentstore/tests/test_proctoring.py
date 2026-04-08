@@ -70,7 +70,7 @@ class TestProctoredExams(ModuleStoreTestCase):
         self.assertEqual(exam['exam_name'], sequence.display_name)  # noqa: PT009
         self.assertEqual(exam['time_limit_mins'], sequence.default_time_limit_minutes)  # noqa: PT009
         self.assertEqual(exam['is_proctored'], sequence.is_proctored_exam)  # noqa: PT009
-        self.assertEqual(exam['is_practice_exam'], sequence.is_practice_exam or sequence.is_onboarding_exam)  # noqa: PT009
+        self.assertEqual(exam['is_practice_exam'], sequence.is_practice_exam or sequence.is_onboarding_exam)  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(exam['is_active'], expected_active)  # noqa: PT009
         self.assertEqual(exam['backend'], self.course.proctoring_provider)  # noqa: PT009
 

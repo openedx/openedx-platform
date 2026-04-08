@@ -47,7 +47,7 @@ class TestLinkTrackingTag(QueryStringAssertionMixin, EmailTemplateTagMixin, Cach
             scheme='http',
             netloc='example.com',
             path='/foo',
-            query='utm_source=test_app_label&utm_campaign=test_name&utm_medium=email&utm_content={uuid}'.format(  # noqa: UP032
+            query='utm_source=test_app_label&utm_campaign=test_name&utm_medium=email&utm_content={uuid}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 uuid=self.message.uuid
             )
         )

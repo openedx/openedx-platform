@@ -277,7 +277,7 @@ WEBPACK_LOADER['DEFAULT']['TIMEOUT'] = 5  # noqa: F405
 SOCIAL_AUTH_EDX_OAUTH2_KEY = 'studio-sso-key'
 SOCIAL_AUTH_EDX_OAUTH2_SECRET = 'studio-sso-secret'  # in stage, prod would be high-entropy secret
 # routed internally server-to-server
-SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT = ENV_TOKENS.get('SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT', 'http://edx.devstack.lms:18000')  # noqa: F405
+SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT = ENV_TOKENS.get('SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT', 'http://edx.devstack.lms:18000')  # noqa: F405  # pylint: disable=line-too-long
 SOCIAL_AUTH_EDX_OAUTH2_PUBLIC_URL_ROOT = 'http://localhost:18000'  # used in browser redirect
 
 # Don't form the return redirect URL with HTTPS on devstack
@@ -317,14 +317,14 @@ EVENT_BUS_REDIS_CONNECTION_URL = 'redis://:password@edx.devstack.redis:6379/'
 EVENT_BUS_TOPIC_PREFIX = 'dev'
 EVENT_BUS_CONSUMER = 'edx_event_bus_redis.RedisEventConsumer'
 
-course_catalog_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.course.catalog_info.changed.v1']  # noqa: F405
+course_catalog_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.course.catalog_info.changed.v1']  # noqa: F405  # pylint: disable=line-too-long
 course_catalog_event_setting['course-catalog-info-changed']['enabled'] = True
 
-xblock_published_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.published.v1']  # noqa: F405
+xblock_published_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.published.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_published_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
-xblock_deleted_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.deleted.v1']  # noqa: F405
+xblock_deleted_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.deleted.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_deleted_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
-xblock_duplicated_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.duplicated.v1']  # noqa: F405
+xblock_duplicated_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.duplicated.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_duplicated_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
 
 

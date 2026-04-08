@@ -59,7 +59,7 @@ def send_idv_update(sender, instance, **kwargs):  # pylint: disable=unused-argum
         full_name = get_name(instance.user.id)
 
     log.info(
-        'IDV sending name_affirmation task (idv_id={idv_id}, user_id={user_id}) to update status={status}'.format(  # noqa: UP032
+        'IDV sending name_affirmation task (idv_id={idv_id}, user_id={user_id}) to update status={status}'.format(  # noqa: UP032  # pylint: disable=line-too-long
             user_id=instance.user.id,
             status=instance.status,
             idv_id=instance.id

@@ -996,7 +996,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             if len(course_block) > 1:
                 raise MultipleCourseBlocksFound(
-                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))  # noqa: UP032
+                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))  # noqa: UP032  # pylint: disable=line-too-long
                 )
             course_summary = extract_course_summary(course_block[0])
             courses_summaries.append(

@@ -288,7 +288,7 @@ class LTI20BlockMixin:
         if verify_content_type and content_type != LTI_2_0_JSON_CONTENT_TYPE:
             log.info(f"[LTI]: v2.0 result service -- bad Content-Type: {content_type}")
             raise LTIError(
-                "For LTI 2.0 result service, Content-Type must be {}.  Got {}".format(LTI_2_0_JSON_CONTENT_TYPE,  # noqa: UP032
+                "For LTI 2.0 result service, Content-Type must be {}.  Got {}".format(LTI_2_0_JSON_CONTENT_TYPE,  # noqa: UP032  # pylint: disable=line-too-long
                                                                                       content_type))
         try:
             self.verify_oauth_body_sign(request, content_type=LTI_2_0_JSON_CONTENT_TYPE)
@@ -329,7 +329,7 @@ class LTI20BlockMixin:
             if isinstance(json_obj, list) and len(json_obj) >= 1 and isinstance(json_obj[0], dict):
                 json_obj = json_obj[0]
             else:
-                msg = ("Supplied JSON string is a list that does not contain an object as the first element. {}"  # noqa: UP032
+                msg = ("Supplied JSON string is a list that does not contain an object as the first element. {}"  # noqa: UP032  # pylint: disable=line-too-long
                        .format(json_str))
                 log.info(f"[LTI] {msg}")
                 raise LTIError(msg)

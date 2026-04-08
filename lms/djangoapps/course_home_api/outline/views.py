@@ -510,7 +510,7 @@ class CourseNavigationBlocksView(RetrieveAPIView):
         Filter out sections and subsections that are not accessible to the current user.
         """
         if course_blocks:
-            user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))  # noqa: UP017
+            user_course_outline = get_user_course_outline(course_key, self.request.user, datetime.now(tz=timezone.utc))  # noqa: UP017  # pylint: disable=line-too-long
             course_sections = course_blocks.get('children', [])
             course_blocks['children'] = self.get_accessible_sections(user_course_outline, course_sections)
 

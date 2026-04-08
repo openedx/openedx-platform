@@ -694,7 +694,7 @@ def consent_needed_for_course(request, user, course_id, enrollment_exists=False)
     )
     if not consent_required:
         LOGGER.info(
-            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. The user's current"  # noqa: UP032
+            "[ENTERPRISE DSC] Consent from user [{username}] is not needed for course [{course_id}]. The user's current"  # noqa: UP032  # pylint: disable=line-too-long
             " enterprise does not require data sharing consent.".format(
                 username=user.username,
                 course_id=course_id
@@ -818,7 +818,7 @@ def get_active_enterprise_customer_user(user):
             enterprise_customer_user = EnterpriseCustomerUser.objects.get(user_id=user.id, active=True)
         except EnterpriseCustomerUser.DoesNotExist:
             LOGGER.info(
-                "Active EnterpriseCustomerUser for user [{username}] does not exist".format(username=user.username)  # noqa: UP032
+                "Active EnterpriseCustomerUser for user [{username}] does not exist".format(username=user.username)  # noqa: UP032  # pylint: disable=line-too-long
             )
             return None
         return EnterpriseCustomerUserReadOnlySerializer(instance=enterprise_customer_user).data

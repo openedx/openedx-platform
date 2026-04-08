@@ -441,7 +441,7 @@ class ImportRequiredTestCases(ContentStoreTestCase):
 
         # get the sample HTML with styling information
         html_block = self.store.get_item(course_id.make_usage_key('html', 'with_styling'))
-        self.assertIn('<p style="font:italic bold 72px/30px Georgia, serif; color: red; ">', html_block.data)  # noqa: PT009
+        self.assertIn('<p style="font:italic bold 72px/30px Georgia, serif; color: red; ">', html_block.data)  # noqa: PT009  # pylint: disable=line-too-long
 
         # get the sample HTML with just a simple <img> tag information
         html_block = self.store.get_item(course_id.make_usage_key('html', 'just_img'))
@@ -1921,7 +1921,7 @@ class RerunCourseTest(ContentStoreTestCase):
         # Verify video upload pipeline is empty.
         source_course = self.store.get_course(source_course.id)
         new_course = self.store.get_course(destination_course_key)
-        self.assertDictEqual(source_course.video_upload_pipeline, {"course_video_upload_token": 'test-token'})  # noqa: PT009
+        self.assertDictEqual(source_course.video_upload_pipeline, {"course_video_upload_token": 'test-token'})  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(new_course.video_upload_pipeline, {})  # noqa: PT009
 
     def test_rerun_course_success(self):

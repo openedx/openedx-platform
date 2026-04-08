@@ -25,7 +25,7 @@ def clear_enterprise_customer_data_consent_share_cache(enterprise_customer_uuid)
     )
     count = enterprise_course_enrollments.count()
     log.info(
-        'Stated Clearing {count} data_sharing_consent_needed cache for enterprise customer {uuid}'.format(  # noqa: UP032
+        'Stated Clearing {count} data_sharing_consent_needed cache for enterprise customer {uuid}'.format(  # noqa: UP032  # pylint: disable=line-too-long
             count=count,
             uuid=enterprise_customer_uuid,
         )

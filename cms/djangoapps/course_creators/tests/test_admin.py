@@ -123,7 +123,7 @@ class CourseCreatorAdminTest(TestCase):
             if expect_sent_to_admin:
                 context = {'user_name': 'test_user', 'user_email': 'test_user+courses@edx.org'}
 
-                self.assertEqual(base_num_emails + 1, len(mail.outbox), 'Expected admin message to be sent')  # noqa: PT009
+                self.assertEqual(base_num_emails + 1, len(mail.outbox), 'Expected admin message to be sent')  # noqa: PT009  # pylint: disable=line-too-long
                 sent_mail = mail.outbox[base_num_emails]
                 self.assertEqual(  # noqa: PT009
                     mock_render_to_string('emails/course_creator_admin_subject.txt', context),

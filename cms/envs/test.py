@@ -211,7 +211,7 @@ RATELIMIT_RATE = '2/m'
 
 ############## openedx_content config ##############
 OPENEDX_LEARNING = {
-    "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}  # noqa: F405
+    "MEDIA": {"BACKEND": "django.core.files.storage.InMemoryStorage", "OPTIONS": {"location": MEDIA_ROOT + "_private"}}  # noqa: F405  # pylint: disable=line-too-long
 }
 
 

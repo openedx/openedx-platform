@@ -2753,7 +2753,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         request.user = staff_user
         request.session = {}
         if setup_enterprise_enrollment:
-            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841
+            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841  # pylint: disable=line-too-long
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(
@@ -3356,6 +3356,6 @@ class CourseAboutViewTests(ModuleStoreTestCase):
             response = self.client.get(reverse('about_course', args=[str(self.course.id)]))
             if expected_redirect:
                 assert response.status_code == 301
-                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032
+                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032  # pylint: disable=line-too-long
             else:
                 assert response.status_code == 200

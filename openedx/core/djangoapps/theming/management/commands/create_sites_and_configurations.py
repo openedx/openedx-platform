@@ -213,21 +213,21 @@ class Command(BaseCommand):
 
         if options['devstack']:
             configuration_prefix = "devstack"
-            self.discovery_oauth_complete_url = "http://discovery-{}.e2e.devstack:18381/complete/edx-oauth2/".format(  # noqa: UP032
+            self.discovery_oauth_complete_url = "http://discovery-{}.e2e.devstack:18381/complete/edx-oauth2/".format(  # noqa: UP032  # pylint: disable=line-too-long
                 self.dns_name
             )
             self.discovery_base_url_fmt = "http://discovery-{site_domain}:18381/"
-            self.ecommerce_oauth_complete_url = "http://ecommerce-{}.e2e.devstack:18130/complete/edx-oauth2/".format(  # noqa: UP032
+            self.ecommerce_oauth_complete_url = "http://ecommerce-{}.e2e.devstack:18130/complete/edx-oauth2/".format(  # noqa: UP032  # pylint: disable=line-too-long
                 self.dns_name
             )
             self.ecommerce_base_url_fmt = "http://ecommerce-{site_domain}:18130/"
         else:
             configuration_prefix = "sandbox"
-            self.discovery_oauth_complete_url = "https://discovery-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032
+            self.discovery_oauth_complete_url = "https://discovery-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032  # pylint: disable=line-too-long
                 self.dns_name
             )
             self.discovery_base_url_fmt = "https://discovery-{site_domain}/"
-            self.ecommerce_oauth_complete_url = "https://ecommerce-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032
+            self.ecommerce_oauth_complete_url = "https://ecommerce-{}.sandbox.edx.org/complete/edx-oauth2/".format(  # noqa: UP032  # pylint: disable=line-too-long
                 self.dns_name
             )
             self.ecommerce_base_url_fmt = "https://ecommerce-{site_domain}/"

@@ -318,7 +318,7 @@ class VideoUploadPostTestsMixin:
             # Ensure response is correct
             response_file = response_obj['files'][i]
             self.assertEqual(response_file['file_name'], file_info['file_name'])  # noqa: PT009
-            self.assertEqual(response_file['upload_url'], f'http://example.com/url_{file_info["file_name"]}')  # noqa: PT009
+            self.assertEqual(response_file['upload_url'], f'http://example.com/url_{file_info["file_name"]}')  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_post_non_json(self):
         response = self.client.post(self.url, {"files": []})
@@ -559,7 +559,7 @@ class VideosHandlerTestCase(
         )
         self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response['error'], 'The file name for %s must contain only ASCII characters.' % file_name)  # noqa: PT009, UP031
+        self.assertEqual(response['error'], 'The file name for %s must contain only ASCII characters.' % file_name)  # noqa: PT009, UP031  # pylint: disable=line-too-long
 
     @override_settings(AWS_ACCESS_KEY_ID='test_key_id', AWS_SECRET_ACCESS_KEY='test_secret', AWS_SECURITY_TOKEN='token')
     @patch('cms.djangoapps.contentstore.video_storage_handlers.boto3.resource')
@@ -1031,7 +1031,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
             {
                 'extension': '.tiff'
             },
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),

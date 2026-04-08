@@ -1725,7 +1725,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         )
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),  # noqa: B905
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),  # noqa: B905  # pylint: disable=line-too-long
             ],
             verify_order=False
         )

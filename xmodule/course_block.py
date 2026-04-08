@@ -1671,7 +1671,7 @@ class CourseSummary:
             return course_metadata_utils.has_course_ended(self.end)
         except TypeError as e:
             log.warning(
-                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032
+                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     course_id=str(self.id), end_date=self.end, err=e
                 )
             )

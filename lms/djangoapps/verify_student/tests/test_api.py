@@ -86,7 +86,7 @@ class CreateVerificationAttempt(TestCase):
         self.assertEqual(verification_attempt.user, self.user)  # noqa: PT009
         self.assertEqual(verification_attempt.name, 'Tester McTest')  # noqa: PT009
         self.assertEqual(verification_attempt.status, VerificationAttemptStatus.CREATED)  # noqa: PT009
-        self.assertEqual(verification_attempt.expiration_datetime, datetime(2024, 12, 31, tzinfo=timezone.utc))  # noqa: PT009, UP017
+        self.assertEqual(verification_attempt.expiration_datetime, datetime(2024, 12, 31, tzinfo=timezone.utc))  # noqa: PT009, UP017  # pylint: disable=line-too-long
         mock_created_event.assert_called_with(
             attempt_id=verification_attempt.id,
             user=self.user,
@@ -132,9 +132,9 @@ class UpdateVerificationAttempt(TestCase):
         self.attempt.save()
 
     @ddt.data(
-        ('Tester McTest', VerificationAttemptStatus.PENDING, datetime(2024, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017
-        ('Tester McTest2', VerificationAttemptStatus.APPROVED, datetime(2025, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017
-        ('Tester McTest3', VerificationAttemptStatus.DENIED, datetime(2026, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017
+        ('Tester McTest', VerificationAttemptStatus.PENDING, datetime(2024, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017  # pylint: disable=line-too-long
+        ('Tester McTest2', VerificationAttemptStatus.APPROVED, datetime(2025, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017  # pylint: disable=line-too-long
+        ('Tester McTest3', VerificationAttemptStatus.DENIED, datetime(2026, 12, 31, tzinfo=timezone.utc)),  # noqa: UP017  # pylint: disable=line-too-long
     )
     @ddt.unpack
     @patch('lms.djangoapps.verify_student.api.emit_idv_attempt_pending_event')

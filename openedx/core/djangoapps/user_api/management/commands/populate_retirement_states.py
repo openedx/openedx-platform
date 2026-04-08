@@ -69,7 +69,7 @@ class Command(BaseCommand):
         """
         if UserRetirementStatus.objects.exclude(current_state__state_name__in=REQUIRED_STATES).exists():
             raise CommandError(
-                'Users are currently being processed. All users must be in one of these states to run this command: '  # noqa: UP032
+                'Users are currently being processed. All users must be in one of these states to run this command: '  # noqa: UP032  # pylint: disable=line-too-long
                 '{}'.format(REQ_STR)
             )
 

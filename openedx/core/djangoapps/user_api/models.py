@@ -343,7 +343,7 @@ class UserRetirementStatus(TimeStampedModel):
         try:
             pending = RetirementState.objects.all().order_by('state_execution_order')[0]
         except IndexError:
-            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
         if cls.objects.filter(user=user).exists():
             raise RetirementStateError(f'User {user} already has a retirement status row!')
@@ -407,7 +407,7 @@ class UserRetirementStatus(TimeStampedModel):
                 break
 
         if retirement is None:
-            raise UserRetirementStatus.DoesNotExist('{} does not have an exact match in UserRetirementStatus. '  # noqa: UP032
+            raise UserRetirementStatus.DoesNotExist('{} does not have an exact match in UserRetirementStatus. '  # noqa: UP032  # pylint: disable=line-too-long
                                                     '{} similar rows found.'.format(username, len(retirements)))
 
         state = retirement.current_state

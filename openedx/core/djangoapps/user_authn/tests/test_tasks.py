@@ -63,7 +63,7 @@ class SendActivationEmailTestCase(TestCase):
         # Asserts sending email retry logging.
         for attempt in range(email_max_attempts):
             mock_log.info.assert_any_call(
-                'Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(  # noqa: UP032
+                'Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     dest_addr=self.student.email,
                     attempt=attempt,
                     max_attempts=email_max_attempts

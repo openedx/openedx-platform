@@ -1636,7 +1636,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             mock_get_org_id.return_value = None
             response = self.client.get(test_url)
             self.assertContains(
-                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(  # noqa: UP032
+                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     settings.MEDIA_URL
                 )
             )

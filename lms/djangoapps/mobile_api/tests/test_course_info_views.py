@@ -263,7 +263,7 @@ class TestCourseGoalsUserActivityAPI(MobileAPITestCase, SharedModuleStoreTestCas
         response = self.client.post(self.apiUrl, post_data)
         assert response.status_code == 200
         mock_logger.warning.assert_called_with(
-            'For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032
+            'For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 str(self.user.id), str(self.course.id))
         )
 
@@ -384,7 +384,7 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
         }
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        self.assertDictEqual(response.data['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009
+        self.assertDictEqual(response.data['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_course_about_url(self):
         response = self.verify_response(url=self.url)
@@ -422,7 +422,7 @@ class TestBlocksInfoInCourseView(TestBlocksInCourseView, MilestonesTestCaseMixin
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        for sequential_info, assignment_progress in zip(response.data['blocks'].values(), expected_results):  # noqa: B905
+        for sequential_info, assignment_progress in zip(response.data['blocks'].values(), expected_results):  # noqa: B905  # pylint: disable=line-too-long
             self.assertDictEqual(sequential_info['assignment_progress'], assignment_progress)  # noqa: PT009
 
     @ddt.data('chapter', 'vertical', 'problem', 'video', 'html')
@@ -491,7 +491,7 @@ class TestCourseEnrollmentDetailsView(MobileAPITestCase, MilestonesTestCaseMixin
             'facebook': 'utm_medium=social&utm_campaign=social-sharing-db&utm_source=facebook',
             'twitter': 'utm_medium=social&utm_campaign=social-sharing-db&utm_source=twitter'
         }
-        self.assertDictEqual(course_info['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009
+        self.assertDictEqual(course_info['course_sharing_utm_parameters'], expected_course_sharing_utm_parameters)  # noqa: PT009  # pylint: disable=line-too-long
 
         expected_course_modes = [{'slug': 'audit', 'sku': None, 'android_sku': None, 'ios_sku': None, 'min_price': 0}]
         self.assertListEqual(course_info['course_modes'], expected_course_modes)  # noqa: PT009

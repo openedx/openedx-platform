@@ -806,7 +806,7 @@ class DiscussionBoardFragmentView(EdxFragmentView):
         course_key = CourseKey.from_string(course_id)
         # Force using the legacy view if a user profile is requested or the URL contains a specific topic or thread
         force_legacy_view = (profile_page_context or thread_id or discussion_id)  # noqa: F841
-        is_educator_or_staff = is_course_staff(course_key, request.user) or GlobalStaff().has_user(request.user)  # noqa: F841
+        is_educator_or_staff = is_course_staff(course_key, request.user) or GlobalStaff().has_user(request.user)  # noqa: F841  # pylint: disable=line-too-long
         try:
             base_context = _create_base_discussion_view_context(request, course_key)
             # Note:

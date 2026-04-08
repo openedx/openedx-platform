@@ -447,10 +447,10 @@ class AssetToJsonTestCase(AssetsTestCase):
             output["external_url"], "https://lms_root_url/asset-v1:org+class+run+type@asset+block@my_file_name.jpg"
         )
         self.assertEqual(output["portable_url"], "/static/my_file_name.jpg")  # noqa: PT009
-        self.assertEqual(output["thumbnail"], "/asset-v1:org+class+run+type@thumbnail+block@my_file_name_thumb.jpg")  # noqa: PT009
+        self.assertEqual(output["thumbnail"], "/asset-v1:org+class+run+type@thumbnail+block@my_file_name_thumb.jpg")  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(output["id"], str(location))  # noqa: PT009
         self.assertEqual(output['locked'], True)  # noqa: PT009
-        self.assertEqual(output['static_full_url'], '/asset-v1:org+class+run+type@asset+block@my_file_name.jpg')  # noqa: PT009
+        self.assertEqual(output['static_full_url'], '/asset-v1:org+class+run+type@asset+block@my_file_name.jpg')  # noqa: PT009  # pylint: disable=line-too-long
 
         output = assets._get_asset_json("name", content_type, upload_date, location, None, False, course_key)
         self.assertIsNone(output["thumbnail"])  # noqa: PT009

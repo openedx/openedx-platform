@@ -653,7 +653,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         reset_request = self.request_factory.get(self.password_reset_confirm_url)
         reset_request.user = UserFactory.create()
 
-        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,  # noqa: PT027
+        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,  # noqa: PT027  # pylint: disable=line-too-long
                           token=self.token)
 
     @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True}, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)

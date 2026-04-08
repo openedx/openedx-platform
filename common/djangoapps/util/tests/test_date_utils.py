@@ -240,10 +240,10 @@ class StrftimeLocalizedHtmlTest(unittest.TestCase):
             html = strftime_localized_html(dtime, 'SHORT_DATE')
         assert isinstance(html, Markup)
         self.assertRegex(html,  # noqa: PT009
-                         '<span class="localized-datetime" data-format="shortDate" data-timezone="%s" ' % timezone +  # noqa: UP031
+                         '<span class="localized-datetime" data-format="shortDate" data-timezone="%s" ' % timezone +  # noqa: UP031  # pylint: disable=line-too-long
                          '\\s*data-datetime="2013-02-14T16:41:17" data-language="en">Feb 14, 2013</span>')
 
     def test_invalid_format_string(self):
         dtime = datetime(2013, 2, 14, 16, 41, 17)
-        with self.assertRaisesRegex(AssertionError, 'format "NOPE" not yet supported in strftime_localized_html'):  # noqa: PT027
+        with self.assertRaisesRegex(AssertionError, 'format "NOPE" not yet supported in strftime_localized_html'):  # noqa: PT027  # pylint: disable=line-too-long
             strftime_localized_html(dtime, 'NOPE')

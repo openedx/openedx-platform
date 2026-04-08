@@ -114,7 +114,7 @@ def send_request(user, course_id, page, page_size, path="", text=None):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(params))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return response
 
@@ -145,7 +145,7 @@ def delete_all_notes_for_user(user):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(headers))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return response
 

@@ -311,7 +311,7 @@ class SafeCookieData:
         if not session_id or session_id == str(None):
             # The session ID should always be valid in the cookie.
             raise SafeCookieError(
-                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(  # noqa: UP032
+                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     session_id,
                     user_id,
                 ))

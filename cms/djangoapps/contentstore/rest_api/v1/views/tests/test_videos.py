@@ -120,14 +120,14 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
                 str(self.course.id)
             )
             self.assertIn("transcript_preferences_handler_url", transcript_settings)  # noqa: PT009
-            self.assertEqual(expected_preference_handler, transcript_settings["transcript_preferences_handler_url"])  # noqa: PT009
+            self.assertEqual(expected_preference_handler, transcript_settings["transcript_preferences_handler_url"])  # noqa: PT009  # pylint: disable=line-too-long
 
             expected_credentials_handler = reverse_course_url(
                 'transcript_credentials_handler',
                 str(self.course.id)
             )
             self.assertIn("transcript_credentials_handler_url", transcript_settings)  # noqa: PT009
-            self.assertEqual(expected_credentials_handler, transcript_settings["transcript_credentials_handler_url"])  # noqa: PT009
+            self.assertEqual(expected_credentials_handler, transcript_settings["transcript_credentials_handler_url"])  # noqa: PT009  # pylint: disable=line-too-long
         with patch(
             'openedx.core.djangoapps.video_config.toggles.XPERT_TRANSLATIONS_UI.is_enabled'
         ) as xpertTranslationfeature:

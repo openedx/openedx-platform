@@ -515,7 +515,7 @@ def get_non_courseware_topics(
     return non_courseware_topics, existing_topic_ids
 
 
-def get_course_topics(request: Request, course_key: CourseKey, topic_ids: Optional[Set[str]] = None):  # noqa: UP006, UP045
+def get_course_topics(request: Request, course_key: CourseKey, topic_ids: Optional[Set[str]] = None):  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Returns the course topic listing for the given course and user; filtered
     by 'topic_ids' list if given.

@@ -178,7 +178,7 @@ class CourseGoalsRecordUserActivity(APIView):
             )
 
         if not ENABLE_COURSE_GOALS.is_enabled(course_key):
-            log.warning('For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032
+            log.warning('For this mobile request, user activity is not enabled for this user {} and course {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 str(user_id), str(course_key))
             )
             return Response(status=(200))
@@ -291,7 +291,7 @@ class BlocksInfoInCourseView(BlocksInCourseView):
         * 404 if the course is not available or cannot be seen.
     """
 
-    def get_requested_user(self, user: UserType, username: Optional[str] = None) -> Union[UserType, None]:  # noqa: UP007, UP045
+    def get_requested_user(self, user: UserType, username: Optional[str] = None) -> Union[UserType, None]:  # noqa: UP007, UP045  # pylint: disable=line-too-long
         """
         Return a user for whom the course blocks are fetched.
 

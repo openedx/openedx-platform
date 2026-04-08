@@ -1102,7 +1102,7 @@ class LoginSessionViewTest(ApiTestCase, OpenEdxEventsTestMixin):
         assert form_desc['submit_url'] == reverse('user_api_login_session', kwargs={'api_version': 'v1'})
         assert form_desc['fields'] == [{'name': 'email', 'defaultValue': '', 'type': 'email', 'exposed': True,
                                         'required': True, 'label': 'Email', 'placeholder': '',
-                                        'instructions': 'The email address you used to register with {platform_name}'  # noqa: UP032
+                                        'instructions': 'The email address you used to register with {platform_name}'  # noqa: UP032  # pylint: disable=line-too-long
                                         .format(platform_name=settings.PLATFORM_NAME),
                                         'restrictions': {'min_length': EMAIL_MIN_LENGTH,
                                                          'max_length': EMAIL_MAX_LENGTH},

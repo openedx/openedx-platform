@@ -38,7 +38,7 @@ class DraftReorderTestCase(ModuleStoreTestCase):  # lint-amnesty, pylint: disabl
         # '5a05be9d59fc4bb79282c94c9e6b88c7' and 'second' are public verticals.
         self.assertEqual(7, len(verticals))  # noqa: PT009
         self.assertEqual(course_key.make_usage_key('vertical', 'z'), verticals[0])  # noqa: PT009
-        self.assertEqual(course_key.make_usage_key('vertical', '5a05be9d59fc4bb79282c94c9e6b88c7'), verticals[1])  # noqa: PT009
+        self.assertEqual(course_key.make_usage_key('vertical', '5a05be9d59fc4bb79282c94c9e6b88c7'), verticals[1])  # noqa: PT009  # pylint: disable=line-too-long
         self.assertEqual(course_key.make_usage_key('vertical', 'a'), verticals[2])  # noqa: PT009
         self.assertEqual(course_key.make_usage_key('vertical', 'second'), verticals[3])  # noqa: PT009
         self.assertEqual(course_key.make_usage_key('vertical', 'b'), verticals[4])  # noqa: PT009

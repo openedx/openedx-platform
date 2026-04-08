@@ -56,7 +56,7 @@ def _get_variables_from_context(context, tag_name):
 
     if request is None:
         raise template.VariableDoesNotExist(
-            'The {} template tag requires a "request" to be present in the template context. Consider using '  # noqa: UP032
+            'The {} template tag requires a "request" to be present in the template context. Consider using '  # noqa: UP032  # pylint: disable=line-too-long
             '"emulate_http_request" if you are rendering the template in a celery task.'.format(tag_name)
         )
 

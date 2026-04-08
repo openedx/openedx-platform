@@ -101,7 +101,7 @@ class ContentTypeGatingConfig(StackedConfigurationModel):
         return bool(self.enabled and self.enabled_as_of <= target_datetime)
 
     def __str__(self):
-        return "ContentTypeGatingConfig(enabled={!r}, enabled_as_of={!r}, studio_override_enabled={!r})".format(  # noqa: UP032
+        return "ContentTypeGatingConfig(enabled={!r}, enabled_as_of={!r}, studio_override_enabled={!r})".format(  # noqa: UP032  # pylint: disable=line-too-long
             self.enabled,
             self.enabled_as_of,
             self.studio_override_enabled,

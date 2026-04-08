@@ -73,7 +73,7 @@ class TestNewPostGrouper(unittest.TestCase):
         updated_context = NewPostGrouper().group(new_notification, old_notification)
 
         self.assertTrue(updated_context['grouped'])  # noqa: PT009
-        self.assertEqual(updated_context['replier_name'], new_notification.content_context['replier_name'])  # noqa: PT009
+        self.assertEqual(updated_context['replier_name'], new_notification.content_context['replier_name'])  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_new_post_with_same_user(self):
         """

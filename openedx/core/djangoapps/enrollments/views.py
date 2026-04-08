@@ -384,7 +384,7 @@ class EnrollmentCourseDetailView(APIView):
         except CourseNotFoundError:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032
+                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032  # pylint: disable=line-too-long
             )
 
 
@@ -662,7 +662,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032
+                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032  # pylint: disable=line-too-long
                         username=username
                     )
                 },
@@ -746,7 +746,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data={
-                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032
+                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032  # pylint: disable=line-too-long
                         mode=mode
                     )
                 },
@@ -771,7 +771,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             if is_active is not None and not isinstance(is_active, bool):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
-                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032
+                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032  # pylint: disable=line-too-long
                 )
 
             explicit_linked_enterprise = request.data.get("linked_enterprise_customer")
@@ -802,7 +802,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data={
-                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032
+                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032  # pylint: disable=line-too-long
                     },
                 )
             # Only a staff user role can enroll a user forcefully
@@ -826,7 +826,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"message": msg})
 
                 if missing_attrs:
-                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032
+                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032  # pylint: disable=line-too-long
                         mode, REQUIRED_ATTRIBUTES.get(mode)
                     )
                     log.warning(msg)

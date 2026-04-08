@@ -178,7 +178,7 @@ def _get_user_country_from_profile(user: types.User) -> str:
     return profile_country
 
 
-def get_embargo_response(request: Request, course_key: CourseKey, user: types.User) -> Optional[Response]:  # noqa: UP045
+def get_embargo_response(request: Request, course_key: CourseKey, user: types.User) -> Optional[Response]:  # noqa: UP045  # pylint: disable=line-too-long
     """
     Check whether any country access rules block the user from enrollment.
 

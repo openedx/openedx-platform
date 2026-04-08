@@ -185,7 +185,7 @@ class TestRefundSignal(ModuleStoreTestCase):
                 assert not mock_send_notification.called
 
                 last_request = httpretty.last_request()
-                self.assertDictEqual(json.loads(last_request.body.decode('utf8')), {'action': 'approve_payment_only'})  # noqa: PT009
+                self.assertDictEqual(json.loads(last_request.body.decode('utf8')), {'action': 'approve_payment_only'})  # noqa: PT009  # pylint: disable=line-too-long
 
     @mock.patch('lms.djangoapps.commerce.utils._send_refund_notification')
     def test_notification_no_refund(self, mock_send_notification):

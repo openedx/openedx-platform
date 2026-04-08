@@ -212,7 +212,7 @@ class TestProblemTypeAccess(SharedModuleStoreTestCase, MasqueradeMixin):  # pyli
         # graded/has_score/weight for the test_graded_score_weight_values test.
         cls.graded_score_weight_blocks = {}
         for graded, has_score, weight, gated in cls.GRADED_SCORE_WEIGHT_TEST_CASES:  # noqa: B007
-            case_name = ' Graded: ' + str(graded) + ' Has Score: ' + str(has_score) + ' Weight: ' + str(weight)  # noqa: F841
+            case_name = ' Graded: ' + str(graded) + ' Has Score: ' + str(has_score) + ' Weight: ' + str(weight)  # noqa: F841  # pylint: disable=line-too-long
             block_args = {
                 'parent': cls.blocks_dict['vertical'],
                 # has_score is determined by XBlock type. It is not a value set on an instance of an XBlock.

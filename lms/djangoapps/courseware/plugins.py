@@ -55,7 +55,7 @@ class ProgressCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -107,7 +107,7 @@ class DatesCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument,line-too-long  # noqa: UP006, UP045
         """
         Returns the allowed operations for the app.
         """
@@ -153,7 +153,7 @@ class TextbooksCourseApp(CourseApp):
         raise ValueError("The textbook app can not be enabled/disabled for a single course.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -205,7 +205,7 @@ class CalculatorCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for calculator app.
         """
@@ -252,7 +252,7 @@ class ProctoringCourseApp(CourseApp):
         raise ValueError("Proctoring cannot be enabled/disabled via this API.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for proctoring app.
         """
@@ -299,7 +299,7 @@ class CustomPagesCourseApp(CourseApp):
         raise ValueError("The custom pages app can not be enabled/disabled for a single course.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -350,7 +350,7 @@ class ORASettingsApp(CourseApp):
         raise ValueError("Flexible Peer Grading cannot be enabled/disabled via this API.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for open response app.
         """

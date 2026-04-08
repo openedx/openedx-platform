@@ -204,7 +204,7 @@ class CourseEnrollmentSerializerModifiedForPrimary(CourseEnrollmentSerializer):
         """
         return get_assignments_completions(model.course_id, model.user)
 
-    def get_course_assignments(self, model: CourseEnrollment) -> Dict[str, Optional[List[Dict[str, str]]]]:  # noqa: UP006, UP045
+    def get_course_assignments(self, model: CourseEnrollment) -> Dict[str, Optional[List[Dict[str, str]]]]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the future assignment data and past assignments data for the user in the course.
         """

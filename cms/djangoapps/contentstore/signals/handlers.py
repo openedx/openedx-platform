@@ -75,7 +75,7 @@ def locked(expiry_seconds, key):  # lint-amnesty, pylint: disable=missing-functi
     return task_decorator
 
 
-def _create_catalog_data_for_signal(course_key: CourseKey) -> (Optional[datetime], Optional[CourseCatalogData]):  # noqa: UP045
+def _create_catalog_data_for_signal(course_key: CourseKey) -> (Optional[datetime], Optional[CourseCatalogData]):  # noqa: UP045  # pylint: disable=line-too-long
     """
     Creates data for catalog-info-changed signal when course is published.
 

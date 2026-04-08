@@ -48,7 +48,7 @@ def get_discussions_mfe_url(course_key: CourseKey, view: Optional[str] = None) -
     return _get_url_with_view_query_params(f"{course_key}/", view)
 
 
-def get_discussions_mfe_topic_url(course_key: CourseKey, topic_id: str, view: Optional[str] = None) -> str:  # noqa: UP045
+def get_discussions_mfe_topic_url(course_key: CourseKey, topic_id: str, view: Optional[str] = None) -> str:  # noqa: UP045  # pylint: disable=line-too-long
     """
     Returns the url for discussions for the specified course and topic in the discussions MFE.
 

@@ -714,7 +714,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         for asset_md in asset_metadata_list:
             if asset_md.asset_id.course_key != course_key:
                 # pylint: disable=logging-format-interpolation
-                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(  # noqa: UP032
+                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     asset_md.asset_id.course_key, course_key
                 ))
                 continue

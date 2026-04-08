@@ -241,7 +241,7 @@ class CreditCourseViewSetTests(AuthMixin, UserMixin, TestCase):
         assert response.status_code == 200
 
         # Verify the API returns the serialized CreditCourse
-        self.assertDictEqual(json.loads(response.content.decode('utf-8')), self._serialize_credit_course(cc1))  # noqa: PT009
+        self.assertDictEqual(json.loads(response.content.decode('utf-8')), self._serialize_credit_course(cc1))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_list(self):
         """ Verify the endpoint supports listing all CreditCourse objects. """

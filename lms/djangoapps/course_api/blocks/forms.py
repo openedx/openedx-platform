@@ -181,7 +181,7 @@ class BlockListGetForm(Form):
         # Verify all blocks can be accessed for the course.
         if not permissions.can_access_all_blocks(requesting_user, course_key):
             raise PermissionDenied(
-                "'{requesting_username}' does not have permission to access all blocks in '{course_key}'.".format(  # noqa: UP032
+                "'{requesting_username}' does not have permission to access all blocks in '{course_key}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     requesting_username=requesting_user.username,
                     course_key=str(course_key),
                 )
@@ -216,7 +216,7 @@ class BlockListGetForm(Form):
         # Verify requesting user can access the user's blocks.
         if not permissions.can_access_others_blocks(requesting_user, course_key):
             raise PermissionDenied(
-                "'{requesting_username}' does not have permission to access view for '{requested_username}'.".format(  # noqa: UP032
+                "'{requesting_username}' does not have permission to access view for '{requested_username}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     requesting_username=requesting_user.username,
                     requested_username=requested_username,
                 )

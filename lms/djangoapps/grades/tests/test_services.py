@@ -120,7 +120,7 @@ class GradesServiceTests(ModuleStoreTestCase):
     def test_get_subsection_grade_override(self):
         override, _ = PersistentSubsectionGradeOverride.objects.update_or_create(grade=self.grade)
 
-        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009
+        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009  # pylint: disable=line-too-long
             user_id=self.user.id,
             course_key_or_id=self.course.id,
             usage_key_or_id=self.subsection.location
@@ -137,7 +137,7 @@ class GradesServiceTests(ModuleStoreTestCase):
         )
 
         # test with course key parameter as string instead
-        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009
+        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009  # pylint: disable=line-too-long
             user_id=self.user.id,
             course_key_or_id=str(self.course.id),
             usage_key_or_id=self.subsection.location

@@ -36,7 +36,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
             try:
                 self.data['unenrolled_run'] = CourseKey.from_string(self.data['unenrolled_run'])
             except InvalidKeyError:
-                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     def clean_course_id(self):
         """Cleans course id and attempts to make course key from string version of key"""
