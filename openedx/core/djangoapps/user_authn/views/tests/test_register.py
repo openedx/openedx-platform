@@ -2687,7 +2687,7 @@ class ThirdPartyRegistrationTestMixin(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestFacebookRegistrationView(
-    OpenEdxEventsTestMixin, ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase
+    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Facebook authentication."""
 
@@ -2708,7 +2708,7 @@ class TestFacebookRegistrationView(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestGoogleRegistrationView(
-    OpenEdxEventsTestMixin, ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase
+    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Google authentication."""
 
