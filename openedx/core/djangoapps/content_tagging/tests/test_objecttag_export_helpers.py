@@ -442,7 +442,7 @@ class TestContentTagChildrenExport(TaggedCourseMixin):  # type: ignore[misc]
         """
         Test if we can export a library
         """
-        with self.assertNumQueries(11):
+        with self.assertNumQueries(10):
             tagged_library = build_object_tree_with_objecttags(self.library.key, self.all_library_object_tags)
 
         assert tagged_library == self.expected_library_tagged_xblock

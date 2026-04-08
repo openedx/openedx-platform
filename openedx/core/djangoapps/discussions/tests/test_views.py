@@ -23,7 +23,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from ..models import AVAILABLE_PROVIDER_MAP, DEFAULT_CONFIG_ENABLED, Provider, get_default_provider_type
-from ..permissions import IsStaffOrCourseTeam
+from ..permissions import HasPagesAndResourcesAccess
 
 DATA_LEGACY_COHORTS = {
     'divided_inline_discussions': [],
@@ -864,12 +864,12 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         self.url = reverse('sync-discussion-topics', kwargs={'course_key_string': self.course_key_string})
 
         # Mock the permission class for course team checking
-        self.original_has_permission = IsStaffOrCourseTeam.has_permission
-        IsStaffOrCourseTeam.has_permission = Mock(return_value=True)
+        self.original_has_permission = HasPagesAndResourcesAccess.has_permission
+        HasPagesAndResourcesAccess.has_permission = Mock(return_value=True)
 
     def tearDown(self):
         # Restore original permission method
-        IsStaffOrCourseTeam.has_permission = self.original_has_permission
+        HasPagesAndResourcesAccess.has_permission = self.original_has_permission
         super().tearDown()
 
     @patch('openedx.core.djangoapps.discussions.views.update_discussions_settings_from_course_task')
@@ -892,7 +892,7 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         self.client.force_authenticate(user=self.instructor_user)
 
         # Mock the course team permission check
-        IsStaffOrCourseTeam.has_permission = Mock(return_value=True)
+        HasPagesAndResourcesAccess.has_permission = Mock(return_value=True)
 
         response = self.client.post(self.url)
 
@@ -916,7 +916,7 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         self.client.force_authenticate(user=self.student_user)
 
         # Mock the course team permission check to return False
-        IsStaffOrCourseTeam.has_permission = Mock(return_value=False)
+        HasPagesAndResourcesAccess.has_permission = Mock(return_value=False)
 
         response = self.client.post(self.url)
 

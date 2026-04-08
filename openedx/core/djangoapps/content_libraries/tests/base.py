@@ -53,10 +53,6 @@ URL_LIB_CONTAINER_COPY = URL_LIB_CONTAINER + 'copy/'  # Copy the specified conta
 URL_LIB_COLLECTION = URL_LIB_COLLECTIONS + '{collection_key}/'  # Get a collection in this library
 URL_LIB_COLLECTION_ITEMS = URL_LIB_COLLECTION + 'items/'  # Get a collection in this library
 
-URL_LIB_LTI_PREFIX = URL_PREFIX + 'lti/1.3/'
-URL_LIB_LTI_JWKS = URL_LIB_LTI_PREFIX + 'pub/jwks/'
-URL_LIB_LTI_LAUNCH = URL_LIB_LTI_PREFIX + 'launch/'
-
 URL_BLOCK_RENDER_VIEW = '/api/xblock/v2/xblocks/{block_key}/view/{view_name}/'
 URL_BLOCK_EMBED_VIEW = '/xblocks/v2/{block_key}/embed/{view_name}/'  # Returns HTML not JSON so its URL is different
 URL_BLOCK_GET_HANDLER_URL = '/api/xblock/v2/xblocks/{block_key}/handler_url/{handler_name}/'

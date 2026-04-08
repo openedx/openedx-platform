@@ -33,8 +33,10 @@ from openedx_authz.api.data import CourseOverviewData
 from openedx_authz.constants.permissions import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
+    COURSES_MANAGE_PAGES_AND_RESOURCES,
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
+    COURSES_VIEW_PAGES_AND_RESOURCES,
 )
 from organizations.api import add_organization_course, ensure_organization
 from organizations.exceptions import InvalidOrganizationException
@@ -1653,16 +1655,23 @@ def textbooks_list_handler(request, course_key_string):
     """
     course_key = CourseKey.from_string(course_key_string)
     if "application/json" not in request.META.get('HTTP_ACCEPT', 'text/html'):
-        # return HTML page
-        # We don't need to do an access check here because
-        # that is done when the endpoint for the actual content of the page.
-        # This is just to handle redirecting anyone that has bookmarked the old
-        # textbooks page.
+        # Legacy HTML bookmark redirect — no data is exposed here.
+        # Access is enforced when the MFE fetches data from the textbooks API.
         return redirect(get_textbooks_url(course_key))
+
+    if request.method == 'GET':
+        authz_perm = COURSES_VIEW_PAGES_AND_RESOURCES.identifier
+        legacy_perm = LegacyAuthoringPermission.READ
+    else:
+        authz_perm = COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+        legacy_perm = LegacyAuthoringPermission.WRITE
+
+    if not user_has_course_permission(request.user, authz_perm, course_key, legacy_perm):
+        raise PermissionDenied()
 
     store = modulestore()
     with store.bulk_operations(course_key):
-        course = get_course_and_check_access(course_key, request.user)
+        course = _get_course_block(course_key)
 
         # from here on down, we know the client has requested JSON
         if request.method == 'GET':
@@ -1725,9 +1734,20 @@ def textbooks_detail_handler(request, course_key_string, textbook_id):
         json: remove textbook
     """
     course_key = CourseKey.from_string(course_key_string)
+
+    if request.method == 'GET':
+        authz_perm = COURSES_VIEW_PAGES_AND_RESOURCES.identifier
+        legacy_perm = LegacyAuthoringPermission.READ
+    else:
+        authz_perm = COURSES_MANAGE_PAGES_AND_RESOURCES.identifier
+        legacy_perm = LegacyAuthoringPermission.WRITE
+
+    if not user_has_course_permission(request.user, authz_perm, course_key, legacy_perm):
+        raise PermissionDenied()
+
     store = modulestore()
     with store.bulk_operations(course_key):
-        course_block = get_course_and_check_access(course_key, request.user)
+        course_block = _get_course_block(course_key)
         matching_id = [tb for tb in course_block.pdf_textbooks
                        if str(tb.get("id")) == str(textbook_id)]
         if matching_id:

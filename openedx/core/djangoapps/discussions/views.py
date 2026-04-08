@@ -18,7 +18,7 @@ from openedx.core.lib.api.view_utils import validate_course_key
 
 from .config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from .models import AVAILABLE_PROVIDER_MAP, DiscussionsConfiguration, Features, Provider
-from .permissions import IsStaffOrCourseTeam, check_course_permissions
+from .permissions import HasPagesAndResourcesAccess, check_course_permissions
 from .serializers import DiscussionsConfigurationSerializer, DiscussionsProvidersSerializer
 from .tasks import update_discussions_settings_from_course_task
 
@@ -32,7 +32,7 @@ class DiscussionsConfigurationSettingsView(APIView):
         BearerAuthenticationAllowInactiveUser,
         SessionAuthenticationAllowInactiveUser
     )
-    permission_classes = (IsStaffOrCourseTeam,)
+    permission_classes = (HasPagesAndResourcesAccess,)
 
     @apidocs.schema(
         parameters=[
@@ -134,7 +134,7 @@ class DiscussionsProvidersView(APIView):
         BearerAuthenticationAllowInactiveUser,
         SessionAuthenticationAllowInactiveUser
     )
-    permission_classes = (IsStaffOrCourseTeam,)
+    permission_classes = (HasPagesAndResourcesAccess,)
 
     @apidocs.schema(
         parameters=[
@@ -258,7 +258,7 @@ class SyncDiscussionTopicsView(APIView):
     View for syncing discussion topics for a course.
     """
     authentication_classes = (BearerAuthenticationAllowInactiveUser, SessionAuthenticationAllowInactiveUser)
-    permission_classes = (IsAuthenticated, IsStaffOrCourseTeam)
+    permission_classes = (IsAuthenticated, HasPagesAndResourcesAccess)
 
     def post(self, request, course_key_string):
         """
