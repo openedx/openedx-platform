@@ -13,7 +13,7 @@ from django.http import Http404
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory

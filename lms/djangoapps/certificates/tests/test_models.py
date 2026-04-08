@@ -13,7 +13,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
 from opaque_keys.edx.locator import CourseKey, CourseLocator
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from path import Path as path
 
 from common.djangoapps.course_modes.models import CourseMode

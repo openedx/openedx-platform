@@ -21,7 +21,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response

@@ -20,7 +20,7 @@ from openedx_events.learning.signals import (
     COURSE_PASSING_STATUS_UPDATED,
     PERSISTENT_GRADE_SUMMARY_CHANGED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 from common.test.utils import assert_dict_contains_subset

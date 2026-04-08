@@ -16,7 +16,7 @@ from django.test import TransactionTestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 

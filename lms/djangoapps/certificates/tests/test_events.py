@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 from openedx_events.learning.data import CertificateData, CourseData, UserData, UserPersonalData
 from openedx_events.learning.signals import CERTIFICATE_CHANGED, CERTIFICATE_CREATED, CERTIFICATE_REVOKED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import assert_dict_contains_subset

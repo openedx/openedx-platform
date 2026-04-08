@@ -13,7 +13,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_events.data import EventsMetadata
 from openedx_events.learning.data import ExamAttemptData, UserData, UserPersonalData
 from openedx_events.learning.signals import EXAM_ATTEMPT_REJECTED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.certificates.api import has_self_generated_certificates_enabled

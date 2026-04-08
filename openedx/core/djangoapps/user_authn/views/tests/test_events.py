@@ -13,7 +13,7 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.urls import reverse
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import SESSION_LOGIN_COMPLETED, STUDENT_REGISTRATION_COMPLETED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import UserFactory, UserProfileFactory
 from common.test.utils import assert_dict_contains_subset

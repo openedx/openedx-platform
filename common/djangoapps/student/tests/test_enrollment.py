@@ -8,7 +8,7 @@ import ddt
 import pytest
 from django.conf import settings
 from django.urls import reverse
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory

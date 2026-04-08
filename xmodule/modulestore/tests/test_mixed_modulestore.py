@@ -33,7 +33,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_PUBLISHED,
     XBLOCK_UPDATED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
 from xblock.fields import Scope, ScopeIds, String

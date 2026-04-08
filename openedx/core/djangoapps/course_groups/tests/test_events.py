@@ -15,7 +15,7 @@ from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wron
 from openedx_events.learning.signals import (
     COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import assert_dict_contains_subset
