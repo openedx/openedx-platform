@@ -120,7 +120,7 @@ class _MigrationContext:
 
     # Fields that remain constant
     previous_block_migrations: dict[UsageKey, data.ModulestoreBlockMigrationResult]
-    target_package_id: int
+    target_package_id: LearningPackage.ID
     target_library_key: LibraryLocatorV2
     source_context_key: SourceContextKey
     content_by_filename: dict[str, int]
@@ -882,12 +882,12 @@ def _migrate_container(
             )
     if container_exists and context.should_skip_strategy:
         return PublishableEntityVersion.objects.get(
-            entity_id=container.container_pk,
+            entity_id=container.container_id,
             version_num=container.draft_version_num,
         ), None
 
     container_publishable_entity_version = content_api.create_next_container_version(
-        container.container_pk,
+        container.container_id,
         title=title,
         entities=[child.entity for child in children],
         created=context.created_at,

@@ -71,7 +71,7 @@ class ContainerMetadata(PublishableItem):
 
     container_key: LibraryContainerLocator
     container_type_code: str
-    container_pk: int
+    container_id: Container.ID
 
     @classmethod
     def from_container(cls, library_key, container: Container, associated_collections=None):
@@ -99,7 +99,7 @@ class ContainerMetadata(PublishableItem):
         return cls(
             container_key=container_key,
             container_type_code=container_key.container_type,
-            container_pk=container.pk,
+            container_id=container.id,
             display_name=draft.title,
             created=container.created,
             modified=draft.created,

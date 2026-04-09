@@ -124,7 +124,7 @@ class ContentLibraryMetadata:
     Class that represents the metadata about a content library.
     """
     key: LibraryLocatorV2
-    learning_package_id: int | None
+    learning_package_id: LearningPackage.ID | None
     title: str = ""
     description: str = ""
     num_blocks: int = 0
