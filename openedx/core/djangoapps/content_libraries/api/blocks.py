@@ -244,7 +244,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
             created=now,
         )
         new_component_version = content_api.create_next_component_version(
-            component.pk,
+            component.id,
             title=new_title,
             media_to_replace={
                 'block.xml': new_content.pk,
@@ -728,7 +728,7 @@ def delete_library_block(
     affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
     affected_containers = get_containers_contains_item(usage_key)
 
-    content_api.soft_delete_draft(component.pk, deleted_by=user_id)
+    content_api.soft_delete_draft(component.id, deleted_by=user_id)
 
     send_block_deleted_signal()
 
@@ -774,7 +774,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
 
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
-        component.pk,
+        component.id,
         component.versioning.latest.pk,
         set_by=user_id,
     )
@@ -910,7 +910,7 @@ def add_library_block_static_asset_file(
 
     with transaction.atomic():
         component_version = content_api.create_next_component_version(
-            component.pk,
+            component.id,
             media_to_replace={file_path: file_content},
             created=datetime.now(tz=timezone.utc),  # noqa: UP017
             created_by=user.id if user else None,
@@ -957,8 +957,8 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
     now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
-        component_version = content_api.create_next_component_version(  # noqa: F841
-            component.pk,
+        content_api.create_next_component_version(
+            component.id,
             media_to_replace={file_path: None},
             created=now,
             created_by=user.id if user else None,

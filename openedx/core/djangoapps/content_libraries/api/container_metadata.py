@@ -110,7 +110,7 @@ class ContainerMetadata(PublishableItem):
             published_by=published_by,
             last_draft_created=last_draft_created,
             last_draft_created_by=last_draft_created_by,
-            has_unpublished_changes=content_api.contains_unpublished_changes(container.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(container.id),
             tags_count=tags.get(str(container_key), 0),
             collections=associated_collections or [],
         )
@@ -260,7 +260,7 @@ def _get_containers_with_entities(
     for member in members:
         qs = qs.union(
             content_api.get_containers_with_entity(
-                member.entity.pk,
+                member.entity.id,
                 ignore_pinned=ignore_pinned,
             )
         )
@@ -338,7 +338,7 @@ class ContainerHierarchyMember:
                 container=entity,
             ),
             display_name=entity.versioning.draft.title,
-            has_unpublished_changes=content_api.contains_unpublished_changes(entity.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(entity.id),
             container=entity,
             component=None,
         )

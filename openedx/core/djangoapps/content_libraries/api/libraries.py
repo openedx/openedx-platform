@@ -410,7 +410,7 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
         license=ref.license,
         created=learning_package.created,
         updated=learning_package.updated,
-        learning_package_id=learning_package.pk,
+        learning_package_id=learning_package.id,
     )
 
 
@@ -494,7 +494,7 @@ def create_library(
         allow_public_learning=ref.allow_public_learning,
         allow_public_read=ref.allow_public_read,
         license=library_license,
-        learning_package_id=ref.learning_package.pk,  # type: ignore[union-attr]
+        learning_package_id=ref.learning_package.id,  # type: ignore[union-attr]
     )
 
 

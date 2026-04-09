@@ -345,13 +345,13 @@ def _import_structure(
         used_component_keys=set(
             LibraryUsageLocatorV2(target_library.key, block_type, block_id)  # type: ignore[abstract]
             for block_type, block_id
-            in content_api.get_components(migration.target.pk).values_list(
+            in content_api.get_components(migration.target.id).values_list(
                 "component_type__name", "local_key"
             )
         ),
         used_container_slugs=set(
             content_api.get_containers(
-                migration.target.pk
+                migration.target.id
             ).values_list("publishable_entity__key", flat=True)
         ),
         previous_block_migrations=(
@@ -359,7 +359,7 @@ def _import_structure(
             if source_data.previous_migration
             else {}
         ),
-        target_package_id=migration.target.pk,
+        target_package_id=migration.target.id,
         target_library_key=target_library.key,
         source_context_key=source_data.source_root_usage_key.course_key,
         content_by_filename=content_by_filename,
