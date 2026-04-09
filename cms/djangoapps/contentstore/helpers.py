@@ -39,6 +39,7 @@ from openedx.core.djangoapps.content_staging.data import LIBRARY_SYNC_PURPOSE
 from openedx.core.djangoapps.content_tagging.types import TagValuesByObjectIdDict
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, build_components_import_path
+from openedx.core.types import AuthUser as UserType
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
@@ -454,7 +455,7 @@ def _fetch_and_set_upstream_link(
     copied_from_block: str,
     copied_from_version_num: int,
     temp_xblock: XBlock,
-    user: User
+    user: UserType,
 ):
     """
     Fetch and set upstream link for the given xblock which is being pasted. This function handles following cases:
@@ -515,7 +516,7 @@ def _import_xml_node_to_parent(
     # The modulestore we're using
     store,
     # The user who is performing this operation
-    user: User,
+    user: UserType,
     # Hint to use as usage ID (block_id) for the new XBlock
     slug_hint: str | None = None,
     # Content tags applied to the source XBlock(s)
