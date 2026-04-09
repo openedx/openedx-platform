@@ -283,7 +283,10 @@ class ImportIdGenerator(IdGenerator):
     def create_definition(self, block_type, slug=None) -> DefinitionLocator:
         """ Generate a new definition_id for an XBlock """
         # Note: Split modulestore will detect this temporary ID and create a new definition ID when the XBlock is saved.
-        return DefinitionLocator(block_type, LocalId(block_type))
+        # FIXME: The DefinitionLocator technically only accepts an ObjectId (or a str representing an ObjectId), but
+        # this code relies on passing a LocalId and having it save the LocalId object as its `definition_id`. We should
+        # either change this in the future or update DefinitionLocator to support LocalId-typed definition IDs.
+        return DefinitionLocator(block_type, LocalId(block_type))  # type: ignore[arg-type]
 
 
 @frozen
