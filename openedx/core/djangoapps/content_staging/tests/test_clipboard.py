@@ -3,6 +3,7 @@
 Tests for the clipboard functionality
 """
 from textwrap import dedent
+from typing import cast
 from xml.etree import ElementTree
 
 from rest_framework.test import APIClient
@@ -294,7 +295,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # Validate the response:
         assert response.status_code == 200
         response_data = response.json()
-        staged_content_id = response_data["content"]["id"]
+        staged_content_id = cast(python_api.StagedContentID, response_data["content"]["id"])
         olx_str = python_api.get_staged_content_olx(staged_content_id)
         assert '<img src="/static/foo_bar.jpg" />' in olx_str
         static_assets = python_api.get_staged_content_static_files(staged_content_id)

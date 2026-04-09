@@ -41,6 +41,7 @@ from openedx_events.content_authoring.signals import (
 )
 from xblock.core import XBlock
 
+from openedx.core.djangoapps.content_staging.data import StagedContentID
 from openedx.core.djangoapps.xblock.api import (
     get_component_from_usage_key,
     get_xblock_app_config,
@@ -382,7 +383,7 @@ def _import_staged_block(
     library_key: LibraryLocatorV2,
     source_context_key: LearningContextKey,
     user,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
 ) -> LibraryXBlockMetadata:
@@ -517,7 +518,7 @@ def _import_staged_block_as_container(
     library_key: LibraryLocatorV2,
     source_context_key: LearningContextKey,
     user,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
     *,
