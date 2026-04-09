@@ -6,11 +6,11 @@
 #
 certifi==2026.2.25
     # via requests
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
 idna==3.11
     # via requests
-requests==2.32.5
+requests==2.33.1
     # via -r scripts/xblock/requirements.in
 urllib3==2.6.3
     # via requests

@@ -6,11 +6,13 @@ from unittest.mock import patch
 import ddt
 from django.conf import settings
 from django.urls import reverse
+from openedx_authz.constants.roles import COURSE_EDITOR
 from rest_framework import status
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import get_proctored_exam_settings_url
 from common.djangoapps.util.course import get_link_for_about_page
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.credit.tests.factories import CreditCourseFactory
 
 from ...mixins import PermissionAccessMixin
@@ -85,3 +87,78 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
         response = self.client.get(self.url)
         self.assertIn("possible_pre_requisite_courses", response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+@ddt.ddt
+class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
+    """
+    Tests for CourseSettingsView using AuthZ permissions.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "cms.djangoapps.contentstore:v1:course_settings",
+            kwargs={"course_id": self.course.id},
+        )
+
+    def test_authorized_user_can_access_course_settings(self):
+        """Authorized user with COURSE_EDITOR role can access course settings."""
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+        response = self.authorized_client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("course_display_name", response.data)
+
+    def test_unauthorized_user_cannot_access_course_settings(self):
+        """Unauthorized user should receive 403."""
+        response = self.unauthorized_client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_user_without_role_then_added_can_access(self):
+        """
+        Validate dynamic role assignment works as expected.
+        """
+        # Initially unauthorized
+        response = self.unauthorized_client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        # Assign role dynamically
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.unauthorized_client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
+    def test_credit_eligibility_setting_with_authz(self):
+        """
+        Ensure feature flags still affect response under AuthZ.
+        """
+        _ = CreditCourseFactory(course_key=self.course.id, enabled=True)
+
+        self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
+        response = self.authorized_client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("credit_requirements", response.data)
+        self.assertTrue(response.data["is_credit_course"])
+
+    def test_staff_user_can_access_without_authz_role(self):
+        """Django staff user should access course settings without AuthZ role."""
+
+        response = self.staff_client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("course_display_name", response.data)
+
+    def test_superuser_can_access_without_authz_role(self):
+        """Superuser should access course settings without AuthZ role."""
+        response = self.super_client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("course_display_name", response.data)

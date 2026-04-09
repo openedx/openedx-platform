@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.74
+boto3==1.42.84
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.74
+botocore==1.42.84
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -33,11 +33,11 @@ cffi==2.0.0
     #   -r scripts/user_retirement/requirements/base.txt
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   requests
-click==8.3.1
+click==8.3.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
@@ -69,7 +69,7 @@ edx-django-utils==8.0.1
     #   edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-api-core==2.30.0
+google-api-core==2.30.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
@@ -81,11 +81,11 @@ google-auth==2.49.1
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
-google-auth-httplib2==0.3.0
+google-auth-httplib2==0.3.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-googleapis-common-protos==1.73.0
+googleapis-common-protos==1.74.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -104,7 +104,7 @@ isodate==0.7.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
-jenkinsapi==0.3.21
+jenkinsapi==0.3.22
     # via -r scripts/user_retirement/requirements/base.txt
 jinja2==3.1.6
     # via moto
@@ -123,7 +123,7 @@ markupsafe==3.0.3
     #   werkzeug
 mock==5.2.0
     # via -r scripts/user_retirement/requirements/testing.in
-more-itertools==10.8.0
+more-itertools==11.0.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   simple-salesforce
@@ -137,11 +137,11 @@ platformdirs==4.9.4
     #   zeep
 pluggy==1.6.0
     # via pytest
-proto-plus==1.27.1
+proto-plus==1.27.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
-protobuf==6.33.6
+protobuf==7.34.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -163,7 +163,7 @@ pycparser==3.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   cffi
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pyjwt[crypto]==2.12.1
     # via
@@ -194,7 +194,7 @@ pyyaml==6.0.3
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   responses
-requests==2.32.5
+requests==2.33.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-rest-api-client
@@ -258,7 +258,7 @@ urllib3==2.6.3
     #   botocore
     #   requests
     #   responses
-werkzeug==3.1.7
+werkzeug==3.1.8
     # via moto
 xmltodict==1.0.4
     # via moto
