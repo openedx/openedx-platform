@@ -38,6 +38,23 @@ log = logging.getLogger(__name__)
 AES_BLOCK_SIZE_BYTES = int(AES.block_size / 8)
 
 
+def _redact_secret(value, prefix_len=4):
+    """
+    Return a short, redacted representation of a secret string suitable
+    for DEBUG-level logging.
+
+    Preserves enough characters for an operator to tell two distinct
+    tenants apart while guaranteeing the full secret cannot be
+    reconstructed from log files or Sentry events (CWE-532).
+    """
+    if not value:
+        return "(empty)"
+    if len(value) <= prefix_len:
+        # Pathologically short secret: redact entirely.
+        return "***"
+    return value[:prefix_len] + "…"
+
+
 def encrypt_and_encode(data, key):
     """ Encrypts and encodes `data` using `key' """
     return base64.urlsafe_b64encode(aes_encrypt(data, key))
@@ -152,12 +169,32 @@ def has_valid_signature(method, headers_dict, body_dict, access_key, secret_key)
 
     if post_access_key != access_key:
         log.error("Posted access key does not match ours")
-        log.debug("Their access: %s; Our access: %s", post_access_key, access_key)
+        # Log only a short prefix + length so operators debugging a
+        # signature mismatch can confirm they are comparing the right
+        # tenants, without writing the full API access key into log
+        # files or Sentry events (CWE-532). The server's access key is
+        # ``settings.VERIFY_STUDENT["SOFTWARE_SECURE"]["API_ACCESS_KEY"]``
+        # and must never be reconstructable from logs.
+        log.debug(
+            "Access key mismatch - theirs: %s (len=%d); ours: %s (len=%d)",
+            _redact_secret(post_access_key),
+            len(post_access_key or ""),
+            _redact_secret(access_key),
+            len(access_key or ""),
+        )
         return False
 
     if post_signature != expected_signature:
         log.error("Posted signature does not match expected")
-        log.debug("Their sig: %s; Expected: %s", post_signature, expected_signature)
+        # Same treatment as above: signatures are HMAC values derived
+        # from the shared secret, so only a short prefix is logged.
+        log.debug(
+            "Signature mismatch - theirs: %s (len=%d); ours: %s (len=%d)",
+            _redact_secret(post_signature),
+            len(post_signature or ""),
+            _redact_secret(expected_signature),
+            len(expected_signature or ""),
+        )
         return False
 
     return True

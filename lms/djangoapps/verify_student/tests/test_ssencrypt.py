@@ -5,12 +5,18 @@ Tests of the encryption and decryption utilities in the ssencrypt module.
 
 import base64
 import binascii
+import logging
+from unittest import TestCase
+
+from testfixtures import LogCapture
 
 from lms.djangoapps.verify_student.ssencrypt import (
+    _redact_secret,
     aes_decrypt,
     aes_encrypt,
     decode_and_decrypt,
     encrypt_and_encode,
+    has_valid_signature,
     rsa_decrypt,
     rsa_encrypt,
 )
@@ -97,3 +103,69 @@ def _assert_rsa(data, public_key, private_key):
     # Even though our test data is only 32 bytes, RSA encryption will make it 256
     # bytes, and base64 encoding will blow that up to 344
     assert len(base64.urlsafe_b64encode(encrypted_data)) == 344
+
+
+class RedactSecretTests(TestCase):
+    """Unit tests for the _redact_secret helper."""
+
+    def test_sec_access_key_logged_regression_redacts_full_secret(self):
+        """The full secret must never appear in the redacted form."""
+        secret = "super-secret-api-access-key-abc123"
+        redacted = _redact_secret(secret)
+        assert secret not in redacted
+        assert redacted == "supe…"
+
+    def test_sec_access_key_logged_regression_empty_value_handled(self):
+        assert _redact_secret("") == "(empty)"
+        assert _redact_secret(None) == "(empty)"
+
+    def test_sec_access_key_logged_regression_short_value_fully_masked(self):
+        """Pathologically short secrets are fully masked."""
+        assert _redact_secret("abc") == "***"
+        assert _redact_secret("abcd") == "***"
+
+
+class HasValidSignatureSecretLoggingTests(TestCase):
+    """
+    Regression tests for CWE-532: ``has_valid_signature`` must not emit
+    the full API access key or HMAC signature at DEBUG level when a
+    mismatch occurs.
+    """
+
+    def _call_with_mismatch(self):
+        """Invoke has_valid_signature with a deliberate access-key mismatch."""
+        # Use raw string literals for the test fixtures so secret values
+        # are obvious in assertion messages.
+        access_key = "AKIA-SERVER-KEY-ABCDEFGH"
+        other_access_key = "AKIA-CLIENT-KEY-ZYXWVUTS"
+        headers = {
+            "Authorization": (
+                f"SSI {other_access_key}:deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+            ),
+        }
+        body_dict = {"hello": "world"}
+        # We do not care about the cryptographic correctness here — we
+        # want to exercise the mismatch branch and inspect the log
+        # output. ``has_valid_signature`` returns False before any
+        # signature check when access keys do not match.
+        return access_key, other_access_key, has_valid_signature(
+            method="POST",
+            headers_dict=headers,
+            body_dict=body_dict,
+            access_key=access_key,
+            secret_key="server-secret",
+        )
+
+    def test_sec_access_key_logged_regression_debug_does_not_emit_full_key(self):
+        logger_name = "lms.djangoapps.verify_student.ssencrypt"
+        with LogCapture(logger_name, level=logging.DEBUG) as captured:
+            access_key, other_access_key, result = self._call_with_mismatch()
+        assert result is False
+        # Use ``LogRecord.getMessage()`` to get the formatted output:
+        # ``str(record)`` yields the raw ``%s`` template and would mask
+        # the secret arguments being interpolated.
+        joined = "\n".join(record.getMessage() for record in captured.records)
+        assert access_key not in joined
+        assert other_access_key not in joined
+        # The redacted prefixes (first 4 chars) remain for debugging.
+        assert "AKIA" in joined
