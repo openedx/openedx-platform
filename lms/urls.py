@@ -862,14 +862,21 @@ if settings.FEATURES.get('ENABLE_INSTRUCTOR_BACKGROUND_TASKS'):
         ),
     ]
 
-if settings.FEATURES.get('ENABLE_DEBUG_RUN_PYTHON'):
+# Debug-only endpoints. These are development aids (sandbox verification and
+# request-parameter echo) and must never be served from a production image.
+# Gate on ``settings.DEBUG`` so they are compiled out of production URL
+# resolution entirely. ``run_python`` additionally requires the existing
+# ``ENABLE_DEBUG_RUN_PYTHON`` feature flag to be flipped on in the dev env,
+# and runs inside CodeJail safe_exec. ``show_parameters`` was previously
+# registered unconditionally and only required ``@login_required``.
+if settings.DEBUG:
     urlpatterns += [
-        path('debug/run_python', debug_views.run_python),
+        path('debug/show_parameters', debug_views.show_parameters),
     ]
-
-urlpatterns += [
-    path('debug/show_parameters', debug_views.show_parameters),
-]
+    if settings.FEATURES.get('ENABLE_DEBUG_RUN_PYTHON'):
+        urlpatterns += [
+            path('debug/run_python', debug_views.run_python),
+        ]
 
 # Third-party auth.
 if settings.FEATURES.get('ENABLE_THIRD_PARTY_AUTH'):

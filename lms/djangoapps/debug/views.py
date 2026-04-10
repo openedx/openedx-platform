@@ -49,7 +49,15 @@ def run_python(request):
 
 @login_required
 def show_parameters(request):
-    """A page that shows what parameters were on the URL and post."""
+    """A page that shows what parameters were on the URL and post.
+
+    Debug-only aid. The URL is additionally gated by ``settings.DEBUG`` in
+    ``lms/urls.py`` so it is not reachable in production, but we enforce
+    the staff check here as a defence-in-depth guard in case the URL is
+    ever re-exposed by misconfiguration.
+    """
+    if not request.user.is_staff:
+        raise Http404
     html_list = []
     for name, value in sorted(request.GET.items()):
         html_list.append(escape(f"GET {name}: {value!r}"))
