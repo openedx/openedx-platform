@@ -697,7 +697,11 @@ def _render_valid_certificate(request, context, custom_template=None):
             custom_template.template,
             output_encoding='utf-8',
             input_encoding='utf-8',
-            default_filters=['decode.utf8'],
+            # Escape user-controlled context (e.g. accomplishment_copy_name,
+            # username) by default. Admin templates that intentionally emit
+            # HTML should use the ``| n`` filter on a per-expression basis.
+            # See the security advisory on certificate template XSS.
+            default_filters=['decode.utf8', 'h'],
             encoding_errors='replace',
         )
         context = RequestContext(request, context)

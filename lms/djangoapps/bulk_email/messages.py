@@ -73,7 +73,14 @@ class ACEEmail(CourseEmailMessage):
         text_message = email_context['course_email'].text_message
         html_message = email_context['course_email'].html_message
         formatted_text_message = substitute_keywords_with_data(text_message, email_context)
-        formatted_html_message = substitute_keywords_with_data(html_message, email_context)
+        # The ACE body template renders ``formatted_html_message`` inside
+        # ``{% autoescape off %}``. Force HTML escaping of substituted user
+        # data (e.g. ``%%USER_FULLNAME%%``) to prevent stored XSS via
+        # profile fields. The plain-text branch above stays unescaped so
+        # the ``text/plain`` alternative is not polluted with ``&lt;``.
+        formatted_html_message = substitute_keywords_with_data(
+            html_message, email_context, html_escape=True,
+        )
         email_context.update({
             'formatted_text_message': formatted_text_message,
             'formatted_html_message': formatted_html_message,

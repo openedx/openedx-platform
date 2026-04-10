@@ -126,3 +126,49 @@ class KeywordSubTest(ModuleStoreTestCase):
         }
         result = Ks.substitute_keywords_with_data(test_string, no_user_id_context)
         assert test_string == result
+
+    def test_sec_xss_keyword_substitution_regression_html_escape_enabled(self):
+        """
+        Regression test: with ``html_escape=True``, a malicious full name
+        containing HTML/script is escaped before insertion, preventing
+        stored XSS in the ACE bulk email body (which renders inside
+        ``{% autoescape off %}``).
+        """
+        self.user.profile.name = '<script>alert("xss")</script>'
+        self.user.profile.save()
+        self.context['name'] = self.user.profile.name
+
+        test_string = 'Hello %%USER_FULLNAME%%!'
+        result = Ks.substitute_keywords_with_data(
+            test_string, self.context, html_escape=True,
+        )
+
+        assert '<script>' not in result
+        assert '</script>' not in result
+        assert '&lt;script&gt;' in result
+        assert '%%USER_FULLNAME%%' not in result
+
+    def test_sec_xss_keyword_substitution_regression_html_escape_default_off(self):
+        """
+        Regression test: default ``html_escape=False`` preserves plaintext
+        behaviour so the ``text_message`` branch does not emit ``&lt;``
+        into plain-text emails and the legacy ``render_htmltext`` path
+        (which pre-escapes its context) does not double-escape.
+        """
+        self.context['name'] = 'Ada <Lovelace>'
+        test_string = 'Hi %%USER_FULLNAME%%'
+        result = Ks.substitute_keywords_with_data(test_string, self.context)
+        assert result == 'Hi Ada <Lovelace>'
+
+    def test_sec_xss_keyword_substitution_regression_course_title_escaped(self):
+        """
+        Regression test: course titles are user-adjacent (set by course
+        staff) and must be escaped when ``html_escape=True``.
+        """
+        self.context['course_title'] = 'Intro <img src=x onerror=alert(1)>'
+        test_string = 'Welcome to %%COURSE_DISPLAY_NAME%%'
+        result = Ks.substitute_keywords_with_data(
+            test_string, self.context, html_escape=True,
+        )
+        assert '<img' not in result
+        assert '&lt;img src=x onerror=alert(1)&gt;' in result
