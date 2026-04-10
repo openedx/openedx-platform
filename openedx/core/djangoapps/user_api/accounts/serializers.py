@@ -591,8 +591,19 @@ def get_extended_profile(user_profile):
 def get_profile_visibility(user_profile, user, configuration):
     """
     Returns the visibility level for the specified user profile.
+
+    When ENABLE_COPPA_COMPLIANCE is True, the platform deliberately does not
+    collect year_of_birth for any learner, so ``year_of_birth is None`` no
+    longer signals "unknown age, assume minor". In that mode, pass
+    ``default_requires_consent=False`` so that users whose year_of_birth is
+    None solely because the platform refused to collect it fall through to
+    their explicit account_privacy preference. When COPPA mode is off, the
+    historical conservative default (None => treat as minor) is preserved.
+    Learners with a real year_of_birth below PARENTAL_CONSENT_AGE_LIMIT are
+    still forced to PRIVATE regardless of the flag. See issue #37987.
     """
-    if user_profile.requires_parental_consent():
+    default_requires_consent = not getattr(settings, 'ENABLE_COPPA_COMPLIANCE', False)
+    if user_profile.requires_parental_consent(default_requires_consent=default_requires_consent):
         return PRIVATE_VISIBILITY
 
     # Calling UserPreference directly because the requesting user may be different from existing_user
