@@ -70,13 +70,21 @@ class UsernameCipher:
 
     @staticmethod
     def decrypt(token):  # lint-amnesty, pylint: disable=missing-function-docstring
+        # All failure modes collapse into a single exception reason
+        # ("invalid") so that callers cannot construct a padding oracle
+        # by distinguishing base64 / IV-length / AES / PKCS7-padding
+        # errors. The caller is also expected to surface a constant
+        # error response to the client — see ``set_subscription`` and
+        # ``opt_out_email_updates``.
+        generic_failure = UsernameDecryptionException("invalid")
+
         try:
             base64_decoded = urlsafe_b64decode(token)
         except (TypeError, Error):
-            raise UsernameDecryptionException("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise generic_failure  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if len(base64_decoded) < AES_BLOCK_SIZE_BYTES:
-            raise UsernameDecryptionException("initialization_vector")
+            raise generic_failure
 
         initialization_vector = base64_decoded[:AES_BLOCK_SIZE_BYTES]
         aes_encrypted = base64_decoded[AES_BLOCK_SIZE_BYTES:]
@@ -87,15 +95,16 @@ class UsernameCipher:
         try:
             decrypted = decryptor.update(aes_encrypted) + decryptor.finalize()
         except ValueError:
-            raise UsernameDecryptionException("aes")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise generic_failure  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         try:
             unpadded = unpadder.update(decrypted) + unpadder.finalize()
-            if len(unpadded) == 0:
-                raise UsernameDecryptionException("padding")
-            return unpadded
         except ValueError:
-            raise UsernameDecryptionException("padding")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise generic_failure  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+
+        if len(unpadded) == 0:
+            raise generic_failure
+        return unpadded
 
 
 def enable_notifications(user):
@@ -184,12 +193,13 @@ def set_subscription(request, token, subscribe):
     try:
         username = UsernameCipher().decrypt(token.encode()).decode()
         user = User.objects.get(username=username)
-    except UnicodeDecodeError:
-        raise Http404("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-    except UsernameDecryptionException as exn:
-        raise Http404(str(exn))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-    except User.DoesNotExist:
-        raise Http404("username")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+    except (UnicodeDecodeError, UsernameDecryptionException, User.DoesNotExist):
+        # Surface a single opaque error message for all failure modes so
+        # that an attacker cannot distinguish padding failures from AES
+        # failures from "valid token, unknown username" (CWE-209 /
+        # padding-oracle guard). The internal exception is intentionally
+        # discarded — it carries no additional safe-to-return context.
+        raise Http404("invalid_token")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Calling UserPreference directly because the fact that the user is passed in the token implies
     # that it may not match request.user.

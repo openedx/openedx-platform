@@ -63,13 +63,19 @@ class OptOutEmailUpdatesViewTest(ModuleStoreTestCase):
         assert Optout.objects.count() == 0
 
     @ddt.data(
-        ("ZOMG INVALID BASE64 CHARS!!!", "base64url", False),
-        ("Non-ASCII\xff".encode(), "base64url", False),
-        ("D6L8Q01ztywqnr3coMOlq0C3DG05686lXX_1ArEd0ok", "base64url", False),
-        ("AAAAAAAAAAA=", "initialization_vector", False),
-        ("nMXVK7PdSlKPOovci-M7iqS09Ux8VoCNDJixLBmj", "aes", False),
-        ("AAAAAAAAAAAAAAAAAAAAAMoazRI7ePLjEWXN1N7keLw=", "padding", False),
-        ("AAAAAAAAAAAAAAAAAAAAACpyUxTGIrUjnpuUsNi7mAY=", "username", False),
+        # All token-related failure modes collapse to a single opaque
+        # "invalid_token" 404 so that distinguishable errors cannot be
+        # used as a padding oracle on the CBC cipher. The ``course``
+        # case is still distinguishable because it is an InvalidKeyError
+        # raised from CourseKey parsing, which happens *after* the
+        # token has successfully decrypted.
+        ("ZOMG INVALID BASE64 CHARS!!!", "invalid_token", False),
+        ("Non-ASCII\xff".encode(), "invalid_token", False),
+        ("D6L8Q01ztywqnr3coMOlq0C3DG05686lXX_1ArEd0ok", "invalid_token", False),
+        ("AAAAAAAAAAA=", "invalid_token", False),
+        ("nMXVK7PdSlKPOovci-M7iqS09Ux8VoCNDJixLBmj", "invalid_token", False),
+        ("AAAAAAAAAAAAAAAAAAAAAMoazRI7ePLjEWXN1N7keLw=", "invalid_token", False),
+        ("AAAAAAAAAAAAAAAAAAAAACpyUxTGIrUjnpuUsNi7mAY=", "invalid_token", False),
         ("_KHGdCAUIToc4iaRGy7K57mNZiiXxO61qfKT08ExlY8=", "course", 'course-v1:testcourse'),
     )
     @ddt.unpack
@@ -80,4 +86,4 @@ class OptOutEmailUpdatesViewTest(ModuleStoreTestCase):
         request = self.request_factory.get("dummy")
         with pytest.raises(Http404) as err:  # noqa: PT012
             opt_out_email_updates(request, token, course)
-            assert message in err
+            assert message in str(err.value)

@@ -34,12 +34,16 @@ def opt_out_email_updates(request, token, course_id):
         user = User.objects.get(username=username)
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key, depth=0)
-    except UnicodeDecodeError:
-        raise Http404("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-    except UsernameDecryptionException as exn:
-        raise Http404(str(exn))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
-    except User.DoesNotExist:
-        raise Http404("username")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+    except (
+        UnicodeDecodeError,
+        UsernameDecryptionException,
+        User.DoesNotExist,
+    ):
+        # Single opaque failure message covers all token-related error
+        # paths so that distinguishable responses cannot be used as a
+        # padding oracle on the underlying CBC cipher. See
+        # ``UsernameCipher.decrypt`` for the encrypt-side counterpart.
+        raise Http404("invalid_token")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except InvalidKeyError:
         raise Http404("course")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 

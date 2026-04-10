@@ -15,6 +15,7 @@ from common.djangoapps.util.testing import UrlResetMixin
 from lms.djangoapps.discussion.notification_prefs import NOTIFICATION_PREF_KEY
 from lms.djangoapps.discussion.notification_prefs.views import (
     UsernameCipher,
+    UsernameDecryptionException,
     ajax_disable,
     ajax_enable,
     ajax_status,
@@ -185,36 +186,63 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
         assert response.status_code == 405
 
     def test_unsubscribe_invalid_token(self):
-        def test_invalid_token(token, message):
+        # All token failure modes must surface the same opaque message
+        # ("invalid_token"). Distinguishable messages would let an
+        # attacker build a padding oracle against the underlying CBC
+        # cipher (CWE-209 / padding oracle guard).
+        def test_invalid_token(token):
             request = self.request_factory.get("dummy")
-            self.assertRaisesRegex(Http404, f"^{message}$", set_subscription, request, token, False)  # noqa: PT027
+            self.assertRaisesRegex(  # noqa: PT027
+                Http404, "^invalid_token$", set_subscription, request, token, False
+            )
 
         # Invalid base64 encoding
-        test_invalid_token("ZOMG INVALID BASE64 CHARS!!!", "base64url")
-        test_invalid_token("Non-ASCII\xff", "base64url")
-        test_invalid_token(self.tokens[self.user][:-1], "base64url")
+        test_invalid_token("ZOMG INVALID BASE64 CHARS!!!")
+        test_invalid_token("Non-ASCII\xff")
+        test_invalid_token(self.tokens[self.user][:-1])
 
         # Token not long enough to contain initialization vector
-        test_invalid_token("AAAAAAAAAAA=", "initialization_vector")
+        test_invalid_token("AAAAAAAAAAA=")
 
         # Token length not a multiple of AES block length
-        test_invalid_token(self.tokens[self.user][:-4], "aes")
+        test_invalid_token(self.tokens[self.user][:-4])
 
         # Invalid padding (ends in 0 byte)
         # Encrypted value: "testuser" + "\x00" * 8
-        test_invalid_token("AAAAAAAAAAAAAAAAAAAAAMoazRI7ePLjEWXN1N7keLw=", "padding")
+        test_invalid_token("AAAAAAAAAAAAAAAAAAAAAMoazRI7ePLjEWXN1N7keLw=")
 
         # Invalid padding (ends in byte > 16)
         # Encrypted value: "testusertestuser"
-        test_invalid_token("AAAAAAAAAAAAAAAAAAAAAC6iLXGhjkFytJoJSBJZzJ4=", "padding")
+        test_invalid_token("AAAAAAAAAAAAAAAAAAAAAC6iLXGhjkFytJoJSBJZzJ4=")
 
         # Invalid padding (entire string is padding)
         # Encrypted value: "\x10" * 16
-        test_invalid_token("AAAAAAAAAAAAAAAAAAAAANRGw8HDEmlcLVFawgY9wI8=", "padding")
+        test_invalid_token("AAAAAAAAAAAAAAAAAAAAANRGw8HDEmlcLVFawgY9wI8=")
 
-        # Nonexistent user
+        # Nonexistent user — must not be distinguishable from a crypto
+        # failure, otherwise a successful decryption acts as a padding
+        # oracle signal.
         # Encrypted value: "nonexistentuser\x01"
-        test_invalid_token("AAAAAAAAAAAAAAAAAAAAACpyUxTGIrUjnpuUsNi7mAY=", "username")
+        test_invalid_token("AAAAAAAAAAAAAAAAAAAAACpyUxTGIrUjnpuUsNi7mAY=")
+
+    def test_decrypt_collapses_failure_reasons(self):
+        """
+        Regression test for the padding oracle fix: every failure mode of
+        ``UsernameCipher.decrypt`` must raise the same exception reason
+        so that the caller cannot distinguish base64 / IV / AES / padding
+        errors and build an oracle against the underlying CBC cipher.
+        """
+        cases = [
+            b"ZOMG INVALID BASE64 CHARS!!!",            # base64url error
+            b"AAAAAAAAAAA=",                            # too short for IV
+            b"nMXVK7PdSlKPOovci-M7iqS09Ux8VoCNDJixLBmj",  # AES finalize error
+            b"AAAAAAAAAAAAAAAAAAAAAMoazRI7ePLjEWXN1N7keLw=",  # padding error
+            b"AAAAAAAAAAAAAAAAAAAAANRGw8HDEmlcLVFawgY9wI8=",  # all-padding
+        ]
+        for token in cases:
+            with self.assertRaises(UsernameDecryptionException) as ctx:  # noqa: PT027
+                UsernameCipher.decrypt(token)
+            assert str(ctx.exception) == "invalid"
 
     def test_unsubscribe_success(self):
         self.create_prefs()
