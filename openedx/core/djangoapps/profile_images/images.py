@@ -18,6 +18,20 @@ from openedx.core.djangoapps.user_api.accounts.image_helpers import get_profile_
 
 from .exceptions import ImageValidationError
 
+# Cap the number of pixels PIL will decode from a single image. Pillow's own
+# default is ~89 megapixels, which is large enough that a carefully crafted
+# highly-compressible PNG ("image decompression bomb") can exhaust memory even
+# when the on-disk byte count is well under PROFILE_IMAGE_MAX_BYTES. 40
+# megapixels (e.g. 8000x5000) is comfortably above any realistic camera
+# upload that a learner would submit as a profile picture while blocking
+# gigapixel bombs whose decoded RGBA buffer would be tens of GB.
+#
+# Operators with an unusual requirement can override via the
+# ``PROFILE_IMAGE_MAX_PIXELS`` setting. This assignment is process-global
+# once the module is imported -- that is deliberate defense in depth, as
+# it also protects any other ``PIL.Image.open`` call in the same worker.
+Image.MAX_IMAGE_PIXELS = getattr(settings, 'PROFILE_IMAGE_MAX_PIXELS', 40_000_000)
+
 ImageType = namedtuple('ImageType', ('extensions', 'mimetypes', 'magic'))
 
 IMAGE_TYPES = {
@@ -136,6 +150,32 @@ def validate_uploaded_image(uploaded_file):
         raise ImageValidationError(file_upload_bad_ext)
     # avoid unexpected errors from subsequent modules expecting the fp to be at 0
     uploaded_file.seek(0)
+
+    # Reject decompression bombs: a small, highly-compressible image file can
+    # declare gigapixel dimensions in its header and exhaust worker memory as
+    # soon as ``PIL.Image.open`` touches the pixels. Opening the image here
+    # forces PIL to parse the header (cheap) so ``MAX_IMAGE_PIXELS`` can fire
+    # as a ``DecompressionBombError`` before any downstream code has a chance
+    # to decode the full pixel buffer. We do not call ``.load()`` because PIL
+    # checks the pixel count against ``MAX_IMAGE_PIXELS`` eagerly during
+    # ``Image.open`` for every format we accept.
+    try:
+        with Image.open(uploaded_file) as probe:
+            probe.verify()
+    except Image.DecompressionBombError as err:
+        raise ImageValidationError(
+            _('The file is too large to process.')
+        ) from err
+    except Exception as err:
+        # Any other PIL-level parse error indicates a corrupt image; surface
+        # the same generic "corrupted" message used by the magic-number
+        # mismatch branch above so the view can return a stable 400.
+        raise ImageValidationError(
+            _('The Content-Type header for this file does not match '
+              'the file data. The file may be corrupted.')
+        ) from err
+    finally:
+        uploaded_file.seek(0)
 
 
 def _crop_image_to_square(image):

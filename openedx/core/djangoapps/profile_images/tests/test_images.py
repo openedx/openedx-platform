@@ -123,6 +123,44 @@ class TestValidateUploadedImage(TestCase):
                 validate_uploaded_image(uploaded_file)
             assert str(ctx.value) == file_upload_bad_mimetype
 
+    def test_decompression_bomb_rejected(self):
+        """
+        A valid-format image whose declared dimensions exceed
+        ``PROFILE_IMAGE_MAX_PIXELS`` must be rejected with a generic
+        "too large" error so that a small, highly-compressible file
+        cannot trigger unbounded PIL memory allocation (CWE-409).
+        """
+        # Build a legitimate 100x100 PNG, then re-open with
+        # MAX_IMAGE_PIXELS temporarily lowered so any non-trivial
+        # image trips the decompression-bomb check path.
+        with make_uploaded_file(
+            dimensions=(100, 100),
+            extension=".png",
+            content_type="image/png",
+        ) as uploaded_file:
+            with mock.patch(
+                'openedx.core.djangoapps.profile_images.images.Image.MAX_IMAGE_PIXELS',
+                10,  # 10 pixels: any real image is a "bomb" relative to this
+            ):
+                with pytest.raises(ImageValidationError) as ctx:
+                    validate_uploaded_image(uploaded_file)
+                assert str(ctx.value) == 'The file is too large to process.'
+            # The file pointer is rewound even on the error path so
+            # downstream code (serializer reuse, other validators) sees
+            # the expected seek-zero invariant.
+            assert uploaded_file.tell() == 0
+
+    def test_max_image_pixels_is_bounded_by_default(self):
+        """
+        Regression test: ``Image.MAX_IMAGE_PIXELS`` must be overridden to
+        a finite value at module import. Pillow's own default (~89 MP)
+        is too loose for user-uploaded profile images; the settings-
+        backed override in ``images.py`` should be in effect.
+        """
+        from openedx.core.djangoapps.profile_images import images as profile_images_module
+        assert profile_images_module.Image.MAX_IMAGE_PIXELS is not None
+        assert profile_images_module.Image.MAX_IMAGE_PIXELS <= 40_000_000
+
 
 @ddt.ddt
 @skip_unless_lms
