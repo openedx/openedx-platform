@@ -871,6 +871,12 @@ CELERY_EVENT_QUEUE_TTL = None
 
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+# Pin the set of message content types Celery will deserialize. edx-platform
+# already uses the JSON serializer for both tasks and results, so locking the
+# accepted content list down to ``['json']`` has zero functional impact on
+# first-party workers while hardening the platform against RCE-class task
+# injection from a compromised broker (CWE-502).
+CELERY_ACCEPT_CONTENT = ['json']
 
 # Message configuration
 CELERY_MESSAGE_COMPRESSION = 'gzip'
