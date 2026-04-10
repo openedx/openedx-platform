@@ -17,6 +17,7 @@ from common.djangoapps.student.models import (
     CourseEnrollment,
     CourseFullError,
     EnrollmentClosedError,
+    EnrollmentNotAllowed,
 )
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentAllowedFactory, UserFactory
@@ -521,3 +522,54 @@ class EnrollmentTest(UrlResetMixin, ModuleStoreTestCase, OpenEdxEventsTestMixin)
                 countdown=SCORE_RECALCULATION_DELAY_ON_ENROLLMENT_UPDATE,
                 kwargs=local_task_args
             )
+
+    def test_unit_inactive_user_enrollment_blocked(self):
+        """
+        Unit test: CourseEnrollment.enroll() should raise EnrollmentNotAllowed
+        when user.is_active is False and check_access is True.
+        Bug #36402.
+        """
+        self.user.is_active = False
+        self.user.save()
+        with pytest.raises(EnrollmentNotAllowed):
+            CourseEnrollment.enroll(self.user, self.course.id, check_access=True)
+
+    def test_integration_inactive_user_cannot_enroll_active_can(self):
+        """
+        Integration test: An inactive user is blocked from enrollment, but after
+        activation the same user can enroll successfully.
+        Bug #36402.
+        """
+        self.user.is_active = False
+        self.user.save()
+        with pytest.raises(EnrollmentNotAllowed):
+            CourseEnrollment.enroll(self.user, self.course.id, check_access=True)
+
+        self.user.is_active = True
+        self.user.save()
+        enrollment = CourseEnrollment.enroll(self.user, self.course.id, check_access=True)
+        assert enrollment.is_active
+        assert CourseEnrollment.is_enrolled(self.user, self.course.id)
+
+    def test_bug_36402_regression_inactive_user_enrollment(self):
+        """
+        Regression test for Bug #36402: Non-active users can enroll in courses.
+        Before the fix, an inactive (unverified email) user could enroll freely.
+        After the fix, EnrollmentNotAllowed is raised when check_access=True.
+        """
+        self.user.is_active = False
+        self.user.save()
+        with pytest.raises(EnrollmentNotAllowed, match="activated"):
+            CourseEnrollment.enroll(self.user, self.course.id, check_access=True)
+
+    def test_inactive_user_enrollment_bypasses_check_when_no_access_check(self):
+        """
+        Server-to-server enrollment (check_access=False) should still allow
+        inactive user enrollment, since the caller is trusted.
+        Bug #36402 — ensures the fix does not break server-side enrollment.
+        """
+        self.user.is_active = False
+        self.user.save()
+        enrollment = CourseEnrollment.enroll(self.user, self.course.id, check_access=False)
+        assert enrollment.is_active
+        assert CourseEnrollment.is_enrolled(self.user, self.course.id)

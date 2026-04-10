@@ -742,6 +742,14 @@ class CourseEnrollment(models.Model):
                 raise NonExistentCourseError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if check_access:
+            if not user.is_active:
+                log.warning(
+                    "User %s failed to enroll in course %s because the account has not been activated.",
+                    user.username,
+                    str(course_key),
+                )
+                raise EnrollmentNotAllowed("Account must be activated before enrollment.")
+
             if cls.is_enrollment_closed(user, course) and not can_upgrade:
                 log.warning(
                     "User %s failed to enroll in course %s because enrollment is closed (can_upgrade=%s).",
