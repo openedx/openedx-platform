@@ -230,6 +230,75 @@ class TestCourseOutline(CourseTestCase):
                 self.client.get(reverse_course_url('course_handler', self.course.id), content_type="application/json")
 
 
+class TestCourseNotificationsHandler(CourseTestCase):
+    """
+    Tests for course_notifications_handler behavior on unsupported HTTP methods.
+
+    Regression tests for Bug #34483: dismissing the Discussions xblocks
+    deprecation banner in Studio used to cause a 500 error because the
+    handler raised NotImplementedError on PUT/POST. It must instead return
+    405 Method Not Allowed.
+    """
+
+    MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
+
+    def _build_url(self):
+        """Build a URL for course_notifications_handler with an arbitrary action_state_id."""
+        from django.urls import reverse
+        return reverse(
+            'course_notifications_handler',
+            kwargs={
+                'course_key_string': str(self.course.id),
+                'action_state_id': 1,
+            },
+        )
+
+    def test_unit_post_returns_405_not_500(self):
+        """
+        Unit: POST to course_notifications_handler must return 405 Method Not
+        Allowed instead of raising NotImplementedError (which Django turns
+        into a 500). Bug #34483.
+        """
+        response = self.client.post(self._build_url(), HTTP_ACCEPT='application/json')
+        assert response.status_code == 405
+        assert 'GET' in response['Allow']
+        assert 'DELETE' in response['Allow']
+
+    def test_unit_put_returns_405_not_500(self):
+        """
+        Unit: PUT to course_notifications_handler must return 405 Method Not
+        Allowed instead of raising NotImplementedError. Bug #34483.
+        """
+        response = self.client.put(self._build_url(), HTTP_ACCEPT='application/json')
+        assert response.status_code == 405
+        assert 'GET' in response['Allow']
+        assert 'DELETE' in response['Allow']
+
+    def test_integration_dismiss_deprecation_banner_does_not_500(self):
+        """
+        Integration: hitting the notification handler with POST or PUT (as
+        happens when the Studio MFE tries to dismiss the xblocks deprecation
+        banner) must not produce a 500. Bug #34483.
+        """
+        url = self._build_url()
+        post_response = self.client.post(url, HTTP_ACCEPT='application/json')
+        put_response = self.client.put(url, HTTP_ACCEPT='application/json')
+        assert post_response.status_code != 500
+        assert put_response.status_code != 500
+
+    def test_bug_34483_regression_dismiss_deprecation_banner(self):
+        """
+        Regression for Bug #34483: Dismissing the Discussions xblocks
+        deprecation banner in Studio used to raise NotImplementedError on the
+        backend, resulting in a 500 error. After the fix, the handler returns
+        405 Method Not Allowed with the correct Allow header.
+        """
+        response = self.client.post(self._build_url(), HTTP_ACCEPT='application/json')
+        # Before the fix: response.status_code == 500
+        # After the fix: response.status_code == 405
+        assert response.status_code == 405
+
+
 class TestCourseReIndex(CourseTestCase):
     """
     Unit tests for the course outline.

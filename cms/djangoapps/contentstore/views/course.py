@@ -17,7 +17,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import FieldError, ImproperlyConfigured, PermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import QuerySet
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseNotAllowed, HttpResponseNotFound
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import gettext as _
@@ -211,9 +211,9 @@ def course_notifications_handler(request, course_key_string=None, action_state_i
     DELETE
         json: return json repressing success or failure of dismissal/deletion of the notification
     PUT
-        Raises a NotImplementedError.
+        Returns 405 Method Not Allowed — this handler only supports GET and DELETE.
     POST
-        Raises a NotImplementedError.
+        Returns 405 Method Not Allowed — this handler only supports GET and DELETE.
     """
     # ensure that we have a course and an action state
     if not course_key_string or not action_state_id:
@@ -231,10 +231,10 @@ def course_notifications_handler(request, course_key_string=None, action_state_i
         elif request.method == 'DELETE':
             # we assume any delete requests dismiss actions from the UI
             return _dismiss_notification(request, action_state_id)
-        elif request.method == 'PUT':
-            raise NotImplementedError()
-        elif request.method == 'POST':
-            raise NotImplementedError()
+        elif request.method in ('PUT', 'POST'):
+            # PUT/POST are not supported. Return 405 so Django does not raise
+            # an unhandled exception and produce a 500 (see issue #34483).
+            return HttpResponseNotAllowed(['GET', 'DELETE'])
         else:
             return HttpResponseBadRequest()
     else:

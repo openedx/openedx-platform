@@ -26,7 +26,9 @@ class CourseIndexSerializer(serializers.Serializer):
     language_code = serializers.CharField()
     lms_link = serializers.CharField()
     mfe_proctored_exam_settings_url = serializers.CharField()
-    notification_dismiss_url = serializers.CharField()
+    # notification_dismiss_url is None when there is no pending CourseRerunState
+    # for this course, so the field must accept null. See issue #34483.
+    notification_dismiss_url = serializers.CharField(allow_null=True, required=False)
     proctoring_errors = ProctoringErrorListSerializer(many=True)
     reindex_link = serializers.CharField()
     rerun_notification_id = serializers.IntegerField()
