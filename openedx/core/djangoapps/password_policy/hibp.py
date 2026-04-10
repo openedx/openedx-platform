@@ -65,11 +65,15 @@ class PwnedPasswordsAPI:
                 return entries
 
             except ReadTimeout:
-                log.warning('Request timed out for {}'.format(password))  # noqa: UP032
+                log.warning('HIBP range request timed out')
                 return HTTP_408_REQUEST_TIMEOUT
 
             except Exception as exc:  # pylint: disable=W0703
-                log.exception(f"Unable to range the password: {exc}")
+                # Do not include ``exc`` or a traceback in the log record:
+                # the traceback embeds ``range_url`` which contains the
+                # first 5 hex chars of the SHA-1 password hash. Log only
+                # the exception class name for operator triage (CWE-532).
+                log.warning('HIBP range request failed: %s', type(exc).__name__)
 
     @staticmethod
     def is_sha1(maybe_sha):
