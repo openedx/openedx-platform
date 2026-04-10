@@ -56,6 +56,7 @@ from lms.djangoapps.courseware.access_utils import (
     ACCESS_DENIED,
     ACCESS_GRANTED,
     check_course_open_for_learner,
+    check_public_access,
     check_start_date,
     debug,
 )
@@ -67,6 +68,7 @@ from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
+    COURSE_VISIBILITY_PUBLIC,
     CourseBlock,
 )
 from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
@@ -366,6 +368,14 @@ def _has_access_course(user, action, courselike):
         if courselike.id.deprecated:  # we no longer support accessing Old Mongo courses
             return OldMongoAccessError(courselike)
 
+        # Anonymous users on a public course (with the unenrolled-access waffle
+        # enabled) must be allowed to load the course even when the course has
+        # a future start date. Without this, check_course_open_for_learner
+        # below returns StartDateError and render_xblock converts it to 404,
+        # breaking anonymous video viewing on public courses. See bug #38019.
+        if user.is_anonymous and check_public_access(courselike, [COURSE_VISIBILITY_PUBLIC]):
+            return ACCESS_GRANTED
+
         visible_to_nonstaff = _visible_to_nonstaff_users(courselike)
         if not visible_to_nonstaff:
             staff_access = _has_staff_access_to_block(user, courselike, courselike.id)
@@ -608,6 +618,17 @@ def _has_access_to_block(user, action, block, course_key=None):
         group_access_response = _has_group_access(block, user, course_key)
         if not group_access_response:
             return group_access_response
+
+        # Anonymous users on a public course must be able to load blocks even
+        # when the block's (inherited) start date is in the future. The course
+        # level check is already handled in _has_access_course; mirror that
+        # bypass here so block-level checks agree (bug #38019). We still honor
+        # group access (checked above) so cohort/partition gating continues
+        # to apply.
+        if user.is_anonymous and course_key is not None:
+            course_overview = CourseOverview.get_from_id(course_key)
+            if check_public_access(course_overview, [COURSE_VISIBILITY_PUBLIC]):
+                return ACCESS_GRANTED
 
         # If the user has staff access, they can load the block and checks below are not needed.
         staff_access_response = _has_staff_access_to_block(user, block, course_key)

@@ -48,7 +48,10 @@ from openedx.core.djangoapps.content.course_overviews.tests.factories import Cou
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
-from openedx.features.course_experience import ENFORCE_MASQUERADE_START_DATES
+from openedx.features.course_experience import (
+    COURSE_ENABLE_UNENROLLED_ACCESS_FLAG,
+    ENFORCE_MASQUERADE_START_DATES,
+)
 from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
@@ -728,6 +731,77 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         assert not see_in_catalog_response
         assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
         assert access._has_access_course(user, 'see_about_page', course_about)
+
+    @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
+    def test_unit_anonymous_can_load_public_course_with_future_start(self):
+        """
+        Unit regression for bug #38019: anonymous users on public courses
+        with a future start date must be granted load access. Previously
+        denied by check_course_open_for_learner -> StartDateError.
+        """
+        from xmodule.course_block import COURSE_VISIBILITY_PUBLIC
+        future_course = CourseFactory.create(
+            org='edX', course='public38019', run='future',
+            start=self.DATES[self.TOMORROW],
+            course_visibility=COURSE_VISIBILITY_PUBLIC,
+        )
+        response = access._has_access_course(self.anonymous_user, 'load', future_course)
+        assert bool(response) is True
+
+    @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=False)
+    def test_unit_anonymous_denied_when_unenrolled_access_flag_off(self):
+        """
+        Guard rail: disabling the unenrolled-access waffle must still deny
+        anonymous users even on a public course. Bug #38019.
+        """
+        from xmodule.course_block import COURSE_VISIBILITY_PUBLIC
+        future_course = CourseFactory.create(
+            org='edX', course='public38019', run='flagoff',
+            start=self.DATES[self.TOMORROW],
+            course_visibility=COURSE_VISIBILITY_PUBLIC,
+        )
+        response = access._has_access_course(self.anonymous_user, 'load', future_course)
+        assert bool(response) is False
+
+    @override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True)
+    def test_integration_anonymous_can_load_block_on_public_course(self):
+        """
+        Integration regression for bug #38019: anonymous block-level load
+        access must succeed on public courses even when the block inherits
+        a future start date.
+        """
+        from xmodule.course_block import COURSE_VISIBILITY_PUBLIC
+        future_course = CourseFactory.create(
+            org='edX', course='public38019', run='blocktest',
+            start=self.DATES[self.TOMORROW],
+            course_visibility=COURSE_VISIBILITY_PUBLIC,
+        )
+        mock_block = Mock(
+            user_partitions=[],
+            group_access={},
+            start=self.DATES[self.TOMORROW],
+            days_early_for_beta=None,
+            merged_group_access={},
+            visible_to_staff_only=False,
+            location=future_course.id.make_usage_key('video', 'sample'),
+        )
+        response = access._has_access_to_block(
+            self.anonymous_user, 'load', mock_block, course_key=future_course.id,
+        )
+        assert bool(response) is True
+
+    def test_bug_38019_regression_anonymous_still_denied_on_non_public_future(self):
+        """
+        Regression for bug #38019: the public-access bypass must not leak
+        to non-public courses. Anonymous users must still be denied on
+        non-public courses with future start dates.
+        """
+        future_course = CourseFactory.create(
+            org='edX', course='private38019', run='future',
+            start=self.DATES[self.TOMORROW],
+        )
+        response = access._has_access_course(self.anonymous_user, 'load', future_course)
+        assert bool(response) is False
 
     @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     @override_settings(MILESTONES_APP=True)

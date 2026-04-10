@@ -612,7 +612,16 @@ class CourseNavigationBlocksView(RetrieveAPIView):
 
         Dictionary keys are block keys and values are int values
         representing the completion status of the block.
+
+        Anonymous users (who can reach this view on public courses via the
+        COURSE_ENABLE_UNENROLLED_ACCESS_FLAG waffle) cannot own BlockCompletion
+        rows, so short-circuit with an empty mapping. Querying BlockCompletion
+        with an AnonymousUser otherwise raises TypeError because the FK
+        coercion cannot cast AnonymousUser to an integer primary key.
+        See bug #38019.
         """
+        if self.request.user.is_anonymous:
+            return {}
         course_key_string = self.kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
         completions = BlockCompletion.objects.filter(user=self.request.user, context_key=course_key).values_list(
