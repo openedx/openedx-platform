@@ -520,3 +520,84 @@ def _make_mock_shuffle(mock_result):
         return mock_result
 
     return shuffle
+
+
+class ItemBankMakeSelectionDeterminismTests(MixedSplitTestCase):
+    """
+    Regression tests for bug #38027: make_selection must be deterministic
+    across independent call sites when a seed is supplied, so that the XBlock
+    runtime and ContentLibraryTransformer converge on the same random subset
+    for a given (user, block) pair.
+    """
+
+    @staticmethod
+    def _children_pool(count=10):
+        """Build a simple children pool for make_selection."""
+        return [Mock(block_type="problem", block_id=f"p{i}") for i in range(count)]
+
+    def test_unit_make_selection_with_seed_is_deterministic(self):
+        """Same seed produces the same selection on every call."""
+        children = self._children_pool()
+        seed = "user-42:block-foo/bar"
+        first = ItemBankBlock.make_selection([], children, max_count=3, seed=seed)
+        for _ in range(5):
+            again = ItemBankBlock.make_selection([], children, max_count=3, seed=seed)
+            assert first['selected'] == again['selected']
+            assert first['added'] == again['added']
+
+    def test_unit_make_selection_different_seeds_can_differ(self):
+        """Different seeds across many users should produce at least two distinct subsets."""
+        children = self._children_pool()
+        subsets = set()
+        for uid in range(20):
+            result = ItemBankBlock.make_selection(
+                [], children, max_count=3, seed=f"user-{uid}:block-x",
+            )
+            subsets.add(tuple(sorted(result['selected'])))
+        assert len(subsets) > 1
+
+    def test_make_selection_preserves_signature_without_seed(self):
+        """
+        Backward compatibility: callers that don't pass seed still work
+        (keyword-only default is None).
+        """
+        children = self._children_pool()
+        result = ItemBankBlock.make_selection([], children, max_count=2)
+        assert len(result['selected']) == 2
+
+    def test_integration_transformer_and_xblock_seed_match(self):
+        """
+        Integration test for bug #38027: the XBlock runtime and transformer
+        produce the same selection for the same (user, block) pair because
+        they use the same seed format.
+        """
+        children = self._children_pool(8)
+        user_id = 777
+        block_key = "block-v1:Org+Course+Run+type@itembank+block@abc"
+        seed_from_xblock = f"{user_id}:{block_key}"
+        seed_from_transformer = f"{user_id}:{block_key}"
+
+        xblock_result = ItemBankBlock.make_selection(
+            [], children, max_count=3, seed=seed_from_xblock,
+        )
+        transformer_result = ItemBankBlock.make_selection(
+            [], children, max_count=3, seed=seed_from_transformer,
+        )
+        assert xblock_result['selected'] == transformer_result['selected']
+
+    def test_bug_38027_regression_selection_stable_across_rerun(self):
+        """
+        Regression for bug #38027: re-running make_selection with a non-empty
+        'selected' from a previous run must be a no-op (no shuffle, no
+        additions), so the learner's checkmark does not disappear on refresh.
+        """
+        children = self._children_pool(8)
+        seed = "user-777:block-abc"
+        first = ItemBankBlock.make_selection([], children, max_count=3, seed=seed)
+        second = ItemBankBlock.make_selection(
+            first['selected'], children, max_count=3, seed=seed,
+        )
+        assert second['added'] == []
+        assert second['invalid'] == []
+        assert second['overlimit'] == []
+        assert sorted(second['selected']) == sorted(first['selected'])

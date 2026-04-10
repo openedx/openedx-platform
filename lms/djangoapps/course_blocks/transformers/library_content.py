@@ -112,7 +112,11 @@ class ContentLibraryTransformer(FilteringTransformerMixin, BlockStructureTransfo
                 if block_class is None:
                     logger.error('Failed to load block class for %s', block_key)
                     continue
-                block_keys = block_class.make_selection(selected, library_children, max_count)
+                # Seed deterministically so this transformer and the XBlock runtime's
+                # selected_children() path converge on the same selection for the same
+                # (user, block). See issue #38027.
+                seed = f"{usage_info.user.id}:{block_key}"
+                block_keys = block_class.make_selection(selected, library_children, max_count, seed=seed)
                 selected = block_keys['selected']
 
                 # Save back any changes

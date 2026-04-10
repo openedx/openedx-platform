@@ -93,7 +93,7 @@ class ItemBankMixin(
         return XBlockCompletionMode.AGGREGATOR
 
     @classmethod
-    def make_selection(cls, selected, children, max_count):
+    def make_selection(cls, selected, children, max_count, *, seed=None):
         """
         Dynamically selects block_ids indicating which of the possible children are displayed to the current user.
 
@@ -101,6 +101,11 @@ class ItemBankMixin(
             selected - list of (block_type, block_id) pairs assigned to this student
             children - children of this block
             max_count - number of components to display to each student
+            seed - optional deterministic seed (any hashable). When provided, two calls with the
+                   same seed, children, and max_count produce the same selection. Callers that run
+                   in independent code paths (e.g. the XBlock runtime and the ContentLibraryTransformer)
+                   MUST pass a stable seed derived from (user_id, block_usage_key) so that both paths
+                   converge on the same selection. See issue #38027.
 
         NOTE/TODO:
             We like to treat `self.selected` as a list of 2-tuples, but when we load a block from persistence, all
@@ -124,7 +129,7 @@ class ItemBankMixin(
             Order of invalid/overlimit/added is ALPHABETICAL, by type then id. This is arbitrary, but it makes the
             events more consistent and easier to test.
         """
-        rand = random.Random()
+        rand = random.Random(seed)
 
         selected_keys = {tuple(k) for k in selected}  # set of (block_type, block_id) tuples assigned to this student
 
@@ -156,7 +161,7 @@ class ItemBankMixin(
 
         if any((invalid_block_keys, overlimit_block_keys, added_block_keys)):
             selected = list(selected_keys)
-            random.shuffle(selected)
+            rand.shuffle(selected)
 
         return {
             'selected': selected,
@@ -249,7 +254,13 @@ class ItemBankMixin(
         if max_count < 0:
             max_count = len(self.children)
 
-        block_keys = self.make_selection(self.selected, self.children, max_count)  # pylint: disable=no-member
+        # Seed deterministically so the XBlock runtime and ContentLibraryTransformer,
+        # which both call make_selection independently on a page load, converge on the
+        # same selection. See issue #38027.
+        seed = f"{self.get_user_id()}:{self.usage_key}"
+        block_keys = self.make_selection(  # pylint: disable=no-member
+            self.selected, self.children, max_count, seed=seed,
+        )
 
         self.publish_selected_children_events(
             block_keys,
