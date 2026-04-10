@@ -15,6 +15,7 @@ from cms.djangoapps.contentstore.tests.test_utils import AuthorizeStaffTestCase
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     ModuleStoreTestCase,
@@ -59,7 +60,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": course.proctoring_escalation_email,
                 "create_zendesk_tickets": course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["null"],
             "requires_escalation_email_providers": [],
         }
@@ -98,7 +99,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": self.course.proctoring_escalation_email,
                 "create_zendesk_tickets": self.course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["null"],
             "requires_escalation_email_providers": [],
         }
@@ -121,7 +122,7 @@ class ProctoringExamSettingsGetTests(
                 "proctoring_escalation_email": self.course.proctoring_escalation_email,
                 "create_zendesk_tickets": self.course.create_zendesk_tickets,
             },
-            "course_start_date": "2030-01-01T00:00:00Z",
+            "course_start_date": DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'),
             "available_proctoring_providers": ["lti_external", "null"],
             "requires_escalation_email_providers": ["lti_external"],
         }

@@ -593,11 +593,11 @@ class TestCreateItem(ItemTest):
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_create_with_future_date(self):
-        self.assertEqual(self.course.start, datetime(2030, 1, 1, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(self.course.start, DEFAULT_START_DATE)  # noqa: PT009
         resp = self.create_xblock(category="chapter")
         usage_key = self.response_usage_key(resp)
         obj = self.get_item_from_modulestore(usage_key)
-        self.assertEqual(obj.start, datetime(2030, 1, 1, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(obj.start, DEFAULT_START_DATE)  # noqa: PT009
 
     def test_static_tabs_initialization(self):
         """
@@ -3395,7 +3395,7 @@ class TestXBlockInfo(ItemTest):
             xblock_info["course_graders"],
             ["Homework", "Lab", "Midterm Exam", "Final Exam"],
         )
-        self.assertEqual(xblock_info["start"], "2030-01-01T00:00:00Z")  # noqa: PT009
+        self.assertEqual(xblock_info["start"], DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'))  # noqa: PT009
         self.assertEqual(xblock_info["graded"], False)  # noqa: PT009
         self.assertEqual(xblock_info["due"], None)  # noqa: PT009
         self.assertEqual(xblock_info["format"], None)  # noqa: PT009
