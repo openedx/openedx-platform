@@ -250,7 +250,11 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
             ],
         )
 
-        assert event_receiver.call_count == 4
+        # 3 CONTENT_OBJECT_ASSOCIATIONS_CHANGED (per entity) + 1 implicit
+        # LIBRARY_COLLECTION_UPDATED from Collection.post_save +
+        # 1 explicit LIBRARY_COLLECTION_UPDATED with background=True emitted
+        # after the M2M commit (bug #35776).
+        assert event_receiver.call_count == 5
         self.assertDictContainsEntries(
             event_receiver.call_args_list[0].kwargs,
             {
@@ -297,6 +301,65 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
                 ),
             },
         )
+        # Regression for bug #35776: explicit background=True emit after M2M commit.
+        final_call = event_receiver.call_args_list[4].kwargs
+        assert final_call["signal"] == LIBRARY_COLLECTION_UPDATED
+        assert final_call["library_collection"] == LibraryCollectionData(
+            collection_key=api.library_collection_locator(
+                self.lib1.library_key,
+                collection_key="COL1",
+            ),
+            background=True,
+        )
+
+    def test_bug_35776_regression_update_items_emits_background_updated(self) -> None:
+        """
+        Regression for bug #35776: update_library_collection_items must emit
+        LIBRARY_COLLECTION_UPDATED with background=True after the M2M commit
+        so the async reindex sees the final count. Without this, the search
+        document num_children reflected the stale pre-M2M state.
+        """
+        collection_update_event_receiver = mock.Mock()
+        LIBRARY_COLLECTION_UPDATED.connect(collection_update_event_receiver)
+
+        api.update_library_collection_items(
+            self.lib1.library_key,
+            self.col1.key,
+            opaque_keys=[
+                LibraryUsageLocatorV2.from_string(self.lib1_problem_block["id"]),
+                LibraryUsageLocatorV2.from_string(self.lib1_html_block["id"]),
+            ],
+        )
+        background_emits = [
+            call.kwargs for call in collection_update_event_receiver.call_args_list
+            if call.kwargs.get("library_collection")
+            and call.kwargs["library_collection"].background is True
+        ]
+        assert len(background_emits) >= 1
+        assert background_emits[-1]["library_collection"] == LibraryCollectionData(
+            collection_key=api.library_collection_locator(
+                self.lib1.library_key,
+                collection_key="COL1",
+            ),
+            background=True,
+        )
+
+        # Also fires for removals
+        collection_update_event_receiver.reset_mock()
+        api.update_library_collection_items(
+            self.lib1.library_key,
+            self.col1.key,
+            opaque_keys=[
+                LibraryUsageLocatorV2.from_string(self.lib1_html_block["id"]),
+            ],
+            remove=True,
+        )
+        background_emits = [
+            call.kwargs for call in collection_update_event_receiver.call_args_list
+            if call.kwargs.get("library_collection")
+            and call.kwargs["library_collection"].background is True
+        ]
+        assert len(background_emits) >= 1
 
     def test_update_collection_components_from_wrong_library(self) -> None:
         with self.assertRaises(api.ContentLibraryBlockNotFound) as exc:  # noqa: PT027

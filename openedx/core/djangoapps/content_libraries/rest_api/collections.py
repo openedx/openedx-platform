@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from django.db import transaction
 from django.db.models import QuerySet
+from django.utils.decorators import method_decorator
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz.constants import permissions as authz_permissions
@@ -27,6 +28,10 @@ from .serializers import (
 from .utils import convert_exceptions
 
 
+# LibraryCollectionsView must run outside the per-request atomic transaction so
+# that LIBRARY_COLLECTION_UPDATED tasks enqueued from update_library_collection_items
+# land after the M2M commit. See bug #35776.
+@method_decorator(transaction.non_atomic_requests, name="dispatch")
 class LibraryCollectionsView(ModelViewSet):
     """
     Views to get, create and update Library Collections.

@@ -176,6 +176,26 @@ def update_library_collection_items(
             created_by=created_by,
         )
 
+    # Explicitly emit LIBRARY_COLLECTION_UPDATED with background=True after the
+    # M2M relationship has been committed. The post_save signal on Collection
+    # fires before the entities M2M commit, so its synchronous reindex would
+    # see a stale num_children. The async (background) reindex runs after the
+    # request transaction commits and computes the correct count. This mirrors
+    # the pattern already used by set_library_item_collections,
+    # delete_library_block, restore_library_block, delete_container, and
+    # restore_container. See bug #35776.
+    # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
+    # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
+    LIBRARY_COLLECTION_UPDATED.send_event(
+        library_collection=LibraryCollectionData(
+            collection_key=library_collection_locator(
+                library_key=library_key,
+                collection_key=collection.key,
+            ),
+            background=True,
+        )
+    )
+
     return collection
 
 
