@@ -52,6 +52,7 @@ from ..outlines import (
     get_user_course_outline_details,
     key_supports_outlines,
     replace_course_outline,
+    replace_course_outline_for_ccx,
 )
 from ..processors.enrollment_track_partition_groups import EnrollmentTrackPartitionGroupsOutlineProcessor
 from .test_data import generate_sections
@@ -2189,3 +2190,77 @@ class TeamPartitionGroupsTestCase(OutlineProcessorTestCase):
         assert team_partition_groups_processor.usage_keys_to_remove(self.outline) == {
             self.course_key.make_usage_key('subsection', '2')
         }
+
+
+class ReplaceCourseOutlineForCCXTestCase(CacheIsolationTestCase):
+    """
+    Tests for replace_course_outline_for_ccx. Regression for #37365:
+    CCX course outlines must be generated in the LMS process without
+    touching the modulestore (ADR 0011).
+    """
+    def setUp(self):
+        super().setUp()
+        from ccx_keys.locator import CCXLocator
+        self.parent_key = CourseKey.from_string("course-v1:OpenedX+CCX101+2025")
+        self.ccx_key = CCXLocator.from_course_locator(self.parent_key, "1")
+        self.parent_outline = CourseOutlineData(
+            course_key=self.parent_key,
+            title="CCX101",
+            published_at=datetime(2025, 9, 16, tzinfo=timezone.utc),
+            published_version="v1",
+            entrance_exam_id=None,
+            days_early_for_beta=None,
+            sections=[
+                CourseSectionData(
+                    usage_key=self.parent_key.make_usage_key("chapter", "ch1"),
+                    title="Week 1",
+                    visibility=VisibilityData(
+                        hide_from_toc=False,
+                        visible_to_staff_only=False,
+                    ),
+                    sequences=[
+                        CourseLearningSequenceData(
+                            usage_key=self.parent_key.make_usage_key("sequential", "s1"),
+                            title="Intro",
+                            inaccessible_after_due=False,
+                            visibility=VisibilityData(
+                                hide_from_toc=False,
+                                visible_to_staff_only=False,
+                            ),
+                            exam=ExamData(),
+                        ),
+                    ],
+                ),
+            ],
+            self_paced=False,
+            course_visibility=CourseVisibility.PRIVATE,
+        )
+        replace_course_outline(self.parent_outline)
+
+    def test_unit_clones_parent_outline_into_ccx_namespace(self):
+        """Unit: replace_course_outline_for_ccx clones the parent outline structure."""
+        replace_course_outline_for_ccx(self.ccx_key)
+        ccx_outline = get_course_outline(self.ccx_key)
+        assert ccx_outline.course_key == self.ccx_key
+        assert ccx_outline.title == "CCX101"
+        assert ccx_outline.published_version == "v1"
+        assert len(ccx_outline.sections) == 1
+        section = ccx_outline.sections[0]
+        assert section.usage_key.course_key == self.ccx_key
+        assert len(section.sequences) == 1
+        assert section.sequences[0].usage_key.course_key == self.ccx_key
+
+    def test_integration_raises_when_parent_not_published(self):
+        """Integration: raises DoesNotExist when the parent outline is missing."""
+        from ccx_keys.locator import CCXLocator
+        other_ccx = CCXLocator.from_course_locator(
+            CourseKey.from_string("course-v1:OpenedX+Nope+2025"), "1",
+        )
+        with self.assertRaises(CourseOutlineData.DoesNotExist):
+            replace_course_outline_for_ccx(other_ccx)
+
+    def test_bug_37365_regression_rejects_non_ccx_key(self):
+        """Regression for #37365: must reject non-CCX keys with ValueError."""
+        with self.assertRaises(ValueError):
+            replace_course_outline_for_ccx(self.parent_key)
+

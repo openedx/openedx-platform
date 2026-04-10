@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, FrozenSet, List, Optional, Union  # noqa: UP035
 
+import attr
 from django.db import transaction
 from django.db.models.query import QuerySet
 from edx_django_utils.cache import TieredCache
@@ -64,6 +65,7 @@ __all__ = [
     'get_user_course_outline_details',
     'key_supports_outlines',
     'replace_course_outline',
+    'replace_course_outline_for_ccx',
 ]
 
 
@@ -413,6 +415,59 @@ def replace_course_outline(course_outline: CourseOutlineData,
         _update_sequences(course_outline, course_context)
         _update_course_section_sequences(course_outline, course_context)
         _update_publish_report(course_outline, content_errors, course_context)
+
+
+def replace_course_outline_for_ccx(ccx_course_key):
+    """
+    Create or refresh the Learning Sequences outline for a CCX course by
+    cloning the parent course's already-published outline.
+
+    This function does not touch the modulestore and is safe to run in the
+    LMS process. It is the mechanism by which LMS-originated CCX
+    ``course_published`` signals can keep ``learning_sequences`` up to date
+    without depending on ``cms.djangoapps.contentstore`` — see ADR 0011
+    ("Limit modulestore use in LMS") and issue #37365.
+
+    CCX-specific overrides (``start``, ``due``, ``visible_to_staff_only``,
+    etc.) are not baked into ``CourseOutlineData``; they are applied at
+    read time by ``get_user_course_outline`` through ``edx-when`` and
+    ``ccx.overrides``. Cloning the parent outline preserves this contract.
+
+    Raises ``CourseOutlineData.DoesNotExist`` if the parent course has no
+    outline yet (never been published through Studio). Callers should log
+    and retry rather than surface this to end users.
+    """
+    # Local import: ccx_keys is not available in every environment that
+    # imports learning_sequences (e.g. some Studio-only code paths).
+    from ccx_keys.locator import CCXLocator
+
+    if not isinstance(ccx_course_key, CCXLocator):
+        raise ValueError(
+            f"Expected CCXLocator, got {type(ccx_course_key).__name__}"
+        )
+
+    parent_key = ccx_course_key.to_course_locator()
+    parent_outline = get_course_outline(parent_key)
+
+    def _remap_sequence(seq):
+        return attr.evolve(
+            seq,
+            usage_key=seq.usage_key.map_into_course(ccx_course_key),
+        )
+
+    def _remap_section(section):
+        return attr.evolve(
+            section,
+            usage_key=section.usage_key.map_into_course(ccx_course_key),
+            sequences=[_remap_sequence(s) for s in section.sequences],
+        )
+
+    ccx_outline = attr.evolve(
+        parent_outline,
+        course_key=ccx_course_key,
+        sections=[_remap_section(s) for s in parent_outline.sections],
+    )
+    replace_course_outline(ccx_outline)
 
 
 def _update_course_context(course_outline: CourseOutlineData):

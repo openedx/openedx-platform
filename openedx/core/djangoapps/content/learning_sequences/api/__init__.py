@@ -7,4 +7,5 @@ from .outlines import (
     get_user_course_outline_details,  # noqa: F401
     key_supports_outlines,  # noqa: F401
     replace_course_outline,  # noqa: F401
+    replace_course_outline_for_ccx,  # noqa: F401
 )
