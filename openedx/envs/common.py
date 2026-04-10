@@ -140,6 +140,23 @@ ALLOWED_HOSTS = ['*']
 # Clickjacking protection can be disbaled by setting this to 'ALLOW'
 X_FRAME_OPTIONS = 'DENY'
 
+# ``Referrer-Policy`` is consumed by Django's SecurityMiddleware. The explicit
+# ``strict-origin-when-cross-origin`` value sends the full origin to same-origin
+# requests (preserving LMS → LMS debugging utility) but only sends the origin
+# (no path, no query string) on cross-origin navigations — which prevents
+# sensitive path segments and query-string tokens from leaking to third parties
+# via the HTTP ``Referer`` header (CWE-598).
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# ``Cross-Origin-Opener-Policy`` is consumed by Django's SecurityMiddleware
+# (Django 4.0+). We deliberately override Django's stricter ``same-origin``
+# default to ``same-origin-allow-popups`` so that third-party OAuth / SSO
+# popup flows and LTI 1.3 popup launches continue to keep an ``opener``
+# reference back to the launching window. Operators who do not use any
+# popup-based auth flows may tighten this to ``same-origin`` in their own
+# environment overrides.
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin-allow-popups'
+
 ROOT_URLCONF = Derived(lambda settings: f'{settings.SERVICE_VARIANT}.urls')
 
 ADMINS = []
