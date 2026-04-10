@@ -599,6 +599,73 @@ data-url='/problem/quiz/'> \
       expect(self.problem.submitButton).toHaveAttr("disabled");
       expect(self.problem.submitButtonLabel.text()).toBe("Submit");
     });
+
+    // Unit test — Bug #36824
+    // Verifies that disableAllButtonsWhileRunning re-evaluates the Submit button
+    // state after the operation completes, rather than blindly re-enabling it.
+    it("unit: disableAllButtonsWhileRunning re-evaluates submit button after operation", function () {
+      const self = this;
+      // Start with Submit enabled (as if an answer were previously selected)
+      self.problem.enableSubmitButton(true);
+      expect(self.problem.submitButton).not.toHaveAttr("disabled");
+      spyOn(self.problem, "submitAnswersAndSubmitButton").and.callThrough();
+      // Operation that mimics a reset: clears the form answered state
+      const operationCallback = function () {
+        return {
+          always(callable) {
+            return callable();
+          },
+        };
+      };
+      self.problem.disableAllButtonsWhileRunning(operationCallback, false);
+      // After the operation, submitAnswersAndSubmitButton must have been called
+      // to re-evaluate the Submit button state.
+      expect(self.problem.submitAnswersAndSubmitButton).toHaveBeenCalled();
+    });
+
+    // Integration test — Bug #36824
+    // After a reset, the Submit button must be disabled because no answer is selected.
+    it("integration: submit button is disabled after reset when no answer is selected", function () {
+      const self = this;
+      // Simulate a previously answered state
+      self.problem.enableSubmitButton(true);
+      expect(self.problem.submitButton).not.toHaveAttr("disabled");
+      spyOn($, "postWithPrefix").and.callFake(function (url, answers, callback) {
+        // Simulate server returning a fresh (empty) problem HTML
+        callback({ success: true, html: self.problem.el.html() });
+        return {
+          always(callable) {
+            return callable();
+          },
+        };
+      });
+      self.problem.reset();
+      // After reset: Submit must be disabled since no answer is selected
+      expect(self.problem.submitButton).toHaveAttr("disabled");
+    });
+
+    // Regression test — Bug #36824
+    // Reproduces the exact original scenario: answer selected → click Reset →
+    // click Submit (without selecting a new answer). Submit must be disabled.
+    it("regression: bug_36824 reset must disable submit button even when it was enabled before", function () {
+      const self = this;
+      // Pre-condition: user had selected an answer, Submit is enabled
+      self.problem.enableSubmitButton(true);
+      expect(self.problem.submitButton).not.toHaveAttr("disabled");
+      spyOn($, "postWithPrefix").and.callFake(function (url, answers, callback) {
+        callback({ success: true, html: self.problem.el.html() });
+        return {
+          always(callable) {
+            return callable();
+          },
+        };
+      });
+      // User clicks Reset
+      self.problem.reset();
+      // Bug: before the fix, Submit would be re-enabled by the .always() callback
+      // in disableAllButtonsWhileRunning. After the fix, Submit stays disabled.
+      expect(self.problem.submitButton).toHaveAttr("disabled");
+    });
   });
 
   describe("show problem with column in id", function () {

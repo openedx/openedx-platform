@@ -1283,7 +1283,13 @@
       });
       this.enableButtons(initiallyEnabledButtons, false, isFromCheckOperation);
       return operationCallback().always(function () {
-        return that.enableButtons(initiallyEnabledButtons, true, isFromCheckOperation);
+        that.enableButtons(initiallyEnabledButtons, true, isFromCheckOperation);
+        // Re-evaluate the Submit button based on the current form state. After a reset,
+        // the form is empty so Submit must be disabled — but enableButtons above would
+        // blindly re-enable it if it was enabled before the operation. See bug #36824.
+        if (that.submitButton.length) {
+          that.submitAnswersAndSubmitButton();
+        }
       });
     };
 
