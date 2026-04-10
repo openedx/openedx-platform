@@ -270,7 +270,7 @@ def fire_segment_event_on_course_grade_passed_first_time(user_id, course_locator
             event_properties=event_properties
         )
 
-    log.info("Segment event fired for passed learners. Event: [{}], Data: [{}]".format(event_name, event_properties))
+    log.info("Segment event fired for passed learners. Event: [{}], Data: [{}]".format(event_name, event_properties))  # noqa: UP032  # pylint: disable=line-too-long
 
 
 def _emit_course_passing_status_update(user, course_id, is_passing):

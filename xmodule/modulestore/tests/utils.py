@@ -373,7 +373,7 @@ class MixedModulestoreBuilder(StoreBuilderBase):
             contentstore: The contentstore that this modulestore should use to store
                 all of its assets.
         """
-        names, generators = list(zip(*self.store_builders))
+        names, generators = list(zip(*self.store_builders))  # noqa: B905
 
         with ExitStack() as stack:
             modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # lint-amnesty, pylint: disable=line-too-long
@@ -422,7 +422,7 @@ COMMON_DOCSTORE_CONFIG = {
     'host': MONGO_HOST,
     'port': MONGO_PORT_NUM,
 }
-DATA_DIR = path(__file__).dirname().parent.parent / "tests" / "data" / "xml-course-root"
+DATA_DIR = path(__file__).dirname().parent.parent / "tests" / "data" / "xml-course-root"  # noqa: F811
 TEST_DATA_DIR = 'common/test/data/'
 
 XBLOCK_MIXINS = (InheritanceMixin, XModuleMixin)
@@ -452,7 +452,7 @@ DIRECT_MS_SETUPS_SHORT = (
 )
 MODULESTORE_SETUPS = DIRECT_MODULESTORE_SETUPS + MIXED_MODULESTORE_SETUPS
 MODULESTORE_SHORTNAMES = DIRECT_MS_SETUPS_SHORT + MIXED_MS_SETUPS_SHORT
-SHORT_NAME_MAP = dict(list(zip(MODULESTORE_SETUPS, MODULESTORE_SHORTNAMES)))
+SHORT_NAME_MAP = dict(list(zip(MODULESTORE_SETUPS, MODULESTORE_SHORTNAMES)))  # noqa: B905
 
 CONTENTSTORE_SETUPS = (MongoContentstoreBuilder(),)
 

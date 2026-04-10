@@ -32,7 +32,7 @@ def random_date(allow_null=False):
         return None
 
     d = randint(1, int(time()))
-    return datetime.datetime.fromtimestamp(d, tz=datetime.timezone.utc)
+    return datetime.datetime.fromtimestamp(d, tz=datetime.timezone.utc)  # noqa: UP017
 
 
 def random_url(allow_null=False):
@@ -53,7 +53,7 @@ def random_grade():
 
 def decimal_to_grade_format(decimal):
     """Util for matching serialized grade format, pads a decimal to 2 places"""
-    return "{:.2f}".format(decimal)
+    return "{:.2f}".format(decimal)  # noqa: UP032
 
 
 def datetime_to_django_format(datetime_obj):

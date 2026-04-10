@@ -145,8 +145,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             source_node=wiki_node,
         )
 
-        self.assertIsNone(result.source_to_target)
-        self.assertEqual(len(result.children), 0)
+        self.assertIsNone(result.source_to_target)  # noqa: PT009
+        self.assertEqual(len(result.children), 0)  # noqa: PT009
 
     def test_migrate_node_course_root(self):
         """
@@ -164,9 +164,9 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         # Course root should not be migrated
-        self.assertIsNone(result.source_to_target)
+        self.assertIsNone(result.source_to_target)  # noqa: PT009
         # But should have children processed
-        self.assertEqual(len(result.children), 1)
+        self.assertEqual(len(result.children), 1)  # noqa: PT009
 
     def test_migrate_node_library_root(self):
         """
@@ -184,9 +184,9 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         # Library root should not be migrated
-        self.assertIsNone(result.source_to_target)
+        self.assertIsNone(result.source_to_target)  # noqa: PT009
         # But should have children processed
-        self.assertEqual(len(result.children), 1)
+        self.assertEqual(len(result.children), 1)  # noqa: PT009
 
     @ddt.data(
         ("chapter", CompositionLevel.Unit, None),
@@ -213,13 +213,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         if should_migrate:
-            self.assertIsNotNone(result.source_to_target)
+            self.assertIsNotNone(result.source_to_target)  # noqa: PT009
             source_key, _, reason = result.source_to_target
-            self.assertEqual(source_key.block_type, tag_name)
-            self.assertEqual(source_key.block_id, f"test_{tag_name}")
-            self.assertIsNone(reason)
+            self.assertEqual(source_key.block_type, tag_name)  # noqa: PT009
+            self.assertEqual(source_key.block_id, f"test_{tag_name}")  # noqa: PT009
+            self.assertIsNone(reason)  # noqa: PT009
         else:
-            self.assertIsNone(result.source_to_target)
+            self.assertIsNone(result.source_to_target)  # noqa: PT009
 
     def test_migrate_node_without_url_name(self):
         """
@@ -234,8 +234,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             source_node=node_without_url_name,
         )
 
-        self.assertIsNone(result.source_to_target)
-        self.assertEqual(len(result.children), 0)
+        self.assertIsNone(result.source_to_target)  # noqa: PT009
+        self.assertEqual(len(result.children), 0)  # noqa: PT009
 
     def test_migrate_node_with_children_components(self):
         """
@@ -253,7 +253,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             source_node=node_without_url_name,
         )
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             result.source_to_target,
             (
                 self.course.id.make_usage_key('library_content', 'test_library_content'),
@@ -262,7 +262,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 'so it is not supported in content libraries. It has 2 children blocks.',
             ),
         )
-        self.assertEqual(len(result.children), 0)
+        self.assertEqual(len(result.children), 0)  # noqa: PT009
 
     def test_migrated_node_all_source_to_target_pairs(self):
         """
@@ -287,10 +287,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
         pairs = list(parent_node.all_source_to_target_pairs())
 
-        self.assertEqual(len(pairs), 3)
-        self.assertEqual(pairs[0][0], key1)
-        self.assertEqual(pairs[1][0], key2)
-        self.assertEqual(pairs[2][0], key3)
+        self.assertEqual(len(pairs), 3)  # noqa: PT009
+        self.assertEqual(pairs[0][0], key1)  # noqa: PT009
+        self.assertEqual(pairs[1][0], key2)  # noqa: PT009
+        self.assertEqual(pairs[2][0], key3)  # noqa: PT009
 
     def test_bulk_migrate_invalid_sources(self):
         """
@@ -310,8 +310,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
-        self.assertEqual(self._get_task_status_fail_message(status), "ModulestoreSource matching query does not exist.")
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
+        self.assertEqual(self._get_task_status_fail_message(status), "ModulestoreSource matching query does not exist.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_bulk_migrate_invalid_collection(self):
         """
@@ -335,8 +335,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
-        self.assertEqual(self._get_task_status_fail_message(status), "Collection matching query does not exist.")
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
+        self.assertEqual(self._get_task_status_fail_message(status), "Collection matching query does not exist.")  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_bulk_migration_task_calculate_total_steps(self):
         """
@@ -346,7 +346,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             "sources_pks": [1, 2, 3, 4],
         })
         expected_steps = len(list(MigrationStep)) - 1 + 6 * 3
-        self.assertEqual(total_steps, expected_steps)
+        self.assertEqual(total_steps, expected_steps)  # noqa: PT009
 
     def test_migrate_component_success(self):
         """
@@ -362,16 +362,16 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="test_problem"
         )
 
-        self.assertIsNone(reason)
-        self.assertIsNotNone(result)
-        self.assertIsInstance(result, PublishableEntityVersion)
+        self.assertIsNone(reason)  # noqa: PT009
+        self.assertIsNotNone(result)  # noqa: PT009
+        self.assertIsInstance(result, PublishableEntityVersion)  # noqa: PT009
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             "problem", result.componentversion.component.component_type.name
         )
 
         # The component is published
-        self.assertFalse(result.componentversion.component.versioning.has_unpublished_changes)
+        self.assertFalse(result.componentversion.component.versioning.has_unpublished_changes)  # noqa: PT009
 
     def test_migrate_component_failure(self):
         """
@@ -392,8 +392,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="test_library content"
         )
 
-        self.assertIsNone(result)
-        self.assertEqual(
+        self.assertIsNone(result)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             reason,
             'The "library_content" XBlock (ID: "test_library_content") has children,'
             ' so it is not supported in content libraries.',
@@ -422,14 +422,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="test_problem"
         )
 
-        self.assertIsNotNone(result)
-        self.assertIsNone(reason)
+        self.assertIsNotNone(result)  # noqa: PT009
+        self.assertIsNone(reason)  # noqa: PT009
 
         component_media = result.componentversion.componentversionmedia_set.filter(
             key="static/test_image.png"
         ).first()
-        self.assertIsNotNone(component_media)
-        self.assertEqual(component_media.media.id, test_media.id)
+        self.assertIsNotNone(component_media)  # noqa: PT009
+        self.assertEqual(component_media.media.id, test_media.id)  # noqa: PT009
 
     def test_migrate_skip_repeats(self):
         """
@@ -668,8 +668,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="test_problem"
         )
 
-        self.assertIsNotNone(result)
-        self.assertIsNone(reason)
+        self.assertIsNotNone(result)  # noqa: PT009
+        self.assertIsNone(reason)  # noqa: PT009
 
         referenced_content_exists = (
             result.componentversion.componentversionmedia_set.filter(
@@ -682,8 +682,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             ).exists()
         )
 
-        self.assertTrue(referenced_content_exists)
-        self.assertFalse(unreferenced_content_exists)
+        self.assertTrue(referenced_content_exists)  # noqa: PT009
+        self.assertFalse(unreferenced_content_exists)  # noqa: PT009
 
     def test_migrate_component_library_source_key(self):
         """
@@ -700,10 +700,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="library_problem"
         )
 
-        self.assertIsNotNone(result)
-        self.assertIsNone(reason)
+        self.assertIsNotNone(result)  # noqa: PT009
+        self.assertIsNone(reason)  # noqa: PT009
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             "problem", result.componentversion.component.component_type.name
         )
 
@@ -759,18 +759,18 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             children=children,
         )
 
-        self.assertIsNone(reason)
-        self.assertIsInstance(result, PublishableEntityVersion)
+        self.assertIsNone(reason)  # noqa: PT009
+        self.assertIsInstance(result, PublishableEntityVersion)  # noqa: PT009
 
         container_version = result.containerversion
-        self.assertEqual(container_version.title, "Test Vertical")
+        self.assertEqual(container_version.title, "Test Vertical")  # noqa: PT009
 
         entity_rows = container_version.entity_list.entitylistrow_set.all()
-        self.assertEqual(len(entity_rows), 2)
+        self.assertEqual(len(entity_rows), 2)  # noqa: PT009
 
         child_entity_ids = {row.entity_id for row in entity_rows}
         expected_entity_ids = {child.entity_id for child in children}
-        self.assertEqual(child_entity_ids, expected_entity_ids)
+        self.assertEqual(child_entity_ids, expected_entity_ids)  # noqa: PT009
 
     def test_migrate_container_different_container_types(self):
         """
@@ -797,13 +797,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                     children=[],
                 )
 
-                self.assertIsNone(reason)
-                self.assertIsNotNone(result)
+                self.assertIsNone(reason)  # noqa: PT009
+                self.assertIsNotNone(result)  # noqa: PT009
 
                 container_version = result.containerversion
-                self.assertEqual(container_version.title, f"Test {block_type.title()}")
+                self.assertEqual(container_version.title, f"Test {block_type.title()}")  # noqa: PT009
                 # The container is published
-                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))
+                self.assertFalse(content_api.contains_unpublished_changes(container_version.container.pk))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_migrate_container_same_title(self):
         """
@@ -868,10 +868,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             children=[],
         )
 
-        self.assertIsNotNone(result)
+        self.assertIsNotNone(result)  # noqa: PT009
 
         container_version = result.containerversion
-        self.assertEqual(container_version.title, "Library Vertical")
+        self.assertEqual(container_version.title, "Library Vertical")  # noqa: PT009
 
     def test_migrate_container_empty_children_list(self):
         """
@@ -887,11 +887,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             children=[],
         )
 
-        self.assertIsNone(reason)
-        self.assertIsNotNone(result)
+        self.assertIsNone(reason)  # noqa: PT009
+        self.assertIsNotNone(result)  # noqa: PT009
 
         container_version = result.containerversion
-        self.assertEqual(container_version.entity_list.entitylistrow_set.count(), 0)
+        self.assertEqual(container_version.entity_list.entitylistrow_set.count(), 0)  # noqa: PT009
 
     def test_migrate_container_preserves_child_order(self):
         """
@@ -931,9 +931,9 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             container_version.entity_list.entitylistrow_set.order_by("order_num")
         )
 
-        self.assertEqual(len(entity_rows), 3)
-        for i, (expected_child, actual_row) in enumerate(zip(children, entity_rows)):
-            self.assertEqual(expected_child.entity_id, actual_row.entity_id)
+        self.assertEqual(len(entity_rows), 3)  # noqa: PT009
+        for i, (expected_child, actual_row) in enumerate(zip(children, entity_rows)):  # noqa: B007, B905
+            self.assertEqual(expected_child.entity_id, actual_row.entity_id)  # noqa: PT009
 
     def test_migrate_container_with_mixed_child_types(self):
         """
@@ -1003,10 +1003,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             children=children,
         )
 
-        self.assertIsNotNone(result)
+        self.assertIsNotNone(result)  # noqa: PT009
 
         container_version = result.containerversion
-        self.assertEqual(container_version.entity_list.entitylistrow_set.count(), 3)
+        self.assertEqual(container_version.entity_list.entitylistrow_set.count(), 3)  # noqa: PT009
 
         child_entity_ids = set(
             container_version.entity_list.entitylistrow_set.values_list(
@@ -1014,7 +1014,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             )
         )
         expected_entity_ids = {child.entity_id for child in children}
-        self.assertEqual(child_entity_ids, expected_entity_ids)
+        self.assertEqual(child_entity_ids, expected_entity_ids)  # noqa: PT009
 
     def test_bulk_migrate_success_courses(self):
         """
@@ -1037,19 +1037,19 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source_1.id, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
 
         migration_2 = ModulestoreMigration.objects.get(
             source=source_2.id, target=self.learning_package
         )
-        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
+        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
 
     def test_migrate_from_modulestore_success_legacy_library(self):
         """
@@ -1071,13 +1071,13 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
 
     def test_bulk_migrate_success_legacy_libraries(self):
         """
@@ -1100,19 +1100,19 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
 
         migration_2 = ModulestoreMigration.objects.get(
             source=source_2, target=self.learning_package
         )
-        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
+        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
 
     def test_bulk_migrate_create_collections(self):
         """
@@ -1137,15 +1137,15 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
-        self.assertIn(
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             "This collection contains content migrated from a legacy library on:",
             migration.target_collection.description,
         )
@@ -1153,10 +1153,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         migration_2 = ModulestoreMigration.objects.get(
             source=source_2, target=self.learning_package
         )
-        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
-        self.assertEqual(migration_2.target_collection.title, self.legacy_library_2.display_name)
-        self.assertIn(
+        self.assertEqual(migration_2.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration_2.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
+        self.assertEqual(migration_2.target_collection.title, self.legacy_library_2.display_name)  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             "This collection contains content migrated from a legacy library on:",
             migration_2.target_collection.description,
         )
@@ -1164,10 +1164,10 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         migration_3 = ModulestoreMigration.objects.get(
             source=source_3, target=self.learning_package
         )
-        self.assertEqual(migration_3.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration_3.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)
-        self.assertEqual(migration_3.target_collection.title, self.course.display_name)
-        self.assertIn(
+        self.assertEqual(migration_3.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration_3.repeat_handling_strategy, RepeatHandlingStrategy.Skip.value)  # noqa: PT009
+        self.assertEqual(migration_3.target_collection.title, self.course.display_name)  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             f"This collection contains content imported from the course {self.course.display_name} on:",
             migration_3.target_collection.description,
         )
@@ -1197,14 +1197,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
 
         # Migrate again and check that the migration uses the previos collection
         previous_collection = migration.target_collection
@@ -1223,16 +1223,16 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             }
         )
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migrations = ModulestoreMigration.objects.filter(
             source=source, target=self.learning_package
         )
         for migration in migrations:
-            self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-            self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)
-            self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
-            self.assertEqual(migration.target_collection.id, previous_collection.id)
+            self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+            self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)  # noqa: PT009
+            self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
+            self.assertEqual(migration.target_collection.id, previous_collection.id)  # noqa: PT009
 
     @ddt.data(
         RepeatHandlingStrategy.Skip,
@@ -1259,14 +1259,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
 
         # Migrate again in other V2 library, verify that the collections are different
         previous_collection = migration.target_collection
@@ -1285,23 +1285,23 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             }
         )
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
-        self.assertEqual(migration.target_collection.id, previous_collection.id)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
+        self.assertEqual(migration.target_collection.id, previous_collection.id)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package_2
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
-        self.assertNotEqual(migration.target_collection.id, previous_collection.id)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, repeat_handling_strategy.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
+        self.assertNotEqual(migration.target_collection.id, previous_collection.id)  # noqa: PT009
 
     def test_bulk_migrate_create_a_new_collection_on_fork(self):
         """
@@ -1324,14 +1324,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)
-        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)
+        self.assertEqual(migration.composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migration.repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)  # noqa: PT009
+        self.assertEqual(migration.target_collection.title, self.legacy_library.display_name)  # noqa: PT009
         previous_collection = migration.target_collection
 
         # Migrate again and check that it creates a new collection
@@ -1349,23 +1349,23 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             }
         )
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migrations = ModulestoreMigration.objects.filter(
             source=source, target=self.learning_package
         )
 
         # First migration
-        self.assertEqual(migrations[0].composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migrations[0].repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)
-        self.assertEqual(migrations[0].target_collection.title, self.legacy_library.display_name)
-        self.assertEqual(migrations[0].target_collection.id, previous_collection.id)
+        self.assertEqual(migrations[0].composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migrations[0].repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)  # noqa: PT009
+        self.assertEqual(migrations[0].target_collection.title, self.legacy_library.display_name)  # noqa: PT009
+        self.assertEqual(migrations[0].target_collection.id, previous_collection.id)  # noqa: PT009
 
         # Second migration
-        self.assertEqual(migrations[1].composition_level, CompositionLevel.Unit.value)
-        self.assertEqual(migrations[1].repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)
-        self.assertEqual(migrations[1].target_collection.title, f"{self.legacy_library.display_name}_1")
-        self.assertNotEqual(migrations[1].target_collection.id, previous_collection.id)
+        self.assertEqual(migrations[1].composition_level, CompositionLevel.Unit.value)  # noqa: PT009
+        self.assertEqual(migrations[1].repeat_handling_strategy, RepeatHandlingStrategy.Fork.value)  # noqa: PT009
+        self.assertEqual(migrations[1].target_collection.title, f"{self.legacy_library.display_name}_1")  # noqa: PT009
+        self.assertNotEqual(migrations[1].target_collection.id, previous_collection.id)  # noqa: PT009
 
     def test_bulk_migrate_invalid_source_key_type(self):
         """
@@ -1388,8 +1388,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
-        self.assertEqual(
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self._get_task_status_fail_message(status),
             f"Not a valid source context key: {invalid_key}. Source key must reference a course or a legacy library."
         )
@@ -1422,8 +1422,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             title="test"
         )
 
-        self.assertIsNone(result)
-        self.assertEqual(reason, "Invalid block type: fake_block")
+        self.assertIsNone(result)  # noqa: PT009
+        self.assertEqual(reason, "Invalid block type: fake_block")  # noqa: PT009
 
     def test_bulk_migrate_nonexistent_modulestore_item(self):
         """
@@ -1448,8 +1448,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
 
         status = UserTaskStatus.objects.get(task_id=task.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
-        self.assertEqual(
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self._get_task_status_fail_message(status),
             "Failed to load source item 'block-v1:NonExistent+Course+Run+type@course+block@course' "
             "from ModuleStore: course-v1:NonExistent+Course+Run+branch@draft-branch"
@@ -1479,8 +1479,8 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         status = UserTaskStatus.objects.get(task_id=task.id)
 
         # Should fail at loading step since we don't have real modulestore content
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
-        self.assertEqual(
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             self._get_task_status_fail_message(status),
             "Failed to load source item 'lib-block-v1:TestOrg+TestLibrary+type@library+block@library' "
             "from ModuleStore: library-v1:TestOrg+TestLibrary+branch@library"
@@ -1506,12 +1506,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         status = UserTaskStatus.objects.get(task_id=task.id)
 
         # Should either succeed or fail, but should have progressed past validation
-        self.assertIn(status.state, [UserTaskStatus.SUCCEEDED, UserTaskStatus.FAILED])
+        self.assertIn(status.state, [UserTaskStatus.SUCCEEDED, UserTaskStatus.FAILED])  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertEqual(migration.task_status, status)
+        self.assertEqual(migration.task_status, status)  # noqa: PT009
 
     def test_bulk_migrate_multiple_users_no_interference(self):
         """
@@ -1549,11 +1549,11 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         status1 = UserTaskStatus.objects.get(task_id=task1.id)
         status2 = UserTaskStatus.objects.get(task_id=task2.id)
 
-        self.assertEqual(status1.user, self.user)
-        self.assertEqual(status2.user, other_user)
+        self.assertEqual(status1.user, self.user)  # noqa: PT009
+        self.assertEqual(status2.user, other_user)  # noqa: PT009
 
         # The first task should not be cancelled since it's from a different user
-        self.assertNotEqual(status1.state, UserTaskStatus.CANCELED)
+        self.assertNotEqual(status1.state, UserTaskStatus.CANCELED)  # noqa: PT009
 
     @patch("cms.djangoapps.modulestore_migrator.tasks._import_assets")
     def test_bulk_migrate_fails_on_import(self, mock_import_assets):
@@ -1580,14 +1580,14 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         status = UserTaskStatus.objects.get(task_id=task.id)
         # The task is successful because the entire bulk migration ends successfully.
         # When a legacy library fails to import, it is marked as failed but continues to the next one.
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
 
         migration = ModulestoreMigration.objects.get(
             source=source, target=self.learning_package
         )
-        self.assertTrue(migration.is_failed)
+        self.assertTrue(migration.is_failed)  # noqa: PT009
 
         migration_2 = ModulestoreMigration.objects.get(
             source=source_2, target=self.learning_package
         )
-        self.assertTrue(migration_2.is_failed)
+        self.assertTrue(migration_2.is_failed)  # noqa: PT009

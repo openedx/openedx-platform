@@ -59,7 +59,7 @@ class ProctoringCourseAppTestCase(ModuleStoreTestCase):
         """
         Test that setting enable status on proctoring app should raise exception.
         """
-        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):
+        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):  # noqa: PT027
             ProctoringCourseApp().set_enabled(
                 course_key=self.course.id,
                 enabled=True,

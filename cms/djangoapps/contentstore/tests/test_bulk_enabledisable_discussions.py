@@ -49,13 +49,13 @@ class BulkEnableDisableDiscussionsTestCase(ModuleStoreTestCase):
                 category='sequential',
                 display_name="Generated Sequence",
             )
-            unit1 = BlockFactory.create(
+            unit1 = BlockFactory.create(  # noqa: F841
                 parent=sequence,
                 category='vertical',
                 display_name="Unit in Section1",
                 discussion_enabled=True,
             )
-            unit2 = BlockFactory.create(
+            unit2 = BlockFactory.create(  # noqa: F841
                 parent=sequence,
                 category='vertical',
                 display_name="Unit in Section2",
@@ -82,16 +82,16 @@ class BulkEnableDisableDiscussionsTestCase(ModuleStoreTestCase):
             "discussion_enabled": is_enabled
         }
         response = self.client.put(self.url, data=json.dumps(data), content_type='application/json')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = response.json()
         print(response_data)
-        self.assertEqual(response_data['units_updated_and_republished'], 0 if is_enabled else 2)
+        self.assertEqual(response_data['units_updated_and_republished'], 0 if is_enabled else 2)  # noqa: PT009
 
         # Check that all verticals now have discussion_enabled set to the expected value
         with self.store.bulk_operations(self.course_key):
             verticals = self.store.get_items(self.course_key, qualifiers={'block_type': 'vertical'})
             for vertical in verticals:
-                self.assertEqual(vertical.discussion_enabled, is_enabled)
+                self.assertEqual(vertical.discussion_enabled, is_enabled)  # noqa: PT009
 
     def test_permission_denied_for_non_staff(self):
         """
@@ -107,11 +107,11 @@ class BulkEnableDisableDiscussionsTestCase(ModuleStoreTestCase):
         non_staff_client.login(username=non_staff_user.username, password=self.user_password)
 
         response = non_staff_client.put(self.url, content_type='application/json')
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_badrequest_for_empty_request_body(self):
         """
         Test that the API returns a 400 for an empty request body.
         """
         response = self.client.put(self.url, data=json.dumps({}), content_type='application/json')
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 400)  # noqa: PT009

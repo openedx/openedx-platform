@@ -56,14 +56,14 @@ class ChangeEligibilityDeadlineTests(SharedModuleStoreTestCase):
                          *command_args.format(username=username, course='XYZ', date='2018-12-30').split(' ')
                          )
         # Student not enrolled
-        with pytest.raises(CourseEnrollment.DoesNotExist):
+        with pytest.raises(CourseEnrollment.DoesNotExist):  # noqa: PT012
             unenrolled_user = UserFactory.create()
             call_command('change_eligibility_deadline',
                          *command_args.format(username=unenrolled_user.username, course=course_id_str,
                                               date='2018-12-30').split(' ')
                          )
         # Date format Invalid
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             call_command('change_eligibility_deadline',
                          *command_args.format(username=username, course=course_id_str, date='30-12-2018').split(' ')
                          )

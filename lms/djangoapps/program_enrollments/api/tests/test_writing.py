@@ -147,7 +147,7 @@ class WritingProgramEnrollmentTest(EnrollmentTestMixin):
         }], True, False)
         assert ProgramEnrollment.objects.count() == 1
         assert ProgramEnrollment.historical_records.count() == 1  # pylint: disable=no-member
-        result = write_program_enrollments(self.program_uuid, [{
+        result = write_program_enrollments(self.program_uuid, [{  # noqa: F841
             'external_user_key': external_key_2,
             'status': target_status,
             'curriculum_uuid': self.curriculum_uuid_a,
@@ -222,7 +222,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 'learner-1': CourseStatuses.ACTIVE,
                 'learner-2': CourseStatuses.INACTIVE,
@@ -262,7 +262,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             False,
             True,
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 'learner-1': CourseStatuses.INACTIVE,
                 'learner-2': CourseStatuses.ACTIVE,
@@ -303,7 +303,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             True,
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 'learner-1': CourseStatuses.INACTIVE,
                 'learner-2': CourseStatuses.ACTIVE,
@@ -345,7 +345,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             True,
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 'leaRNER-1': CourseStatuses.INACTIVE,
                 'LEarner-2': CourseStatuses.ACTIVE,
@@ -373,7 +373,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False,
         )
-        self.assertDictEqual({'learner-1': CourseStatuses.CONFLICT}, result)
+        self.assertDictEqual({'learner-1': CourseStatuses.CONFLICT}, result)  # noqa: PT009
 
     def test_create_conflicting_enrollment_mixed_case_external_user_key(self):
         """
@@ -389,7 +389,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False,
         )
-        self.assertDictEqual({'LeArnER-1': CourseStatuses.CONFLICT}, result)
+        self.assertDictEqual({'LeArnER-1': CourseStatuses.CONFLICT}, result)  # noqa: PT009
 
     def test_update_nonexistent_enrollment(self):
         self.create_program_enrollment('learner-1')
@@ -400,7 +400,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             False,
             True,
         )
-        self.assertDictEqual({'learner-1': CourseStatuses.NOT_FOUND}, result)
+        self.assertDictEqual({'learner-1': CourseStatuses.NOT_FOUND}, result)  # noqa: PT009
 
     def test_invalid_status(self):
         self.create_program_enrollment('learner-1')
@@ -411,7 +411,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False,
         )
-        self.assertDictEqual({'learner-1': CourseStatuses.INVALID_STATUS}, result)
+        self.assertDictEqual({'learner-1': CourseStatuses.INVALID_STATUS}, result)  # noqa: PT009
 
     def test_duplicate_external_keys(self):
         self.create_program_enrollment('learner-1')
@@ -426,7 +426,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False,
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 'learner-1': CourseStatuses.DUPLICATED,
             },
@@ -441,7 +441,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
             False,
         )
-        self.assertDictEqual({'learner-1': CourseStatuses.NOT_IN_PROGRAM}, result)
+        self.assertDictEqual({'learner-1': CourseStatuses.NOT_IN_PROGRAM}, result)  # noqa: PT009
 
     @ddt.data(
         'learner',
@@ -462,13 +462,13 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
 
         course_enrollment_requests = [
             self.course_enrollment_request(
-                '{}-1'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True
+                '{}-1'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True  # noqa: UP032
             ),
             self.course_enrollment_request(
-                '{}-2'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True
+                '{}-2'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True  # noqa: UP032
             ),
             self.course_enrollment_request(
-                '{}-3'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True
+                '{}-3'.format(request_user_key_prefix), CourseStatuses.ACTIVE, True  # noqa: UP032
             ),
         ]
         write_program_course_enrollments(
@@ -484,7 +484,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
         self.assert_program_course_enrollment('learner-3', CourseStatuses.ACTIVE, True)
 
         # Users linked to either enrollment are given the course staff role
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             [self.student_1, self.student_2],
             list(course_staff_role.users_with_role())
         )
@@ -532,7 +532,7 @@ class WriteProgramCourseEnrollmentTest(EnrollmentTestMixin):
             True,
         )
         # Role is revoked for user's with a linked enrollment
-        self.assertListEqual(
+        self.assertListEqual(  # noqa: PT009
             [self.student_1],
             list(course_staff_role.users_with_role())
         )

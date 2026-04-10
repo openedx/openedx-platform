@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-# coding=utf-8
+# coding=utf-8  # noqa: UP009
 
 """
 Command-line script to drive the partner reporting part of the retirement process
@@ -101,7 +101,7 @@ def _check_all_learner_orgs_or_exit(config, learners):
     if mismatched_orgs:
         FAIL(
             ERR_UNKNOWN_ORG,
-            'Partners for organizations {} do not exist in configuration.'.format(text_type(mismatched_orgs))
+            'Partners for organizations {} do not exist in configuration.'.format(text_type(mismatched_orgs))  # noqa: UP032
         )
 
 
@@ -114,7 +114,7 @@ def _get_orgs_and_learners_or_exit(config):
     try:
         LOG('Retrieving all learners on which to report from the LMS.')
         learners = config['LMS'].retirement_partner_report()
-        LOG('Retrieved {} learners from the LMS.'.format(len(learners)))
+        LOG('Retrieved {} learners from the LMS.'.format(len(learners)))  # noqa: UP032
 
         _check_all_learner_orgs_or_exit(config, learners)
 
@@ -185,9 +185,9 @@ def _generate_report_files_or_exit(config, report_data, output_dir):
             outfile = _generate_report_file_or_exit(config, output_dir, partner_name, partner_headings,
                                                     partner_learners)
             partner_filenames[partner_name] = outfile
-            LOG('Report complete for partner {}'.format(partner_name))
+            LOG('Report complete for partner {}'.format(partner_name))  # noqa: UP032
         except Exception as exc:  # pylint: disable=broad-except
-            FAIL_EXCEPTION(ERR_REPORTING, 'Error reporting retirement for partner {}'.format(partner_name), exc)
+            FAIL_EXCEPTION(ERR_REPORTING, 'Error reporting retirement for partner {}'.format(partner_name), exc)  # noqa: UP032
 
     return partner_filenames
 
@@ -196,7 +196,7 @@ def _generate_report_file_or_exit(config, output_dir, partner, field_headings, f
     """
     Create a CSV file for the partner
     """
-    LOG('Starting report for partner {}: {} learners to add. Field headings are {}'.format(
+    LOG('Starting report for partner {}: {} learners to add. Field headings are {}'.format(  # noqa: UP032
         partner,
         len(field_values),
         field_headings
@@ -263,7 +263,7 @@ def _push_files_to_google(config, partner_filenames):
             failed_partners.append(partner)
 
     if failed_partners:
-        FAIL(ERR_BAD_CONFIG, 'These partners have retiring learners, but no Drive folder: {}'.format(failed_partners))
+        FAIL(ERR_BAD_CONFIG, 'These partners have retiring learners, but no Drive folder: {}'.format(failed_partners))  # noqa: UP032
 
     file_ids = {}
     drive = DriveApi(config['google_secrets_file'])
@@ -274,10 +274,10 @@ def _push_files_to_google(config, partner_filenames):
         with open(partner_filenames[partner], 'rb') as f:
             try:
                 drive_filename = os.path.basename(partner_filenames[partner])
-                LOG('Attempting to upload {} to {} Drive folder.'.format(drive_filename, partner))
+                LOG('Attempting to upload {} to {} Drive folder.'.format(drive_filename, partner))  # noqa: UP032
                 file_id = drive.create_file_in_folder(folder_id, drive_filename, f, "text/csv")
             except Exception as exc:  # pylint: disable=broad-except
-                FAIL_EXCEPTION(ERR_DRIVE_UPLOAD, 'Drive upload failed for: {}'.format(drive_filename), exc)
+                FAIL_EXCEPTION(ERR_DRIVE_UPLOAD, 'Drive upload failed for: {}'.format(drive_filename), exc)  # noqa: UP032
         file_ids[partner] = file_id
     return file_ids
 
@@ -319,7 +319,7 @@ def _add_comments_to_files(config, file_ids):
     for partner in file_ids:
         if not external_emails[partner]:
             LOG(
-                'WARNING: could not find a POC for the following partner: "{}". '
+                'WARNING: could not find a POC for the following partner: "{}". '  # noqa: UP032
                 'Double check the partner folder permissions in Google Drive.'
                 .format(partner)
             )
@@ -333,7 +333,7 @@ def _add_comments_to_files(config, file_ids):
         drive.create_comments_for_files(file_ids_and_comments)
     except Exception as exc:  # pylint: disable=broad-except
         # do not fail the script here, since comment errors are non-critical
-        LOG('WARNING: there was an error adding Google Drive comments to the csv files: {}'.format(exc))
+        LOG('WARNING: there was an error adding Google Drive comments to the csv files: {}'.format(exc))  # noqa: UP032
 
 
 @click.command("generate_report")
@@ -364,7 +364,7 @@ def generate_report(config_file, google_secrets_file, output_dir, comments):
     - Pushes the reports to Google Drive
     - On success tells LMS to remove the users who succeeded from the reporting queue
     """
-    LOG('Starting partner report using config file {} and Google config {}'.format(config_file, google_secrets_file))
+    LOG('Starting partner report using config file {} and Google config {}'.format(config_file, google_secrets_file))  # noqa: UP032
 
     try:
         if not config_file:

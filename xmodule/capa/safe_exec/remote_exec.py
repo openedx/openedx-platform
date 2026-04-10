@@ -17,4 +17,4 @@ warnings.warn(
 )
 
 # Wildcard import to expose send_safe_exec_request_v0 and any other attributes
-from xblocks_contrib.problem.capa.safe_exec.remote_exec import *
+from xblocks_contrib.problem.capa.safe_exec.remote_exec import *  # noqa: F403

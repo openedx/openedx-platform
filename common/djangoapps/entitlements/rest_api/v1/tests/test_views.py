@@ -607,7 +607,7 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 200
         results = response.data.get('results', [])
         # Make sure that the first result isn't expired, and the second one is also not for staff users
-        assert results[0].get('expired_at') is None and results[1].get('expired_at') is None
+        assert results[0].get('expired_at') is None and results[1].get('expired_at') is None  # noqa: PT018
 
     def test_get_user_expired_entitlements(self):
         past_datetime = now() - timedelta(days=365 * 2)
@@ -628,7 +628,7 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 200
 
         results = response.data.get('results', [])
-        assert results[0].get('expired_at') is None and results[1].get('expired_at')
+        assert results[0].get('expired_at') is None and results[1].get('expired_at')  # noqa: PT018
 
     def test_get_user_entitlements(self):
         user2 = UserFactory()
@@ -658,7 +658,7 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 200
 
         results = response.data
-        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None
+        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None  # noqa: PT018  # pylint: disable=line-too-long
 
     def test_get_expired_entitlement_by_uuid(self):
         past_datetime = now() - timedelta(days=365 * 2)
@@ -1050,7 +1050,7 @@ class EntitlementEnrollmentViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 201
         assert CourseEnrollment.is_enrolled(self.user, self.course.id)
         (enrolled_mode, is_active) = CourseEnrollment.enrollment_mode_for_user(self.user, self.course.id)
-        assert is_active and (enrolled_mode == course_entitlement.mode)
+        assert is_active and (enrolled_mode == course_entitlement.mode)  # noqa: PT018
         assert course_entitlement.enrollment_course_run is not None
 
     @patch("common.djangoapps.entitlements.rest_api.v1.views.get_course_runs_for_course")
@@ -1077,7 +1077,7 @@ class EntitlementEnrollmentViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 201
         assert CourseEnrollment.is_enrolled(self.user, self.course.id)
         (enrolled_mode, is_active) = CourseEnrollment.enrollment_mode_for_user(self.user, self.course.id)
-        assert is_active and (enrolled_mode == course_entitlement.mode)
+        assert is_active and (enrolled_mode == course_entitlement.mode)  # noqa: PT018
         assert course_entitlement.enrollment_course_run is not None
 
     @patch("common.djangoapps.entitlements.rest_api.v1.views.get_course_runs_for_course")

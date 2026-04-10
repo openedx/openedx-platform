@@ -412,7 +412,7 @@ class SocialAuthEnrollmentCompletionSignalTest(CacheIsolationTestCase):
         with mock.patch('lms.djangoapps.program_enrollments.api.linking.enroll_in_masters_track') as enrollMock:
             enrollMock.side_effect = Exception('unexpected error')
             with LogCapture(logger.name) as log:
-                with self.assertRaisesRegex(Exception, 'unexpected error'):
+                with self.assertRaisesRegex(Exception, 'unexpected error'):  # noqa: PT027
                     UserSocialAuth.objects.create(
                         user=self.user,
                         uid=f'{self.provider_slug}:{self.external_id}',

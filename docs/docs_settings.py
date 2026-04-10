@@ -4,34 +4,34 @@ Basically the LMS devstack settings plus a few items needed to successfully
 import all the Studio code.
 """
 
-import os
+import os  # noqa: F401
 from textwrap import dedent
 
 from cms.envs.common import (  # lint-amnesty, pylint: disable=unused-import
-    ADVANCED_PROBLEM_TYPES,
-    COURSE_IMPORT_EXPORT_STORAGE,
-    ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,
-    FRONTEND_REGISTER_URL,
-    GIT_EXPORT_DEFAULT_IDENT,
-    SCRAPE_YOUTUBE_THUMBNAILS_JOB_QUEUE,
-    UPDATE_SEARCH_INDEX_JOB_QUEUE,
-    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,
+    ADVANCED_PROBLEM_TYPES,  # noqa: F401
+    COURSE_IMPORT_EXPORT_STORAGE,  # noqa: F401
+    ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS,  # noqa: F401
+    FRONTEND_REGISTER_URL,  # noqa: F401
+    GIT_EXPORT_DEFAULT_IDENT,  # noqa: F401
+    SCRAPE_YOUTUBE_THUMBNAILS_JOB_QUEUE,  # noqa: F401
+    UPDATE_SEARCH_INDEX_JOB_QUEUE,  # noqa: F401
+    VIDEO_TRANSCRIPT_MIGRATIONS_JOB_QUEUE,  # noqa: F401
 )
-from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import
+from lms.envs.common import *  # lint-amnesty, pylint: disable=wildcard-import  # noqa: F403
 from openedx.core.lib.derived import derive_settings
 
 # Turn on all the boolean feature flags, so that conditionally included
 # API endpoints will be found.
-for key, value in FEATURES.items():
+for key, value in FEATURES.items():  # noqa: F405
     if value is False:
-        FEATURES[key] = True
+        FEATURES[key] = True  # noqa: F405
 
 # Settings that will fail if we enable them, and we don't need them for docs anyway.
-FEATURES["RUN_AS_ANALYTICS_SERVER_ENABLED"] = False
-FEATURES["ENABLE_SOFTWARE_SECURE_FAKE"] = False
-FEATURES["ENABLE_MKTG_SITE"] = False
+FEATURES["RUN_AS_ANALYTICS_SERVER_ENABLED"] = False  # noqa: F405
+FEATURES["ENABLE_SOFTWARE_SECURE_FAKE"] = False  # noqa: F405
+FEATURES["ENABLE_MKTG_SITE"] = False  # noqa: F405
 
-INSTALLED_APPS.extend(
+INSTALLED_APPS.extend(  # noqa: F405
     [
         "cms.djangoapps.contentstore.apps.ContentstoreConfig",
         'cms.djangoapps.modulestore_migrator',
@@ -75,7 +75,7 @@ openapi_security_info_jwt = dedent(
 openapi_security_info_csrf = (
     "Obtain by making a `GET` request to `/csrf/api/v1/token`. The token will be in the response cookie `csrftoken`."
 )
-SWAGGER_SETTINGS["SECURITY_DEFINITIONS"] = {
+SWAGGER_SETTINGS["SECURITY_DEFINITIONS"] = {  # noqa: F405
     "Basic": {
         "type": "basic",
         "description": openapi_security_info_basic,

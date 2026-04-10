@@ -50,7 +50,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
         cls.outline = CourseOutlineData(
             course_key=cls.course_key,
             title="Views Test Course!",
-            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2020",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -110,7 +110,7 @@ class CourseOutlineViewTest(CacheIsolationTestCase, APITestCase):
         # the raw form for max compatibility (i.e. guard against serialization
         # of dates changing), or do the parsing for conveninece? Convenience for
         # now.
-        assert data['published_at'] == datetime(2020, 5, 20, tzinfo=timezone.utc)
+        assert data['published_at'] == datetime(2020, 5, 20, tzinfo=timezone.utc)  # noqa: UP017
         assert data['published_version'] == "5ebece4b69dd593d82fe2020"
 
         # Basic outline structure checks
@@ -139,7 +139,7 @@ class CourseOutlineViewTargetUserTest(CacheIsolationTestCase, APITestCase):
             outline = CourseOutlineData(
                 course_key=course_key,
                 title="Views Test Course!",
-                published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+                published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
                 published_version="5ebece4b69dd593d82fe2020",
                 entrance_exam_id=None,
                 days_early_for_beta=None,
@@ -260,7 +260,7 @@ class CourseOutlineViewMasqueradingTest(MasqueradeMixin, CacheIsolationTestCase)
         outline = CourseOutlineData(
             course_key=cls.course_key,
             title="Views Test Course!",
-            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),
+            published_at=datetime(2020, 5, 20, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2020",
             entrance_exam_id=None,
             days_early_for_beta=None,

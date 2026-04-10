@@ -48,7 +48,7 @@ class UserServiceTestCase(TestCase):
         assert not xb_user.opt_attrs[ATTR_KEY_IS_AUTHENTICATED]
         assert xb_user.opt_attrs[ATTR_KEY_REQUEST_COUNTRY_CODE] == request_country_code
         assert xb_user.full_name is None
-        self.assertListEqual(xb_user.emails, [])
+        self.assertListEqual(xb_user.emails, [])  # noqa: PT009
 
     def assert_xblock_user_matches_django(
         self,
@@ -201,7 +201,7 @@ class UserServiceTestCase(TestCase):
         ext_id1 = django_user_service.get_external_user_id('test1')
         ext_id2 = django_user_service.get_external_user_id('test2')
         assert ext_id1 != ext_id2
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             django_user_service.get_external_user_id('unknown')
 
     def test_get_user_by_anonymous_id_assume_id(self):

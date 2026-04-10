@@ -28,7 +28,7 @@ class TeamsService:
         """ Returns the url to the detail view for the given team """
         teams_dashboard_url = reverse('teams_dashboard', kwargs={'course_id': team.course_id})
         # Unfortunately required since this URL resolution is done in a Backbone view
-        return "{teams_dashboard_url}#teams/{topic_id}/{team_id}".format(
+        return "{teams_dashboard_url}#teams/{topic_id}/{team_id}".format(  # noqa: UP032
             teams_dashboard_url=teams_dashboard_url,
             topic_id=team.topic_id,
             team_id=team.team_id,

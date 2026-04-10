@@ -78,6 +78,6 @@ class OptOutEmailUpdatesViewTest(ModuleStoreTestCase):
         Make sure that view returns 404 in case token is not valid
         """
         request = self.request_factory.get("dummy")
-        with pytest.raises(Http404) as err:
+        with pytest.raises(Http404) as err:  # noqa: PT012
             opt_out_email_updates(request, token, course)
             assert message in err

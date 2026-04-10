@@ -316,7 +316,7 @@ def _get_enabled_provider(provider_id):
     enabled_provider = provider.Registry.get(provider_id)
 
     if not enabled_provider:
-        raise ValueError('Provider %s not enabled' % provider_id)
+        raise ValueError('Provider %s not enabled' % provider_id)  # noqa: UP031
 
     return enabled_provider
 
@@ -338,7 +338,7 @@ def _get_url(view_name, backend_name, auth_entry=None, redirect_url=None,
     if extra_params:
         query_params.update(extra_params)
 
-    return "{url}?{params}".format(
+    return "{url}?{params}".format(  # noqa: UP032
         url=url,
         params=six.moves.urllib.parse.urlencode(query_params)
     )
@@ -358,7 +358,7 @@ def get_complete_url(backend_name):
         ValueError: if no provider is enabled with the given backend_name.
     """
     if not any(provider.Registry.get_enabled_by_backend_name(backend_name)):
-        raise ValueError('Provider with backend %s not enabled' % backend_name)
+        raise ValueError('Provider with backend %s not enabled' % backend_name)  # noqa: UP031
 
     return _get_url('social:complete', backend_name)
 
@@ -656,7 +656,7 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # register anew via SSO. See SOL-1324 in JIRA.
             # However, we will log a warning for this case:
             logger.warning(
-                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '
+                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
                 'Username: {username}'.format(username=user.username)
             )
 
@@ -808,7 +808,7 @@ def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *ar
         try:
             enterprise_customer_user = is_enterprise_customer_user(current_provider.provider_id, current_user)
             logger.info(
-                '[Multiple_SSO_SAML_Accounts_Association_to_User] Enterprise user verification:'
+                '[Multiple_SSO_SAML_Accounts_Association_to_User] Enterprise user verification:'  # noqa: UP032
                 'User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
                 ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
                     email=current_user.email,
@@ -826,7 +826,7 @@ def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *ar
 
                 if not user_is_active:
                     logger.info(
-                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'
+                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032  # pylint: disable=line-too-long
                         ' active: User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
                         ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
                             email=current_user.email,
@@ -897,7 +897,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
             current_value = getattr(model, field)
             if provider_value is not None and current_value != provider_value:
                 if field in integrity_conflict_fields and User.objects.filter(**{field: provider_value}).exists():
-                    logger.warning('[THIRD_PARTY_AUTH] Profile data synchronization conflict. '
+                    logger.warning('[THIRD_PARTY_AUTH] Profile data synchronization conflict. '  # noqa: UP032
                                    'UserId: {user_id}, Provider: {provider}, ConflictField: {conflict_field}, '
                                    'ConflictValue: {conflict_value}'.format(
                                        user_id=user.id,
@@ -910,7 +910,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
 
         if changed:
             logger.info(
-                '[THIRD_PARTY_AUTH] User performed SSO and data was synchronized. '
+                '[THIRD_PARTY_AUTH] User performed SSO and data was synchronized. '  # noqa: UP032
                 'Username: {username}, Provider: {provider}, UpdatedKeys: {updated_keys}'.format(
                     username=user.username,
                     provider=current_provider.name,
@@ -940,7 +940,7 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                 try:
                     email.send()
                 except SMTPException:
-                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '
+                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032  # pylint: disable=line-too-long
                                      'notification email. Username: {username}'.format(username=user.username))
 
 

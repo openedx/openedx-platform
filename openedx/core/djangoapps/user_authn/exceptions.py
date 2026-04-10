@@ -10,7 +10,7 @@ class AuthFailedError(Exception):
     message.
     """
     def __init__(  # lint-amnesty, pylint: disable=dangerous-default-value
-        self, value=None, redirect=None, redirect_url=None, error_code=None, context={},
+        self, value=None, redirect=None, redirect_url=None, error_code=None, context={},  # noqa: B006
     ):
         super().__init__()
         self.value = Text(value)

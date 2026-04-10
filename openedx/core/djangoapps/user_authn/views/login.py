@@ -59,7 +59,6 @@ from openedx.core.djangoapps.user_authn.views.password_reset import send_passwor
 from openedx.core.djangoapps.user_authn.views.utils import API_V1, ENTERPRISE_ENROLLMENT_URL_REGEX, UUID4_REGEX
 from openedx.core.djangoapps.util.user_messages import PageLevelMessages
 from openedx.core.djangolib.markup import HTML, Text
-from openedx.core.lib.api.view_utils import require_post_params  # lint-amnesty, pylint: disable=unused-import
 from openedx.features.enterprise_support.api import activate_learner_enterprise, get_enterprise_learner_data_from_api
 
 log = logging.getLogger("edx.student")
@@ -83,7 +82,7 @@ def _do_third_party_auth(request):
         return pipeline.get_authenticated_user(requested_provider, username, third_party_uid)
     except USER_MODEL.DoesNotExist:
         AUDIT_LOG.info(
-            "Login failed - user with username {username} has no social auth "
+            "Login failed - user with username {username} has no social auth "  # noqa: UP032
             "with backend_name {backend_name}".format(username=username, backend_name=backend_name)
         )
         message = Text(
@@ -102,7 +101,7 @@ def _do_third_party_auth(request):
             register_label_strong=HTML("<strong>{register_text}</strong>").format(register_text=_("Register")),
         )
 
-        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _get_user_by_email(email):
@@ -211,7 +210,7 @@ def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint:
         send_password_reset_email_for_user(user, request)
 
         # Prevent the login attempt.
-        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _log_and_raise_inactive_user_auth_error(unauthenticated_user):
@@ -801,4 +800,4 @@ def _parse_analytics_param_for_course_id(request):
                 modified_request["course_id"] = analytics.get("enroll_course_id")
         except (ValueError, TypeError):
             set_custom_attribute("shim_analytics_course_id", "parse-error")
-            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))
+            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032  # pylint: disable=line-too-long

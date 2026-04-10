@@ -38,8 +38,8 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
 
     def setUp(self) -> None:
         super().setUp()
-        self.create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)
-        self.modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)
+        self.create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)  # noqa: UP017
+        self.modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)  # noqa: UP017
         self.lib = self._create_library(
             slug="containers",
             title="Container Test Library",
@@ -159,7 +159,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         Test Create, Read, Update, and Delete of a Containers
         """
         # Create container:
-        create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)
+        create_date = datetime(2024, 9, 8, 7, 6, 5, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(create_date):
             container_data = self._create_container(
                 self.lib["id"],
@@ -190,7 +190,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(container_as_read, expected_data)
 
         # Update the container:
-        modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)
+        modified_date = datetime(2024, 10, 9, 8, 7, 6, tzinfo=timezone.utc)  # noqa: UP017
         with freeze_time(modified_date):
             container_data = self._update_container(container_id, display_name=f"New Display Name for {container_type}")
         expected_data["last_draft_created"] = expected_data["modified"] = "2024-10-09T08:07:06Z"

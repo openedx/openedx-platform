@@ -139,7 +139,7 @@ class MongoKeyValueStore(InheritanceKeyValueStore):
             return False
 
     def __repr__(self):
-        return "MongoKeyValueStore{!r}<{!r}, {!r}>".format(
+        return "MongoKeyValueStore{!r}<{!r}, {!r}>".format(  # noqa: UP032
             (self._data, self._metadata),
             self._fields,
             self.inherited_settings
@@ -884,7 +884,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             course_query = location.to_deprecated_son('_id.')
             for key in course_query.keys():
                 if isinstance(course_query[key], str):
-                    course_query[key] = re.compile(r"(?i)^{}$".format(course_query[key]))
+                    course_query[key] = re.compile(r"(?i)^{}$".format(course_query[key]))  # noqa: UP032
         else:
             course_query = {'_id': location.to_deprecated_son()}
 
@@ -1089,7 +1089,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             if block_type == 'course':
                 block_id = course_key.run
             else:
-                block_id = '{}_{}'.format(block_type, uuid4().hex[:5])
+                block_id = '{}_{}'.format(block_type, uuid4().hex[:5])  # noqa: UP032
 
         if runtime is None:
             services = {}
@@ -1153,7 +1153,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             if block_type == 'course':
                 block_id = course_key.run
             else:
-                block_id = '{}_{}'.format(block_type, uuid4().hex[:5])
+                block_id = '{}_{}'.format(block_type, uuid4().hex[:5])  # noqa: UP032
 
         runtime = kwargs.pop('runtime', None)
         xblock = self.create_xblock(runtime, course_key, block_type, block_id, **kwargs)
@@ -1310,7 +1310,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         # A single document exists per course to store the course asset metadata.
         course_key = self.fill_in_run(course_key)
         if course_key.run is None:
-            log.warning('No run found for combo org "{}" course "{}" on asset request.'.format(
+            log.warning('No run found for combo org "{}" course "{}" on asset request.'.format(  # noqa: UP032
                 course_key.org, course_key.course
             ))
             course_assets = None
@@ -1497,7 +1497,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             self.database.client.admin.command('ismaster')
             return {ModuleStoreEnum.Type.mongo: True}
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def ensure_indexes(self):
         """

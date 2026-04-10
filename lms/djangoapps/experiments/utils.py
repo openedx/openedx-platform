@@ -88,7 +88,7 @@ def check_and_get_upgrade_link_and_date(user, enrollment=None, course=None):
 
     if enrollment:
         if course and enrollment.course_id != course.id:
-            logger.warning('{} refers to a different course than {} which was supplied. Enrollment course id={}, '
+            logger.warning('{} refers to a different course than {} which was supplied. Enrollment course id={}, '  # noqa: UP032  # pylint: disable=line-too-long
                            'repr={!r}, deprecated={}. Course id={}, repr={!r}, deprecated={}.'
                            .format(enrollment,
                                    course,
@@ -103,7 +103,7 @@ def check_and_get_upgrade_link_and_date(user, enrollment=None, course=None):
             return (None, None, None)
 
         if enrollment.user_id != user.id:
-            logger.warning('{} refers to a different user than {} which was supplied. '
+            logger.warning('{} refers to a different user than {} which was supplied. '  # noqa: UP032
                            'Enrollment user id={}, repr={!r}. '
                            'User id={}, repr={!r}.'.format(enrollment,
                                                            user,
@@ -266,7 +266,7 @@ def get_experiment_user_metadata_context(course, user):
     enrollment = None
     # TODO: clean up as part of REVO-28 (START)
     user_enrollments = None
-    audit_enrollments = None  # lint-amnesty, pylint: disable=unused-variable
+    audit_enrollments = None  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
     has_non_audit_enrollments = False
     context = {}
     if course is not None:

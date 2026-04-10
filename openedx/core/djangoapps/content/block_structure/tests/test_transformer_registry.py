@@ -62,7 +62,7 @@ class TransformerRegistryTestCase(TestCase):
     def test_find_unregistered(self, transformers, expected_unregistered):
 
         with mock_registered_transformers([TestTransformer1, TestTransformer2]):
-            self.assertSetEqual(
+            self.assertSetEqual(  # noqa: PT009
                 TransformerRegistry.find_unregistered(transformers),
                 set(expected_unregistered),
             )

@@ -70,7 +70,7 @@ class SAMLProviderConfigViewSet(PermissionRequiredMixin, SAMLProviderMixin, view
         try:
             enterprise_customer = EnterpriseCustomer.objects.get(pk=customer_uuid)
         except EnterpriseCustomer.DoesNotExist:
-            raise ValidationError(f'Enterprise customer not found at uuid: {customer_uuid}')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f'Enterprise customer not found at uuid: {customer_uuid}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         enterprise_saml_provider = EnterpriseCustomerIdentityProvider.objects.filter(
             enterprise_customer=enterprise_customer,
@@ -114,7 +114,7 @@ class SAMLProviderConfigViewSet(PermissionRequiredMixin, SAMLProviderMixin, view
         try:
             enterprise_customer = EnterpriseCustomer.objects.get(pk=customer_uuid)
         except EnterpriseCustomer.DoesNotExist:
-            raise ValidationError(f'Enterprise customer not found at uuid: {customer_uuid}')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f'Enterprise customer not found at uuid: {customer_uuid}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # Create the samlproviderconfig model first
         try:

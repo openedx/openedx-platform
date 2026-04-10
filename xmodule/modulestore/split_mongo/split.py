@@ -173,7 +173,7 @@ class SplitBulkWriteRecord(BulkOpsRecord):  # lint-amnesty, pylint: disable=miss
         self.structures[structure['_id']] = structure
 
     def __repr__(self):
-        return "SplitBulkWriteRecord<{!r}, {!r}, {!r}, {!r}, {!r}>".format(
+        return "SplitBulkWriteRecord<{!r}, {!r}, {!r}, {!r}, {!r}>".format(  # noqa: UP032
             self._active_count,
             self.initial_index,
             self.index,
@@ -996,7 +996,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             if len(course_block) > 1:
                 raise MultipleCourseBlocksFound(
-                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))
+                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))  # noqa: UP032  # pylint: disable=line-too-long
                 )
             course_summary = extract_course_summary(course_block[0])
             courses_summaries.append(
@@ -1037,7 +1037,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             if len(library_block) > 1:
                 raise MultipleLibraryBlocksFound(
-                    "Expected 1 library block, but found {}".format(len(library_block))
+                    "Expected 1 library block, but found {}".format(len(library_block))  # noqa: UP032
                 )
 
             library_block_fields = library_block[0].fields
@@ -1514,7 +1514,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             for key, value in new_def_data.items():
                 if key not in old_definition['fields'] or value != old_definition['fields'][key]:
                     return True
-            for key, value in old_definition.get('fields', {}).items():
+            for key, value in old_definition.get('fields', {}).items():  # noqa: B007
                 if key not in new_def_data:
                     return True
 
@@ -2535,7 +2535,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                         log.info("Block %s found in draft branch, proceeding with deletion from draft", block_key)
                     else:
                         raise ValueError(
-                            (
+                            (  # noqa: UP032
                                 "Cannot delete block_key {} from course {}, "
                                 "because that block does not exist in either branch."
                             ).format(
@@ -2545,7 +2545,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                         )
                 except ItemNotFoundError as exc:
                     raise ValueError(
-                        (
+                        (  # noqa: UP032
                             "Cannot delete block_key {} from course {}, "
                             "because that block does not exist."
                         ).format(
@@ -2716,7 +2716,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         """
         try:
             course_assets = self._lookup_course(course_key).structure.get('assets', {})
-        except (InsufficientSpecificationError, VersionConflictError) as err:  # lint-amnesty, pylint: disable=unused-variable
+        except (InsufficientSpecificationError, VersionConflictError) as err:  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             log.warning('Error finding assets for org "%s" course "%s" on asset '
                         'request. Either version of course_key is None or invalid.',
                         course_key.org, course_key.course)
@@ -3248,7 +3248,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                 tmp_new_asides_data[aside_type] = asd
 
             result_list = []
-            for i, aside in enumerate(block.asides):  # lint-amnesty, pylint: disable=unused-variable
+            for i, aside in enumerate(block.asides):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
                 if aside['aside_type'] in tmp_new_asides_data:
                     result_list.append(tmp_new_asides_data.pop(aside['aside_type']))
                     updated = True

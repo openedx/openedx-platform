@@ -102,7 +102,7 @@ class TestItemBankForCms(ItemBankTestBase):
         self.item_bank.add_xml_to_node(node)
 
         # Read back the itembank OLX
-        with export_fs.open('{dir}/{file_name}.xml'.format(
+        with export_fs.open('{dir}/{file_name}.xml'.format(  # noqa: UP032
             dir=self.item_bank.scope_ids.usage_id.block_type,
             file_name=self.item_bank.scope_ids.usage_id.block_id
         )) as f:
@@ -251,7 +251,7 @@ class TestItemBankForLms(ItemBankTestBase):
             total_tries += 1
             if total_tries >= max_tries:
                 # The chance that this happens by accident is (4 * (3/4)^100) ~= 1/10^12
-                assert False, "Max tries exceeded before seeing all blocks."
+                assert False, "Max tries exceeded before seeing all blocks."  # noqa: B011, PT015
                 break
 
     def _change_count_and_reselect_children(self, count):

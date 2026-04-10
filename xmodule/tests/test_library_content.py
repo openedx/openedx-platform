@@ -438,7 +438,7 @@ class LegacyLibraryContentBlockTestMixin:
             blocks_seen.update(selected)
             total_tries += 1
             if total_tries >= max_tries:
-                assert False, "Max tries exceeded before seeing all blocks."
+                assert False, "Max tries exceeded before seeing all blocks."  # noqa: B011, PT015
                 break
 
     def _change_count_and_reselect_children(self, count):

@@ -35,7 +35,7 @@ class DynamicTemplateLookup(TemplateLookup):
         self.__original_module_directory = self.template_args['module_directory']
 
     def __repr__(self):
-        return "<{0.__class__.__name__} {0.directories}>".format(self)
+        return "<{0.__class__.__name__} {0.directories}>".format(self)  # noqa: UP032
 
     def add_directory(self, directory, prepend=False):
         """

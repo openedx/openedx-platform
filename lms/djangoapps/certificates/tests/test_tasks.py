@@ -41,7 +41,7 @@ class GenerateUserCertificateTest(TestCase):
         del kwargs[missing_arg]
 
         with patch("lms.djangoapps.certificates.tasks.User.objects.get"):
-            with self.assertRaisesRegex(KeyError, missing_arg):
+            with self.assertRaisesRegex(KeyError, missing_arg):  # noqa: PT027
                 generate_certificate.apply_async(kwargs=kwargs).get()
 
     def test_generation(self):

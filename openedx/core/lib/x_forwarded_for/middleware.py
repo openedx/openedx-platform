@@ -64,7 +64,7 @@ class XForwardedForMiddleware(MiddlewareMixin):
 
             set_custom_attribute('ip_chain.safest_client_ip', safest_client_ip)
         except BaseException:
-            warnings.warn('Error while computing IP chain metrics')
+            warnings.warn('Error while computing IP chain metrics')  # noqa: B028
 
         # Older code for the Gunicorn 19.0 upgrade. Original docstring:
         #

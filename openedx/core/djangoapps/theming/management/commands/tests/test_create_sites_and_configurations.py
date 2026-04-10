@@ -72,7 +72,7 @@ class TestCreateSiteAndConfiguration(TestCase):
 
                 assert site_theme.theme_dir_name == f'{site.name}_dir_name'
 
-                self.assertDictEqual(
+                self.assertDictEqual(  # noqa: PT009
                     dict(site.configuration.values),
                     _generate_site_config(self.dns_name, site.name)
                 )

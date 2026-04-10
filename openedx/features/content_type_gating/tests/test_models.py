@@ -54,7 +54,7 @@ class TestContentTypeGatingConfig(FilteredQueryCountMixin, CacheIsolationTestCas
         else:
             enabled_as_of = datetime.now() - timedelta(days=1)
 
-        config = ContentTypeGatingConfig.objects.create(
+        config = ContentTypeGatingConfig.objects.create(  # noqa: F841
             enabled=True,
             course=self.course_overview,
             enabled_as_of=enabled_as_of,
@@ -66,9 +66,9 @@ class TestContentTypeGatingConfig(FilteredQueryCountMixin, CacheIsolationTestCas
                 course=self.course_overview,
             )
         else:
-            existing_enrollment = None
+            existing_enrollment = None  # noqa: F841
 
-        enrollment = None
+        enrollment = None  # noqa: F841
         user = self.user
         course_key = self.course_overview.id
 
@@ -82,11 +82,11 @@ class TestContentTypeGatingConfig(FilteredQueryCountMixin, CacheIsolationTestCas
             assert (not enrolled_before_enabled) == enabled
 
     def test_enabled_for_enrollment_failure(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             ContentTypeGatingConfig.enabled_for_enrollment(None, None)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             ContentTypeGatingConfig.enabled_for_enrollment(Mock(name='user'), None)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             ContentTypeGatingConfig.enabled_for_enrollment(None, Mock(name='course_key'))
 
     @ddt.data(True, False)
@@ -166,7 +166,7 @@ class TestContentTypeGatingConfig(FilteredQueryCountMixin, CacheIsolationTestCas
             site=test_site_cfg.site, enabled=site_setting, enabled_as_of=datetime(2018, 1, 1)
         )
 
-        all_settings = [global_setting, site_setting, org_setting, course_setting]
+        all_settings = [global_setting, site_setting, org_setting, course_setting]  # noqa: F841
         expected_global_setting = self._resolve_settings([global_setting])
         expected_site_setting = self._resolve_settings([global_setting, site_setting])
         expected_org_setting = self._resolve_settings([global_setting, site_setting, org_setting])

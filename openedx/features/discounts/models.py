@@ -36,7 +36,7 @@ class DiscountRestrictionConfig(StackedConfigurationModel):
         return current_config.disabled
 
     def __str__(self):
-        return "DiscountRestrictionConfig(disabled={!r})".format(
+        return "DiscountRestrictionConfig(disabled={!r})".format(  # noqa: UP032
             self.disabled
         )
 
@@ -51,7 +51,7 @@ class DiscountPercentageConfig(StackedConfigurationModel):
     percentage = models.PositiveIntegerField()
 
     def __str__(self):
-        return "DiscountPercentageConfig(enabled={!r},percentage={!r})".format(
+        return "DiscountPercentageConfig(enabled={!r},percentage={!r})".format(  # noqa: UP032
             self.enabled,
             self.percentage
         )

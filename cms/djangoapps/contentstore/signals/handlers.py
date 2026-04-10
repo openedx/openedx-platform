@@ -75,7 +75,7 @@ def locked(expiry_seconds, key):  # lint-amnesty, pylint: disable=missing-functi
     return task_decorator
 
 
-def _create_catalog_data_for_signal(course_key: CourseKey) -> (Optional[datetime], Optional[CourseCatalogData]):
+def _create_catalog_data_for_signal(course_key: CourseKey) -> (Optional[datetime], Optional[CourseCatalogData]):  # noqa: UP045  # pylint: disable=line-too-long
     """
     Creates data for catalog-info-changed signal when course is published.
 
@@ -94,7 +94,7 @@ def _create_catalog_data_for_signal(course_key: CourseKey) -> (Optional[datetime
     store = modulestore()
     with store.branch_setting(ModuleStoreEnum.Branch.published_only, course_key):
         course = store.get_course(course_key)
-        timestamp = course.subtree_edited_on.replace(tzinfo=timezone.utc)
+        timestamp = course.subtree_edited_on.replace(tzinfo=timezone.utc)  # noqa: UP017
         return timestamp, CourseCatalogData(
             course_key=course_key.for_branch(None),  # Shouldn't be necessary, but just in case...
             name=course.display_name,
@@ -238,7 +238,7 @@ def handle_grading_policy_changed(sender, **kwargs):
         'event_transaction_type': str(get_event_transaction_type()),
     }
     result = task_compute_all_grades_for_course.apply_async(kwargs=kwargs, countdown=GRADING_POLICY_COUNTDOWN_SECONDS)
-    log.info("Grades: Created {task_name}[{task_id}] with arguments {kwargs}".format(
+    log.info("Grades: Created {task_name}[{task_id}] with arguments {kwargs}".format(  # noqa: UP032
         task_name=task_compute_all_grades_for_course.name,
         task_id=result.task_id,
         kwargs=kwargs,

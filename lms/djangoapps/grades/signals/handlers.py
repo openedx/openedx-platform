@@ -165,7 +165,7 @@ def score_published_handler(sender, block, user, raw_earned, raw_possible, only_
             if not is_score_higher_or_equal(prev_raw_earned, prev_raw_possible, raw_earned, raw_possible):
                 update_score = False
                 log.warning(
-                    "Grades: Rescore is not higher than previous: "
+                    "Grades: Rescore is not higher than previous: "  # noqa: UP032
                     "user: {}, block: {}, previous: {}/{}, new: {}/{} ".format(
                         user, block.location, prev_raw_earned, prev_raw_possible, raw_earned, raw_possible,
                     )

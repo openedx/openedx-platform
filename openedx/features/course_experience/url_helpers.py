@@ -23,7 +23,7 @@ User = get_user_model()
 
 def get_courseware_url(
         usage_key: UsageKey,
-        request: Optional[HttpRequest] = None,
+        request: Optional[HttpRequest] = None,  # noqa: UP045
         is_staff: bool = False,
 ) -> str:
     """
@@ -46,7 +46,7 @@ def get_courseware_url(
 
 def _get_new_courseware_url(
         usage_key: UsageKey,
-        request: Optional[HttpRequest] = None,
+        request: Optional[HttpRequest] = None,  # noqa: UP045
         is_staff: bool = None,
 ) -> str:
     """
@@ -91,9 +91,9 @@ def _get_new_courseware_url(
 
 def make_learning_mfe_courseware_url(
         course_key: CourseKey,
-        sequence_key: Optional[UsageKey] = None,
-        unit_key: Optional[UsageKey] = None,
-        params: Optional[QueryDict] = None,
+        sequence_key: Optional[UsageKey] = None,  # noqa: UP045
+        unit_key: Optional[UsageKey] = None,  # noqa: UP045
+        params: Optional[QueryDict] = None,  # noqa: UP045
         preview: bool = None,
 ) -> str:
     """
@@ -155,8 +155,8 @@ def make_learning_mfe_courseware_url(
 
 def get_learning_mfe_home_url(
         course_key: CourseKey,
-        url_fragment: Optional[str] = None,
-        params: Optional[QueryDict] = None,
+        url_fragment: Optional[str] = None,  # noqa: UP045
+        params: Optional[QueryDict] = None,  # noqa: UP045
 ) -> str:
     """
     Given a course run key and view name, return the appropriate course home (MFE) URL.

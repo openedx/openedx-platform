@@ -147,7 +147,7 @@ class EcommerceServiceTests(TestCase):
             skus=urlencode({'sku': skus}, doseq=True),
         )
         if program_uuid:
-            expected_url = '{expected_url}&basket={program_uuid}'.format(
+            expected_url = '{expected_url}&basket={program_uuid}'.format(  # noqa: UP032
                 expected_url=expected_url,
                 program_uuid=program_uuid
             )
@@ -177,7 +177,7 @@ class EcommerceServiceTests(TestCase):
         if enterprise_catalog_uuid:
             query.update({'catalog': enterprise_catalog_uuid})
 
-        expected_url = '{root}{basket_url}?{skus}'.format(
+        expected_url = '{root}{basket_url}?{skus}'.format(  # noqa: UP032
             basket_url=config.basket_checkout_page,
             root=settings.ECOMMERCE_PUBLIC_URL_ROOT,
             skus=urlencode(query, doseq=True),

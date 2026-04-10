@@ -433,6 +433,7 @@ def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, py
     if upgrade_deadline:
         formatted_upgrade_deadline = strftime_localized_html(upgrade_deadline, 'SHORT_DATE')
 
+        # ruff: disable[UP032]
         bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\
                      You lose all access to this course, including your progress, on {expiration_date}.\
                      <br>Upgrade by {upgrade_deadline} to get unlimited access to the course as long as it exists\
@@ -442,12 +443,15 @@ def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, py
             upgrade_link=upgrade_link,
             upgrade_deadline=formatted_upgrade_deadline
         )
+        # ruff: enable[UP032]
     else:
+        # ruff: disable[UP032]
         bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\
                      You lose all access to this course, including your progress, on {expiration_date}.\
                      '.format(
             expiration_date=formatted_expiration_date
         )
+        # ruff: enable[UP032]
     return bannerText
 
 

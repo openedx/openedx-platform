@@ -347,7 +347,7 @@ class CourseModeModelTest(TestCase):
             assert not is_error_expected, 'Expected a ValidationError to be thrown.'
         except ValidationError as exc:
             assert is_error_expected, 'Did not expect a ValidationError to be thrown.'
-            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']
+            assert exc.messages == ['Professional education modes are not allowed to have expiration_datetime set.']  # noqa: PT017  # pylint: disable=line-too-long
 
     @ddt.data(
         "verified",
@@ -376,11 +376,11 @@ class CourseModeModelTest(TestCase):
 
         # Check the selectable modes, which should exclude credit
         selectable_modes = CourseMode.modes_for_course_dict(self.course_key)
-        self.assertCountEqual(list(selectable_modes.keys()), expected_selectable_modes)
+        self.assertCountEqual(list(selectable_modes.keys()), expected_selectable_modes)  # noqa: PT009
 
         # When we get all unexpired modes, we should see credit as well
         all_modes = CourseMode.modes_for_course_dict(self.course_key, only_selectable=False)
-        self.assertCountEqual(list(all_modes.keys()), available_modes)
+        self.assertCountEqual(list(all_modes.keys()), available_modes)  # noqa: PT009
 
     def _enrollment_display_modes_dicts(self, mode):
         """
@@ -398,7 +398,7 @@ class CourseModeModelTest(TestCase):
                                    'professional'],
         }
 
-        return dict(list(zip(dict_keys, display_values.get(mode))))
+        return dict(list(zip(dict_keys, display_values.get(mode))))  # noqa: B905
 
     def test_expiration_datetime_explicitly_set(self):
         """ Verify that setting the expiration_date property sets the explicit flag. """

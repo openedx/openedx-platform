@@ -26,7 +26,7 @@ class CreditProviderSerializerTests(TestCase):
             'fulfillment_instructions': provider.fulfillment_instructions,
             'thumbnail_url': provider.thumbnail_url,
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009
 
 
 class CreditEligibilitySerializerTests(TestCase):
@@ -42,7 +42,7 @@ class CreditEligibilitySerializerTests(TestCase):
             'deadline': eligibility.deadline.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'username': user.username,
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009
 
 
 class CreditProviderCallbackSerializerTests(TestCase):

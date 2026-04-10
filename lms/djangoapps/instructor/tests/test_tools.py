@@ -365,7 +365,7 @@ class TestDataDumps(ModuleStoreTestCase):
             self.week1.display_name)
         assert (
             report['header'] == ["Username", "Full Name", "Extended Due Date"])
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             report['data'],
             [
                 {
@@ -388,7 +388,7 @@ class TestDataDumps(ModuleStoreTestCase):
                                      extended)
         report = tools.dump_student_extensions(self.course, self.user1)
         assert (
-            report['title'] == 'Due date extensions for %s (%s)' %
+            report['title'] == 'Due date extensions for %s (%s)' %  # noqa: UP031
             (self.user1.profile.name, self.user1.username))
         assert (
             report['header'] == ["Unit", "Extended Due Date"])

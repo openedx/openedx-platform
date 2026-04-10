@@ -262,5 +262,5 @@ class Catalog(models.Model):
             'viewers': self.viewers,
         }
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return f'Catalog {self.name} [{self.query}]'

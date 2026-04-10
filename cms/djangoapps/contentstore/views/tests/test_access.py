@@ -39,12 +39,12 @@ class RolesTest(TestCase):
         Verifies if user is instructor.
         """
         add_users(self.global_admin, CourseInstructorRole(self.course_key), self.instructor)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             'instructor',
             get_user_role(self.instructor, self.course_key)
         )
         add_users(self.global_admin, CourseStaffRole(self.course_key), self.staff)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             'instructor',
             get_user_role(self.instructor, self.course_key)
         )
@@ -54,7 +54,7 @@ class RolesTest(TestCase):
         Verifies if user is staff.
         """
         add_users(self.global_admin, CourseStaffRole(self.course_key), self.staff)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             'staff',
             get_user_role(self.staff, self.course_key)
         )

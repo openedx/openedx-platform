@@ -4,14 +4,14 @@ Constants used by django app plugins
 
 # expose constants from edx-django-utils so plugins using these continue to work
 from edx_django_utils.plugins import (  # lint-amnesty, pylint: disable=unused-import
-    PluginContexts,
-    PluginSettings,
-    PluginSignals,
-    PluginURLs,
+    PluginContexts,  # noqa: F401
+    PluginSettings,  # noqa: F401
+    PluginSignals,  # noqa: F401
+    PluginURLs,  # noqa: F401
 )
 
 
-class ProjectType():
+class ProjectType():  # noqa: UP039
     """
     The ProjectType enum defines the possible values for the Django Projects
     that are available in the edx-platform. Plugin apps use these values to
@@ -22,7 +22,7 @@ class ProjectType():
     CMS = 'cms.djangoapp'
 
 
-class SettingsType():
+class SettingsType():  # noqa: UP039
     """
     The SettingsType enum defines the possible values for the settings files
     that are available for extension in the edx-platform. Plugin apps use these

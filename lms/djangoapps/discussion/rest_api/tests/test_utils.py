@@ -69,9 +69,9 @@ class DiscussionAPIUtilsTestCase(ModuleStoreTestCase):
         CourseInstructorRole(course_key=self.course.id).add_users(self.course_instructor_user)
 
     def test_discussion_open_for_user(self):
-        self.assertFalse(discussion_open_for_user(self.course, self.student))
-        self.assertTrue(discussion_open_for_user(self.course, self.moderator))
-        self.assertTrue(discussion_open_for_user(self.course, self.community_ta))
+        self.assertFalse(discussion_open_for_user(self.course, self.student))  # noqa: PT009
+        self.assertTrue(discussion_open_for_user(self.course, self.moderator))  # noqa: PT009
+        self.assertTrue(discussion_open_for_user(self.course, self.community_ta))  # noqa: PT009
 
     def test_course_staff_users_list(self):
         assert len(get_course_staff_users_list(self.course.id)) == 2
@@ -133,7 +133,7 @@ class TestRemoveEmptySequentials(unittest.TestCase):
         # Test that the function can handle an empty list
         data = []
         result = remove_empty_sequentials(data)
-        self.assertEqual(result, [])
+        self.assertEqual(result, [])  # noqa: PT009
 
     def test_no_empty_sequentials(self):
         # Test that the function does not remove any sequentials if they all have children
@@ -144,7 +144,7 @@ class TestRemoveEmptySequentials(unittest.TestCase):
             ]}
         ]
         result = remove_empty_sequentials(data)
-        self.assertEqual(result, data)
+        self.assertEqual(result, data)  # noqa: PT009
 
     def test_remove_empty_sequentials(self):
         # Test that the function removes empty sequentials
@@ -177,7 +177,7 @@ class TestRemoveEmptySequentials(unittest.TestCase):
             ]}
         ]
         result = remove_empty_sequentials(data)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
 
 @ddt.ddt
@@ -239,7 +239,7 @@ class TestBlackoutDates(CommentsServiceMockMixin, ModuleStoreTestCase):
         self._set_discussion_blackouts(date_ranges)
 
         posting_allowed = self._check_posting_allowed(restriction)
-        self.assertEqual(state, posting_allowed)
+        self.assertEqual(state, posting_allowed)  # noqa: PT009
 
     def test_posting_scheduled_future(self):
         """
@@ -254,4 +254,4 @@ class TestBlackoutDates(CommentsServiceMockMixin, ModuleStoreTestCase):
         self._set_discussion_blackouts(date_ranges)
 
         posting_allowed = self._check_posting_allowed(PostingRestriction.SCHEDULED)
-        self.assertTrue(posting_allowed)
+        self.assertTrue(posting_allowed)  # noqa: PT009

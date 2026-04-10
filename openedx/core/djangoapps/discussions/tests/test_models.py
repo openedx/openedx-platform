@@ -45,7 +45,7 @@ class OrganizationFilterTest(TestCase):
         self.provider_denied = SUPPORTED_PROVIDERS[1]
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_get_nonexistent(self, _default_providers):
+    def test_get_nonexistent(self, _default_providers):  # noqa: PT019
         """
         Assert we retrieve defaults when no configuration set
         """
@@ -53,7 +53,7 @@ class OrganizationFilterTest(TestCase):
         assert len(providers) == len(SUPPORTED_PROVIDERS)
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_get_allow(self, _default_providers):
+    def test_get_allow(self, _default_providers):  # noqa: PT019
         """
         Assert we can set the allow list
         """
@@ -66,7 +66,7 @@ class OrganizationFilterTest(TestCase):
         assert len(providers) == 1
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_get_deny(self, _default_providers):
+    def test_get_deny(self, _default_providers):  # noqa: PT019
         """
         Assert we can set the deny list
         """
@@ -78,7 +78,7 @@ class OrganizationFilterTest(TestCase):
         assert self.provider_denied not in providers
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_get_allow_and_deny(self, _default_providers):
+    def test_get_allow_and_deny(self, _default_providers):  # noqa: PT019
         """
         Assert we can add an item to both allow and deny lists
         """
@@ -93,7 +93,7 @@ class OrganizationFilterTest(TestCase):
         assert self.provider_allowed in providers
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_get_allow_or_deny(self, _default_providers):
+    def test_get_allow_or_deny(self, _default_providers):  # noqa: PT019
         """
         Assert we can exclusively add an items to both allow and deny lists
         """
@@ -108,7 +108,7 @@ class OrganizationFilterTest(TestCase):
         assert self.provider_allowed in providers
 
     @patch('openedx.core.djangoapps.discussions.models.get_supported_providers', return_value=SUPPORTED_PROVIDERS)
-    def test_override(self, _default_providers):
+    def test_override(self, _default_providers):  # noqa: PT019
         """
         Assert we can override a configuration and get the latest data
         """

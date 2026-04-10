@@ -37,7 +37,7 @@ class CourseModeForm(forms.ModelForm):
 
     class Meta:
         model = CourseMode
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     mode_slug = forms.ChoiceField(choices=COURSE_MODE_SLUG_CHOICES, label=_("Mode"))
 

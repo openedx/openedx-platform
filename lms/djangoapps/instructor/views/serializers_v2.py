@@ -26,6 +26,7 @@ from lms.djangoapps.certificates.models import CertificateGenerationConfiguratio
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
+from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
@@ -65,6 +66,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
     grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
     course_errors = serializers.SerializerMethodField(help_text="List of course validation errors from modulestore")
     studio_url = serializers.SerializerMethodField(help_text="URL to view/edit course in Studio")
+    gradebook_url = serializers.SerializerMethodField(
+        help_text="URL to the MFE gradebook for the course (null if not configured)"
+    )
+    studio_grading_url = serializers.SerializerMethodField(
+        help_text="URL to the Studio grading settings page for the course (null if not configured)"
+    )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
     disable_buttons = serializers.SerializerMethodField(
@@ -433,6 +440,21 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get Studio URL for the course."""
         return get_studio_url(data['course'], 'course')
 
+    def get_gradebook_url(self, data):
+        """Get MFE gradebook URL for the course."""
+        course_key = data['course'].id
+        if is_writable_gradebook_enabled(course_key) and settings.WRITABLE_GRADEBOOK_URL:
+            return f'{settings.WRITABLE_GRADEBOOK_URL}/gradebook/{course_key}'
+        return None
+
+    def get_studio_grading_url(self, data):
+        """Get Studio MFE grading settings URL for the course."""
+        course_key = data['course'].id
+        mfe_base_url = getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
+        if mfe_base_url:
+            return f'{mfe_base_url}/course/{course_key}/settings/grading'
+        return None
+
     def get_disable_buttons(self, data):
         """Check if buttons should be disabled for large courses."""
         return not CourseEnrollment.objects.is_small_course(data['course'].id)
@@ -586,3 +608,130 @@ class CourseEnrollmentSerializerV2(serializers.Serializer):
         """Check if the user is a beta tester for this course."""
         beta_tester_ids = self.context.get('beta_tester_ids', set())
         return enrollment.user_id in beta_tester_ids
+
+
+class LearnerSerializer(serializers.Serializer):
+    """
+    Serializer for learner information.
+
+    Provides comprehensive learner data including profile, enrollment status,
+    and current progress in a course.
+    """
+    username = serializers.CharField(
+        help_text="Learner's username"
+    )
+    email = serializers.EmailField(
+        help_text="Learner's email address"
+    )
+    full_name = serializers.CharField(
+        help_text="Learner's full name from their Open edX profile"
+    )
+    progress_url = serializers.CharField(
+        allow_null=True,
+        required=False,
+        help_text="URL to learner's progress page"
+    )
+
+
+class GraderSerializer(serializers.Serializer):
+    """Serializer for a single grader configuration entry."""
+    type = serializers.CharField(
+        help_text="Assignment type (e.g. Homework, Lab, Midterm Exam)"
+    )
+    short_label = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Short label used when displaying assignment names"
+    )
+    min_count = serializers.IntegerField(
+        help_text="Minimum number of assignments counted in this category"
+    )
+    drop_count = serializers.IntegerField(
+        help_text="Number of lowest scores dropped from this category"
+    )
+    weight = serializers.FloatField(
+        help_text="Weight of this assignment type in the final grade (0.0 to 1.0)"
+    )
+
+
+class GradingConfigSerializer(serializers.Serializer):
+    """
+    Serializer for course grading configuration.
+
+    Returns structured grading policy data including assignment type weights
+    and grade cutoff thresholds.
+    """
+    graders = GraderSerializer(
+        many=True,
+        help_text="List of grader configurations by assignment type"
+    )
+    grade_cutoffs = serializers.DictField(
+        child=serializers.FloatField(),
+        help_text="Grade cutoffs mapping letter grades to minimum score thresholds (0.0 to 1.0)"
+    )
+
+
+class ProblemSerializer(serializers.Serializer):
+    """
+    Serializer for problem metadata and location.
+
+    Provides problem information including display name and course hierarchy.
+    Optionally includes learner-specific score and attempt data when a learner
+    query parameter is provided.
+    """
+    id = serializers.CharField(
+        help_text="Problem usage key"
+    )
+    name = serializers.CharField(
+        help_text="Problem display name"
+    )
+    breadcrumbs = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="Course hierarchy breadcrumbs showing problem location"
+    )
+    current_score = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Learner's current score with 'score' and 'total' fields. Null if no learner specified."
+    )
+    attempts = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Learner's attempt data with 'current' and 'total' (max) fields. Null if no learner specified."
+    )
+
+
+class TaskStatusSerializer(serializers.Serializer):
+    """
+    Serializer for background task status.
+
+    Provides status and progress information for asynchronous operations.
+    """
+    task_id = serializers.CharField(
+        help_text="Task identifier"
+    )
+    state = serializers.ChoiceField(
+        choices=['pending', 'running', 'completed', 'failed'],
+        help_text="Current state of the task"
+    )
+    progress = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Progress information with 'current' and 'total' fields"
+    )
+    result = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Task result (present when state is 'completed')"
+    )
+    error = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Error information (present when state is 'failed')"
+    )
+    created_at = serializers.DateTimeField(
+        help_text="Task creation timestamp"
+    )
+    updated_at = serializers.DateTimeField(
+        help_text="Last update timestamp"
+    )

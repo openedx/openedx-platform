@@ -118,7 +118,7 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
 
         cohort_membership, _ = CohortMembership.assign(cohort=self.second_cohort, user=self.user)
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             {"cohort_info": "Changed from Cohort FirstCohort to Cohort SecondCohort"},
             cohort_membership.user.profile.get_meta(),
         )
@@ -145,7 +145,7 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
 
         cohort_membership, _ = CohortMembership.assign(user=self.user, cohort=self.second_cohort, )
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             {"cohort_info": "User assigned to Cohort SecondCohort"},
             cohort_membership.user.profile.get_meta(),
         )
@@ -170,7 +170,7 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
         """
         CohortMembership.assign(cohort=self.first_cohort, user=self.user)
 
-        with self.assertRaises(CohortChangeNotAllowed):
+        with self.assertRaises(CohortChangeNotAllowed):  # noqa: PT027
             CohortMembership.assign(cohort=self.second_cohort, user=self.user)
 
     @override_settings(
@@ -191,7 +191,7 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
             - CohortAssignmentRequested is triggered and executes TestStopAssignmentChangeStep.
             - The user can't be assigned to the cohort.
         """
-        with self.assertRaises(CohortAssignmentNotAllowed):
+        with self.assertRaises(CohortAssignmentNotAllowed):  # noqa: PT027
             CohortMembership.assign(cohort=self.second_cohort, user=self.user)
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
@@ -207,7 +207,7 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
 
         cohort_membership, _ = CohortMembership.assign(cohort=self.second_cohort, user=self.user)
 
-        self.assertEqual({}, cohort_membership.user.profile.get_meta())
+        self.assertEqual({}, cohort_membership.user.profile.get_meta())  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_cohort_assignment_without_filter_configuration(self):
@@ -220,4 +220,4 @@ class CohortFiltersTest(SharedModuleStoreTestCase):
         """
         cohort_membership, _ = CohortMembership.assign(cohort=self.second_cohort, user=self.user)
 
-        self.assertEqual({}, cohort_membership.user.profile.get_meta())
+        self.assertEqual({}, cohort_membership.user.profile.get_meta())  # noqa: PT009

@@ -305,7 +305,7 @@ class TestLmsApi(OAuth2Mixin, unittest.TestCase):
         )
 
         mock_learners_to_retire.side_effect = HTTPError(response=response)
-        with self.assertRaises(BackoffTriedException):
+        with self.assertRaises(BackoffTriedException):  # noqa: PT027
             self.lms_api.learners_to_retire(
                 TEST_RETIREMENT_QUEUE_STATES, cool_off_days=365)
 
@@ -325,7 +325,7 @@ class TestLmsApi(OAuth2Mixin, unittest.TestCase):
         mock_retirement_partner_cleanup.retirement_partner_cleanup.side_effect = ConnectionError(
             response=response
         )
-        with self.assertRaises(BackoffTriedException):
+        with self.assertRaises(BackoffTriedException):  # noqa: PT027
             self.lms_api.retirement_partner_cleanup([{'original_username': 'test'}])
 
 

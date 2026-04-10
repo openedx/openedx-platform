@@ -60,7 +60,7 @@ class CertificateServiceTests(ModuleStoreTestCase):
             user=self.user_id,
             course_id=self.course_id
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             self.generated_certificate_to_dict(invalid_generated_certificate),
             {
                 'verify_uuid': invalid_generated_certificate.verify_uuid,

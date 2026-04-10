@@ -91,7 +91,7 @@ class BulkEmailApiTests(ModuleStoreTestCase):
             f"{targets}"
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             with LogCapture() as log:
                 create_course_email(
                     self.course.id,
@@ -192,7 +192,7 @@ class BulkEmailApiTests(ModuleStoreTestCase):
             self.html_message,
         )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             update_course_email(
                 self.course.id,
                 course_email.id,
@@ -253,7 +253,7 @@ class BulkEmailApiTests(ModuleStoreTestCase):
             f"subject '{self.subject}'"
         )
 
-        with self.assertRaises(ValueError) as value_err:
+        with self.assertRaises(ValueError) as value_err:  # noqa: PT027
             determine_targets_for_course_email(
                 self.course.id,
                 self.subject,

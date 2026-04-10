@@ -47,7 +47,7 @@ class RestrictedCourseFormTest(ModuleStoreTestCase):
         msg = 'COURSE NOT FOUND'
         assert msg in form._errors['course_key'][0]  # pylint: disable=protected-access
 
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             ValueError, "The RestrictedCourse could not be created because the data didn't validate."
         ):
             form.save()
@@ -122,5 +122,5 @@ class IPFilterFormTest(TestCase):
                " Please fix the error(s) and try again."
         assert bmsg == form._errors['blacklist'][0]  # pylint: disable=protected-access
 
-        with self.assertRaisesRegex(ValueError, "The IPFilter could not be created because the data didn't validate."):
+        with self.assertRaisesRegex(ValueError, "The IPFilter could not be created because the data didn't validate."):  # noqa: PT027  # pylint: disable=line-too-long
             form.save()

@@ -36,7 +36,7 @@ class TestSyncCoursesCommand(ModuleStoreTestCase):
     def _validate_courses(self):
         for run in self.catalog_course_runs:
             course_key = CourseKey.from_string(run.get('key'))  # lint-amnesty, pylint: disable=no-member
-            self.assertTrue(modulestore().has_course(course_key))
+            self.assertTrue(modulestore().has_course(course_key))  # noqa: PT009
             CourseOverview.objects.get(id=run.get('key'))  # lint-amnesty, pylint: disable=no-member
 
     def test_courses_sync(self, mock_catalog_course_runs):
@@ -65,7 +65,7 @@ class TestSyncCoursesCommand(ModuleStoreTestCase):
 
         with LogCapture() as capture:
             call_command('sync_courses', self.user.email)
-            expected_message = "Course already exists for {}, {}, {}. Skipping".format(
+            expected_message = "Course already exists for {}, {}, {}. Skipping".format(  # noqa: UP032
                 course_key.org,
                 course_key.course,
                 course_key.run,
@@ -77,4 +77,4 @@ class TestSyncCoursesCommand(ModuleStoreTestCase):
         self._validate_courses()
 
         course = modulestore().get_course(course_key)
-        self.assertEqual(course.display_name, initial_display_name)
+        self.assertEqual(course.display_name, initial_display_name)  # noqa: PT009

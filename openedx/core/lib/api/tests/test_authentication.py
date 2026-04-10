@@ -142,7 +142,7 @@ class OAuth2AllowInActiveUsersTests(TestCase):  # lint-amnesty, pylint: disable=
     def test_get_form_failing_auth_url_transport(self):
         """Ensure GETing form over OAuth with correct client credentials in query fails when DEBUG is False"""
         query = urlencode({'access_token': self.dot_access_token.token})
-        response = self.csrf_client.get(self.OAUTH2_BASE_TESTING_URL + '?%s' % query)
+        response = self.csrf_client.get(self.OAUTH2_BASE_TESTING_URL + '?%s' % query)  # noqa: UP031
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         # This case is handled directly by DRF so no error_code is provided (yet).

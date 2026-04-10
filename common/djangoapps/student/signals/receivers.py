@@ -32,7 +32,7 @@ from lms.djangoapps.utils import get_email_client
 from openedx.core.djangoapps.safe_sessions.middleware import EmailChangeMiddleware
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # noqa: F811
 
 
 @receiver(pre_save, sender=get_user_model())
@@ -149,5 +149,5 @@ def _listen_for_user_email_changed(sender, user, request, **kwargs):
         email_client = get_email_client()
         if email_client:
             email_client.track_user(attributes=attributes)
-    except Exception as exc:   # pylint: disable=broad-except
+    except Exception as exc:   # pylint: disable=broad-except  # noqa: F841
         logger.exception(f'Unable to sync new email [{email}] with Braze for user [{user_id}]')

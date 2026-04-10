@@ -94,7 +94,7 @@ class CohortViewsTestCase(ModuleStoreTestCase):
             request = RequestFactory().request()
         request.user = self.non_staff_user
         view_args.insert(0, request)
-        self.assertRaises(Http404, view, *view_args)
+        self.assertRaises(Http404, view, *view_args)  # noqa: PT027
 
     def get_handler(self, course, cohort=None, expected_response_code=200, handler=cohort_handler, user=None):
         """
@@ -998,7 +998,7 @@ class AddUsersToCohortTestCase(CohortViewsTestCase):
         """
         unknown = "unknown_user"
         response_dict = self.request_add_users_to_cohort(
-            " {} {}\t{}, \r\n{}".format(
+            " {} {}\t{}, \r\n{}".format(  # noqa: UP032
                 unknown,
                 self.cohort1_users[0].username,
                 self.cohort2_users[0].username,

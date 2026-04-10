@@ -45,7 +45,7 @@ class TestSAMLAuthBackend(SAMLTestCase):
     def test_saml_auth_complete(self, super_auth_complete):
         super_auth_complete.side_effect = MultiValueDictKeyError('RelayState')
         backend = SAMLAuthBackend()
-        with self.assertRaises(AuthMissingParameter) as cm:
+        with self.assertRaises(AuthMissingParameter) as cm:  # noqa: PT027
             backend.auth_complete()
 
         assert cm.exception.parameter == 'RelayState'

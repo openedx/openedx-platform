@@ -58,7 +58,10 @@ from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE
 
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import mock_render_template, override_descriptor_system  # pylint: disable=unused-import
+from xmodule.tests.helpers import (  # pylint: disable=unused-import  # noqa: F401
+    mock_render_template,
+    override_descriptor_system,
+)
 from xmodule.tests.test_import import DummyModuleStoreRuntime
 from xmodule.tests.test_video import VideoBlockTestBase
 from xmodule.video_block import VideoBlock, video_utils
@@ -290,7 +293,7 @@ class TestVideoPublicAccess(BaseTestVideoXBlock):
             is_public_sharing_enabled = sharing.is_public_sharing_enabled(self.block.location, self.block.public_access)
 
         # Then I will get that course value
-        self.assertTrue(is_public_sharing_enabled)
+        self.assertTrue(is_public_sharing_enabled)  # noqa: PT009
 
     @patch('openedx.core.djangoapps.video_config.sharing.get_course_video_sharing_override')
     def test_is_public_sharing_disabled_by_course_override(self, mock_course_sharing_override):
@@ -303,7 +306,7 @@ class TestVideoPublicAccess(BaseTestVideoXBlock):
             is_public_sharing_enabled = sharing.is_public_sharing_enabled(self.block.location, self.block.public_access)
 
         # Then I will get that course value
-        self.assertFalse(is_public_sharing_enabled)
+        self.assertFalse(is_public_sharing_enabled)  # noqa: PT009
 
     @ddt.data(COURSE_VIDEO_SHARING_PER_VIDEO, None)
     @patch('openedx.core.djangoapps.video_config.sharing.get_course_video_sharing_override')
@@ -317,7 +320,7 @@ class TestVideoPublicAccess(BaseTestVideoXBlock):
             is_public_sharing_enabled = sharing.is_public_sharing_enabled(self.block.location, self.block.public_access)
 
         # I will get the per-video value
-        self.assertEqual(self.block.public_access, is_public_sharing_enabled)
+        self.assertEqual(self.block.public_access, is_public_sharing_enabled)  # noqa: PT009
 
     @patch('openedx.core.lib.courses.get_course_by_id')
     def test_is_public_sharing_course_not_found(self, mock_get_course):
@@ -330,7 +333,7 @@ class TestVideoPublicAccess(BaseTestVideoXBlock):
             is_public_sharing_enabled = sharing.is_public_sharing_enabled(self.block.location, self.block.public_access)
 
         # I will fall-back to per-video values
-        self.assertEqual(self.block.public_access, is_public_sharing_enabled)
+        self.assertEqual(self.block.public_access, is_public_sharing_enabled)  # noqa: PT009
 
     @ddt.data(False, True)
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
@@ -1162,7 +1165,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
     )
     @ddt.unpack
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    def test_get_html_on_toggling_hls_feature(self, hls_feature_enabled, expected_val_profiles, _):
+    def test_get_html_on_toggling_hls_feature(self, hls_feature_enabled, expected_val_profiles, _):  # noqa: PT019
         """
         Verify val profiles on toggling HLS Playback feature.
         """
@@ -1243,7 +1246,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         assert actual_context['download_video_link'] is None
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    def test_get_html_non_hls_video_download(self, _):
+    def test_get_html_non_hls_video_download(self, _):  # noqa: PT019
         """
         Verify that `download_video_link` is available if a non HLS videos is available
         """
@@ -1260,7 +1263,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         assert "'download_video_link': 'http://example.com/example.mp4'" in context
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
-    def test_html_student_public_view(self, _):
+    def test_html_student_public_view(self, _):  # noqa: PT019
         """
         Test the student and public views
         """
@@ -1278,7 +1281,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     @patch('xmodule.video_block.video_block.edxval_api.get_course_video_image_url')
-    def test_poster_image(self, get_course_video_image_url, _):
+    def test_poster_image(self, get_course_video_image_url, _):  # noqa: PT019
         """
         Verify that poster image functionality works as expected.
         """
@@ -1292,7 +1295,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
 
     @patch('xblock.utils.resources.ResourceLoader.render_django_template', side_effect=mock_render_template)
     @patch('xmodule.video_block.video_block.edxval_api.get_course_video_image_url')
-    def test_poster_image_without_edx_video_id(self, get_course_video_image_url, _):
+    def test_poster_image_without_edx_video_id(self, get_course_video_image_url, _):  # noqa: PT019
         """
         Verify that poster image is set to None and there is no crash when no edx_video_id.
         """
@@ -1309,7 +1312,7 @@ class TestGetHtmlMethod(BaseTestVideoXBlock):
         'openedx.core.djangoapps.video_config.services.VideoConfigService.is_hls_playback_enabled',
         Mock(return_value=False)
     )
-    def test_hls_primary_playback_on_toggling_hls_feature(self, _):
+    def test_hls_primary_playback_on_toggling_hls_feature(self, _):  # noqa: PT019
         """
         Verify that `prioritize_hls` is set to `False` if `HLSPlaybackEnabledFlag` is disabled.
         """
@@ -1653,7 +1656,7 @@ class TestVideoBlockStudentViewJson(BaseTestVideoXBlock, CacheIsolationTestCase)
         """
         Verifies the result is as expected when returning "fallback" video data (not from VAL).
         """
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             result,
             {
                 "only_on_web": False,
@@ -1671,7 +1674,7 @@ class TestVideoBlockStudentViewJson(BaseTestVideoXBlock, CacheIsolationTestCase)
         """
         Verifies the result is as expected when returning "fallback" video data (not from VAL).
         """
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             result,
             {
                 "only_on_web": False,
@@ -1691,7 +1694,7 @@ class TestVideoBlockStudentViewJson(BaseTestVideoXBlock, CacheIsolationTestCase)
             result.pop("encoded_videos")[self.TEST_PROFILE],
             self.TEST_ENCODED_VIDEO,
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             result,
             {
                 "only_on_web": False,
@@ -1704,7 +1707,7 @@ class TestVideoBlockStudentViewJson(BaseTestVideoXBlock, CacheIsolationTestCase)
     def test_only_on_web(self):
         self.video.only_on_web = True
         result = self.get_result()
-        self.assertDictEqual(result, {"only_on_web": True})
+        self.assertDictEqual(result, {"only_on_web": True})  # noqa: PT009
 
     def test_no_edx_video_id(self):
         result = self.get_result()
@@ -1778,7 +1781,7 @@ class TestVideoBlockStudentViewJson(BaseTestVideoXBlock, CacheIsolationTestCase)
         self.video.transcripts = transcripts
         self.video.sub = english_sub
         student_view_response = self.get_result()
-        self.assertCountEqual(list(student_view_response['transcripts'].keys()), expected_transcripts)
+        self.assertCountEqual(list(student_view_response['transcripts'].keys()), expected_transcripts)  # noqa: PT009
 
 
 @ddt.ddt
@@ -1821,7 +1824,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
             }
         ]
         rendered_context = self.block.get_context()
-        self.assertListEqual(rendered_context['tabs'], correct_tabs)
+        self.assertListEqual(rendered_context['tabs'], correct_tabs)  # noqa: PT009
 
         # Assert that the Video ID field is present in basic tab metadata context.
         assert rendered_context['transcripts_basic_tab_metadata']['edx_video_id'] ==\
@@ -1873,7 +1876,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                 </video_asset>
                 <transcript language="{language_code}" src="{transcript_file}"/>
             </video>
-        """.format(
+        """.format(  # noqa: UP032
             language_code=language_code,
             transcript_file=transcript_file_name,
             transcripts=json.dumps({language_code: transcript_file_name})
@@ -1933,13 +1936,13 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
         assert video_xml.get('sub') == expected_sub
 
         expected_transcripts = {
-            language: "{edx_video_id}-{language}.srt".format(
+            language: "{edx_video_id}-{language}.srt".format(  # noqa: UP032
                 edx_video_id=self.block.edx_video_id,
                 language=language
             )
             for language in languages
         }
-        self.assertDictEqual(json.loads(video_xml.get('transcripts')), expected_transcripts)
+        self.assertDictEqual(json.loads(video_xml.get('transcripts')), expected_transcripts)  # noqa: PT009
 
         # Assert transcript content from course OLX
         for language in languages:
@@ -2028,7 +2031,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                     </transcripts>
                 </video_asset>
             </video>
-        """.format(
+        """.format(  # noqa: UP032
             edx_video_id=edx_video_id,
             sub_id=sub_id,
             transcripts=json.dumps(external_transcripts),
@@ -2118,7 +2121,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                 </transcripts>
             </video_asset>
         </video>
-        """.format(
+        """.format(  # noqa: UP032
             edx_video_id=edx_video_id,
             val_transcript_language_code=val_transcript_language_code,
             val_transcript_provider=val_transcript_provider
@@ -2245,7 +2248,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                 module_system.resources_fs,
                 EXPORT_IMPORT_STATIC_DIR
             )
-            xml_data += " sub='{sub_id}'".format(
+            xml_data += " sub='{sub_id}'".format(  # noqa: UP032
                 sub_id=sub_id
             )
 
@@ -2257,7 +2260,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                 module_system.resources_fs,
                 EXPORT_IMPORT_STATIC_DIR
             )
-            xml_data += " transcripts='{transcripts}'".format(
+            xml_data += " transcripts='{transcripts}'".format(  # noqa: UP032
                 transcripts=json.dumps(external_transcripts),
             )
 
@@ -2267,7 +2270,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
         if val_transcripts:
             create_file_in_fs(
                 TRANSCRIPT_FILE_SRT_DATA,
-                '{edx_video_id}-{language_code}.srt'.format(
+                '{edx_video_id}-{language_code}.srt'.format(  # noqa: UP032
                     edx_video_id=edx_video_id,
                     language_code=language_code
                 ),

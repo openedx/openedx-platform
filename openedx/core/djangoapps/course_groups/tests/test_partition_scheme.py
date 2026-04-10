@@ -231,7 +231,7 @@ class TestCohortPartitionScheme(ModuleStoreTestCase):
         with patch('openedx.core.djangoapps.course_groups.partition_scheme.log') as mock_log:
             self.assert_student_in_group(None, new_user_partition)
             assert mock_log.warning.called
-            self.assertRegex(mock_log.warning.call_args[0][0], 'group not found')
+            self.assertRegex(mock_log.warning.call_args[0][0], 'group not found')  # noqa: PT009
 
     def test_missing_partition(self):
         """
@@ -256,7 +256,7 @@ class TestCohortPartitionScheme(ModuleStoreTestCase):
         with patch('openedx.core.djangoapps.course_groups.partition_scheme.log') as mock_log:
             self.assert_student_in_group(None, new_user_partition)
             assert mock_log.warning.called
-            self.assertRegex(mock_log.warning.call_args[0][0], 'partition mismatch')
+            self.assertRegex(mock_log.warning.call_args[0][0], 'partition mismatch')  # noqa: PT009
 
 
 class TestExtension(django.test.TestCase):
@@ -267,7 +267,7 @@ class TestExtension(django.test.TestCase):
 
     def test_get_scheme(self):
         assert UserPartition.get_scheme('cohort') == CohortPartitionScheme
-        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):
+        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):  # noqa: PT027
             UserPartition.get_scheme('other')
 
 

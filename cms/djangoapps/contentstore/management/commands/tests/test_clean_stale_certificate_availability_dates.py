@@ -89,7 +89,7 @@ class CleanStaleCertAvailableDateTests(ModuleStoreTestCase):
             "date can be adjusted via Studio in the UI. Aborting operation."
         )
 
-        with self.assertRaises(CommandError) as error:
+        with self.assertRaises(CommandError) as error:  # noqa: PT027
             call_command(
                 "clean_stale_certificate_available_dates",
                 "--course-runs",
@@ -109,7 +109,7 @@ class CleanStaleCertAvailableDateTests(ModuleStoreTestCase):
         expected_error_message = (
             "CleanStaleCertificateAvailabilityDatesConfig is disabled, but --args-from-database was requested."
         )
-        with self.assertRaises(CommandError) as error:
+        with self.assertRaises(CommandError) as error:  # noqa: PT027
             call_command("clean_stale_certificate_available_dates", "--args-from-database")
 
         assert str(error.exception) == expected_error_message
@@ -133,7 +133,7 @@ class CleanStaleCertAvailableDateTests(ModuleStoreTestCase):
         config.enabled = False
         config.save()
 
-        with self.assertRaises(CommandError) as disabled_error:
+        with self.assertRaises(CommandError) as disabled_error:  # noqa: F841, PT027
             call_command("clean_stale_certificate_available_dates", "--args-from-database")
 
         assert str(error.exception) == expected_error_message

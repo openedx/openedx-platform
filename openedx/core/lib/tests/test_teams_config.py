@@ -185,7 +185,7 @@ class TeamsConfigTests(TestCase):
         """
         teams_config = TeamsConfig(input_data)
         actual_output_data = teams_config.cleaned_data
-        self.assertDictEqual(actual_output_data, expected_output_data)
+        self.assertDictEqual(actual_output_data, expected_output_data)  # noqa: PT009
 
     @ddt.data(
         (None, None, "open", DEFAULT_COURSE_RUN_MAX_TEAM_SIZE),

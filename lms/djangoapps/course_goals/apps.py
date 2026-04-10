@@ -19,4 +19,4 @@ class CourseGoalsConfig(AppConfig):
         """
         Connect signal handlers.
         """
-        from . import handlers  # pylint: disable=unused-import
+        from . import handlers  # pylint: disable=unused-import  # noqa: F401

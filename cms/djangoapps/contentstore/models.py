@@ -127,7 +127,7 @@ class EntityLinkBase(models.Model):
         """
         raise NotImplementedError
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         abstract = True
 
     @classmethod
@@ -265,7 +265,7 @@ class ComponentLink(EntityLinkBase):
         Update or create entity link. This will only update `updated` field if something has changed.
         """
         if not created:
-            created = datetime.now(tz=timezone.utc)
+            created = datetime.now(tz=timezone.utc)  # noqa: UP017
         top_level_parent = None
         if top_level_parent_usage_key is not None:
             try:
@@ -501,7 +501,7 @@ class ContainerLink(EntityLinkBase):
         Update or create entity link. This will only update `updated` field if something has changed.
         """
         if not created:
-            created = datetime.now(tz=timezone.utc)
+            created = datetime.now(tz=timezone.utc)  # noqa: UP017
         top_level_parent = None
         if top_level_parent_usage_key is not None:
             try:
@@ -589,7 +589,7 @@ class LearningContextLinksStatus(models.Model):
             LearningContextLinksStatus object
         """
         if not created:
-            created = datetime.now(tz=timezone.utc)
+            created = datetime.now(tz=timezone.utc)  # noqa: UP017
         status, _ = cls.objects.get_or_create(
             context_key=context_key,
             defaults={
@@ -609,5 +609,5 @@ class LearningContextLinksStatus(models.Model):
         Updates entity links processing status of given learning context.
         """
         self.status = status
-        self.updated = updated or datetime.now(tz=timezone.utc)
+        self.updated = updated or datetime.now(tz=timezone.utc)  # noqa: UP017
         self.save()

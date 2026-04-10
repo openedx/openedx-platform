@@ -87,7 +87,7 @@ def strip_key(func):
             return field_value
 
         # call the decorated function
-        retval = func(field_decorator=strip_key_collection, *args, **kwargs)
+        retval = func(field_decorator=strip_key_collection, *args, **kwargs)  # noqa: B026
 
         # strip the return value
         return strip_key_collection(retval)
@@ -680,7 +680,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         # .. event_implemented_name: COURSE_CREATED
         # .. event_type: org.openedx.content_authoring.course.created.v1
         COURSE_CREATED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             course=CourseData(
                 course_key=course_key,
             )
@@ -735,7 +735,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         if source_modulestore == dest_modulestore:
             return source_modulestore.clone_course(source_course_id, dest_course_id, user_id, fields, **kwargs)
 
-        raise NotImplementedError("No code for cloning from {} to {}".format(
+        raise NotImplementedError("No code for cloning from {} to {}".format(  # noqa: UP032
             source_modulestore, dest_modulestore
         ))
 
@@ -764,7 +764,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
             # .. event_implemented_name: XBLOCK_CREATED
             # .. event_type: org.openedx.content_authoring.xblock.created.v1
             XBLOCK_CREATED.send_event(
-                time=datetime.now(timezone.utc),
+                time=datetime.now(timezone.utc),  # noqa: UP017
                 xblock_info=XBlockData(
                     usage_key=xblock.location.for_branch(None),
                     block_type=block_type,
@@ -803,7 +803,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
             # .. event_implemented_name: XBLOCK_CREATED
             # .. event_type: org.openedx.content_authoring.xblock.created.v1
             XBLOCK_CREATED.send_event(
-                time=datetime.now(timezone.utc),
+                time=datetime.now(timezone.utc),  # noqa: UP017
                 xblock_info=XBlockData(
                     usage_key=xblock.location.for_branch(None),
                     block_type=block_type,
@@ -848,7 +848,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
             # .. event_implemented_name: XBLOCK_UPDATED
             # .. event_type: org.openedx.content_authoring.xblock.updated.v1
             XBLOCK_UPDATED.send_event(
-                time=datetime.now(timezone.utc),
+                time=datetime.now(timezone.utc),  # noqa: UP017
                 xblock_info=XBlockData(
                     usage_key=xblock.location.for_branch(None),
                     block_type=xblock.location.block_type,
@@ -872,7 +872,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
             # .. event_implemented_name: XBLOCK_DELETED
             # .. event_type: org.openedx.content_authoring.xblock.deleted.v1
             XBLOCK_DELETED.send_event(
-                time=datetime.now(timezone.utc),
+                time=datetime.now(timezone.utc),  # noqa: UP017
                 xblock_info=XBlockData(
                     usage_key=location,
                     block_type=location.block_type,
@@ -998,7 +998,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         # .. event_implemented_name: XBLOCK_PUBLISHED
         # .. event_type: org.openedx.content_authoring.xblock.published.v1
         XBLOCK_PUBLISHED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             xblock_info=XBlockData(
                 usage_key=location,
                 block_type=location.block_type,

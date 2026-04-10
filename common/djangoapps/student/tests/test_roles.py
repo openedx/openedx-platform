@@ -279,7 +279,7 @@ class RolesTestCase(TestCase):
 
         with patch("openedx_authz.api.users.get_user_role_assignments_filtered", return_value=assignments):
             result = role.get_orgs_for_user(self.student)
-            self.assertCountEqual(result, [self.course_key.org, other_org])
+            self.assertCountEqual(result, [self.course_key.org, other_org])  # noqa: PT009
 
     def test_get_authz_compat_course_access_roles_for_user(self):
         """
@@ -459,13 +459,13 @@ class CourseAccessRoleHistoryTest(TestCase):
         )
 
         history = CourseAccessRoleHistory.objects.first()
-        self.assertIsNotNone(history)
-        self.assertEqual(history.user, self.user)
-        self.assertEqual(history.org, self.org)
-        self.assertEqual(history.course_id, self.course_key)
-        self.assertEqual(history.role, "student")
-        self.assertEqual(history.action_type, "created")
-        self.assertIsNone(history.old_values)
+        self.assertIsNotNone(history)  # noqa: PT009
+        self.assertEqual(history.user, self.user)  # noqa: PT009
+        self.assertEqual(history.org, self.org)  # noqa: PT009
+        self.assertEqual(history.course_id, self.course_key)  # noqa: PT009
+        self.assertEqual(history.role, "student")  # noqa: PT009
+        self.assertEqual(history.action_type, "created")  # noqa: PT009
+        self.assertIsNone(history.old_values)  # noqa: PT009
 
     def test_update_logs_history(self):
         """
@@ -480,13 +480,13 @@ class CourseAccessRoleHistoryTest(TestCase):
         history_entries = CourseAccessRoleHistory.objects.filter(
             user=self.user, course_id=self.course_key
         ).order_by("created")
-        self.assertEqual(history_entries.count(), 2)
+        self.assertEqual(history_entries.count(), 2)  # noqa: PT009
 
         update_history = history_entries.last()
-        self.assertEqual(update_history.action_type, "updated")
-        self.assertIsNotNone(update_history.old_values)
-        self.assertEqual(update_history.old_values["role"], "student")
-        self.assertEqual(update_history.role, "staff")
+        self.assertEqual(update_history.action_type, "updated")  # noqa: PT009
+        self.assertIsNotNone(update_history.old_values)  # noqa: PT009
+        self.assertEqual(update_history.old_values["role"], "student")  # noqa: PT009
+        self.assertEqual(update_history.role, "staff")  # noqa: PT009
 
     def test_delete_logs_history(self):
         """
@@ -501,12 +501,12 @@ class CourseAccessRoleHistoryTest(TestCase):
         history_entries = CourseAccessRoleHistory.objects.filter(
             user=self.user, course_id=self.course_key
         ).order_by("created")
-        self.assertEqual(history_entries.count(), 2)
+        self.assertEqual(history_entries.count(), 2)  # noqa: PT009
 
         delete_history = history_entries.last()
-        self.assertEqual(delete_history.action_type, "deleted")
-        self.assertIsNone(delete_history.old_values)
-        self.assertEqual(delete_history.role, "student")
+        self.assertEqual(delete_history.action_type, "deleted")  # noqa: PT009
+        self.assertIsNone(delete_history.old_values)  # noqa: PT009
+        self.assertEqual(delete_history.role, "student")  # noqa: PT009
 
 
 class CourseAccessRoleAdminActionsTest(TestCase):
@@ -565,19 +565,19 @@ class CourseAccessRoleAdminActionsTest(TestCase):
         CourseAccessRole.objects.create(
             user=self.user, org=self.org, course_id=self.course_key, role="beta_tester"
         )
-        self.assertEqual(CourseAccessRole.objects.count(), 1)
+        self.assertEqual(CourseAccessRole.objects.count(), 1)  # noqa: PT009
         created_history = CourseAccessRoleHistory.objects.filter(
             action_type="created"
         ).first()
-        self.assertIsNotNone(created_history)
+        self.assertIsNotNone(created_history)  # noqa: PT009
 
         self._get_admin_action_response(
             CourseAccessRoleHistoryAdmin.revert_selected_history,
             CourseAccessRoleHistory.objects.filter(pk=created_history.pk),
         )
 
-        self.assertEqual(CourseAccessRole.objects.count(), 0)
-        self.assertIn(
+        self.assertEqual(CourseAccessRole.objects.count(), 0)  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             f"Successfully reverted creation of role for {self.user.username} in {self.course_key}",
             self.messages[0],
         )
@@ -593,20 +593,20 @@ class CourseAccessRoleAdminActionsTest(TestCase):
         role_instance.role = "new_role"
         role_instance.save()
 
-        self.assertEqual(CourseAccessRole.objects.get().role, "new_role")
+        self.assertEqual(CourseAccessRole.objects.get().role, "new_role")  # noqa: PT009
         updated_history = CourseAccessRoleHistory.objects.filter(
             action_type="updated"
         ).first()
-        self.assertIsNotNone(updated_history)
-        self.assertEqual(updated_history.old_values["role"], "old_role")
+        self.assertIsNotNone(updated_history)  # noqa: PT009
+        self.assertEqual(updated_history.old_values["role"], "old_role")  # noqa: PT009
 
         self._get_admin_action_response(
             CourseAccessRoleHistoryAdmin.revert_selected_history,
             CourseAccessRoleHistory.objects.filter(pk=updated_history.pk),
         )
 
-        self.assertEqual(CourseAccessRole.objects.get().role, "old_role")
-        self.assertIn(
+        self.assertEqual(CourseAccessRole.objects.get().role, "old_role")  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             f"Successfully reverted update of role for {self.user.username} to old_role in {self.course_key}",
             self.messages[0],
         )
@@ -621,28 +621,28 @@ class CourseAccessRoleAdminActionsTest(TestCase):
             course_id=self.course_key,
             role="to_be_deleted",
         )
-        self.assertEqual(CourseAccessRole.objects.count(), 1)
-        initial_history_count = CourseAccessRoleHistory.objects.count()
+        self.assertEqual(CourseAccessRole.objects.count(), 1)  # noqa: PT009
+        initial_history_count = CourseAccessRoleHistory.objects.count()  # noqa: F841
 
         role_instance.delete()
-        self.assertEqual(CourseAccessRole.objects.count(), 0)
+        self.assertEqual(CourseAccessRole.objects.count(), 0)  # noqa: PT009
         deleted_history = CourseAccessRoleHistory.objects.filter(
             action_type="deleted"
         ).first()
-        self.assertIsNotNone(deleted_history)
+        self.assertIsNotNone(deleted_history)  # noqa: PT009
 
         self._get_admin_action_response(
             CourseAccessRoleHistoryAdmin.revert_selected_history,
             CourseAccessRoleHistory.objects.filter(pk=deleted_history.pk),
         )
 
-        self.assertEqual(CourseAccessRole.objects.count(), 1)
+        self.assertEqual(CourseAccessRole.objects.count(), 1)  # noqa: PT009
         reverted_role = CourseAccessRole.objects.first()
-        self.assertEqual(reverted_role.user, self.user)
-        self.assertEqual(reverted_role.org, self.org)
-        self.assertEqual(reverted_role.course_id, self.course_key)
-        self.assertEqual(reverted_role.role, "to_be_deleted")
-        self.assertIn(
+        self.assertEqual(reverted_role.user, self.user)  # noqa: PT009
+        self.assertEqual(reverted_role.org, self.org)  # noqa: PT009
+        self.assertEqual(reverted_role.course_id, self.course_key)  # noqa: PT009
+        self.assertEqual(reverted_role.role, "to_be_deleted")  # noqa: PT009
+        self.assertIn(  # noqa: PT009
             f"Successfully reverted deletion of role for {self.user.username} in {self.course_key}",
             self.messages[0],
         )
@@ -654,7 +654,7 @@ class CourseAccessRoleAdminActionsTest(TestCase):
         CourseAccessRole.objects.create(
             user=self.user, org=self.org, course_id=self.course_key, role="some_role"
         )
-        self.assertEqual(CourseAccessRoleHistory.objects.count(), 1)
+        self.assertEqual(CourseAccessRoleHistory.objects.count(), 1)  # noqa: PT009
         history_entry = CourseAccessRoleHistory.objects.first()
 
         self._get_admin_action_response(
@@ -662,5 +662,5 @@ class CourseAccessRoleAdminActionsTest(TestCase):
             CourseAccessRoleHistory.objects.filter(pk=history_entry.pk),
         )
 
-        self.assertEqual(CourseAccessRoleHistory.objects.count(), 0)
-        self.assertIn("Successfully deleted 1 selected history entry.", self.messages[0])
+        self.assertEqual(CourseAccessRoleHistory.objects.count(), 0)  # noqa: PT009
+        self.assertIn("Successfully deleted 1 selected history entry.", self.messages[0])  # noqa: PT009

@@ -116,7 +116,7 @@ def create_container(
     )
 
     if not created:
-        created = datetime.now(tz=timezone.utc)
+        created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     # Then try creating the actual container:
     container, _initial_version = content_api.create_container_and_version(
@@ -150,7 +150,7 @@ def update_container(
     """
     container = get_container_from_key(container_key)
     library_key = container_key.lib_key
-    created = datetime.now(tz=timezone.utc)
+    created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     # Get children containers or components to update their index data
     children = get_container_children(container_key, published=False)
@@ -406,7 +406,7 @@ def update_container_children(
     [ 🛑 UNSTABLE ] Adds children components or containers to given container.
     """
     container = get_container_from_key(container_key)
-    created = datetime.now(tz=timezone.utc)
+    created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     new_version = content_api.create_next_container_version(
         container,

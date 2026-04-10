@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager, nullcontext
 from datetime import datetime, timedelta, timezone
 from functools import wraps
-from typing import Callable, Generator, cast
+from typing import Callable, Generator, cast  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -964,7 +964,7 @@ def generate_user_token_for_studio_search(request):
     """
     Returns a Meilisearch API key that only allows the user to search content that they have permission to view
     """
-    expires_at = datetime.now(tz=timezone.utc) + timedelta(days=7)
+    expires_at = datetime.now(tz=timezone.utc) + timedelta(days=7)  # noqa: UP017
 
     search_rules = {
         STUDIO_INDEX_NAME: _get_meili_access_filter(request),

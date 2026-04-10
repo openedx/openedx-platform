@@ -72,10 +72,10 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
                 course=self.course_overview,
             )
         else:
-            existing_enrollment = None
+            existing_enrollment = None  # noqa: F841
 
         user = self.user
-        course_key = self.course_overview.id  # lint-amnesty, pylint: disable=unused-variable
+        course_key = self.course_overview.id  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         query_count = 9
 
@@ -84,14 +84,14 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
             assert (not enrolled_before_enabled) == enabled
 
     def test_enabled_for_enrollment_failure(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseDurationLimitConfig.enabled_for_enrollment(None, None)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseDurationLimitConfig.enabled_for_enrollment(
                 Mock(name='user'),
                 None
             )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseDurationLimitConfig.enabled_for_enrollment(
                 None,
                 Mock(name='course_key')

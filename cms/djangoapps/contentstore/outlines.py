@@ -4,7 +4,7 @@ is responsible for holding course outline data. Studio _pushes_ that data into
 learning_sequences at publish time.
 """
 from datetime import timezone
-from typing import List, Tuple
+from typing import List, Tuple  # noqa: UP035
 
 from edx_django_utils.monitoring import function_trace, set_custom_attribute
 
@@ -321,7 +321,7 @@ def _make_section_data(section, unique_sequences):
 
 
 @function_trace('get_outline_from_modulestore')
-def get_outline_from_modulestore(course_key) -> Tuple[CourseOutlineData, List[ContentErrorData]]:
+def get_outline_from_modulestore(course_key) -> Tuple[CourseOutlineData, List[ContentErrorData]]:  # noqa: UP006
     """
     Return a CourseOutlineData and list of ContentErrorData for param:course_key
 
@@ -352,7 +352,7 @@ def get_outline_from_modulestore(course_key) -> Tuple[CourseOutlineData, List[Co
             # maps to UTC), but for consistency, we're going to use the standard
             # python timezone.utc (which is what the learning_sequence app will
             # return from MySQL). They will compare as equal.
-            published_at=course.subtree_edited_on.replace(tzinfo=timezone.utc),
+            published_at=course.subtree_edited_on.replace(tzinfo=timezone.utc),  # noqa: UP017
 
             # .course_version is a BSON obj, so we convert to str (MongoDB-
             # specific objects don't go into CourseOutlineData).

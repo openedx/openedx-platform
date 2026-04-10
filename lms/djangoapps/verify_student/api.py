@@ -57,8 +57,8 @@ def create_verification_attempt(
     user: User,
     name: str,
     status: str,
-    expiration_datetime: Optional[datetime] = None,
-    hide_status_from_user: Optional[bool] = False,
+    expiration_datetime: Optional[datetime] = None,  # noqa: UP045
+    hide_status_from_user: Optional[bool] = False,  # noqa: UP045
 ):
     """
     Create a verification attempt.
@@ -95,9 +95,9 @@ def create_verification_attempt(
 
 def update_verification_attempt(
     attempt_id: int,
-    name: Optional[str] = None,
-    status: Optional[str] = None,
-    expiration_datetime: Optional[datetime] = None,
+    name: Optional[str] = None,  # noqa: UP045
+    status: Optional[str] = None,  # noqa: UP045
+    expiration_datetime: Optional[datetime] = None,  # noqa: UP045
 ):
     """
     Update a verification attempt.

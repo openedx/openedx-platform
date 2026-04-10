@@ -371,7 +371,7 @@ class GraderTest(unittest.TestCase):
     )
     @ddt.unpack
     def test_grader_with_invalid_conf(self, invalid_conf, expected_error_message):
-        with pytest.raises(ValueError) as error:
+        with pytest.raises(ValueError) as error:  # noqa: PT011
             graders.grader_from_conf([invalid_conf])
         assert expected_error_message in str(error.value)
 

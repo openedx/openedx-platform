@@ -99,7 +99,7 @@ class TestRecentEnrollments(ModuleStoreTestCase, XssTestMixin):
         # Create a number of new enrollments and courses, and force their creation behind
         # the first enrollment
         courses = []
-        for idx, seconds_past in zip(list(range(2, 6)), [5, 10, 15, 20]):
+        for idx, seconds_past in zip(list(range(2, 6)), [5, 10, 15, 20]):  # noqa: B905
             course_location = locator.CourseLocator(
                 f'Org{idx}',
                 f'Course{idx}',

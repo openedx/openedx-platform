@@ -28,7 +28,7 @@ class RestrictedCourseForm(forms.ModelForm):
     """
     class Meta:
         model = RestrictedCourse
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def clean_course_key(self):
         """Validate the course key.
@@ -49,7 +49,7 @@ class RestrictedCourseForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(cleaned_id)
         except InvalidKeyError:
-            raise forms.ValidationError(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise forms.ValidationError(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(error_msg)
@@ -62,7 +62,7 @@ class IPFilterForm(forms.ModelForm):
 
     class Meta:
         model = IPFilter
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
     def _is_valid_ip(self, address):
         """Whether or not address is a valid ipv4 address or ipv6 address"""

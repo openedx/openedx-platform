@@ -475,7 +475,7 @@ class TestGetEdxApiData(
             ]
         )
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017, PT027
             get_api_data(
                 catalog_integration,
                 "programs",

@@ -20,4 +20,4 @@ class ThemingConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-d
 
     def ready(self):
         # settings validations related to theming.
-        from . import checks  # lint-amnesty, pylint: disable=unused-import
+        from . import checks  # lint-amnesty, pylint: disable=unused-import  # noqa: F401

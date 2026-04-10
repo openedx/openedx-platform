@@ -104,7 +104,7 @@ class Command(BaseCommand):
         Get all programs with candidate courses.
         """
         candidate_programs = []
-        for program, program_progress in zip(programs, programs_progress):
+        for program, program_progress in zip(programs, programs_progress):  # noqa: B905
             candidate_programs.append(
                 self.get_candidate_program_and_courses(program, program_progress)
             )

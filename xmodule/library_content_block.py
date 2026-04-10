@@ -344,7 +344,7 @@ class LegacyLibraryContentBlock(ItemBankMixin, XModuleToXBlockMixin, XBlock):
                 for child in children
             ]
             child_migrations = migrator_api.get_forwarding_for_blocks(child_old_upstream_keys)
-            for child, old_upstream_key in zip(children, child_old_upstream_keys):
+            for child, old_upstream_key in zip(children, child_old_upstream_keys):  # noqa: B905
                 upstream_migration = child_migrations.get(old_upstream_key)
                 if upstream_migration and isinstance(upstream_migration.target_key, LibraryUsageLocatorV2):
                     child.upstream = str(upstream_migration.target_key)

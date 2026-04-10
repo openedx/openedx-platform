@@ -5,16 +5,16 @@ This module provides functionality to override notification configurations
 via Django settings.
 """
 from copy import deepcopy
-from typing import Any, Dict, Set
+from typing import Any, Dict, Set  # noqa: UP035
 
 from django.conf import settings
 
 
 def _apply_overrides(
-    default_config: Dict[str, Any],
+    default_config: Dict[str, Any],  # noqa: UP006
     setting_name: str,
-    allowed_keys: Set[str]
-) -> Dict[str, Any]:
+    allowed_keys: Set[str]  # noqa: UP006
+) -> Dict[str, Any]:  # noqa: UP006
     """
     Internal helper to apply settings overrides to a default configuration dictionary.
 
@@ -37,7 +37,7 @@ def _apply_overrides(
     return config
 
 
-def get_notification_types_config() -> Dict[str, Any]:
+def get_notification_types_config() -> Dict[str, Any]:  # noqa: UP006
     """
     Get COURSE_NOTIFICATION_TYPES configuration with settings overrides applied.
     """
@@ -50,7 +50,7 @@ def get_notification_types_config() -> Dict[str, Any]:
     )
 
 
-def get_notification_apps_config() -> Dict[str, Any]:
+def get_notification_apps_config() -> Dict[str, Any]:  # noqa: UP006
     """
     Get COURSE_NOTIFICATION_APPS configuration with settings overrides applied.
     """

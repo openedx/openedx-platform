@@ -26,7 +26,7 @@ class TestImport(ModuleStoreTestCase):
         directory = tempfile.mkdtemp(dir=content_dir)
         os.makedirs(os.path.join(directory, "course"))
         with open(os.path.join(directory, "course.xml"), "w+") as f:
-            f.write('<course url_name="{0.run}" org="{0.org}" course="{0.course}"/>'.format(course_id))
+            f.write('<course url_name="{0.run}" org="{0.org}" course="{0.course}"/>'.format(course_id))  # noqa: UP032
 
         with open(os.path.join(directory, "course", f"{course_id.run}.xml"), "w+") as f:
             f.write('<course><chapter name="Test Chapter"></chapter></course>')
@@ -55,9 +55,9 @@ class TestImport(ModuleStoreTestCase):
         """
         Tests that forum roles were created with import.
         """
-        self.assertFalse(are_permissions_roles_seeded(self.base_course_key))
+        self.assertFalse(are_permissions_roles_seeded(self.base_course_key))  # noqa: PT009
         call_command('import', self.content_dir, self.good_dir)
-        self.assertTrue(are_permissions_roles_seeded(self.base_course_key))
+        self.assertTrue(are_permissions_roles_seeded(self.base_course_key))  # noqa: PT009
 
     def test_truncated_course_with_url(self):
         """
@@ -69,8 +69,8 @@ class TestImport(ModuleStoreTestCase):
         # Load up base course and verify it is available
         call_command('import', self.content_dir, self.good_dir)
         store = modulestore()
-        self.assertIsNotNone(store.get_course(self.base_course_key))
+        self.assertIsNotNone(store.get_course(self.base_course_key))  # noqa: PT009
 
         # Now load up the course with a similar course_id and verify it loads
         call_command('import', self.content_dir, self.course_dir)
-        self.assertIsNotNone(store.get_course(self.truncated_key))
+        self.assertIsNotNone(store.get_course(self.truncated_key))  # noqa: PT009

@@ -24,7 +24,7 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 FEATURES_WITH_EXPORT_GIT = settings.FEATURES.copy()
 FEATURES_WITH_EXPORT_GIT['ENABLE_EXPORT_GIT'] = True
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -44,7 +44,7 @@ class TestGitExport(CourseTestCase):
             os.mkdir(git_export_utils.GIT_REPO_EXPORT_DIR)
             self.addCleanup(shutil.rmtree, git_export_utils.GIT_REPO_EXPORT_DIR)
 
-        self.bare_repo_dir = '{}/data/test_bare.git'.format(
+        self.bare_repo_dir = '{}/data/test_bare.git'.format(  # noqa: UP032
             os.path.abspath(settings.TEST_ROOT))
         if not os.path.isdir(self.bare_repo_dir):
             os.mkdir(self.bare_repo_dir)
@@ -57,7 +57,7 @@ class TestGitExport(CourseTestCase):
         Test that the command interface works. Ignore stderr for clean
         test output.
         """
-        with self.assertRaisesRegex(CommandError, 'Error: unrecognized arguments:*'):
+        with self.assertRaisesRegex(CommandError, 'Error: unrecognized arguments:*'):  # noqa: PT027
             call_command('git_export', 'blah', 'blah', 'blah', stderr=StringIO())
 
         with self.assertRaisesMessage(
@@ -67,23 +67,23 @@ class TestGitExport(CourseTestCase):
             call_command('git_export', stderr=StringIO())
 
         # Send bad url to get course not exported
-        with self.assertRaisesRegex(CommandError, str(GitExportError.URL_BAD)):
+        with self.assertRaisesRegex(CommandError, str(GitExportError.URL_BAD)):  # noqa: PT027
             call_command('git_export', 'foo/bar/baz', 'silly', stderr=StringIO())
 
         # Send bad course_id to get course not exported
-        with self.assertRaisesRegex(CommandError, str(GitExportError.BAD_COURSE)):
+        with self.assertRaisesRegex(CommandError, str(GitExportError.BAD_COURSE)):  # noqa: PT027
             call_command('git_export', 'foo/bar:baz', 'silly', stderr=StringIO())
 
     def test_error_output(self):
         """
         Verify that error output is actually resolved as the correct string
         """
-        with self.assertRaisesRegex(CommandError, str(GitExportError.BAD_COURSE)):
+        with self.assertRaisesRegex(CommandError, str(GitExportError.BAD_COURSE)):  # noqa: PT027
             call_command(
                 'git_export', 'foo/bar:baz', 'silly'
             )
 
-        with self.assertRaisesRegex(CommandError, str(GitExportError.URL_BAD)):
+        with self.assertRaisesRegex(CommandError, str(GitExportError.URL_BAD)):  # noqa: PT027
             call_command(
                 'git_export', 'foo/bar/baz', 'silly'
             )
@@ -93,13 +93,13 @@ class TestGitExport(CourseTestCase):
         Test several bad URLs for validation
         """
         course_key = CourseLocator('org', 'course', 'run')
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_BAD)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_BAD)):  # noqa: PT027
             git_export_utils.export_to_git(course_key, 'Sillyness')
 
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_BAD)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_BAD)):  # noqa: PT027
             git_export_utils.export_to_git(course_key, 'example.com:edx/notreal')
 
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_NO_AUTH)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_NO_AUTH)):  # noqa: PT027
             git_export_utils.export_to_git(course_key, 'http://blah')
 
     def test_bad_git_repos(self):
@@ -107,23 +107,23 @@ class TestGitExport(CourseTestCase):
         Test invalid git repos
         """
         test_repo_path = f'{git_export_utils.GIT_REPO_EXPORT_DIR}/test_repo'
-        self.assertFalse(os.path.isdir(test_repo_path))
+        self.assertFalse(os.path.isdir(test_repo_path))  # noqa: PT009
         course_key = CourseLocator('foo', 'blah', '100-')
         # Test bad clones
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_PULL)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_PULL)):  # noqa: PT027
             git_export_utils.export_to_git(
                 course_key,
                 'https://user:blah@example.com/test_repo.git')
-        self.assertFalse(os.path.isdir(test_repo_path))
+        self.assertFalse(os.path.isdir(test_repo_path))  # noqa: PT009
 
         # Setup good repo with bad course to test xml export
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.XML_EXPORT_FAIL)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.XML_EXPORT_FAIL)):  # noqa: PT027
             git_export_utils.export_to_git(
                 course_key,
                 f'file://{self.bare_repo_dir}')
 
         # Test bad git remote after successful clone
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_PULL)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_PULL)):  # noqa: PT027
             git_export_utils.export_to_git(
                 course_key,
                 'https://user:blah@example.com/r.git')
@@ -153,7 +153,7 @@ class TestGitExport(CourseTestCase):
         cwd = os.path.abspath(git_export_utils.GIT_REPO_EXPORT_DIR / 'test_bare')
         git_log = subprocess.check_output(['git', 'log', '-1',
                                            '--format=%an|%ae'], cwd=cwd).decode('utf-8')
-        self.assertEqual(expect_string, git_log)
+        self.assertEqual(expect_string, git_log)  # noqa: PT009
 
         # Make changes to course so there is something to commit
         self.populate_course()
@@ -162,13 +162,13 @@ class TestGitExport(CourseTestCase):
             f'file://{self.bare_repo_dir}',
             self.user.username
         )
-        expect_string = '{}|{}\n'.format(
+        expect_string = '{}|{}\n'.format(  # noqa: UP032
             self.user.username,
             self.user.email,
         )
         git_log = subprocess.check_output(
             ['git', 'log', '-1', '--format=%an|%ae'], cwd=cwd).decode('utf-8')
-        self.assertEqual(expect_string, git_log)
+        self.assertEqual(expect_string, git_log)  # noqa: PT009
 
     def test_no_change(self):
         """
@@ -179,6 +179,6 @@ class TestGitExport(CourseTestCase):
             f'file://{self.bare_repo_dir}'
         )
 
-        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_COMMIT)):
+        with self.assertRaisesRegex(GitExportError, str(GitExportError.CANNOT_COMMIT)):  # noqa: PT027
             git_export_utils.export_to_git(
                 self.course.id, f'file://{self.bare_repo_dir}')

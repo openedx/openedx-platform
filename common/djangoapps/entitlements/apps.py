@@ -18,5 +18,5 @@ class EntitlementsConfig(AppConfig):
         """
         Connect handlers to signals.
         """
-        from . import signals  # pylint: disable=unused-import
-        from .tasks import expire_old_entitlements  # lint-amnesty, pylint: disable=unused-import
+        from . import signals  # pylint: disable=unused-import  # noqa: F401
+        from .tasks import expire_old_entitlements  # lint-amnesty, pylint: disable=unused-import  # noqa: F401

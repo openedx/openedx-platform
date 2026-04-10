@@ -39,7 +39,7 @@ class ProfileImageUrlTestCase(TestCase):
         Verify correct url structure.
         """
         assert actual_url == 'http://example-storage.com/profile-images/{name}_{size}.jpg?v={version}'\
-            .format(name=expected_name, size=expected_pixels, version=expected_version)
+            .format(name=expected_name, size=expected_pixels, version=expected_version)  # noqa: UP032
 
     def verify_default_url(self, actual_url, expected_pixels):
         """

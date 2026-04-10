@@ -18,7 +18,7 @@ from openedx.core.djangoapps.course_groups.constants import (  # pylint: disable
     COHORT_SCHEME,
     CONTENT_GROUP_CONFIGURATION_DESCRIPTION,
     CONTENT_GROUP_CONFIGURATION_NAME,
-    ENROLLMENT_SCHEME,
+    ENROLLMENT_SCHEME,  # noqa: F401
     RANDOM_SCHEME,
 )
 from openedx.core.djangoapps.course_groups.partition_scheme import get_cohorted_user_partition
@@ -67,7 +67,7 @@ class GroupConfiguration:
         try:
             configuration = json.loads(json_string.decode("utf-8"))
         except ValueError:
-            raise GroupConfigurationsValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise GroupConfigurationsValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         configuration["version"] = UserPartition.VERSION
         return configuration
 
@@ -116,7 +116,7 @@ class GroupConfiguration:
         try:
             return UserPartition.from_json(self.configuration)
         except ReadOnlyUserPartitionError:
-            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     @staticmethod
     def _get_usage_dict(course, unit, block, scheme_name=None):

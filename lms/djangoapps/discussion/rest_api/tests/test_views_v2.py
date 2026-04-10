@@ -1008,7 +1008,7 @@ class BulkDeleteUserPostsTest(DiscussionAPIViewTestMixin, ModuleStoreTestCase):
         self.client.login(username=self.moderator.username, password=self.TEST_PASSWORD)
         response = self.client.get(self.url, params)
         data = response.json()
-        self.assertFalse(data['results'])
+        self.assertFalse(data['results'])  # noqa: PT009
         assert data['pagination']['count'] == 0
 
     @ddt.data(
@@ -1937,7 +1937,7 @@ class CourseActivityStatsTest(UrlResetMixin, ForumMockUtilsMixin, APITestCase,
         self.client.login(username=self.moderator.username, password=self.TEST_PASSWORD)
         response = self.client.get(self.url, params)
         data = response.json()
-        self.assertFalse(data['results'])
+        self.assertFalse(data['results'])  # noqa: PT009
         assert data['pagination']['count'] == 0
 
     @ddt.data(

@@ -4,7 +4,7 @@ Tasks that operate on course certificates for a user
 
 from difflib import unified_diff
 from logging import getLogger
-from typing import Any, Dict, List
+from typing import Any, Dict, List  # noqa: UP035
 
 from celery import shared_task
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask, LoggedTask
@@ -61,7 +61,7 @@ def generate_certificate(self, **kwargs):  # pylint: disable=unused-argument
 
 @shared_task(base=LoggedTask, ignore_result=True)
 @set_code_owner_attribute
-def handle_modify_cert_template(options: Dict[str, Any]) -> None:
+def handle_modify_cert_template(options: Dict[str, Any]) -> None:  # noqa: UP006
     """
     Celery task to handle the modify_cert_template management command.
 
@@ -77,7 +77,7 @@ def handle_modify_cert_template(options: Dict[str, Any]) -> None:
         template_ids = []
 
     log.info(
-        "[modify_cert_template] Attempting to modify {num} templates".format(
+        "[modify_cert_template] Attempting to modify {num} templates".format(  # noqa: UP032
             num=len(template_ids)
         )
     )
@@ -87,7 +87,7 @@ def handle_modify_cert_template(options: Dict[str, Any]) -> None:
         template.save()
 
 
-def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTemplate]:
+def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTemplate]:  # noqa: UP006
     """
     Loop through the templates and return instances with changed template text.
 
@@ -102,7 +102,7 @@ def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTempl
         template_ids = []
 
     log.info(
-        "[modify_cert_template] Attempting to modify {num} templates".format(
+        "[modify_cert_template] Attempting to modify {num} templates".format(  # noqa: UP032
             num=len(template_ids)
         )
     )
@@ -117,7 +117,7 @@ def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTempl
             log.warning(f"Template {template_id} could not be found")
         if template is not None:
             log.info(
-                "[modify_cert_template] Calling for template {template_id} : {name}".format(
+                "[modify_cert_template] Calling for template {template_id} : {name}".format(  # noqa: UP032
                     template_id=template_id, name=template.description
                 )
             )
@@ -126,14 +126,14 @@ def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTempl
             )
             if template.template == new_template:
                 log.info(
-                    "[modify_cert_template] No changes to {template_id}".format(
+                    "[modify_cert_template] No changes to {template_id}".format(  # noqa: UP032
                         template_id=template_id
                     )
                 )
             else:
                 if not dry_run:
                     log.info(
-                        "[modify_cert_template] Modifying template {template} ({description})".format(
+                        "[modify_cert_template] Modifying template {template} ({description})".format(  # noqa: UP032
                             template=template_id,
                             description=template.description,
                         )
@@ -142,7 +142,7 @@ def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTempl
                     templates_changed.append(template)
                 else:
                     log.info(
-                        "DRY-RUN: Not making the following template change to {id}.".format(
+                        "DRY-RUN: Not making the following template change to {id}.".format(  # noqa: UP032
                             id=template_id
                         )
                     )
@@ -158,7 +158,7 @@ def get_changed_cert_templates(options: Dict[str, Any]) -> List[CertificateTempl
                         ),
                     )
     log.info(
-        "[modify_cert_template] Modified {num} templates".format(
+        "[modify_cert_template] Modified {num} templates".format(  # noqa: UP032
             num=len(templates_changed)
         )
     )

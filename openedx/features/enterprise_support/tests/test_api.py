@@ -1371,7 +1371,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
             provider_id='the-provider',
         )
         customer = customer_idp.enterprise_customer
-        customer_user = EnterpriseCustomerUserFactory.create(  # lint-amnesty, pylint: disable=unused-variable
+        customer_user = EnterpriseCustomerUserFactory.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             enterprise_customer=customer,
             user_id=self.user.id,
         )

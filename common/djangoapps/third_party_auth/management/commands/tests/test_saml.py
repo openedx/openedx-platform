@@ -185,7 +185,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
 
-        with self.assertRaisesRegex(CommandError, r"HTTPError: 404 Client Error"):
+        with self.assertRaisesRegex(CommandError, r"HTTPError: 404 Client Error"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -230,7 +230,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
         )
 
         expected = '\n4 provider(s) found in database.\n1 skipped and 3 attempted.\n2 updated and 1 failed.\n'
-        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):
+        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -253,7 +253,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         # Four test configurations plus setUp -- two will be skipped and three attempted, with similar results.
         expected = '\nDone.\n5 provider(s) found in database.\n2 skipped and 3 attempted.\n0 updated and 1 failed.\n'
-        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):
+        with self.assertRaisesRegex(CommandError, r"MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -269,19 +269,19 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
 
-        with self.assertRaisesRegex(CommandError, "SSLError:"):
+        with self.assertRaisesRegex(CommandError, "SSLError:"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
         mocked_get.side_effect = exceptions.ConnectionError
 
-        with self.assertRaisesRegex(CommandError, "ConnectionError:"):
+        with self.assertRaisesRegex(CommandError, "ConnectionError:"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
         mocked_get.side_effect = exceptions.HTTPError
 
-        with self.assertRaisesRegex(CommandError, "HTTPError:"):
+        with self.assertRaisesRegex(CommandError, "HTTPError:"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -306,7 +306,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
 
-        with self.assertRaisesRegex(CommandError, "MetadataParseError: Can't find EntityDescriptor for entityID"):
+        with self.assertRaisesRegex(CommandError, "MetadataParseError: Can't find EntityDescriptor for entityID"):  # noqa: PT027  # pylint: disable=line-too-long
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -326,7 +326,7 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         expected = "\nDone.\n2 provider(s) found in database.\n1 skipped and 1 attempted.\n0 updated and 1 failed.\n"
 
-        with self.assertRaisesRegex(CommandError, "XMLSyntaxError:"):
+        with self.assertRaisesRegex(CommandError, "XMLSyntaxError:"):  # noqa: PT027
             call_command("saml", pull=True, stdout=self.stdout)
         assert expected in self.stdout.getvalue()
 
@@ -357,9 +357,9 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'site_id={self.provider_config.site_id}) '
             f'has SAML config (id={self.saml_config.id}, enabled=False).'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Missing configs: 0', output)  # No missing configs from setUp
-        self.assertIn('Disabled configs: 1', output)  # From setUp: provider_config with disabled saml_config
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Missing configs: 0', output)  # No missing configs from setUp  # noqa: PT009
+        self.assertIn('Disabled configs: 1', output)  # From setUp: provider_config with disabled saml_config  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_run_checks_outdated_configs(self):
         """
@@ -375,10 +375,10 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'has outdated SAML config (id={old_config.id}) which should be updated to '
             f'the current SAML config (id={new_config.id}).'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Outdated: 1', output)
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Outdated: 1', output)  # noqa: PT009
         # Total includes: 1 outdated + 2 disabled configs (setUp + test's old_config which is also disabled)
-        self.assertIn('Total issues requiring attention: 3', output)
+        self.assertIn('Total issues requiring attention: 3', output)  # noqa: PT009
 
     def test_run_checks_site_mismatches(self):
         """
@@ -403,10 +403,10 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'slug={provider.slug}, site_id={provider.site_id}) '
             f'SAML config (id={config.id}, site_id={config.site_id}) does not match the provider\'s site_id.'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Site mismatches: 1', output)
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Site mismatches: 1', output)  # noqa: PT009
         # Total includes: 1 site mismatch + 1 disabled config (from setUp)
-        self.assertIn('Total issues requiring attention: 2', output)
+        self.assertIn('Total issues requiring attention: 2', output)  # noqa: PT009
 
     def test_run_checks_slug_mismatches(self):
         """
@@ -432,8 +432,8 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'has SAML config (id={config.id}, slug=\'{config.slug}\') '
             f'that does not match the provider\'s slug.'
         )
-        self.assertIn(expected_info, output)
-        self.assertIn('Slug mismatches: 1', output)
+        self.assertIn(expected_info, output)  # noqa: PT009
+        self.assertIn('Slug mismatches: 1', output)  # noqa: PT009
 
     def test_run_checks_null_configurations(self):
         """
@@ -455,9 +455,9 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'slug={provider.slug}, site_id={provider.site_id}) '
             f'has no direct SAML configuration and no matching default configuration was found.'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Missing configs: 1', output)  # 1 from this test (provider with no config and no default)
-        self.assertIn('Disabled configs: 1', output)  # 1 from setUp data
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Missing configs: 1', output)  # 1 from this test (provider with no config and no default)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertIn('Disabled configs: 1', output)  # 1 from setUp data  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_run_checks_null_config_id(self):
         """
@@ -489,21 +489,21 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'has no direct SAML configuration and the default configuration '
             f'(id={disabled_default_config.id}, enabled=False).'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Missing configs: 0', output)  # No missing configs since default config exists
-        self.assertIn('Disabled configs: 2', output)  # 1 from this test + 1 from setUp data
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Missing configs: 0', output)  # No missing configs since default config exists  # noqa: PT009
+        self.assertIn('Disabled configs: 2', output)  # 1 from this test + 1 from setUp data  # noqa: PT009
 
     def test_run_checks_with_default_config(self):
         """
         Test the --run-checks command correctly handles providers with default configurations.
         """
-        provider = SAMLProviderConfigFactory.create(
+        provider = SAMLProviderConfigFactory.create(  # noqa: F841
             site=self.site,
             slug='default-config-provider',
             saml_configuration=None
         )
 
-        default_config = SAMLConfigurationFactory.create(
+        default_config = SAMLConfigurationFactory.create(  # noqa: F841
             site=self.site,
             slug='default',
             entity_id='https://default.example.com'
@@ -511,14 +511,14 @@ class TestSAMLCommand(CacheIsolationTestCase):
 
         output = self._run_checks_command()
 
-        self.assertIn('Missing configs: 0', output)  # This tests provider has valid default config
-        self.assertIn('Disabled configs: 1', output)  # From setUp
+        self.assertIn('Missing configs: 0', output)  # This tests provider has valid default config  # noqa: PT009
+        self.assertIn('Disabled configs: 1', output)  # From setUp  # noqa: PT009
 
     def test_run_checks_disabled_functionality(self):
         """
         Test the --run-checks command handles disabled providers and configurations.
         """
-        disabled_provider = SAMLProviderConfigFactory.create(
+        disabled_provider = SAMLProviderConfigFactory.create(  # noqa: F841
             site=self.site,
             slug='disabled-provider',
             enabled=False
@@ -545,6 +545,6 @@ class TestSAMLCommand(CacheIsolationTestCase):
             f'site_id={provider_with_disabled_config.site_id}) '
             f'has SAML config (id={disabled_config.id}, enabled=False).'
         )
-        self.assertIn(expected_warning, output)
-        self.assertIn('Missing configs: 1', output)  # disabled_provider has no config
-        self.assertIn('Disabled configs: 2', output)  # setUp's provider + provider_with_disabled_config
+        self.assertIn(expected_warning, output)  # noqa: PT009
+        self.assertIn('Missing configs: 1', output)  # disabled_provider has no config  # noqa: PT009
+        self.assertIn('Disabled configs: 2', output)  # setUp's provider + provider_with_disabled_config  # noqa: PT009

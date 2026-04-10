@@ -173,7 +173,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
             'next_url': None,
             'course_id': 'coursekey',
             'expected_redirect': (
-                '{root_url}/account/finish_auth?course_id=coursekey&next=%2Fdashboard'.
+                '{root_url}/account/finish_auth?course_id=coursekey&next=%2Fdashboard'.  # noqa: UP032
                 format(root_url=settings.LMS_ROOT_URL)
             ),
         },
@@ -192,7 +192,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
             'next_url': 'http://scam.scam',
             'course_id': 'coursekey',
             'expected_redirect': (
-                '{root_url}/account/finish_auth?course_id=coursekey&next=%2Fdashboard'.
+                '{root_url}/account/finish_auth?course_id=coursekey&next=%2Fdashboard'.  # noqa: UP032
                 format(root_url=settings.LMS_ROOT_URL)
             ),
         },
@@ -838,7 +838,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
         try:
             response_dict = json.loads(response.content.decode('utf-8'))
         except ValueError:
-            self.fail("Could not parse response content as JSON: %s"
+            self.fail("Could not parse response content as JSON: %s"  # noqa: UP031
                       % str(response.content))
 
         if success is not None:
@@ -848,7 +848,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
             assert response_dict['error_code'] == error_code
 
         if value is not None:
-            msg = ("'%s' did not contain '%s'" %
+            msg = ("'%s' did not contain '%s'" %  # noqa: UP031
                    (str(response_dict['value']), str(value)))
             assert value in response_dict['value'], msg
 
@@ -861,7 +861,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
         """
         response_dict = json.loads(response.content.decode('utf-8'))
         assert 'redirect_url' in response_dict, (
-            "Response JSON unexpectedly does not have redirect_url: {!r}".format(
+            "Response JSON unexpectedly does not have redirect_url: {!r}".format(  # noqa: UP032
                 response_dict
             )
         )
@@ -1102,7 +1102,7 @@ class LoginSessionViewTest(ApiTestCase, OpenEdxEventsTestMixin):
         assert form_desc['submit_url'] == reverse('user_api_login_session', kwargs={'api_version': 'v1'})
         assert form_desc['fields'] == [{'name': 'email', 'defaultValue': '', 'type': 'email', 'exposed': True,
                                         'required': True, 'label': 'Email', 'placeholder': '',
-                                        'instructions': 'The email address you used to register with {platform_name}'
+                                        'instructions': 'The email address you used to register with {platform_name}'  # noqa: UP032  # pylint: disable=line-too-long
                                         .format(platform_name=settings.PLATFORM_NAME),
                                         'restrictions': {'min_length': EMAIL_MIN_LENGTH,
                                                          'max_length': EMAIL_MAX_LENGTH},

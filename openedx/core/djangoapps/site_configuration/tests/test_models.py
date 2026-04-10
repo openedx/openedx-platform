@@ -301,7 +301,7 @@ class SiteConfigurationTests(TestCase):
         )
 
         # Test that the default value is returned if the value for the given key is not found in the configuration
-        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)
+        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)  # noqa: PT009
 
     def test_get_all_orgs_returns_only_enabled(self):
         """
@@ -320,4 +320,4 @@ class SiteConfigurationTests(TestCase):
         )
 
         # Test that the default value is returned if the value for the given key is not found in the configuration
-        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)
+        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)  # noqa: PT009

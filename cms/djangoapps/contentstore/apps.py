@@ -20,4 +20,4 @@ class ContentstoreConfig(AppConfig):
         """
         # Can't import models at module level in AppConfigs, and models get
         # included from the signal handlers
-        from .signals import handlers  # pylint: disable=unused-import
+        from .signals import handlers  # pylint: disable=unused-import  # noqa: F401

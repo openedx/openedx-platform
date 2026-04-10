@@ -256,7 +256,7 @@ class SignalIsolationMixin:
                     "You tried to enable signal '{}', but I don't recognize that "
                     "signal name. Did you mean one of these?: {}"
                 )
-                raise ValueError(err_msg.format(signal_name, all_signal_names))  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ValueError(err_msg.format(signal_name, all_signal_names))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             signal.enable()
 
 
@@ -364,7 +364,7 @@ class ModuleStoreIsolationMixin(CacheIsolationMixin, SignalIsolationMixin):
         return transaction.atomic()
 
 
-class ModuleStoreTestUsersMixin():
+class ModuleStoreTestUsersMixin():  # noqa: UP039
     """
     A mixin to help manage test users.
     """

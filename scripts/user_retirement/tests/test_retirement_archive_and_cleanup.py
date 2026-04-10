@@ -63,11 +63,11 @@ def _fake_learner(ordinal):
     """
     return get_fake_user_retirement(
         user_id=ordinal,
-        original_username='test{}'.format(ordinal),
-        original_email='test{}@edx.invalid'.format(ordinal),
-        original_name='test {}'.format(ordinal),
-        retired_username='retired_{}'.format(ordinal),
-        retired_email='retired_test{}@edx.invalid'.format(ordinal),
+        original_username='test{}'.format(ordinal),  # noqa: UP032
+        original_email='test{}@edx.invalid'.format(ordinal),  # noqa: UP032
+        original_name='test {}'.format(ordinal),  # noqa: UP032
+        retired_username='retired_{}'.format(ordinal),  # noqa: UP032
+        retired_email='retired_test{}@edx.invalid'.format(ordinal),  # noqa: UP032
         last_state_name='COMPLETE'
     )
 
@@ -264,7 +264,7 @@ def test_s3_upload_data():
     key = 'raw/' + datetime.datetime.now().strftime('%Y/%m/') + filename
 
     # first try dry run without uploading. Try to get object should raise error
-    with pytest.raises(ClientError) as exc_info:
+    with pytest.raises(ClientError) as exc_info:  # noqa: PT012
         _upload_to_s3(config, filename, True)
         s3.get_object(Bucket=FAKE_BUCKET_NAME, Key=key)
         assert exc_info.value.response['Error']['Code'] == 'NoSuchKey'

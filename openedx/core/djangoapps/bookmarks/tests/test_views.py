@@ -91,7 +91,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
 
         course, __, bookmarks = self.create_course_with_bookmarks_count(bookmarks_count)
 
-        query_parameters = 'course_id={}&page_size={}'.format(
+        query_parameters = 'course_id={}&page_size={}'.format(  # noqa: UP032
             quote(str(course.id)), 100)
         if check_all_fields:
             query_parameters += '&fields=path,display_name'
@@ -133,7 +133,7 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         course, __, bookmarks = self.create_course_with_bookmarks_count(bookmarks_count)
 
         page_size = 5
-        query_parameters = 'course_id={}&page_size={}'.format(
+        query_parameters = 'course_id={}&page_size={}'.format(  # noqa: UP032
             quote(str(course.id)), page_size)
 
         response = self.send_get(
@@ -308,10 +308,10 @@ class BookmarksListViewTests(BookmarksViewsTestsBase):
         )
         assert response.data['user_message'] == 'You can create up to {} bookmarks.' \
                                                 ' You must remove some bookmarks before you can add new ones.'\
-            .format(max_bookmarks)
+            .format(max_bookmarks)  # noqa: UP032
         assert response.data['developer_message'] == 'You can create up to {} bookmarks.' \
                                                      ' You must remove some bookmarks before you can add new ones.'\
-            .format(max_bookmarks)
+            .format(max_bookmarks)  # noqa: UP032
 
     def test_unsupported_methods(self):
         """

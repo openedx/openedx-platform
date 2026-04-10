@@ -167,7 +167,7 @@ class ProfileImageViewPostTestCase(ProfileImageEndpointMixin, APITestCase):
         'openedx.core.djangoapps.profile_images.views._make_upload_dt',
         side_effect=[TEST_UPLOAD_DT, TEST_UPLOAD_DT2],
     )
-    def test_upload_self(self, extension, _mock_make_image_version, mock_log):
+    def test_upload_self(self, extension, _mock_make_image_version, mock_log):  # noqa: PT019
         """
         Test that an authenticated user can POST to their own upload endpoint.
         """
@@ -200,7 +200,7 @@ class ProfileImageViewPostTestCase(ProfileImageEndpointMixin, APITestCase):
     )
     @ddt.unpack
     @patch('openedx.core.djangoapps.profile_images.views._make_upload_dt', return_value=TEST_UPLOAD_DT)
-    def test_upload_by_mimetype(self, content_type, extension, _mock_make_image_version, mock_log):
+    def test_upload_by_mimetype(self, content_type, extension, _mock_make_image_version, mock_log):  # noqa: PT019
         """
         Test that a user can upload raw content with the appropriate mimetype
         """
@@ -348,7 +348,7 @@ class ProfileImageViewPostTestCase(ProfileImageEndpointMixin, APITestCase):
         """
         image_open.side_effect = [Exception("whoops"), None]
         with make_image_file() as image_file:
-            with pytest.raises(Exception):
+            with pytest.raises(Exception):  # noqa: B017, PT011
                 self.client.post(self.url, {'file': image_file}, format='multipart')
             self.check_images(False)
             self.check_has_profile_image(False)
@@ -446,7 +446,7 @@ class ProfileImageViewDeleteTestCase(ProfileImageEndpointMixin, APITestCase):
         messages are returned.
         """
         user_profile_save.side_effect = [Exception("whoops"), None]
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             self.client.delete(self.url)
         self.check_images(True)  # thumbnails should remain intact.
         self.check_has_profile_image(True)

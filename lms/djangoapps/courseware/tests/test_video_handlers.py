@@ -35,7 +35,7 @@ from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 # noinspection PyUnresolvedReferences
-from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import
+from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
 from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW
 
@@ -274,7 +274,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
             <source src="example.webm"/>
             <transcript language="uk" src="{}"/>
         </video>
-    """.format(os.path.split(srt_file.name)[1])
+    """.format(os.path.split(srt_file.name)[1])  # noqa: UP032
 
     MODEL_DATA = {
         'data': DATA
@@ -402,7 +402,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
         # Make request to available translations dispatch.
         request = Request.blank('/available_translations')
         response = self.block.transcript(request=request, dispatch='available_translations')
-        self.assertCountEqual(json.loads(response.body.decode('utf-8')), result)
+        self.assertCountEqual(json.loads(response.body.decode('utf-8')), result)  # noqa: PT009
 
     @patch('openedx.core.djangoapps.video_config.transcripts_utils.edxval_api.get_available_transcript_languages')
     def test_val_available_translations_feature_disabled(self, mock_get_available_transcript_languages):
@@ -431,7 +431,7 @@ class TestTranscriptAvailableTranslationsBumperDispatch(TestVideo):  # lint-amne
             <source src="example.webm"/>
             <transcript language="uk" src="{}"/>
         </video>
-    """.format(os.path.split(srt_file.name)[1])
+    """.format(os.path.split(srt_file.name)[1])  # noqa: UP032
 
     MODEL_DATA = {
         'data': DATA
@@ -515,7 +515,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         'xblocks_contrib.video.video_handlers.get_transcript',
         return_value=('Subs!', 'test_filename.srt', 'application/x-subrip; charset=utf-8')
     )
-    def test_download_srt_exist(self, __):
+    def test_download_srt_exist(self, __):  # noqa: PT019
         request = Request.blank('/download')
         response = self.block.transcript(request=request, dispatch='download')
         assert response.body.decode('utf-8') == 'Subs!'
@@ -526,7 +526,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         'xblocks_contrib.video.video_handlers.get_transcript',
         return_value=('Subs!', 'txt', 'text/plain; charset=utf-8')
     )
-    def test_download_txt_exist(self, __):
+    def test_download_txt_exist(self, __):  # noqa: PT019
         self.block.transcript_format = 'txt'
         request = Request.blank('/download')
         response = self.block.transcript(request=request, dispatch='download')
@@ -545,7 +545,7 @@ class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disabl
         'openedx.core.djangoapps.video_config.transcripts_utils.get_transcript_for_video',
         return_value=(Transcript.SRT, "塞", 'Subs!')
     )
-    def test_download_non_en_non_ascii_filename(self, __):
+    def test_download_non_en_non_ascii_filename(self, __):  # noqa: PT019
         request = Request.blank('/download')
         response = self.block.transcript(request=request, dispatch='download')
         assert response.body.decode('utf-8') == 'Subs!'
@@ -614,7 +614,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
             <source src="example.webm"/>
             <transcript language="uk" src="{}"/>
         </video>
-    """.format(os.path.split(srt_file.name)[1])
+    """.format(os.path.split(srt_file.name)[1])  # noqa: UP032
 
     MODEL_DATA = {
         'data': DATA
@@ -658,7 +658,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         attach(self.block, subs_id)
         request = _create_djangowebobrequest_object_for_url(url.format(subs_id))
         response = self.block.transcript(request=request, dispatch=dispatch)
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)  # noqa: PT009
 
     def test_translation_non_en_youtube_success(self):
         subs = {
@@ -678,7 +678,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         self.store.update_item(self.block, self.user.id)
         request = _create_djangowebobrequest_object_for_url(f'/translation/uk?videoId={subs_id}')
         response = self.block.transcript(request=request, dispatch='translation/uk')
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)  # noqa: PT009
 
         # 0_75 subs are exist
         request = _create_djangowebobrequest_object_for_url('/translation/uk?videoId={}'.format('0_75'))
@@ -691,7 +691,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
             ]
         }
 
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_0_75)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_0_75)  # noqa: PT009
         # 1_5 will be generated from 1_0
         self.block.youtube_id_1_5 = '1_5'
         self.store.update_item(self.block, self.user.id)
@@ -704,7 +704,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
                 '\u041f\u0440\u0438\u0432\u0456\u0442, edX \u0432\u0456\u0442\u0430\u0454 \u0432\u0430\u0441.'
             ]
         }
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_1_5)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), calculated_1_5)  # noqa: PT009
 
     @ddt.data(
         ('translation/en', 'translation/en', attach_sub),
@@ -719,7 +719,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         self.store.update_item(self.block, self.user.id)
         request = _create_djangowebobrequest_object_for_url(url)
         response = self.block.transcript(request=request, dispatch=dispatch)
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), TRANSCRIPT)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), TRANSCRIPT)  # noqa: PT009
 
     def test_translaton_non_en_html5_success(self):
         subs = {
@@ -736,7 +736,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         self.block.youtube_id_1_0 = ""
         request = _create_djangowebobrequest_object_for_url('/translation/uk')
         response = self.block.transcript(request=request, dispatch='translation/uk')
-        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)
+        self.assertDictEqual(json.loads(response.body.decode('utf-8')), subs)  # noqa: PT009
 
     def test_translation_static_transcript_xml_with_data_dirc(self):
         """
@@ -785,7 +785,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         ('/translation/uk?is_bumper=1', 'translation/uk', '404 Not Found'),
     )
     @ddt.unpack
-    def test_translation_static_transcript(self, url, dispatch, status_code, sub=None, attach=None):
+    def test_translation_static_transcript(self, url, dispatch, status_code, sub=None, attach=None):  # noqa: PT028
         """
         Set course static_asset_path and ensure we get redirected to that path
         if it isn't found in the contentstore
@@ -801,7 +801,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
             assert ('Location', f'/static/dummy/static/subs_{sub}.srt.sjson') in response.headerlist
 
     @patch('xmodule.video_block.VideoBlock.context_key', return_value='not_a_course_locator')
-    def test_translation_static_non_course(self, __):
+    def test_translation_static_non_course(self, __):  # noqa: PT019
         """
         Test that get_static_transcript short-circuits in the case of a non-CourseLocator.
         This fixes a bug for videos inside of content libraries.
@@ -1007,7 +1007,7 @@ class TestStudioTranscriptTranslationPostDispatch(TestVideo):  # lint-amnesty, p
         assert response.status == '201 Created'
         response = json.loads(response.text)
         assert response['language_code'], 'uk'
-        self.assertDictEqual(self.block.transcripts, {'uk': f'{response["edx_video_id"]}-uk.srt'})
+        self.assertDictEqual(self.block.transcripts, {'uk': f'{response["edx_video_id"]}-uk.srt'})  # noqa: PT009
         assert edxval_api.get_video_transcript_data(video_id=response['edx_video_id'], language_code='uk')
 
     def test_studio_transcript_post_bad_content(self):
@@ -1026,7 +1026,7 @@ class TestStudioTranscriptTranslationPostDispatch(TestVideo):  # lint-amnesty, p
         assert response.status_code == 400
         assert response.json['error'] == 'There is a problem with this transcript file. Try to upload a different file.'
         # transcripts fields should not be updated
-        self.assertDictEqual(self.block.transcripts, {})
+        self.assertDictEqual(self.block.transcripts, {})  # noqa: PT009
 
 
 @ddt.ddt
@@ -1311,7 +1311,7 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         self.srt_file.seek(0)
         _upload_file(self.srt_file, self.block.location, "塞.srt")
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable
+        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         text, filename, mime_type = get_transcript(self.block)
         expected_text = textwrap.dedent("""
         0
@@ -1328,7 +1328,7 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         _upload_sjson_file(good_sjson, self.block.location)
         self.block.sub = _get_subs_id(good_sjson.name)
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable
+        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         error_transcript = {"start": [], "end": [], "text": ["An error occured obtaining the transcript."]}
         content, _, _ = get_transcript(self.block)
         assert error_transcript["text"][0] in content
@@ -1350,6 +1350,6 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         _upload_sjson_file(good_sjson, self.block.location)
         self.block.sub = _get_subs_id(good_sjson.name)
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable
+        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         with pytest.raises(KeyError):
             get_transcript(self.block)

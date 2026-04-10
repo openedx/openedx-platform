@@ -130,7 +130,7 @@ class CourseDiscussionSettingsTest(ModuleStoreTestCase):
 
         discussion_settings = CourseDiscussionSettings.get(self.course.id)
         for field in fields:
-            with pytest.raises(ValueError) as value_error:
+            with pytest.raises(ValueError) as value_error:  # noqa: PT011
                 discussion_settings.update({field['name']: invalid_value})
 
             assert str(value_error.value) == exception_msg_template.format(field['name'], field['type'].__name__)

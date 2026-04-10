@@ -37,13 +37,13 @@ class EnrollmentUtilsTest(TestCase):
         self.a_user.username = USERNAME
 
     def test_validation_of_inputs_course_id(self):
-        with self.assertRaises(CourseIdMissingException):
+        with self.assertRaises(CourseIdMissingException):  # noqa: PT027
             lms_update_or_create_enrollment(
                 USERNAME, None, COURSE_MODE, is_active=True, enterprise_uuid=ENTERPRISE_UUID
             )
 
     def test_validation_of_inputs_user_not_provided(self):
-        with self.assertRaises(UserDoesNotExistException):
+        with self.assertRaises(UserDoesNotExistException):  # noqa: PT027
             lms_update_or_create_enrollment(
                 None, COURSE_ID, COURSE_MODE, is_active=True, enterprise_uuid=ENTERPRISE_UUID
             )
@@ -57,7 +57,7 @@ class EnrollmentUtilsTest(TestCase):
     ):
         mock_tx.return_value.atomic.side_effect = None
         mock_user_model.side_effect = ObjectDoesNotExist()
-        with self.assertRaises(UserDoesNotExistException):
+        with self.assertRaises(UserDoesNotExistException):  # noqa: PT027
             lms_update_or_create_enrollment(
                 USERNAME, COURSE_ID, COURSE_MODE, is_active=True, enterprise_uuid=ENTERPRISE_UUID
             )
@@ -78,7 +78,7 @@ class EnrollmentUtilsTest(TestCase):
 
         mock_user_model.return_value = self.a_user
         mock_get_enrollment_api.return_value = None
-        with self.assertRaises(CourseEnrollmentError):
+        with self.assertRaises(CourseEnrollmentError):  # noqa: PT027
             lms_update_or_create_enrollment(
                 USERNAME, COURSE_ID, COURSE_MODE, is_active=True, enterprise_uuid=ENTERPRISE_UUID
             )
@@ -100,7 +100,7 @@ class EnrollmentUtilsTest(TestCase):
 
         mock_user_model.return_value = self.a_user
         mock_get_enrollment_api.return_value = None
-        with self.assertRaises(CourseUserGroup.DoesNotExist):
+        with self.assertRaises(CourseUserGroup.DoesNotExist):  # noqa: PT027
             lms_update_or_create_enrollment(
                 USERNAME, COURSE_ID, COURSE_MODE, is_active=True, enterprise_uuid=ENTERPRISE_UUID
             )

@@ -28,7 +28,7 @@ class BrazeApi:
         self.api_key = braze_api_key
 
         # https://www.braze.com/docs/api/basics/#endpoints
-        self.base_url = 'https://rest.{instance}.braze.com'.format(instance=braze_instance)
+        self.base_url = 'https://rest.{instance}.braze.com'.format(instance=braze_instance)  # noqa: UP032
 
     def auth_headers(self):
         """Returns authorization headers suitable for passing to the requests library"""
@@ -52,11 +52,11 @@ class BrazeApi:
     def process_response(self, response, action):
         """Log response status and raise an error as needed"""
         if response.ok:
-            LOG.info('Braze {action} succeeded'.format(action=action))
+            LOG.info('Braze {action} succeeded'.format(action=action))  # noqa: UP032
             return
 
         # We have some sort of error. Parse it, log it, and retry as needed.
-        error_msg = 'Braze {action} failed due to {msg}'.format(action=action, msg=self.get_error_message(response))
+        error_msg = 'Braze {action} failed due to {msg}'.format(action=action, msg=self.get_error_message(response))  # noqa: UP032
         LOG.error(error_msg)
 
         if response.status_code == 429 or 500 <= response.status_code < 600:

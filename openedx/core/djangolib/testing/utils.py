@@ -202,7 +202,7 @@ class _AssertNumQueriesContext(CaptureQueriesContext):
         executed = len(filtered_queries)
 
         assert executed == self.num, (
-            '%d queries executed, %d expected\nCaptured queries were:\n%s' % (
+            '%d queries executed, %d expected\nCaptured queries were:\n%s' % (  # noqa: UP031
                 executed, self.num, '\n'.join(query['sql'] for query in filtered_queries)
             )
         )

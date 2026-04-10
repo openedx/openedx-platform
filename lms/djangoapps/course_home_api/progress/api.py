@@ -121,7 +121,7 @@ class _AssignmentTypeGradeAggregator:
         self.course_grade = course_grade
         self.grading_policy = grading_policy
         self.has_staff_access = has_staff_access
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(timezone.utc)  # noqa: UP017
         self.policy_map = self._build_policy_map()
         self.buckets: dict[str, _AssignmentBucket] = {}
 

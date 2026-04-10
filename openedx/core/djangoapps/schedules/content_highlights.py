@@ -167,7 +167,7 @@ def _get_highlights_for_week(sections, week_num, course_key):
     num_sections = len(sections)
     if not 1 <= week_num <= num_sections:
         raise CourseUpdateDoesNotExist(
-            'Requested week {} but {} has only {} sections.'.format(
+            'Requested week {} but {} has only {} sections.'.format(  # noqa: UP032
                 week_num, course_key, num_sections
             )
         )

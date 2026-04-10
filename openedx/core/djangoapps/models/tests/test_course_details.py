@@ -145,7 +145,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
         attribute_name = 'not_an_about_attribute'
         with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
             CourseDetails.update_about_item(self.course, attribute_name, 'test_value', self.user.id)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseDetails.fetch_about_attribute(self.course.id, attribute_name)
 
     def test_fetch_video(self):
@@ -154,7 +154,7 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
             CourseDetails.update_about_video(self.course, video_value, self.user.id)
         assert CourseDetails.fetch_youtube_video_id(self.course.id) == video_value
         video_url = CourseDetails.fetch_video_url(self.course.id)
-        self.assertRegex(video_url, fr'http://.*{video_value}')
+        self.assertRegex(video_url, fr'http://.*{video_value}')  # noqa: PT009
 
     @ddt.data(
         (

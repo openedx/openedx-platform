@@ -77,7 +77,7 @@ class TestContentTypeGatingPartition(CacheIsolationTestCase):  # pylint: disable
         mock_request = RequestFactory().get('/')
         mock_course = Mock(id=self.course_key, user_partitions={})
         mock_block = Mock(scope_ids=Mock(usage_id=Mock(course_key=mock_course.id)))
-        mock_course_masquerade = Mock(
+        mock_course_masquerade = Mock(  # noqa: F841
             role='student',
             user_partition_id=CONTENT_GATING_PARTITION_ID,
             group_id=LIMITED_ACCESS.id,

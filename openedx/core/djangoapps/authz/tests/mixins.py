@@ -55,6 +55,14 @@ class CourseAuthoringAuthzTestMixin:
         self.unauthorized_client = APIClient()
         self.unauthorized_client.force_authenticate(user=self.unauthorized_user)
 
+        self.super_user = UserFactory(is_superuser=True, password=self.password)
+        self.super_client = APIClient()
+        self.super_client.force_authenticate(user=self.super_user)
+
+        self.staff_user = UserFactory(is_staff=True, password=self.password)
+        self.staff_client = APIClient()
+        self.staff_client.force_authenticate(user=self.staff_user)
+
     def tearDown(self):
         super().tearDown()
         AuthzEnforcer.get_enforcer().clear_policy()

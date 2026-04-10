@@ -157,7 +157,7 @@ class LegacyLibraryToolsService:
 
         Returns tuples of (library key, display_name).
         """
-        user = User.objects.get(id=self.user_id)
+        user = User.objects.get(id=self.user_id)  # noqa: F841
         return [
             (lib.location.library_key.replace(version_guid=None, branch=None), lib.display_name)
             for lib in self.store.get_library_summaries()

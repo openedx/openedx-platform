@@ -169,7 +169,7 @@ class TestGetPrograms(CacheIsolationTestCase):
                 key = PROGRAM_CACHE_KEY_TPL.format(uuid=program["uuid"])
                 assert program == all_programs[key]
 
-    def test_get_one(self, mock_warning, _mock_info):
+    def test_get_one(self, mock_warning, _mock_info):  # noqa: PT019
         expected_program = ProgramFactory()
         expected_uuid = expected_program["uuid"]
 
@@ -183,7 +183,7 @@ class TestGetPrograms(CacheIsolationTestCase):
         assert actual_program == expected_program
         assert not mock_warning.called
 
-    def test_get_from_course(self, mock_warning, _mock_info):
+    def test_get_from_course(self, mock_warning, _mock_info):  # noqa: PT019
         expected_program = ProgramFactory()
         expected_course = expected_program["courses"][0]["course_runs"][0]["key"]
 
@@ -196,7 +196,7 @@ class TestGetPrograms(CacheIsolationTestCase):
         assert actual_program == [expected_program]
         assert not mock_warning.called
 
-    def test_get_via_uuids(self, mock_warning, _mock_info):
+    def test_get_via_uuids(self, mock_warning, _mock_info):  # noqa: PT019
         first_program = ProgramFactory()
         second_program = ProgramFactory()
 
@@ -209,7 +209,7 @@ class TestGetPrograms(CacheIsolationTestCase):
         assert second_program in results
         assert not mock_warning.called
 
-    def test_get_from_catalog_course(self, mock_warning, _mock_info):
+    def test_get_from_catalog_course(self, mock_warning, _mock_info):  # noqa: PT019
         expected_program = ProgramFactory()
         expected_catalog_course = expected_program["courses"][0]
 
@@ -323,7 +323,7 @@ class TestGetPathways(CacheIsolationTestCase):
             key = PATHWAY_CACHE_KEY_TPL.format(id=pathway["id"])
             assert pathway == all_pathways[key]
 
-    def test_get_one(self, mock_warning, _mock_info):
+    def test_get_one(self, mock_warning, _mock_info):  # noqa: PT019
         expected_pathway = PathwayFactory()
         expected_id = expected_pathway["id"]
 
@@ -844,8 +844,8 @@ class TestGetProgramsByType(CacheIsolationTestCase):
 
     def test_get_masters_programs(self):
         expected_programs = [self.masters_program_1, self.masters_program_2]
-        self.assertCountEqual(expected_programs, get_programs_by_type(self.site, "masters"))
-        self.assertCountEqual(expected_programs, get_programs_by_type_slug(self.site, "masters"))
+        self.assertCountEqual(expected_programs, get_programs_by_type(self.site, "masters"))  # noqa: PT009
+        self.assertCountEqual(expected_programs, get_programs_by_type_slug(self.site, "masters"))  # noqa: PT009
 
     def test_get_bachelors_programs(self):
         expected_programs = [self.bachelors_program]

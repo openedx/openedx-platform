@@ -17,7 +17,7 @@ def _prefix_only_url_replace_regex(pattern):
         (?P<quote>\\\\?['"])      # the opening quotes
         {}
         (?P=quote)                # the first matching closing quote
-        """.format(pattern),
+        """.format(pattern),  # noqa: UP032
         flags=re.VERBOSE)
 
 
@@ -54,7 +54,7 @@ def rewrite_nonportable_content_links(source_course_id, dest_course_id, text):
     usage_block_pattern = str(source_course_id.make_usage_key(placeholder_category, placeholder_id))
     usage_block_pattern = usage_block_pattern.replace(placeholder_category, r'(?P<category>[^/+@]+)')
     usage_block_pattern = usage_block_pattern.replace(placeholder_id, r'(?P<block_id>.*?)')
-    jump_to_link_base = '/courses/{course_key_string}/jump_to/{usage_key_string}'.format(
+    jump_to_link_base = '/courses/{course_key_string}/jump_to/{usage_key_string}'.format(  # noqa: UP032
         course_key_string=str(source_course_id), usage_key_string=usage_block_pattern
     )
     try:

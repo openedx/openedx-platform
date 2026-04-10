@@ -57,7 +57,7 @@ class CourseTabsListTestCase(TestCase):
     @ddt.unpack
     def test_upgrade_tabs(self, tabs, expected_result):
         CourseTabList.upgrade_tabs(tabs)
-        self.assertEqual(tabs, expected_result)
+        self.assertEqual(tabs, expected_result)  # noqa: PT009
 
     @ddt.data(
         [
@@ -112,7 +112,7 @@ class CourseTabsListTestCase(TestCase):
     @ddt.unpack
     def test_validate_tabs(self, tabs, expected_success):
         if not expected_success:
-            with self.assertRaises(InvalidTabsException):
+            with self.assertRaises(InvalidTabsException):  # noqa: PT027
                 CourseTabList.validate_tabs(tabs)
         else:
             CourseTabList.validate_tabs(tabs)

@@ -98,7 +98,7 @@ class GradesServiceTests(ModuleStoreTestCase):
         }
 
     def test_get_subsection_grade(self):
-        self.assertDictEqual(self.subsection_grade_to_dict(self.service.get_subsection_grade(
+        self.assertDictEqual(self.subsection_grade_to_dict(self.service.get_subsection_grade(  # noqa: PT009
             user_id=self.user.id,
             course_key_or_id=self.course.id,
             usage_key_or_id=self.subsection.location
@@ -108,7 +108,7 @@ class GradesServiceTests(ModuleStoreTestCase):
         })
 
         # test with id strings as parameters instead
-        self.assertDictEqual(self.subsection_grade_to_dict(self.service.get_subsection_grade(
+        self.assertDictEqual(self.subsection_grade_to_dict(self.service.get_subsection_grade(  # noqa: PT009
             user_id=self.user.id,
             course_key_or_id=str(self.course.id),
             usage_key_or_id=str(self.subsection.location)
@@ -120,7 +120,7 @@ class GradesServiceTests(ModuleStoreTestCase):
     def test_get_subsection_grade_override(self):
         override, _ = PersistentSubsectionGradeOverride.objects.update_or_create(grade=self.grade)
 
-        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(
+        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009  # pylint: disable=line-too-long
             user_id=self.user.id,
             course_key_or_id=self.course.id,
             usage_key_or_id=self.subsection.location
@@ -137,7 +137,7 @@ class GradesServiceTests(ModuleStoreTestCase):
         )
 
         # test with course key parameter as string instead
-        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(
+        self.assertDictEqual(self.subsection_grade_override_to_dict(self.service.get_subsection_grade_override(  # noqa: PT009  # pylint: disable=line-too-long
             user_id=self.user.id,
             course_key_or_id=str(self.course.id),
             usage_key_or_id=self.subsection.location
@@ -245,7 +245,7 @@ class GradesServiceTests(ModuleStoreTestCase):
             grade=self.grade,
             system=GradeOverrideFeatureEnum.proctoring
         )
-        override_id = override.id  # lint-amnesty, pylint: disable=unused-variable
+        override_id = override.id  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         self.service.undo_override_subsection_grade(
             user_id=self.user.id,
             course_key_or_id=self.course.id,
@@ -301,7 +301,7 @@ class GradesServiceTests(ModuleStoreTestCase):
                 usage_key_or_id=self.subsection.location,
             )
         except PersistentSubsectionGrade.DoesNotExist:
-            assert False, 'Exception raised unexpectedly'
+            assert False, 'Exception raised unexpectedly'  # noqa: B011, PT015
 
         assert not self.mock_signal.called
 

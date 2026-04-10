@@ -7,7 +7,7 @@ Python APIs exposed by the student app to other in-process apps.
 import logging
 from typing import TYPE_CHECKING
 
-from django.conf import settings
+from django.conf import settings  # noqa: F401
 from django.contrib.auth import get_user_model
 from opaque_keys.edx.keys import CourseKey
 
@@ -21,11 +21,11 @@ from common.djangoapps.student.models_api import UNENROLLED_TO_ALLOWEDTOENROLL a
 from common.djangoapps.student.models_api import UNENROLLED_TO_ENROLLED as _UNENROLLED_TO_ENROLLED
 from common.djangoapps.student.models_api import UNENROLLED_TO_UNENROLLED as _UNENROLLED_TO_UNENROLLED
 from common.djangoapps.student.models_api import create_manual_enrollment_audit as _create_manual_enrollment_audit
-from common.djangoapps.student.models_api import get_course_access_role
+from common.djangoapps.student.models_api import get_course_access_role  # noqa: F401
 from common.djangoapps.student.models_api import get_course_enrollment as _get_course_enrollment
 from common.djangoapps.student.roles import REGISTERED_ACCESS_ROLES as _REGISTERED_ACCESS_ROLES
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers  # noqa: F401
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user

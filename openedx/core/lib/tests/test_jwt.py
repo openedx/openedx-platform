@@ -33,7 +33,7 @@ class TestSign(unittest.TestCase):
         token = create_jwt(test_user_id, test_timeout, {}, test_now)
 
         decoded = unpack_and_verify(token)
-        self.assertEqual(expected_full_token, decoded)
+        self.assertEqual(expected_full_token, decoded)  # noqa: PT009
 
     def test_create_jwt_with_claims(self):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
@@ -42,7 +42,7 @@ class TestSign(unittest.TestCase):
         expected_token_with_claims.update(test_claims)
 
         decoded = unpack_and_verify(token)
-        self.assertEqual(expected_token_with_claims, decoded)
+        self.assertEqual(expected_token_with_claims, decoded)  # noqa: PT009
 
     def test_malformed_token(self):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
@@ -51,7 +51,7 @@ class TestSign(unittest.TestCase):
         expected_token_with_claims = expected_full_token.copy()
         expected_token_with_claims.update(test_claims)
 
-        with self.assertRaises(InvalidSignatureError):
+        with self.assertRaises(InvalidSignatureError):  # noqa: PT027
             unpack_and_verify(token)
 
 
@@ -65,7 +65,7 @@ class TestUnpack(unittest.TestCase):
         token = create_jwt(test_user_id, test_timeout, {}, test_now)
         decoded = unpack_jwt(token, test_user_id, test_now)
 
-        self.assertEqual(expected_full_token, decoded)
+        self.assertEqual(expected_full_token, decoded)  # noqa: PT009
 
     def test_unpack_jwt_with_claims(self):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
@@ -75,7 +75,7 @@ class TestUnpack(unittest.TestCase):
 
         decoded = unpack_jwt(token, test_user_id, test_now)
 
-        self.assertEqual(expected_token_with_claims, decoded)
+        self.assertEqual(expected_token_with_claims, decoded)  # noqa: PT009
 
     def test_malformed_token(self):
         token = create_jwt(test_user_id, test_timeout, test_claims, test_now)
@@ -84,19 +84,19 @@ class TestUnpack(unittest.TestCase):
         expected_token_with_claims = expected_full_token.copy()
         expected_token_with_claims.update(test_claims)
 
-        with self.assertRaises(InvalidSignatureError):
+        with self.assertRaises(InvalidSignatureError):  # noqa: PT027
             unpack_jwt(token, test_user_id, test_now)
 
     def test_unpack_token_with_invalid_user(self):
         token = create_jwt(invalid_test_user_id, test_timeout, {}, test_now)
 
-        with self.assertRaises(InvalidSignatureError):
+        with self.assertRaises(InvalidSignatureError):  # noqa: PT027
             unpack_jwt(token, test_user_id, test_now)
 
     def test_unpack_expired_token(self):
         token = create_jwt(test_user_id, test_timeout, {}, test_now)
 
-        with self.assertRaises(ExpiredSignatureError):
+        with self.assertRaises(ExpiredSignatureError):  # noqa: PT027
             unpack_jwt(token, test_user_id, test_now + test_timeout + 1)
 
     def test_missing_expired_lms_user_id(self):
@@ -104,7 +104,7 @@ class TestUnpack(unittest.TestCase):
         del payload['lms_user_id']
         token = _encode_and_sign(payload)
 
-        with self.assertRaises(MissingRequiredClaimError):
+        with self.assertRaises(MissingRequiredClaimError):  # noqa: PT027
             unpack_jwt(token, test_user_id, test_now)
 
     def test_missing_expired_key(self):
@@ -112,5 +112,5 @@ class TestUnpack(unittest.TestCase):
         del payload['exp']
         token = _encode_and_sign(payload)
 
-        with self.assertRaises(MissingRequiredClaimError):
+        with self.assertRaises(MissingRequiredClaimError):  # noqa: PT027
             unpack_jwt(token, test_user_id, test_now)

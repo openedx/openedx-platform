@@ -15,7 +15,7 @@ from pymongo.read_preferences import (  # lint-amnesty, pylint: disable=unused-i
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # This will yeld a map of all available Mongo modes and their name
-MONGO_READ_PREFERENCE_MAP = dict(zip(_MONGOS_MODES, _MODES))
+MONGO_READ_PREFERENCE_MAP = dict(zip(_MONGOS_MODES, _MODES))  # noqa: B905
 
 
 def connect_to_mongodb(

@@ -2,7 +2,7 @@
 Public python API for serializing XBlocks to OLX
 """
 # pylint: disable=unused-import
-from .block_serializer import StaticFile, XBlockSerializer
+from .block_serializer import StaticFile, XBlockSerializer  # noqa: F401
 
 
 def serialize_xblock_to_olx(block):

@@ -24,7 +24,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ...errors import (  # lint-amnesty, pylint: disable=unused-import
-    CountryCodeError,
+    CountryCodeError,  # noqa: F401
     PreferenceUpdateError,
     PreferenceValidationError,
     UserNotAuthorized,

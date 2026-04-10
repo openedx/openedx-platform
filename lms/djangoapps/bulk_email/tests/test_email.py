@@ -165,7 +165,7 @@ class SendEmailWithMockedUgettextMixin:
 
             >>> mock_ugettext('Hello') == 'AR Hello'
             """
-            return '{lang} {text}'.format(
+            return '{lang} {text}'.format(  # noqa: UP032
                 lang=get_language().upper(),
                 text=text,
             )
@@ -201,7 +201,7 @@ class LocalizedFromAddressPlatformLangTestCase(SendEmailWithMockedUgettextMixin,
             BULK_EMAIL_SEND_USING_EDX_ACE=ace_enabled
         ):
             message = self.send_email()
-            self.assertRegex(message.from_email, f'{language_code.upper()} .* Course Staff')
+            self.assertRegex(message.from_email, f'{language_code.upper()} .* Course Staff')  # noqa: PT009
 
 
 @patch.dict(settings.FEATURES, {'ENABLE_INSTRUCTOR_EMAIL': True, 'REQUIRE_COURSE_EMAIL_AUTH': False})
@@ -231,8 +231,8 @@ class AceEmailTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardT
         with override_settings(
             BULK_EMAIL_SEND_USING_EDX_ACE=ace_enabled
         ):
-            response = self.client.post(self.send_mail_url, test_email)
-            self.assertEqual(email_sent_with_ace, mock_ace_email_send.called)
+            response = self.client.post(self.send_mail_url, test_email)  # noqa: F841
+            self.assertEqual(email_sent_with_ace, mock_ace_email_send.called)  # noqa: PT009
 
     def test_keyword_substitution_in_message_body(self):
         """
@@ -252,14 +252,14 @@ class AceEmailTestCase(SendEmailWithMockedUgettextMixin, EmailSendFromDashboardT
                 html_message_body = content
                 break
 
-        self.assertNotIn('%%USER_FULLNAME%%', text_message_body)
-        self.assertNotIn('%%COURSE_DISPLAY_NAME%%', text_message_body)
-        self.assertNotIn('%%USER_FULLNAME%%', html_message_body)
-        self.assertNotIn('%%COURSE_DISPLAY_NAME%%', html_message_body)
-        self.assertIn(f'Hi {self.instructor.get_full_name()}', text_message_body)
-        self.assertIn(f'Welcome to {self.course.display_name}', text_message_body)
-        self.assertIn(f'Hi {self.instructor.get_full_name()}', html_message_body)
-        self.assertIn(f'Welcome to {self.course.display_name}', html_message_body)
+        self.assertNotIn('%%USER_FULLNAME%%', text_message_body)  # noqa: PT009
+        self.assertNotIn('%%COURSE_DISPLAY_NAME%%', text_message_body)  # noqa: PT009
+        self.assertNotIn('%%USER_FULLNAME%%', html_message_body)  # noqa: PT009
+        self.assertNotIn('%%COURSE_DISPLAY_NAME%%', html_message_body)  # noqa: PT009
+        self.assertIn(f'Hi {self.instructor.get_full_name()}', text_message_body)  # noqa: PT009
+        self.assertIn(f'Welcome to {self.course.display_name}', text_message_body)  # noqa: PT009
+        self.assertIn(f'Hi {self.instructor.get_full_name()}', html_message_body)  # noqa: PT009
+        self.assertIn(f'Welcome to {self.course.display_name}', html_message_body)  # noqa: PT009
 
 
 @patch.dict(settings.FEATURES, {'ENABLE_INSTRUCTOR_EMAIL': True, 'REQUIRE_COURSE_EMAIL_AUTH': False})
@@ -291,7 +291,7 @@ class LocalizedFromAddressCourseLangTestCase(SendEmailWithMockedUgettextMixin, E
         The course language should override the platform's.
         """
         message = self.send_email()
-        self.assertRegex(message.from_email, 'AR .* Course Staff')
+        self.assertRegex(message.from_email, 'AR .* Course Staff')  # noqa: PT009
 
 
 @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
@@ -367,7 +367,7 @@ class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase)
         }
         self.client.post(self.send_mail_url, test_email)
         from_email = mail.outbox[0].from_email
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             from_email,
             'test@example.com'
         )
@@ -613,7 +613,7 @@ class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase)
         assert len(mail.outbox) == 1
         from_email = mail.outbox[0].from_email
 
-        expected_from_addr = (
+        expected_from_addr = (  # noqa: UP032
             '"{course_name}" Course Staff <{course_name}-no-reply@courseupdates.edx.org>'
         ).format(course_name=course.id.course)
 

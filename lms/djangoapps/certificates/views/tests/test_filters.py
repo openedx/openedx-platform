@@ -205,8 +205,8 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
         response = self.client.get(test_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual("https://certificate.pdf", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual("https://certificate.pdf", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -265,5 +265,5 @@ class CertificateFiltersTest(CommonCertificatesTestCase, SharedModuleStoreTestCa
 
         response = self.client.get(test_url)
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)  # noqa: PT009
         self.assertContains(response, "My Platform Site")

@@ -110,7 +110,7 @@ class CourseGradingViewTest(SharedModuleStoreTestCase, APITestCase):
             parent_location=cls.section.location,
             category="sequential",
         )
-        unit2 = BlockFactory.create(
+        unit2 = BlockFactory.create(  # noqa: F841
             parent_location=cls.subsection2.location,
             category="vertical",
         )
@@ -1721,7 +1721,7 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
         the score from the most recent request is recorded.
         """
         with override_waffle_flag(self.waffle_flag, active=True):
-            request_user = getattr(self, login_method)()
+            request_user = getattr(self, login_method)()  # noqa: F841
             post_data = [
                 {
                     'user_id': self.student.id,
@@ -1997,7 +1997,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_override_no_modification(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.objects.create(
+        override = PersistentSubsectionGradeOverride.objects.create(  # noqa: F841
             grade=self.grade,
             earned_all_override=0.0,
             possible_all_override=12.0,
@@ -2054,7 +2054,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
         self.login_staff()
 
         for i in range(6):
-            override = PersistentSubsectionGradeOverride.update_or_create_override(
+            override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
                 requesting_user=self.global_staff,
                 subsection_grade_model=self.grade,
                 earned_all_override=i,
@@ -2081,7 +2081,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_override_with_history(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,
@@ -2136,7 +2136,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
         """
         proctoring_failure_fake_comment = "Failed Test Proctoring"
         self.login_course_staff()
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,
@@ -2183,7 +2183,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_valid_subsection_id_and_valid_user_id_but_no_record(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,

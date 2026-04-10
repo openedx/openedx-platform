@@ -70,10 +70,10 @@ class RetrieveUnsubscribedEmailsTests(TestCase):
             ]
             self._write_test_csv(csv, lines)
 
-            with open(filepath, 'r') as csv_file:
+            with open(filepath, 'r') as csv_file:  # noqa: UP015
                 csv_data = csv_file.read()
-                self.assertIn('test1@example.com,2023-06-01 10:00:00', csv_data)
-                self.assertIn('test2@example.com,2023-06-02 12:00:00', csv_data)
+                self.assertIn('test1@example.com,2023-06-01 10:00:00', csv_data)  # noqa: PT009
+                self.assertIn('test2@example.com,2023-06-02 12:00:00', csv_data)  # noqa: PT009
 
     @override_settings(
         BRAZE_UNSUBSCRIBED_EMAILS_FROM_EMAIL='test@example.com',
@@ -116,10 +116,10 @@ class RetrieveUnsubscribedEmailsTests(TestCase):
             ]
             self._write_test_csv(csv, lines)
 
-            with open(filepath, 'r') as csv_file:
+            with open(filepath, 'r') as csv_file:  # noqa: UP015
                 csv_data = csv_file.read()
-                self.assertIn('test3@example.com,2023-06-03 08:00:00', csv_data)
-                self.assertIn('test4@example.com,2023-06-04 14:00:00', csv_data)
+                self.assertIn('test3@example.com,2023-06-03 08:00:00', csv_data)  # noqa: PT009
+                self.assertIn('test4@example.com,2023-06-04 14:00:00', csv_data)  # noqa: PT009
 
     @patch('common.djangoapps.student.management.commands.retrieve_unsubscribed_emails.EmailMultiAlternatives.send')
     @patch('common.djangoapps.student.management.commands.retrieve_unsubscribed_emails.get_email_client')
@@ -133,7 +133,7 @@ class RetrieveUnsubscribedEmailsTests(TestCase):
         mock_email_client.retrieve_unsubscribed_emails.side_effect = Exception('Braze API error')
         mock_send.return_value = MagicMock()
 
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command('retrieve_unsubscribed_emails')
 
         mock_logger_exception.assert_called_once_with(
@@ -178,7 +178,7 @@ class RetrieveUnsubscribedEmailsTests(TestCase):
         ]
         mock_send.side_effect = Exception('Email sending error')
 
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command('retrieve_unsubscribed_emails')
 
         mock_logger_exception.assert_called_once_with(

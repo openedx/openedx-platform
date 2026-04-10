@@ -44,7 +44,7 @@ class ApiTestCaseMixin:
     def assert_error_response(self, response, msg, status_code=400):
         """ Validate the response's status and detail message. """
         assert response.status_code == status_code
-        self.assertDictEqual(response.data, {'detail': msg})
+        self.assertDictEqual(response.data, {'detail': msg})  # noqa: PT009
 
 
 class UserMixin:
@@ -200,7 +200,7 @@ class CreditCourseViewSetTests(AuthMixin, UserMixin, TestCase):
         assert response.status_code == 201
 
         # Verify the API returns the serialized CreditCourse
-        self.assertDictEqual(json.loads(response.content.decode('utf-8')), data)
+        self.assertDictEqual(json.loads(response.content.decode('utf-8')), data)  # noqa: PT009
 
         # Verify the CreditCourse was actually created
         course_key = CourseKey.from_string(course_id)
@@ -241,7 +241,7 @@ class CreditCourseViewSetTests(AuthMixin, UserMixin, TestCase):
         assert response.status_code == 200
 
         # Verify the API returns the serialized CreditCourse
-        self.assertDictEqual(json.loads(response.content.decode('utf-8')), self._serialize_credit_course(cc1))
+        self.assertDictEqual(json.loads(response.content.decode('utf-8')), self._serialize_credit_course(cc1))  # noqa: PT009  # pylint: disable=line-too-long
 
     def test_list(self):
         """ Verify the endpoint supports listing all CreditCourse objects. """
@@ -253,7 +253,7 @@ class CreditCourseViewSetTests(AuthMixin, UserMixin, TestCase):
         assert response.status_code == 200
 
         # Verify the API returns a list of serialized CreditCourse objects
-        self.assertListEqual(json.loads(response.content.decode('utf-8')), expected)
+        self.assertListEqual(json.loads(response.content.decode('utf-8')), expected)  # noqa: PT009
 
     def test_update(self):
         """ Verify the endpoint supports updating a CreditCourse object. """
@@ -267,7 +267,7 @@ class CreditCourseViewSetTests(AuthMixin, UserMixin, TestCase):
         assert response.status_code == 200
 
         # Verify the serialized CreditCourse is returned
-        self.assertDictEqual(json.loads(response.content.decode('utf-8')), data)
+        self.assertDictEqual(json.loads(response.content.decode('utf-8')), data)  # noqa: PT009
 
         # Verify the data was persisted
         credit_course = CreditCourse.objects.get(course_key=credit_course.course_key)
@@ -430,7 +430,7 @@ class CreditProviderRequestCreateViewTests(ApiTestCaseMixin, UserMixin, TestCase
         course_key = credit_course.course_key
 
         response = self.post_credit_request(username, course_key)
-        msg = '[{username}] is not eligible for credit for [{course_key}].'.format(username=username,
+        msg = '[{username}] is not eligible for credit for [{course_key}].'.format(username=username,  # noqa: UP032
                                                                                    course_key=course_key)
         self.assert_error_response(response, msg)
 
@@ -659,7 +659,7 @@ class CreditEligibilityViewTests(AuthMixin, UserMixin, ReadOnlyMixin, TestCase):
 
     def create_url(self, eligibility):
         """ Returns a URL that can be used to view eligibility data. """
-        return '{path}?username={username}&course_key={course_key}'.format(
+        return '{path}?username={username}&course_key={course_key}'.format(  # noqa: UP032
             path=reverse(self.view_name),
             username=eligibility.username,
             course_key=eligibility.course.course_key
@@ -671,7 +671,7 @@ class CreditEligibilityViewTests(AuthMixin, UserMixin, ReadOnlyMixin, TestCase):
         response = self.client.get(url)
 
         assert response.status_code == 200
-        self.assertListEqual(response.data, CreditEligibilitySerializer([eligibility], many=True).data)
+        self.assertListEqual(response.data, CreditEligibilitySerializer([eligibility], many=True).data)  # noqa: PT009
 
     def test_get(self):
         """ Verify the endpoint returns eligibility information for the give user and course. """
@@ -682,7 +682,7 @@ class CreditEligibilityViewTests(AuthMixin, UserMixin, ReadOnlyMixin, TestCase):
         is not provided. """
         response = self.client.get(reverse(self.view_name))
         assert response.status_code == 400
-        self.assertDictEqual(response.data,
+        self.assertDictEqual(response.data,  # noqa: PT009
                              {'detail': 'Both the course_key and username querystring parameters must be supplied.'})
 
     def test_get_with_invalid_course_key(self):
@@ -690,7 +690,7 @@ class CreditEligibilityViewTests(AuthMixin, UserMixin, ReadOnlyMixin, TestCase):
         url = f'{reverse(self.view_name)}?username=edx&course_key=a'
         response = self.client.get(url)
         assert response.status_code == 400
-        self.assertDictEqual(response.data, {'detail': '[a] is not a valid course key.'})
+        self.assertDictEqual(response.data, {'detail': '[a] is not a valid course key.'})  # noqa: PT009
 
     def test_staff_can_view_all(self):
         """ Verify that staff users can view eligibility data for all users. """

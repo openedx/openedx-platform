@@ -11,7 +11,7 @@ from unittest.mock import patch
 import ddt
 from django.conf import settings
 from django.utils import timezone
-from pytest import mark
+from pytest import mark  # noqa: PT013
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification, SSOVerification

@@ -143,7 +143,7 @@ class TestGetCourseBlocks(UserPartitionTestMixin, CourseStructureTestCase):
                 self.course.location,
                 BlockStructureTransformers([]),
             )
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             set(block_structure.get_block_keys()),
             self.get_block_key_set(self.blocks, *expected_blocks)
         )

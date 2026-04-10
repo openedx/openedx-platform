@@ -33,12 +33,12 @@ def _field_values(fields, xblock):
             try:
                 result[field.name] = field.read_from(xblock)
             except TypeError as exception:
-                exception_message = "{message}, Block-location:{location}, Field-name:{field_name}".format(
+                exception_message = "{message}, Block-location:{location}, Field-name:{field_name}".format(  # noqa: UP032  # pylint: disable=line-too-long
                     message=str(exception),
                     location=str(xblock.location),
                     field_name=field.name
                 )
-                raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return result
 
 

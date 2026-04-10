@@ -140,7 +140,7 @@ class BackfillCourseTabsTest(ModuleStoreTestCase):
         updated_course = CourseFactory()
         updated_course.tabs = [tab for tab in updated_course.tabs if tab.type != 'dates']
         self.update_course(updated_course, ModuleStoreEnum.UserID.test)
-        updated_course_tabs_before = updated_course.tabs
+        updated_course_tabs_before = updated_course.tabs  # noqa: F841
 
         with mock.patch(
             'lms.djangoapps.ccx.modulestore.CCXModulestoreWrapper.update_item', side_effect=[ValueError, None]

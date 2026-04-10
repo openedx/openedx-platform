@@ -50,11 +50,11 @@ class Command(BaseCommand):
         csv_file_path = options['csv_path']
 
         try:
-            with open(csv_file_path, 'r') as csv_file:
+            with open(csv_file_path, 'r') as csv_file:  # noqa: UP015
                 reader = list(csv.DictReader(csv_file))
                 emails = [row.get('email') for row in reader]
         except FileNotFoundError as exc:
-            raise CommandError(f"Error: File not found due to exception - {exc}")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(f"Error: File not found due to exception - {exc}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         except csv.Error as exc:
             logger.exception(f"CSV error: {exc}")
         else:

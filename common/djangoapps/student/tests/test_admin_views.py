@@ -145,14 +145,14 @@ class AdminCourseRolesPageTest(SharedModuleStoreTestCase):
         response = self.client.post(reverse('admin:student_courseaccessrole_add'), data=data)
         self.assertContains(
             response,
-            'Course not found. Entered course id was: &quot;{}&quot;.'.format(
+            'Course not found. Entered course id was: &quot;{}&quot;.'.format(  # noqa: UP032
                 course
             )
         )
 
         self.assertContains(
             response,
-            "Email does not exist. Could not find {}. Please re-enter email address".format(
+            "Email does not exist. Could not find {}. Please re-enter email address".format(  # noqa: UP032
                 email
             )
         )
@@ -576,10 +576,10 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         profile = UserProfileFactory(user=self.staff_user, language='Esperanto')
 
         response = self.client.get(self.language_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         data = json.loads(response.content.decode('utf-8'))
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any('Esperanto' in item['text'] for item in data['results']),
             f"Esperanto not found in: {data['results']}"
         )
@@ -588,10 +588,10 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         profile.save()
 
         response = self.client.get(f'{self.language_url}?q=Fren')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         data = json.loads(response.content.decode('utf-8'))
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any('French' in item['text'] for item in data['results']),
             f"French not found in: {data['results']}"
         )
@@ -601,9 +601,9 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         profile = UserProfileFactory(user=self.staff_user, country='SE')
 
         response = self.client.get(self.country_url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = json.loads(response.content.decode('utf-8'))
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any('Sweden' in item['text'] for item in data['results']),
             f"Sweden not found in: {data['results']}"
         )
@@ -612,10 +612,10 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         profile.save()
 
         response = self.client.get(f'{self.country_url}?q=Japan')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         data = json.loads(response.content.decode('utf-8'))
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any('Japan' in item['text'] for item in data['results']),
             f"Japan not found in: {data['results']}"
         )
@@ -623,24 +623,24 @@ class TestUserProfileAutocompleteAdmin(TestCase):
     @ddt.data('eng', 'fren', 'GER')
     def test_language_autocomplete_filters_correctly(self, term):
         response = self.client.get(f'{self.language_url}?q={term}')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = json.loads(response.content)
-        self.assertTrue(any(term.lower() in item['text'].lower() for item in data['results']))
+        self.assertTrue(any(term.lower() in item['text'].lower() for item in data['results']))  # noqa: PT009
 
     def test_language_autocomplete_returns_empty_on_no_match(self):
         response = self.client.get(f'{self.language_url}?q=not-a-lang')
-        self.assertEqual(json.loads(response.content)['results'], [])
+        self.assertEqual(json.loads(response.content)['results'], [])  # noqa: PT009
 
     @ddt.data('United', 'Kingdom', 'Pakistan')
     def test_country_autocomplete_filters_correctly(self, term):
         response = self.client.get(f'{self.country_url}?q={term}')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = json.loads(response.content)
-        self.assertTrue(any(term.lower() in item['text'].lower() for item in data['results']))
+        self.assertTrue(any(term.lower() in item['text'].lower() for item in data['results']))  # noqa: PT009
 
     def test_country_autocomplete_returns_empty_on_gibberish(self):
         response = self.client.get(f'{self.country_url}?q=asdfghjkl')
-        self.assertEqual(json.loads(response.content)['results'], [])
+        self.assertEqual(json.loads(response.content)['results'], [])  # noqa: PT009
 
     def test_admin_inline_autocomplete_urls_render(self):
         admin = UserFactory(is_staff=True, is_superuser=True)
@@ -653,7 +653,7 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         self.client.login(username=admin.username, password='test')  # re-login as admin
 
         response = self.client.get(reverse('admin:auth_user_change', args=[user.id]))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertContains(response, self.language_url)
         self.assertContains(response, self.country_url)
 
@@ -662,37 +662,37 @@ class TestUserProfileAutocompleteAdmin(TestCase):
         self.client.login(username=self.non_staff_user.username, password='test')
         response = self.client.get(f'{self.language_url}?q=english')
         data = json.loads(response.content)
-        self.assertEqual(data['results'], [])
+        self.assertEqual(data['results'], [])  # noqa: PT009
 
     def test_country_autocomplete_blocks_non_staff(self):
         self.client.logout()
         self.client.login(username=self.non_staff_user.username, password='test')
         response = self.client.get(f'{self.country_url}?q=pakistan')
         data = json.loads(response.content)
-        self.assertEqual(data['results'], [])
+        self.assertEqual(data['results'], [])  # noqa: PT009
 
     def test_language_autocomplete_blocks_anonymous_user(self):
         """Ensure anonymous user gets blocked or redirected."""
         self.client.logout()
         response = self.client.get(f'{self.language_url}?q=English')
-        self.assertIn(response.status_code, [302, 403])
+        self.assertIn(response.status_code, [302, 403])  # noqa: PT009
 
     def test_country_autocomplete_blocks_anonymous_user(self):
         """Ensure anonymous user gets blocked or redirected."""
         self.client.logout()
         response = self.client.get(f'{self.country_url}?q=Pakistan')
-        self.assertIn(response.status_code, [302, 403])
+        self.assertIn(response.status_code, [302, 403])  # noqa: PT009
 
     def test_language_autocomplete_status_for_non_staff(self):
         self.client.logout()
         self.client.login(username=self.non_staff_user.username, password='test')
         response = self.client.get(f'{self.language_url}?q=English')
-        self.assertEqual(response.status_code, 200)  # still 200, but empty results expected
-        self.assertEqual(json.loads(response.content)['results'], [])
+        self.assertEqual(response.status_code, 200)  # still 200, but empty results expected  # noqa: PT009
+        self.assertEqual(json.loads(response.content)['results'], [])  # noqa: PT009
 
     def test_unknown_autocomplete_path_404s(self):
         logged_in = self.client.login(username=self.staff_user.username, password='test')
         assert logged_in, "Login failed — test user not authenticated"
 
         response = self.client.get('/admin/myapp/mymodel/fake-autocomplete/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009

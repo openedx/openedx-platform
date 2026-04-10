@@ -4,7 +4,7 @@ Public data structures for the instructor_task app.
 from enum import Enum
 
 
-class InstructorTaskTypes(str, Enum):
+class InstructorTaskTypes(str, Enum):  # noqa: UP042
     """
     Enum describing the assortment of instructor tasks supported by edx-platform.
     """

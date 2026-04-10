@@ -41,7 +41,7 @@ def test_no_assignee_email():
     ) as getuser:
         getuser.return_value = None
         with mock.patch('scripts.user_retirement.utils.thirdparty_apis.salesforce_api.Salesforce'):
-            with pytest.raises(Exception) as exc:
+            with pytest.raises(Exception) as exc:  # noqa: PT011
                 make_api()
             print(str(exc))
             assert 'Could not find Salesforce user with username user' in str(exc)
@@ -108,7 +108,7 @@ def test_retire_task_error(test_learner, caplog):  # pylint: disable=redefined-o
             api._sf.query.return_value = mock_query_response  # pylint: disable=protected-access
             mock_task_response = {'success': False, 'errors': ["This is an error!"]}
             api._sf.Task.create.return_value = mock_task_response  # pylint: disable=protected-access
-            with pytest.raises(Exception) as exc:
+            with pytest.raises(Exception) as exc:  # noqa: PT011
                 api.retire_learner(test_learner)
             assert "Errors while creating task:" in caplog.text
             assert "This is an error!" in caplog.text

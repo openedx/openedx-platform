@@ -104,7 +104,7 @@ class PageLoaderTestCase(LoginEnrollmentTestCase):
         response = self.client.get(url, follow=True)
 
         if response.status_code != 200:
-            self.fail('Status %d for page %s' %
+            self.fail('Status %d for page %s' %  # noqa: UP031
                       (response.status_code, block.location))
 
         if expect_redirect:

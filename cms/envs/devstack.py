@@ -9,18 +9,18 @@ from os.path import abspath, dirname, join
 
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
-from .production import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from .production import *  # pylint: disable=wildcard-import, unused-wildcard-import  # noqa: F403
 
 FEATURES = FeaturesProxy(globals())
 
 # Don't use S3 in devstack, fall back to filesystem
-STORAGES['default']['BACKEND'] = 'django.core.files.storage.FileSystemStorage'
+STORAGES['default']['BACKEND'] = 'django.core.files.storage.FileSystemStorage'  # noqa: F405
 COURSE_IMPORT_EXPORT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 USER_TASKS_ARTIFACT_STORAGE = COURSE_IMPORT_EXPORT_STORAGE
 
 DEBUG = True
 USE_I18N = True
-DEFAULT_TEMPLATE_ENGINE['OPTIONS']['debug'] = DEBUG
+DEFAULT_TEMPLATE_ENGINE['OPTIONS']['debug'] = DEBUG  # noqa: F405
 SITE_NAME = 'localhost:8001'
 HTTPS = 'off'
 
@@ -35,11 +35,11 @@ for pkg_name in ['common.djangoapps.track.contexts', 'common.djangoapps.track.mi
     logging.getLogger(pkg_name).setLevel(logging.CRITICAL)
 
 # Docker does not support the syslog socket at /dev/log. Rely on the console.
-LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {
+LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {  # noqa: F405
     'class': 'logging.NullHandler',
 }
 
-LOGGING['loggers']['tracking']['handlers'] = ['console']
+LOGGING['loggers']['tracking']['handlers'] = ['console']  # noqa: F405
 
 ################################ EMAIL ########################################
 
@@ -60,8 +60,8 @@ ENABLE_VIDEO_UPLOAD_PIPELINE = True
 ########################### PIPELINE #################################
 
 # Skip packaging and optimization in development
-PIPELINE['PIPELINE_ENABLED'] = False
-STORAGES['staticfiles']['BACKEND'] = 'openedx.core.storage.DevelopmentStorage'
+PIPELINE['PIPELINE_ENABLED'] = False  # noqa: F405
+STORAGES['staticfiles']['BACKEND'] = 'openedx.core.storage.DevelopmentStorage'  # noqa: F405
 
 # Revert to the default set of finders as we don't want the production pipeline
 STATICFILES_FINDERS = [
@@ -91,9 +91,9 @@ CLEAR_REQUEST_CACHE_ON_TASK_COMPLETION = False
 
 ################################ DEBUG TOOLBAR ################################
 
-INSTALLED_APPS += ['debug_toolbar']
+INSTALLED_APPS += ['debug_toolbar']  # noqa: F405
 
-MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')
+MIDDLEWARE.append('debug_toolbar.middleware.DebugToolbarMiddleware')  # noqa: F405
 INTERNAL_IPS = ('127.0.0.1',)
 
 DEBUG_TOOLBAR_PANELS = (
@@ -146,7 +146,7 @@ ENTRANCE_EXAMS = True
 ################################ COURSE LICENSES ################################
 LICENSING = True
 # Needed to enable licensing on video blocks
-XBLOCK_SETTINGS.update({'VideoBlock': {'licensing_enabled': True}})
+XBLOCK_SETTINGS.update({'VideoBlock': {'licensing_enabled': True}})  # noqa: F405
 
 ################################ SEARCH INDEX ################################
 ENABLE_COURSEWARE_INDEX = True
@@ -200,7 +200,7 @@ DISCUSSIONS_MFE_FEEDBACK_URL = None
 REQUIRE_DEBUG = DEBUG
 
 ########################### OAUTH2 #################################
-JWT_AUTH.update({
+JWT_AUTH.update({  # noqa: F405
     'JWT_ISSUER': f'{LMS_ROOT_URL}/oauth2',
     'JWT_ISSUERS': [{
         'AUDIENCE': 'lms-key',
@@ -241,18 +241,18 @@ OPENAPI_CACHE_TIMEOUT = 0
 
 #####################################################################
 # set replica set of contentstore to none as we haven't setup any for cms in devstack
-CONTENTSTORE['DOC_STORE_CONFIG']['replicaSet'] = None
+CONTENTSTORE['DOC_STORE_CONFIG']['replicaSet'] = None  # noqa: F405
 
 #####################################################################
 # set replica sets of moduelstore to none as we haven't setup any for cms in devstack
-for store in MODULESTORE['default']['OPTIONS']['stores']:
+for store in MODULESTORE['default']['OPTIONS']['stores']:  # noqa: F405
     if 'DOC_STORE_CONFIG' in store and 'replicaSet' in store['DOC_STORE_CONFIG']:
         store['DOC_STORE_CONFIG']['replicaSet'] = None
 
 
 #####################################################################
 # Lastly, run any migrations, if needed.
-MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)
+MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)  # noqa: F405
 
 # Dummy secret key for dev
 SECRET_KEY = '85920908f28904ed733fe576320db18cabd7b6cd'
@@ -271,13 +271,13 @@ ENABLE_PREREQUISITE_COURSES = True
 PROCTORING_USER_OBFUSCATION_KEY = '85920908f28904ed733fe576320db18cabd7b6cd'
 
 #################### Webpack Configuration Settings ##############################
-WEBPACK_LOADER['DEFAULT']['TIMEOUT'] = 5
+WEBPACK_LOADER['DEFAULT']['TIMEOUT'] = 5  # noqa: F405
 
 ################ Using LMS SSO for login to Studio ################
 SOCIAL_AUTH_EDX_OAUTH2_KEY = 'studio-sso-key'
 SOCIAL_AUTH_EDX_OAUTH2_SECRET = 'studio-sso-secret'  # in stage, prod would be high-entropy secret
 # routed internally server-to-server
-SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT = ENV_TOKENS.get('SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT', 'http://edx.devstack.lms:18000')
+SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT = ENV_TOKENS.get('SOCIAL_AUTH_EDX_OAUTH2_URL_ROOT', 'http://edx.devstack.lms:18000')  # noqa: F405  # pylint: disable=line-too-long
 SOCIAL_AUTH_EDX_OAUTH2_PUBLIC_URL_ROOT = 'http://localhost:18000'  # used in browser redirect
 
 # Don't form the return redirect URL with HTTPS on devstack
@@ -317,22 +317,22 @@ EVENT_BUS_REDIS_CONNECTION_URL = 'redis://:password@edx.devstack.redis:6379/'
 EVENT_BUS_TOPIC_PREFIX = 'dev'
 EVENT_BUS_CONSUMER = 'edx_event_bus_redis.RedisEventConsumer'
 
-course_catalog_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.course.catalog_info.changed.v1']
+course_catalog_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.course.catalog_info.changed.v1']  # noqa: F405  # pylint: disable=line-too-long
 course_catalog_event_setting['course-catalog-info-changed']['enabled'] = True
 
-xblock_published_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.published.v1']
+xblock_published_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.published.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_published_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
-xblock_deleted_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.deleted.v1']
+xblock_deleted_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.deleted.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_deleted_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
-xblock_duplicated_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.duplicated.v1']
+xblock_duplicated_event_setting = EVENT_BUS_PRODUCER_CONFIG['org.openedx.content_authoring.xblock.duplicated.v1']  # noqa: F405  # pylint: disable=line-too-long
 xblock_duplicated_event_setting['course-authoring-xblock-lifecycle']['enabled'] = True
 
 
 ################# New settings must go ABOVE this line #################
 ########################################################################
 # See if the developer has any local overrides.
-if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):
-    from .private import *  # pylint: disable=import-error,wildcard-import
+if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):  # noqa: F405
+    from .private import *  # pylint: disable=import-error,wildcard-import  # noqa: F403
 
 ############## Authoring API drf-spectacular openapi settings ##############
 # These fields override the spectacular settings default values.
@@ -360,7 +360,7 @@ SPECTACULAR_SETTINGS = {
     'SCHEMA_PATH_PREFIX': '/api/contentstore',
     'SCHEMA_PATH_PREFIX_TRIM': '/api/contentstore',
     'SERVERS': [
-        {'url': AUTHORING_API_URL, 'description': 'Public'},
+        {'url': AUTHORING_API_URL, 'description': 'Public'},  # noqa: F405
         {'url': f'http://{CMS_BASE}', 'description': 'Local'},
         {'url': f'http://{CMS_BASE}/api/contentstore', 'description': 'CMS-contentstore'}
     ],

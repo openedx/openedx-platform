@@ -21,15 +21,15 @@ class TestCommand(TestCase):
     """
 
     def test_bad_course_id(self):
-        with self.assertRaises(InvalidKeyError):
+        with self.assertRaises(InvalidKeyError):  # noqa: PT027
             call_command("reset_course_content", "not_a_course_id", "0123456789abcdef01234567")
 
     def test_wrong_length_version_guid(self):
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command("reset_course_content", "course-v1:a+b+c", "0123456789abcdef")
 
     def test_non_hex_version_guid(self):
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command("reset_course_content", "course-v1:a+b+c", "0123456789abcdefghijklmn")
 
     @mock.patch.object(MixedModuleStore, "reset_course_to_version")

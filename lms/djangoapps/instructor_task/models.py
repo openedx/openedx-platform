@@ -69,13 +69,13 @@ class InstructorTask(models.Model):
     class Meta:
         app_label = "instructor_task"
 
-    task_type = models.CharField(max_length=50, db_index=True)
+    task_type = models.CharField(max_length=50, db_index=True)  # noqa: DJ012
     course_id = CourseKeyField(max_length=255, db_index=True)
     task_key = models.CharField(max_length=255, db_index=True)
     task_input = models.TextField()
     task_id = models.CharField(max_length=255, db_index=True)  # max_length from celery_taskmeta
-    task_state = models.CharField(max_length=50, null=True, db_index=True)  # max_length from celery_taskmeta
-    task_output = models.CharField(max_length=1024, null=True)
+    task_state = models.CharField(max_length=50, null=True, db_index=True)  # max_length from celery_taskmeta  # noqa: DJ001  # pylint: disable=line-too-long
+    task_output = models.CharField(max_length=1024, null=True)  # noqa: DJ001
     requester = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True, null=True)
     updated = models.DateTimeField(auto_now=True)

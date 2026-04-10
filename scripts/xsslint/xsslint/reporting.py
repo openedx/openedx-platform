@@ -224,7 +224,7 @@ class ExpressionRuleViolation(RuleViolation):
                 column = 1
                 rule_id = " " * (len(self.rule.rule_id) + 1)
             line = self.lines[line_number - self.start_line].encode(encoding='utf-8')
-            print("{}: {}:{}: {} {}".format(
+            print("{}: {}:{}: {} {}".format(  # noqa: UP032
                 self.full_path,
                 line_number,
                 column,

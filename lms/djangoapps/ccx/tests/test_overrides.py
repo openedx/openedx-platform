@@ -51,7 +51,7 @@ class TestFieldOverrides(FieldOverrideTestMixin, SharedModuleStoreTestCase):
         verticals = flatten([
             [BlockFactory.create(due=due, parent=sequential) for _ in range(2)]
             for sequential in sequentials])
-        blocks = flatten([  # pylint: disable=unused-variable
+        blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
             [BlockFactory.create(parent=vertical) for _ in range(2)]
             for vertical in verticals])
 

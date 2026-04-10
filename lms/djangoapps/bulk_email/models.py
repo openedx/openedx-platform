@@ -38,8 +38,8 @@ class Email(models.Model):
     sender = models.ForeignKey(User, default=1, blank=True, null=True, on_delete=models.CASCADE)
     slug = models.CharField(max_length=128, db_index=True)
     subject = models.CharField(max_length=128, blank=True)
-    html_message = models.TextField(null=True, blank=True)
-    text_message = models.TextField(null=True, blank=True)
+    html_message = models.TextField(null=True, blank=True)  # noqa: DJ001
+    text_message = models.TextField(null=True, blank=True)  # noqa: DJ001
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
 
@@ -54,7 +54,7 @@ SEND_TO_STAFF = 'staff'
 SEND_TO_LEARNERS = 'learners'
 SEND_TO_COHORT = 'cohort'
 SEND_TO_TRACK = 'track'
-EMAIL_TARGET_CHOICES = list(zip(
+EMAIL_TARGET_CHOICES = list(zip(  # noqa: B905
     [SEND_TO_MYSELF, SEND_TO_STAFF, SEND_TO_LEARNERS, SEND_TO_COHORT, SEND_TO_TRACK],
     ['Myself', 'Staff and instructors', 'All students', 'Specific cohort', 'Specific course mode']
 ))
@@ -188,8 +188,8 @@ class CohortTarget(Target):
         try:
             cohort = get_cohort_by_name(name=cohort_name, course_key=course_id)
         except CourseUserGroup.DoesNotExist:
-            raise ValueError(  # lint-amnesty, pylint: disable=raise-missing-from
-                "Cohort {cohort} does not exist in course {course_id}".format(
+            raise ValueError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                "Cohort {cohort} does not exist in course {course_id}".format(  # noqa: UP032
                     cohort=cohort_name,
                     course_id=course_id
                 ).encode('utf8')
@@ -237,8 +237,8 @@ class CourseModeTarget(Target):
         try:
             validate_course_mode(str(course_id), mode_slug, include_expired=True)
         except CourseModeNotFoundError:
-            raise ValueError(  # lint-amnesty, pylint: disable=raise-missing-from
-                "Track {track} does not exist in course {course_id}".format(
+            raise ValueError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                "Track {track} does not exist in course {course_id}".format(  # noqa: UP032
                     track=mode_slug,
                     course_id=course_id
                 ).encode('utf8')
@@ -256,10 +256,10 @@ class CourseEmail(Email):
 
     course_id = CourseKeyField(db_index=True)
     # to_option is deprecated and unused, but dropping db columns is hard so it's still here for legacy reasons
-    to_option = models.CharField(max_length=64, choices=[("deprecated", "deprecated")])
+    to_option = models.CharField(max_length=64, choices=[("deprecated", "deprecated")])  # noqa: DJ012
     targets = models.ManyToManyField(Target)
-    template_name = models.CharField(null=True, max_length=255)
-    from_addr = models.CharField(null=True, max_length=255)
+    template_name = models.CharField(null=True, max_length=255)  # noqa: DJ001
+    from_addr = models.CharField(null=True, max_length=255)  # noqa: DJ001
 
     def __str__(self):
         return self.subject
@@ -303,7 +303,7 @@ class CourseEmail(Email):
         return CourseEmailTemplate.get_template(name=self.template_name)
 
 
-class Optout(models.Model):
+class Optout(models.Model):  # noqa: DJ008
     """
     Stores users that have opted out of receiving emails from a course.
 
@@ -332,7 +332,7 @@ class Optout(models.Model):
 COURSE_EMAIL_MESSAGE_BODY_TAG = '{{message_body}}'
 
 
-class CourseEmailTemplate(models.Model):
+class CourseEmailTemplate(models.Model):  # noqa: DJ008
     """
     Stores templates for all emails to a course to use.
 
@@ -346,8 +346,8 @@ class CourseEmailTemplate(models.Model):
     class Meta:
         app_label = "bulk_email"
 
-    html_template = models.TextField(null=True, blank=True)
-    plain_template = models.TextField(null=True, blank=True)
+    html_template = models.TextField(null=True, blank=True)  # noqa: DJ001, DJ012
+    plain_template = models.TextField(null=True, blank=True)  # noqa: DJ001
     name = models.CharField(null=True, max_length=255, unique=True, blank=True)
 
     @staticmethod
@@ -432,7 +432,7 @@ class CourseAuthorization(models.Model):
     course_id = CourseKeyField(db_index=True, unique=True)
 
     # Whether or not to enable instructor email
-    email_enabled = models.BooleanField(default=False)
+    email_enabled = models.BooleanField(default=False)  # noqa: DJ012
 
     @classmethod
     def instructor_email_enabled(cls, course_id):
@@ -445,14 +445,14 @@ class CourseAuthorization(models.Model):
         except cls.DoesNotExist:
             return False
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         not_en = "Not "
         if self.email_enabled:
             not_en = ""
         return f"Course '{str(self.course_id)}': Instructor Email {not_en}Enabled"
 
 
-class DisabledCourse(models.Model):
+class DisabledCourse(models.Model):  # noqa: DJ008
     """
     Disable the bulk email feature for specific courses.
 
@@ -522,7 +522,7 @@ class BulkEmailFlag(ConfigurationModel):
         app_label = "bulk_email"
 
     def __str__(self):
-        return "BulkEmailFlag: enabled {}, require_course_email_auth: {}".format(
+        return "BulkEmailFlag: enabled {}, require_course_email_auth: {}".format(  # noqa: UP032
             self.enabled,
             self.require_course_email_auth
         )

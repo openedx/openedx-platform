@@ -11,28 +11,28 @@ import openedx.core.djangoapps.course_groups.views
 
 urlpatterns = [
     re_path(
-        r'^v1/settings/{}$'.format(
+        r'^v1/settings/{}$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         openedx.core.djangoapps.course_groups.views.CohortSettings.as_view(),
         name='cohort_settings',
     ),
     re_path(
-        r'^v1/courses/{}/cohorts/(?P<cohort_id>[0-9]+)?$'.format(
+        r'^v1/courses/{}/cohorts/(?P<cohort_id>[0-9]+)?$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         openedx.core.djangoapps.course_groups.views.CohortHandler.as_view(),
         name='cohort_handler',
     ),
     re_path(
-        r'^v1/courses/{}/cohorts/(?P<cohort_id>[0-9]+)/users/(?P<username>.+)?$'.format(
+        r'^v1/courses/{}/cohorts/(?P<cohort_id>[0-9]+)/users/(?P<username>.+)?$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         openedx.core.djangoapps.course_groups.views.CohortUsers.as_view(),
         name='cohort_users',
     ),
     re_path(
-        r'^v1/courses/{}/users?$'.format(
+        r'^v1/courses/{}/users?$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         lms.djangoapps.instructor.views.api.CohortCSV.as_view(),

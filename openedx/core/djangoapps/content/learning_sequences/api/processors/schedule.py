@@ -127,7 +127,7 @@ class ScheduleOutlineProcessor(OutlineProcessor):
             specified_dates = [date for date in dates if date is not None]
             return max(specified_dates) if specified_dates else None
 
-        pruned_section_keys = {section.usage_key for section in pruned_course_outline.sections}  # lint-amnesty, pylint: disable=unused-variable
+        pruned_section_keys = {section.usage_key for section in pruned_course_outline.sections}  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         course_usage_key = self.course_key.make_usage_key('course', 'course')
         course_start = self.keys_to_schedule_fields[course_usage_key].get('start')
         course_end = self.keys_to_schedule_fields[course_usage_key].get('end')

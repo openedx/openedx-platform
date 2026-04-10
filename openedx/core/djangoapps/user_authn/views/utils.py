@@ -6,7 +6,7 @@ import random
 import re
 import string
 from datetime import datetime
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 from django.conf import settings
 from django.contrib import messages
@@ -189,7 +189,7 @@ def get_auto_generated_username(data):
     return f"{username_prefix}_{username_suffix}" if username_prefix else username_suffix
 
 
-def remove_disabled_country_from_list(countries: Dict) -> Dict:
+def remove_disabled_country_from_list(countries: Dict) -> Dict:  # noqa: UP006
     """
     Remove disabled countries from the list of countries.
 

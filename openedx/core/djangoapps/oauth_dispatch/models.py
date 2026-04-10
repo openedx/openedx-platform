@@ -109,18 +109,18 @@ class ApplicationAccess(models.Model):
                 if name == filter_name:
                     yield filter_value
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         """
         Return a unicode representation of this object.
         """
-        return "{application_name}:{scopes}:{filters}".format(
+        return "{application_name}:{scopes}:{filters}".format(  # noqa: UP032
             application_name=self.application.name,
             scopes=self.scopes,
             filters=self.filters,
         )
 
 
-class ApplicationOrganization(models.Model):
+class ApplicationOrganization(models.Model):  # noqa: DJ008
     """
     DEPRECATED: Associates a DOT Application to an Organization.
 

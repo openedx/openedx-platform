@@ -213,7 +213,7 @@ class DateSummary:
         return self.date_html(date_format='shortTime')
 
     def __repr__(self):
-        return 'DateSummary: "{title}" {date} is_enabled={is_enabled}'.format(
+        return 'DateSummary: "{title}" {date} is_enabled={is_enabled}'.format(  # noqa: UP032
             title=self.title,
             date=self.date,
             is_enabled=self.is_enabled

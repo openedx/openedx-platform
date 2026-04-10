@@ -299,7 +299,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         assert response.status_code == 200
         params = {
-            'name': '{platform_name} Honor Code Certificate for {course_name}'.format(
+            'name': '{platform_name} Honor Code Certificate for {course_name}'.format(  # noqa: UP032
                 platform_name=settings.PLATFORM_NAME, course_name=self.course.display_name,
             ).encode('utf-8'),
             'certUrl': self.request.build_absolute_uri(test_url),
@@ -330,7 +330,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         # the linkedIn share URL with appropriate parameters should be present
         params = {
-            'name': 'My Platform Site Honor Code Certificate for {course_name}'.format(
+            'name': 'My Platform Site Honor Code Certificate for {course_name}'.format(  # noqa: UP032
                 course_name=self.course.display_name,
             ).encode('utf-8'),
             'certUrl': 'http://test.localhost' + test_url,
@@ -585,7 +585,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # Test an item from certificate/org info
         self.assertContains(
             response,
-            "a course of study offered by {partner_short_name}, "
+            "a course of study offered by {partner_short_name}, "  # noqa: UP032
             "an online learning initiative of "
             "{partner_long_name}.".format(
                 partner_short_name=short_org_name,
@@ -914,7 +914,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             uuid=self.cert.verify_uuid
         )
         self.cert.delete()
-        self.assertListEqual(list(GeneratedCertificate.eligible_certificates.all()), [])
+        self.assertListEqual(list(GeneratedCertificate.eligible_certificates.all()), [])  # noqa: PT009
 
         response = self.client.get(test_url)
         assert response.status_code == 404
@@ -1636,7 +1636,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             mock_get_org_id.return_value = None
             response = self.client.get(test_url)
             self.assertContains(
-                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(
+                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     settings.MEDIA_URL
                 )
             )

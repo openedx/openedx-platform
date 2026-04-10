@@ -278,7 +278,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
             entitlement = CourseEntitlement.objects.get(uuid=entitlement_uuid)
         except CourseEntitlement.DoesNotExist:
             return HttpResponseBadRequest(
-                'Could not find entitlement {entitlement_uuid} to update'.format(
+                'Could not find entitlement {entitlement_uuid} to update'.format(  # noqa: UP032
                     entitlement_uuid=entitlement_uuid
                 )
             )
@@ -300,7 +300,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
                     support_detail['unenrolled_run'] = CourseOverview.objects.get(id=unenrolled_run_course_key)
                 except (InvalidKeyError, CourseOverview.DoesNotExist) as error:
                     return HttpResponseBadRequest(
-                        'Error raised while trying to unenroll user {user} from course run {course_id}: {error}'
+                        'Error raised while trying to unenroll user {user} from course run {course_id}: {error}'  # noqa: UP032  # pylint: disable=line-too-long
                         .format(user=entitlement.user.username, course_id=unenrolled_run_id, error=error)
                     )
             CourseEntitlementSupportDetail.objects.create(**support_detail)
@@ -360,7 +360,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
             # Else the User is already enrolled in another paid Mode and we should
             # not do anything else related to Entitlements.
         except CourseEnrollmentException:
-            message = (
+            message = (  # noqa: UP032
                 'Course Entitlement Enroll for {username} failed for course: {course_id}, '
                 'mode: {mode}, and entitlement: {entitlement}'
             ).format(
@@ -430,7 +430,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    'message': 'The User is unable to enroll in Course Run {course_id}, it is not available.'.format(
+                    'message': 'The User is unable to enroll in Course Run {course_id}, it is not available.'.format(  # noqa: UP032  # pylint: disable=line-too-long
                         course_id=course_run_id
                     )
                 }

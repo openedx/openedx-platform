@@ -102,7 +102,7 @@ class HubspotAPI:
             LOG.info("No action taken because no user was found in Hubspot.")
             return
         else:
-            error_msg = "Error attempted to get user_vid from Hubspot. Error: {}".format(
+            error_msg = "Error attempted to get user_vid from Hubspot. Error: {}".format(  # noqa: UP032
                 req.text
             )
             LOG.error(error_msg)
@@ -113,7 +113,7 @@ class HubspotAPI:
         Notify marketing with user's Hubspot `vid` upon successful deletion.
         """
         subject = "Alert: Hubspot Deletion"
-        body = "Learner with the VID \"{}\" has been deleted from Hubspot.".format(vid)
+        body = "Learner with the VID \"{}\" has been deleted from Hubspot.".format(vid)  # noqa: UP032
         send_email(
             self.aws_region,
             self.from_address,

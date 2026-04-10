@@ -91,14 +91,14 @@ class BasicAssetsTestCase(AssetsTestCase):
 
     def test_basic(self):
         resp = self.client.get(self.url, HTTP_ACCEPT='text/html')
-        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.status_code, 302)  # noqa: PT009
 
     def test_static_url_generation(self):
 
         course_key = CourseLocator('org', 'class', 'run')
         location = course_key.make_asset_key('asset', 'my_file_name.jpg')
         path = StaticContent.get_static_path_from_location(location)
-        self.assertEqual(path, '/static/my_file_name.jpg')
+        self.assertEqual(path, '/static/my_file_name.jpg')  # noqa: PT009
 
     def test_pdf_asset(self):
         module_store = modulestore()
@@ -122,7 +122,7 @@ class BasicAssetsTestCase(AssetsTestCase):
         # Check after import textbook.pdf has valid contentType ('application/pdf')
 
         # Note: Actual contentType for textbook.pdf in asset.json is 'text/pdf'
-        self.assertEqual(content.content_type, 'application/pdf')
+        self.assertEqual(content.content_type, 'application/pdf')  # noqa: PT009
 
     def test_relative_url_for_split_course(self):
         """
@@ -148,9 +148,9 @@ class BasicAssetsTestCase(AssetsTestCase):
             url = asset_url.replace('"', '')
             base_url = url.replace(filename, '')
 
-            self.assertIn(f"/{filename}", url)
+            self.assertIn(f"/{filename}", url)  # noqa: PT009
             resp = self.client.get(url)
-            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
             # simulation of html page where base_url is up-to asset's main directory
             # and relative_path is dom element with its src
@@ -158,9 +158,9 @@ class BasicAssetsTestCase(AssetsTestCase):
             # browser append relative_path with base_url
             absolute_path = base_url + relative_path
 
-            self.assertIn(f"/{relative_path}", absolute_path)
+            self.assertIn(f"/{relative_path}", absolute_path)  # noqa: PT009
             resp = self.client.get(absolute_path)
-            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
 
 class PaginationTestCase(AssetsTestCase):
@@ -264,9 +264,9 @@ class PaginationTestCase(AssetsTestCase):
         resp = self.client.get(url, HTTP_ACCEPT='application/json')
         json_response = json.loads(resp.content.decode('utf-8'))
         assets_response = json_response['assets']
-        self.assertEqual(json_response['start'], expected_start)
-        self.assertEqual(len(assets_response), expected_length)
-        self.assertEqual(json_response['totalCount'], expected_total)
+        self.assertEqual(json_response['start'], expected_start)  # noqa: PT009
+        self.assertEqual(len(assets_response), expected_length)  # noqa: PT009
+        self.assertEqual(json_response['totalCount'], expected_total)  # noqa: PT009
 
     def assert_correct_sort_response(self, url, sort, direction):
         """
@@ -276,17 +276,17 @@ class PaginationTestCase(AssetsTestCase):
             url + '?sort=' + sort + '&direction=' + direction, HTTP_ACCEPT='application/json')
         json_response = json.loads(resp.content.decode('utf-8'))
         assets_response = json_response['assets']
-        self.assertEqual(sort, json_response['sort'])
-        self.assertEqual(direction, json_response['direction'])
+        self.assertEqual(sort, json_response['sort'])  # noqa: PT009
+        self.assertEqual(direction, json_response['direction'])  # noqa: PT009
         name1 = assets_response[0][sort]
         name2 = assets_response[1][sort]
         name3 = assets_response[2][sort]
         if direction == 'asc':
-            self.assertLessEqual(name1, name2)
-            self.assertLessEqual(name2, name3)
+            self.assertLessEqual(name1, name2)  # noqa: PT009
+            self.assertLessEqual(name2, name3)  # noqa: PT009
         else:
-            self.assertGreaterEqual(name1, name2)
-            self.assertGreaterEqual(name2, name3)
+            self.assertGreaterEqual(name1, name2)  # noqa: PT009
+            self.assertGreaterEqual(name2, name3)  # noqa: PT009
 
     def assert_correct_filter_response(self, url, filter_type, filter_value):
         """
@@ -312,7 +312,7 @@ class PaginationTestCase(AssetsTestCase):
             url + '?' + filter_type + '=' + filter_value, HTTP_ACCEPT='application/json')
         json_response = json.loads(resp.content.decode('utf-8'))
         assets_response = json_response['assets']
-        self.assertEqual(filter_value_split, json_response['assetTypes'])
+        self.assertEqual(filter_value_split, json_response['assetTypes'])  # noqa: PT009
 
         if filter_value != '':
             content_types = [asset['content_type'].lower()
@@ -321,12 +321,12 @@ class PaginationTestCase(AssetsTestCase):
                 for content_type in content_types:
                     # content_type is either not any defined type (i.e. OTHER) or is a defined type (if multiple
                     # parameters including OTHER are used)
-                    self.assertTrue(
+                    self.assertTrue(  # noqa: PT009
                         content_type in requested_file_extensions or content_type not in all_file_extensions
                     )
             else:
                 for content_type in content_types:
-                    self.assertIn(content_type, requested_file_extensions)
+                    self.assertIn(content_type, requested_file_extensions)  # noqa: PT009
 
     def assert_invalid_parameters_error(self, url, filter_type, filter_value):
         """
@@ -334,7 +334,7 @@ class PaginationTestCase(AssetsTestCase):
         """
         resp = self.client.get(
             url + '?' + filter_type + '=' + filter_value, HTTP_ACCEPT='application/json')
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def assert_correct_text_search_response(self, url, text_search, number_matches):
         """
@@ -344,14 +344,14 @@ class PaginationTestCase(AssetsTestCase):
             url + '?text_search=' + text_search, HTTP_ACCEPT='application/json')
         json_response = json.loads(resp.content.decode('utf-8'))
         assets_response = json_response['assets']
-        self.assertEqual(text_search, json_response['textSearch'])
-        self.assertEqual(len(assets_response), number_matches)
+        self.assertEqual(text_search, json_response['textSearch'])  # noqa: PT009
+        self.assertEqual(len(assets_response), number_matches)  # noqa: PT009
 
         text_search_tokens = text_search.split()
 
         for asset_response in assets_response:
             for token in text_search_tokens:
-                self.assertIn(token.lower(), asset_response['display_name'].lower())
+                self.assertIn(token.lower(), asset_response['display_name'].lower())  # noqa: PT009
 
 
 @ddt
@@ -365,11 +365,11 @@ class UploadTestCase(AssetsTestCase):
 
     def test_happy_path(self):
         resp = self.upload_asset()
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_upload_image(self):
         resp = self.upload_asset("test_image", asset_type="image")
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     @data(
         (int(MAX_FILE_SIZE / 2.0), "small.file.test", 200),
@@ -387,7 +387,7 @@ class UploadTestCase(AssetsTestCase):
             "name": name,
             "file": f
         })
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, status_code)  # noqa: PT009
 
 
 class DownloadTestCase(AssetsTestCase):
@@ -400,19 +400,19 @@ class DownloadTestCase(AssetsTestCase):
         # First, upload something.
         self.asset_name = 'download_test'
         resp = self.upload_asset(self.asset_name)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self.uploaded_url = json.loads(resp.content.decode('utf-8'))['asset']['url']
 
     def test_download(self):
         # Now, download it.
         resp = self.client.get(self.uploaded_url, HTTP_ACCEPT='text/html')
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self.assertContains(resp, 'This file is generated by python unit test')
 
     def test_download_not_found_throw(self):
         url = self.uploaded_url.replace(self.asset_name, 'not_the_asset_name')
         resp = self.client.get(url, HTTP_ACCEPT='text/html')
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     @patch('xmodule.modulestore.mixed.MixedModuleStore.find_asset_metadata')
     def test_pickling_calls(self, patched_find_asset_metadata):
@@ -420,7 +420,7 @@ class DownloadTestCase(AssetsTestCase):
         """
         patched_find_asset_metadata.return_value = None
         self.client.get(self.uploaded_url, HTTP_ACCEPT='text/html')
-        self.assertFalse(patched_find_asset_metadata.called)
+        self.assertFalse(patched_find_asset_metadata.called)  # noqa: PT009
 
 
 class AssetToJsonTestCase(AssetsTestCase):
@@ -440,20 +440,20 @@ class AssetToJsonTestCase(AssetsTestCase):
         output = assets._get_asset_json("my_file", content_type, upload_date, location,
                                         thumbnail_location, True, course_key)
 
-        self.assertEqual(output["display_name"], "my_file")
-        self.assertEqual(output["date_added"], "Jun 01, 2013 at 10:30 UTC")
-        self.assertEqual(output["url"], "/asset-v1:org+class+run+type@asset+block@my_file_name.jpg")
-        self.assertEqual(
+        self.assertEqual(output["display_name"], "my_file")  # noqa: PT009
+        self.assertEqual(output["date_added"], "Jun 01, 2013 at 10:30 UTC")  # noqa: PT009
+        self.assertEqual(output["url"], "/asset-v1:org+class+run+type@asset+block@my_file_name.jpg")  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             output["external_url"], "https://lms_root_url/asset-v1:org+class+run+type@asset+block@my_file_name.jpg"
         )
-        self.assertEqual(output["portable_url"], "/static/my_file_name.jpg")
-        self.assertEqual(output["thumbnail"], "/asset-v1:org+class+run+type@thumbnail+block@my_file_name_thumb.jpg")
-        self.assertEqual(output["id"], str(location))
-        self.assertEqual(output['locked'], True)
-        self.assertEqual(output['static_full_url'], '/asset-v1:org+class+run+type@asset+block@my_file_name.jpg')
+        self.assertEqual(output["portable_url"], "/static/my_file_name.jpg")  # noqa: PT009
+        self.assertEqual(output["thumbnail"], "/asset-v1:org+class+run+type@thumbnail+block@my_file_name_thumb.jpg")  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(output["id"], str(location))  # noqa: PT009
+        self.assertEqual(output['locked'], True)  # noqa: PT009
+        self.assertEqual(output['static_full_url'], '/asset-v1:org+class+run+type@asset+block@my_file_name.jpg')  # noqa: PT009  # pylint: disable=line-too-long
 
         output = assets._get_asset_json("name", content_type, upload_date, location, None, False, course_key)
-        self.assertIsNone(output["thumbnail"])
+        self.assertIsNone(output["thumbnail"])  # noqa: PT009
 
 
 class LockAssetTestCase(AssetsTestCase):
@@ -470,7 +470,7 @@ class LockAssetTestCase(AssetsTestCase):
             asset_location = StaticContent.get_location_from_path(
                 'asset-v1:edX+toy+2012_Fall+type@asset+block@sample_static.html')
             content = contentstore().find(asset_location)
-            self.assertEqual(content.locked, locked)
+            self.assertEqual(content.locked, locked)  # noqa: PT009
 
         def post_asset_update(lock, course):
             """ Helper method for posting asset update. """
@@ -490,7 +490,7 @@ class LockAssetTestCase(AssetsTestCase):
                 "application/json"
             )
 
-            self.assertEqual(resp.status_code, 201)
+            self.assertEqual(resp.status_code, 201)  # noqa: PT009
             return json.loads(resp.content.decode('utf-8'))
 
         # Load the toy course.
@@ -509,12 +509,12 @@ class LockAssetTestCase(AssetsTestCase):
 
         # Lock the asset
         resp_asset = post_asset_update(True, course)
-        self.assertTrue(resp_asset['locked'])
+        self.assertTrue(resp_asset['locked'])  # noqa: PT009
         verify_asset_locked_state(True)
 
         # Unlock the asset
         resp_asset = post_asset_update(False, course)
-        self.assertFalse(resp_asset['locked'])
+        self.assertFalse(resp_asset['locked'])  # noqa: PT009
         verify_asset_locked_state(False)
 
 
@@ -531,7 +531,7 @@ class DeleteAssetTestCase(AssetsTestCase):
         self.asset = self.get_sample_asset(self.asset_name)
 
         response = self.client.post(self.url, {"name": self.asset_name, "file": self.asset})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.uploaded_id = json.loads(response.content.decode('utf-8'))['asset']['id']
 
         self.asset_location = AssetKey.from_string(self.uploaded_id)
@@ -542,7 +542,7 @@ class DeleteAssetTestCase(AssetsTestCase):
         test_url = reverse_course_url(
             'assets_handler', self.course.id, kwargs={'asset_key_string': self.uploaded_id})
         resp = self.client.delete(test_url, HTTP_ACCEPT="application/json")
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
     def test_delete_image_type_asset(self):
         """ Tests deletion of image type asset """
@@ -551,12 +551,12 @@ class DeleteAssetTestCase(AssetsTestCase):
 
         # upload image
         response = self.client.post(self.url, {"name": "delete_image_test", "file": image_asset})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         uploaded_image_url = json.loads(response.content.decode('utf-8'))['asset']['id']
 
         # upload image thumbnail
         response = self.client.post(self.url, {"name": "delete_image_thumb_test", "file": thumbnail_image_asset})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         thumbnail_url = json.loads(response.content.decode('utf-8'))['asset']['url']
         thumbnail_location = StaticContent.get_location_from_path(thumbnail_url)
 
@@ -571,7 +571,7 @@ class DeleteAssetTestCase(AssetsTestCase):
             test_url = reverse_course_url(
                 'assets_handler', self.course.id, kwargs={'asset_key_string': str(uploaded_image_url)})
             resp = self.client.delete(test_url, HTTP_ACCEPT="application/json")
-            self.assertEqual(resp.status_code, 204)
+            self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
     def test_delete_asset_with_invalid_asset(self):
         """ Tests the sad path :( """
@@ -580,7 +580,7 @@ class DeleteAssetTestCase(AssetsTestCase):
             self.course.id, kwargs={'asset_key_string': "asset-v1:edX+toy+2012_Fall+type@asset+block@invalid.pdf"}
         )
         resp = self.client.delete(test_url, HTTP_ACCEPT="application/json")
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     def test_delete_asset_with_invalid_thumbnail(self):
         """ Tests the sad path :( """
@@ -590,7 +590,7 @@ class DeleteAssetTestCase(AssetsTestCase):
             '/asset-v1:edX+toy+2012_Fall+type@asset+block@invalid.pdf')
         contentstore().save(self.content)
         resp = self.client.delete(test_url, HTTP_ACCEPT="application/json")
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
 
 class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
@@ -644,23 +644,23 @@ class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
 
         # GET assets_handler allowed
         resp = client.get(self.asset_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # GET asset_usage_path_handler allowed
         resp = client.get(self.asset_usage_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # POST assets_handler forbidden
         resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # PUT assets_handler forbidden
         resp = self._put_asset(client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # DELETE assets_handler forbidden
         resp = self._delete_asset(client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_editor_permissions(self):
         """Editor: read/create/edit allowed, delete forbidden."""
@@ -671,23 +671,23 @@ class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
 
         # GET assets_handler allowed
         resp = client.get(self.url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # GET asset_usage_path_handler allowed
         resp = client.get(self.asset_usage_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # POST assets_handler allowed
         resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # PUT assets_handler allowed
         resp = self._put_asset(client)
-        self.assertIn(resp.status_code, [200, 201])
+        self.assertIn(resp.status_code, [200, 201])  # noqa: PT009
 
         # DELETE assets_handler forbidden
         resp = self._delete_asset(client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_admin_permissions(self):
         """Admin: full access."""
@@ -698,23 +698,23 @@ class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
 
         # GET assets_handler allowed
         resp = client.get(self.url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # GET asset_usage_path_handler allowed
         resp = client.get(self.asset_usage_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # POST assets_handler allowed
         resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # PUT assets_handler allowed
         resp = self._put_asset(client)
-        self.assertIn(resp.status_code, [200, 201])
+        self.assertIn(resp.status_code, [200, 201])  # noqa: PT009
 
         # DELETE assets_handler allowed
         resp = self._delete_asset(client)
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
 
     def test_no_role_permissions(self):
         """No role: all forbidden."""
@@ -724,20 +724,20 @@ class AssetsEndpointsAuthzTestCase(CourseAuthzTestMixin, AssetsTestCase):
 
         # GET assets_handler forbidden
         resp = client.get(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # GET asset_usage_path_handler forbidden
         resp = client.get(self.asset_usage_url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # POST assets_handler forbidden
         resp = client.post(self.url, {"name": "file", "file": self.get_sample_asset('file')})
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # PUT assets_handler forbidden
         resp = self._put_asset(client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
         # DELETE assets_handler forbidden
         resp = self._delete_asset(client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009

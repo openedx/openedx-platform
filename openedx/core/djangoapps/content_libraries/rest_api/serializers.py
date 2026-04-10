@@ -17,11 +17,9 @@ from openedx.core.djangoapps.content_libraries import api
 from openedx.core.djangoapps.content_libraries.constants import ALL_RIGHTS_RESERVED, LICENSE_OPTIONS
 from openedx.core.djangoapps.content_libraries.models import (
     ContentLibrary,
-    ContentLibraryBlockImportTask,
     ContentLibraryPermission,
 )
 from openedx.core.djangoapps.content_libraries.tasks import LibraryRestoreTask
-from openedx.core.lib.api.serializers import CourseKeyField
 
 from .. import permissions
 
@@ -50,7 +48,6 @@ class ContentLibraryMetadataSerializer(serializers.Serializer):
     published_by = serializers.CharField(read_only=True)
     last_draft_created = serializers.DateTimeField(format=DATETIME_FORMAT, read_only=True)
     last_draft_created_by = serializers.CharField(read_only=True)
-    allow_lti = serializers.BooleanField(default=False, read_only=True)
     allow_public_learning = serializers.BooleanField(default=False)
     allow_public_read = serializers.BooleanField(default=False)
     has_unpublished_changes = serializers.BooleanField(read_only=True)
@@ -281,32 +278,6 @@ class LibraryContainerUpdateSerializer(serializers.Serializer):
     """
     display_name = serializers.CharField()
 
-
-class ContentLibraryBlockImportTaskSerializer(serializers.ModelSerializer):
-    """
-    Serializer for a Content Library block import task.
-    """
-
-    org = serializers.SerializerMethodField()
-
-    def get_org(self, obj):
-        return obj.course_id.org
-
-    class Meta:
-        model = ContentLibraryBlockImportTask
-        fields = '__all__'
-
-
-class ContentLibraryBlockImportTaskCreateSerializer(serializers.Serializer):
-    """
-    Serializer to create a new block import task.
-
-    The serializer accepts the following parameter:
-
-    - The courseware course key to import blocks from.
-    """
-
-    course_key = CourseKeyField()
 
 
 class ContentLibraryCollectionSerializer(serializers.ModelSerializer):

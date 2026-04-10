@@ -1,7 +1,7 @@
 """
 Course app configuration for live.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -57,7 +57,7 @@ class LiveCourseApp(CourseApp):
         return configuration.enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Return allowed operations for live app.
         """

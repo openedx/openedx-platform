@@ -47,7 +47,7 @@ class InterceptErrorsTest(TestCase):
         intercepted_function()
 
     def test_ignores_expected_errors(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             intercepted_function(raise_error=ValueError)
 
     @mock.patch('openedx.core.djangoapps.user_api.helpers.LOGGER')

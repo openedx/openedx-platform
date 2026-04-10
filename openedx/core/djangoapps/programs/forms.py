@@ -31,7 +31,7 @@ class ProgramDiscussionsConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = ProgramDiscussionsConfiguration
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 class ProgramLiveConfigurationForm(forms.ModelForm):
@@ -59,4 +59,4 @@ class ProgramLiveConfigurationForm(forms.ModelForm):
 
     class Meta:
         model = ProgramLiveConfiguration
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007

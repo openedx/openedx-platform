@@ -24,7 +24,7 @@ def register_redirect_to_lms(request):
     This view redirects to the LMS register view. It is used to temporarily keep the old
     Studio signup url alive.
     """
-    register_url = '{register_url}{params}'.format(
+    register_url = '{register_url}{params}'.format(  # noqa: UP032
         register_url=settings.FRONTEND_REGISTER_URL,
         params=_build_next_param(request),
     )
@@ -36,7 +36,7 @@ def login_redirect_to_lms(request):
     This view redirects to the LMS login view. It is used for Django's LOGIN_URL
     setting, which is where unauthenticated requests to protected endpoints are redirected.
     """
-    login_url = '{login_url}{params}'.format(
+    login_url = '{login_url}{params}'.format(  # noqa: UP032
         login_url=settings.FRONTEND_LOGIN_URL,
         params=_build_next_param(request),
     )

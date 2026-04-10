@@ -4,7 +4,7 @@ Agreements API
 
 import logging
 from datetime import datetime
-from typing import Iterator
+from typing import Iterator  # noqa: UP035
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -43,7 +43,7 @@ def create_integrity_signature(username, course_id):
     signature, created = IntegritySignature.objects.get_or_create(user=user, course_key=course_key)
     if not created:
         log.warning(
-            'Integrity signature already exists for user_id={user_id} and '
+            'Integrity signature already exists for user_id={user_id} and '  # noqa: UP032
             'course_id={course_id}'.format(user_id=user.id, course_id=course_id)
         )
     return signature

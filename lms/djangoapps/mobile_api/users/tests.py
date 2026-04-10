@@ -311,11 +311,11 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         courses = response.data['enrollments'] if api_version == API_V2 else response.data
 
         # Test for 3 expected courses
-        self.assertEqual(len(courses), 3)
+        self.assertEqual(len(courses), 3)  # noqa: PT009
 
         # Verify only edX courses are returned
         for entry in courses:
-            self.assertEqual(entry['course']['org'], 'edX')
+            self.assertEqual(entry['course']['org'], 'edX')  # noqa: PT009
 
     def create_enrollment(self, expired):
         """
@@ -416,7 +416,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         }
 
         response = self.api_response(api_version=API_V2)
-        self.assertDictEqual(response.data['configs'], expected_result)
+        self.assertDictEqual(response.data['configs'], expected_result)  # noqa: PT009
         assert 'enrollments' in response.data
 
     def test_pagination_enrollment(self):
@@ -465,9 +465,9 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_result, response.data)
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_result, response.data)  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_student_have_one_enrollment(self):
         """
@@ -488,10 +488,10 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_enrollments, response.data['enrollments'])
-        self.assertIn('primary', response.data)
-        self.assertEqual(str(course.id), response.data['primary']['course']['id'])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_enrollments, response.data['enrollments'])  # noqa: PT009
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(str(course.id), response.data['primary']['course']['id'])  # noqa: PT009
 
     def test_student_have_two_enrollments(self):
         """
@@ -505,12 +505,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['enrollments']['results']), 1)
-        self.assertEqual(response.data['enrollments']['count'], 1)
-        self.assertEqual(response.data['enrollments']['results'][0]['course']['id'], str(course_first.id))
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(course_second.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 1)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 1)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['results'][0]['course']['id'], str(course_first.id))  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(course_second.id))  # noqa: PT009
 
     def test_student_have_more_then_ten_enrollments(self):
         """
@@ -525,12 +525,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 15)
-        self.assertEqual(response.data['enrollments']['num_pages'], 3)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(latest_enrolment.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 15)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['num_pages'], 3)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(latest_enrolment.id))  # noqa: PT009
 
     def test_student_have_progress_in_old_course_and_enroll_newest_course(self):
         """
@@ -547,12 +547,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 6)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 6)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
         # check that we have the new_course in primary section
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))  # noqa: PT009
 
         # doing progress in the old_course
         StudentModule.objects.create(
@@ -562,12 +562,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         )
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 6)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 6)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
         # check that now we have the old_course in primary section
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(old_course.id))
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(old_course.id))  # noqa: PT009
 
         # enroll to the newest course
         newest_course = CourseFactory.create(org="edx", mobile_available=True)
@@ -575,12 +575,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 7)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 7)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
         # check that now we have the newest_course in primary section
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(newest_course.id))
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(newest_course.id))  # noqa: PT009
 
     def test_student_enrolled_only_not_mobile_available_courses(self):
         """
@@ -608,9 +608,9 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_result, response.data)
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_result, response.data)  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_do_progress_in_not_mobile_available_course(self):
         """
@@ -627,12 +627,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 5)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 5)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
         # check that we have the new_course in primary section
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))  # noqa: PT009
 
         # doing progress in the not_mobile_available course
         StudentModule.objects.create(
@@ -642,12 +642,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         )
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 5)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 5)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
         # check that we have the new_course in primary section in the same way
-        self.assertIn('primary', response.data)
-        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))
+        self.assertIn('primary', response.data)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course']['id'], str(new_course.id))  # noqa: PT009
 
     def test_pagination_for_user_enrollments_api_v4(self):
         """
@@ -659,14 +659,14 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
             self.enroll(course.id)
 
         response = self.api_response(api_version=API_V4)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['enrollments']['count'], 14)
-        self.assertEqual(response.data['enrollments']['num_pages'], 3)
-        self.assertEqual(response.data['enrollments']['current_page'], 1)
-        self.assertEqual(len(response.data['enrollments']['results']), 5)
-        self.assertIn('next', response.data['enrollments'])
-        self.assertIn('previous', response.data['enrollments'])
-        self.assertIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['count'], 14)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['num_pages'], 3)  # noqa: PT009
+        self.assertEqual(response.data['enrollments']['current_page'], 1)  # noqa: PT009
+        self.assertEqual(len(response.data['enrollments']['results']), 5)  # noqa: PT009
+        self.assertIn('next', response.data['enrollments'])  # noqa: PT009
+        self.assertIn('previous', response.data['enrollments'])  # noqa: PT009
+        self.assertIn('primary', response.data)  # noqa: PT009
 
     def test_course_status_in_primary_obj_when_student_doesnt_have_progress(self):
         """
@@ -678,8 +678,8 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['primary']['course_status'], None)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course_status'], None)  # noqa: PT009
 
     @patch('lms.djangoapps.mobile_api.users.serializers.get_key_to_last_completed_block')
     def test_course_status_in_primary_obj_when_student_have_progress(
@@ -727,8 +727,8 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['primary']['course_status'], expected_course_status)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['primary']['course_status'], expected_course_status)  # noqa: PT009
         get_last_completed_block_mock.assert_called_once_with(self.user, course.id)
 
     def test_user_enrollment_api_v4_in_progress_status(self):
@@ -762,11 +762,11 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         response = self.api_response(api_version=API_V4, data={'status': EnrollmentStatuses.IN_PROGRESS.value})
         enrollments = response.data['enrollments']
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(enrollments['count'], 2)
-        self.assertEqual(enrollments['results'][1]['course']['id'], str(actual_course.id))
-        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(enrollments['count'], 2)  # noqa: PT009
+        self.assertEqual(enrollments['results'][1]['course']['id'], str(actual_course.id))  # noqa: PT009
+        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_user_enrollment_api_v4_completed_status(self):
         """
@@ -805,10 +805,10 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         response = self.api_response(api_version=API_V4, data={'status': EnrollmentStatuses.COMPLETED.value})
         enrollments = response.data['enrollments']
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(enrollments['count'], 1)
-        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(enrollments['count'], 1)  # noqa: PT009
+        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_user_enrollment_api_v4_expired_status(self):
         """
@@ -840,10 +840,10 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         response = self.api_response(api_version=API_V4, data={'status': EnrollmentStatuses.EXPIRED.value})
         enrollments = response.data['enrollments']
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(enrollments['count'], 1)
-        self.assertEqual(enrollments['results'][0]['course']['id'], str(old_course.id))
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(enrollments['count'], 1)  # noqa: PT009
+        self.assertEqual(enrollments['results'][0]['course']['id'], str(old_course.id))  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_user_enrollment_api_v4_expired_course_with_certificate(self):
         """
@@ -876,10 +876,10 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         response = self.api_response(api_version=API_V4, data={'status': EnrollmentStatuses.COMPLETED.value})
         enrollments = response.data['enrollments']
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(enrollments['count'], 1)
-        self.assertEqual(enrollments['results'][0]['course']['id'], str(expired_course_with_cert.id))
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(enrollments['count'], 1)  # noqa: PT009
+        self.assertEqual(enrollments['results'][0]['course']['id'], str(expired_course_with_cert.id))  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_user_enrollment_api_v4_status_all(self):
         """
@@ -918,12 +918,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         response = self.api_response(api_version=API_V4, data={'status': EnrollmentStatuses.ALL.value})
         enrollments = response.data['enrollments']
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(enrollments['count'], 3)
-        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))
-        self.assertEqual(enrollments['results'][1]['course']['id'], str(actual_course.id))
-        self.assertEqual(enrollments['results'][2]['course']['id'], str(old_course.id))
-        self.assertNotIn('primary', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(enrollments['count'], 3)  # noqa: PT009
+        self.assertEqual(enrollments['results'][0]['course']['id'], str(infinite_course.id))  # noqa: PT009
+        self.assertEqual(enrollments['results'][1]['course']['id'], str(actual_course.id))  # noqa: PT009
+        self.assertEqual(enrollments['results'][2]['course']['id'], str(old_course.id))  # noqa: PT009
+        self.assertNotIn('primary', response.data)  # noqa: PT009
 
     def test_response_contains_primary_enrollment_assignments_info(self):
         self.login()
@@ -932,12 +932,12 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('course_assignments', response.data['primary'])
-        self.assertIn('past_assignments', response.data['primary']['course_assignments'])
-        self.assertIn('future_assignments', response.data['primary']['course_assignments'])
-        self.assertListEqual(response.data['primary']['course_assignments']['past_assignments'], [])
-        self.assertListEqual(response.data['primary']['course_assignments']['future_assignments'], [])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('course_assignments', response.data['primary'])  # noqa: PT009
+        self.assertIn('past_assignments', response.data['primary']['course_assignments'])  # noqa: PT009
+        self.assertIn('future_assignments', response.data['primary']['course_assignments'])  # noqa: PT009
+        self.assertListEqual(response.data['primary']['course_assignments']['past_assignments'], [])  # noqa: PT009
+        self.assertListEqual(response.data['primary']['course_assignments']['future_assignments'], [])  # noqa: PT009
 
     @patch('lms.djangoapps.courseware.courses.get_course_assignments', return_value=[])
     def test_course_progress_in_primary_enrollment_with_no_assignments(
@@ -951,9 +951,9 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('course_progress', response.data['primary'])
-        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('course_progress', response.data['primary'])  # noqa: PT009
+        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)  # noqa: PT009
 
     @patch(
         'lms.djangoapps.mobile_api.users.serializers.CourseEnrollmentSerializerModifiedForPrimary'
@@ -981,9 +981,9 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('course_progress', response.data['primary'])
-        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('course_progress', response.data['primary'])  # noqa: PT009
+        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)  # noqa: PT009
 
     @patch('lms.djangoapps.courseware.courses.get_course_assignments')
     def test_course_progress_for_secondary_enrollments_no_query_param(
@@ -997,9 +997,9 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         for enrollment in response.data['enrollments']['results']:
-            self.assertNotIn('course_progress', enrollment)
+            self.assertNotIn('course_progress', enrollment)  # noqa: PT009
 
     @patch('lms.djangoapps.courseware.courses.get_course_assignments')
     def test_course_progress_for_secondary_enrollments_with_query_param(
@@ -1014,10 +1014,10 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4, data={'requested_fields': 'course_progress'})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         for enrollment in response.data['enrollments']['results']:
-            self.assertIn('course_progress', enrollment)
-            self.assertDictEqual(enrollment['course_progress'], expected_course_progress)
+            self.assertIn('course_progress', enrollment)  # noqa: PT009
+            self.assertDictEqual(enrollment['course_progress'], expected_course_progress)  # noqa: PT009
 
     @patch(
         'lms.djangoapps.mobile_api.users.serializers.CourseEnrollmentSerializerModifiedForPrimary'
@@ -1046,11 +1046,11 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         response = self.api_response(api_version=API_V4, data={'requested_fields': 'course_progress'})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('course_progress', response.data['primary'])
-        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)
-        self.assertIn('course_progress', response.data['enrollments']['results'][0])
-        self.assertDictEqual(response.data['enrollments']['results'][0]['course_progress'], expected_course_progress)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('course_progress', response.data['primary'])  # noqa: PT009
+        self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)  # noqa: PT009
+        self.assertIn('course_progress', response.data['enrollments']['results'][0])  # noqa: PT009
+        self.assertDictEqual(response.data['enrollments']['results'][0]['course_progress'], expected_course_progress)  # noqa: PT009  # pylint: disable=line-too-long
 
 
 @override_settings(MKTG_URLS={'ROOT': 'dummy-root'})
@@ -1087,7 +1087,7 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
 
         response = self.api_response()
         certificate_data = response.data[0]['certificate']
-        self.assertDictEqual(certificate_data, {})
+        self.assertDictEqual(certificate_data, {})  # noqa: PT009
 
     @patch.dict(settings.FEATURES, {'CERTIFICATES_HTML_VIEW': False, 'ENABLE_MKTG_SITE': True})
     def test_pdf_certificate_with_html_cert_disabled(self):
@@ -1115,7 +1115,7 @@ class TestUserEnrollmentCertificates(UrlResetMixin, MobileAPITestCase, Milestone
 
         response = self.api_response()
         certificate_data = response.data[0]['certificate']
-        self.assertRegex(
+        self.assertRegex(  # noqa: PT009
             certificate_data['url'],
             r'http.*/certificates/[0-9a-f]{32}'
         )
@@ -1353,8 +1353,8 @@ class TestCourseEnrollmentSerializer(MobileAPITestCase, MilestonesTestCaseMixin)
         qstwitter = parse_qs('utm_campaign=social-sharing-db&utm_medium=social&utm_source=twitter')
         qsfacebook = parse_qs('utm_campaign=social-sharing-db&utm_medium=social&utm_source=facebook')
 
-        self.assertDictEqual(qsfacebook, parse_qs(serialized['course']['course_sharing_utm_parameters']['facebook']))
-        self.assertDictEqual(qstwitter, parse_qs(serialized['course']['course_sharing_utm_parameters']['twitter']))
+        self.assertDictEqual(qsfacebook, parse_qs(serialized['course']['course_sharing_utm_parameters']['facebook']))  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertDictEqual(qstwitter, parse_qs(serialized['course']['course_sharing_utm_parameters']['twitter']))  # noqa: PT009  # pylint: disable=line-too-long
 
     @ddt.data(API_V05, API_V1)
     def test_with_display_overrides(self, api_version):
@@ -1432,8 +1432,8 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
 
         response = self.api_response(api_version=API_V1)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, [])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, [])  # noqa: PT009
 
     def test_no_enrollments(self) -> None:
         self.login()
@@ -1442,8 +1442,8 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
 
         response = self.api_response(api_version=API_V1)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, [])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, [])  # noqa: PT009
 
     def test_user_have_only_active_enrollments_and_no_completions(self) -> None:
         self.login()
@@ -1459,8 +1459,8 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
             {'course_id': str(courses[2].course_id), 'course_name': courses[2].display_name, 'recently_active': True},
         ]
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, expected_response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, expected_response)  # noqa: PT009
 
     def test_user_have_active_and_inactive_enrollments_and_no_completions(self) -> None:
         self.login()
@@ -1482,8 +1482,8 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
             {'course_id': str(old_course.course_id), 'course_name': old_course.display_name, 'recently_active': False}
         ]
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, expected_response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, expected_response)  # noqa: PT009
 
     @ddt.data(
         (27, True),
@@ -1511,8 +1511,8 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
             }
         ]
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, expected_response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, expected_response)  # noqa: PT009
 
     @ddt.data(
         (27, True),
@@ -1554,5 +1554,5 @@ class TestUserEnrollmentsStatus(MobileAPITestCase, MobileAuthUserTestMixin):
             }
         ]
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(response.data, expected_response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(response.data, expected_response)  # noqa: PT009

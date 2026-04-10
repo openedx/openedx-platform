@@ -33,7 +33,7 @@ from openedx.core.lib.logsettings import get_logger_config
 from xmodule.modulestore.modulestore_settings import \
     convert_module_store_setting_if_needed  # lint-amnesty, pylint: disable=wrong-import-order
 
-from .common import *
+from .common import *  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -44,8 +44,8 @@ def get_env_setting(setting):
     try:
         return os.environ[setting]
     except KeyError:
-        error_msg = "Set the %s env variable" % setting
-        raise ImproperlyConfigured(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        error_msg = "Set the %s env variable" % setting  # noqa: UP031
+        raise ImproperlyConfigured(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 #######################################################################################################################
 #### YAML LOADING
@@ -102,7 +102,7 @@ except Exception:  # pylint: disable=broad-except
     REVISION_CONFIG = {}
 
 # Do NOT calculate this dynamically at startup with git because it's *slow*.
-EDX_PLATFORM_REVISION = REVISION_CONFIG.get('EDX_PLATFORM_REVISION', EDX_PLATFORM_REVISION)
+EDX_PLATFORM_REVISION = REVISION_CONFIG.get('EDX_PLATFORM_REVISION', EDX_PLATFORM_REVISION)  # noqa: F405
 
 
 #######################################################################################################################
@@ -121,34 +121,34 @@ CELERYD_PREFETCH_MULTIPLIER = 1
 
 # STATIC_ROOT specifies the directory where static files are
 # collected
-if STATIC_ROOT_BASE:
-    STATIC_ROOT = path(STATIC_ROOT_BASE)
+if STATIC_ROOT_BASE:  # noqa: F405
+    STATIC_ROOT = path(STATIC_ROOT_BASE)  # noqa: F405
 
 # STATIC_URL_BASE specifies the base url to use for static files
-if STATIC_URL_BASE:
-    STATIC_URL = STATIC_URL_BASE
+if STATIC_URL_BASE:  # noqa: F405
+    STATIC_URL = STATIC_URL_BASE  # noqa: F405
     if not STATIC_URL.endswith("/"):
         STATIC_URL += "/"
 
-DATA_DIR = path(DATA_DIR)
+DATA_DIR = path(DATA_DIR)  # noqa: F405
 
 # TODO: This was for backwards compatibility back when installed django-cookie-samesite (not since 2022).
 #       The DCS_ version of the setting can be DEPR'd at this point.
-SESSION_COOKIE_SAMESITE = DCS_SESSION_COOKIE_SAMESITE
+SESSION_COOKIE_SAMESITE = DCS_SESSION_COOKIE_SAMESITE  # noqa: F405
 
 for feature, value in _YAML_TOKENS.get('FEATURES', {}).items():
     FEATURES[feature] = value
 
 # Cache used for location mapping -- called many times with the same key/value
 # in a given request.
-if 'loc_cache' not in CACHES:
-    CACHES['loc_cache'] = {
+if 'loc_cache' not in CACHES:  # noqa: F405
+    CACHES['loc_cache'] = {  # noqa: F405
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'edx_location_mem_cache',
     }
 
-if 'staticfiles' in CACHES:
-    CACHES['staticfiles']['KEY_PREFIX'] = EDX_PLATFORM_REVISION
+if 'staticfiles' in CACHES:  # noqa: F405
+    CACHES['staticfiles']['KEY_PREFIX'] = EDX_PLATFORM_REVISION  # noqa: F405
 
 # In order to transition from local disk asset storage to S3 backed asset storage,
 # we need to run asset collection twice, once for local disk and once for S3.
@@ -163,7 +163,7 @@ if _YAML_CELERY_QUEUES:
 # Then add alternate environment queues
 _YAML_ALTERNATE_WORKER_QUEUES = _YAML_TOKENS.get('ALTERNATE_WORKER_QUEUES', '').split()
 ALTERNATE_QUEUES = [
-    DEFAULT_PRIORITY_QUEUE.replace(SERVICE_VARIANT, alternate)
+    DEFAULT_PRIORITY_QUEUE.replace(SERVICE_VARIANT, alternate)  # noqa: F405
     for alternate in _YAML_ALTERNATE_WORKER_QUEUES
 ]
 
@@ -175,28 +175,28 @@ CELERY_QUEUES.update(
     }
 )
 
-MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))
+MKTG_URL_LINK_MAP.update(_YAML_TOKENS.get('MKTG_URL_LINK_MAP', {}))  # noqa: F405
 
 # Timezone overrides
-TIME_ZONE = CELERY_TIMEZONE
+TIME_ZONE = CELERY_TIMEZONE  # noqa: F405
 
 # Translation overrides
-LANGUAGE_DICT = dict(LANGUAGES)
+LANGUAGE_DICT = dict(LANGUAGES)  # noqa: F405
 
-LANGUAGE_COOKIE_NAME = _YAML_TOKENS.get('LANGUAGE_COOKIE') or LANGUAGE_COOKIE_NAME
+LANGUAGE_COOKIE_NAME = _YAML_TOKENS.get('LANGUAGE_COOKIE') or LANGUAGE_COOKIE_NAME  # noqa: F405
 
 # Additional installed apps
 for app in _YAML_TOKENS.get('ADDL_INSTALLED_APPS', []):
-    INSTALLED_APPS.append(app)
+    INSTALLED_APPS.append(app)  # noqa: F405
 
 LOGGING = get_logger_config(
-    LOG_DIR,
-    logging_env=LOGGING_ENV,
-    local_loglevel=LOCAL_LOGLEVEL,
-    service_variant=SERVICE_VARIANT,
+    LOG_DIR,  # noqa: F405
+    logging_env=LOGGING_ENV,  # noqa: F405
+    local_loglevel=LOCAL_LOGLEVEL,  # noqa: F405
+    service_variant=SERVICE_VARIANT,  # noqa: F405
 )
 
-if ENABLE_CORS_HEADERS or ENABLE_CROSS_DOMAIN_CSRF_COOKIE:
+if ENABLE_CORS_HEADERS or ENABLE_CROSS_DOMAIN_CSRF_COOKIE:  # noqa: F405
     CORS_ALLOW_CREDENTIALS = True
     CORS_ORIGIN_WHITELIST = _YAML_TOKENS.get('CORS_ORIGIN_WHITELIST', ())
     CORS_ORIGIN_ALLOW_ALL = _YAML_TOKENS.get('CORS_ORIGIN_ALLOW_ALL', False)
@@ -206,9 +206,9 @@ if ENABLE_CORS_HEADERS or ENABLE_CROSS_DOMAIN_CSRF_COOKIE:
 ############### Mixed Related(Secure/Not-Secure) Items ##########
 LMS_SEGMENT_KEY = _YAML_TOKENS.get('SEGMENT_KEY')
 
-if AWS_ACCESS_KEY_ID == "":
+if AWS_ACCESS_KEY_ID == "":  # noqa: F405
     AWS_ACCESS_KEY_ID = None
-if AWS_SECRET_ACCESS_KEY == "":
+if AWS_SECRET_ACCESS_KEY == "":  # noqa: F405
     AWS_SECRET_ACCESS_KEY = None
 
 # these variable already exists in cms with `private` value. django-storages starting `1.10.1`
@@ -230,18 +230,18 @@ _storages_default_backend_is_missing = not _yaml_storages.get('default', {}).get
 # without overwriting user-defined STORAGES and AWS creds are treated only as a fallback.
 if _storages_default_backend_is_missing:
     if 'DEFAULT_FILE_STORAGE' in _YAML_TOKENS:
-        STORAGES['default']['BACKEND'] = _YAML_TOKENS['DEFAULT_FILE_STORAGE']
+        STORAGES['default']['BACKEND'] = _YAML_TOKENS['DEFAULT_FILE_STORAGE']  # noqa: F405
     elif AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
-        STORAGES['default']['BACKEND'] = 'storages.backends.s3boto3.S3Boto3Storage'
+        STORAGES['default']['BACKEND'] = 'storages.backends.s3boto3.S3Boto3Storage'  # noqa: F405
 
 # Apply legacy STATICFILES_STORAGE if no backend is defined for "staticfiles"
 if 'STATICFILES_STORAGE' in _YAML_TOKENS and not _yaml_storages.get('staticfiles', {}).get('BACKEND'):
-    STORAGES['staticfiles']['BACKEND'] = _YAML_TOKENS['STATICFILES_STORAGE']
+    STORAGES['staticfiles']['BACKEND'] = _YAML_TOKENS['STATICFILES_STORAGE']  # noqa: F405
 
 # The normal database user does not have enough permissions to run migrations.
 # Migrations are run with separate credentials, given as DB_MIGRATION_*
 # environment variables
-for name, database in DATABASES.items():
+for name, database in DATABASES.items():  # noqa: F405
     if name != 'read_replica':
         database.update({
             'ENGINE': os.environ.get('DB_MIGRATION_ENGINE', database['ENGINE']),
@@ -254,13 +254,13 @@ for name, database in DATABASES.items():
 
 # Get the MODULESTORE from auth.json, but if it doesn't exist,
 # use the one from common.py
-MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)
+MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)  # noqa: F405
 
-BROKER_URL = "{}://{}:{}@{}/{}".format(CELERY_BROKER_TRANSPORT,
-                                       CELERY_BROKER_USER,
-                                       CELERY_BROKER_PASSWORD,
-                                       CELERY_BROKER_HOSTNAME,
-                                       CELERY_BROKER_VHOST)
+BROKER_URL = "{}://{}:{}@{}/{}".format(CELERY_BROKER_TRANSPORT,  # noqa: F405, UP032
+                                       CELERY_BROKER_USER,  # noqa: F405
+                                       CELERY_BROKER_PASSWORD,  # noqa: F405
+                                       CELERY_BROKER_HOSTNAME,  # noqa: F405
+                                       CELERY_BROKER_VHOST)  # noqa: F405
 try:
     BROKER_TRANSPORT_OPTIONS = {
         'fanout_patterns': True,
@@ -271,15 +271,15 @@ except TypeError as exc:
     raise ImproperlyConfigured('CELERY_BROKER_TRANSPORT_OPTIONS must be a dict') from exc
 
 # Event tracking
-TRACKING_BACKENDS.update(_YAML_TOKENS.get("TRACKING_BACKENDS", {}))
-EVENT_TRACKING_BACKENDS['tracking_logs']['OPTIONS']['backends'].update(
+TRACKING_BACKENDS.update(_YAML_TOKENS.get("TRACKING_BACKENDS", {}))  # noqa: F405
+EVENT_TRACKING_BACKENDS['tracking_logs']['OPTIONS']['backends'].update(  # noqa: F405
     _YAML_TOKENS.get("EVENT_TRACKING_BACKENDS", {})
 )
-EVENT_TRACKING_BACKENDS['segmentio']['OPTIONS']['processors'][0]['OPTIONS']['whitelist'].extend(
-    EVENT_TRACKING_SEGMENTIO_EMIT_WHITELIST
+EVENT_TRACKING_BACKENDS['segmentio']['OPTIONS']['processors'][0]['OPTIONS']['whitelist'].extend(  # noqa: F405
+    EVENT_TRACKING_SEGMENTIO_EMIT_WHITELIST  # noqa: F405
 )
 
-if ENABLE_THIRD_PARTY_AUTH:
+if ENABLE_THIRD_PARTY_AUTH:  # noqa: F405
     AUTHENTICATION_BACKENDS = _YAML_TOKENS.get('THIRD_PARTY_AUTH_BACKENDS', [
         'social_core.backends.google.GoogleOAuth2',
         'social_core.backends.linkedin.LinkedinOAuth2',
@@ -289,7 +289,7 @@ if ENABLE_THIRD_PARTY_AUTH:
         'common.djangoapps.third_party_auth.identityserver3.IdentityServer3',
         'common.djangoapps.third_party_auth.saml.SAMLAuthBackend',
         'common.djangoapps.third_party_auth.lti.LTIAuthBackend',
-    ]) + list(AUTHENTICATION_BACKENDS)
+    ]) + list(AUTHENTICATION_BACKENDS)  # noqa: F405
 
     # The reduced session expiry time during the third party login pipeline. (Value in seconds)
     SOCIAL_AUTH_PIPELINE_TIMEOUT = _YAML_TOKENS.get('SOCIAL_AUTH_PIPELINE_TIMEOUT', 600)
@@ -305,7 +305,7 @@ if ENABLE_THIRD_PARTY_AUTH:
     if hours := _YAML_TOKENS.get('THIRD_PARTY_AUTH_SAML_FETCH_PERIOD_HOURS', 24):
         # If we didn't override the value in YAML, OR we overrode it to a truthy value,
         # then update CELERYBEAT_SCHEDULE.
-        CELERYBEAT_SCHEDULE['refresh-saml-metadata'] = {
+        CELERYBEAT_SCHEDULE['refresh-saml-metadata'] = {  # noqa: F405
             'task': 'common.djangoapps.third_party_auth.tasks.fetch_saml_metadata',
             'schedule': datetime.timedelta(hours=hours),
         }
@@ -319,14 +319,14 @@ if ENABLE_THIRD_PARTY_AUTH:
 OAUTH_ENFORCE_SECURE = True
 OAUTH_ENFORCE_CLIENT_SECURE = True
 # Defaults for the following are defined in lms.envs.common
-OAUTH_EXPIRE_DELTA = datetime.timedelta(days=OAUTH_EXPIRE_CONFIDENTIAL_CLIENT_DAYS)
-OAUTH_EXPIRE_DELTA_PUBLIC = datetime.timedelta(days=OAUTH_EXPIRE_PUBLIC_CLIENT_DAYS)
+OAUTH_EXPIRE_DELTA = datetime.timedelta(days=OAUTH_EXPIRE_CONFIDENTIAL_CLIENT_DAYS)  # noqa: F405
+OAUTH_EXPIRE_DELTA_PUBLIC = datetime.timedelta(days=OAUTH_EXPIRE_PUBLIC_CLIENT_DAYS)  # noqa: F405
 
 if (
-   ENABLE_COURSEWARE_SEARCH or
-   ENABLE_DASHBOARD_SEARCH or
-   ENABLE_COURSE_DISCOVERY or
-   ENABLE_TEAMS
+   ENABLE_COURSEWARE_SEARCH or  # noqa: F405
+   ENABLE_DASHBOARD_SEARCH or  # noqa: F405
+   ENABLE_COURSE_DISCOVERY or  # noqa: F405
+   ENABLE_TEAMS  # noqa: F405
    ):
     # Use ElasticSearch as the search engine herein
     SEARCH_ENGINE = "search.elastic.ElasticSearchEngine"
@@ -334,20 +334,20 @@ if (
 # TODO: Once we have successfully upgraded to ES7, switch this back to ELASTIC_SEARCH_CONFIG.
 ELASTIC_SEARCH_CONFIG = _YAML_TOKENS.get('ELASTIC_SEARCH_CONFIG_ES7', [{}])
 
-XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = FEATURES["LICENSING"]
-XBLOCK_SETTINGS.setdefault("VideoBlock", {})['YOUTUBE_API_KEY'] = YOUTUBE_API_KEY
+XBLOCK_SETTINGS.setdefault("VideoBlock", {})["licensing_enabled"] = FEATURES["LICENSING"]  # noqa: F405
+XBLOCK_SETTINGS.setdefault("VideoBlock", {})['YOUTUBE_API_KEY'] = YOUTUBE_API_KEY  # noqa: F405
 
 ##### Custom Courses for EdX #####
-if CUSTOM_COURSES_EDX:
-    INSTALLED_APPS += ['lms.djangoapps.ccx', 'openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig']
-    MODULESTORE_FIELD_OVERRIDE_PROVIDERS += (
+if CUSTOM_COURSES_EDX:  # noqa: F405
+    INSTALLED_APPS += ['lms.djangoapps.ccx', 'openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig']  # noqa: F405
+    MODULESTORE_FIELD_OVERRIDE_PROVIDERS += (  # noqa: F405
         'lms.djangoapps.ccx.overrides.CustomCoursesForEdxOverrideProvider',
     )
 
-FIELD_OVERRIDE_PROVIDERS = tuple(FIELD_OVERRIDE_PROVIDERS)
+FIELD_OVERRIDE_PROVIDERS = tuple(FIELD_OVERRIDE_PROVIDERS)  # noqa: F405
 
 ##### Individual Due Date Extensions #####
-if INDIVIDUAL_DUE_DATES:
+if INDIVIDUAL_DUE_DATES:  # noqa: F405
     FIELD_OVERRIDE_PROVIDERS += (
         'lms.djangoapps.courseware.student_field_overrides.IndividualStudentOverrideProvider',
     )
@@ -358,7 +358,7 @@ FIELD_OVERRIDE_PROVIDERS += (
 )
 
 ##### Self-Paced Course Due Dates #####
-XBLOCK_FIELD_DATA_WRAPPERS += (
+XBLOCK_FIELD_DATA_WRAPPERS += (  # noqa: F405
     'lms.djangoapps.courseware.field_overrides:OverrideModulestoreFieldData.wrap',
 )
 
@@ -372,14 +372,14 @@ PROFILE_IMAGE_DEFAULT_FILENAME = 'images/profiles/default'
 ##### Credit Provider Integration #####
 
 ##################### LTI Provider #####################
-if ENABLE_LTI_PROVIDER:
+if ENABLE_LTI_PROVIDER:  # noqa: F405
     INSTALLED_APPS.append('lms.djangoapps.lti_provider.apps.LtiProviderConfig')
     AUTHENTICATION_BACKENDS.append('lms.djangoapps.lti_provider.users.LtiBackend')
 
 ##################### Credit Provider help link ####################
 
 #### JWT configuration ####
-JWT_AUTH.update(_YAML_TOKENS.get('JWT_AUTH', {}))
+JWT_AUTH.update(_YAML_TOKENS.get('JWT_AUTH', {}))  # noqa: F405
 
 
 ############## ENTERPRISE SERVICE LMS CONFIGURATION ##################################
@@ -387,14 +387,14 @@ JWT_AUTH.update(_YAML_TOKENS.get('JWT_AUTH', {}))
 # which are not provided by the Enterprise service. These settings override the
 # base values for the parameters as defined in common.py
 
-ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS = set(ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS)
+ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS = set(ENTERPRISE_EXCLUDED_REGISTRATION_FIELDS)  # noqa: F405
 
 ########################## Extra middleware classes  #######################
 
 # Allow extra middleware classes to be added to the app through configuration.
 # TODO: Declare `EXTRA_MIDDLEWARE_CLASSES = []` in lms/envs/common.py so that we can simplify this
 #       next line. See CMS settings for the example of what we want.
-MIDDLEWARE.extend(_YAML_TOKENS.get('EXTRA_MIDDLEWARE_CLASSES', []))
+MIDDLEWARE.extend(_YAML_TOKENS.get('EXTRA_MIDDLEWARE_CLASSES', []))  # noqa: F405
 
 
 #######################################################################################################################
@@ -442,69 +442,69 @@ ALTERNATE_ENV_TASKS = {}
 # Defines the task -> alternate worker queue to be used when routing.
 EXPLICIT_QUEUES = {
     'openedx.core.djangoapps.content.course_overviews.tasks.async_course_overview_update': {
-        'queue': GRADES_DOWNLOAD_ROUTING_KEY},
+        'queue': GRADES_DOWNLOAD_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.bulk_email.tasks.send_course_email': {
-        'queue': BULK_EMAIL_ROUTING_KEY},
+        'queue': BULK_EMAIL_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.heartbeat.tasks.sample_task': {
-        'queue': HEARTBEAT_CELERY_ROUTING_KEY},
+        'queue': HEARTBEAT_CELERY_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.instructor_task.tasks.calculate_grades_csv': {
-        'queue': GRADES_DOWNLOAD_ROUTING_KEY},
+        'queue': GRADES_DOWNLOAD_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.instructor_task.tasks.calculate_problem_grade_report': {
-        'queue': GRADES_DOWNLOAD_ROUTING_KEY},
+        'queue': GRADES_DOWNLOAD_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.instructor_task.tasks.generate_certificates': {
-        'queue': GRADES_DOWNLOAD_ROUTING_KEY},
+        'queue': GRADES_DOWNLOAD_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.verify_student.tasks.send_verification_status_email': {
-        'queue': ACE_ROUTING_KEY},
+        'queue': ACE_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.verify_student.tasks.send_ace_message': {
-        'queue': ACE_ROUTING_KEY},
+        'queue': ACE_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.verify_student.tasks.send_request_to_ss_for_user': {
-        'queue': SOFTWARE_SECURE_VERIFICATION_ROUTING_KEY},
+        'queue': SOFTWARE_SECURE_VERIFICATION_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.schedules.tasks._recurring_nudge_schedule_send': {
-        'queue': ACE_ROUTING_KEY},
+        'queue': ACE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.schedules.tasks._upgrade_reminder_schedule_send': {
-        'queue': ACE_ROUTING_KEY},
+        'queue': ACE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.schedules.tasks._course_update_schedule_send': {
-        'queue': ACE_ROUTING_KEY},
+        'queue': ACE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.schedules.tasks.v1.tasks.send_grade_to_credentials': {
-        'queue': CREDENTIALS_GENERATION_ROUTING_KEY},
+        'queue': CREDENTIALS_GENERATION_ROUTING_KEY},  # noqa: F405
     'common.djangoapps.entitlements.tasks.expire_old_entitlements': {
-        'queue': ENTITLEMENTS_EXPIRATION_ROUTING_KEY},
+        'queue': ENTITLEMENTS_EXPIRATION_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.grades.tasks.recalculate_course_and_subsection_grades_for_user': {
-        'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},
+        'queue': POLICY_CHANGE_GRADES_ROUTING_KEY},  # noqa: F405
     'lms.djangoapps.grades.tasks.recalculate_subsection_grade_v3': {
-        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},
+        'queue': SINGLE_LEARNER_COURSE_REGRADE_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.award_program_certificates': {
-        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},
+        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.revoke_program_certificates': {
-        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},
+        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.update_certificate_available_date_on_course_update': {
-        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},
+        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405
     'openedx.core.djangoapps.programs.tasks.award_course_certificate': {
-        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},
+        'queue': PROGRAM_CERTIFICATES_ROUTING_KEY},  # noqa: F405
     'openassessment.workflow.tasks.update_workflows_for_all_blocked_submissions_task': {
-        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},
+        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},  # noqa: F405
     'openassessment.workflow.tasks.update_workflows_for_course_task': {
-        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},
+        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},  # noqa: F405
     'openassessment.workflow.tasks.update_workflows_for_ora_block_task': {
-        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},
+        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},  # noqa: F405
     'openassessment.workflow.tasks.update_workflow_for_submission_task': {
-        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},
+        'queue': ORA_WORKFLOW_UPDATE_ROUTING_KEY},  # noqa: F405
 
 }
 
 ############## XBlock extra mixins ############################
-XBLOCK_MIXINS += tuple(XBLOCK_EXTRA_MIXINS)
+XBLOCK_MIXINS += tuple(XBLOCK_EXTRA_MIXINS)  # noqa: F405
 
 ############## DRF overrides ##############
-REST_FRAMEWORK.update(_YAML_TOKENS.get('REST_FRAMEWORK', {}))
+REST_FRAMEWORK.update(_YAML_TOKENS.get('REST_FRAMEWORK', {}))  # noqa: F405
 
 ############################# CELERY ############################
-CELERY_IMPORTS.extend(_YAML_TOKENS.get('CELERY_EXTRA_IMPORTS', []))
+CELERY_IMPORTS.extend(_YAML_TOKENS.get('CELERY_EXTRA_IMPORTS', []))  # noqa: F405
 
 # keys for  big blue button live provider
 # TODO: This should not be in the core platform. If it has to stay for now, though, then we should move these
 #       defaults into common.py
-COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {
+COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {  # noqa: F405
     "KEY": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_KEY'),
     "SECRET": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_SECRET'),
     "URL": _YAML_TOKENS.get('BIG_BLUE_BUTTON_GLOBAL_URL'),
@@ -512,7 +512,7 @@ COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = {
 
 ############## Event bus producer ##############
 EVENT_BUS_PRODUCER_CONFIG = merge_producer_configs(
-    EVENT_BUS_PRODUCER_CONFIG,
+    EVENT_BUS_PRODUCER_CONFIG,  # noqa: F405
     _YAML_TOKENS.get('EVENT_BUS_PRODUCER_CONFIG', {})
 )
 

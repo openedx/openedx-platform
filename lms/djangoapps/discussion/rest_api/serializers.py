@@ -3,7 +3,7 @@ Discussion API serializers
 """
 import html
 import re
-from typing import Dict
+from typing import Dict  # noqa: UP035
 from urllib.parse import urlencode, urlunparse
 
 from bs4 import BeautifulSoup
@@ -126,7 +126,7 @@ def validate_close_reason_code(value):
         raise ValidationError("Invalid close reason code")
 
 
-def _validate_privileged_access(context: Dict) -> bool:
+def _validate_privileged_access(context: Dict) -> bool:  # noqa: UP006
     """
     Return the field specified by ``field_name`` if requesting user is privileged.
 
@@ -741,7 +741,7 @@ class DiscussionTopicSerializerV2(serializers.Serializer):
         help_text="Whether this topic is enabled in its context",
     )
 
-    def get_thread_counts(self, obj: DiscussionTopicLink) -> Dict[str, int]:
+    def get_thread_counts(self, obj: DiscussionTopicLink) -> Dict[str, int]:  # noqa: UP006
         """
         Get thread counts from provided context
         """

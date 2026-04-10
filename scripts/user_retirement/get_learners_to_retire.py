@@ -63,7 +63,7 @@ def get_learners_to_retire(config_file,
         click.echo('A config file is required.')
         sys.exit(-1)
 
-    with io.open(config_file, 'r') as config:
+    with io.open(config_file, 'r') as config:  # noqa: UP020
         config_yaml = yaml.safe_load(config)
 
     user_count_error_threshold = int(user_count_error_threshold)
@@ -86,7 +86,7 @@ def get_learners_to_retire(config_file,
 
     if learners_to_retire_cnt > user_count_error_threshold:
         click.echo(
-            'Too many learners to retire! Expected {} or fewer, got {}!'.format(
+            'Too many learners to retire! Expected {} or fewer, got {}!'.format(  # noqa: UP032
                 user_count_error_threshold,
                 learners_to_retire_cnt
             )

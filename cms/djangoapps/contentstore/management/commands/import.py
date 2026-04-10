@@ -49,7 +49,7 @@ class Command(BaseCommand):
         do_import_python_lib = do_import_static or not options.get('nopythonlib', False)
         python_lib_filename = options.get('python_lib_filename')
 
-        output = (
+        output = (  # noqa: UP032
             "Importing...\n"
             "    data_dir={data}, source_dirs={courses}\n"
             "    Importing static content? {import_static}\n"

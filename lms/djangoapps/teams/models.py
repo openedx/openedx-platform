@@ -113,7 +113,7 @@ class CourseTeam(models.Model):
         return f"{self.name} in {self.course_id}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeam"
             " id={0.id}"
             " team_id={0.team_id}"
@@ -123,10 +123,10 @@ class CourseTeam(models.Model):
             ">"
         ).format(self)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "teams"
 
-    team_id = models.SlugField(max_length=255, unique=True)
+    team_id = models.SlugField(max_length=255, unique=True)  # noqa: DJ012
     discussion_topic_id = models.SlugField(max_length=255, unique=True)
     name = models.CharField(max_length=255, db_index=True)
     course_id = CourseKeyField(db_index=True)
@@ -233,7 +233,7 @@ class CourseTeamMembership(models.Model):
         return f"{self.user.username} is member of {self.team}"
 
     def __repr__(self):
-        return (  # lint-amnesty, pylint: disable=missing-format-attribute
+        return (  # lint-amnesty, pylint: disable=missing-format-attribute  # noqa: UP032
             "<CourseTeamMembership"
             " id={0.id}"
             " user_id={0.user.id}"
@@ -241,11 +241,11 @@ class CourseTeamMembership(models.Model):
             ">"
         ).format(self)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "teams"
         unique_together = (('user', 'team'),)
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # noqa: DJ012
     team = models.ForeignKey(CourseTeam, related_name='membership', on_delete=models.CASCADE)
     date_joined = models.DateTimeField(auto_now_add=True)
     last_activity_at = models.DateTimeField()

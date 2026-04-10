@@ -160,7 +160,7 @@ class AssetsViewPostTest(AssetsViewTestCase, ModuleStoreTestCase, APITestCase):
         mock_handle_assets.assert_called_once()
         passed_args = mock_handle_assets.call_args[0][0]
 
-        course_id = self.get_course_key_string()
+        course_id = self.get_course_key_string()  # noqa: F841
 
         assert passed_args.data.get("file").name == mock_image.name
         assert passed_args.method == "POST"
@@ -203,7 +203,7 @@ class AssetsViewPutTest(AssetsViewTestCase, ModuleStoreTestCase, APITestCase):
         mock_handle_assets.assert_called_once()
         passed_args = mock_handle_assets.call_args[0][0]
 
-        course_id = self.get_course_key_string()
+        course_id = self.get_course_key_string()  # noqa: F841
 
         assert passed_args.data.get("locked") is True
         assert passed_args.method == "PUT"

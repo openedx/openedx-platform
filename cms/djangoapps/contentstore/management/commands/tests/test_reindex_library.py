@@ -57,24 +57,24 @@ class TestReindexLibrary(ModuleStoreTestCase):
 
     def test_given_no_arguments_raises_command_error(self):
         """ Test that raises CommandError for incorrect arguments """
-        with self.assertRaisesRegex(CommandError, ".* requires one or more *"):
+        with self.assertRaisesRegex(CommandError, ".* requires one or more *"):  # noqa: PT027
             call_command('reindex_library')
 
     @ddt.data('qwerty', 'invalid_key', 'xblock-v1:qwe+rty')
     def test_given_invalid_lib_key_raises_not_found(self, invalid_key):
         """ Test that raises InvalidKeyError for invalid keys """
-        with self.assertRaises(InvalidKeyError):
+        with self.assertRaises(InvalidKeyError):  # noqa: PT027
             call_command('reindex_library', invalid_key)
 
     def test_given_course_key_raises_command_error(self):
         """ Test that raises CommandError if course key is passed """
-        with self.assertRaisesRegex(CommandError, ".* is not a library key"):
+        with self.assertRaisesRegex(CommandError, ".* is not a library key"):  # noqa: PT027
             call_command('reindex_library', str(self.first_course.id))
 
-        with self.assertRaisesRegex(CommandError, ".* is not a library key"):
+        with self.assertRaisesRegex(CommandError, ".* is not a library key"):  # noqa: PT027
             call_command('reindex_library', str(self.second_course.id))
 
-        with self.assertRaisesRegex(CommandError, ".* is not a library key"):
+        with self.assertRaisesRegex(CommandError, ".* is not a library key"):  # noqa: PT027
             call_command(
                 'reindex_library',
                 str(self.second_course.id),
@@ -86,11 +86,11 @@ class TestReindexLibrary(ModuleStoreTestCase):
         with mock.patch(self.REINDEX_PATH_LOCATION) as patched_index, \
                 mock.patch(self.MODULESTORE_PATCH_LOCATION, mock.Mock(return_value=self.store)):
             call_command('reindex_library', str(self._get_lib_key(self.first_lib)))
-            self.assertEqual(patched_index.mock_calls, self._build_calls(self.first_lib))
+            self.assertEqual(patched_index.mock_calls, self._build_calls(self.first_lib))  # noqa: PT009
             patched_index.reset_mock()
 
             call_command('reindex_library', str(self._get_lib_key(self.second_lib)))
-            self.assertEqual(patched_index.mock_calls, self._build_calls(self.second_lib))
+            self.assertEqual(patched_index.mock_calls, self._build_calls(self.second_lib))  # noqa: PT009
             patched_index.reset_mock()
 
             call_command(
@@ -99,7 +99,7 @@ class TestReindexLibrary(ModuleStoreTestCase):
                 str(self._get_lib_key(self.second_lib))
             )
             expected_calls = self._build_calls(self.first_lib, self.second_lib)
-            self.assertEqual(patched_index.mock_calls, expected_calls)
+            self.assertEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
     def test_given_all_key_prompts_and_reindexes_all_libraries(self):
         """ Test that reindexes all libraries when --all key is given and confirmed """
@@ -111,7 +111,7 @@ class TestReindexLibrary(ModuleStoreTestCase):
 
                 patched_yes_no.assert_called_once_with(ReindexCommand.CONFIRMATION_PROMPT, default='no')
                 expected_calls = self._build_calls(self.first_lib, self.second_lib)
-                self.assertCountEqual(patched_index.mock_calls, expected_calls)
+                self.assertCountEqual(patched_index.mock_calls, expected_calls)  # noqa: PT009
 
     def test_given_all_key_prompts_and_reindexes_all_libraries_cancelled(self):
         """ Test that does not reindex anything when --all key is given and cancelled """
@@ -129,5 +129,5 @@ class TestReindexLibrary(ModuleStoreTestCase):
         with mock.patch(self.REINDEX_PATH_LOCATION) as patched_index:
             patched_index.side_effect = SearchIndexingError("message", [])
 
-            with self.assertRaises(SearchIndexingError):
+            with self.assertRaises(SearchIndexingError):  # noqa: PT027
                 call_command('reindex_library', str(self._get_lib_key(self.second_lib)))

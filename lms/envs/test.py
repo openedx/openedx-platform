@@ -26,8 +26,8 @@ from xmodule.modulestore.modulestore_settings import (
     update_module_store_settings,  # lint-amnesty, pylint: disable=wrong-import-order
 )
 
-from .common import *
-from openedx.envs.test import *  # must come after .common to override Derived values with literals
+from .common import *  # noqa: F403
+from openedx.envs.test import *  # must come after .common to override Derived values with literals  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -50,18 +50,18 @@ ENABLE_BULK_ENROLLMENT_VIEW = True
 
 ENABLE_BULK_USER_RETIREMENT = True
 
-COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"
+COMMON_TEST_DATA_ROOT = COMMON_ROOT / "test" / "data"  # noqa: F405
 
-COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]
+COMPREHENSIVE_THEME_DIRS = [REPO_ROOT / "themes", REPO_ROOT / "common/test"]  # noqa: F405
 
-WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'
+WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] = 'webpack_loader.loader.FakeWebpackLoader'  # noqa: F405
 
-STATUS_MESSAGE_PATH = TEST_ROOT / "status_message.json"
+STATUS_MESSAGE_PATH = TEST_ROOT / "status_message.json"  # noqa: F405
 
-COURSES_ROOT = TEST_ROOT / "data"
+COURSES_ROOT = TEST_ROOT / "data"  # noqa: F405
 
 # Where the content data is checked out.
-GITHUB_REPO_ROOT = ENV_ROOT / "data"
+GITHUB_REPO_ROOT = ENV_ROOT / "data"  # noqa: F405
 
 USE_I18N = True
 LANGUAGE_CODE = 'en'  # tests assume they will get English.
@@ -84,7 +84,7 @@ COMMENTS_SERVICE_URL = 'http://localhost:4567'
 
 DJFS = {
     'type': 'osfs',
-    'directory_root': f'{DATA_DIR}/django-pyfs/static/django-pyfs',
+    'directory_root': f'{DATA_DIR}/django-pyfs/static/django-pyfs',  # noqa: F405
     'url_root': '/static/django-pyfs',
 }
 
@@ -96,23 +96,23 @@ API_ACCESS_MANAGER_EMAIL = 'api-access@example.com'
 # If we don't add these settings, then Django templates that can't
 # find pipelined assets will raise a ValueError.
 # http://stackoverflow.com/questions/12816941/unit-testing-with-django-pipeline
-STORAGES['staticfiles']['BACKEND'] = 'pipeline.storage.NonPackagingPipelineStorage'
+STORAGES['staticfiles']['BACKEND'] = 'pipeline.storage.NonPackagingPipelineStorage'  # noqa: F405
 
 # Don't use compression during tests
-PIPELINE['JS_COMPRESSOR'] = None
+PIPELINE['JS_COMPRESSOR'] = None  # noqa: F405
 
 update_module_store_settings(
-    MODULESTORE,
+    MODULESTORE,  # noqa: F405
     module_store_options={
-        'fs_root': TEST_ROOT / "data",
+        'fs_root': TEST_ROOT / "data",  # noqa: F405
     },
     xml_store_options={
-        'data_dir': mkdtemp_clean(dir=TEST_ROOT),  # never inadvertently load all the XML courses
+        'data_dir': mkdtemp_clean(dir=TEST_ROOT),  # never inadvertently load all the XML courses  # noqa: F405
     },
     doc_store_settings={
-        'host': MONGO_HOST,
-        'port': MONGO_PORT_NUM,
-        'db': f'test_xmodule_{THIS_UUID}',
+        'host': MONGO_HOST,  # noqa: F405
+        'port': MONGO_PORT_NUM,  # noqa: F405
+        'db': f'test_xmodule_{THIS_UUID}',  # noqa: F405
         'collection': 'test_modulestore',
     },
 )
@@ -120,9 +120,9 @@ update_module_store_settings(
 CONTENTSTORE = {
     'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
     'DOC_STORE_CONFIG': {
-        'host': MONGO_HOST,
-        'db': f'test_xcontent_{THIS_UUID}',
-        'port': MONGO_PORT_NUM,
+        'host': MONGO_HOST,  # noqa: F405
+        'db': f'test_xcontent_{THIS_UUID}',  # noqa: F405
+        'port': MONGO_PORT_NUM,  # noqa: F405
     }
 }
 
@@ -184,7 +184,7 @@ AUTHENTICATION_BACKENDS = [
     'common.djangoapps.third_party_auth.dummy.DummyBackend',
     'common.djangoapps.third_party_auth.saml.SAMLAuthBackend',
     'common.djangoapps.third_party_auth.lti.LTIAuthBackend',
-] + AUTHENTICATION_BACKENDS
+] + AUTHENTICATION_BACKENDS  # noqa: F405
 
 THIRD_PARTY_AUTH_CUSTOM_AUTH_FORMS = {
     'custom1': {
@@ -240,22 +240,22 @@ HOSTNAME_MODULESTORE_DEFAULT_MAPPINGS = {}
 CLASS_DASHBOARD = True
 
 # add extra template directory for test-only templates
-MAKO_TEMPLATE_DIRS_BASE.extend([
-    COMMON_ROOT / 'test' / 'templates',
-    COMMON_ROOT / 'test' / 'test_sites',
-    REPO_ROOT / 'openedx' / 'core' / 'djangolib' / 'tests' / 'templates',
+MAKO_TEMPLATE_DIRS_BASE.extend([  # noqa: F405
+    COMMON_ROOT / 'test' / 'templates',  # noqa: F405
+    COMMON_ROOT / 'test' / 'test_sites',  # noqa: F405
+    REPO_ROOT / 'openedx' / 'core' / 'djangolib' / 'tests' / 'templates',  # noqa: F405
 ])
 
 # Setting for the testing of Software Secure Result Callback
-VERIFY_STUDENT["SOFTWARE_SECURE"] = {
+VERIFY_STUDENT["SOFTWARE_SECURE"] = {  # noqa: F405
     "API_ACCESS_KEY": "BBBBBBBBBBBBBBBBBBBB",
     "API_SECRET_KEY": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
 }
 
 ######### dashboard git log settings #########
 MONGODB_LOG = {
-    'host': MONGO_HOST,
-    'port': MONGO_PORT_NUM,
+    'host': MONGO_HOST,  # noqa: F405
+    'port': MONGO_PORT_NUM,  # noqa: F405
     'user': '',
     'password': '',
     'db': 'xlog',
@@ -274,13 +274,13 @@ FACEBOOK_APP_ID = "Test"
 FACEBOOK_API_VERSION = "v2.8"
 
 ######### custom courses #########
-INSTALLED_APPS += ['lms.djangoapps.ccx', 'openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig']
+INSTALLED_APPS += ['lms.djangoapps.ccx', 'openedx.core.djangoapps.ccxcon.apps.CCXConnectorConfig']  # noqa: F405
 
 # Set dummy values for profile image settings.
 PROFILE_IMAGE_BACKEND = {
     'class': 'openedx.core.storage.OverwriteStorage',
     'options': {
-        'location': MEDIA_ROOT,
+        'location': MEDIA_ROOT,  # noqa: F405
         'base_url': 'http://example-storage.com/profile-images/',
     },
 }
@@ -306,7 +306,7 @@ COURSE_BLOCKS_API_EXTRA_FIELDS = [
 COURSE_CATALOG_URL_ROOT = 'https://catalog.example.com'
 COURSE_CATALOG_API_URL = f'{COURSE_CATALOG_URL_ROOT}/api/v1'
 
-COMPREHENSIVE_THEME_LOCALE_PATHS = [REPO_ROOT / "themes/conf/locale", ]
+COMPREHENSIVE_THEME_LOCALE_PATHS = [REPO_ROOT / "themes/conf/locale", ]  # noqa: F405
 
 PREPEND_LOCALE_PATHS = []
 
@@ -330,16 +330,16 @@ ENTERPRISE_LEARNER_PORTAL_BASE_URL = 'http://' + ENTERPRISE_LEARNER_PORTAL_NETLO
 
 ACTIVATION_EMAIL_FROM_ADDRESS = 'test_activate@edx.org'
 
-TEMPLATES[0]['OPTIONS']['debug'] = True
-TEMPLATES.append(
+TEMPLATES[0]['OPTIONS']['debug'] = True  # noqa: F405
+TEMPLATES.append(  # noqa: F405
     {
         # This separate copy of the Mako backend is used to test rendering previews in the 'lms.main' namespace
         'NAME': 'preview',
         'BACKEND': 'common.djangoapps.edxmako.backend.Mako',
         'APP_DIRS': False,
-        'DIRS': MAKO_TEMPLATE_DIRS_BASE,
+        'DIRS': MAKO_TEMPLATE_DIRS_BASE,  # noqa: F405
         'OPTIONS': {
-            'context_processors': CONTEXT_PROCESSORS,
+            'context_processors': CONTEXT_PROCESSORS,  # noqa: F405
             'debug': False,
             'namespace': 'lms.main',
         }
@@ -350,7 +350,7 @@ TEMPLATES.append(
 
 # Most of the JWT_AUTH settings come from lms/envs/common.py (from openedx/envs/common.py),
 # but here we update to use JWKS values from openedx/envs/test.py for testing.
-JWT_AUTH.update(jwt_jwks_values)
+JWT_AUTH.update(jwt_jwks_values)  # noqa: F405
 
 ####################### Plugin Settings ##########################
 
@@ -361,23 +361,23 @@ add_plugins(__name__, ProjectType.LMS, SettingsType.TEST)
 derive_settings(__name__)
 
 ############################ STATIC FILES #############################
-STATICFILES_DIRS.append(("uploads", MEDIA_ROOT))
+STATICFILES_DIRS.append(("uploads", MEDIA_ROOT))  # noqa: F405
 
 _NEW_STATICFILES_DIRS = []
 # Strip out any static files that aren't in the repository root
 # so that the tests can run with only the edx-platform directory checked out
-for static_dir in STATICFILES_DIRS:  # pylint: disable=not-an-iterable
+for static_dir in STATICFILES_DIRS:  # pylint: disable=not-an-iterable  # noqa: F405
     # Handle both tuples and non-tuple directory definitions
     try:
         _, data_dir = static_dir
     except ValueError:
         data_dir = static_dir
 
-    if data_dir.startswith(REPO_ROOT):
+    if data_dir.startswith(REPO_ROOT):  # noqa: F405
         _NEW_STATICFILES_DIRS.append(static_dir)
 STATICFILES_DIRS = _NEW_STATICFILES_DIRS
 
-FILE_UPLOAD_TEMP_DIR = TEST_ROOT / "uploads"
+FILE_UPLOAD_TEMP_DIR = TEST_ROOT / "uploads"  # noqa: F405
 FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.MemoryFileUploadHandler',
     'django.core.files.uploadhandler.TemporaryFileUploadHandler',
@@ -493,7 +493,7 @@ TOKEN_SIGNING = {
 }
 
 ### Course Live
-COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = big_blue_button_credentials
+COURSE_LIVE_GLOBAL_CREDENTIALS["BIG_BLUE_BUTTON"] = big_blue_button_credentials  # noqa: F405
 
 ### Override default production settings for testing purposes
 
@@ -503,19 +503,19 @@ CC_MERCHANT_NAME = "Your Platform Name Here"
 CERT_QUEUE = "certificates"
 CMS_BASE = "localhost:18010"
 COMMENTS_SERVICE_KEY = "password"
-del BROKER_HEARTBEAT
-del BROKER_HEARTBEAT_CHECKRATE
-del BROKER_USE_SSL
-del DEFAULT_ENTERPRISE_API_URL
-del DEFAULT_ENTERPRISE_CONSENT_API_URL
-del EMAIL_FILE_PATH
-del ENABLE_REQUIRE_THIRD_PARTY_AUTH
-del ENTITLEMENTS_EXPIRATION_ROUTING_KEY
-del PYTHON_LIB_FILENAME
-del REGISTRATION_CODE_LENGTH
-del SESSION_INACTIVITY_TIMEOUT_IN_SECONDS
-del SSL_AUTH_DN_FORMAT_STRING
-del SSL_AUTH_EMAIL_DOMAIN
+del BROKER_HEARTBEAT  # noqa: F821
+del BROKER_HEARTBEAT_CHECKRATE  # noqa: F821
+del BROKER_USE_SSL  # noqa: F821
+del DEFAULT_ENTERPRISE_API_URL  # noqa: F821
+del DEFAULT_ENTERPRISE_CONSENT_API_URL  # noqa: F821
+del EMAIL_FILE_PATH  # noqa: F821
+del ENABLE_REQUIRE_THIRD_PARTY_AUTH  # noqa: F821
+del ENTITLEMENTS_EXPIRATION_ROUTING_KEY  # noqa: F821
+del PYTHON_LIB_FILENAME  # noqa: F821
+del REGISTRATION_CODE_LENGTH  # noqa: F821
+del SESSION_INACTIVITY_TIMEOUT_IN_SECONDS  # noqa: F821
+del SSL_AUTH_DN_FORMAT_STRING  # noqa: F821
+del SSL_AUTH_EMAIL_DOMAIN  # noqa: F821
 EDX_API_KEY = "PUT_YOUR_API_KEY_HERE"
 ENTERPRISE_PUBLIC_ENROLLMENT_API_URL = "https://localhost:18000/api/enrollment/v1/"
 GOOGLE_ANALYTICS_LINKEDIN = "GOOGLE_ANALYTICS_LINKEDIN_DUMMY"

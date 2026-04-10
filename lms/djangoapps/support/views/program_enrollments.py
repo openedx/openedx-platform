@@ -277,7 +277,7 @@ class ProgramEnrollmentsInspectorView(ProgramEnrollmentInspector, View):
                 selected_provider,
             )
             if not learner_program_enrollments:
-                search_error = 'No user found for external key {} for institution {}'.format(
+                search_error = 'No user found for external key {} for institution {}'.format(  # noqa: UP032
                     external_user_key, org_key
                 )
         elif not org_key and not external_user_key:
@@ -374,7 +374,7 @@ class ProgramEnrollmentsInspectorAPIView(ProgramEnrollmentInspector, APIView):
                 selected_provider,
             )
             if not learner_program_enrollments:
-                search_error = 'No user found for external key {} for institution {}'.format(
+                search_error = 'No user found for external key {} for institution {}'.format(  # noqa: UP032
                     external_user_key, org_key
                 )
         else:

@@ -16,11 +16,11 @@ from edx_django_utils.plugins import add_plugins
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 
-from .production import *  # pylint: disable=wildcard-import, unused-wildcard-import
+from .production import *  # pylint: disable=wildcard-import, unused-wildcard-import  # noqa: F403
 
 FEATURES = FeaturesProxy(globals())
 # Don't use S3 in devstack, fall back to filesystem
-STORAGES['default']['BACKEND'] = 'django.core.files.storage.FileSystemStorage'
+STORAGES['default']['BACKEND'] = 'django.core.files.storage.FileSystemStorage'  # noqa: F405
 ORA2_FILEUPLOAD_BACKEND = 'django'
 
 
@@ -28,7 +28,7 @@ DEBUG = True
 INTERNAL_IPS = ('127.0.0.1',)
 
 USE_I18N = True
-DEFAULT_TEMPLATE_ENGINE['OPTIONS']['debug'] = True
+DEFAULT_TEMPLATE_ENGINE['OPTIONS']['debug'] = True  # noqa: F405
 LMS_BASE = 'localhost:18000'
 CMS_BASE = 'localhost:18010'
 SITE_NAME = LMS_BASE
@@ -64,11 +64,11 @@ for log_name, log_level in LOG_OVERRIDES:
     logging.getLogger(log_name).setLevel(log_level)
 
 # Docker does not support the syslog socket at /dev/log. Rely on the console.
-LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {
+LOGGING['handlers']['local'] = LOGGING['handlers']['tracking'] = {  # noqa: F405
     'class': 'logging.NullHandler',
 }
 
-LOGGING['loggers']['tracking']['handlers'] = ['console']
+LOGGING['loggers']['tracking']['handlers'] = ['console']  # noqa: F405
 
 ################################ EMAIL ########################################
 
@@ -125,8 +125,8 @@ def should_show_debug_toolbar(request):  # lint-amnesty, pylint: disable=missing
 
 ########################### PIPELINE #################################
 
-PIPELINE['PIPELINE_ENABLED'] = False
-STORAGES['staticfiles']['BACKEND'] = 'openedx.core.storage.DevelopmentStorage'
+PIPELINE['PIPELINE_ENABLED'] = False  # noqa: F405
+STORAGES['staticfiles']['BACKEND'] = 'openedx.core.storage.DevelopmentStorage'  # noqa: F405
 
 # Revert to the default set of finders as we don't want the production pipeline
 STATICFILES_FINDERS = [
@@ -136,12 +136,12 @@ STATICFILES_FINDERS = [
 ]
 
 # Disable JavaScript compression in development
-PIPELINE['JS_COMPRESSOR'] = None
+PIPELINE['JS_COMPRESSOR'] = None  # noqa: F405
 
 # Whether to run django-require in debug mode.
 REQUIRE_DEBUG = DEBUG
 
-PIPELINE['SASS_ARGUMENTS'] = '--debug-info'
+PIPELINE['SASS_ARGUMENTS'] = '--debug-info'  # noqa: F405
 
 ########################### VERIFIED CERTIFICATES #################################
 
@@ -190,7 +190,7 @@ CERTIFICATES_HTML_VIEW = True
 
 ########################## Course Discovery #######################
 LANGUAGE_MAP = {
-    'terms': dict(ALL_LANGUAGES),
+    'terms': dict(ALL_LANGUAGES),  # noqa: F405
     'name': 'Language',
 }
 COURSE_DISCOVERY_MEANINGS = {
@@ -217,7 +217,7 @@ HOMEPAGE_COURSE_MAX = 9
 ENABLE_SOFTWARE_SECURE_FAKE = True
 
 # Setting for the testing of Software Secure Result Callback
-VERIFY_STUDENT["SOFTWARE_SECURE"] = {
+VERIFY_STUDENT["SOFTWARE_SECURE"] = {  # noqa: F405
     "API_ACCESS_KEY": "BBBBBBBBBBBBBBBBBBBB",
     "API_SECRET_KEY": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
 }
@@ -235,10 +235,10 @@ ENABLE_ENROLLMENT_RESET = True
 
 ########################## Third Party Auth #######################
 
-if ENABLE_THIRD_PARTY_AUTH and (
-        'common.djangoapps.third_party_auth.dummy.DummyBackend' not in AUTHENTICATION_BACKENDS
+if ENABLE_THIRD_PARTY_AUTH and (  # noqa: F405
+        'common.djangoapps.third_party_auth.dummy.DummyBackend' not in AUTHENTICATION_BACKENDS  # noqa: F405
 ):
-    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)
+    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)  # noqa: F405  # pylint: disable=line-too-long
 
 ########################## Authn MFE Context API #######################
 ENABLE_DYNAMIC_REGISTRATION_FIELDS = True
@@ -257,7 +257,7 @@ CREDENTIALS_PUBLIC_SERVICE_URL = 'http://localhost:18150'
 ############## Exams CONFIGURATION SETTINGS ####################
 EXAMS_SERVICE_URL = 'http://localhost:8740/api/v1'
 
-TOKEN_SIGNING.update({
+TOKEN_SIGNING.update({  # noqa: F405
     'JWT_PUBLIC_SIGNING_JWK_SET': (
         '{"keys": [{"kid": "localdev_exam_token_key", "e": "AQAB", "kty": "RSA", "n": "o5cn3ljSRi6FaDEKTn0PS-oL9EFyv1pI'
         '7dRgffQLD1qf5D6sprmYfWWokSsrWig8u2y0HChSygR6Jn5KXBqQn6FpM0dDJLnWQDRXHLl3Ey1iPYgDSmOIsIGrV9ZyNCQwk03wAgWbfdBTig'
@@ -291,8 +291,8 @@ LEARNER_HOME_MICROFRONTEND_URL = 'http://localhost:1996'
 
 ########################## LEARNING MFE ##############################
 # pylint: disable=line-too-long
-LEARNING_MICROFRONTEND_URL = os.environ.get("LEARNING_MICROFRONTEND_URL", "http://localhost:2000")
-LEARNING_MICROFRONTEND_NETLOC = os.environ.get("LEARNING_MICROFRONTEND_NETLOC", urlparse(LEARNING_MICROFRONTEND_URL).netloc)
+LEARNING_MICROFRONTEND_URL = os.environ.get("LEARNING_MICROFRONTEND_URL", "http://localhost:2000")  # noqa: F405
+LEARNING_MICROFRONTEND_NETLOC = os.environ.get("LEARNING_MICROFRONTEND_NETLOC", urlparse(LEARNING_MICROFRONTEND_URL).netloc)  # noqa: F405
 
 ###################### Cross-domain requests ######################
 ENABLE_CORS_HEADERS = True
@@ -300,7 +300,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_WHITELIST = ()
 CORS_ORIGIN_ALLOW_ALL = True
 
-LOGIN_REDIRECT_WHITELIST.extend([
+LOGIN_REDIRECT_WHITELIST.extend([  # noqa: F405
     CMS_BASE,
     # Allow redirection to all micro-frontends.
     # Please add your MFE if is not already listed here.
@@ -324,7 +324,7 @@ LOGIN_REDIRECT_WHITELIST.extend([
 ])
 
 ###################### JWTs ######################
-JWT_AUTH.update({
+JWT_AUTH.update({  # noqa: F405
     'JWT_AUDIENCE': 'lms-key',
     'JWT_ISSUER': f'{LMS_ROOT_URL}/oauth2',
     'JWT_ISSUERS': [{
@@ -363,7 +363,7 @@ add_plugins(__name__, ProjectType.LMS, SettingsType.DEVSTACK)
 
 ######################### Django Rest Framework ########################
 
-REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (
+REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] += (  # noqa: F405
     'rest_framework.renderers.BrowsableAPIRenderer',
 )
 
@@ -371,18 +371,18 @@ OPENAPI_CACHE_TIMEOUT = 0
 
 #####################################################################
 # set replica set of contentstore to none as we haven't setup any for lms in devstack
-CONTENTSTORE['DOC_STORE_CONFIG']['replicaSet'] = None
+CONTENTSTORE['DOC_STORE_CONFIG']['replicaSet'] = None  # noqa: F405
 
 #####################################################################
 # set replica sets of moduelstore to none as we haven't setup any for lms in devstack
-for store in MODULESTORE['default']['OPTIONS']['stores']:
+for store in MODULESTORE['default']['OPTIONS']['stores']:  # noqa: F405
     if 'DOC_STORE_CONFIG' in store and 'replicaSet' in store['DOC_STORE_CONFIG']:
         store['DOC_STORE_CONFIG']['replicaSet'] = None
 
 
 #####################################################################
 # Lastly, run any migrations, if needed.
-MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)
+MODULESTORE = convert_module_store_setting_if_needed(MODULESTORE)  # noqa: F405
 
 
 SECRET_KEY = '85920908f28904ed733fe576320db18cabd7b6cd'
@@ -421,8 +421,8 @@ SHOW_HEADER_LANGUAGE_SELECTOR = True
 # Toggle this off if you don't want anything to do with enterprise in devstack.
 ENABLE_ENTERPRISE_INTEGRATION = True
 
-ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', False)
-MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://localhost:8080')
+ENABLE_MKTG_SITE = os.environ.get('ENABLE_MARKETING_SITE', False)  # noqa: F405
+MARKETING_SITE_ROOT = os.environ.get('MARKETING_SITE_ROOT', 'http://localhost:8080')  # noqa: F405
 
 MKTG_URLS = {
     'ABOUT': '/about',
@@ -460,7 +460,7 @@ CREDENTIALS_SERVICE_USERNAME = 'credentials_worker'
 COURSE_CATALOG_URL_ROOT = 'http://edx.devstack.discovery:18381'
 COURSE_CATALOG_API_URL = f'{COURSE_CATALOG_URL_ROOT}/api/v1'
 
-SYSTEM_WIDE_ROLE_CLASSES = os.environ.get("SYSTEM_WIDE_ROLE_CLASSES", SYSTEM_WIDE_ROLE_CLASSES)
+SYSTEM_WIDE_ROLE_CLASSES = os.environ.get("SYSTEM_WIDE_ROLE_CLASSES", SYSTEM_WIDE_ROLE_CLASSES)  # noqa: F405
 SYSTEM_WIDE_ROLE_CLASSES.append(
     'system_wide_roles.SystemWideRoleAssignment',
 )
@@ -508,7 +508,7 @@ ENABLE_PREREQUISITE_COURSES = True
 PROCTORING_USER_OBFUSCATION_KEY = '85920908f28904ed733fe576320db18cabd7b6cd'
 
 #################### Webpack Configuration Settings ##############################
-WEBPACK_LOADER['DEFAULT']['TIMEOUT'] = 5
+WEBPACK_LOADER['DEFAULT']['TIMEOUT'] = 5  # noqa: F405
 
 #################### Network configuration ####################
 # Devstack is directly exposed to the caller
@@ -520,22 +520,22 @@ EVENT_BUS_REDIS_CONNECTION_URL = 'redis://:password@edx.devstack.redis:6379/'
 EVENT_BUS_TOPIC_PREFIX = 'dev'
 EVENT_BUS_CONSUMER = 'edx_event_bus_redis.RedisEventConsumer'
 
-certificate_revoked_event_config = EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.certificate.revoked.v1']
+certificate_revoked_event_config = EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.certificate.revoked.v1']  # noqa: F405
 certificate_revoked_event_config['learning-certificate-lifecycle']['enabled'] = True
-certificate_created_event_config = EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.certificate.created.v1']
+certificate_created_event_config = EVENT_BUS_PRODUCER_CONFIG['org.openedx.learning.certificate.created.v1']  # noqa: F405
 certificate_created_event_config['learning-certificate-lifecycle']['enabled'] = True
 
-course_access_role_added_event_setting = EVENT_BUS_PRODUCER_CONFIG[
+course_access_role_added_event_setting = EVENT_BUS_PRODUCER_CONFIG[  # noqa: F405
     'org.openedx.learning.user.course_access_role.added.v1'
 ]
 course_access_role_added_event_setting['learning-course-access-role-lifecycle']['enabled'] = True
-course_access_role_removed_event_setting = EVENT_BUS_PRODUCER_CONFIG[
+course_access_role_removed_event_setting = EVENT_BUS_PRODUCER_CONFIG[  # noqa: F405
     'org.openedx.learning.user.course_access_role.removed.v1'
 ]
 course_access_role_removed_event_setting['learning-course-access-role-lifecycle']['enabled'] = True
 
 lc_enrollment_revoked_setting = \
-    EVENT_BUS_PRODUCER_CONFIG['org.openedx.enterprise.learner_credit_course_enrollment.revoked.v1']
+    EVENT_BUS_PRODUCER_CONFIG['org.openedx.enterprise.learner_credit_course_enrollment.revoked.v1']  # noqa: F405
 lc_enrollment_revoked_setting['learner-credit-course-enrollment-lifecycle']['enabled'] = True
 
 # API access management
@@ -583,5 +583,5 @@ RETIREMENT_STATES = [
 ################# New settings must go ABOVE this line #################
 ########################################################################
 # See if the developer has any local overrides.
-if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):
-    from .private import *  # pylint: disable=import-error,wildcard-import
+if os.path.isfile(join(dirname(abspath(__file__)), 'private.py')):  # noqa: F405
+    from .private import *  # pylint: disable=import-error,wildcard-import  # noqa: F403

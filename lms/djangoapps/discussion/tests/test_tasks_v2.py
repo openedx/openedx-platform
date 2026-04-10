@@ -363,7 +363,7 @@ class TaskTestCase(
         ):
             comment_created.send(sender=None, user=user, post=comment)
 
-        actual_result = _should_send_message(
+        actual_result = _should_send_message(  # noqa: F841
             {
                 "thread_author_id": self.thread_author.id,
                 "course_id": self.course.id,

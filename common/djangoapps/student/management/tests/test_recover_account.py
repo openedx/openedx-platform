@@ -82,7 +82,7 @@ class RecoverAccountTests(TestCase):
             assert len(mail.outbox) == 1
 
         authn_mfe_url = re.findall(settings.AUTHN_MICROFRONTEND_URL, mail.outbox[0].body)[0]
-        self.assertEqual(authn_mfe_url, settings.AUTHN_MICROFRONTEND_URL)
+        self.assertEqual(authn_mfe_url, settings.AUTHN_MICROFRONTEND_URL)  # noqa: PT009
 
     def test_file_not_found_error(self):
         """

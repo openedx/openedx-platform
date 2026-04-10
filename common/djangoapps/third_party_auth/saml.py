@@ -160,7 +160,7 @@ class SAMLAuthBackend(SAMLAuth):  # pylint: disable=abstract-method
             for expected in idp.conf['requiredEntitlements']:
                 if expected not in entitlements:
                     log.warning(
-                        '[THIRD_PARTY_AUTH] SAML user rejected due to missing eduPersonEntitlement. '
+                        '[THIRD_PARTY_AUTH] SAML user rejected due to missing eduPersonEntitlement. '  # noqa: UP032
                         'Provider: {provider}, Entitlement: {entitlement}'.format(
                             provider=idp.name,
                             entitlement=expected)
@@ -413,7 +413,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
         if not all(var in self.conf for var in self.required_variables):
             missing = [var for var in self.required_variables if var not in self.conf]
             log.warning(
-                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '
+                '[THIRD_PARTY_AUTH] To retrieve rich user data for a SAP SuccessFactors identity provider, '  # noqa: UP032  # pylint: disable=line-too-long
                 'the following keys in other_settings are required, but were missing. MissingKeys: {keys}'.format(
                     keys=missing
                 )
@@ -537,7 +537,7 @@ class SapSuccessFactorsIdentityProvider(EdXSAMLIdentityProvider):
         # endpoint_url is constructed from field_mappings setting of SAML Provider config.
         # We convert field_mappings to make comma separated list of the fields which needs to be pulled from BizX
         fields = ','.join(self.field_mappings)
-        endpoint_url = '{root_url}User(userId=\'{user_id}\')?$select={fields}'.format(
+        endpoint_url = '{root_url}User(userId=\'{user_id}\')?$select={fields}'.format(  # noqa: UP032
             root_url=self.odata_api_root_url,
             user_id=user_id,
             fields=fields,
@@ -590,7 +590,7 @@ def get_saml_idp_class(idp_identifier_string):
     }
     if idp_identifier_string not in choices:
         log.error(
-            '[THIRD_PARTY_AUTH] Invalid EdXSAMLIdentityProvider subclass--'
+            '[THIRD_PARTY_AUTH] Invalid EdXSAMLIdentityProvider subclass--'  # noqa: UP032
             'using EdXSAMLIdentityProvider base class. Provider: {provider}'.format(provider=idp_identifier_string)
         )
     return choices.get(idp_identifier_string, EdXSAMLIdentityProvider)

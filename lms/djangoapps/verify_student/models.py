@@ -80,7 +80,7 @@ def status_before_must_be(*valid_start_statuses):
         @functools.wraps(func)
         def with_status_check(obj, *args, **kwargs):
             if obj.status not in valid_start_statuses:
-                exception_msg = (
+                exception_msg = (  # noqa: UP032
                     "Error calling {} {}: status is '{}', must be one of: {}"
                 ).format(func, obj, obj.status, valid_start_statuses)
                 raise VerificationException(exception_msg)
@@ -180,7 +180,7 @@ class ManualVerification(IDVerificationAttempt):
         app_label = 'verify_student'
 
     def __str__(self):
-        return 'ManualIDVerification for {name}, status: {status}'.format(
+        return 'ManualIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -230,7 +230,7 @@ class SSOVerification(IDVerificationAttempt):
         app_label = "verify_student"
 
     def __str__(self):
-        return 'SSOIDVerification for {name}, status: {status}'.format(
+        return 'SSOIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -243,7 +243,7 @@ class SSOVerification(IDVerificationAttempt):
         """
         Send a signal indicating that this verification was approved.
         """
-        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(  # noqa: UP032
             user_id=self.user, reviewer=approved_by
         ))
 
@@ -438,7 +438,7 @@ class PhotoVerification(IDVerificationAttempt):
         if self.status == self.STATUS.approved:
             return
 
-        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=user_id
         ))
         self.error_msg = ""  # reset, in case this attempt was denied before
@@ -541,7 +541,7 @@ class PhotoVerification(IDVerificationAttempt):
             lets you amend the error message in case there were additional
             details to be made.
         """
-        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=reviewing_user
         ))
         self.error_msg = error_msg

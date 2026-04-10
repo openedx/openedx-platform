@@ -313,7 +313,7 @@ def add_users_to_cohort(request, course_key_string, cohort_id):
     try:
         cohort = cohorts.get_cohort_by_id(course_key, cohort_id)
     except CourseUserGroup.DoesNotExist:
-        raise Http404("Cohort (ID {cohort_id}) not found for {course_key_string}".format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Cohort (ID {cohort_id}) not found for {course_key_string}".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP032
             cohort_id=cohort_id,
             course_key_string=course_key_string
         ))
@@ -518,7 +518,7 @@ class CohortSettings(DeveloperErrorViewMixin, APIPermissions):
         try:
             cohorts.set_course_cohorted(course_key, request.data.get('is_cohorted'))
         except ValueError as err:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, err)
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, err)  # noqa: B904
         return _get_cohort_settings_response(course_key)
 
 
@@ -663,7 +663,7 @@ class CohortHandler(DeveloperErrorViewMixin, APIPermissions):
             try:
                 cohorts.set_assignment_type(cohort, assignment_type)
             except ValueError as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'last-random-cohort')
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'last-random-cohort')  # noqa: B904
 
         # Handle group_id and user_partition_id for content group association
         if has_group_id:
@@ -770,11 +770,11 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
         try:
             cohort = cohorts.get_cohort_by_id(course_key, cohort_id)
         except CourseUserGroup.DoesNotExist:
-            msg = 'Cohort (ID {cohort_id}) not found for {course_key_string}'.format(
+            msg = 'Cohort (ID {cohort_id}) not found for {course_key_string}'.format(  # noqa: UP032
                 cohort_id=cohort_id,
                 course_key_string=course_key_string
             )
-            raise self.api_error(status.HTTP_404_NOT_FOUND, msg, 'cohort-not-found')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(status.HTTP_404_NOT_FOUND, msg, 'cohort-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return course_key, cohort
 
     def get(self, request, course_key_string, cohort_id, username=None):  # pylint: disable=unused-argument
@@ -807,9 +807,9 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
         try:
             api.remove_user_from_cohort(course_key, username, cohort.id)
         except User.DoesNotExist:
-            raise self.api_error(status.HTTP_404_NOT_FOUND, 'User does not exist.', 'user-not-found')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(status.HTTP_404_NOT_FOUND, 'User does not exist.', 'user-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         except CohortMembership.DoesNotExist:  # pylint: disable=duplicate-except
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status.HTTP_400_BAD_REQUEST,
                 'User not assigned to the given cohort.',
                 'user-not-in-cohort'

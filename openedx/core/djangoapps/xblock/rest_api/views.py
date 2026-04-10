@@ -125,7 +125,7 @@ def embed_block_view(request, usage_key: UsageKeyV2, view_name: str):
 
     new_oa_manifest = {}
     if oa_manifest_path.exists():
-        with open(oa_manifest_path, "r") as f:
+        with open(oa_manifest_path, "r") as f:  # noqa: UP015
             oa_manifest = json.load(f)
             new_oa_manifest = {
                 # When we add the RTL style, it automatically applies that style (right-to-left reading) regardless

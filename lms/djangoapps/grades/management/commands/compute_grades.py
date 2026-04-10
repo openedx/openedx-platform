@@ -83,7 +83,7 @@ class Command(BaseCommand):
         for seq_id, kwargs in enumerate(self._shuffled_task_kwargs(options)):
             kwargs['seq_id'] = seq_id
             result = tasks.compute_grades_for_course_v2.apply_async(kwargs=kwargs, **task_options)
-            log.info("Grades: Created {task_name}[{task_id}] with arguments {kwargs}".format(
+            log.info("Grades: Created {task_name}[{task_id}] with arguments {kwargs}".format(  # noqa: UP032
                 task_name=tasks.compute_grades_for_course.name,
                 task_id=result.task_id,
                 kwargs=kwargs,
@@ -106,7 +106,7 @@ class Command(BaseCommand):
             for task_arg_tuple in tasks._course_task_args(course_key, **options):  # lint-amnesty, pylint: disable=protected-access
                 all_args.append(task_arg_tuple)
 
-        all_args.sort(key=lambda x: hashlib.md5(f'{x!r}'.encode('utf-8')).digest())
+        all_args.sort(key=lambda x: hashlib.md5(f'{x!r}'.encode('utf-8')).digest())  # noqa: UP012
 
         for args in all_args:
             yield {

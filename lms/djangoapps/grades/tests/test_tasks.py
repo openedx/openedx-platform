@@ -113,7 +113,7 @@ class RecalculateSubsectionGradeTest(HasCourseWithProblemsMixin, ModuleStoreTest
         self.user = UserFactory()
 
     @contextmanager
-    def mock_csm_get_score(self, score=MagicMock(grade=1.0, max_grade=2.0)):
+    def mock_csm_get_score(self, score=MagicMock(grade=1.0, max_grade=2.0)):  # noqa: B008
         """
         Mocks the scores needed by the SCORE_PUBLISHED signal
         handler. By default, sets the returned score to 1/2.
@@ -208,7 +208,7 @@ class RecalculateSubsectionGradeTest(HasCourseWithProblemsMixin, ModuleStoreTest
             args[1]['subsection_grade'].location
             for args in mock_subsection_signal.call_args_list
         }
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             sequentials_signalled,
             {self.sequential.location},
         )
@@ -383,8 +383,8 @@ class RecalculateSubsectionGradeTest(HasCourseWithProblemsMixin, ModuleStoreTest
 
     def _apply_recalculate_subsection_grade(
             self,
-            mock_score=MagicMock(
-                modified=datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(days=1),
+            mock_score=MagicMock(  # noqa: B008
+                modified=datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(days=1),  # noqa: B008
                 grade=1.0,
                 max_grade=2.0,
             )
@@ -638,7 +638,7 @@ class FreezeGradingAfterCourseEndTest(HasCourseWithProblemsMixin, ModuleStoreTes
             CourseEnrollment.enroll(user, self.course.id)
 
         with override_waffle_flag(self.freeze_grade_flag, active=freeze_flag_value):
-            modified_datetime = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=1)  # lint-amnesty, pylint: disable=unused-variable
+            modified_datetime = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=1)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             with patch('lms.djangoapps.grades.tasks._has_db_updated_with_new_score') as mock_has_db_updated:
                 result = recalculate_subsection_grade_v3.apply_async(kwargs=self.recalculate_subsection_grade_kwargs)
                 self._assert_for_freeze_grade_flag(

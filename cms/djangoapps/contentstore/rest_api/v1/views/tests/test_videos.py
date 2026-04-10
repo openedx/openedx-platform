@@ -73,8 +73,8 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
             "pagination_context": {}
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @override_waffle_switch(WaffleSwitch(  # lint-amnesty, pylint: disable=toggle-missing-annotation
         'videos.video_image_upload_enabled', __name__
@@ -84,12 +84,12 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
         Make sure if the feature flag is enabled we have updated the dict keys in response.
         """
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("video_image_settings", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("video_image_settings", response.data)  # noqa: PT009
 
         imageSettings = response.data["video_image_settings"]
-        self.assertIn("video_image_upload_enabled", imageSettings)
-        self.assertTrue(imageSettings["video_image_upload_enabled"])
+        self.assertIn("video_image_upload_enabled", imageSettings)  # noqa: PT009
+        self.assertTrue(imageSettings["video_image_upload_enabled"])  # noqa: PT009
 
     def test_VideoTranscriptEnabledFlag_enabled(self):
         """
@@ -98,40 +98,40 @@ class CourseVideosViewTest(CourseTestCase, PermissionAccessMixin):
         with patch('openedx.core.djangoapps.video_config.models.VideoTranscriptEnabledFlag.feature_enabled') as feature:
             feature.return_value = True
             response = self.client.get(self.url)
-            self.assertIn("is_video_transcript_enabled", response.data)
-            self.assertTrue(response.data["is_video_transcript_enabled"])
+            self.assertIn("is_video_transcript_enabled", response.data)  # noqa: PT009
+            self.assertTrue(response.data["is_video_transcript_enabled"])  # noqa: PT009
 
             expect_active_preferences = get_transcript_preferences(str(self.course.id))
-            self.assertIn("active_transcript_preferences", response.data)
-            self.assertEqual(expect_active_preferences, response.data["active_transcript_preferences"])
+            self.assertIn("active_transcript_preferences", response.data)  # noqa: PT009
+            self.assertEqual(expect_active_preferences, response.data["active_transcript_preferences"])  # noqa: PT009
 
             expected_credentials = get_transcript_credentials_state_for_org(self.course.id.org)
-            self.assertIn("transcript_credentials", response.data)
-            self.assertDictEqual(expected_credentials, response.data["transcript_credentials"])
+            self.assertIn("transcript_credentials", response.data)  # noqa: PT009
+            self.assertDictEqual(expected_credentials, response.data["transcript_credentials"])  # noqa: PT009
 
             transcript_settings = response.data["video_transcript_settings"]
 
             expected_plans = get_3rd_party_transcription_plans()
-            self.assertIn("transcription_plans", transcript_settings)
-            self.assertDictEqual(expected_plans, transcript_settings["transcription_plans"])
+            self.assertIn("transcription_plans", transcript_settings)  # noqa: PT009
+            self.assertDictEqual(expected_plans, transcript_settings["transcription_plans"])  # noqa: PT009
 
             expected_preference_handler = reverse_course_url(
                 'transcript_preferences_handler',
                 str(self.course.id)
             )
-            self.assertIn("transcript_preferences_handler_url", transcript_settings)
-            self.assertEqual(expected_preference_handler, transcript_settings["transcript_preferences_handler_url"])
+            self.assertIn("transcript_preferences_handler_url", transcript_settings)  # noqa: PT009
+            self.assertEqual(expected_preference_handler, transcript_settings["transcript_preferences_handler_url"])  # noqa: PT009  # pylint: disable=line-too-long
 
             expected_credentials_handler = reverse_course_url(
                 'transcript_credentials_handler',
                 str(self.course.id)
             )
-            self.assertIn("transcript_credentials_handler_url", transcript_settings)
-            self.assertEqual(expected_credentials_handler, transcript_settings["transcript_credentials_handler_url"])
+            self.assertIn("transcript_credentials_handler_url", transcript_settings)  # noqa: PT009
+            self.assertEqual(expected_credentials_handler, transcript_settings["transcript_credentials_handler_url"])  # noqa: PT009  # pylint: disable=line-too-long
         with patch(
             'openedx.core.djangoapps.video_config.toggles.XPERT_TRANSLATIONS_UI.is_enabled'
         ) as xpertTranslationfeature:
             xpertTranslationfeature.return_value = True
             response = self.client.get(self.url)
-            self.assertIn("is_ai_translations_enabled", response.data)
-            self.assertTrue(response.data["is_ai_translations_enabled"])
+            self.assertIn("is_ai_translations_enabled", response.data)  # noqa: PT009
+            self.assertTrue(response.data["is_ai_translations_enabled"])  # noqa: PT009

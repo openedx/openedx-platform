@@ -211,7 +211,7 @@ class XmlHandlingTest(TestCase):
     score = 0.25
 
     @patch('uuid.uuid4', return_value='random_uuid')
-    def test_replace_result_message_uuid(self, _uuid_mock):
+    def test_replace_result_message_uuid(self, _uuid_mock):  # noqa: PT019
         # Pylint doesn't recognize members in the LXML module
         xml = outcomes.generate_replace_result_xml(self.result_id, self.score)
         tree = etree.fromstring(xml)

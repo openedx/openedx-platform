@@ -105,7 +105,7 @@ class LearnerDashboardBaseTest(SharedModuleStoreTestCase):
         # Create related course overviews
         course_key_str = pseudo_sessions[str(unfulfilled_entitlement.uuid)]["key"]
         course_key = CourseKey.from_string(course_key_str)
-        course_overview = CourseOverviewFactory.create(id=course_key)
+        course_overview = CourseOverviewFactory.create(id=course_key)  # noqa: F841
 
         return unfulfilled_entitlement, pseudo_sessions, available_sessions
 
@@ -155,7 +155,7 @@ class TestCourseProviderSerializer(LearnerDashboardBaseTest):
         input_data = test_enrollment.course_overview
         output_data = CourseProviderSerializer(input_data).data
 
-        self.assertEqual(output_data["name"], test_enrollment.course_overview.org)
+        self.assertEqual(output_data["name"], test_enrollment.course_overview.org)  # noqa: PT009
 
 
 class TestCourseSerializer(LearnerDashboardBaseTest):
@@ -217,7 +217,7 @@ class TestCourseRunSerializer(LearnerDashboardBaseTest):
         output_data = CourseRunSerializer(input_data, context=input_context).data
 
         # Then the resumeUrl is None, which is allowed
-        self.assertIsNone(output_data["resumeUrl"])
+        self.assertIsNone(output_data["resumeUrl"])  # noqa: PT009
 
     def is_progress_url_matching_course_home_mfe_progress_tab_is_active(self):
         """
@@ -238,10 +238,10 @@ class TestCourseRunSerializer(LearnerDashboardBaseTest):
         Otherwise, it must point to the legacy progress page.
         """
         mock_course_home_mfe_progress_tab_is_active.return_value = True
-        self.assertTrue(self.is_progress_url_matching_course_home_mfe_progress_tab_is_active())
+        self.assertTrue(self.is_progress_url_matching_course_home_mfe_progress_tab_is_active())  # noqa: PT009
 
         mock_course_home_mfe_progress_tab_is_active.return_value = False
-        self.assertTrue(self.is_progress_url_matching_course_home_mfe_progress_tab_is_active())
+        self.assertTrue(self.is_progress_url_matching_course_home_mfe_progress_tab_is_active())  # noqa: PT009
 
 
 @ddt.ddt
@@ -268,7 +268,7 @@ class TestCoursewareAccessSerializer(LearnerDashboardBaseTest):
         # ... without unmet prerequisites
         if has_unmet_prerequisites:
             # ... or with unmet prerequisites
-            prerequisite_course = CourseFactory()
+            prerequisite_course = CourseFactory()  # noqa: F841
             input_context.update(
                 {
                     "course_access_checks": {
@@ -283,7 +283,7 @@ class TestCoursewareAccessSerializer(LearnerDashboardBaseTest):
         output_data = CoursewareAccessSerializer(input_data, context=input_context).data
 
         # Then "hasUnmetPrerequisites" is outputs correctly
-        self.assertEqual(output_data["hasUnmetPrerequisites"], has_unmet_prerequisites)
+        self.assertEqual(output_data["hasUnmetPrerequisites"], has_unmet_prerequisites)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_is_staff(self, is_staff):
@@ -306,7 +306,7 @@ class TestCoursewareAccessSerializer(LearnerDashboardBaseTest):
         output_data = CoursewareAccessSerializer(input_data, context=input_context).data
 
         # Then "isStaff" serializes properly
-        self.assertEqual(output_data["isStaff"], is_staff)
+        self.assertEqual(output_data["isStaff"], is_staff)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_is_too_early(self, is_too_early):
@@ -329,7 +329,7 @@ class TestCoursewareAccessSerializer(LearnerDashboardBaseTest):
         output_data = CoursewareAccessSerializer(input_data, context=input_context).data
 
         # Then "isTooEarly" serializes properly
-        self.assertEqual(output_data["isTooEarly"], is_too_early)
+        self.assertEqual(output_data["isTooEarly"], is_too_early)  # noqa: PT009
 
 
 @ddt.ddt
@@ -380,7 +380,7 @@ class TestEnrollmentSerializer(LearnerDashboardBaseTest):
 
         # With/out an expiration date (made timezone aware, if it exists)
         expiration_datetime = (
-            expiration_datetime.replace(tzinfo=timezone.utc)
+            expiration_datetime.replace(tzinfo=timezone.utc)  # noqa: UP017
             if expiration_datetime
             else None
         )
@@ -393,7 +393,7 @@ class TestEnrollmentSerializer(LearnerDashboardBaseTest):
         # When I serialize
         output = EnrollmentSerializer(input_data, context=input_context).data
 
-        self.assertEqual(output["isAuditAccessExpired"], should_be_expired)
+        self.assertEqual(output["isAuditAccessExpired"], should_be_expired)  # noqa: PT009
 
     @ddt.data(
         (random_url(), True, uuid4(), True),
@@ -427,7 +427,7 @@ class TestEnrollmentSerializer(LearnerDashboardBaseTest):
 
         # Then I correctly return whether or not the user can upgrade
         # (If any of the payment page, upsell, or sku aren't provided, this is False)
-        self.assertEqual(output["canUpgrade"], expected_can_upgrade)
+        self.assertEqual(output["canUpgrade"], expected_can_upgrade)  # noqa: PT009
 
     @ddt.data(None, "", "some_url")
     def test_has_started(self, resume_url):
@@ -448,9 +448,9 @@ class TestEnrollmentSerializer(LearnerDashboardBaseTest):
 
         # If I have a resume URL, "hasStarted" should be True, otherwise False
         if resume_url:
-            self.assertTrue(output["hasStarted"])
+            self.assertTrue(output["hasStarted"])  # noqa: PT009
         else:
-            self.assertFalse(output["hasStarted"])
+            self.assertFalse(output["hasStarted"])  # noqa: PT009
 
 
 @ddt.ddt
@@ -471,7 +471,7 @@ class TestGradeDataSerializer(LearnerDashboardBaseTest):
         output_data = GradeDataSerializer(input_data, context=input_context).data
 
         # Then I get the correct data shape out
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "isPassing": is_passing,
@@ -531,7 +531,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         output_data = CertificateSerializer(input_data, context=input_context).data
 
         # Then all the info is provided correctly
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "availableDate": datetime_to_django_format(available_date),
@@ -557,7 +557,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
 
         # Then the available date is the course end date
         expected_available_date = datetime_to_django_format(input_data.course.end)
-        self.assertEqual(output_data["availableDate"], expected_available_date)
+        self.assertEqual(output_data["availableDate"], expected_available_date)  # noqa: PT009
 
     def test_available_date_specific_end(self):
         # Given new cert display settings are enabled
@@ -577,7 +577,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         expected_available_date = datetime_to_django_format(
             input_data.course.certificate_available_date
         )
-        self.assertEqual(output_data["availableDate"], expected_available_date)
+        self.assertEqual(output_data["availableDate"], expected_available_date)  # noqa: PT009
 
     @ddt.data(
         ("downloadable", False),
@@ -599,7 +599,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         output_data = CertificateSerializer(input_data, context=input_context).data
 
         # Then isRestricted should be calculated correctly
-        self.assertEqual(output_data["isRestricted"], is_restricted_expected)
+        self.assertEqual(output_data["isRestricted"], is_restricted_expected)  # noqa: PT009
 
     @ddt.data(
         ("downloadable", True),
@@ -622,7 +622,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         output_data = CertificateSerializer(input_data, context=input_context).data
 
         # Then isEarned should be calculated correctly
-        self.assertEqual(output_data["isEarned"], is_earned_expected)
+        self.assertEqual(output_data["isEarned"], is_earned_expected)  # noqa: PT009
 
     @ddt.data(
         ("downloadable", True),
@@ -645,7 +645,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         output_data = CertificateSerializer(input_data, context=input_context).data
 
         # Then isDownloadable should be calculated correctly
-        self.assertEqual(output_data["isDownloadable"], is_downloadable_expected)
+        self.assertEqual(output_data["isDownloadable"], is_downloadable_expected)  # noqa: PT009
 
     @ddt.data(
         (True, random_url()),
@@ -672,7 +672,7 @@ class TestCertificateSerializer(LearnerDashboardBaseTest):
         output_data = CertificateSerializer(input_data, context=input_context).data
 
         # Then certPreviewUrl should be calculated correctly
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             output_data["certPreviewUrl"],
             cert_web_view_url if show_cert_web_view else None,
         )
@@ -684,7 +684,7 @@ class TestEntitlementSerializer(TestCase):
 
     def _assert_available_sessions(self, input_sessions, output_sessions):
         assert len(output_sessions) == len(input_sessions)
-        for input_session, output_session in zip(input_sessions, output_sessions):
+        for input_session, output_session in zip(input_sessions, output_sessions):  # noqa: B905
             assert output_session == {
                 "startDate": input_session["start"],
                 "endDate": input_session["end"],
@@ -756,7 +756,7 @@ class TestProgramsSerializer(TestCase):
         # When I serialize it
         output_data = RelatedProgramSerializer(input_data).data
         # Then the output should map with the input
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             output_data,
             {
                 "bannerImgSrc": input_data["banner_image"]["small"]["url"],
@@ -785,7 +785,7 @@ class TestProgramsSerializer(TestCase):
         # Test the output
         assert output_data["relatedPrograms"]
         assert len(output_data["relatedPrograms"]) == len(input_data["relatedPrograms"])
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             output_data,
             {
                 "relatedPrograms": RelatedProgramSerializer(
@@ -807,7 +807,7 @@ class TestProgramsSerializer(TestCase):
         output_data = RelatedProgramSerializer(input_data).data
 
         # Test the output
-        self.assertEqual(output_data["bannerImgSrc"], None)
+        self.assertEqual(output_data["bannerImgSrc"], None)  # noqa: PT009
 
     def test_empty_sessions(self):
         input_data = {"relatedPrograms": []}
@@ -850,7 +850,7 @@ class TestCreditSerializer(LearnerDashboardBaseTest):
         output_data = CreditSerializer(credit_data).data
 
         # Then I get the appropriate data shape
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "providerStatusUrl": credit_data["provider_status_url"],
@@ -906,15 +906,15 @@ class TestLearnerEnrollmentsSerializer(LearnerDashboardBaseTest):
         ]
 
         # Verify we have all the expected keys in our output
-        self.assertEqual(output.keys(), set(expected_keys))
+        self.assertEqual(output.keys(), set(expected_keys))  # noqa: PT009
 
         # Entitlements should be the only empty field for an enrollment
         entitlement = output.pop("entitlement")
-        self.assertDictEqual(entitlement, {})
+        self.assertDictEqual(entitlement, {})  # noqa: PT009
 
         # All other keys should have some basic info, unless we broke something
         for key in output.keys():
-            self.assertNotEqual(output[key], {})
+            self.assertNotEqual(output[key], {})  # noqa: PT009
 
     def test_credit_no_credit_option(self):
         # Given an enrollment
@@ -929,7 +929,7 @@ class TestLearnerEnrollmentsSerializer(LearnerDashboardBaseTest):
         output = LearnerEnrollmentSerializer(input_data, context=input_context).data
 
         # Then I return empty credit info
-        self.assertDictEqual(output["credit"], {})
+        self.assertDictEqual(output["credit"], {})  # noqa: PT009
 
 
 class TestUnfulfilledEntitlementSerializer(LearnerDashboardBaseTest):
@@ -1058,7 +1058,7 @@ class TestSuggestedCourseSerializer(TestCase):
             "is_personalized_recommendation": False,
         }
 
-        for i in range(courses_count):
+        for i in range(courses_count):  # noqa: B007
             suggested_courses["courses"].append(
                 {
                     "course_key": uuid4(),
@@ -1077,7 +1077,7 @@ class TestSuggestedCourseSerializer(TestCase):
 
         output_data = SuggestedCourseSerializer(input_data).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "bannerImgSrc": input_data["logo_image_url"],
@@ -1117,7 +1117,7 @@ class TestEmailConfirmationSerializer(TestCase):
 
         output_data = EmailConfirmationSerializer(input_data).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "isNeeded": input_data["isNeeded"],
@@ -1146,7 +1146,7 @@ class TestEnterpriseDashboardSerializer(TestCase):
         output_data = EnterpriseDashboardSerializer(input_data).data
 
         expected_keys = ["label", "url", "uuid", "isLearnerPortalEnabled", "authOrgId"]
-        self.assertEqual(output_data.keys(), set(expected_keys))
+        self.assertEqual(output_data.keys(), set(expected_keys))  # noqa: PT009
 
     def test_happy_path(self):
         """Test that data serializes correctly"""
@@ -1155,7 +1155,7 @@ class TestEnterpriseDashboardSerializer(TestCase):
 
         output_data = EnterpriseDashboardSerializer(input_data).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "label": input_data["name"],
@@ -1172,7 +1172,7 @@ class TestEnterpriseDashboardSerializer(TestCase):
         """ Test for missing auth_org_id """
         input_data = self.generate_test_enterprise_customer()
         del input_data['auth_org_id']
-        self.assertIsNone(EnterpriseDashboardSerializer(input_data).data['authOrgId'])
+        self.assertIsNone(EnterpriseDashboardSerializer(input_data).data['authOrgId'])  # noqa: PT009
 
 
 class TestSocialMediaSettingsSiteSerializer(TestCase):
@@ -1197,7 +1197,7 @@ class TestSocialMediaSettingsSiteSerializer(TestCase):
             "socialBrand",
             "utmParams",
         ]
-        self.assertEqual(output_data.keys(), set(expected_keys))
+        self.assertEqual(output_data.keys(), set(expected_keys))  # noqa: PT009
 
 
 class TestSocialShareSettingsSerializer(TestCase):
@@ -1217,7 +1217,7 @@ class TestSocialShareSettingsSerializer(TestCase):
         output_data = SocialShareSettingsSerializer(input_data).data
 
         expected_keys = ["twitter", "facebook"]
-        self.assertEqual(output_data.keys(), set(expected_keys))
+        self.assertEqual(output_data.keys(), set(expected_keys))  # noqa: PT009
 
 
 class TestLearnerDashboardSerializer(LearnerDashboardBaseTest):
@@ -1317,7 +1317,7 @@ class TestLearnerDashboardSerializer(LearnerDashboardBaseTest):
         }
         output_data = LearnerDashboardSerializer(input_data).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "emailConfirmation": None,
@@ -1414,7 +1414,7 @@ class TestLearnerDashboardSerializer(LearnerDashboardBaseTest):
 
         output_suggested_courses = output_data.pop("suggestedCourses")
 
-        self.assertEqual(len(suggested_courses), len(output_suggested_courses))
+        self.assertEqual(len(suggested_courses), len(output_suggested_courses))  # noqa: PT009
 
     @mock.patch(
         "lms.djangoapps.learner_home.serializers.SuggestedCourseSerializer.to_representation"
@@ -1474,7 +1474,7 @@ class TestLearnerDashboardSerializer(LearnerDashboardBaseTest):
         }
         output_data = LearnerDashboardSerializer(input_data).data
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             output_data,
             {
                 "emailConfirmation": mock_email_confirmation_serializer,

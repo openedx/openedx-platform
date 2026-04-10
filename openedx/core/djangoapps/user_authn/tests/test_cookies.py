@@ -89,7 +89,7 @@ class CookieTests(TestCase):
 
     def _assert_cookies_present(self, response, expected_cookies):
         """ Verify all expected_cookies are present in the response. """
-        self.assertSetEqual(set(response.cookies.keys()), set(expected_cookies))
+        self.assertSetEqual(set(response.cookies.keys()), set(expected_cookies))  # noqa: PT009
 
     def _assert_consistent_expires(self, response, num_of_unique_expires=1):
         """ Verify cookies in the response have the same expiration, as expected. """
@@ -112,7 +112,7 @@ class CookieTests(TestCase):
             'user_image_urls': get_profile_image_urls_for_user(self.user),
         }
 
-        self.assertDictEqual(actual, expected)
+        self.assertDictEqual(actual, expected)  # noqa: PT009
 
     def test_set_logged_in_cookies_anonymous_user(self):
         anonymous_user = AnonymousUserFactory()

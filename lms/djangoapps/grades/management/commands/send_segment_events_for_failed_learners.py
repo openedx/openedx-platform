@@ -127,7 +127,7 @@ class Command(BaseCommand):
                     stats['failed_course_enrollment_ids'][course_id].append(failed_enrollment_id)
 
                     log.info(
-                        "{} Segment event fired for failed learner. Event: [{}], Data: [{}]".format(
+                        "{} Segment event fired for failed learner. Event: [{}], Data: [{}]".format(  # noqa: UP032
                             log_prefix,
                             EVENT_NAME,
                             event_properties

@@ -489,7 +489,7 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
 
         # Choose mode (POST request)
         response = self.client.post(url, post_params)
-        self.assertEqual(response.status_code, status_code)
+        self.assertEqual(response.status_code, status_code)  # noqa: PT009
 
         if has_perm:
             self.assertContains(response, error_msg)
@@ -501,7 +501,7 @@ class CourseModeViewTest(CatalogIntegrationMixin, UrlResetMixin, ModuleStoreTest
             self.assertContains(response, search_courses_url)
             self.assertContains(response, '<span>Explore all courses</span>')
         else:
-            self.assertTrue(CourseEnrollment.is_enrollment_closed(self.user, self.course))
+            self.assertTrue(CourseEnrollment.is_enrollment_closed(self.user, self.course))  # noqa: PT009
 
     def _assert_fbe_page(self, response, min_price=None, **_):
         """

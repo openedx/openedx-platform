@@ -115,7 +115,7 @@ class Command(BaseCommand):
             query = 'INSERT INTO user_api_userorgtag (`user_id`, `org`, `key`, `value`, `created`, `modified`) VALUES '
             query_values = []
             for idx in range(start_idx, end_idx + 1):
-                query_values.append('({},"{}","email-optin","False",NOW(),NOW())'.format(
+                query_values.append('({},"{}","email-optin","False",NOW(),NOW())'.format(  # noqa: UP032
                     optout_rows[idx][0], optout_rows[idx][1])
                 )
             query += ','.join(query_values)

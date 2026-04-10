@@ -105,8 +105,8 @@ def config_course_cohorts(
         course,
         is_cohorted,
         discussion_division_scheme=CourseDiscussionSettings.COHORT,
-        auto_cohorts=[],
-        manual_cohorts=[],
+        auto_cohorts=[],  # noqa: B006
+        manual_cohorts=[],  # noqa: B006
 ):
     """
     Set and configure cohorts for a course.

@@ -273,14 +273,14 @@ if settings.WIKI_ENABLED:
 urlpatterns += [
     # jump_to URLs for direct access to a location in the course
     re_path(
-        r'^courses/{}/jump_to/(?P<location>.*)$'.format(
+        r'^courses/{}/jump_to/(?P<location>.*)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.jump_to,
         name='jump_to',
     ),
     re_path(
-        r'^courses/{}/jump_to_id/(?P<module_id>.*)$'.format(
+        r'^courses/{}/jump_to_id/(?P<module_id>.*)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.jump_to_id,
@@ -289,7 +289,7 @@ urlpatterns += [
 
     # xblock Handler APIs
     re_path(
-        r'^courses/{course_key}/xblock/{usage_key}/handler/(?P<handler>[^/]*)(?:/(?P<suffix>.*))?$'.format(
+        r'^courses/{course_key}/xblock/{usage_key}/handler/(?P<handler>[^/]*)(?:/(?P<suffix>.*))?$'.format(  # noqa: UP032
             course_key=settings.COURSE_ID_PATTERN,
             usage_key=settings.USAGE_ID_PATTERN,
         ),
@@ -297,7 +297,7 @@ urlpatterns += [
         name='xblock_handler',
     ),
     re_path(
-        r'^courses/{course_key}/xblock/{usage_key}/handler_noauth/(?P<handler>[^/]*)(?:/(?P<suffix>.*))?$'.format(
+        r'^courses/{course_key}/xblock/{usage_key}/handler_noauth/(?P<handler>[^/]*)(?:/(?P<suffix>.*))?$'.format(  # noqa: UP032
             course_key=settings.COURSE_ID_PATTERN,
             usage_key=settings.USAGE_ID_PATTERN,
         ),
@@ -309,7 +309,7 @@ urlpatterns += [
     # (unpublished) API that returns JSON with the HTML fragment and related resources
     # for the xBlock's requested view.
     re_path(
-        r'^courses/{course_key}/xblock/{usage_key}/view/(?P<view_name>[^/]*)$'.format(
+        r'^courses/{course_key}/xblock/{usage_key}/view/(?P<view_name>[^/]*)$'.format(  # noqa: UP032
             course_key=settings.COURSE_ID_PATTERN,
             usage_key=settings.USAGE_ID_PATTERN,
         ),
@@ -350,7 +350,7 @@ urlpatterns += [
                      namespace='xblock_api')),
 
     re_path(
-        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(
+        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         xqueue_callback,
@@ -358,7 +358,7 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(
+        r'^courses/{}/xqueue/(?P<userid>[^/]*)/(?P<mod_id>.*?)/(?P<dispatch>[^/]*)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         xqueue_callback,
@@ -378,7 +378,7 @@ urlpatterns += [
 
     # About the course
     re_path(
-        r'^courses/{}/about$'.format(
+        r'^courses/{}/about$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.course_about,
@@ -390,7 +390,7 @@ urlpatterns += [
         name='yt_video_metadata',
     ),
     re_path(
-        r'^courses/{}/enroll_staff$'.format(
+        r'^courses/{}/enroll_staff$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         EnrollStaffView.as_view(),
@@ -399,7 +399,7 @@ urlpatterns += [
 
     # Inside the course
     re_path(
-        r'^courses/{}/$'.format(
+        r'^courses/{}/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.course_about,
@@ -407,7 +407,7 @@ urlpatterns += [
     ),
     # TODO arjun remove when custom tabs in place, see courseware/courses.py
     re_path(
-        r'^courses/{}/syllabus$'.format(
+        r'^courses/{}/syllabus$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.syllabus,
@@ -416,7 +416,7 @@ urlpatterns += [
 
     # Survey associated with a course
     re_path(
-        r'^courses/{}/survey$'.format(
+        r'^courses/{}/survey$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.course_survey,
@@ -424,14 +424,14 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/book/(?P<book_index>\d+)/$'.format(
+        r'^courses/{}/book/(?P<book_index>\d+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.index,
         name='book',
     ),
     re_path(
-        r'^courses/{}/book/(?P<book_index>\d+)/(?P<page>\d+)$'.format(
+        r'^courses/{}/book/(?P<book_index>\d+)/(?P<page>\d+)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.index,
@@ -439,29 +439,14 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/pdfbook/(?P<book_index>\d+)/$'.format(
+        r'^courses/{}/pdfbook/(?P<book_index>\d+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.pdf_index,
         name='pdf_book',
     ),
     re_path(
-        r'^courses/{}/pdfbook/(?P<book_index>\d+)/(?P<page>\d+)$'.format(
-            settings.COURSE_ID_PATTERN,
-        ),
-        staticbook_views.pdf_index,
-        name='pdf_book',
-    ),
-
-    re_path(
-        r'^courses/{}/pdfbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/$'.format(
-            settings.COURSE_ID_PATTERN,
-        ),
-        staticbook_views.pdf_index,
-        name='pdf_book',
-    ),
-    re_path(
-        r'^courses/{}/pdfbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/(?P<page>\d+)$'.format(
+        r'^courses/{}/pdfbook/(?P<book_index>\d+)/(?P<page>\d+)$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.pdf_index,
@@ -469,14 +454,29 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/htmlbook/(?P<book_index>\d+)/$'.format(
+        r'^courses/{}/pdfbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/$'.format(  # noqa: UP032
+            settings.COURSE_ID_PATTERN,
+        ),
+        staticbook_views.pdf_index,
+        name='pdf_book',
+    ),
+    re_path(
+        r'^courses/{}/pdfbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/(?P<page>\d+)$'.format(  # noqa: UP032
+            settings.COURSE_ID_PATTERN,
+        ),
+        staticbook_views.pdf_index,
+        name='pdf_book',
+    ),
+
+    re_path(
+        r'^courses/{}/htmlbook/(?P<book_index>\d+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.html_index,
         name='html_book',
     ),
     re_path(
-        r'^courses/{}/htmlbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/$'.format(
+        r'^courses/{}/htmlbook/(?P<book_index>\d+)/chapter/(?P<chapter>\d+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         staticbook_views.html_index,
@@ -484,28 +484,28 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/courseware/?$'.format(
+        r'^courses/{}/courseware/?$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CoursewareIndex.as_view(),
         name='courseware',
     ),
     re_path(
-        r'^courses/{}/courseware/(?P<section>[^/]*)/$'.format(
+        r'^courses/{}/courseware/(?P<section>[^/]*)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CoursewareIndex.as_view(),
         name='courseware_section',
     ),
     re_path(
-        r'^courses/{}/courseware/(?P<section>[^/]*)/(?P<subsection>[^/]*)/$'.format(
+        r'^courses/{}/courseware/(?P<section>[^/]*)/(?P<subsection>[^/]*)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CoursewareIndex.as_view(),
         name='courseware_subsection',
     ),
     re_path(
-        r'^courses/{}/courseware/(?P<section>[^/]*)/(?P<subsection>[^/]*)/(?P<position>[^/]*)/?$'.format(
+        r'^courses/{}/courseware/(?P<section>[^/]*)/(?P<subsection>[^/]*)/(?P<position>[^/]*)/?$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CoursewareIndex.as_view(),
@@ -514,7 +514,7 @@ urlpatterns += [
 
     # progress page
     re_path(
-        r'^courses/{}/progress$'.format(
+        r'^courses/{}/progress$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.progress,
@@ -522,11 +522,11 @@ urlpatterns += [
     ),
 
     # dates page (no longer functional, just redirects to MFE)
-    re_path(r'^courses/{}/dates'.format(settings.COURSE_ID_PATTERN), courseware_views.dates, name='dates'),
+    re_path(r'^courses/{}/dates'.format(settings.COURSE_ID_PATTERN), courseware_views.dates, name='dates'),  # noqa: UP032
 
     # Takes optional student_id for instructor use--shows profile as that student sees it.
     re_path(
-        r'^courses/{}/progress/(?P<student_id>[^/]*)/$'.format(
+        r'^courses/{}/progress/(?P<student_id>[^/]*)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.progress,
@@ -543,7 +543,7 @@ urlpatterns += [
 
     # For the instructor
     re_path(
-        r'^courses/{}/instructor$'.format(
+        r'^courses/{}/instructor$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         instructor_dashboard_views.instructor_dashboard_2,
@@ -551,7 +551,7 @@ urlpatterns += [
     ),
 
     re_path(
-        r'^courses/{}/set_course_mode_price$'.format(
+        r'^courses/{}/set_course_mode_price$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         instructor_dashboard_views.set_course_mode_price,
@@ -560,7 +560,7 @@ urlpatterns += [
 
     # Discussions Management
     re_path(
-        r'^courses/{}/discussions/settings$'.format(
+        r'^courses/{}/discussions/settings$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         discussion_views.course_discussions_settings_handler,
@@ -574,49 +574,49 @@ urlpatterns += [
 
     # Cohorts management
     re_path(
-        r'^courses/{}/cohorts/settings$'.format(
+        r'^courses/{}/cohorts/settings$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.course_cohort_settings_handler,
         name='course_cohort_settings',
     ),
     re_path(
-        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)?$'.format(
+        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)?$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.cohort_handler,
         name='cohorts',
     ),
     re_path(
-        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)$'.format(
+        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.users_in_cohort,
         name='list_cohort',
     ),
     re_path(
-        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)/add$'.format(
+        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)/add$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.add_users_to_cohort,
         name='add_to_cohort',
     ),
     re_path(
-        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)/delete$'.format(
+        r'^courses/{}/cohorts/(?P<cohort_id>[0-9]+)/delete$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.remove_user_from_cohort,
         name='remove_from_cohort',
     ),
     re_path(
-        r'^courses/{}/cohorts/debug$'.format(
+        r'^courses/{}/cohorts/debug$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         course_groups_views.debug_cohort_mgmt,
         name='debug_cohort_mgmt',
     ),
     re_path(
-        r'^courses/{}/discussion/topics$'.format(
+        r'^courses/{}/discussion/topics$'.format(  # noqa: UP032
             settings.COURSE_KEY_PATTERN,
         ),
         discussion_views.discussion_topics,
@@ -625,7 +625,7 @@ urlpatterns += [
 
     # LTI endpoints listing
     re_path(
-        r'^courses/{}/lti_rest_endpoints/'.format(
+        r'^courses/{}/lti_rest_endpoints/'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.get_course_lti_endpoints,
@@ -634,7 +634,7 @@ urlpatterns += [
 
     # Student Notes
     re_path(
-        r'^courses/{}/edxnotes/'.format(
+        r'^courses/{}/edxnotes/'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         include('lms.djangoapps.edxnotes.urls'),
@@ -655,7 +655,7 @@ urlpatterns += [
 
     # Course experience
     re_path(
-        r'^courses/{}/course/'.format(
+        r'^courses/{}/course/'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         include('openedx.features.course_experience.urls'),
@@ -663,7 +663,7 @@ urlpatterns += [
 
     # Course bookmarks UI in LMS
     re_path(
-        r'^courses/{}/bookmarks/'.format(
+        r'^courses/{}/bookmarks/'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         include('openedx.features.course_bookmarks.urls'),
@@ -677,7 +677,7 @@ urlpatterns += [
 
     # Survey Report
     re_path(
-        fr'^survey_report/',
+        fr'^survey_report/',  # noqa: F541
         include('openedx.features.survey_report.urls'),
     ),
 ]
@@ -690,7 +690,7 @@ if settings.FEATURES.get('ENABLE_TEAMS'):
             include('lms.djangoapps.teams.api_urls')
         ),
         re_path(
-            r'^courses/{}/teams/'.format(
+            r'^courses/{}/teams/'.format(  # noqa: UP032
                 settings.COURSE_ID_PATTERN,
             ),
             include('lms.djangoapps.teams.urls'),
@@ -702,7 +702,7 @@ if settings.FEATURES.get('ENABLE_TEAMS'):
 if settings.FEATURES.get('ENABLE_MASQUERADE'):
     urlpatterns += [
         re_path(
-            r'^courses/{}/masquerade$'.format(
+            r'^courses/{}/masquerade$'.format(  # noqa: UP032
                 settings.COURSE_KEY_PATTERN,
             ),
             MasqueradeView.as_view(),
@@ -712,7 +712,7 @@ if settings.FEATURES.get('ENABLE_MASQUERADE'):
 
 urlpatterns += [
     re_path(
-        r'^courses/{}/generate_user_cert'.format(
+        r'^courses/{}/generate_user_cert'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.generate_user_cert,
@@ -728,7 +728,7 @@ if settings.FEATURES.get('ENABLE_DISCUSSION_SERVICE'):
             include('lms.djangoapps.discussion.rest_api.urls')
         ),
         re_path(
-            r'^courses/{}/discussion/'.format(
+            r'^courses/{}/discussion/'.format(  # noqa: UP032
                 settings.COURSE_ID_PATTERN,
             ),
             include('lms.djangoapps.discussion.django_comment_client.urls')
@@ -744,7 +744,7 @@ urlpatterns += [
 
 urlpatterns += [
     re_path(
-        r'^courses/{}/tab/(?P<tab_type>[^/]+)/$'.format(
+        r'^courses/{}/tab/(?P<tab_type>[^/]+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CourseTabView.as_view(),
@@ -754,7 +754,7 @@ urlpatterns += [
 
 urlpatterns += [
     re_path(
-        r'^courses/{}/courseware-search/enabled/$'.format(
+        r'^courses/{}/courseware-search/enabled/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         courseware_views.courseware_mfe_search_enabled,
@@ -769,7 +769,7 @@ urlpatterns += [
 
 urlpatterns += [
     re_path(
-        r'^courses/{}/lti_tab/(?P<provider_uuid>[^/]+)/$'.format(
+        r'^courses/{}/lti_tab/(?P<provider_uuid>[^/]+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         CourseTabView.as_view(),
@@ -781,7 +781,7 @@ urlpatterns += [
 urlpatterns += [
     # This MUST be the last view in the courseware--it's a catch-all for custom tabs.
     re_path(
-        r'^courses/{}/(?P<tab_slug>[^/]+)/$'.format(
+        r'^courses/{}/(?P<tab_slug>[^/]+)/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         StaticCourseTabView.as_view(),
@@ -792,7 +792,7 @@ urlpatterns += [
 if settings.FEATURES.get('ENABLE_STUDENT_HISTORY_VIEW'):
     urlpatterns += [
         re_path(
-            r'^courses/{}/submission_history/(?P<learner_identifier>[^/]*)/(?P<location>.*?)$'.format(
+            r'^courses/{}/submission_history/(?P<learner_identifier>[^/]*)/(?P<location>.*?)$'.format(  # noqa: UP032
                 settings.COURSE_ID_PATTERN
             ),
             courseware_views.submission_history,

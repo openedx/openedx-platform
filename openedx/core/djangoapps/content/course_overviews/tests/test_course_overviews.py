@@ -362,7 +362,7 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
             # This mock makes it so when the module store tries to load course data,
             # an exception is thrown, which causes get_course to return an ErrorBlock,
             # which causes get_from_id to raise an IOError.
-            with pytest.raises(IOError):
+            with pytest.raises(IOError):  # noqa: PT011
                 CourseOverview.load_from_module_store(self.store.make_course_key('Non', 'Existent', 'Course'))
 
     def test_malformed_grading_policy(self):
@@ -375,7 +375,7 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
         """
         course = CourseFactory.create()
         course._grading_policy['GRADE_CUTOFFS'] = {}  # pylint: disable=protected-access
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             __ = course.lowest_passing_grade
         course_overview = CourseOverview._create_or_update(course)  # pylint: disable=protected-access
         assert course_overview.lowest_passing_grade is None

@@ -432,7 +432,7 @@ class CommentsServiceMockMixin:
         for path in ["abuse_flag", "abuse_unflag"]:
             httpretty.register_uri(
                 "PUT",
-                "http://localhost:4567/api/v1/{content_type}s/{content_id}/{path}".format(
+                "http://localhost:4567/api/v1/{content_type}s/{content_id}/{path}".format(  # noqa: UP032
                     content_type=content_type,
                     content_id=content_id,
                     path=path
@@ -979,7 +979,7 @@ def querystring(request):
     return parse_qs(request.path.split('?', 1)[-1])
 
 
-class ThreadMock(object):
+class ThreadMock(object):  # noqa: UP004
     """
     A mock thread object
     """

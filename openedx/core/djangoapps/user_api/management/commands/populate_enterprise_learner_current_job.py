@@ -67,7 +67,7 @@ class Command(BaseCommand):
         try:
             existing_user = User.objects.get(username=username)
         except ObjectDoesNotExist:
-            raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from
+            raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
         return existing_user_profile

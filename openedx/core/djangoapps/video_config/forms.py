@@ -39,7 +39,7 @@ class CourseHLSPlaybackFlagAdminForm(CourseSpecificFlagAdminBaseForm):
 
     class Meta:
         model = CourseHLSPlaybackEnabledFlag
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 class CourseYoutubeBlockedFlagAdminForm(CourseSpecificFlagAdminBaseForm):
@@ -49,7 +49,7 @@ class CourseYoutubeBlockedFlagAdminForm(CourseSpecificFlagAdminBaseForm):
 
     class Meta:
         model = CourseYoutubeBlockedFlag
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 class CourseVideoTranscriptFlagAdminForm(CourseSpecificFlagAdminBaseForm):
@@ -59,4 +59,4 @@ class CourseVideoTranscriptFlagAdminForm(CourseSpecificFlagAdminBaseForm):
 
     class Meta:
         model = CourseVideoTranscriptEnabledFlag
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007

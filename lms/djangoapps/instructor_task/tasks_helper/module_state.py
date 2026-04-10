@@ -143,7 +143,7 @@ def rescore_problem_module_state(xblock_instance_args, block, student_module, ta
         if instance is None:
             # Either permissions just changed, or someone is trying to be clever
             # and load something they shouldn't have access to.
-            msg = "No module {location} for student {student}--access denied?".format(
+            msg = "No module {location} for student {student}--access denied?".format(  # noqa: UP032
                 location=usage_key,
                 student=student
             )
@@ -239,7 +239,7 @@ def override_score_module_state(xblock_instance_args, block, student_module, tas
         if instance is None:
             # Either permissions just changed, or someone is trying to be clever
             # and load something they shouldn't have access to.
-            msg = "No module {location} for student {student}--access denied?".format(
+            msg = "No module {location} for student {student}--access denied?".format(  # noqa: UP032
                 location=usage_key,
                 student=student
             )

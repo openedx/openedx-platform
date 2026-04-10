@@ -69,8 +69,8 @@ class CapaFactoryWithDelay:
         Return the key stored in the capa problem answer dict
         """
         return (
-            "%s_%d_1" % (
-                "-".join(['i4x', 'edX', 'capa_test', 'problem', 'SampleProblem%d' % cls.num]),
+            "%s_%d_1" % (  # noqa: UP031
+                "-".join(['i4x', 'edX', 'capa_test', 'problem', 'SampleProblem%d' % cls.num]),  # noqa: UP031
                 input_num,
             )
         )
@@ -182,7 +182,7 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least.*")
+        self.assertRegex(result['success'], r"You must wait at least.*")  # noqa: PT009
         assert block.attempts == num_attempts
 
     def test_submit_quiz_too_soon(self):
@@ -196,7 +196,7 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait 2 minutes
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least 3 minutes between submissions. 2 minutes remaining\..*")  # lint-amnesty, pylint: disable=line-too-long
+        self.assertRegex(result['success'], r"You must wait at least 3 minutes between submissions. 2 minutes remaining\..*")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts
 
     def test_submit_quiz_1_second_too_soon(self):
@@ -210,7 +210,7 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait 2 minutes
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least 3 minutes between submissions. 1 second remaining\..*")  # lint-amnesty, pylint: disable=line-too-long
+        self.assertRegex(result['success'], r"You must wait at least 3 minutes between submissions. 1 second remaining\..*")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts
 
     def test_submit_quiz_as_soon_as_allowed(self):
@@ -275,7 +275,7 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait 2 minutes
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least 2 hours between submissions. 2 minutes 1 second remaining\..*")  # lint-amnesty, pylint: disable=line-too-long
+        self.assertRegex(result['success'], r"You must wait at least 2 hours between submissions. 2 minutes 1 second remaining\..*")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts
 
     def test_submit_quiz_with_involved_pretty_print(self):
@@ -289,7 +289,7 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait 2 minutes
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least 2 hours 1 minute 3 seconds between submissions. 1 hour 2 minutes 59 seconds remaining\..*")  # lint-amnesty, pylint: disable=line-too-long
+        self.assertRegex(result['success'], r"You must wait at least 2 hours 1 minute 3 seconds between submissions. 1 hour 2 minutes 59 seconds remaining\..*")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts
 
     def test_submit_quiz_with_nonplural_pretty_print(self):
@@ -303,5 +303,5 @@ class XModuleQuizAttemptsDelayTest(unittest.TestCase):
         )
         # You should get a dialog that tells you to wait 2 minutes
         # Also, the number of attempts should not be incremented
-        self.assertRegex(result['success'], r"You must wait at least 1 minute between submissions. 1 minute remaining\..*")  # lint-amnesty, pylint: disable=line-too-long
+        self.assertRegex(result['success'], r"You must wait at least 1 minute between submissions. 1 minute remaining\..*")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
         assert block.attempts == num_attempts

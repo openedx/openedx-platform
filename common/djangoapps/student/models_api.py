@@ -126,7 +126,7 @@ def do_name_change_request(user, new_name, rationale):
     user_profile = _UserProfile.objects.get(user=user)
     if user_profile.name == new_name:
         log_msg = (
-            'user_id={user_id} requested a name change, but the requested name is the same as'
+            'user_id={user_id} requested a name change, but the requested name is the same as'  # noqa: UP032
             'their current profile name. Not taking any action.'.format(user_id=user.id)
         )
         log.warning(log_msg)

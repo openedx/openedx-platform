@@ -2,7 +2,7 @@
 Utilities for django models.
 """
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple  # noqa: UP035
 
 from django.conf import settings
 from django.dispatch import Signal
@@ -130,7 +130,7 @@ def truncate_fields(old_value, new_value):
     return {'old': serialized_old_value, 'new': serialized_new_value, 'truncated': truncated_values}
 
 
-def emit_settings_changed_event(user, db_table, changed_fields: Dict[str, Tuple[Any, Any]]):
+def emit_settings_changed_event(user, db_table, changed_fields: Dict[str, Tuple[Any, Any]]):  # noqa: UP006
     """Emits an event for a change in a setting.
 
     Args:

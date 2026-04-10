@@ -92,8 +92,8 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             'created_on': None,
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=False)
     def test_course_index_response_with_show_locators(self):
@@ -143,14 +143,14 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
             'created_on': None,
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     def test_course_index_response_with_invalid_course(self):
         """Check error response for invalid course id"""
         response = self.client.get(self.url + "1")
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEqual(response.data, {
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
+        self.assertEqual(response.data, {  # noqa: PT009
             "developer_message": f"Unknown course {self.course.id}1",
             "error_code": "course_does_not_exist"
         })

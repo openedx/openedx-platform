@@ -49,7 +49,7 @@ class Command(BaseCommand):
         log.addHandler(log_handler)
         total, skipped, attempted, updated, failed, failure_messages = fetch_saml_metadata()
         self.stdout.write(
-            "\nDone."
+            "\nDone."  # noqa: UP032
             "\n{total} provider(s) found in database."
             "\n{skipped} skipped and {attempted} attempted."
             "\n{updated} updated and {failed} failed.\n".format(

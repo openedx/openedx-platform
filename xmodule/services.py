@@ -113,7 +113,7 @@ class ConfigurationService:
         """
         if not (inspect.isclass(configuration_model) and issubclass(configuration_model, ConfigurationModel)):
             raise ValueError(
-                "Expected ConfigurationModel got {} of type {}".format(
+                "Expected ConfigurationModel got {} of type {}".format(  # noqa: UP032
                     configuration_model,
                     type(configuration_model)
                 )

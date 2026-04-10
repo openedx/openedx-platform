@@ -73,7 +73,7 @@ class ProctoringPIISignature(TimeStampedModel):
         app_label = 'agreements'
 
 
-class UserAgreement(models.Model):
+class UserAgreement(models.Model):  # noqa: DJ008
     """
     This model stores agreements that the user can accept, which can gate certain
     platform features.
@@ -95,12 +95,12 @@ class UserAgreement(models.Model):
             "Brief summary of the agreement content. Will be displayed to users in alert to accept the agreement."
         ),
     )
-    text = models.TextField(
+    text = models.TextField(  # noqa: DJ001
         help_text="Full text of the agreement. (Required if url is not provided)",
         null=True,
         blank=True,
     )
-    url = models.URLField(
+    url = models.URLField(  # noqa: DJ001
         help_text=(
             "URL where the full agreement can be accessed. "
             'Will be used for "Learn More" link in alert to accept the agreement.'
@@ -121,7 +121,7 @@ class UserAgreement(models.Model):
     def has_text(self):
         return bool(self.text)
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "agreements"
         constraints = [
             models.CheckConstraint(
@@ -130,7 +130,7 @@ class UserAgreement(models.Model):
         ]
 
 
-class UserAgreementRecord(models.Model):
+class UserAgreementRecord(models.Model):  # noqa: DJ008
     """
     This model stores the agreements a user has accepted or acknowledged.
 
@@ -148,5 +148,5 @@ class UserAgreementRecord(models.Model):
     def is_current(self):
         return self.agreement.updated < self.timestamp
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "agreements"

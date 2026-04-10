@@ -8,7 +8,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from enum import Enum
-from typing import Dict, Iterable, List, Literal, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Literal, Optional, Set, Tuple  # noqa: UP035
 from urllib.parse import urlencode, urlunparse
 
 from django.conf import settings
@@ -142,11 +142,11 @@ class DiscussionTopic:
 
     def __init__(
         self,
-        topic_id: Optional[str],
+        topic_id: Optional[str],  # noqa: UP045
         name: str,
         thread_list_url: str,
-        children: Optional[List[DiscussionTopic]] = None,
-        thread_counts: Dict[str, int] = None,
+        children: Optional[List[DiscussionTopic]] = None,  # noqa: UP006, UP045
+        thread_counts: Dict[str, int] = None,  # noqa: UP006
     ):
         self.id = topic_id  # pylint: disable=invalid-name
         self.name = name
@@ -390,9 +390,9 @@ def get_courseware_topics(
     request: Request,
     course_key: CourseKey,
     course: CourseBlock,
-    topic_ids: Optional[List[str]],
-    thread_counts: Dict[str, Dict[str, int]],
-) -> Tuple[List[Dict], Set[str]]:
+    topic_ids: Optional[List[str]],  # noqa: UP006, UP045
+    thread_counts: Dict[str, Dict[str, int]],  # noqa: UP006
+) -> Tuple[List[Dict], Set[str]]:  # noqa: UP006
     """
     Returns a list of topic trees for courseware-linked topics.
 
@@ -476,9 +476,9 @@ def get_non_courseware_topics(
     request: Request,
     course_key: CourseKey,
     course: CourseBlock,
-    topic_ids: Optional[List[str]],
-    thread_counts: Dict[str, Dict[str, int]]
-) -> Tuple[List[Dict], Set[str]]:
+    topic_ids: Optional[List[str]],  # noqa: UP006, UP045
+    thread_counts: Dict[str, Dict[str, int]]  # noqa: UP006
+) -> Tuple[List[Dict], Set[str]]:  # noqa: UP006
     """
     Returns a list of topic trees that are not linked to courseware.
 
@@ -515,7 +515,7 @@ def get_non_courseware_topics(
     return non_courseware_topics, existing_topic_ids
 
 
-def get_course_topics(request: Request, course_key: CourseKey, topic_ids: Optional[Set[str]] = None):
+def get_course_topics(request: Request, course_key: CourseKey, topic_ids: Optional[Set[str]] = None):  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Returns the course topic listing for the given course and user; filtered
     by 'topic_ids' list if given.
@@ -621,7 +621,7 @@ def get_v2_courseware_topics_as_v1(request, course_key, sequentials, topics):
 def get_v2_course_topics_as_v1(
     request: Request,
     course_key: CourseKey,
-    topic_ids: Optional[Iterable[str]] = None,
+    topic_ids: Optional[Iterable[str]] = None,  # noqa: UP045
 ):
     """
     Returns v2 topics in v1 structure
@@ -666,9 +666,9 @@ def get_v2_course_topics_as_v1(
 def get_course_topics_v2(
     course_key: CourseKey,
     user: User,
-    topic_ids: Optional[Iterable[str]] = None,
+    topic_ids: Optional[Iterable[str]] = None,  # noqa: UP045
     order_by: TopicOrdering = TopicOrdering.COURSE_STRUCTURE,
-) -> List[Dict]:
+) -> List[Dict]:  # noqa: UP006
     """
     Returns the course topic listing for the given course and user; filtered
     by 'topic_ids' list if given.
@@ -900,16 +900,16 @@ def get_thread_list(
     course_key: CourseKey,
     page: int,
     page_size: int,
-    topic_id_list: List[str] = None,
-    text_search: Optional[str] = None,
-    following: Optional[bool] = False,
-    author: Optional[str] = None,
-    thread_type: Optional[ThreadType] = None,
-    flagged: Optional[bool] = None,
-    view: Optional[ViewType] = None,
+    topic_id_list: List[str] = None,  # noqa: UP006
+    text_search: Optional[str] = None,  # noqa: UP045
+    following: Optional[bool] = False,  # noqa: UP045
+    author: Optional[str] = None,  # noqa: UP045
+    thread_type: Optional[ThreadType] = None,  # noqa: UP045
+    flagged: Optional[bool] = None,  # noqa: UP045
+    view: Optional[ViewType] = None,  # noqa: UP045
     order_by: ThreadOrderingType = "last_activity_at",
     order_direction: Literal["desc"] = "desc",
-    requested_fields: Optional[List[Literal["profile_image"]]] = None,
+    requested_fields: Optional[List[Literal["profile_image"]]] = None,  # noqa: UP006, UP045
     count_flagged: bool = None,
 ):
     """
@@ -1756,7 +1756,7 @@ def get_user_comments(
     flagged: bool = False,
     page: int = 1,
     page_size: int = 10,
-    requested_fields: Optional[List[str]] = None,
+    requested_fields: Optional[List[str]] = None,  # noqa: UP006, UP045
 ):
     """
     Returns the list of comments made by the user in the requested course.
@@ -1879,7 +1879,7 @@ def get_course_discussion_user_stats(
     page_size: int,
     order_by: UserOrdering = None,
     username_search_string: str = None,
-) -> Dict:
+) -> Dict:  # noqa: UP006
     """
     Get paginated course discussion stats for users in the course.
 

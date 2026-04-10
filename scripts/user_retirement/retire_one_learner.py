@@ -82,16 +82,16 @@ def _get_learner_state_index_or_exit(learner, config):
         learner_state_index = config['all_states'].index(learner_state)
 
         if learner_state in END_STATES:
-            FAIL(ERR_USER_AT_END_STATE, 'User already in end state: {}'.format(learner_state))
+            FAIL(ERR_USER_AT_END_STATE, 'User already in end state: {}'.format(learner_state))  # noqa: UP032
 
         if learner_state in config['working_states']:
-            FAIL(ERR_USER_IN_WORKING_STATE, 'User is already in a working state! {}'.format(learner_state))
+            FAIL(ERR_USER_IN_WORKING_STATE, 'User is already in a working state! {}'.format(learner_state))  # noqa: UP032
 
         return learner_state_index
     except KeyError:
-        FAIL(ERR_BAD_LEARNER, 'Bad learner response missing current_state or state_name: {}'.format(learner))
+        FAIL(ERR_BAD_LEARNER, 'Bad learner response missing current_state or state_name: {}'.format(learner))  # noqa: UP032
     except ValueError:
-        FAIL(ERR_UNKNOWN_STATE, 'Unknown learner retirement state for learner: {}'.format(learner))
+        FAIL(ERR_UNKNOWN_STATE, 'Unknown learner retirement state for learner: {}'.format(learner))  # noqa: UP032
 
 
 def _config_retirement_pipeline(config):
@@ -122,7 +122,7 @@ def _get_learner_and_state_index_or_exit(config, username):
         learner_state_index = _get_learner_state_index_or_exit(learner, config)
         return learner, learner_state_index
     except HttpDoesNotExistException:
-        FAIL(ERR_BAD_LEARNER, 'Learner {} not found. Please check that the learner is present in '
+        FAIL(ERR_BAD_LEARNER, 'Learner {} not found. Please check that the learner is present in '  # noqa: UP032
                               'UserRetirementStatus, is not already retired, '
                               'and is in an appropriate state to be acted upon.'.format(username))
     except Exception as exc:  # pylint: disable=broad-except
@@ -138,7 +138,7 @@ def _get_ecom_segment_id(config, learner):
     try:
         return config['ECOMMERCE'].get_tracking_key(learner)
     except HttpDoesNotExistException:
-        LOG('Learner {} not found in Ecommerce. Setting Ecommerce Segment ID to None'.format(learner))
+        LOG('Learner {} not found in Ecommerce. Setting Ecommerce Segment ID to None'.format(learner))  # noqa: UP032
         return None
     except Exception as exc:  # pylint: disable=broad-except
         FAIL_EXCEPTION(ERR_SETUP_FAILED, 'Unexpected error fetching Ecommerce tracking id!', str(exc))
@@ -161,7 +161,7 @@ def retire_learner(
     Retrieves a JWT token as the retirement service learner, then performs the retirement process as
     defined in WORKING_STATE_ORDER
     """
-    LOG('Starting learner retirement for {} using config file {}'.format(username, config_file))
+    LOG('Starting learner retirement for {} using config file {}'.format(username, config_file))  # noqa: UP032
 
     if not config_file:
         FAIL(ERR_BAD_CONFIG, 'No config file passed in.')
@@ -180,42 +180,42 @@ def retire_learner(
         for start_state, end_state, service, method in config['retirement_pipeline']:
             # Skip anything that has already been done
             if config['all_states'].index(start_state) < learner_state_index:
-                LOG('State {} completed in previous run, skipping'.format(start_state))
+                LOG('State {} completed in previous run, skipping'.format(start_state))  # noqa: UP032
                 continue
 
-            LOG('Starting state {}'.format(start_state))
+            LOG('Starting state {}'.format(start_state))  # noqa: UP032
 
-            config['LMS'].update_learner_retirement_state(username, start_state, 'Starting: {}'.format(start_state))
+            config['LMS'].update_learner_retirement_state(username, start_state, 'Starting: {}'.format(start_state))  # noqa: UP032
 
             # This does the actual API call
             start_time = time()
             response = getattr(config[service], method)(learner)
             end_time = time()
 
-            LOG('State {} completed in {} seconds'.format(start_state, end_time - start_time))
+            LOG('State {} completed in {} seconds'.format(start_state, end_time - start_time))  # noqa: UP032
 
             config['LMS'].update_learner_retirement_state(
                 username,
                 end_state,
-                'Ending: {} with response:\n{}'.format(end_state, response)
+                'Ending: {} with response:\n{}'.format(end_state, response)  # noqa: UP032
             )
 
             learner_state_index += 1
 
-            LOG('Progressing to state {}'.format(end_state))
+            LOG('Progressing to state {}'.format(end_state))  # noqa: UP032
 
         config['LMS'].update_learner_retirement_state(username, COMPLETE_STATE, 'Learner retirement complete.')
-        LOG('Retirement complete for learner {}'.format(username))
+        LOG('Retirement complete for learner {}'.format(username))  # noqa: UP032
     except Exception as exc:  # pylint: disable=broad-except
         exc_msg = _get_error_str_from_exception(exc)
 
         try:
-            LOG('Error in retirement state {}: {}'.format(start_state, exc_msg))
+            LOG('Error in retirement state {}: {}'.format(start_state, exc_msg))  # noqa: UP032
             config['LMS'].update_learner_retirement_state(username, ERROR_STATE, exc_msg)
         except Exception as update_exc:  # pylint: disable=broad-except
-            LOG('Critical error attempting to change learner state to ERRORED: {}'.format(update_exc))
+            LOG('Critical error attempting to change learner state to ERRORED: {}'.format(update_exc))  # noqa: UP032
 
-        FAIL_EXCEPTION(ERR_WHILE_RETIRING, 'Error encountered in state "{}"'.format(start_state), exc)
+        FAIL_EXCEPTION(ERR_WHILE_RETIRING, 'Error encountered in state "{}"'.format(start_state), exc)  # noqa: UP032
 
 
 if __name__ == '__main__':

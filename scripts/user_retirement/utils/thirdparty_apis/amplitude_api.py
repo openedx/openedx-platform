@@ -81,7 +81,7 @@ class AmplitudeApi:
             return
 
         # We have some sort of error. Parse it, log it, and retry as needed.
-        error_msg = "Amplitude user deletion failed due to {reason}".format(reason=response.reason)
+        error_msg = "Amplitude user deletion failed due to {reason}".format(reason=response.reason)  # noqa: UP032
         logger.error(error_msg)
         # Status 429 is returned when there are too many requests and can be resolved in retrying sending
         # request.

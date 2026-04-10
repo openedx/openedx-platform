@@ -226,7 +226,7 @@ class TestFooter(CacheIsolationTestCase):
         url = reverse("branding_footer")
 
         if params is not None:
-            url = "{url}?{params}".format(
+            url = "{url}?{params}".format(  # noqa: UP032
                 url=url,
                 params=six.moves.urllib.parse.urlencode(params)
             )

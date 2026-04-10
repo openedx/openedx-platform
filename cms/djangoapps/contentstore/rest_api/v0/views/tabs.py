@@ -3,12 +3,17 @@
 import edx_api_doc_tools as apidocs
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import (
+    COURSES_MANAGE_PAGES_AND_RESOURCES,
+    COURSES_VIEW_PAGES_AND_RESOURCES,
+)
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -79,7 +84,12 @@ class CourseTabListView(DeveloperErrorViewMixin, APIView):
         ```
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_read_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_VIEW_PAGES_AND_RESOURCES.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ,
+        ):
             self.permission_denied(request)
 
         course_block = modulestore().get_course(course_key)
@@ -150,7 +160,12 @@ class CourseTabSettingsView(DeveloperErrorViewMixin, APIView):
         without any content.
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_write_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_MANAGE_PAGES_AND_RESOURCES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
             self.permission_denied(request)
 
         tab_id_locator = TabIDLocatorSerializer(data=request.query_params)
@@ -222,7 +237,12 @@ class CourseTabReorderView(DeveloperErrorViewMixin, APIView):
         without any content.
         """
         course_key = CourseKey.from_string(course_id)
-        if not has_studio_write_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_MANAGE_PAGES_AND_RESOURCES.identifier,
+            course_key,
+            LegacyAuthoringPermission.WRITE,
+        ):
             self.permission_denied(request)
 
         course_block = modulestore().get_course(course_key)

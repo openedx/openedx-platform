@@ -14,7 +14,7 @@ from openedx.core.djangoapps.user_api.models import (
     UserRetirementStatus,
 )
 
-from .retirement_helpers import setup_retirement_states  # pylint: disable=unused-import
+from .retirement_helpers import setup_retirement_states  # pylint: disable=unused-import  # noqa: F401
 
 # Tell pytest it's ok to use the database
 pytestmark = pytest.mark.django_db
@@ -40,7 +40,7 @@ def _assert_retirementstatus_is_user(retirement, user):
     assert pending.state_name in retirement.responses
 
 
-def test_retirement_create_success(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name
+def test_retirement_create_success(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name  # noqa: F811
     """
     Basic test to make sure default creation succeeds
     """
@@ -59,7 +59,7 @@ def test_retirement_create_no_default_state():
         UserRetirementStatus.create_retirement(user)
 
 
-def test_retirement_create_already_retired(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name
+def test_retirement_create_already_retired(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name  # noqa: F811
     """
     Confirm the correct error bubbles up if the user already has a retirement row
     """
@@ -80,7 +80,7 @@ def test_retirement_request_create_success():
     assert UserRetirementRequest.has_user_requested_retirement(user)
 
 
-def test_retirement_request_created_upon_status(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name
+def test_retirement_request_created_upon_status(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name  # noqa: F811
     """
     Ensure that retirement request record is created upon retirement status creation.
     """
@@ -89,7 +89,7 @@ def test_retirement_request_created_upon_status(setup_retirement_states):  # pyl
     assert UserRetirementRequest.has_user_requested_retirement(user)
 
 
-def test_retirement_request_deleted_upon_pending_status_delete(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name
+def test_retirement_request_deleted_upon_pending_status_delete(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name  # noqa: F811
     """
     Ensure that retirement request record is deleted upon deletion of a PENDING retirement status.
     """
@@ -102,7 +102,7 @@ def test_retirement_request_deleted_upon_pending_status_delete(setup_retirement_
     assert not UserRetirementRequest.has_user_requested_retirement(user)
 
 
-def test_retirement_request_preserved_upon_non_pending_status_delete(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name
+def test_retirement_request_preserved_upon_non_pending_status_delete(setup_retirement_states):  # pylint: disable=unused-argument, redefined-outer-name  # noqa: F811
     """
     Ensure that retirement request record is not deleted upon deletion of a non-PENDING retirement status.
     """

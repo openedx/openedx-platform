@@ -12,7 +12,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from openedx.core.djangoapps.content_libraries.api import get_libraries_for_user
 
 
-class SearchAccess(models.Model):
+class SearchAccess(models.Model):  # noqa: DJ008
     """
     Stores a numeric ID for each ContextKey.
 
@@ -67,7 +67,7 @@ def get_access_ids_for_request(request: Request, omit_orgs: list[str] = None) ->
     )
 
 
-class IncrementalIndexCompleted(models.Model):
+class IncrementalIndexCompleted(models.Model):  # noqa: DJ008
     """
     Stores the contex keys of aleady indexed courses and libraries for incremental indexing.
     """

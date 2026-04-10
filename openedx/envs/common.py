@@ -36,12 +36,12 @@ from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 # We have legacy components that reference these constants via the settings module.
 # New code should import them directly from `openedx.core.constants` instead.
 from openedx.core.constants import (  # pylint: disable=unused-import
-    ASSET_KEY_PATTERN,
-    COURSE_ID_PATTERN,
-    COURSE_KEY_PATTERN,
-    COURSE_KEY_REGEX,
-    USAGE_ID_PATTERN,
-    USAGE_KEY_PATTERN,
+    ASSET_KEY_PATTERN,  # noqa: F401
+    COURSE_ID_PATTERN,  # noqa: F401
+    COURSE_KEY_PATTERN,  # noqa: F401
+    COURSE_KEY_REGEX,  # noqa: F401
+    USAGE_ID_PATTERN,  # noqa: F401
+    USAGE_KEY_PATTERN,  # noqa: F401
 )
 from openedx.core.djangoapps.theming.helpers_dirs import get_theme_base_dirs_from_settings, get_themes_unchecked
 from openedx.core.lib.derived import Derived

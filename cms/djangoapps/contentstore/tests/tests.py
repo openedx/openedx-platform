@@ -48,7 +48,7 @@ class ContentStoreTestCase(ModuleStoreTestCase):
     def login(self, email, password):
         """Login, check that it worked."""
         resp = self._login(email, password)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         return resp
 
     def _create_account(self, username, email, password):
@@ -69,12 +69,12 @@ class ContentStoreTestCase(ModuleStoreTestCase):
     def create_account(self, username, email, password):
         """Create the account and check that it worked"""
         resp = self._create_account(username, email, password)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         json_data = parse_json(resp)
-        self.assertEqual(json_data['success'], True)
+        self.assertEqual(json_data['success'], True)  # noqa: PT009
 
         # Check both that the user is created, and inactive
-        self.assertFalse(user(email).is_active)
+        self.assertFalse(user(email).is_active)  # noqa: PT009
 
         return resp
 
@@ -89,9 +89,9 @@ class ContentStoreTestCase(ModuleStoreTestCase):
 
     def activate_user(self, email):
         resp = self._activate_user(email)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         # Now make sure that the user is now actually activated
-        self.assertTrue(user(email).is_active)
+        self.assertTrue(user(email).is_active)  # noqa: PT009
 
 
 @ddt
@@ -226,31 +226,31 @@ class ForumTestCase(CourseTestCase):
             (now + datetime.timedelta(days=24), now + datetime.timedelta(days=30))
         ]
         self.set_blackout_dates(times1)
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
         times2 = [
             (now - datetime.timedelta(days=14), now + datetime.timedelta(days=2)),
             (now + datetime.timedelta(days=24), now + datetime.timedelta(days=30))
         ]
         self.set_blackout_dates(times2)
-        self.assertFalse(self.course.forum_posts_allowed)
+        self.assertFalse(self.course.forum_posts_allowed)  # noqa: PT009
 
         # Single date set for allowed forum posts.
         self.course.discussion_blackouts = [
             now + datetime.timedelta(days=24),
             now + datetime.timedelta(days=30)
         ]
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
 
         # Single date set for restricted forum posts.
         self.course.discussion_blackouts = [
             now - datetime.timedelta(days=24),
             now + datetime.timedelta(days=30)
         ]
-        self.assertFalse(self.course.forum_posts_allowed)
+        self.assertFalse(self.course.forum_posts_allowed)  # noqa: PT009
 
         # test if user gives empty blackout date it should return true for forum_posts_allowed
         self.course.discussion_blackouts = [[]]
-        self.assertTrue(self.course.forum_posts_allowed)
+        self.assertTrue(self.course.forum_posts_allowed)  # noqa: PT009
 
 
 @ddt
@@ -273,11 +273,11 @@ class CourseKeyVerificationTestCase(CourseTestCase):
         """
         url = f'/import/{course_key}'
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, status_code)  # noqa: PT009
 
         url = '/import_status/{course_key}/{filename}'.format(
             course_key=course_key,
             filename='xyz.tar.gz'
         )
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, status_code)
+        self.assertEqual(resp.status_code, status_code)  # noqa: PT009

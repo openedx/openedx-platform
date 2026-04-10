@@ -7,11 +7,11 @@ from urllib.parse import urljoin
 
 import ddt
 import httpretty
-import requests
+import requests  # noqa: F401
 from django.conf import settings
 from django.test import TestCase
 from edx_rest_api_client.auth import JwtAuth
-from freezegun import freeze_time
+from freezegun import freeze_time  # noqa: F401
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.commerce.utils import (
@@ -20,7 +20,7 @@ from openedx.core.djangoapps.commerce.utils import (
     get_ecommerce_api_client,
     user_agent,
 )
-from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user  # noqa: F401
 
 __version__ = '5.6.1'
 URL = 'http://example.com/api/v2'
@@ -68,7 +68,7 @@ class DeprecatedRestApiClientTests(TestCase):
         We also check that the auth type of the api is what we expect.
         """
         api = DeprecatedRestApiClient(**kwargs)
-        self.assertIsInstance(api._store['session'].auth, auth_type)  # pylint: disable=protected-access
+        self.assertIsInstance(api._store['session'].auth, auth_type)  # pylint: disable=protected-access  # noqa: PT009
 
     @ddt.data(
         {'url': None, 'signing_key': SIGNING_KEY, 'username': USERNAME},
@@ -78,7 +78,7 @@ class DeprecatedRestApiClientTests(TestCase):
         """
         If the constructor arguments are invalid, an InvalidConfigurationError should be raised.
         """
-        self.assertRaises(ValueError, DeprecatedRestApiClient, **kwargs)
+        self.assertRaises(ValueError, DeprecatedRestApiClient, **kwargs)  # noqa: PT027
 
     @mock.patch('edx_rest_api_client.auth.JwtAuth.__init__', return_value=None)
     def test_tracking_context(self, mock_auth):
@@ -86,7 +86,7 @@ class DeprecatedRestApiClientTests(TestCase):
         Ensure the tracking context is included with API requests if specified.
         """
         DeprecatedRestApiClient(URL, SIGNING_KEY, USERNAME, FULL_NAME, EMAIL, tracking_context=TRACKING_CONTEXT)
-        self.assertIn(TRACKING_CONTEXT, mock_auth.call_args[1].values())
+        self.assertIn(TRACKING_CONTEXT, mock_auth.call_args[1].values())  # noqa: PT009
 
     def test_oauth2(self):
         """
@@ -107,20 +107,20 @@ class DeprecatedRestApiClientTests(TestCase):
         """Make sure our custom User-Agent is getting built correctly."""
         with mock.patch('socket.gethostbyname', return_value='test_hostname'):
             default_user_agent = user_agent()
-            self.assertIn('python-requests', default_user_agent)
-            self.assertIn(f'edx-rest-api-client/{__version__}', default_user_agent)
-            self.assertIn('test_hostname', default_user_agent)
+            self.assertIn('python-requests', default_user_agent)  # noqa: PT009
+            self.assertIn(f'edx-rest-api-client/{__version__}', default_user_agent)  # noqa: PT009
+            self.assertIn('test_hostname', default_user_agent)  # noqa: PT009
 
         with mock.patch('socket.gethostbyname') as mock_gethostbyname:
             mock_gethostbyname.side_effect = ValueError()
             default_user_agent = user_agent()
-            self.assertIn('unknown_client_name', default_user_agent)
+            self.assertIn('unknown_client_name', default_user_agent)  # noqa: PT009
 
         with mock.patch.dict(os.environ, {'EDX_REST_API_CLIENT_NAME': "awesome_app"}):
             uagent = user_agent()
-            self.assertIn('awesome_app', uagent)
+            self.assertIn('awesome_app', uagent)  # noqa: PT009
 
-        self.assertEqual(user_agent(), DeprecatedRestApiClient.user_agent())
+        self.assertEqual(user_agent(), DeprecatedRestApiClient.user_agent())  # noqa: PT009
 
 
 class DeprecatedRestApiClientTest(TestCase):

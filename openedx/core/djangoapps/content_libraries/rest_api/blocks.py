@@ -6,7 +6,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.transaction import non_atomic_requests
 from django.http import Http404, HttpResponse, StreamingHttpResponse
-from django.urls import reverse
 from django.utils.decorators import method_decorator
 from drf_yasg.utils import swagger_auto_schema
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
@@ -91,7 +90,7 @@ class LibraryBlocksView(GenericAPIView):
         try:
             result = api.create_library_block(library_key, user_id=request.user.id, **serializer.validated_data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 detail={'block_type': str(err)},
             )
 
@@ -206,7 +205,7 @@ class LibraryBlockAssetView(APIView):
         try:
             result = api.add_library_block_static_asset_file(usage_key, file_path, file_content, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class(result).data)
 
     @convert_exceptions
@@ -221,7 +220,7 @@ class LibraryBlockAssetView(APIView):
         try:
             api.delete_library_block_static_asset_file(usage_key, file_path, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -284,28 +283,6 @@ class LibraryBlockCollectionsView(APIView):
 
 @method_decorator(non_atomic_requests, name="dispatch")
 @view_auth_classes()
-class LibraryBlockLtiUrlView(APIView):
-    """
-    Views to generate LTI URL for existing XBlocks in a content library.
-
-    Returns 404 in case the block not found by the given key.
-    """
-    @convert_exceptions
-    def get(self, request, usage_key_str):
-        """
-        Get the LTI launch URL for the XBlock.
-        """
-        key = LibraryUsageLocatorV2.from_string(usage_key_str)
-        api.require_permission_for_library_key(key.lib_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY)
-
-        # Get the block to validate its existence
-        api.get_library_block(key)
-        lti_login_url = f"{reverse('content_libraries:lti-launch')}?id={key}"
-        return Response({"lti_url": lti_login_url})
-
-
-@method_decorator(non_atomic_requests, name="dispatch")
-@view_auth_classes()
 class LibraryBlockOlxView(APIView):
     """
     Views to work with an existing XBlock's OLX
@@ -341,7 +318,7 @@ class LibraryBlockOlxView(APIView):
         try:
             version_num = api.set_library_block_olx(key, new_olx_str).version_num
         except ValueError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class({"olx": new_olx_str, "version_num": version_num}).data)
 
 

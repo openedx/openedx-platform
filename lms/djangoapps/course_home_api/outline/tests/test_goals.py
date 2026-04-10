@@ -129,7 +129,7 @@ class TestCourseGoalsAPI(SharedModuleStoreTestCase):
         assert len(current_goals) == 1
         assert current_goals[0].subscribed_to_reminders is True
 
-        response = self.save_course_goal(None, False)
+        response = self.save_course_goal(None, False)  # noqa: F841
         current_goals = CourseGoal.objects.filter(user=self.user, course_key=self.course.id)
         assert current_goals[0].subscribed_to_reminders is False
 

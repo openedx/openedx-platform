@@ -6,7 +6,7 @@ from __future__ import annotations
 import csv
 import io
 from itertools import groupby
-from typing import Iterator
+from typing import Iterator  # noqa: UP035
 
 import openedx_tagging.api as oel_tagging
 from django.db.models import Exists, OuterRef, Q, QuerySet
@@ -323,7 +323,7 @@ def import_course_tags_from_csv(csv_path, course_id) -> None:
     Import tags from a csv file generated on export.
     """
     # Open csv file and extract the tags
-    with open(csv_path, 'r') as csv_file:
+    with open(csv_path, 'r') as csv_file:  # noqa: UP015
         csv_reader = csv.DictReader(csv_file)
         tags_in_blocks = list(csv_reader)
 

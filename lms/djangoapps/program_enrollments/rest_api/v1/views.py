@@ -100,7 +100,7 @@ class EnrollmentWriteMixin:
         num_requests = len(self.request.data)
         if num_requests > MAX_ENROLLMENT_RECORDS:
             return Response(
-                '{} enrollments requested, but limit is {}.'.format(
+                '{} enrollments requested, but limit is {}.'.format(  # noqa: UP032
                     MAX_ENROLLMENT_RECORDS, num_requests
                 ),
                 status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,

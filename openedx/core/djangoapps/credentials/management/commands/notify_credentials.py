@@ -225,5 +225,5 @@ class Command(BaseCommand):
                 # keep the string; the celery task needs JSON serializable data.
                 validated_course_run_keys.append(str(CourseKey.from_string(course_run_key)))
             except InvalidKeyError as exc:
-                raise CommandError("{} is not a parsable CourseKey".format(course_run_key)) from exc
+                raise CommandError("{} is not a parsable CourseKey".format(course_run_key)) from exc  # noqa: UP032
         return validated_course_run_keys

@@ -338,7 +338,7 @@ class TestCourseNextSectionUpdateResolver(SchedulesResolverTestMixin, ModuleStor
         resolver = self.create_resolver(user_start_date_offset=29)
         with LogCapture(LOG.name) as log_capture:
             list(resolver.get_schedules())
-            log_message = ('Next Section Course Update: Last section was reached. '
+            log_message = ('Next Section Course Update: Last section was reached. '  # noqa: UP032
                            'There are no more highlights for {}'.format(self.course.id))
             log_capture.check_present((LOG.name, 'WARNING', log_message))
 
@@ -347,4 +347,4 @@ class TestCourseNextSectionUpdateResolver(SchedulesResolverTestMixin, ModuleStor
         self.course = self.update_course(self.course, self.user.id)
         resolver = self.create_resolver()
         schedules = list(resolver.get_schedules())
-        self.assertListEqual(schedules, [])
+        self.assertListEqual(schedules, [])  # noqa: PT009

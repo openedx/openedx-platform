@@ -225,7 +225,7 @@ def get_valid_student_with_email(identifier):
     try:
         validate_email(email)
     except ValidationError:
-        raise CCXUserValidationException(f'Could not find a user with name or email "{identifier}" ')  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CCXUserValidationException(f'Could not find a user with name or email "{identifier}" ')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return email, user
 
 

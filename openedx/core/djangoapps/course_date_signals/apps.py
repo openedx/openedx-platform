@@ -12,4 +12,4 @@ class CourseDatesSignalsConfig(AppConfig):  # lint-amnesty, pylint: disable=miss
         """
         Connect handlers to signals.
         """
-        from . import handlers  # lint-amnesty, pylint: disable=unused-import, unused-variable
+        from . import handlers  # lint-amnesty, pylint: disable=unused-import, unused-variable  # noqa: F401

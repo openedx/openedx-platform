@@ -350,7 +350,7 @@ class TestCachePrograms(CatalogIntegrationMixin, CacheIsolationTestCase, SiteMix
         Verify that the command raises an exception when run without a service
         user, and that program UUIDs are not cached.
         """
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             call_command('cache_programs')
 
         cached_uuids = cache.get(SITE_PROGRAM_UUIDS_CACHE_KEY_TPL.format(domain=self.site_domain))

@@ -150,7 +150,7 @@ class CertificateDisplayTest(CertificateDisplayTestBase):
         response = self.client.get(reverse('dashboard'))
         self.assertContains(
             response,
-            'do not have a current verified identity with {platform_name}'
+            'do not have a current verified identity with {platform_name}'  # noqa: UP032
             .format(platform_name=settings.PLATFORM_NAME))
 
     @ddt.data(

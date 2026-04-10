@@ -214,13 +214,13 @@ class PythonAPITests(SharedModuleStoreTestCase):
         """
         A learner should not be able to get IDs from members of a team they are not a member of
         """
-        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, self.user1, self.team2)
+        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, self.user1, self.team2)  # noqa: B017, PT027
 
     def test_anonymous_user_ids_for_team_bad_user_or_team(self):
         """
         An exception should be thrown when a bad user or team are passed to the endpoint
         """
-        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, None, self.team1)
+        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, None, self.team1)  # noqa: B017, PT027
 
     def test_anonymous_user_ids_for_team_staff(self):
         """

@@ -137,7 +137,7 @@ class RegistrationFiltersTest(UserAPITestCase):
         self.client.post(self.url, self.user_info)
 
         user = User.objects.filter(username=f"{self.user_info.get('username')}-OpenEdx-Test")
-        self.assertTrue(user)
+        self.assertTrue(user)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -160,7 +160,7 @@ class RegistrationFiltersTest(UserAPITestCase):
         """
         response = self.client.post(self.url, self.user_info)
 
-        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_register_without_filter_configuration(self):
@@ -174,7 +174,7 @@ class RegistrationFiltersTest(UserAPITestCase):
         self.client.post(self.url, self.user_info)
 
         user = User.objects.filter(username=f"{self.user_info.get('username')}")
-        self.assertTrue(user)
+        self.assertTrue(user)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -225,7 +225,7 @@ class LoginFiltersTest(UserAPITestCase):
         self.client.post(self.url, data)
 
         user = User.objects.get(username=self.user.username)
-        self.assertDictEqual({"logged_in": True, "another_logged_in": True}, user.profile.get_meta())
+        self.assertDictEqual({"logged_in": True, "another_logged_in": True}, user.profile.get_meta())  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -253,7 +253,7 @@ class LoginFiltersTest(UserAPITestCase):
 
         response = self.client.post(self.url, data)
 
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_login_without_filter_configuration(self):
@@ -271,4 +271,4 @@ class LoginFiltersTest(UserAPITestCase):
 
         response = self.client.post(self.url, data)
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)  # noqa: PT009

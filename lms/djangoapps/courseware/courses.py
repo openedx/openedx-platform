@@ -156,7 +156,7 @@ def get_course_overview_with_access(user, action, course_key, check_if_enrolled=
     try:
         course_overview = CourseOverview.get_from_id(course_key)
     except CourseOverview.DoesNotExist:
-        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     check_course_access_with_redirect(course_overview, user, action, check_if_enrolled)
     return course_overview
 

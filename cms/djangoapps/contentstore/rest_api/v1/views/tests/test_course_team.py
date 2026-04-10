@@ -65,8 +65,8 @@ class CourseTeamViewTest(CourseTestCase, PermissionAccessMixin):
         response = self.client.get(self.url)
         expected_response = self.get_expected_course_data()
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     def test_users_response(self):
         """Test the response for users in the course."""
@@ -74,5 +74,5 @@ class CourseTeamViewTest(CourseTestCase, PermissionAccessMixin):
         response = self.client.get(self.url)
         users_response = [dict(item) for item in response.data["users"]]
         expected_response = self.get_expected_course_data(instructor, staff)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(expected_response["users"], users_response)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertListEqual(expected_response["users"], users_response)  # noqa: PT009

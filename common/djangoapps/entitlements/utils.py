@@ -18,7 +18,7 @@ log = logging.getLogger("common.entitlements.utils")
 def is_course_run_entitlement_fulfillable(
         course_run_key,
         entitlement,
-        compare_date=timezone.now(),
+        compare_date=timezone.now(),  # noqa: B008
 ):
     """
     Checks that the current run meets the following criteria for an entitlement
@@ -37,7 +37,7 @@ def is_course_run_entitlement_fulfillable(
     try:
         course_overview = CourseOverview.get_from_id(course_run_key)
     except CourseOverview.DoesNotExist:
-        log.error(('There is no CourseOverview entry available for {course_run_id}, '
+        log.error(('There is no CourseOverview entry available for {course_run_id}, '  # noqa: UP032
                    'course run cannot be applied to entitlement').format(
             course_run_id=str(course_run_key)
         ))

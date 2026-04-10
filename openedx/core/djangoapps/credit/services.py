@@ -147,7 +147,7 @@ class CreditService:
         # table. This will be to help debug any issues that might
         # arise in production
         log_msg = (
-            'set_credit_requirement_status was called with '
+            'set_credit_requirement_status was called with '  # noqa: UP032
             'user_id={user_id}, course_key_or_id={course_key_or_id} '
             'req_namespace={req_namespace}, req_name={req_name}, '
             'status={status}, reason={reason}'.format(
@@ -203,7 +203,7 @@ class CreditService:
         # table. This will be to help debug any issues that might
         # arise in production
         log_msg = (
-            'remove_credit_requirement_status was called with '
+            'remove_credit_requirement_status was called with '  # noqa: UP032
             'user_id={user_id}, course_key_or_id={course_key_or_id} '
             'req_namespace={req_namespace}, req_name={req_name}, '.format(
                 user_id=user_id,

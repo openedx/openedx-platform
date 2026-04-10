@@ -53,7 +53,7 @@ class EdxClearExpiredTokensTests(TestCase):  # lint-amnesty, pylint: disable=mis
     @patch('oauth2_provider.settings.oauth2_settings.REFRESH_TOKEN_EXPIRE_SECONDS', 'xyz')
     def test_invalid_expiration_time(self):
         with LogCapture(LOGGER_NAME) as log:
-            with pytest.raises(ImproperlyConfigured):
+            with pytest.raises(ImproperlyConfigured):  # noqa: PT012
                 call_command('edx_clear_expired_tokens')
                 log.check(
                     (
@@ -141,7 +141,7 @@ class EdxClearExpiredTokensTests(TestCase):  # lint-amnesty, pylint: disable=mis
             assert QuerySet.delete.invocations == 2
             assert RefreshToken.objects.filter(revoked__lt=refresh_expires).count() == 0
             # revoked token has been deleted
-            with self.assertRaises(RefreshToken.DoesNotExist):
+            with self.assertRaises(RefreshToken.DoesNotExist):  # noqa: PT027
                 RefreshToken.objects.get(token=revoke_token.token)
             # normal token is still there
             assert RefreshToken.objects.get(token=keep_token.token) == keep_token

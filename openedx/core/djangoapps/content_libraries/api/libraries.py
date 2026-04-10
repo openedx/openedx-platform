@@ -139,7 +139,6 @@ class ContentLibraryMetadata:
     # has_unpublished_deletes will be true when the draft version of the library's bundle
     # contains deletes of any XBlocks that were in the most recently published version
     has_unpublished_deletes: bool = False
-    allow_lti: bool = False
     # Allow any user (even unregistered users) to view and interact directly
     # with this library's content in the LMS
     allow_public_learning: bool = False
@@ -336,15 +335,24 @@ def get_metadata(queryset: QuerySet[ContentLibrary], text_search: str | None = N
     return libraries
 
 
-def require_permission_for_library_key(library_key: LibraryLocatorV2, user: UserType, permission) -> ContentLibrary:
+def require_permission_for_library_key(
+    library_key: LibraryLocatorV2, user: UserType, permission: str | authz_api.data.PermissionData
+) -> ContentLibrary:
     """
-    Given any of the content library permission strings defined in
-    openedx.core.djangoapps.content_libraries.permissions,
-    check if the given user has that permission for the library with the
-    specified library ID.
+    Check if the user has the specified permission for a content library.
 
-    Raises django.core.exceptions.PermissionDenied if the user doesn't have
-    permission.
+    Args:
+        library_key: The library key identifying the content library
+        user: The user whose permissions are being checked
+        permission: Either a permission string from content_libraries.permissions
+                   or a PermissionData instance from the authz API
+
+    Returns:
+        ContentLibrary: The library object if permission check passes
+
+    Raises:
+        ContentLibraryNotFound: If the library with the given key doesn't exist
+        PermissionDenied: If the user doesn't have the required permission
     """
     library_obj = ContentLibrary.objects.get_by_key(library_key)
     # obj should be able to read any valid model object but mypy thinks it can only be
@@ -395,7 +403,6 @@ def get_library(library_key: LibraryLocatorV2) -> ContentLibraryMetadata:
         published_by=published_by,
         last_draft_created=last_draft_created,
         last_draft_created_by=last_draft_created_by,
-        allow_lti=ref.allow_lti,
         allow_public_learning=ref.allow_public_learning,
         allow_public_read=ref.allow_public_read,
         has_unpublished_changes=has_unpublished_changes,
@@ -438,7 +445,7 @@ def create_library(
     """
     assert isinstance(org, Organization)
     validate_unicode_slug(slug)
-    is_learning_package_loaded = learning_package is not None
+    is_learning_package_loaded = learning_package is not None  # noqa: F841
     try:
         with transaction.atomic():
             ref = ContentLibrary.objects.create(
@@ -468,7 +475,7 @@ def create_library(
             ref.learning_package = learning_package
             ref.save()
     except IntegrityError:
-        raise LibraryAlreadyExists(slug)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise LibraryAlreadyExists(slug)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # .. event_implemented_name: CONTENT_LIBRARY_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.created.v1
@@ -828,6 +835,8 @@ def _transform_authz_permission_to_legacy_lib_permission(permission: str) -> str
         authz_permissions.CREATE_LIBRARY_COLLECTION.identifier: permissions.CAN_EDIT_THIS_CONTENT_LIBRARY,
         authz_permissions.EDIT_LIBRARY_COLLECTION.identifier: permissions.CAN_EDIT_THIS_CONTENT_LIBRARY,
         authz_permissions.DELETE_LIBRARY_COLLECTION.identifier: permissions.CAN_EDIT_THIS_CONTENT_LIBRARY,
+        authz_permissions.MANAGE_LIBRARY_TAGS.identifier: permissions.CAN_EDIT_THIS_CONTENT_LIBRARY,
+        authz_permissions.REUSE_LIBRARY_CONTENT.identifier: permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
     }.get(permission, permission)
 
 

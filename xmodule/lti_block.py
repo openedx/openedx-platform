@@ -438,7 +438,7 @@ class _BuiltInLTIBlock(
                 msg = _('Could not parse custom parameter: {custom_parameter}. Should be "x=y" string.').format(
                     custom_parameter=f"{custom_parameter!r}"
                 )
-                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             # LTI specs: 'custom_' should be prepended before each custom parameter, as pointed in link above.
             if param_name not in PARAMETERS:
@@ -598,7 +598,7 @@ class _BuiltInLTIBlock(
         The TP should only retain the most recent value for this field for a particular resource_link_id / user_id.
         This field is generally optional, but is required for grading.
         """
-        return "{context}:{resource_link}:{user_id}".format(
+        return "{context}:{resource_link}:{user_id}".format(  # noqa: UP032
             context=parse.quote(self.context_id),
             resource_link=self.get_resource_link_id(),
             user_id=self.get_user_id()
@@ -949,7 +949,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
 
         if (not signature.verify_hmac_sha1(mock_request_lti_1, client_secret) and not
                 signature.verify_hmac_sha1(mock_request_lti_2, client_secret)):
-            log.error("OAuth signature verification failed, for "
+            log.error("OAuth signature verification failed, for "  # noqa: UP032
                       "headers:{} url:{} method:{}".format(
                           oauth_headers,
                           self.get_outcome_service_url(),
@@ -971,7 +971,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
                 msg = _('Could not parse LTI passport: {lti_passport}. Should be "id:key:secret" string.').format(
                     lti_passport=f'{lti_passport!r}'
                 )
-                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             if lti_id == self.lti_id.strip():
                 return key, secret

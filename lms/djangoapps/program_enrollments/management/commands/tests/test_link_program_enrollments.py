@@ -39,7 +39,7 @@ class TestLinkProgramEnrollmentManagementCommand(TestCase):
         )
 
     def test_incorrectly_formatted_input_exception(self):
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
                 CommandError,
                 INCORRECT_PARAMETER_TEMPLATE.format('whoops')
         ):
@@ -48,7 +48,7 @@ class TestLinkProgramEnrollmentManagementCommand(TestCase):
             )
 
     def test_missing_external_user_key(self):
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
                 CommandError,
                 INCORRECT_PARAMETER_TEMPLATE.format('whoops: ')
         ):
@@ -57,7 +57,7 @@ class TestLinkProgramEnrollmentManagementCommand(TestCase):
             )
 
     def test_missing_username(self):
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
                 CommandError,
                 INCORRECT_PARAMETER_TEMPLATE.format(' :whoops')
         ):
@@ -66,7 +66,7 @@ class TestLinkProgramEnrollmentManagementCommand(TestCase):
             )
 
     def test_repeated_user_key_exception(self):
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
                 CommandError,
                 DUPLICATE_KEY_TEMPLATE.format('learner-01'),
         ):
@@ -76,7 +76,7 @@ class TestLinkProgramEnrollmentManagementCommand(TestCase):
 
     def test_invalid_uuid(self):
         error_regex = r"supplied program_uuid '.*' is not a valid UUID"
-        with self.assertRaisesRegex(CommandError, error_regex):
+        with self.assertRaisesRegex(CommandError, error_regex):  # noqa: PT027
             call_command(
                 Command(), 'notauuid::thisisntauuid', 'learner-0:user-01'
             )

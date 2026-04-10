@@ -57,7 +57,7 @@ class BlockNavigationTransformerTestCase(TestCase, ChildrenMapTestMixin):
         block_structure._prune_unreachable()
 
         for block_key, expected_nav in enumerate(expected_nav_map):
-            self.assertSetEqual(
+            self.assertSetEqual(  # noqa: PT009
                 {str(block) for block in expected_nav},
                 set(
                     block_structure.get_transformer_block_field(

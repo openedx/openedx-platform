@@ -297,7 +297,7 @@ class CourseGradingView(BaseCourseView):
         master's track or is enabled with the grades.bulk_management course waffle flag.
         """
         course_modes = get_course_enrollment_details(str(course_key), include_expired=True).get('course_modes', [])
-        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))
+        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))  # noqa: UP034  # pylint: disable=line-too-long
         return course_has_masters_track or gradebook_bulk_management_enabled(course_key)
 
     def _get_assignment_types(self, course):
@@ -686,7 +686,7 @@ class GradebookView(GradeViewMixin, PaginatedAPIView):
             queryset = queryset.annotate(**annotations)
         queryset = queryset.filter(*query_args)
 
-        cache_key = 'usercount.%s' % queryset.query
+        cache_key = 'usercount.%s' % queryset.query  # noqa: UP031
         user_count = cache.get(cache_key, None)
         if user_count is None:
             user_count = queryset.count()
@@ -1063,7 +1063,7 @@ class SubsectionGradeView(GradeViewMixin, APIView):
         try:
             usage_key = UsageKey.from_string(subsection_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='Invalid UsageKey',
                 error_code='invalid_usage_key'
@@ -1079,7 +1079,7 @@ class SubsectionGradeView(GradeViewMixin, APIView):
         try:
             user_id = int(request.GET.get('user_id'))
         except ValueError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='Invalid UserID',
                 error_code='invalid_user_id'

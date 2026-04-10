@@ -45,7 +45,7 @@ def create_users(
                     raise account_creation_error
             except User.DoesNotExist:
                 # If a user with the username doesn't exist the error was probably something else, so reraise
-                raise account_creation_error  # pylint: disable=raise-missing-from
+                raise account_creation_error  # pylint: disable=raise-missing-from  # noqa: B904
 
         if activate:
             user.is_active = True

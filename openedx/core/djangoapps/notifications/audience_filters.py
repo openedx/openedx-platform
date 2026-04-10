@@ -4,7 +4,7 @@ Audience based filters for notifications and Notification filters
 
 import logging
 from abc import abstractmethod
-from typing import List
+from typing import List  # noqa: UP035
 
 from django.utils import timezone
 from opaque_keys.edx.keys import CourseKey
@@ -160,7 +160,7 @@ class NotificationFilter:
     """
 
     @staticmethod
-    def get_users_with_course_role(user_ids: List[int], course_id: str) -> List[int]:
+    def get_users_with_course_role(user_ids: List[int], course_id: str) -> List[int]:  # noqa: UP006
         """
         Get users with a course role for the given course.
         """
@@ -170,7 +170,7 @@ class NotificationFilter:
         ).values_list('user_id', flat=True)
 
     @staticmethod
-    def get_users_with_forum_roles(user_ids: List[int], course_id: str) -> List[int]:
+    def get_users_with_forum_roles(user_ids: List[int], course_id: str) -> List[int]:  # noqa: UP006
         """
         Get users with forum roles for the given course.
         """

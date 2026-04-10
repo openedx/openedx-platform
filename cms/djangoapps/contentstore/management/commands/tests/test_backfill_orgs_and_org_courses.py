@@ -241,5 +241,5 @@ class BackfillOrgsAndOrgCoursesTest(SharedModuleStoreTestCase):
         """
         Test that calling the command with both "--dry" and "--apply" raises an exception.
         """
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command("backfill_orgs_and_org_courses", "--dry", "--apply")

@@ -25,7 +25,7 @@ class QueryStringAssertionMixin:
         Raises:
             AssertionError: If the two query strings are not equal.
         """
-        self.assertDictEqual(parse_qs(expected_qs), parse_qs(actual_qs))
+        self.assertDictEqual(parse_qs(expected_qs), parse_qs(actual_qs))  # noqa: PT009
 
     def assert_url_components_equal(self, url, **kwargs):
         """

@@ -55,17 +55,17 @@ class CreateScheduleTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint: d
             mode=CourseMode.AUDIT,
         )
         with pytest.raises(Schedule.DoesNotExist):
-            enrollment.schedule  # lint-amnesty, pylint: disable=pointless-statement
+            enrollment.schedule  # lint-amnesty, pylint: disable=pointless-statement  # noqa: B018
 
     def test_create_schedule(self):
         self.assert_schedule_created()
 
     @patch.object(CourseOverview, '_get_course_has_highlights', return_value=True)
-    def test_schedule_config_creation_enabled_instructor_paced(self, _mock_highlights):
+    def test_schedule_config_creation_enabled_instructor_paced(self, _mock_highlights):  # noqa: PT019
         self.assert_schedule_created(is_self_paced=False, experience_type=ScheduleExperience.EXPERIENCES.course_updates)
 
     @patch.object(CourseOverview, '_get_course_has_highlights', return_value=True)
-    def test_create_schedule_course_updates_experience(self, _mock_highlights):
+    def test_create_schedule_course_updates_experience(self, _mock_highlights):  # noqa: PT019
         self.assert_schedule_created(experience_type=ScheduleExperience.EXPERIENCES.course_updates)
 
     @patch('openedx.core.djangoapps.schedules.signals.log.exception')

@@ -105,7 +105,7 @@ class TestProgramProgressDetailView(ProgramsApiConfigMixin, SharedModuleStoreTes
             certs.return_value = [{"type": "program", "url": "/"}]
             response = self.client.get(self.url)
 
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(200, response.status_code)  # noqa: PT009
         self.assert_program_data_present(response)
         self.assert_pathway_data_present(response)
 
@@ -122,7 +122,7 @@ class TestProgramProgressDetailView(ProgramsApiConfigMixin, SharedModuleStoreTes
         response = self.client.get(self.url)
         assert response.status_code == 401
 
-    def test_404_if_no_program_data(self, mock_get_programs, _mock_get_pathways):
+    def test_404_if_no_program_data(self, mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """
         Verify that the API returns 404 if program data is not available.
         """
@@ -199,7 +199,7 @@ class TestProgramsEnterpriseView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         program = response.data[0]
 
         assert len(program)
@@ -233,8 +233,8 @@ class TestProgramsEnterpriseView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, [])  # noqa: PT009
 
 
 @skip_unless_lms
@@ -291,7 +291,7 @@ class TestProgramsB2CView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         program = response.data[0]
 
         assert len(program)
@@ -322,5 +322,5 @@ class TestProgramsB2CView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, [])  # noqa: PT009

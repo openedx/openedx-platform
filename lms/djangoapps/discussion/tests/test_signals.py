@@ -105,4 +105,4 @@ class CoursePublishHandlerTestCase(ModuleStoreTestCase):
         Verifies the discussion ID map for the given course matches the expected value.
         """
         mapping_entry = models.DiscussionsIdMapping.objects.get(course_id=course_key)
-        self.assertDictEqual(mapping_entry.mapping, expected_map)
+        self.assertDictEqual(mapping_entry.mapping, expected_map)  # noqa: PT009

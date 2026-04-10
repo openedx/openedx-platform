@@ -88,7 +88,7 @@ class CertificateManager:
         try:
             certificate = json.loads(json_string)
         except ValueError:
-            raise CertificateValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CertificateValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         # Include the data contract version
         certificate["version"] = CERTIFICATE_SCHEMA_VERSION
         # Ensure a signatories list is always returned
@@ -155,7 +155,7 @@ class CertificateManager:
                 used_ids
             )
 
-        for index, signatory in enumerate(certificate_data['signatories']):  # pylint: disable=unused-variable
+        for index, signatory in enumerate(certificate_data['signatories']):  # pylint: disable=unused-variable  # noqa: B007
             if signatory and not signatory.get('id', False):
                 signatory['id'] = generate_int_id(used_ids=used_ids)
             used_ids.append(signatory['id'])
@@ -251,7 +251,7 @@ class CertificateManager:
             if int(cert['id']) == int(certificate_id):
                 certificate = course.certificates['certificates'][index]
                 # Remove any signatory assets prior to dropping the entire cert record from the course
-                for sig_index, signatory in enumerate(certificate.get('signatories')):  # pylint: disable=unused-variable
+                for sig_index, signatory in enumerate(certificate.get('signatories')):  # pylint: disable=unused-variable  # noqa: B007
                     _delete_asset(course.id, signatory['signature_image_path'])
                 # Now drop the certificate record
                 course.certificates['certificates'].pop(index)
@@ -264,7 +264,7 @@ class CertificateManager:
         """
         Remove the specified signatory from the provided course certificate
         """
-        for cert_index, cert in enumerate(course.certificates['certificates']):  # pylint: disable=unused-variable
+        for cert_index, cert in enumerate(course.certificates['certificates']):  # pylint: disable=unused-variable  # noqa: B007
             if int(cert['id']) == int(certificate_id):
                 for sig_index, signatory in enumerate(cert.get('signatories')):
                     if int(signatory_id) == int(signatory['id']):

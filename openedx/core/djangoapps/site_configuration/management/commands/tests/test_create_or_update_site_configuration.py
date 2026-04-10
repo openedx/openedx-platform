@@ -149,7 +149,7 @@ class CreateOrUpdateSiteConfigurationTest(TestCase):
         self.assert_site_configuration_does_not_exist()
         call_command(self.command, '--configuration', json.dumps(self.input_configuration), *self.site_id_arg)
         site_configuration = self.get_site_configuration()
-        self.assertDictEqual(site_configuration.site_values, self.input_configuration)
+        self.assertDictEqual(site_configuration.site_values, self.input_configuration)  # noqa: PT009
 
     def test_site_configuration_created_with_json_file_parameters(self):
         """

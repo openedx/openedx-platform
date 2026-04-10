@@ -67,12 +67,12 @@ class Command(BaseCommand):
                 course_key = str(options['course_key'])
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise CommandError('Invalid course_key: {}'.format(options['course_key']))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError('Invalid course_key: {}'.format(options['course_key']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().get_course(course_key):
             raise CommandError('Course not found: {}'.format(options['course_key']))
 
-        print('Preparing to delete course %s from module store....' % options['course_key'])
+        print('Preparing to delete course %s from module store....' % options['course_key'])  # noqa: UP031
 
         if query_yes_no(f'Are you sure you want to delete course {course_key}?', default='no'):
             if query_yes_no('Are you sure? This action cannot be undone!', default='no'):

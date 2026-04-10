@@ -104,7 +104,7 @@ class CourseListViewTests(CourseApiViewTestMixin, ModuleStoreTestCase):
         assert response.status_code == 200
         actual = json.loads(response.content.decode('utf-8'))
         expected = [self._serialize_course(self.course, [self.course_mode])]
-        self.assertListEqual(actual, expected)
+        self.assertListEqual(actual, expected)  # noqa: PT009
 
 
 @ddt.ddt
@@ -323,7 +323,7 @@ class CourseRetrieveUpdateViewTests(CourseApiViewTestMixin, ModuleStoreTestCase)
         expected_dict = self._serialize_course(self.course, [new_mode])
         expected_items = expected_dict['modes']
         actual_items = json.loads(response.content.decode('utf-8'))['modes']
-        self.assertCountEqual(actual_items, expected_items)
+        self.assertCountEqual(actual_items, expected_items)  # noqa: PT009
 
         # The existing non-Masters CourseMode should have been removed.
         assert not CourseMode.objects.filter(id=existing_mode.id).exists()
@@ -389,7 +389,7 @@ class CourseRetrieveUpdateViewTests(CourseApiViewTestMixin, ModuleStoreTestCase)
         # Verify the display names are correct
         course_modes = CourseMode.objects.filter(course_id=course.id)
         actual = [course_mode.mode_display_name for course_mode in course_modes]
-        self.assertListEqual(actual, ['Verified Certificate', 'Honor Certificate'])
+        self.assertListEqual(actual, ['Verified Certificate', 'Honor Certificate'])  # noqa: PT009
 
     def test_create_with_permissions(self):
         """ Verify the view supports creating a course as a user with the appropriate permissions. """
@@ -437,12 +437,12 @@ class CourseRetrieveUpdateViewTests(CourseApiViewTestMixin, ModuleStoreTestCase)
 
         expected_dict = {
             'id': [
-                'Course {} does not exist.'.format(
+                'Course {} does not exist.'.format(  # noqa: UP032
                     course_key
                 )
             ]
         }
-        self.assertDictEqual(expected_dict, json.loads(response.content.decode('utf-8')))
+        self.assertDictEqual(expected_dict, json.loads(response.content.decode('utf-8')))  # noqa: PT009
 
 
 class OrderViewTests(UserMixin, TestCase):

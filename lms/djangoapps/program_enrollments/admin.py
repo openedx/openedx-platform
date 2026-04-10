@@ -43,7 +43,7 @@ def _pce_pe_id(pce):
         "admin:program_enrollments_programenrollment_change",
         args=[pe.id],
     )
-    link_text = "id={pe.id:05} ({pe.status})".format(pe=pe)
+    link_text = "id={pe.id:05} ({pe.status})".format(pe=pe)  # noqa: UP032
     return format_html("<a href={}>{}</a>", link_url, link_text)
 
 
@@ -67,7 +67,7 @@ def _pce_ce(pce):
     if not enrollment:
         return None
     active_string = "Active" if enrollment.is_active else "Inactive"
-    return "id={enrollment.id:09} ({active_string})".format(
+    return "id={enrollment.id:09} ({active_string})".format(  # noqa: UP032
         enrollment=enrollment, active_string=active_string
     )
 

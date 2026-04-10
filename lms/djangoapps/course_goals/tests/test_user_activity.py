@@ -90,7 +90,7 @@ class UserActivityTests(UrlResetMixin, ModuleStoreTestCase):
             UserActivity.record_user_activity(None, self.course.id)
             activity_cache_set.assert_not_called()
 
-        cache_key = 'goals_user_activity_{}_{}_{}'.format(
+        cache_key = 'goals_user_activity_{}_{}_{}'.format(  # noqa: UP032
             str(self.user.id), str(self.course.id), str(datetime.now().date())
         )
         TieredCache.set_all_tiers(cache_key, 'test', 3600)

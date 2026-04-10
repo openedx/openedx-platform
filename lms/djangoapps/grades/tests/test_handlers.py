@@ -72,7 +72,7 @@ class ExamCompletionEventBusTests(TestCase):
             minorversion=0,
             source='openedx/lms/web',
             sourcehost='lms.test',
-            time=datetime.now(timezone.utc)
+            time=datetime.now(timezone.utc)  # noqa: UP017
         )
 
     @ddt.data(

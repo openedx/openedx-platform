@@ -24,7 +24,7 @@ class BlockStructureConfiguration(ConfigurationModel):
     cache_timeout_in_seconds = IntegerField(blank=True, null=True, default=DEFAULT_CACHE_TIMEOUT_IN_SECONDS)
 
     def __str__(self):
-        return "BlockStructureConfiguration: num_versions_to_keep: {}, cache_timeout_in_seconds: {}".format(
+        return "BlockStructureConfiguration: num_versions_to_keep: {}, cache_timeout_in_seconds: {}".format(  # noqa: UP032  # pylint: disable=line-too-long
             self.num_versions_to_keep,
             self.cache_timeout_in_seconds,
         )

@@ -384,7 +384,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -414,7 +414,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
             except CourseUpdateDoesNotExist:
                 LOG.warning(
-                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(
+                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(  # noqa: UP032  # pylint: disable=line-too-long
                         user, week_num, enrollment.course_id
                     )
                 )
@@ -472,13 +472,13 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for course-key: {}'.format(
+                'Sending email to user: {} for course-key: {}'.format(  # noqa: UP032
                     user.username,
                     self.course_id
                 )
             )
             LOG.info(
-                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -518,7 +518,7 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
 
             user = schedule.enrollment.user
             start_date = max(filter(None, (schedule.start_date, course.start)))
-            LOG.info('Received a schedule for user {} in course {} for date {}'.format(
+            LOG.info('Received a schedule for user {} in course {} for date {}'.format(  # noqa: UP032
                 user.username, self.course_id, target_date,
             ))
 

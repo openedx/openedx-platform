@@ -56,12 +56,12 @@ class ExportAllCourses(ModuleStoreTestCase):
         )
 
         course = self.module_store.get_course(CourseKey.from_string('/'.join(['edX', 'course_ignore', '2014_Fall'])))
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
 
         # check that there are two assets ['example.txt', '.example.txt'] in contentstore for imported course
         all_assets, count = self.content_store.get_all_content_for_course(course.id)
-        self.assertEqual(count, 2)
-        self.assertEqual({asset['_id']['name'] for asset in all_assets}, {'.example.txt', 'example.txt'})
+        self.assertEqual(count, 2)  # noqa: PT009
+        self.assertEqual({asset['_id']['name'] for asset in all_assets}, {'.example.txt', 'example.txt'})  # noqa: PT009
 
         # manually add redundant assets (file ".DS_Store" and filename starts with "._")
         course_filter = course.id.make_asset_key("asset", None)
@@ -75,13 +75,13 @@ class ExportAllCourses(ModuleStoreTestCase):
 
         # check that now course has four assets
         all_assets, count = self.content_store.get_all_content_for_course(course.id)
-        self.assertEqual(count, 4)
-        self.assertEqual(
+        self.assertEqual(count, 4)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             {asset['_id']['name'] for asset in all_assets},
             {'.example.txt', 'example.txt', '._example_test.txt', '.DS_Store'}
         )
         # now call asset_cleanup command and check that there is only two proper assets in contentstore for the course
         call_command('cleanup_assets')
         all_assets, count = self.content_store.get_all_content_for_course(course.id)
-        self.assertEqual(count, 2)
-        self.assertEqual({asset['_id']['name'] for asset in all_assets}, {'.example.txt', 'example.txt'})
+        self.assertEqual(count, 2)  # noqa: PT009
+        self.assertEqual({asset['_id']['name'] for asset in all_assets}, {'.example.txt', 'example.txt'})  # noqa: PT009

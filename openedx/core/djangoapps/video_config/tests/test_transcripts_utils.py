@@ -118,7 +118,7 @@ class TranscriptsUtilsTest(TestCase):
         mock_get.return_value = YoutubeVideoHTMLResponse.with_caption_track(language_code)
 
         language_specific_caption_link = get_transcript_link_from_youtube(YOUTUBE_VIDEO_ID)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             language_specific_caption_link,
             {language_code: CAPTION_URL_UTF8_DECODED_TEMPLATE.format(language_code)}
         )
@@ -132,7 +132,7 @@ class TranscriptsUtilsTest(TestCase):
         mock_get.return_value = YoutubeVideoHTMLResponse.with_caption_track(language_code)
 
         english_language_caption_link = get_transcript_link_from_youtube(YOUTUBE_VIDEO_ID)
-        self.assertIsNone(english_language_caption_link)
+        self.assertIsNone(english_language_caption_link)  # noqa: PT009
 
     @ mock.patch('requests.get')
     def test_get_caption_malformed_caption_locator(self, mock_get):
@@ -143,4 +143,4 @@ class TranscriptsUtilsTest(TestCase):
         mock_get.return_value = YoutubeVideoHTMLResponse.with_malformed_caption_track(language_code)
 
         english_language_caption_link = get_transcript_link_from_youtube(YOUTUBE_VIDEO_ID)
-        self.assertIsNone(english_language_caption_link)
+        self.assertIsNone(english_language_caption_link)  # noqa: PT009

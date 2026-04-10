@@ -487,7 +487,7 @@ class CourseTeamManageAPIView(GenericAPIView):
             course_key = CourseKey.from_string(course_id)
             if not CourseOverview.course_exists(course_key):
                 course_key = None
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:  # pylint: disable=broad-except  # noqa: F841
             course_key = None
 
         cache[course_id] = course_key

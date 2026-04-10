@@ -190,7 +190,7 @@ class ObjectTagExportView(APIView):
         Export a CSV with all children and tags for a given course/context.
         """
 
-        class Echo(object):
+        class Echo(object):  # noqa: UP004
             """
             Class that implements just the write method of the file-like interface,
             used for the streaming response.

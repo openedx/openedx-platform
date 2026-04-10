@@ -107,7 +107,7 @@ class TestInstructorTasks(InstructorTaskModuleTestCase):
     def _test_missing_current_task(self, task_class):
         """Check that a task_class fails when celery doesn't provide a current_task."""
         task_entry = self._create_input_entry()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             task_class(task_entry.id, self._get_block_instance_args())
 
     def _test_undefined_course(self, task_class):
@@ -167,7 +167,7 @@ class TestInstructorTasks(InstructorTaskModuleTestCase):
     def _create_and_enroll_students(self, num_students, mode=CourseMode.DEFAULT_MODE_SLUG):
         """Create & enroll students for testing"""
         return [
-            self.create_student(username='robot%d' % i, email='robot+test+%d@edx.org' % i, mode=mode)
+            self.create_student(username='robot%d' % i, email='robot+test+%d@edx.org' % i, mode=mode)  # noqa: UP031
             for i in range(num_students)
         ]
 
@@ -334,7 +334,7 @@ class TestOverrideScoreInstructorTask(TestInstructorTasks):
         Tests score override for a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'override_problem_score').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute
+        getattr(mock_instance, 'override_problem_score').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
 
         num_students = 10
         self._create_students_with_state(num_students)
@@ -435,7 +435,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         entry = InstructorTask.objects.get(id=task_entry.id)
         output = json.loads(entry.task_output)
         assert output['exception'] == 'ExceptionWithTraceback'
-        assert 'Specified module {} of type {} does not support rescoring.'.format(
+        assert 'Specified module {} of type {} does not support rescoring.'.format(  # noqa: UP032
             self.location,
             mock_instance.__class__,
         ) in output['message']
@@ -467,7 +467,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         Tests rescores a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'rescore').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute
+        getattr(mock_instance, 'rescore').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
         mock_instance.has_submitted_answer.return_value = True
         del mock_instance.done  # old CAPA code used to use this value so we delete it here to be sure
 

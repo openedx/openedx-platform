@@ -172,7 +172,7 @@ class BasketsView(APIView):
                     HTTP_403_FORBIDDEN
                 )
 
-            mode = CourseMode.AUDIT if audit_mode else CourseMode.HONOR  # lint-amnesty, pylint: disable=unused-variable
+            mode = CourseMode.AUDIT if audit_mode else CourseMode.HONOR  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             self._handle_marketing_opt_in(request, course_key, user)
             return DetailResponse(msg)
         else:

@@ -191,7 +191,7 @@ class VideoBlockTestBase(unittest.TestCase):
             assert expected_attr == actual_attr
 
         assert get_child_tags(expected) == get_child_tags(xml)
-        for left, right in zip(expected, xml):
+        for left, right in zip(expected, xml):  # noqa: B905
             self.assertXmlEqual(left, right)
 
 
@@ -671,7 +671,7 @@ class VideoBlockImportTestCase(TestCase):
             <video edx_video_id="{edx_video_id}">
                 <video_asset mock_attr=""/>
             </video>
-        """.format(
+        """.format(  # noqa: UP032
             edx_video_id=edx_video_id
         )
         xml_object = etree.fromstring(xml_data)
@@ -983,7 +983,7 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
         block.runtime.handler_url = MagicMock()
         student_view_data = block.student_view_data()
         expected_video_data = {'hls': {'url': 'http://www.meowmix.com', 'file_size': 25556}}
-        self.assertDictEqual(student_view_data.get('encoded_videos'), expected_video_data)
+        self.assertDictEqual(student_view_data.get('encoded_videos'), expected_video_data)  # noqa: PT009
 
 
 @ddt.ddt
@@ -1014,7 +1014,7 @@ class VideoBlockStudentViewDataTestCase(unittest.TestCase):
     'ENGINE': 'xmodule.contentstore.mongo.MongoContentStore',
     'DOC_STORE_CONFIG': {
         'host': 'localhost',
-        'db': 'test_xcontent_%s' % uuid4().hex,
+        'db': 'test_xcontent_%s' % uuid4().hex,  # noqa: UP031
     },
     # allow for additional options that can be keyed on a name, e.g. 'trashcan'
     'ADDITIONAL_OPTIONS': {
@@ -1153,7 +1153,7 @@ class VideoBlockIndexingTestCase(unittest.TestCase):
               <handout src="http://www.example.com/handout"/>
               {xml_transcripts}
             </video>
-        '''.format(xml_transcripts=xml_transcripts)
+        '''.format(xml_transcripts=xml_transcripts)  # noqa: UP032
         block = instantiate_block(data=xml_data_transcripts)
         validation = block.validate()
         self.assert_validation_message(validation, expected_validation_msg)

@@ -34,7 +34,7 @@ class Model:
             return self.attributes[name]
         except KeyError:
             if self.retrieved or self.id is None:
-                raise AttributeError(f"Field {name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from
+                raise AttributeError(f"Field {name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             self.retrieve()
             return self.__getattr__(name)
 
@@ -108,7 +108,7 @@ class Model:
                 setattr(self, k, v)
             else:
                 log.warning(
-                    "Unexpected field {field_name} in model {model_name}".format(
+                    "Unexpected field {field_name} in model {model_name}".format(  # noqa: UP032
                         field_name=k,
                         model_name=self.__class__.__name__
                     )
@@ -177,7 +177,7 @@ class Model:
             try:
                 return cls.url_with_id(params)
             except KeyError:
-                raise CommentClientRequestError(f"Cannot perform action {action} without id")  # lint-amnesty, pylint: disable=raise-missing-from
+                raise CommentClientRequestError(f"Cannot perform action {action} without id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         else:   # action must be in DEFAULT_ACTIONS_WITHOUT_ID now
             return cls.url_without_id()
 

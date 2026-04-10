@@ -48,7 +48,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
         autospec=True, side_effect=lambda func: func(),  # run right away
     )
     @patch('cms.djangoapps.contentstore.signals.handlers.emit_catalog_info_changed_signal', autospec=True)
-    def test_signal_chain(self, mock_emit, _mock_on_commit):
+    def test_signal_chain(self, mock_emit, _mock_on_commit):  # noqa: PT019
         """
         Test that the course_published signal handler invokes the catalog info signal emitter.
 
@@ -66,7 +66,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
         with patch.object(EditInfoMixin, 'subtree_edited_on', now):
             sh.emit_catalog_info_changed_signal(self.course_key)
         mock_signal.send_event.assert_called_once_with(
-            time=now.replace(tzinfo=timezone.utc),
+            time=now.replace(tzinfo=timezone.utc),  # noqa: UP017
             catalog_info=self.expected_data)
 
     @patch('cms.djangoapps.contentstore.signals.handlers.COURSE_CATALOG_INFO_CHANGED', autospec=True)

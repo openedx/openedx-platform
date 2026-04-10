@@ -129,7 +129,7 @@ def provider_state(request):
     state = request_body.get('state')
 
     if state in state_setup_mapping:
-        print('Setting up provider state for state value: {}'.format(state))
+        print('Setting up provider state for state value: {}'.format(state))  # noqa: UP032
         state_setup_mapping[state](request)
 
     return JsonResponse({'result': state})

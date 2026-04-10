@@ -75,7 +75,7 @@ def send_activation_email(self, msg_string, from_address=None, site_id=None):
         with emulate_http_request(site=site, user=user):
             ace.send(msg)
     except RecoverableChannelDeliveryError:
-        log.info('Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(
+        log.info('Retrying sending email to user {dest_addr}, attempt # {attempt} of {max_attempts}'.format(  # noqa: UP032  # pylint: disable=line-too-long
             dest_addr=dest_addr,
             attempt=retries,
             max_attempts=max_retries
@@ -95,4 +95,4 @@ def send_activation_email(self, msg_string, from_address=None, site_id=None):
             from_address,
             dest_addr,
         )
-        raise Exception  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Exception  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

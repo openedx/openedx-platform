@@ -40,7 +40,7 @@ def get_masquerade_user(request):
         try:
             masquerade_user = get_user_by_username_or_email(masquerade_identifier)
         except User.DoesNotExist:
-            raise NotFound()  # pylint: disable=raise-missing-from
+            raise NotFound()  # pylint: disable=raise-missing-from  # noqa: B904
         except MultipleObjectsReturned:
             msg = (
                 f"[Learner Home] {masquerade_identifier} could refer to multiple learners. "

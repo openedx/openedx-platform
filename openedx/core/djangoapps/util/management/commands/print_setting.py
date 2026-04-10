@@ -44,7 +44,7 @@ class Command(BaseCommand):
 
         for setting in settings_to_print:
             if not hasattr(settings, setting):
-                raise CommandError('%s not found in settings.' % setting)
+                raise CommandError('%s not found in settings.' % setting)  # noqa: UP031
 
             setting_value = getattr(settings, setting)
 

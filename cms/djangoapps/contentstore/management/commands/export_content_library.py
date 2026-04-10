@@ -34,7 +34,7 @@ class Command(BaseCommand):
         try:
             library_key = CourseKey.from_string(options['library_id'])
         except InvalidKeyError:
-            raise CommandError('Invalid library ID: "{}".'.format(options['library_id']))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError('Invalid library ID: "{}".'.format(options['library_id']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         if not isinstance(library_key, LibraryLocator):
             raise CommandError('Argument "{}" is not a library key'.format(options['library_id']))
 
@@ -50,7 +50,7 @@ class Command(BaseCommand):
             # Generate archive using the handy tasks implementation
             tarball = tasks.create_export_tarball(library, library_key, {}, None)
         except Exception as e:
-            raise CommandError(f'Failed to export "{library_key}" with "{e}"')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(f'Failed to export "{library_key}" with "{e}"')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         with tarball:
             # Save generated archive with keyed filename
             prefix, suffix, n = str(library_key).replace(':', '+'), '.tar.gz', 0

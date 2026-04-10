@@ -3,7 +3,7 @@ This file contains celery tasks and utility functions responsible for syncing co
 between the monolith and the Credentials IDA.
 """
 
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional  # noqa: UP035
 from urllib.parse import urljoin
 
 from celery import shared_task
@@ -50,7 +50,7 @@ COURSE_CERTIFICATE = "course-run"
 DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 
-def get_completed_programs(site: Site, student: "UserType") -> Dict:
+def get_completed_programs(site: Site, student: "UserType") -> Dict:  # noqa: UP006
     """
     Given a set of completed courses, determine which programs are completed.
 
@@ -85,7 +85,7 @@ def get_inverted_programs(student: "UserType"):
     return inverted_programs
 
 
-def get_certified_programs(student: "UserType", raise_on_error: bool = False) -> List[str]:
+def get_certified_programs(student: "UserType", raise_on_error: bool = False) -> List[str]:  # noqa: UP006
     """
     Find the UUIDs of all the programs for which the student has already been awarded
     a certificate.
@@ -110,7 +110,7 @@ def get_certified_programs(student: "UserType", raise_on_error: bool = False) ->
     return certified_programs
 
 
-def get_revokable_program_uuids(course_specific_programs: List[Dict], student: "UserType") -> List[str]:
+def get_revokable_program_uuids(course_specific_programs: List[Dict], student: "UserType") -> List[str]:  # noqa: UP006
     """
     Get program uuids for which certificate to be revoked.
 
@@ -198,7 +198,7 @@ def post_course_certificate(
     username: str,
     certificate: GeneratedCertificateData,
     date_override: Optional["datetime"] = None,
-    org: Optional[str] = None,
+    org: Optional[str] = None,  # noqa: UP045
 ):
     """
     POST a certificate that has been updated to Credentials
@@ -510,7 +510,7 @@ def award_course_certificate(self, username, course_run_key):
     LOGGER.info(f"Running task award_course_certificate for user {user.id}")
     try:
         course_key = CourseKey.from_string(course_run_key)
-    except InvalidKeyError as exc:
+    except InvalidKeyError as exc:  # noqa: F841
         error_msg = "Failed to determine course key"
         LOGGER.warning(
             f"Failed to award course certificate for user {user.id} for course {course_run_key}. Reason: {error_msg}"

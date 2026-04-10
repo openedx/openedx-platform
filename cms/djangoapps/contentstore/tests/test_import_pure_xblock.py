@@ -62,5 +62,5 @@ class XBlockImportTest(ModuleStoreTestCase):
         xblock_location = courses[0].id.make_usage_key('stubxblock', 'xblock_test')
 
         xblock = self.store.get_item(xblock_location)
-        self.assertTrue(isinstance(xblock, StubXBlock))
-        self.assertEqual(xblock.test_field, expected_field_val)
+        self.assertTrue(isinstance(xblock, StubXBlock))  # noqa: PT009
+        self.assertEqual(xblock.test_field, expected_field_val)  # noqa: PT009

@@ -23,7 +23,7 @@ def expect_failure_with_message(message):
     """Ensure the test raises an exception and does not emit an event"""
     def test_decorator(func):
         def test_decorated(self, *args, **kwargs):
-            self.assertRaisesRegex(segmentio.EventValidationError, message, func, self, *args, **kwargs)
+            self.assertRaisesRegex(segmentio.EventValidationError, message, func, self, *args, **kwargs)  # noqa: PT027
             self.assert_no_events_emitted()
         return test_decorated
     return test_decorator

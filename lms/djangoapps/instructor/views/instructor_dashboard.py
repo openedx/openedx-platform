@@ -171,7 +171,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
     course_mode_has_price = False  # lint-amnesty, pylint: disable=unused-variable
     paid_modes = CourseMode.paid_modes_for_course(course_key)
     if len(paid_modes) == 1:
-        course_mode_has_price = True
+        course_mode_has_price = True  # noqa: F841
     elif len(paid_modes) > 1:
         log.error(
             "Course %s has %s course modes with payment options. Course must only have "

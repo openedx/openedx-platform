@@ -69,7 +69,7 @@ class ZendeskProxyTestCase(ApiTestCase):
             self.assertHttpCreated(response)
             (mock_args, mock_kwargs) = mock_post.call_args
             assert mock_args == ('https://www.superrealurlsthataredefinitelynotfake.com/api/v2/tickets.json',)
-            self.assertCountEqual(mock_kwargs.keys(), ['headers', 'data'])
+            self.assertCountEqual(mock_kwargs.keys(), ['headers', 'data'])  # noqa: PT009
             assert mock_kwargs['headers'] == {
                 'content-type': 'application/json', 'Authorization': 'Bearer abcdefghijklmnopqrstuvwxyz1234567890'
             }

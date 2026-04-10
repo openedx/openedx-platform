@@ -371,7 +371,7 @@ class _BuiltInVideoBlock(
         else:
             self.youtube_streams = youtube_streams or create_youtube_string(self)  # pylint: disable=W0201
 
-        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable
+        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         poster = self._poster()
         completion_service = self.runtime.service(self, 'completion')
@@ -500,7 +500,7 @@ class _BuiltInVideoBlock(
             video_config_service = self.runtime.service(self, 'video_config')
             feature_enabled = video_config_service.is_transcript_feedback_enabled(
                 self.context_key) if video_config_service else False
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except  # noqa: F841
             log.exception(f"Error retrieving course for course ID: {self.context_key}")
             return False
         return feature_enabled
@@ -897,7 +897,7 @@ class _BuiltInVideoBlock(
         for video in videos:
             pieces = video.split(':')
             try:
-                speed = '%.2f' % float(pieces[0])  # normalize speed
+                speed = '%.2f' % float(pieces[0])  # normalize speed  # noqa: UP031
 
                 # Handle the fact that youtube IDs got double-quoted for a period of time.
                 # Note: we pass in "VideoFields.youtube_id_1_0" so we deserialize as a String--

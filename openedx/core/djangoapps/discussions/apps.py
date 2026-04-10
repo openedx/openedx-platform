@@ -31,4 +31,4 @@ class DiscussionsConfig(AppConfig):
     }
 
     def ready(self):
-        from . import handlers  # pylint: disable=unused-import
+        from . import handlers  # pylint: disable=unused-import  # noqa: F401

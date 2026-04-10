@@ -699,7 +699,7 @@ class RegistrationView(APIView):
             response = self._create_response(request, errors, status_code=409, error_code=err.error_code)
         except ValidationError as err:
             # Should only get field errors from this exception
-            assert NON_FIELD_ERRORS not in err.message_dict
+            assert NON_FIELD_ERRORS not in err.message_dict  # noqa: PT017
 
             # Error messages are returned as arrays from ValidationError
             error_code = err.message_dict.get('error_code', ['validation-error'])[0]

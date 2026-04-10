@@ -409,7 +409,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
             child_id = str(self.child.scope_ids.usage_id)
         except Exception:
             log.info(
-                "Can't get usage_id of Nonetype object in course {course_key}".format(
+                "Can't get usage_id of Nonetype object in course {course_key}".format(  # noqa: UP032
                     course_key=str(self.location.course_key)
                 )
             )
@@ -715,7 +715,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
     @property
     def group_configuration_url(self):  # lint-amnesty, pylint: disable=missing-function-docstring
         assert hasattr(self.runtime, 'modulestore') and hasattr(self.runtime.modulestore, 'get_course'), \
-            "modulestore has to be available"
+            "modulestore has to be available"  # noqa: PT018
 
         course_block = self.runtime.modulestore.get_course(self.location.course_key)
         group_configuration_url = None
@@ -738,7 +738,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
         modulestore work, currently relies on mongo's create_item method).
         """
         assert hasattr(self.runtime, 'modulestore') and hasattr(self.runtime.modulestore, 'create_item'), \
-            "editor_saved should only be called when a mutable modulestore is available"
+            "editor_saved should only be called when a mutable modulestore is available"  # noqa: PT018
         modulestore = self.runtime.modulestore
         dest_usage_key = self.location.replace(category="vertical", name=uuid4().hex)
         metadata = {'display_name': DEFAULT_GROUP_NAME.format(group_id=group.id)}

@@ -27,7 +27,7 @@ class AbsoluteURLFieldTests(TestCase):
     def test_to_representation_without_request(self):
         """ Verify an AssertionError is raised if no request is passed as context to the field. """
         self.field._context = {}  # pylint:disable=protected-access
-        self.assertRaises(AssertionError, self.field.to_representation, '/image.jpg')
+        self.assertRaises(AssertionError, self.field.to_representation, '/image.jpg')  # noqa: PT027
 
     @ddt.data(
         'http://example.com',

@@ -92,7 +92,7 @@ class CourseContext(TimeStampedModel):
     )
     days_early_for_beta = models.IntegerField(null=True, blank=True)
     self_paced = models.BooleanField(default=False)
-    entrance_exam_id = models.CharField(max_length=255, null=True)
+    entrance_exam_id = models.CharField(max_length=255, null=True)  # noqa: DJ001
 
     class Meta:
         verbose_name = 'Course'
@@ -159,7 +159,7 @@ class CourseContentVisibilityMixin(models.Model):
         abstract = True
 
 
-class UserPartitionGroup(models.Model):
+class UserPartitionGroup(models.Model):  # noqa: DJ008
     """
     Each row represents a Group in a UserPartition.
 
@@ -201,7 +201,7 @@ class UserPartitionGroup(models.Model):
         ]
 
 
-class CourseSection(CourseContentVisibilityMixin, TimeStampedModel):
+class CourseSection(CourseContentVisibilityMixin, TimeStampedModel):  # noqa: DJ008
     """
     Course Section data, mapping to the 'chapter' block type.
 
@@ -234,7 +234,7 @@ class CourseSection(CourseContentVisibilityMixin, TimeStampedModel):
         ]
 
 
-class SectionPartitionGroup(models.Model):
+class SectionPartitionGroup(models.Model):  # noqa: DJ008
     """
     Model which maps user partition groups to course sections.
     Used for the user_partition_groups ManyToManyField field in the CourseSection model above.
@@ -248,7 +248,7 @@ class SectionPartitionGroup(models.Model):
             ['user_partition_group', 'course_section'],
         ]
 
-    user_partition_group = models.ForeignKey(UserPartitionGroup, on_delete=models.CASCADE)
+    user_partition_group = models.ForeignKey(UserPartitionGroup, on_delete=models.CASCADE)  # noqa: DJ012
     course_section = models.ForeignKey(CourseSection, on_delete=models.CASCADE)
 
 
@@ -302,7 +302,7 @@ class CourseSectionSequence(CourseContentVisibilityMixin, TimeStampedModel):
         return f"{self.section.title} > {self.sequence.title}"
 
 
-class SectionSequencePartitionGroup(models.Model):
+class SectionSequencePartitionGroup(models.Model):  # noqa: DJ008
     """
     Model which maps user partition groups to course section sequences.
     Used for the user_partition_groups ManyToManyField field in the CourseSectionSequence model above.
@@ -316,7 +316,7 @@ class SectionSequencePartitionGroup(models.Model):
             ['user_partition_group', 'course_section_sequence'],
         ]
 
-    user_partition_group = models.ForeignKey(UserPartitionGroup, on_delete=models.CASCADE)
+    user_partition_group = models.ForeignKey(UserPartitionGroup, on_delete=models.CASCADE)  # noqa: DJ012
     course_section_sequence = models.ForeignKey(CourseSectionSequence, on_delete=models.CASCADE)
 
 
@@ -334,7 +334,7 @@ class CourseSequenceExam(TimeStampedModel):
     is_time_limited = models.BooleanField(default=False)
 
 
-class PublishReport(models.Model):
+class PublishReport(models.Model):  # noqa: DJ008
     """
     A report about the content that generated this LearningContext publish.
 
@@ -352,7 +352,7 @@ class PublishReport(models.Model):
     num_sequences = models.PositiveIntegerField(null=False, db_index=True)
 
 
-class ContentError(models.Model):
+class ContentError(models.Model):  # noqa: DJ008
     """
     Human readable content errors.
 

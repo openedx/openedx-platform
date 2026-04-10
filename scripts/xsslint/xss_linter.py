@@ -68,7 +68,7 @@ def _process_file(full_path, template_linters, options, summary_results, out):
         out: output file
 
     """
-    num_violations = 0
+    num_violations = 0  # noqa: F841
     directory = os.path.dirname(full_path)
     file_name = os.path.basename(full_path)
     try:
@@ -155,7 +155,7 @@ def _check_violations(options, results):
     try:
         thresholds_option = options['thresholds']
         # Read the JSON file
-        with open(thresholds_option, 'r') as file:
+        with open(thresholds_option, 'r') as file:  # noqa: UP015
             violation_thresholds = json.load(file)
 
     except ValueError:
@@ -163,7 +163,7 @@ def _check_violations(options, results):
     if isinstance(violation_thresholds, dict) is False or \
             any(key not in ("total", "rules") for key in violation_thresholds.keys()):
         print('xsslint')
-        fail_quality("""FAILURE: Thresholds option "{thresholds_option}" was not supplied using proper format.\n"""
+        fail_quality("""FAILURE: Thresholds option "{thresholds_option}" was not supplied using proper format.\n"""  # noqa: UP032
                      """Here is a properly formatted example, '{{"total":100,"rules":{{"javascript-escape":0}}}}' """
                      """with property names in double-quotes.""".format(thresholds_option=thresholds_option))
 
@@ -181,7 +181,7 @@ def _check_violations(options, results):
                 )
     except TypeError:
         print('xsslint')
-        fail_quality("FAILURE: Number of {xsslint_script} violations could not be found".format(
+        fail_quality("FAILURE: Number of {xsslint_script} violations could not be found".format(  # noqa: UP032
             xsslint_script=xsslint_script
         ))
 
@@ -198,7 +198,7 @@ def _check_violations(options, results):
         threshold_keys = sorted(violation_thresholds['rules'].keys())
         for threshold_key in threshold_keys:
             if threshold_key not in results['rules']:
-                error_message += (
+                error_message += (  # noqa: UP032
                     "\nNumber of {xsslint_script} violations for {rule} could not be found"
                 ).format(
                     xsslint_script=xsslint_script, rule=threshold_key
@@ -212,7 +212,7 @@ def _check_violations(options, results):
 
     if error_message:
         print('xsslint')
-        fail_quality("FAILURE: XSSLinter Failed.\n{error_message}\n"
+        fail_quality("FAILURE: XSSLinter Failed.\n{error_message}\n"  # noqa: UP032
                      "run the following command to hone in on the problem:\n"
                      "./scripts/xss-commit-linter.sh -h".format(error_message=error_message))
     else:

@@ -686,7 +686,7 @@ class CoursewareInformation(RetrieveAPIView):
         if not user.id:
             return
 
-        cache_key = 'browser_timezone_{}'.format(str(user.id))
+        cache_key = 'browser_timezone_{}'.format(str(user.id))  # noqa: UP032
         browser_timezone = self.request.query_params.get('browser_timezone', None)
         cached_value = TieredCache.get_cached_response(cache_key)
         if not cached_value.is_found:

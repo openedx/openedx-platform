@@ -211,7 +211,7 @@ class TestRecommenderCreateFromEmpty(TestRecommender):
                 for field in resource:
                     expected_result[field] = resource[field]
 
-                self.assertDictEqual(json.loads(result.content), expected_result)
+                self.assertDictEqual(json.loads(result.content), expected_result)  # noqa: PT009
                 self.assert_request_status_code(200, self.course_url)
 
 

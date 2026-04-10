@@ -66,7 +66,7 @@ class Command(BaseCommand):
         total_emails, failed_emails = self._generate_manual_verification_from_file(email_ids_file, batch_size)
 
         if failed_emails:
-            log.error('Completed manual verification. {} of {} failed.'.format(
+            log.error('Completed manual verification. {} of {} failed.'.format(  # noqa: UP032
                 len(failed_emails),
                 total_emails
             ))

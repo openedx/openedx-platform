@@ -40,7 +40,7 @@ def _backoff_handler(details):
     try:
         LOG.error(traceback.format_exc())
         exc = sys.exc_info()[1]
-        LOG.error("HTTPError code {}: {}".format(exc.response.status_code, exc.response.text))
+        LOG.error("HTTPError code {}: {}".format(exc.response.status_code, exc.response.text))  # noqa: UP032
     except Exception:  # pylint: disable=broad-except
         pass
 
@@ -108,7 +108,7 @@ class SegmentApi:
         all others will bubble up.
         """
         headers = {
-            "Authorization": "Bearer {}".format(self.auth_token),
+            "Authorization": "Bearer {}".format(self.auth_token),  # noqa: UP032
             "Content-Type": "application/json"
         }
         resp = requests.post(self.base_url + url, json=params, headers=headers)
@@ -124,7 +124,7 @@ class SegmentApi:
         all others will bubble up.
         """
         headers = {
-            "Authorization": "Bearer {}".format(self.auth_token)
+            "Authorization": "Bearer {}".format(self.auth_token)  # noqa: UP032
         }
         resp = requests.get(self.base_url + url, headers=headers)
         resp.raise_for_status()
@@ -154,7 +154,7 @@ class SegmentApi:
             try:
                 resp_json = resp.json()
                 bulk_user_delete_id = resp_json['regulate_id']
-                LOG.info('Bulk user regulation queued. Id: {}'.format(bulk_user_delete_id))
+                LOG.info('Bulk user regulation queued. Id: {}'.format(bulk_user_delete_id))  # noqa: UP032
             except JSONDecodeError:
                 resp_json = resp.text
                 raise
@@ -164,13 +164,13 @@ class SegmentApi:
         # eat the TypeError / KeyError since they won't be relevant.
         except (TypeError, KeyError, requests.exceptions.HTTPError, JSONDecodeError) as exc:
             LOG.exception(exc)
-            err = u'Error was encountered for params: {} \n\n Response: {}'.format(
+            err = u'Error was encountered for params: {} \n\n Response: {}'.format(  # noqa: UP025, UP032
                 params,
                 text_type(resp_json)
             ).encode('utf-8')
             LOG.error(err)
 
-            raise Exception(err)
+            raise Exception(err)  # noqa: B904
 
     def delete_and_suppress_learner(self, learner):
         """

@@ -187,7 +187,7 @@ def prune(ctx, plan_file, delay, batch_size, start):
     change_plan = ChangePlan.load(plan_file)
     if start is not None and start not in change_plan.delete:
         raise click.BadParameter(
-            "{} is not in the Change Plan {}".format(
+            "{} is not in the Change Plan {}".format(  # noqa: UP032
                 start, click.format_filename(plan_file.name)
             ),
             param_hint='--start'

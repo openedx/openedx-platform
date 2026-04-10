@@ -1,7 +1,7 @@
 """
 Helper functions for overriding notification content for given notification type.
 """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 
 def get_notification_type_context_function(notification_type) -> callable:
@@ -15,7 +15,7 @@ def get_notification_type_context_function(notification_type) -> callable:
         return lambda context: context
 
 
-def get_notification_context_with_author_pronoun(context: Dict) -> Dict:
+def get_notification_context_with_author_pronoun(context: Dict) -> Dict:  # noqa: UP006
     """
     Returns the context for the given notification type with the author pronoun.
 

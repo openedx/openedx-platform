@@ -103,7 +103,7 @@ def _get_course_data_summary(auth_token, months_restriction, xblock_type_set, ap
         # print to update the screen for status
         sys.stdout.write('.')
         sys.stdout.flush()
-    print('Processed %d courses' % total_courses)
+    print('Processed %d courses' % total_courses)  # noqa: UP031
     return course_summary_data
 
 
@@ -158,14 +158,14 @@ def _get_block_types_from_json_file(xblock_json_file):
         set: A set of strings for all the types that are available in the configuration file
     """
     if not os.path.isfile(xblock_json_file):
-        print('xBlock configuration file does not exist: %s' % xblock_json_file)
+        print('xBlock configuration file does not exist: %s' % xblock_json_file)  # noqa: UP031
         sys.exit(2)
     with open(xblock_json_file) as json_file:
         type_set = set()
         try:
             json_data = json.loads(json_file.read())
         except ValueError as e:
-            print('xBlock configuration file does not match the expected layout and is '
+            print('xBlock configuration file does not match the expected layout and is '  # noqa: UP031
                   'missing "data" list: %s' % xblock_json_file)
             sys.exit(str(e))
         if 'data' in json_data:
@@ -174,7 +174,7 @@ def _get_block_types_from_json_file(xblock_json_file):
                 type_set.add(xblock['name'])
             return type_set
         else:
-            print('xBlock configuration file does not match the expected layout and is '
+            print('xBlock configuration file does not match the expected layout and is '  # noqa: UP031
                   'missing "data" list: %s' % xblock_json_file)
             sys.exit(2)
 
@@ -373,7 +373,7 @@ if __name__ == "__main__":
     # Get User access token
     token = get_access_token(username, password, oauth2_client_id, api_root)
     if token is None:
-        print('Failed to retrieve user token for user: %s ' % username)
+        print('Failed to retrieve user token for user: %s ' % username)  # noqa: UP031
         sys.exit(2)
 
     # Collect course data and write CSV reports

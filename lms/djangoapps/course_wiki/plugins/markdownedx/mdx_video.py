@@ -186,7 +186,7 @@ class VideoExtension(markdown.Extension):  # lint-amnesty, pylint: disable=missi
 
 class Bliptv(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://blip.tv/scripts/flash/showplayer.swf?file=http://blip.tv/file/get/%s' % m.group('bliptvfile')
+        url = 'http://blip.tv/scripts/flash/showplayer.swf?file=http://blip.tv/file/get/%s' % m.group('bliptvfile')  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['bliptv_width'][0]
         height = self.ext.config['bliptv_height'][0]
@@ -195,7 +195,7 @@ class Bliptv(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=
 
 class Dailymotion(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://www.dailymotion.com/swf/%s' % m.group('dailymotionid').split('/')[-1]
+        url = 'http://www.dailymotion.com/swf/%s' % m.group('dailymotionid').split('/')[-1]  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['dailymotion_width'][0]
         height = self.ext.config['dailymotion_height'][0]
@@ -205,7 +205,7 @@ class Dailymotion(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: dis
 class Gametrailers(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
         url = 'http://www.gametrailers.com/remote_wrap.php?mid=%s' % \
-            m.group('gametrailersid').split('/')[-1]
+            m.group('gametrailersid').split('/')[-1]  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['gametrailers_width'][0]
         height = self.ext.config['gametrailers_height'][0]
@@ -214,7 +214,7 @@ class Gametrailers(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: di
 
 class Metacafe(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://www.metacafe.com/fplayer/%s.swf' % m.group('metacafeid')
+        url = 'http://www.metacafe.com/fplayer/%s.swf' % m.group('metacafeid')  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['metacafe_width'][0]
         height = self.ext.config['metacafe_height'][0]
@@ -223,7 +223,7 @@ class Metacafe(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disabl
 
 class Veoh(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://www.veoh.com/videodetails2.swf?permalinkId=%s' % m.group('veohid')
+        url = 'http://www.veoh.com/videodetails2.swf?permalinkId=%s' % m.group('veohid')  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['veoh_width'][0]
         height = self.ext.config['veoh_height'][0]
@@ -232,7 +232,7 @@ class Veoh(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=mi
 
 class Vimeo(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://vimeo.com/moogaloop.swf?clip_id=%s&amp;server=vimeo.com' % m.group('vimeoid')
+        url = 'http://vimeo.com/moogaloop.swf?clip_id=%s&amp;server=vimeo.com' % m.group('vimeoid')  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['vimeo_width'][0]
         height = self.ext.config['vimeo_height'][0]
@@ -255,7 +255,7 @@ class Yahoo(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=m
 
 class Youtube(markdown.inlinepatterns.Pattern):  # lint-amnesty, pylint: disable=missing-class-docstring
     def handleMatch(self, m):
-        url = 'http://www.youtube.com/v/%s' % m.group('youtubeargs')
+        url = 'http://www.youtube.com/v/%s' % m.group('youtubeargs')  # noqa: UP031
         # pylint: disable=no-member
         width = self.ext.config['youtube_width'][0]
         height = self.ext.config['youtube_height'][0]

@@ -124,7 +124,7 @@ class BaseApiClient:
 
         # Generate arbitrary (but unique in this batch request) IDs for each request, so that we can recall the
         # corresponding response within a batch response.
-        request_object_to_request_id = dict(zip(
+        request_object_to_request_id = dict(zip(  # noqa: B905
             requests,
             (text_type(n) for n in count()),
         ))
@@ -138,16 +138,16 @@ class BaseApiClient:
             request_object = request_id_to_request_object[request_id]
             if exception:
                 if _should_retry_google_api(exception):
-                    LOG.error(u'Request throttled, adding to the retry queue: {}'.format(exception).encode('utf-8'))
+                    LOG.error(u'Request throttled, adding to the retry queue: {}'.format(exception).encode('utf-8'))  # noqa: UP025, UP032
                     retry_requests.append(request_object)
                 else:
                     # In this case, probably nothing can be done, so we just give up on this particular request and
                     # do not include it in the responses dict.
-                    LOG.error(u'Error processing request {}'.format(request_object).encode('utf-8'))
+                    LOG.error(u'Error processing request {}'.format(request_object).encode('utf-8'))  # noqa: UP025, UP032
                     LOG.error(text_type(exception).encode('utf-8'))
             else:
                 responses[request_object] = response
-                LOG.info(u'Successfully processed request {}.'.format(request_object).encode('utf-8'))
+                LOG.info(u'Successfully processed request {}.'.format(request_object).encode('utf-8'))  # noqa: UP025, UP032
 
         # Retry on API throttling at the HTTP request level.
         @backoff.on_exception(
@@ -270,7 +270,7 @@ class DriveApi(BaseApiClient):
             media_body=media,
             fields='id'
         ).execute()
-        LOG.info(u'File uploaded: ID="{}", name="{}"'.format(uploaded_file.get('id'), filename).encode('utf-8'))
+        LOG.info(u'File uploaded: ID="{}", name="{}"'.format(uploaded_file.get('id'), filename).encode('utf-8'))  # noqa: UP025
         return uploaded_file.get('id')
 
     # NOTE: Do not decorate this function with backoff since it already calls retryable methods.
@@ -325,13 +325,13 @@ class DriveApi(BaseApiClient):
         all_files = self.walk_files(
             top_level, 'id, name, createdTime', mimetype
         )
-        LOG.info("Files walked. {} files found before filtering.".format(len(all_files)))
+        LOG.info("Files walked. {} files found before filtering.".format(len(all_files)))  # noqa: UP032
         file_ids_to_delete = []
         for file in all_files:
             if (not prefix or file['name'].startswith(prefix)) and parse(file['createdTime']) < delete_before_dt:
                 file_ids_to_delete.append(file['id'])
         if file_ids_to_delete:
-            LOG.info("{} files remaining after filtering.".format(len(file_ids_to_delete)))
+            LOG.info("{} files remaining after filtering.".format(len(file_ids_to_delete)))  # noqa: UP032
             self.delete_files(file_ids_to_delete)
 
     @backoff.on_exception(
@@ -377,17 +377,17 @@ class DriveApi(BaseApiClient):
         mimetype_clause = ""
         if mimetype:
             # Return both folders and the specified mimetype.
-            mimetype_clause = "( mimeType = '{}' or mimeType = '{}') and ".format(FOLDER_MIMETYPE, mimetype)
+            mimetype_clause = "( mimeType = '{}' or mimeType = '{}') and ".format(FOLDER_MIMETYPE, mimetype)  # noqa: UP032
 
         while folders_to_visit:
             current_folder = folders_to_visit.pop()
-            LOG.info("Current folder: {}".format(current_folder))
+            LOG.info("Current folder: {}".format(current_folder))  # noqa: UP032
             visited_folders.append(current_folder)
             extra_kwargs = {}
 
             while True:
                 resp = self._client.files().list(  # pylint: disable=no-member
-                    q="{}'{}' in parents".format(mimetype_clause, current_folder),
+                    q="{}'{}' in parents".format(mimetype_clause, current_folder),  # noqa: UP032
                     fields='nextPageToken, files({})'.format(
                         file_fields + ', mimeType, parents'
                     ),
@@ -399,7 +399,7 @@ class DriveApi(BaseApiClient):
 
                 # Examine returned results to separate folders from non-folders.
                 for result in page_results:
-                    LOG.info(u"walk_files: Result: {}".format(result).encode('utf-8'))
+                    LOG.info(u"walk_files: Result: {}".format(result).encode('utf-8'))  # noqa: UP025, UP032
                     # Folders contain files - and get special treatment.
                     if result['mimeType'] == FOLDER_MIMETYPE:
                         if recurse and result['id'] not in visited_folders:
@@ -443,7 +443,7 @@ class DriveApi(BaseApiClient):
             BatchRequestError:
                 One or more files resulted in an error when adding comments.
         """
-        file_ids, _ = zip(*file_ids_and_content)
+        file_ids, _ = zip(*file_ids_and_content)  # noqa: B905
         if len(set(file_ids)) != len(file_ids):
             raise ValueError('Duplicates detected in the file_ids_and_content list.')
 
@@ -456,7 +456,7 @@ class DriveApi(BaseApiClient):
             for file_id, content in file_ids_and_content_batch:
                 request_object = self._client.comments().create(  # pylint: disable=no-member
                     fileId=file_id,
-                    body={u'content': content},
+                    body={u'content': content},  # noqa: UP025
                     fields=fields
                 )
                 request_objects_to_file_id[request_object] = file_id
@@ -508,7 +508,7 @@ class DriveApi(BaseApiClient):
             for file_id in file_ids_batch:
                 request_object = self._client.permissions().list(  # pylint: disable=no-member
                     fileId=file_id,
-                    fields='permissions({})'.format(fields)
+                    fields='permissions({})'.format(fields)  # noqa: UP032
                 )
                 request_objects_to_file_id[request_object] = file_id
 
