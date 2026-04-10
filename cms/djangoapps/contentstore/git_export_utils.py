@@ -4,8 +4,10 @@ committing and pushing the changes.
 """
 
 
+import ipaddress
 import logging
 import os
+import socket
 import subprocess
 from urllib.parse import urlparse
 
@@ -66,6 +68,61 @@ def cmd_log(cmd, cwd):
     return output
 
 
+def _validate_git_url(repo):
+    """
+    Reject repo URLs that would let git itself reinterpret the argument
+    as a command-line option (CVE-2017-1000117 and similar), or that point
+    at internal/loopback/link-local network addresses (SSRF).
+
+    Raises GitExportError with URL_BAD on any violation.
+    """
+    # A URL whose first character is "-" is interpreted by git as a command
+    # line option (e.g. --upload-pack=...) regardless of subprocess list-form.
+    # ``git remote set-url`` does not accept a ``--`` separator, so we cannot
+    # fall back to positional-only parsing; we must refuse the input outright.
+    if repo.startswith('-'):
+        raise GitExportError(GitExportError.URL_BAD)
+
+    # http/https URLs: parse and additionally reject internal targets.
+    if repo.startswith(('http:', 'https:')):
+        parsed = urlparse(repo)
+        hostname = parsed.hostname
+        # A missing hostname means the URL is malformed.
+        if not hostname:
+            raise GitExportError(GitExportError.URL_BAD)
+        # A path whose first segment begins with "-" (e.g.
+        # http://host/-oOops) is still safe because git only sees the
+        # full URL as a single positional argument after validation, but
+        # we reject it here as defense-in-depth against future call
+        # sites that might split on "/".
+        if parsed.path.lstrip('/').startswith('-'):
+            raise GitExportError(GitExportError.URL_BAD)
+
+        # SSRF defense: resolve the hostname and reject any address that
+        # is loopback, link-local, private, reserved, or multicast.
+        try:
+            addr_info = socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            # Name resolution failed. Defer the error to git itself so we
+            # do not turn transient DNS failures into a hard validation
+            # error — git will raise CANNOT_PULL with the original output.
+            return
+        for _family, _socktype, _proto, _canonname, sockaddr in addr_info:
+            try:
+                ip = ipaddress.ip_address(sockaddr[0])
+            except (ValueError, IndexError):
+                continue
+            if (
+                ip.is_loopback
+                or ip.is_link_local
+                or ip.is_private
+                or ip.is_reserved
+                or ip.is_multicast
+                or ip.is_unspecified
+            ):
+                raise GitExportError(GitExportError.URL_BAD)
+
+
 def export_to_git(course_id, repo, user='', rdir=None):
     """Export a course to git."""
     # pylint: disable=too-many-statements
@@ -80,6 +137,10 @@ def export_to_git(course_id, repo, user='', rdir=None):
     if not (repo.endswith('.git') or
             repo.startswith(('http:', 'https:', 'file:'))):
         raise GitExportError(GitExportError.URL_BAD)
+
+    # Reject git-option-style URLs (CVE-2017-1000117 class) and
+    # SSRF-prone internal targets before handing the value to git.
+    _validate_git_url(repo)
 
     # Check for username and password if using http[s]
     if repo.startswith('http:') or repo.startswith('https:'):
@@ -117,7 +178,9 @@ def export_to_git(course_id, repo, user='', rdir=None):
             ['git', 'clean', '-d', '-f'],
         ]
     else:
-        cmds = [['git', 'clone', repo]]
+        # Use ``--`` so git clone treats ``repo`` as a positional argument,
+        # even if a future validator change misses a leading dash.
+        cmds = [['git', 'clone', '--', repo]]
         cwd = GIT_REPO_EXPORT_DIR
 
     cwd = os.path.abspath(cwd)

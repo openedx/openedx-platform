@@ -6,9 +6,11 @@ Unittests for exporting to git via management command.
 import copy
 import os
 import shutil
+import socket
 import subprocess
 import unittest
 from io import StringIO
+from unittest.mock import patch
 from uuid import uuid4
 
 from django.conf import settings
@@ -101,6 +103,93 @@ class TestGitExport(CourseTestCase):
 
         with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_NO_AUTH)):  # noqa: PT027
             git_export_utils.export_to_git(course_key, 'http://blah')
+
+    def test_rejects_git_option_injection_urls(self):
+        """
+        Regression test for CVE-2017-1000117-style attacks: a repo URL that
+        begins with ``-`` must be rejected before reaching git, because git
+        itself would otherwise interpret it as a command-line option
+        (``--upload-pack=...``) regardless of subprocess list-form.
+
+        These inputs are crafted to end in ``.git`` so they pass the legacy
+        endswith-based validator and exercise the new ``_validate_git_url``
+        path directly.
+        """
+        course_key = CourseLocator('org', 'course', 'run')
+        for bad in (
+            '-https://example.com/test.git',
+            '--upload-pack=evil/x.git',
+            '-u evil.example.com:22/x.git',
+        ):
+            with self.assertRaisesRegex(GitExportError, str(GitExportError.URL_BAD)):  # noqa: PT027
+                git_export_utils.export_to_git(course_key, bad)
+
+    def test_rejects_internal_ip_targets(self):
+        """
+        SSRF defense: http(s) URLs that resolve to loopback, link-local,
+        private, reserved, or multicast addresses must be rejected.
+        """
+        course_key = CourseLocator('org', 'course', 'run')
+        internal_cases = [
+            ('https://user:pw@internal.example/test.git', '127.0.0.1'),
+            ('https://user:pw@internal.example/test.git', '10.0.0.5'),
+            ('https://user:pw@internal.example/test.git', '169.254.169.254'),
+            ('https://user:pw@internal.example/test.git', '::1'),
+            ('https://user:pw@internal.example/test.git', 'fe80::1'),
+        ]
+        for url, ip in internal_cases:
+            family = socket.AF_INET6 if ':' in ip else socket.AF_INET
+            addr_info = [(family, socket.SOCK_STREAM, 0, '', (ip, 0))]
+            with patch(
+                'cms.djangoapps.contentstore.git_export_utils.socket.getaddrinfo',
+                return_value=addr_info,
+            ):
+                with self.assertRaisesRegex(  # noqa: PT027
+                    GitExportError, str(GitExportError.URL_BAD)
+                ):
+                    git_export_utils.export_to_git(course_key, url)
+
+    def test_validate_git_url_allows_public_https(self):
+        """
+        Public addresses must still be accepted by the URL validator.
+        """
+        addr_info = [(socket.AF_INET, socket.SOCK_STREAM, 0, '', ('140.82.112.4', 0))]
+        with patch(
+            'cms.djangoapps.contentstore.git_export_utils.socket.getaddrinfo',
+            return_value=addr_info,
+        ):
+            # Should not raise; the validator is the only thing under test,
+            # so call it directly rather than the full export pipeline.
+            git_export_utils._validate_git_url(  # pylint: disable=protected-access
+                'https://user:pw@github.com/openedx/test.git'
+            )
+
+    def test_git_clone_uses_double_dash_separator(self):
+        """
+        ``git clone`` is invoked with ``--`` before the repo argument so
+        the repo is unambiguously positional.
+        """
+        course_key = CourseLocator('foo', 'blah', '100-')
+        with patch(
+            'cms.djangoapps.contentstore.git_export_utils.cmd_log'
+        ) as mock_cmd_log:
+            mock_cmd_log.side_effect = subprocess.CalledProcessError(
+                returncode=1, cmd='git', output=b'stop'
+            )
+            with self.assertRaises(GitExportError):  # noqa: PT027
+                git_export_utils.export_to_git(
+                    course_key, f'file://{self.bare_repo_dir}_new_clone_path.git'
+                )
+            clone_calls = [
+                call for call in mock_cmd_log.call_args_list
+                if call.args and call.args[0][:2] == ['git', 'clone']
+            ]
+            assert clone_calls, 'expected at least one git clone invocation'
+            clone_cmd = clone_calls[0].args[0]
+            assert '--' in clone_cmd
+            assert clone_cmd.index('--') < clone_cmd.index(
+                f'file://{self.bare_repo_dir}_new_clone_path.git'
+            )
 
     def test_bad_git_repos(self):
         """
