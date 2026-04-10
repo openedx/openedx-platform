@@ -385,9 +385,15 @@ def _import_staged_block(
     staged_content_id: int,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
+    *,
+    can_stand_alone: bool = True,
 ) -> LibraryXBlockMetadata:
     """
     Create a new library block and populate it with staged content from clipboard
+
+    Set ``can_stand_alone=False`` when the block is being created as a child
+    of a container (e.g. a Unit being pasted from a course), so it is not
+    listed as a top-level library item. See bug #38132.
 
     Returns the newly created library block
     """
@@ -427,6 +433,7 @@ def _import_staged_block(
             local_key=usage_key.block_id,
             created=now,
             created_by=user.id,
+            can_stand_alone=can_stand_alone,
         )
 
         # This will create the first component version and set the OLX/title
@@ -602,7 +609,9 @@ def _import_staged_block_as_container(
             new_child_keys.append(child_container.container_key)
             continue
 
-        # This is not a container, so we import it as a standalone block
+        # This is not a container, so we import it as a child component.
+        # Mark it as can_stand_alone=False so it is owned by the Unit and
+        # does not leak into the top-level library listing. See bug #38132.
         try:
             if copied_from_block in copied_from_map:
                 # This block was already copied from the library, so we just link it to the container
@@ -618,6 +627,7 @@ def _import_staged_block_as_container(
                 staged_content_id=staged_content_id,
                 staged_content_files=staged_content_files,
                 now=now,
+                can_stand_alone=False,
             )
             if copied_from_block:
                 copied_from_map[copied_from_block] = child_metadata.usage_key

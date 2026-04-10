@@ -78,3 +78,47 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ModuleStoreTestCase):
                 "block_type": "poll_question",
             })
             assert children[3]["id"].startswith("lb:CL-TEST:test_lib_paste_clipboard:poll_question:change-your-answer-")
+
+            # Regression for bug #38132: every child must be marked
+            # can_stand_alone=False so it is owned by the Unit and does not
+            # leak into the top-level library listing. Before the fix the
+            # default was True and children appeared as orphan top-level items
+            # that could not be deleted cleanly.
+            for child in children:
+                assert child.get("can_stand_alone") is False, (
+                    f"pasted child {child['id']} must have can_stand_alone=False"
+                )
+
+    def test_bug_38132_regression_pasted_unit_children_not_standalone(self):
+        """
+        Regression test for bug #38132: after pasting a Unit from a course
+        into a library, the unit's children must be marked can_stand_alone=False
+        so the top-level library listing does not contain orphan components
+        that cannot be deleted.
+        """
+        author = UserFactory.create(
+            username="Author38132",
+            email="author38132@example.com",
+            is_staff=True,
+        )
+        with self.as_user(author):
+            lib = self._create_library(
+                slug="test_lib_bug_38132",
+                title="Bug 38132 regression",
+                description="",
+            )
+            lib_id = lib["id"]
+
+            course_key = ToyCourseFactory.create().id
+            unit_key = course_key.make_usage_key("vertical", "vertical_test")
+            self._api(
+                'post',
+                "/api/content-staging/v1/clipboard/",
+                {"usage_key": str(unit_key)},
+                expect_response=200,
+            )
+            paste_data = self._paste_clipboard_content_in_library(lib_id)
+            children = self._get_container_children(paste_data["id"])
+            assert len(children) >= 1
+            for child in children:
+                assert child.get("can_stand_alone") is False
