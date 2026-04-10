@@ -35,7 +35,8 @@ let VideoCaption = function(state) {
         'previousLanguageMenuItem', 'nextLanguageMenuItem', 'handleCaptionToggle',
         'showClosedCaptions', 'hideClosedCaptions', 'toggleClosedCaptions',
         'updateCaptioningCookie', 'handleCaptioningCookie', 'handleTranscriptToggle',
-        'listenForDragDrop', 'setTranscriptVisibility', 'updateTranscriptCookie',
+        'listenForDragDrop', 'handleCaptionKeydown', 'setTranscriptVisibility',
+        'updateTranscriptCookie',
         'updateGoogleDisclaimer', 'toggleGoogleDisclaimer', 'updateProblematicCaptionsContent'
     );
 
@@ -64,6 +65,9 @@ VideoCaption.prototype = {
                 destroy: this.destroy
             })
             .removeClass('is-captions-rendered');
+        if (this.captionDisplayEl) {
+            this.captionDisplayEl.off('keydown', this.handleCaptionKeydown);
+        }
         if (this.fetchXHR && this.fetchXHR.abort) {
             this.fetchXHR.abort();
         }
@@ -1353,12 +1357,79 @@ VideoCaption.prototype = {
     listenForDragDrop: function() {
         let captions = this.captionDisplayEl['0'];
 
+        // Make the caption overlay focusable and describe its behavior to
+        // assistive technology. WCAG 2.1.1: provide a keyboard alternative to
+        // the mouse-only Draggabilly repositioning. See issue #36800.
+        this.captionDisplayEl.attr({
+            tabindex: '0',
+            role: 'region',
+            'aria-label': gettext(
+                'Closed captions. Use the arrow keys to reposition. '
+                + 'Hold Shift for larger steps. Press Home to reset.'
+            )
+        });
+
+        this.captionDisplayEl.on('keydown', this.handleCaptionKeydown);
+
         if (typeof Draggabilly === 'function') {
             // eslint-disable-next-line no-new
             new Draggabilly(captions, {containment: true});
         } else {
             console.log('Closed captioning available but not draggable');
         }
+    },
+
+    /**
+    * @desc Reposition the closed-caption overlay with the keyboard.
+    *     Arrow keys nudge by 10px (or 40px with Shift); Home resets to the
+    *     default CSS position. Mirrors Draggabilly's containment behavior.
+    *     WCAG 2.1.1 keyboard alternative to Draggabilly. See issue #36800.
+    *
+    * @param {jQuery.Event} event - keydown event on .closed-captions
+    */
+    handleCaptionKeydown: function(event) {
+        let KEY = $.ui.keyCode,
+            keyCode = event.keyCode,
+            step = event.shiftKey ? 40 : 10,
+            el = this.captionDisplayEl,
+            parent = el.parent(),
+            pos = el.position(),
+            left = pos.left,
+            top = pos.top,
+            maxLeft = parent.width() - el.outerWidth(),
+            maxTop = parent.height() - el.outerHeight(),
+            handled = true;
+
+        switch (keyCode) {
+        case KEY.LEFT:
+            left -= step;
+            break;
+        case KEY.RIGHT:
+            left += step;
+            break;
+        case KEY.UP:
+            top -= step;
+            break;
+        case KEY.DOWN:
+            top += step;
+            break;
+        case KEY.HOME:
+            el.css({left: '', top: ''});
+            event.preventDefault();
+            return;
+        default:
+            handled = false;
+        }
+
+        if (!handled) {
+            return;
+        }
+
+        event.preventDefault();
+        el.css({
+            left: Math.max(0, Math.min(left, maxLeft)) + 'px',
+            top: Math.max(0, Math.min(top, maxTop)) + 'px'
+        });
     },
 
     /**

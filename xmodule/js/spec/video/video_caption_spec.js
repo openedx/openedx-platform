@@ -1374,5 +1374,86 @@
                 expect(Caption.shouldShowGoogleDisclaimer).toBe(true);
             });
          });
+
+        describe('captionKeyboardDragDrop (bug #36800)', function() {
+            var keydownEvent = function(key, shiftKey) {
+                return $.Event('keydown', {keyCode: key, shiftKey: !!shiftKey});
+            };
+
+            beforeEach(function() {
+                state = jasmine.initializePlayer();
+                // Make captions visible so listenForDragDrop's attrs are applied.
+                $('.toggle-captions').click();
+            });
+
+            it('unit: marks the caption overlay as focusable (WCAG 2.1.1)', function() {
+                var $cc = $('.closed-captions');
+                expect($cc).toHaveAttr('tabindex', '0');
+                expect($cc).toHaveAttr('role', 'region');
+                expect($cc.attr('aria-label')).toMatch(/arrow keys/i);
+            });
+
+            it('unit: registers a keydown handler on the caption overlay', function() {
+                var events = $._data($('.closed-captions')[0], 'events');
+                expect(events && events.keydown).toBeTruthy();
+            });
+
+            it('integration: nudges captions on arrow keys by 10px', function() {
+                var $cc = $('.closed-captions');
+                $cc.css({position: 'absolute', left: '100px', top: '100px'});
+
+                $cc.trigger(keydownEvent($.ui.keyCode.RIGHT));
+                expect(parseInt($cc.css('left'), 10)).toBe(110);
+
+                $cc.trigger(keydownEvent($.ui.keyCode.LEFT));
+                expect(parseInt($cc.css('left'), 10)).toBe(100);
+
+                $cc.trigger(keydownEvent($.ui.keyCode.DOWN));
+                expect(parseInt($cc.css('top'), 10)).toBe(110);
+
+                $cc.trigger(keydownEvent($.ui.keyCode.UP));
+                expect(parseInt($cc.css('top'), 10)).toBe(100);
+            });
+
+            it('integration: uses a 40px step when Shift is held', function() {
+                var $cc = $('.closed-captions');
+                $cc.css({position: 'absolute', left: '100px', top: '100px'});
+
+                $cc.trigger(keydownEvent($.ui.keyCode.RIGHT, true));
+                expect(parseInt($cc.css('left'), 10)).toBe(140);
+            });
+
+            it('integration: clamps position to the containing player', function() {
+                var $cc = $('.closed-captions');
+                $cc.css({position: 'absolute', left: '0px', top: '0px'});
+
+                $cc.trigger(keydownEvent($.ui.keyCode.LEFT));
+                expect(parseInt($cc.css('left'), 10) || 0).toBe(0);
+
+                $cc.trigger(keydownEvent($.ui.keyCode.UP));
+                expect(parseInt($cc.css('top'), 10) || 0).toBe(0);
+            });
+
+            it('integration: resets position when Home is pressed', function() {
+                var $cc = $('.closed-captions');
+                $cc.css({left: '200px', top: '200px'});
+
+                $cc.trigger(keydownEvent($.ui.keyCode.HOME));
+                expect($cc[0].style.left).toBe('');
+                expect($cc[0].style.top).toBe('');
+            });
+
+            it('bug_36800 regression: calls preventDefault on handled keys only', function() {
+                var ev = keydownEvent($.ui.keyCode.RIGHT);
+                spyOn(ev, 'preventDefault');
+                $('.closed-captions').trigger(ev);
+                expect(ev.preventDefault).toHaveBeenCalled();
+
+                var tabEv = keydownEvent($.ui.keyCode.TAB);
+                spyOn(tabEv, 'preventDefault');
+                $('.closed-captions').trigger(tabEv);
+                expect(tabEv.preventDefault).not.toHaveBeenCalled();
+            });
+        });
     });
 }).call(this);

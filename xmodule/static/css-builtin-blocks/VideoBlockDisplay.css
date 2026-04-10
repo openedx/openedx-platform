@@ -277,6 +277,17 @@
     opacity: 1;
 }
 
+/*
+ * Keyboard focus indicator for the draggable closed-captions overlay.
+ * WCAG 2.1.1 keyboard accessibility (see issue #36800).
+ */
+.xmodule_display.xmodule_VideoBlock .video .video-wrapper .closed-captions.is-visible:focus,
+.xmodule_display.xmodule_VideoBlock .video .video-wrapper .closed-captions.is-visible:focus-visible {
+    background: black;
+    outline: 2px solid var(--yellow, #e2c01f);
+    outline-offset: 2px;
+}
+
 .xmodule_display.xmodule_VideoBlock .video .video-wrapper .video-player {
     overflow: hidden;
     min-height: 158px;
