@@ -1686,7 +1686,11 @@ REGISTRATION_EXTRA_FIELDS = {
     'honor_code': 'required',
     'terms_of_service': 'hidden',
     'city': 'hidden',
-    'country': 'hidden',
+    # 'country' defaults to 'optional' so the country list is exposed via the
+    # registration form API, which the Profile MFE relies on to render the
+    # country dropdown. Operators can override to 'hidden' or 'required' via
+    # site configuration or YAML env config. See issue #38195.
+    'country': 'optional',
 }
 
 ######################### Course Enrollment Modes ##########################

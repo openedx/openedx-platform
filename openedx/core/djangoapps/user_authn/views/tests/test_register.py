@@ -1817,6 +1817,68 @@ class RegistrationViewTestV1(
 
         self.assertContains(response, 'Kosovo')
 
+    def test_unit_country_default_is_optional(self):
+        """
+        Unit test for Bug #38195.
+
+        The platform default for REGISTRATION_EXTRA_FIELDS['country'] must be
+        'optional' so the country list is exposed via the registration form
+        API. The Profile MFE depends on this API to render its country
+        dropdown.
+        """
+        assert settings.REGISTRATION_EXTRA_FIELDS.get('country') == 'optional'
+
+    def test_integration_country_field_exposed_by_default(self):
+        """
+        Integration test for Bug #38195.
+
+        With default settings, the registration form API response must include
+        the country field populated with its options list, so consumers like
+        the Profile MFE can render a country dropdown.
+        """
+        response = self.client.get(self.url)
+        self.assertHttpOK(response)
+        form_desc = json.loads(response.content.decode('utf-8'))
+        field_names = [field['name'] for field in form_desc['fields']]
+        assert 'country' in field_names, \
+            "country field must be exposed by default so Profile MFE gets the list"
+
+        country_field = next(f for f in form_desc['fields'] if f['name'] == 'country')
+        assert country_field['type'] == 'select'
+        assert len(country_field['options']) > 0, \
+            "country field must ship with the full list of country options"
+
+    def test_bug_38195_regression_profile_mfe_gets_country_options(self):
+        """
+        Regression test for Bug #38195.
+
+        Before the fix, the default value of REGISTRATION_EXTRA_FIELDS['country']
+        was 'hidden', which caused RegistrationFormFactory._is_field_visible
+        to exclude the country field entirely from the registration form API
+        response. The Profile MFE, which consumes this API to get the country
+        list, had no country options to display.
+
+        This test hits the same API endpoint the Profile MFE uses and
+        verifies the country options are present in the response payload.
+        """
+        response = self.client.get(self.url)
+        self.assertHttpOK(response)
+        self.assertContains(response, 'country')
+        self.assertContains(response, 'Kosovo')
+
+    @override_settings(REGISTRATION_EXTRA_FIELDS={"country": "hidden"})
+    def test_operator_can_still_hide_country(self):
+        """
+        Ensures the default change does not remove the operator's ability to
+        hide the country field via override. Bug #38195.
+        """
+        response = self.client.get(self.url)
+        self.assertHttpOK(response)
+        form_desc = json.loads(response.content.decode('utf-8'))
+        field_names = [field['name'] for field in form_desc['fields']]
+        assert 'country' not in field_names, \
+            "operator override to 'hidden' must still remove the country field"
+
     def test_password_with_spaces(self):
         """Test that spaces are stripped correctly from password while creating an account."""
         unstripped_password = self.PASSWORD + '  '
