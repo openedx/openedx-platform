@@ -67,6 +67,27 @@ class SegmentIOTrackingTestCase(SegmentIOTrackingTestCaseBase):
         assert response.status_code == 401
         self.assert_no_events_emitted()
 
+    def test_secret_comparison_is_constant_time(self):
+        """
+        Regression test: the query-string secret comparison must go through
+        ``hmac.compare_digest`` so that it runs in constant time with
+        respect to the secret's contents (CWE-208 guard). Patch the
+        function on the module under test and verify it is invoked with
+        the (provided, expected) secret pair on a mismatch.
+        """
+        from unittest.mock import patch
+        with patch(
+            'common.djangoapps.track.views.segmentio.hmac.compare_digest',
+            wraps=segmentio.hmac.compare_digest,
+        ) as mock_compare:
+            request = self.create_request(key='y')
+            response = segmentio.segmentio_event(request)
+        assert response.status_code == 401
+        assert mock_compare.called
+        args, _kwargs = mock_compare.call_args
+        assert args[0] == 'y'
+        self.assert_no_events_emitted()
+
     @data('identify', 'Group', 'Alias', 'Page', 'identify', 'screen')
     def test_segmentio_ignore_actions(self, action):
         self.post_segmentio_event(action=action)

@@ -1,6 +1,7 @@
 """Handle events that were forwarded from the Segment webhook integration"""
 
 
+import hmac
 import json
 import logging
 
@@ -64,10 +65,15 @@ def segmentio_event(request):
     # Validate the security token. We must use a query string parameter for this since we cannot customize the POST body
     # in the Segment webhook configuration, we can only change the URL that they call, so we force this token to be
     # included in the URL and reject any requests that do not include it. This also assumes HTTPS is used to make the
-    # connection between their server and ours.
+    # connection between their server and ours. Segment's Webhook destination does not sign request bodies, so true
+    # HMAC verification is not possible on the receiver side — the shared secret in the URL is the vendor-documented
+    # authentication pattern for this integration. The comparison below uses hmac.compare_digest to eliminate the
+    # content-based timing side channel on the secret equality check (CWE-208).
     expected_secret = getattr(settings, 'TRACKING_SEGMENTIO_WEBHOOK_SECRET', None)
     provided_secret = request.GET.get('key')
-    if not expected_secret or provided_secret != expected_secret:
+    if not expected_secret or not provided_secret:
+        return HttpResponse(status=401)
+    if not hmac.compare_digest(provided_secret, expected_secret):
         return HttpResponse(status=401)
 
     try:
