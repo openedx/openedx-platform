@@ -548,8 +548,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         for tab in tabs:
             self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")  # noqa: PT009  # pylint: disable=line-too-long
             self.assertTrue(  # noqa: PT009
-                tab['url'].startswith('/instructor/'),
-                f"Tab URL should start with '/instructor/': {tab['url']}"
+                tab['url'].startswith(f'/{self.course.id}/'),
+                f"Tab URL should start with '/{self.course.id}/': {tab['url']}"
             )
 
     def test_pacing_self_for_self_paced_course(self):
