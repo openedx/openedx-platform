@@ -960,6 +960,35 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
             password = generate_unique_password(generated_password, 12)
             assert password != 'first'
 
+    def test_sec_weak_prng_generate_random_string_uses_secrets_regression(self):
+        """
+        Regression test: generate_random_string must use secrets.choice
+        (CSPRNG) rather than random.choice (Mersenne Twister). Batch
+        enrollment passwords are emailed to learners, so a deterministic
+        PRNG would let an observer predict future passwords from observed
+        ones.
+        """
+        from lms.djangoapps.instructor.views import api as instructor_api
+        with patch.object(
+            instructor_api.secrets, 'choice',
+            wraps=instructor_api.secrets.choice,
+        ) as mock_choice:
+            password = instructor_api.generate_random_string(12)
+        assert len(password) == 12
+        assert mock_choice.call_count == 12
+
+    def test_sec_weak_prng_generate_random_string_entropy_regression(self):
+        """
+        Regression test: 200 successive batch-enrollment password draws
+        must be distinct with overwhelming probability when backed by a
+        CSPRNG. Catches any future reintroduction of a low-entropy PRNG.
+        """
+        from lms.djangoapps.instructor.views.api import generate_unique_password
+        generated = []
+        for _iteration in range(200):
+            generate_unique_password(generated, password_length=12)
+        assert len(generated) == len(set(generated)) == 200
+
     @patch.dict(settings.FEATURES, {'ALLOW_AUTOMATED_SIGNUPS': False})
     def test_allow_automated_signups_flag_not_set(self):
         csv_content = b"test_student1@example.com,test_student_1,tester1,USA"

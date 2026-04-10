@@ -2,7 +2,7 @@
 import functools
 import json
 import logging
-import random
+import secrets
 import time
 
 import six
@@ -1117,7 +1117,9 @@ def upload(request, course_id):  # ajax upload file to a question or answer  # l
 
         #request.user.assert_can_upload_file()
 
-        base_file_name = str(time.time()).replace('.', str(random.randint(0, 100000)))
+        # secrets.randbelow(n) yields [0, n) so use 100001 to match the
+        # inclusive upper bound of the original random.randint(0, 100000).
+        base_file_name = str(time.time()).replace('.', str(secrets.randbelow(100001)))
         file_storage, new_file_name = store_uploaded_file(
             request, 'file-upload', cc_settings.ALLOWED_UPLOAD_FILE_TYPES, base_file_name,
             max_file_size=cc_settings.MAX_UPLOAD_FILE_SIZE
