@@ -338,6 +338,12 @@ CERT_QUEUE = 'certificates'
 
 MIDDLEWARE = [
     'openedx.core.lib.x_forwarded_for.middleware.XForwardedForMiddleware',
+    # Django's SecurityMiddleware runs right after the proxy-header normaliser
+    # so it sees request.is_secure() with the correct X-Forwarded-Proto value.
+    # It writes X-Content-Type-Options: nosniff by default and honours the
+    # SECURE_HSTS_SECONDS / SECURE_SSL_REDIRECT / SECURE_REFERRER_POLICY
+    # settings operators set in their YAML config.
+    'django.middleware.security.SecurityMiddleware',
     'edx_django_utils.security.csp.middleware.content_security_policy_middleware',
 
     'crum.CurrentRequestUserMiddleware',
