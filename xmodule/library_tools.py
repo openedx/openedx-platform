@@ -121,7 +121,7 @@ class LegacyLibraryToolsService:
         ensure_cms("library_content block children may only be duplicated in a CMS context")
         if not isinstance(dest_block, LegacyLibraryContentBlock):
             raise ValueError(f"Can only duplicate children for library_content blocks, not {dest_block.tag} blocks.")
-        if source_block.scope_ids.usage_id.context_key != source_block.scope_ids.usage_id.context_key:
+        if source_block.scope_ids.usage_id.context_key != dest_block.scope_ids.usage_id.context_key:
             raise ValueError(
                 "Cannot duplicate_children across different learning contexts "
                 f"(source={source_block.scope_ids.usage_id}, dest={dest_block.scope_ids.usage_id})"
@@ -131,10 +131,17 @@ class LegacyLibraryToolsService:
                 "Cannot duplicate_children across different source libraries or versions thereof "
                 f"({source_block.source_library_key=}, {dest_block.source_library_key=})."
             )
-        library_tasks.duplicate_children.delay(
-            user_id=self.user_id,
-            source_block_id=str(source_block.scope_ids.usage_id),
-            dest_block_id=str(dest_block.scope_ids.usage_id),
+        # TODO: This task runs synchronously to avoid a race with duplicate_block's
+        # enclosing store.bulk_operations(), which buffers writes thread-locally.
+        # An out-of-process Celery worker would not see the dest block and would
+        # produce a duplicate with no children. This mirrors the identical fix
+        # applied to sync_from_library in TNL-11339 / #34029. See #36544.
+        library_tasks.duplicate_children.apply(
+            kwargs=dict(
+                user_id=self.user_id,
+                source_block_id=str(source_block.scope_ids.usage_id),
+                dest_block_id=str(dest_block.scope_ids.usage_id),
+            ),
         )
 
     def are_children_syncing(self, library_content_block: LegacyLibraryContentBlock) -> bool:
