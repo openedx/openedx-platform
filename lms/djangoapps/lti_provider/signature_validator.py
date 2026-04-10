@@ -3,7 +3,20 @@ Subclass of oauthlib's RequestValidator that checks an OAuth signature.
 """
 
 
+import hashlib
+import logging
+import time
+
+from django.conf import settings
+from django.core.cache import cache
 from oauthlib.oauth1 import RequestValidator, SignatureOnlyEndpoint
+
+log = logging.getLogger(__name__)
+
+#: Nonce cache key prefix. The value contains the consumer_key (hashed to
+#: bound its length) and the nonce itself, so two consumers using the same
+#: nonce value do not collide.
+_NONCE_CACHE_KEY_PREFIX = "lti_provider.nonce."
 
 
 class SignatureValidator(RequestValidator):
@@ -63,10 +76,43 @@ class SignatureValidator(RequestValidator):
         in which the timestamp marks a request as valid. This method signature
         is required by the oauthlib library.
 
+        The timestamp window is controlled by
+        ``settings.LTI_NONCE_WINDOW_SECONDS`` (default 300s). Nonces are
+        tracked in Django's default cache — in production this is
+        memcached/Redis and shared across LMS workers, so replay checks
+        are cluster-consistent.
+
         :return: True if the OAuth nonce and timestamp are valid, False if they
         are not.
         """
-        return True
+        window = getattr(settings, "LTI_NONCE_WINDOW_SECONDS", 300)
+        try:
+            ts = int(timestamp)
+        except (TypeError, ValueError):
+            return False
+        now = int(time.time())
+        if abs(now - ts) > window:
+            return False
+
+        # Scope the cache key per consumer so two consumers reusing the
+        # same nonce value do not collide with each other. ``cache.add``
+        # is atomic on memcached/Redis: it returns False if the key
+        # already exists, which is our replay signal.
+        consumer_digest = hashlib.sha256(
+            (client_key or "").encode("utf-8")
+        ).hexdigest()
+        key = f"{_NONCE_CACHE_KEY_PREFIX}{consumer_digest}.{nonce}"
+        try:
+            fresh = cache.add(key, "1", timeout=window)
+        except Exception:  # pylint: disable=broad-except
+            # If the cache backend is unavailable, fail closed — reject
+            # rather than risk silently accepting replays.
+            log.exception(
+                "LTI nonce cache.add failed for client_key=%s; rejecting request",
+                client_key,
+            )
+            return False
+        return fresh
 
     def validate_client_key(self, client_key, request):
         """

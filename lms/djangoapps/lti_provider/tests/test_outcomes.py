@@ -40,6 +40,15 @@ class StoreOutcomeParametersTest(TestCase):
             consumer_secret='secret'
         )
         self.consumer.save()
+        # The URL validator added for SSRF protection rejects the legacy
+        # http://example.com fixture URL. Patch it out for tests that focus
+        # on the storage/db behaviour rather than URL validation; the
+        # ValidateOutcomeServiceUrlTest class covers the validator itself.
+        patcher = patch(
+            'lms.djangoapps.lti_provider.outcomes._validate_outcome_service_url',
+        )
+        self.addCleanup(patcher.stop)
+        patcher.start()
 
     def get_valid_request_params(self):
         """
@@ -168,16 +177,128 @@ class SignAndSendReplaceResultTest(TestCase):
         )
         self.assignment.save()
 
+    @patch('lms.djangoapps.lti_provider.outcomes._validate_outcome_service_url')
     @patch('requests.post', return_value='response')
-    def test_sign_and_send_replace_result(self, post_mock):
+    def test_sign_and_send_replace_result(self, post_mock, validate_mock):  # pylint: disable=unused-argument  # noqa: ARG002
         response = outcomes.sign_and_send_replace_result(self.assignment, 'xml')
         post_mock.assert_called_with(
             'http://example.com/service_url',
             data='xml',
             auth=ANY,
-            headers={'content-type': 'application/xml'}
+            headers={'content-type': 'application/xml'},
+            timeout=10,
+            allow_redirects=False,
         )
         assert response == 'response'
+
+    @patch('requests.post')
+    def test_sec_lti_ssrf_regression_sign_and_send_refuses_private_url(self, post_mock):
+        """
+        Regression test: if a pre-existing OutcomeService row has a URL
+        that would resolve to a private network, sign_and_send_replace_result
+        must refuse to POST to it. Protects against exploiting legacy rows
+        written before URL validation was introduced.
+        """
+        self.assignment.outcome_service.lis_outcome_service_url = 'http://127.0.0.1/'
+        self.assignment.outcome_service.save()
+        response = outcomes.sign_and_send_replace_result(self.assignment, 'xml')
+        post_mock.assert_not_called()
+        assert response is None
+
+
+class ValidateOutcomeServiceUrlTest(TestCase):
+    """
+    Regression tests for _validate_outcome_service_url (SSRF protection).
+    """
+
+    def test_sec_lti_ssrf_regression_rejects_http_by_default(self):
+        """HTTP is rejected unless LTI_OUTCOME_SERVICE_ALLOW_HTTP is True."""
+        import pytest
+        with pytest.raises(ValueError, match='scheme'):
+            outcomes._validate_outcome_service_url('http://example.com/outcomes')  # pylint: disable=protected-access
+
+    def test_sec_lti_ssrf_regression_accepts_https_public(self):
+        """HTTPS against a public IP must be accepted."""
+        with patch('socket.getaddrinfo', return_value=[
+            (None, None, None, '', ('93.184.216.34', 0))
+        ]):
+            outcomes._validate_outcome_service_url('https://example.com/outcomes')  # pylint: disable=protected-access
+
+    def test_sec_lti_ssrf_regression_rejects_loopback(self):
+        """HTTPS against 127.0.0.1 must be rejected (SSRF to loopback)."""
+        import pytest
+        with patch('socket.getaddrinfo', return_value=[
+            (None, None, None, '', ('127.0.0.1', 0))
+        ]), pytest.raises(ValueError, match='disallowed address'):
+            outcomes._validate_outcome_service_url('https://localhost/')  # pylint: disable=protected-access
+
+    def test_sec_lti_ssrf_regression_rejects_aws_metadata(self):
+        """
+        HTTPS targeting the AWS instance metadata endpoint must be rejected.
+        169.254.0.0/16 is link-local.
+        """
+        import pytest
+        with patch('socket.getaddrinfo', return_value=[
+            (None, None, None, '', ('169.254.169.254', 0))
+        ]), pytest.raises(ValueError, match='disallowed address'):
+            outcomes._validate_outcome_service_url(  # pylint: disable=protected-access
+                'https://metadata.internal/latest/meta-data/',
+            )
+
+    def test_sec_lti_ssrf_regression_rejects_rfc1918_private_ranges(self):
+        """10.0.0.0/8 and 192.168.0.0/16 must be rejected."""
+        import pytest
+        for ip in ('10.0.0.5', '192.168.1.1', '172.16.0.1'):
+            with patch('socket.getaddrinfo', return_value=[
+                (None, None, None, '', (ip, 0))
+            ]), pytest.raises(ValueError, match='disallowed address'):
+                outcomes._validate_outcome_service_url(  # pylint: disable=protected-access
+                    f'https://internal-{ip}.example.com/',
+                )
+
+    def test_sec_lti_ssrf_regression_rejects_bad_scheme(self):
+        """Non-HTTP(S) schemes must be rejected outright."""
+        import pytest
+        for url in ('file:///etc/passwd', 'gopher://x/', 'ftp://x/'):
+            with pytest.raises(ValueError, match='scheme'):
+                outcomes._validate_outcome_service_url(url)  # pylint: disable=protected-access
+
+    def test_sec_lti_ssrf_regression_rejects_empty_or_none(self):
+        import pytest
+        with pytest.raises(ValueError, match='empty or not a string'):
+            outcomes._validate_outcome_service_url('')  # pylint: disable=protected-access
+        with pytest.raises(ValueError, match='empty or not a string'):
+            outcomes._validate_outcome_service_url(None)  # pylint: disable=protected-access
+
+    def test_sec_lti_ssrf_regression_store_outcome_rejects_bad_url(self):
+        """
+        store_outcome_parameters must refuse to persist a private URL so
+        the OutcomeService row is never created. Fails-closed.
+        """
+        consumer = LtiConsumer(
+            consumer_name='consumer',
+            consumer_key='consumer_key',
+            consumer_secret='secret',
+        )
+        consumer.save()
+        user = UserFactory.create()
+        with patch('socket.getaddrinfo', return_value=[
+            (None, None, None, '', ('169.254.169.254', 0))
+        ]):
+            outcomes.store_outcome_parameters(
+                {
+                    'lis_result_sourcedid': 'sid',
+                    'lis_outcome_service_url': 'https://metadata.internal/',
+                    'usage_key': BlockUsageLocator(
+                        course_key=CourseLocator('o', 'c', 'r'),
+                        block_type='problem', block_id='b',
+                    ),
+                    'course_key': CourseLocator('o', 'c', 'r'),
+                },
+                user, consumer,
+            )
+        assert OutcomeService.objects.count() == 0
+        assert GradedAssignment.objects.count() == 0
 
 
 class XmlHandlingTest(TestCase):

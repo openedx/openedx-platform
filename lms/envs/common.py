@@ -2571,6 +2571,29 @@ CREDIT_HELP_LINK_URL = ""
 # route any messages intended for LTI users to a common domain.
 LTI_USER_EMAIL_DOMAIN = 'lti.example.com'
 
+# LTI Provider security settings. See lms/djangoapps/lti_provider/signature_validator.py
+# and outcomes.py.
+#
+# LTI_NONCE_WINDOW_SECONDS: the acceptable drift (in seconds) between an LTI
+# consumer's clock and this platform's clock. Requests with a timestamp
+# outside this window are rejected. Nonces are also tracked in Django's cache
+# for this duration so replays within the window fail.
+LTI_NONCE_WINDOW_SECONDS = 300
+
+# LTI_OUTCOME_SERVICE_TIMEOUT: maximum time (in seconds) to wait for an LTI
+# consumer's outcome endpoint to respond to a score-update POST.
+LTI_OUTCOME_SERVICE_TIMEOUT = 10
+
+# LTI_OUTCOME_SERVICE_ALLOW_HTTP: when False (the default), lis_outcome_service_url
+# values must use HTTPS. Set to True only in trusted development environments.
+LTI_OUTCOME_SERVICE_ALLOW_HTTP = False
+
+# LTI_OUTCOME_SERVICE_ALLOWED_HOSTS: optional allowlist of host suffixes that
+# are permitted to appear in lis_outcome_service_url values. When non-empty,
+# only URLs whose hostname matches (or ends with '.<host>') a listed entry
+# are accepted. Leaving this empty still enforces private-IP blocking.
+LTI_OUTCOME_SERVICE_ALLOWED_HOSTS = []
+
 # An aggregate score is one derived from multiple problems (such as the
 # cumulative score for a vertical element containing many problems). Sending
 # aggregate scores immediately introduces two issues: one is a race condition

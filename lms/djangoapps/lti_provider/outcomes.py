@@ -4,11 +4,15 @@ in LTI v1.1.
 """
 
 
+import ipaddress
 import logging
+import socket
 import uuid
+from urllib.parse import urlparse
 
 import requests
 import requests_oauthlib
+from django.conf import settings
 from lxml import etree
 from lxml.builder import ElementMaker
 from requests.exceptions import RequestException
@@ -16,6 +20,69 @@ from requests.exceptions import RequestException
 from lms.djangoapps.lti_provider.models import GradedAssignment, OutcomeService
 
 log = logging.getLogger("edx.lti_provider")
+
+
+def _validate_outcome_service_url(url):
+    """
+    Validate an ``lis_outcome_service_url`` supplied by an LTI consumer before
+    the platform issues a signed outbound POST to it.
+
+    Rejects non-HTTP(S) schemes, private / loopback / link-local / reserved
+    IP ranges (SSRF protection), and — optionally — hostnames not present in
+    ``settings.LTI_OUTCOME_SERVICE_ALLOWED_HOSTS``. HTTP is rejected unless
+    ``settings.LTI_OUTCOME_SERVICE_ALLOW_HTTP`` is explicitly True (e.g. in
+    devstack).
+
+    Raises ``ValueError`` on any rejection so callers can log and skip.
+    See the security advisory on LTI SSRF.
+    """
+    if not url or not isinstance(url, str):
+        raise ValueError("lis_outcome_service_url is empty or not a string")
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"unsupported scheme: {parsed.scheme!r}")
+
+    if parsed.scheme == "http" and not getattr(
+        settings, "LTI_OUTCOME_SERVICE_ALLOW_HTTP", False
+    ):
+        raise ValueError("http scheme rejected (set LTI_OUTCOME_SERVICE_ALLOW_HTTP to allow)")
+
+    host = parsed.hostname
+    if not host:
+        raise ValueError("lis_outcome_service_url has no hostname")
+
+    allowed_hosts = getattr(settings, "LTI_OUTCOME_SERVICE_ALLOWED_HOSTS", None) or []
+    if allowed_hosts:
+        host_l = host.lower()
+        if not any(host_l == h.lower() or host_l.endswith("." + h.lower()) for h in allowed_hosts):
+            raise ValueError(f"host {host!r} not in LTI_OUTCOME_SERVICE_ALLOWED_HOSTS")
+
+    # Resolve the hostname and reject if any returned address belongs to a
+    # private/loopback/link-local/reserved range. This protects against
+    # DNS rebinding and direct IP targets like 169.254.169.254.
+    try:
+        addrinfo = socket.getaddrinfo(host, None)
+    except socket.gaierror as err:
+        raise ValueError(f"cannot resolve host {host!r}: {err}") from err
+
+    for _family, _type, _proto, _canon, sockaddr in addrinfo:
+        addr = sockaddr[0]
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            continue
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            raise ValueError(
+                f"host {host!r} resolves to a disallowed address: {addr}"
+            )
 
 
 def store_outcome_parameters(request_params, user, lti_consumer):
@@ -42,6 +109,19 @@ def store_outcome_parameters(request_params, user, lti_consumer):
                 "from scored assignment; we will be unable to return a score. "
                 "Request parameters: %s",
                 request_params
+            )
+            return
+
+        # Reject outcome service URLs that point at private networks or use
+        # unsafe schemes before we persist them. This prevents SSRF via a
+        # signed outbound POST the first time a score is sent. See the
+        # security advisory on LTI outcome URLs.
+        try:
+            _validate_outcome_service_url(result_service)
+        except ValueError as err:
+            log.warning(
+                "Outcome Service: rejecting lis_outcome_service_url %r: %s",
+                result_service, err,
             )
             return
 
@@ -157,8 +237,25 @@ def sign_and_send_replace_result(assignment, xml):
     Take the XML document generated in generate_replace_result_xml, and sign it
     with the consumer key and secret assigned to the consumer. Send the signed
     message to the LTI consumer.
+
+    Re-validates the target URL before sending so that any pre-existing
+    ``OutcomeService`` rows written before the URL validator was introduced
+    cannot be used as SSRF pivots. Also enforces a request timeout and
+    disables redirect-following so a consumer cannot chain into a private
+    network via a redirect.
     """
     outcome_service = assignment.outcome_service
+    target_url = outcome_service.lis_outcome_service_url
+
+    try:
+        _validate_outcome_service_url(target_url)
+    except ValueError as err:
+        log.warning(
+            "Outcome Service: refusing to POST score to %r: %s",
+            target_url, err,
+        )
+        return None
+
     consumer = outcome_service.lti_consumer
     consumer_key = consumer.consumer_key
     consumer_secret = consumer.consumer_secret
@@ -173,11 +270,14 @@ def sign_and_send_replace_result(assignment, xml):
     )
 
     headers = {'content-type': 'application/xml'}
+    timeout = getattr(settings, "LTI_OUTCOME_SERVICE_TIMEOUT", 10)
     response = requests.post(
-        assignment.outcome_service.lis_outcome_service_url,
+        target_url,
         data=xml,
         auth=oauth,
-        headers=headers
+        headers=headers,
+        timeout=timeout,
+        allow_redirects=False,
     )
 
     return response
