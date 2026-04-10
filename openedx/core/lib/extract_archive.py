@@ -18,6 +18,80 @@ from django.core.exceptions import SuspiciousOperation
 
 log = logging.getLogger(__name__)
 
+# Default decompression budget for course archives. These thresholds block
+# zip / tar bombs during course import without rejecting any realistic edX
+# course export. Operators can override each threshold via Django settings:
+#
+#   COURSE_IMPORT_MAX_EXTRACTED_SIZE   (default 2 GB)
+#   COURSE_IMPORT_MAX_EXTRACTED_FILES  (default 50 000)
+#   COURSE_IMPORT_MAX_COMPRESSION_RATIO (default 200x)
+#
+# Rationale:
+#   * 2 GB uncompressed covers large video-heavy OLX exports with margin.
+#   * 50 000 files covers heavily fragmented OLX (real exports observed
+#     in the 1000-5000 file range).
+#   * 200x compression ratio is well above any legitimate compression
+#     (XML text ~10x, media ~1x) and rejects canonical 42.zip-style bombs
+#     whose ratio is upwards of 10^6.
+_DEFAULT_MAX_EXTRACTED_SIZE = 2 * 1024 * 1024 * 1024
+_DEFAULT_MAX_EXTRACTED_FILES = 50_000
+_DEFAULT_MAX_COMPRESSION_RATIO = 200
+
+
+def _get_archive_limits():
+    """
+    Resolve the three archive-size thresholds from Django settings so
+    tests and operators can override them without patching this module.
+    """
+    return (
+        getattr(settings, 'COURSE_IMPORT_MAX_EXTRACTED_SIZE', _DEFAULT_MAX_EXTRACTED_SIZE),
+        getattr(settings, 'COURSE_IMPORT_MAX_EXTRACTED_FILES', _DEFAULT_MAX_EXTRACTED_FILES),
+        getattr(settings, 'COURSE_IMPORT_MAX_COMPRESSION_RATIO', _DEFAULT_MAX_COMPRESSION_RATIO),
+    )
+
+
+def _check_archive_bomb(members, compressed_size):
+    """
+    Reject archives whose declared uncompressed size, file count, or
+    compression ratio exceed the configured budget. Raises
+    ``SuspiciousOperation`` on any violation. The check runs *before*
+    ``archive.extractall`` writes anything to disk, so a pathological
+    archive never materializes a byte on the target filesystem.
+    """
+    max_size, max_files, max_ratio = _get_archive_limits()
+
+    if len(members) > max_files:
+        log.debug(
+            "Archive blocked: %d members exceeds limit of %d",
+            len(members), max_files,
+        )
+        raise SuspiciousOperation("Archive contains too many files")
+
+    total_uncompressed = 0
+    for finfo in members:
+        if isinstance(finfo, ZipInfo):
+            member_size = finfo.file_size
+        elif isinstance(finfo, TarInfo):
+            member_size = finfo.size if finfo.isfile() else 0
+        else:  # defensive: safe_extractall only yields the two types above
+            member_size = 0
+        total_uncompressed += member_size
+        if total_uncompressed > max_size:
+            log.debug(
+                "Archive blocked: uncompressed size %d exceeds limit of %d",
+                total_uncompressed, max_size,
+            )
+            raise SuspiciousOperation("Archive too large")
+
+    # Compression-ratio guard: use max(compressed_size, 1) to avoid a
+    # divide-by-zero on empty archives, which are harmless anyway.
+    if total_uncompressed // max(compressed_size, 1) > max_ratio:
+        log.debug(
+            "Archive blocked: compression ratio %d exceeds limit of %d",
+            total_uncompressed // max(compressed_size, 1), max_ratio,
+        )
+        raise SuspiciousOperation("Archive compression ratio too high")
+
 
 def resolved(rpath):
     """
@@ -89,10 +163,13 @@ def safe_extractall(file_name, output_path):
     """
     Extract Zip or Tar files
     """
+    import os  # local import: stdlib, not module-hot
+
     archive = None
     if not output_path.endswith("/"):
         output_path += "/"
     try:
+        compressed_size = os.path.getsize(file_name)
         if file_name.endswith(".zip"):
             archive = ZipFile(file_name, "r")
             members = archive.infolist()
@@ -102,6 +179,7 @@ def safe_extractall(file_name, output_path):
         else:
             raise ValueError("Unsupported archive format")
         _checkmembers(members, output_path)
+        _check_archive_bomb(members, compressed_size)
         archive.extractall(output_path)
     finally:
         if archive:
