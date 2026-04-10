@@ -211,10 +211,14 @@ if AWS_ACCESS_KEY_ID == "":  # noqa: F405
 if AWS_SECRET_ACCESS_KEY == "":  # noqa: F405
     AWS_SECRET_ACCESS_KEY = None
 
-# these variable already exists in cms with `private` value. django-storages starting `1.10.1`
-# does not set acl values till 1.9.1 default-acl is `public-read`. To maintain the behaviour
-# same with upcoming version setting it to `public-read`.
-AWS_DEFAULT_ACL = 'public-read'
+# Align with CMS and with defense-in-depth: new S3 objects uploaded by the LMS
+# default storage are private. Read URLs are produced by storage.url(), which
+# generates pre-signed URLs because AWS_QUERYSTRING_AUTH is True (see
+# openedx/envs/common.py). Profile images, grade reports, and other uploads
+# served through Django therefore do not depend on a public object ACL.
+# Operators who historically relied on raw unsigned S3 object URLs must
+# migrate to pre-signed URLs or front the bucket with CloudFront.
+AWS_DEFAULT_ACL = 'private'
 AWS_BUCKET_ACL = AWS_DEFAULT_ACL
 
 _yaml_storages = _YAML_TOKENS.get('STORAGES', {})
