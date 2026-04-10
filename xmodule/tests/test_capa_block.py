@@ -1490,6 +1490,73 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
             # but that it was considered the second attempt for grading purposes
             assert block.lcp.context["attempt"] == 2
 
+    def test_unit_submit_problem_empty_answer(self):
+        """
+        Unit test for bug #36829: empty submissions must be rejected server-side
+        with a clear translatable message, must NOT reach the grading engine,
+        and must NOT consume an attempt.
+        """
+        block = CapaFactory.create(attempts=1, user_is_staff=False)
+
+        with patch(
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers"
+        ) as mock_grade:
+            result = block.submit_problem({})
+            mock_grade.assert_not_called()
+
+        assert result["success"] == "You must provide an answer before submitting."
+        assert result["html"] == ""
+        assert block.attempts == 1
+
+    def test_integration_submit_problem_all_blank_values(self):
+        """
+        Integration test for bug #36829: a payload where every input is present
+        but blank must be treated the same as an empty payload.
+        """
+        block = CapaFactory.create(attempts=1, user_is_staff=False)
+
+        with patch(
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers"
+        ) as mock_grade:
+            result = block.submit_problem({CapaFactory.input_key(): ""})
+            mock_grade.assert_not_called()
+
+        assert result["success"] == "You must provide an answer before submitting."
+        assert block.attempts == 1
+
+    def test_submit_problem_zero_is_not_empty(self):
+        """
+        Regression guard for bug #36829: a literal '0' answer must NOT be
+        rejected as empty — it is a valid numeric response.
+        """
+        block = CapaFactory.create(attempts=1, user_is_staff=False)
+
+        with patch(
+            "xblocks_contrib.problem.capa.capa_problem.LoncapaProblem.grade_answers"
+        ) as mock_grade:
+            mock_grade.return_value = CorrectMap()
+            block.submit_problem({CapaFactory.input_key(): "0"})
+            mock_grade.assert_called_once()
+
+        # Attempt was accepted and incremented.
+        assert block.attempts == 2
+
+    def test_bug_36829_regression_empty_answer_publishes_fail_event(self):
+        """
+        Regression for bug #36829: empty submissions emit a problem_check_fail
+        tracking event with failure='missing_answer' so the rejection is
+        observable in tracking logs (parity with the other pre-grading guards).
+        """
+        block = CapaFactory.create(attempts=1, user_is_staff=False)
+
+        with patch.object(block, "publish_unmasked") as mock_publish:
+            block.submit_problem({})
+
+            mock_publish.assert_called_once()
+            event_name, event_info = mock_publish.call_args[0]
+            assert event_name == "problem_check_fail"
+            assert event_info["failure"] == "missing_answer"
+
     @ddt.data(
         ("never", True, None, "submitted"),
         ("never", False, None, "submitted"),

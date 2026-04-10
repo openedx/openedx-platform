@@ -1807,6 +1807,19 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
                 )
                 return {"success": msg, "html": ""}
 
+        # Reject empty submissions before they reach the grading engine. Without this
+        # guard, grade_answers({}) raises a cryptic StudentInputError that is surfaced
+        # to the learner verbatim via the codejail-traceback parser (see #36829).
+        if not answers or all(
+            value in ("", [], {}, None) for value in answers.values()
+        ):
+            event_info["failure"] = "missing_answer"
+            self.publish_unmasked("problem_check_fail", event_info)
+            return {
+                "success": _("You must provide an answer before submitting."),
+                "html": "",
+            }
+
         try:
             # expose the attempt number to a potential python custom grader
             # self.lcp.context['attempt'] refers to the attempt number (1-based)
