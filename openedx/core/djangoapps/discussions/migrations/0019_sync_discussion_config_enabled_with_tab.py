@@ -1,15 +1,15 @@
 """
-Sync DiscussionsConfiguration.enabled and CourseAppStatus.enabled with
-CourseOverviewTab.is_hidden.
+Backfill DiscussionsConfiguration.enabled and CourseAppStatus.enabled for
+existing courses to match CourseOverviewTab.is_hidden.
 
 When a course is imported, the discussion tab's is_hidden value is carried over
 from the source course. However, DiscussionsConfiguration.enabled and
 CourseAppStatus.enabled default to True and are not updated from the imported
 tab state, causing a desync.
 
-This migration reads each discussion tab from CourseOverviewTab (a DB cache of
-course tabs) and sets both DiscussionsConfiguration.enabled and
-CourseAppStatus.enabled to NOT is_hidden.
+This is a one-time backfill for existing courses. Going forward, the
+update_course_discussion_config handler keeps these values in sync on every
+course publish.
 """
 
 from django.db import migrations
