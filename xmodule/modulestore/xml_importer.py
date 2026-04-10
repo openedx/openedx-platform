@@ -60,6 +60,10 @@ from xmodule.x_module import XModuleMixin
 from .inheritance import own_metadata
 from .store_utilities import rewrite_nonportable_content_links
 
+# XML attributes on <sequential> used to carry subsection gating metadata
+# across OLX export/import. See issue #36995.
+GATING_XML_ATTRS = ('is_prerequisite', 'required_prereq', 'min_score', 'min_completion')
+
 log = logging.getLogger(__name__)
 
 DEFAULT_STATIC_CONTENT_SUBDIR = 'static'
@@ -834,6 +838,86 @@ def import_library_from_xml(*args, **kwargs):
     return list(manager.run_imports())
 
 
+def _apply_sequential_gating(block, dest_course_id, gating_xml_attrs):
+    """
+    Persist subsection gating metadata carried on a ``<sequential>`` OLX
+    element into the external edx-milestones tables.
+
+    Called after the sequential has been written to the modulestore so the
+    block exists when milestones reference it. Clears any stale "requires"
+    relationship on the target so re-imports stay idempotent: if the OLX no
+    longer defines a prereq, existing milestones for this subsection are
+    removed first. See issue #36995.
+
+    Raises:
+        CourseImportException: if the OLX references a prereq subsection
+            that does not exist in the imported course, or carries an
+            invalid prerequisite key.
+    """
+    # Local imports to avoid pulling LMS-only code at module import time.
+    from opaque_keys import InvalidKeyError  # noqa: PLC0415
+    from openedx.core.lib.gating import api as gating_api  # noqa: PLC0415
+    from openedx.core.lib.gating.exceptions import GatingValidationError  # noqa: PLC0415
+
+    from xmodule.modulestore.django import modulestore  # noqa: PLC0415
+
+    course = modulestore().get_course(dest_course_id)
+    if course is None or not getattr(course, 'enable_subsection_gating', False):
+        log.info(
+            'Skipping gating import for %s: enable_subsection_gating is off',
+            block.location,
+        )
+        return
+
+    # Idempotency: wipe any existing "requires" relationship so re-imports
+    # reflect the source OLX exactly.
+    gating_api.set_required_content(dest_course_id, block.location, None)
+
+    if str(gating_xml_attrs.get('is_prerequisite', '')).lower() == 'true':
+        gating_api.add_prerequisite(dest_course_id, block.location)
+
+    required_prereq = gating_xml_attrs.get('required_prereq')
+    if not required_prereq:
+        return
+
+    try:
+        prereq_key = UsageKey.from_string(required_prereq).map_into_course(dest_course_id)
+    except InvalidKeyError as err:
+        raise CourseImportException(
+            _('Invalid prerequisite key {key} on subsection {loc}').format(
+                key=required_prereq, loc=block.location,
+            )
+        ) from err
+
+    if not modulestore().has_item(prereq_key):
+        raise CourseImportException(
+            _(
+                'Subsection {loc} references prerequisite {prereq} which was '
+                'not found in the imported course.'
+            ).format(loc=block.location, prereq=prereq_key)
+        )
+
+    # The target subsection must itself be registered as a prereq source
+    # before set_required_content can succeed.
+    if not gating_api.is_prerequisite(dest_course_id, prereq_key):
+        gating_api.add_prerequisite(dest_course_id, prereq_key)
+
+    try:
+        gating_api.set_required_content(
+            dest_course_id,
+            block.location,
+            prereq_key,
+            gating_xml_attrs.get('min_score', ''),
+            gating_xml_attrs.get('min_completion', ''),
+        )
+    except GatingValidationError as err:
+        raise CourseImportException(
+            _('Invalid gating thresholds on {loc}: {err}').format(
+                loc=block.location, err=err,
+            )
+        ) from err
+
+
 def _update_and_import_block(  # pylint: disable=too-many-statements
         block, store, user_id,
         source_course_id, dest_course_id,
@@ -843,6 +927,18 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
     then import the block into the destination course.
     """
     logging.debug('processing import of blocks %s...', str(block.location))
+
+    # Snapshot gating xml_attributes before _update_block_references strips
+    # them, so we can re-apply the data to the milestones tables after the
+    # sequential has been imported. See issue #36995.
+    gating_xml_attrs_snapshot = None
+    if block.location.block_type == 'sequential':
+        raw_xml_attrs = getattr(block, 'xml_attributes', None) or {}
+        gating_xml_attrs_snapshot = {
+            key: raw_xml_attrs[key]
+            for key in GATING_XML_ATTRS
+            if key in raw_xml_attrs
+        }
 
     def _update_block_references(block, source_course_id, dest_course_id):
         """
@@ -892,6 +988,11 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
 
                     if 'index_in_children_list' in value:
                         del value['index_in_children_list']
+                    # Strip gating xml_attributes — they are re-applied
+                    # against the milestones tables by
+                    # _apply_sequential_gating below (see issue #36995).
+                    for _gate_attr in GATING_XML_ATTRS:
+                        value.pop(_gate_attr, None)
                     fields[field_name] = value
                 else:
                     fields[field_name] = field.read_from(block)
@@ -917,6 +1018,9 @@ def _update_and_import_block(  # pylint: disable=too-many-statements
         user_id, dest_course_id, block.location.block_type,
         block.location.block_id, fields, runtime, asides=asides
     )
+
+    if gating_xml_attrs_snapshot:
+        _apply_sequential_gating(block, dest_course_id, gating_xml_attrs_snapshot)
 
     # TODO: Move this code once the following condition is met.
     # Get to the point where XML import is happening inside the

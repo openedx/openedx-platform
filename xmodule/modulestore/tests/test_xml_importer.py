@@ -257,3 +257,75 @@ class StaticContentImporterTest(unittest.TestCase):  # lint-amnesty, pylint: dis
             )
             mock_file.assert_called_with(full_file_path, 'rb')
             self.mocked_content_store.generate_thumbnail.assert_called_once()
+
+
+class TestApplySequentialGating(unittest.TestCase):
+    """
+    Unit tests for ``_apply_sequential_gating`` — bug #36995 regression.
+
+    Subsection gating metadata must round-trip through OLX export/import.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.course_key = CourseLocator('org', 'course', 'run')
+        self.seq_loc = self.course_key.make_usage_key('sequential', 'gated_seq')
+        self.prereq_loc = self.course_key.make_usage_key('sequential', 'prereq_seq')
+        self.block = mock.Mock()
+        self.block.location = self.seq_loc
+
+    def _run(self, attrs, gating_enabled=True, prereq_exists=True):
+        """Invoke _apply_sequential_gating with the given config and return the mocks."""
+        from xmodule.modulestore.xml_importer import _apply_sequential_gating  # noqa: PLC0415
+        course = mock.Mock(enable_subsection_gating=gating_enabled)
+        with mock.patch('xmodule.modulestore.xml_importer.modulestore') as ms, \
+                mock.patch('openedx.core.lib.gating.api.is_prerequisite', return_value=False), \
+                mock.patch('openedx.core.lib.gating.api.add_prerequisite') as add_p, \
+                mock.patch('openedx.core.lib.gating.api.set_required_content') as set_r:
+            ms.return_value.get_course.return_value = course
+            ms.return_value.has_item.return_value = prereq_exists
+            _apply_sequential_gating(self.block, self.course_key, attrs)
+        return add_p, set_r
+
+    def test_unit_noop_when_gating_disabled_on_course(self):
+        """If the course has gating disabled, do nothing."""
+        add_p, set_r = self._run(
+            {
+                'required_prereq': str(self.prereq_loc),
+                'min_score': '80',
+                'min_completion': '90',
+            },
+            gating_enabled=False,
+        )
+        add_p.assert_not_called()
+        set_r.assert_not_called()
+
+    def test_unit_is_prerequisite_flag_only(self):
+        """is_prerequisite='true' alone marks the subsection as an eligible prereq source."""
+        add_p, set_r = self._run({'is_prerequisite': 'true'})
+        add_p.assert_called_once_with(self.course_key, self.seq_loc)
+        # set_required_content is still called once to clear stale state.
+        assert set_r.call_count == 1
+
+    def test_integration_missing_prereq_raises(self):
+        """Referencing a non-existent prereq must raise CourseImportException."""
+        from xmodule.modulestore.xml_importer import CourseImportException  # noqa: PLC0415
+        with self.assertRaises(CourseImportException):
+            self._run(
+                {
+                    'required_prereq': str(self.prereq_loc),
+                    'min_score': '80',
+                    'min_completion': '90',
+                },
+                prereq_exists=False,
+            )
+
+    def test_bug_36995_regression_invalid_prereq_key_raises(self):
+        """Regression for #36995: invalid key string must raise CourseImportException."""
+        from xmodule.modulestore.xml_importer import CourseImportException  # noqa: PLC0415
+        with self.assertRaises(CourseImportException):
+            self._run({
+                'required_prereq': 'not-a-usage-key',
+                'min_score': '80',
+                'min_completion': '90',
+            })

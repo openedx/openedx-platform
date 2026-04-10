@@ -969,7 +969,51 @@ class SequenceBlock(
         xml_object = etree.Element('sequential')
         for child in self.get_children():
             self.runtime.add_block_as_child_node(child, xml_object)
+        self._add_gating_info_to_xml(xml_object)
         return xml_object
+
+    def _add_gating_info_to_xml(self, xml_object):
+        """
+        Serialize subsection gating metadata onto the <sequential> element so
+        it survives OLX export/import. No-op if the course has
+        ``enable_subsection_gating`` disabled.
+
+        Subsection gating data lives in the external ``edx-milestones``
+        tables (outside the modulestore), so without this serialization
+        step every prerequisite is lost on export/import. See issue #36995.
+
+        Writes up to three attributes on the <sequential> element:
+
+        * ``is_prerequisite="true"`` — this subsection is marked as
+          available to gate other subsections.
+        * ``required_prereq`` — usage key string of the subsection that
+          must be completed before this one is accessible.
+        * ``min_score`` / ``min_completion`` — thresholds on that prereq.
+        """
+        # Local import: avoid pulling LMS-only code at module load time.
+        from openedx.core.lib.gating import api as gating_api  # noqa: PLC0415
+
+        try:
+            course = self.runtime.modulestore.get_course(self.location.course_key)
+        except Exception:  # pylint: disable=broad-except
+            return
+        if course is None or not getattr(course, 'enable_subsection_gating', False):
+            return
+
+        if gating_api.is_prerequisite(self.location.course_key, self.location):
+            xml_object.set('is_prerequisite', 'true')
+
+        prereq_key_str, min_score, min_completion = gating_api.get_required_content(
+            self.location.course_key,
+            self.location,
+        )
+        if not prereq_key_str:
+            return
+        xml_object.set('required_prereq', prereq_key_str)
+        if min_score not in (None, ''):
+            xml_object.set('min_score', str(min_score))
+        if min_completion not in (None, ''):
+            xml_object.set('min_completion', str(min_completion))
 
     @property
     def non_editable_metadata_fields(self):
