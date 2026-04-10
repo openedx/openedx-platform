@@ -9,7 +9,12 @@ from rest_framework.generics import GenericAPIView
 
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.lib.api.permissions import IsCourseStaffInstructor, IsMasterCourseStaffInstructor, IsStaffOrOwner
+from openedx.core.lib.api.permissions import (
+    IsCourseStaffInstructor,
+    IsMasterCourseStaffInstructor,
+    IsStaffOrOwner,
+    IsUserInUrlOrStaff,
+)
 
 
 class TestObject:
@@ -185,3 +190,60 @@ class IsStaffOrOwnerTests(TestCase):
         view = GenericAPIView()
         view.kwargs = {'username': UserFactory().username}
         assert not self.permission.has_permission(self.request, view)
+
+
+class IsUserInUrlOrStaffTests(TestCase):
+    """
+    Regression tests for IsUserInUrlOrStaff.
+
+    The previous implementation returned ``IsStaff | IsUserInUrl``, a
+    composite class object that is always truthy. The permission
+    therefore unconditionally granted access to every authenticated
+    caller regardless of the URL subject.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.permission = IsUserInUrlOrStaff()
+        self.factory = RequestFactory()
+        self.owner = UserFactory(username='owner')
+        self.other = UserFactory(username='intruder')
+        self.staff = UserFactory(username='gremlin', is_staff=True)
+
+    def _make_request(self, user, url_username):
+        request = self.factory.get(f'/api/user/v1/preferences/{url_username}/')
+        request.user = user
+        request.parser_context = {'kwargs': {'username': url_username}}
+        return request
+
+    def test_sec_broken_permission_staff_granted_regression(self):
+        request = self._make_request(self.staff, 'owner')
+        assert self.permission.has_permission(request, None) is True
+
+    def test_sec_broken_permission_user_matching_url_granted_regression(self):
+        request = self._make_request(self.owner, 'owner')
+        assert self.permission.has_permission(request, None) is True
+
+    def test_sec_broken_permission_user_mismatch_denied_regression(self):
+        """
+        Non-staff attempting to access another user's URL must be denied.
+        The regression is that previously this returned a truthy class
+        object (``IsStaff | IsUserInUrl``) and granted access silently.
+        Now the method must return a concrete ``False`` for mismatched
+        non-staff callers.
+        """
+        request = self._make_request(self.other, 'owner')
+        assert self.permission.has_permission(request, None) is False
+
+    def test_sec_broken_permission_anonymous_denied_regression(self):
+        request = self._make_request(AnonymousUser(), 'owner')
+        assert self.permission.has_permission(request, None) is False
+
+    def test_sec_broken_permission_returns_boolean_not_class_regression(self):
+        """
+        Ensure the return value is a bool, not a DRF permission class
+        object (which would always be truthy).
+        """
+        request = self._make_request(self.staff, 'owner')
+        result = self.permission.has_permission(request, None)
+        assert isinstance(result, bool)

@@ -101,8 +101,19 @@ class IsMasterCourseStaffInstructor(permissions.BasePermission):
 
 
 class IsUserInUrlOrStaff(permissions.BasePermission):
+    """
+    Permission that grants access if the requesting user matches the
+    username in the URL or is global staff.
+
+    The previous implementation returned ``IsStaff | IsUserInUrl``, a
+    composite class object that is always truthy. It therefore
+    unconditionally granted access regardless of the request user.
+    """
     def has_permission(self, request, view):
-        return IsStaff | IsUserInUrl
+        return (
+            IsStaff().has_permission(request, view)
+            or IsUserInUrl().has_permission(request, view)
+        )
 
 
 class IsStaffOrReadOnly(permissions.BasePermission):
