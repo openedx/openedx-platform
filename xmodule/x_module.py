@@ -1550,10 +1550,33 @@ class ModuleStoreRuntime(_MetricsMixin, _ConfigurableFragmentWrapper, _ModuleSys
         raise NotImplementedError("edX Platform doesn't currently implement XBlock resource urls")
 
     def add_block_as_child_node(self, block, node):
-        """Append the block’s XML to the given parent XML node."""
+        """Append the block's XML to the given parent XML node.
+
+        For blocks that do not inherit ``XmlMixin`` (i.e. external XBlocks),
+        also write the block's definition to a separate file and leave a
+        pointer tag in the parent, matching the export format used by
+        built-in blocks. See bug #36390.
+        """
+        from xmodule.xml_block import XmlMixin, name_to_pathname  # noqa: PLC0415
         child = etree.SubElement(node, block.category)
         child.set("url_name", block.url_name)
-        block.add_xml_to_node(child)
+        if not isinstance(block, XmlMixin) and hasattr(self, "export_fs"):
+            # External block: dispatch into a scratch element, then serialize
+            # that element into its own file, leaving only a pointer tag here.
+            scratch = etree.Element(block.category)
+            block.add_xml_to_node(scratch)
+            url_path = name_to_pathname(block.url_name)
+            filepath = f"{block.category}/{url_path}.xml"
+            dirname = os.path.dirname(filepath)
+            if dirname:
+                self.export_fs.makedirs(dirname, recreate=True)
+            with self.export_fs.open(filepath, "wb") as fileobj:
+                etree.ElementTree(scratch).write(
+                    fileobj, pretty_print=True, encoding="utf-8",
+                )
+            # Leave the child node as a pure pointer; url_name is already set.
+        else:
+            block.add_xml_to_node(child)
 
     def publish(self, block, event_type, event_data):
         """

@@ -159,3 +159,71 @@ class TestModuleStoreIgnore(TestXMLModuleStore):  # lint-amnesty, pylint: disabl
         about_block = modulestore.get_item(about_location)
         assert 'GREEN' in about_block.data
         assert 'RED' not in about_block.data
+
+
+class TestLoadPointerNodeHelper(TestCase):
+    """
+    Unit tests for ``XMLParsingModuleStoreRuntime._load_pointer_node``.
+
+    Regression for bug #36390: external XBlocks (which do not inherit
+    ``XmlMixin``) must be able to import pointer-tag OLX like built-in
+    blocks. The runtime-level helper is the new chokepoint.
+    """
+
+    def _make_runtime_with_fs(self, fs):
+        """Instantiate just the helper without building a full modulestore."""
+        from xmodule.modulestore.xml import XMLParsingModuleStoreRuntime
+        runtime = XMLParsingModuleStoreRuntime.__new__(XMLParsingModuleStoreRuntime)
+        runtime.resources_fs = fs
+        return runtime
+
+    def test_unit_load_pointer_node_reads_referenced_file(self):
+        """Pointer node resolves by reading ``<tag>/<url_name>.xml``."""
+        from fs.memoryfs import MemoryFS
+        from lxml import etree as _etree
+
+        fs = MemoryFS()
+        fs.makedirs("ext_block")
+        with fs.open("ext_block/hello.xml", "w") as fp:
+            fp.write('<ext_block url_name="hello">PAYLOAD</ext_block>')
+
+        runtime = self._make_runtime_with_fs(fs)
+        pointer = _etree.fromstring('<ext_block url_name="hello"/>')
+        resolved = runtime._load_pointer_node(pointer)  # pylint: disable=protected-access
+        assert resolved.tag == "ext_block"
+        assert (resolved.text or "").strip() == "PAYLOAD"
+        assert resolved.get("url_name") == "hello"
+
+    def test_unit_load_pointer_node_preserves_url_name_if_missing(self):
+        """When the inner file omits url_name, we copy it from the pointer."""
+        from fs.memoryfs import MemoryFS
+        from lxml import etree as _etree
+
+        fs = MemoryFS()
+        fs.makedirs("ext_block")
+        with fs.open("ext_block/foo.xml", "w") as fp:
+            fp.write('<ext_block>BODY</ext_block>')
+
+        runtime = self._make_runtime_with_fs(fs)
+        pointer = _etree.fromstring('<ext_block url_name="foo"/>')
+        resolved = runtime._load_pointer_node(pointer)  # pylint: disable=protected-access
+        assert resolved.get("url_name") == "foo"
+
+    def test_bug_36390_regression_load_pointer_node_honors_url_name(self):
+        """
+        Regression for bug #36390: an inner file that already declares
+        ``url_name`` must not be clobbered by the pointer's url_name.
+        """
+        from fs.memoryfs import MemoryFS
+        from lxml import etree as _etree
+
+        fs = MemoryFS()
+        fs.makedirs("ext_block")
+        with fs.open("ext_block/bar.xml", "w") as fp:
+            fp.write('<ext_block url_name="inner-name">BODY</ext_block>')
+
+        runtime = self._make_runtime_with_fs(fs)
+        pointer = _etree.fromstring('<ext_block url_name="bar"/>')
+        resolved = runtime._load_pointer_node(pointer)  # pylint: disable=protected-access
+        # The inner file's url_name wins (it was explicitly set).
+        assert resolved.get("url_name") == "inner-name"

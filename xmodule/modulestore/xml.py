@@ -92,6 +92,15 @@ class XMLParsingModuleStoreRuntime(ModuleStoreRuntime):
         keys = ScopeIds(None, block_type, def_id, usage_id)
         block_class = self.mixologist.mix(self.load_block_type(block_type))
 
+        # Resolve pointer-tag syntax at the runtime level so external XBlocks
+        # (which do not inherit XmlMixin) can be loaded from a separate file
+        # just like built-in blocks. Classes that already inherit XmlMixin
+        # handle pointer tags in their own parse_xml, so we skip to avoid a
+        # double file read. See bug #36390.
+        from xmodule.xml_block import XmlMixin, is_pointer_tag  # noqa: PLC0415
+        if is_pointer_tag(node) and not issubclass(block_class, XmlMixin):
+            node = self._load_pointer_node(node)
+
         aside_children = self.parse_asides(node, def_id, usage_id, id_generator)
         asides_tags = [x.tag for x in aside_children]
 
@@ -106,6 +115,27 @@ class XMLParsingModuleStoreRuntime(ModuleStoreRuntime):
                 block.add_aside(asd)
 
         return block
+
+    def _load_pointer_node(self, node):
+        """
+        Resolve a pointer-tag XML node (e.g. ``<drag-and-drop-v2 url_name="foo"/>``)
+        by loading the referenced file from ``resources_fs``. Returns the
+        resolved ``lxml.etree`` element.
+
+        Used so external XBlocks — which do not inherit ``XmlMixin`` — can be
+        imported from pointer-tag OLX at the runtime level. See bug #36390.
+        """
+        from lxml import etree as _etree  # noqa: PLC0415
+        from xmodule.xml_block import EDX_XML_PARSER, name_to_pathname  # noqa: PLC0415
+
+        url_name = node.get("url_name")
+        filepath = f"{node.tag}/{name_to_pathname(url_name)}.xml"
+        with self.resources_fs.open(filepath) as xml_file:
+            resolved = _etree.parse(xml_file, parser=EDX_XML_PARSER).getroot()
+        # Preserve the url_name from the pointer tag — inner files may omit it.
+        if "url_name" not in resolved.attrib:
+            resolved.set("url_name", url_name)
+        return resolved
 
     def parse_asides(self, node, def_id, usage_id, id_generator):
         """pull the asides out of the xml payload and instantiate them"""
