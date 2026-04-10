@@ -107,7 +107,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
                 try:
                     return self.local_modules[usage_key]
                 except KeyError:
-                    raise ItemNotFoundError  # lint-amnesty, pylint: disable=raise-missing-from
+                    raise ItemNotFoundError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             else:
                 block_key = BlockKey.from_usage_key(usage_key)
                 version_guid = self.course_entry.course_key.version_guid

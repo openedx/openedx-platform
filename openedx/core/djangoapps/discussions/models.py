@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from collections import namedtuple
 from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
-from typing import List, Type, TypeVar
+from typing import List, Type, TypeVar  # noqa: UP035
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -305,7 +305,7 @@ AVAILABLE_PROVIDER_MAP = {
 }
 
 
-def get_supported_providers() -> List[str]:
+def get_supported_providers() -> List[str]:  # noqa: UP006
     """
     Return the list of supported discussion providers
 
@@ -376,7 +376,7 @@ class ProviderFilter(StackedConfigurationModel):
         )
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> List[str]:  # noqa: UP006
         """
         Return a filtered list of available providers
         """
@@ -396,7 +396,7 @@ class ProviderFilter(StackedConfigurationModel):
         return _providers
 
     @classmethod
-    def get_available_providers(cls, course_key: CourseKey) -> List[str]:
+    def get_available_providers(cls, course_key: CourseKey) -> List[str]:  # noqa: UP006
         _filter = cls.current(course_key=course_key)
         providers = _filter.available_providers
         return providers
@@ -480,7 +480,7 @@ class DiscussionsConfiguration(TimeStampedModel):
             raise ValidationError('Context Key should be an existing learning context.')
 
     def __str__(self):
-        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(
+        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(  # noqa: UP032  # pylint: disable=line-too-long
             context_key=self.context_key,
             provider=self.provider_type,
             enabled=self.enabled,
@@ -515,7 +515,7 @@ class DiscussionsConfiguration(TimeStampedModel):
         return configuration.enabled
 
     @classmethod
-    def get(cls: Type[T], context_key: CourseKey) -> T:
+    def get(cls: Type[T], context_key: CourseKey) -> T:  # noqa: UP006
         """
         Lookup a model by context_key
         """
@@ -530,11 +530,11 @@ class DiscussionsConfiguration(TimeStampedModel):
         return configuration
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> List[str]:  # noqa: UP006
         return ProviderFilter.current(course_key=self.context_key).available_providers
 
     @classmethod
-    def get_available_providers(cls, context_key: CourseKey) -> List[str]:
+    def get_available_providers(cls, context_key: CourseKey) -> List[str]:  # noqa: UP006
         return ProviderFilter.current(course_key=context_key).available_providers
 
     @classmethod

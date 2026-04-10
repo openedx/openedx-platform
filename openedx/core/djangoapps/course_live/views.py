@@ -1,7 +1,7 @@
 """
 View for course live app
 """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 import edx_api_doc_tools as apidocs
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
@@ -193,7 +193,7 @@ class CourseLiveProvidersView(APIView):
         return Response(data)
 
     @staticmethod
-    def get_provider_data(course_id: str) -> Dict:
+    def get_provider_data(course_id: str) -> Dict:  # noqa: UP006
         """
         Get provider data for specified course
         Args:

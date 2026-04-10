@@ -47,23 +47,23 @@ class XBlockSupportTestCase(CacheIsolationTestCase):
         """ Tests the deprecated_xblocks method """
 
         deprecated_xblock_names = [block.name for block in deprecated_xblocks()]
-        self.assertCountEqual(["poll", "survey"], deprecated_xblock_names)
+        self.assertCountEqual(["poll", "survey"], deprecated_xblock_names)  # noqa: PT009
 
         XBlockConfiguration(name="poll", enabled=True, deprecated=False).save()
 
         deprecated_xblock_names = [block.name for block in deprecated_xblocks()]
-        self.assertCountEqual(["survey"], deprecated_xblock_names)
+        self.assertCountEqual(["survey"], deprecated_xblock_names)  # noqa: PT009
 
     def test_disabled_blocks(self):
         """ Tests the disabled_xblocks method """
 
         disabled_xblock_names = [block.name for block in disabled_xblocks()]
-        self.assertCountEqual(["survey"], disabled_xblock_names)
+        self.assertCountEqual(["survey"], disabled_xblock_names)  # noqa: PT009
 
         XBlockConfiguration(name="poll", enabled=False, deprecated=True).save()
 
         disabled_xblock_names = [block.name for block in disabled_xblocks()]
-        self.assertCountEqual(["survey", "poll"], disabled_xblock_names)
+        self.assertCountEqual(["survey", "poll"], disabled_xblock_names)  # noqa: PT009
 
     def test_authorable_blocks_empty_model(self):
         """
@@ -81,7 +81,7 @@ class XBlockSupportTestCase(CacheIsolationTestCase):
         Tests authorable_xblocks when name is not specified.
         """
         authorable_xblock_names = [block.name for block in authorable_xblocks()]
-        self.assertCountEqual(["done", "problem", "problem", "html"], authorable_xblock_names)
+        self.assertCountEqual(["done", "problem", "problem", "html"], authorable_xblock_names)  # noqa: PT009
 
         # Note that "survey" is disabled in XBlockConfiguration, but it is still returned by
         # authorable_xblocks because it is marked as enabled and unsupported in XBlockStudioConfiguration.
@@ -89,7 +89,7 @@ class XBlockSupportTestCase(CacheIsolationTestCase):
         # is a whitelist and uses a combination of xblock type and template (and in addition has a global feature flag),
         # it is expected that Studio code will need to filter by both disabled_xblocks and authorable_xblocks.
         authorable_xblock_names = [block.name for block in authorable_xblocks(allow_unsupported=True)]
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             ["survey", "done", "problem", "problem", "problem", "html", "split_module"],
             authorable_xblock_names
         )

@@ -64,8 +64,8 @@ from xmodule.modulestore.xml_importer import (
 
 TASK_LOGGER = 'cms.djangoapps.contentstore.tasks.LOGGER'
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
-TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
+TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT  # noqa: F811
 User = get_user_model()
 
 log = logging.getLogger(__name__)
@@ -112,17 +112,17 @@ class ImportEntranceExamTestCase(CourseTestCase, MilestonesTestCaseMixin):
         Check that course is imported successfully as an entrance exam.
         """
         course = self.store.get_course(self.course.id)
-        self.assertIsNotNone(course)
-        self.assertEqual(course.entrance_exam_enabled, False)
+        self.assertIsNotNone(course)  # noqa: PT009
+        self.assertEqual(course.entrance_exam_enabled, False)  # noqa: PT009
 
         with open(self.entrance_exam_tar, 'rb') as gtar:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
             args = {"name": self.entrance_exam_tar, "course-data": [gtar]}
             resp = self.client.post(self.url, args)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         course = self.store.get_course(self.course.id)
-        self.assertIsNotNone(course)
-        self.assertEqual(course.entrance_exam_enabled, True)
-        self.assertEqual(course.entrance_exam_minimum_score_pct, 0.7)
+        self.assertIsNotNone(course)  # noqa: PT009
+        self.assertEqual(course.entrance_exam_enabled, True)  # noqa: PT009
+        self.assertEqual(course.entrance_exam_minimum_score_pct, 0.7)  # noqa: PT009
 
     def test_import_delete_pre_exiting_entrance_exam(self):
         """
@@ -130,31 +130,31 @@ class ImportEntranceExamTestCase(CourseTestCase, MilestonesTestCaseMixin):
         """
         exam_url = f'/course/{str(self.course.id)}/entrance_exam/'
         resp = self.client.post(exam_url, {'entrance_exam_minimum_score_pct': 0.5}, http_accept='application/json')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
 
         # Reload the test course now that the exam block has been added
         self.course = modulestore().get_course(self.course.id)
         metadata = CourseMetadata.fetch_all(self.course)
-        self.assertTrue(metadata['entrance_exam_enabled'])
-        self.assertIsNotNone(metadata['entrance_exam_minimum_score_pct'])
-        self.assertEqual(metadata['entrance_exam_minimum_score_pct']['value'], 0.5)
-        self.assertTrue(len(milestones_helpers.get_course_milestones(str(self.course.id))))
+        self.assertTrue(metadata['entrance_exam_enabled'])  # noqa: PT009
+        self.assertIsNotNone(metadata['entrance_exam_minimum_score_pct'])  # noqa: PT009
+        self.assertEqual(metadata['entrance_exam_minimum_score_pct']['value'], 0.5)  # noqa: PT009
+        self.assertTrue(len(milestones_helpers.get_course_milestones(str(self.course.id))))  # noqa: PT009
         content_milestones = milestones_helpers.get_course_content_milestones(
             str(self.course.id),
             metadata['entrance_exam_id']['value'],
             milestones_helpers.get_milestone_relationship_types()['FULFILLS']
         )
-        self.assertTrue(len(content_milestones))
+        self.assertTrue(len(content_milestones))  # noqa: PT009
 
         # Now import entrance exam course
         with open(self.entrance_exam_tar, 'rb') as gtar:  # lint-amnesty, pylint: disable=bad-option-value, open-builtin
             args = {"name": self.entrance_exam_tar, "course-data": [gtar]}
             resp = self.client.post(self.url, args)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         course = self.store.get_course(self.course.id)
-        self.assertIsNotNone(course)
-        self.assertEqual(course.entrance_exam_enabled, True)
-        self.assertEqual(course.entrance_exam_minimum_score_pct, 0.7)
+        self.assertIsNotNone(course)  # noqa: PT009
+        self.assertEqual(course.entrance_exam_enabled, True)  # noqa: PT009
+        self.assertEqual(course.entrance_exam_minimum_score_pct, 0.7)  # noqa: PT009
 
 
 @ddt.ddt
@@ -194,7 +194,7 @@ class ImportTestCase(CourseTestCase):
 
         self.good_zip = os.path.join(self.content_dir, "good.zip")
         with ZipFile(self.good_zip, "w") as gzip:
-            for folder_name, subfolders, filenames in os.walk(good_dir):
+            for folder_name, subfolders, filenames in os.walk(good_dir):  # noqa: B007
                 for filename in filenames:
                     file_path = os.path.join(folder_name, filename)
                     gzip.write(file_path, file_path[len(good_dir) + 1:])
@@ -213,7 +213,7 @@ class ImportTestCase(CourseTestCase):
 
         self.bad_zip = os.path.join(self.content_dir, "bad.zip")
         with ZipFile(self.bad_zip, "w") as bzip:
-            for folder_name, subfolders, filenames in os.walk(bad_dir):
+            for folder_name, subfolders, filenames in os.walk(bad_dir):  # noqa: B007
                 for filename in filenames:
                     file_path = os.path.join(folder_name, filename)
                     bzip.write(file_path, file_path[len(good_dir) + 1:])
@@ -239,9 +239,9 @@ class ImportTestCase(CourseTestCase):
         """
         Fail if the import response does not match with the provided status and message.
         """
-        self.assertEqual(response["ImportStatus"], expected_status)
+        self.assertEqual(response["ImportStatus"], expected_status)  # noqa: PT009
         if expected_message:
-            self.assertEqual(response['Message'], expected_message)
+            self.assertEqual(response['Message'], expected_message)  # noqa: PT009
 
     def get_import_status(self, course_id, file_path):
         """Helper method to get course import status."""
@@ -272,7 +272,7 @@ class ImportTestCase(CourseTestCase):
         expected_error_mesg = f'{self.log_prefix} {error_msg}'
         response = self.import_file_in_course(bad_file)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mocked_log.error.assert_called_once_with(expected_error_mesg)
 
         # Check that `import_status` returns the appropriate stage (i.e., the
@@ -288,7 +288,7 @@ class ImportTestCase(CourseTestCase):
         """
         good_file = self.good_archives[fmt]
         response = self.import_file_in_course(good_file)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @ddt.data('zip', 'tar')
     def test_import_in_existing_course(self, fmt):
@@ -302,32 +302,32 @@ class ImportTestCase(CourseTestCase):
         auth.add_users(self.user, CourseStaffRole(self.course.id), nonstaff_user)
 
         course = self.store.get_course(self.course.id)
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
         display_name_before_import = course.display_name
 
         # Check that global staff user can import course
         response = self.import_file_in_course(good_file)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         course = self.store.get_course(self.course.id)
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
         display_name_after_import = course.display_name
 
         # Check that course display name have changed after import
-        self.assertNotEqual(display_name_before_import, display_name_after_import)
+        self.assertNotEqual(display_name_before_import, display_name_after_import)  # noqa: PT009
 
         # Now check that non_staff user has his same role
-        self.assertFalse(CourseInstructorRole(self.course.id).has_user(nonstaff_user))
-        self.assertTrue(CourseStaffRole(self.course.id).has_user(nonstaff_user))
+        self.assertFalse(CourseInstructorRole(self.course.id).has_user(nonstaff_user))  # noqa: PT009
+        self.assertTrue(CourseStaffRole(self.course.id).has_user(nonstaff_user))  # noqa: PT009
 
         # Now course staff user can also successfully import course
         self.client.login(username=nonstaff_user.username, password='foo')
         resp = self.import_file_in_course(good_file)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Now check that non_staff user has his same role
-        self.assertFalse(CourseInstructorRole(self.course.id).has_user(nonstaff_user))
-        self.assertTrue(CourseStaffRole(self.course.id).has_user(nonstaff_user))
+        self.assertFalse(CourseInstructorRole(self.course.id).has_user(nonstaff_user))  # noqa: PT009
+        self.assertTrue(CourseStaffRole(self.course.id).has_user(nonstaff_user))  # noqa: PT009
 
     ## Unsafe tar methods #####################################################
     # Each of these methods creates a tarfile with a single type of unsafe
@@ -415,10 +415,10 @@ class ImportTestCase(CourseTestCase):
         def try_tar(tarpath):
             """ Attempt to tar an unacceptable file """
             resp = self.import_file_in_course(tarpath)
-            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
             resp = self.get_import_status(self.course.id, tarpath)
-            self.assertEqual(resp["ImportStatus"], -1)
+            self.assertEqual(resp["ImportStatus"], -1)  # noqa: PT009
 
         try_tar(self._fifo_tar())
         try_tar(self._symlink_tar())
@@ -435,7 +435,7 @@ class ImportTestCase(CourseTestCase):
         # indicating no upload in progress)
         resp_status = self.get_import_status(self.course.id, self.good_tar)
         import_status = resp_status["ImportStatus"]
-        self.assertIn(import_status, (0, 3))
+        self.assertIn(import_status, (0, 3))  # noqa: PT009
 
     def test_library_import(self):
         """
@@ -475,15 +475,15 @@ class ImportTestCase(CourseTestCase):
         # Refresh library.
         library = self.store.get_library(lib_key)
         children = [self.store.get_item(child).url_name for child in library.children]
-        self.assertEqual(len(children), 2)
-        self.assertIn(test_block.url_name, children)
-        self.assertIn(test_block2.url_name, children)
+        self.assertEqual(len(children), 2)  # noqa: PT009
+        self.assertIn(test_block.url_name, children)  # noqa: PT009
+        self.assertIn(test_block2.url_name, children)  # noqa: PT009
 
         unchanged_lib = self.store.get_library(unchanged_key)
         children = [self.store.get_item(child).url_name for child in unchanged_lib.children]
-        self.assertEqual(len(children), 2)
-        self.assertIn(test_block3.url_name, children)
-        self.assertIn(test_block4.url_name, children)
+        self.assertEqual(len(children), 2)  # noqa: PT009
+        self.assertIn(test_block3.url_name, children)  # noqa: PT009
+        self.assertIn(test_block4.url_name, children)  # noqa: PT009
 
         extract_dir = path(tempfile.mkdtemp(dir=settings.DATA_DIR))
         # the extract_dir needs to be passed as a relative dir to
@@ -504,18 +504,18 @@ class ImportTestCase(CourseTestCase):
         finally:
             shutil.rmtree(extract_dir)
 
-        self.assertEqual(lib_key, library_items[0].location.library_key)
+        self.assertEqual(lib_key, library_items[0].location.library_key)  # noqa: PT009
         library = self.store.get_library(lib_key)
         children = [self.store.get_item(child).url_name for child in library.children]
-        self.assertEqual(len(children), 3)
-        self.assertNotIn(test_block.url_name, children)
-        self.assertNotIn(test_block2.url_name, children)
+        self.assertEqual(len(children), 3)  # noqa: PT009
+        self.assertNotIn(test_block.url_name, children)  # noqa: PT009
+        self.assertNotIn(test_block2.url_name, children)  # noqa: PT009
 
         unchanged_lib = self.store.get_library(unchanged_key)
         children = [self.store.get_item(child).url_name for child in unchanged_lib.children]
-        self.assertEqual(len(children), 2)
-        self.assertIn(test_block3.url_name, children)
-        self.assertIn(test_block4.url_name, children)
+        self.assertEqual(len(children), 2)  # noqa: PT009
+        self.assertIn(test_block3.url_name, children)  # noqa: PT009
+        self.assertIn(test_block4.url_name, children)  # noqa: PT009
 
     @ddt.data(
         ModuleStoreEnum.Branch.draft_preferred,
@@ -592,7 +592,7 @@ class ImportTestCase(CourseTestCase):
         expected_error_mesg = f'{self.log_prefix} User permission denied: {self.user.username}'
         with patch('cms.djangoapps.contentstore.tasks.has_course_author_access', Mock(return_value=False)):
             response = self.import_file_in_course(good_file)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mocked_log.error.assert_called_once_with(expected_error_mesg)
 
         status_response = self.get_import_status(self.course.id, good_file)
@@ -609,7 +609,7 @@ class ImportTestCase(CourseTestCase):
         good_file = self.good_archives[fmt]
         with patch('django.contrib.auth.models.User.objects.get', side_effect=User.DoesNotExist):
             response = self.import_file_in_course(good_file)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             mocked_log.error.assert_called_once_with(expected_error_mesg)
 
         status_response = self.get_import_status(self.course.id, good_file)
@@ -626,7 +626,7 @@ class ImportTestCase(CourseTestCase):
         with patch('cms.djangoapps.contentstore.tasks.safe_extractall', side_effect=SuspiciousOperation):
             response = self.import_file_in_course(good_file)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mocked_log.error.assert_called_once_with(expected_error_mesg)
 
         status_response = self.get_import_status(self.course.id, good_file)
@@ -643,7 +643,7 @@ class ImportTestCase(CourseTestCase):
         with patch.object(course_import_export_storage, 'open', side_effect=Exception):
             response = self.import_file_in_course(good_file)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mocked_log.exception.assert_called_once_with(expected_error_mesg, exc_info=True)
 
         status_response = self.get_import_status(self.course.id, good_file)
@@ -670,7 +670,7 @@ class ImportTestCase(CourseTestCase):
         with patch.dict(settings.FEATURES, ENABLE_COURSE_OLX_VALIDATION=True):
             response = self.import_file_in_course(good_file)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mocked_log.error.assert_called_once_with(expected_error_mesg)
 
         status_response = self.get_import_status(self.course.id, good_file)
@@ -696,7 +696,7 @@ class ImportTestCase(CourseTestCase):
             mocked_import.side_effect = exc
             expected_exception_messages = f"{self.log_prefix} Error while importing course: {str(exc)}"
             response = self.import_file_in_course(good_file)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             mocked_log.exception.assert_called_once_with(expected_exception_messages)
             mocked_log.reset_mock()
 
@@ -718,7 +718,7 @@ class ImportTestCase(CourseTestCase):
             mocked_import.side_effect = exception
             expected_exc_mesg = f"{self.log_prefix} Error while importing course: {str(exception)}"
             response = self.import_file_in_course(good_file)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             mocked_log.exception.assert_called_once_with(expected_exc_mesg)
             mocked_log.reset_mock()
 
@@ -736,7 +736,7 @@ class ImportTestCase(CourseTestCase):
                 kwargs={'filename': os.path.split(good_file)[1]}
             )
         )
-        self.assertEqual(resp.headers['Cache-Control'], 'no-cache, no-store, must-revalidate')
+        self.assertEqual(resp.headers['Cache-Control'], 'no-cache, no-store, must-revalidate')  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -760,7 +760,7 @@ class ExportTestCase(CourseTestCase):
         Get the HTML for the page.
         """
         resp = self.client.get_html(self.url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self.assertContains(resp, "Export My Course Content")
 
     def test_export_json_unsupported(self):
@@ -768,7 +768,7 @@ class ExportTestCase(CourseTestCase):
         JSON is unsupported.
         """
         resp = self.client.get(self.url, HTTP_ACCEPT='application/json')
-        self.assertEqual(resp.status_code, 406)
+        self.assertEqual(resp.status_code, 406)  # noqa: PT009
 
     def test_export_async(self):
         """
@@ -777,12 +777,12 @@ class ExportTestCase(CourseTestCase):
         Return a TarFile of the successful export.
         """
         resp = self.client.post(self.url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
         res_status = result['ExportStatus']
-        self.assertEqual(res_status, 3)
-        self.assertIn('ExportOutput', result)
+        self.assertEqual(res_status, 3)  # noqa: PT009
+        self.assertIn('ExportOutput', result)  # noqa: PT009
         output_url = result['ExportOutput']
         resp = self.client.get(output_url)
         self._verify_export_succeeded(resp)
@@ -795,8 +795,8 @@ class ExportTestCase(CourseTestCase):
 
     def _verify_export_succeeded(self, resp):
         """ Export success helper method. """
-        self.assertEqual(resp.status_code, 200)
-        self.assertTrue(resp.get('Content-Disposition').startswith('attachment'))
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
+        self.assertTrue(resp.get('Content-Disposition').startswith('attachment'))  # noqa: PT009
 
     def test_unknown_xblock_top_level(self):
         """
@@ -820,11 +820,11 @@ class ExportTestCase(CourseTestCase):
 
         # The course run file still has a child pointer to the unknown type and
         # creates the <not_a_real_block_type url="..."> pointer tag...
-        self.assertEqual(course_elem.tag, 'course')
+        self.assertEqual(course_elem.tag, 'course')  # noqa: PT009
         unknown_elem = course_elem[0]
-        self.assertEqual(unknown_elem.tag, 'not_a_real_block_type')
+        self.assertEqual(unknown_elem.tag, 'not_a_real_block_type')  # noqa: PT009
         # Non empty url_name attribute (the generated ID)
-        self.assertTrue(unknown_elem.attrib['url_name'])
+        self.assertTrue(unknown_elem.attrib['url_name'])  # noqa: PT009
 
         # But there should be no file exported for our fake block type. Without
         # the XBlock installed, we don't know how to serialize it properly.
@@ -860,8 +860,8 @@ class ExportTestCase(CourseTestCase):
 
         # The course run file should have a vertical that points to the
         # non-existant block.
-        self.assertEqual(course_elem.tag, 'course')
-        self.assertEqual(course_elem[0].tag, 'vertical')  # This is just a reference
+        self.assertEqual(course_elem.tag, 'course')  # noqa: PT009
+        self.assertEqual(course_elem[0].tag, 'vertical')  # This is just a reference  # noqa: PT009
 
         vert_file_path = next(
             path for path in tar_ball.getnames()
@@ -870,12 +870,12 @@ class ExportTestCase(CourseTestCase):
         vert_file = tar_ball.extractfile(vert_file_path)
         vert_xml = lxml.etree.parse(vert_file)
         vert_elem = vert_xml.getroot()
-        self.assertEqual(vert_elem.tag, 'vertical')
-        self.assertEqual(len(vert_elem), 1)
+        self.assertEqual(vert_elem.tag, 'vertical')  # noqa: PT009
+        self.assertEqual(len(vert_elem), 1)  # noqa: PT009
         unknown_elem = vert_elem[0]
-        self.assertEqual(unknown_elem.tag, 'not_a_real_block_type')
+        self.assertEqual(unknown_elem.tag, 'not_a_real_block_type')  # noqa: PT009
         # Non empty url_name attribute (the generated ID)
-        self.assertTrue(unknown_elem.attrib['url_name'])
+        self.assertTrue(unknown_elem.attrib['url_name'])  # noqa: PT009
 
         # There should be no file exported for our fake block type
         assert not any(
@@ -886,15 +886,15 @@ class ExportTestCase(CourseTestCase):
     def _verify_export_failure(self, expected_text):
         """ Export failure helper method. """
         resp = self.client.post(self.url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         resp = self.client.get(self.status_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         result = json.loads(resp.content.decode('utf-8'))
-        self.assertNotIn('ExportOutput', result)
-        self.assertIn('ExportError', result)
+        self.assertNotIn('ExportOutput', result)  # noqa: PT009
+        self.assertIn('ExportError', result)  # noqa: PT009
         error = result['ExportError']
-        self.assertIn('Unable to create xml for block', error['raw_error_msg'])
-        self.assertIn(expected_text, error['edit_unit_url'])
+        self.assertIn('Unable to create xml for block', error['raw_error_msg'])  # noqa: PT009
+        self.assertIn(expected_text, error['edit_unit_url'])  # noqa: PT009
 
     def test_library_export(self):
         """
@@ -916,15 +916,15 @@ class ExportTestCase(CourseTestCase):
             export_library_to_xml(self.store, contentstore(), lib_key, root_dir, name)
             with open(root_dir / name / LIBRARY_ROOT) as xml_root:
                 lib_xml = lxml.etree.XML(xml_root.read())
-                self.assertEqual(lib_xml.get('org'), lib_key.org)
-                self.assertEqual(lib_xml.get('library'), lib_key.library)
+                self.assertEqual(lib_xml.get('org'), lib_key.org)  # noqa: PT009
+                self.assertEqual(lib_xml.get('library'), lib_key.library)  # noqa: PT009
                 block = lib_xml.find('video')
-                self.assertIsNotNone(block)
-                self.assertEqual(block.get('url_name'), video_block.url_name)
+                self.assertIsNotNone(block)  # noqa: PT009
+                self.assertEqual(block.get('url_name'), video_block.url_name)  # noqa: PT009
             with open(root_dir / name / 'video' / video_block.url_name + '.xml') as xml_block:
                 video_xml = lxml.etree.XML(xml_block.read())
-                self.assertEqual(video_xml.tag, 'video')
-                self.assertEqual(video_xml.get('youtube_id_1_0'), youtube_id)
+                self.assertEqual(video_xml.tag, 'video')  # noqa: PT009
+                self.assertEqual(video_xml.get('youtube_id_1_0'), youtube_id)  # noqa: PT009
         finally:
             shutil.rmtree(root_dir / name)
 
@@ -954,7 +954,7 @@ class ExportTestCase(CourseTestCase):
         Export failure if course does not exist
         """
         resp = self.client.get_html(url)
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     def test_non_course_author(self):
         """
@@ -962,7 +962,7 @@ class ExportTestCase(CourseTestCase):
         """
         client, _ = self.create_non_staff_authed_user_client()
         resp = client.get(self.url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_status_non_course_author(self):
         """
@@ -970,7 +970,7 @@ class ExportTestCase(CourseTestCase):
         """
         client, _ = self.create_non_staff_authed_user_client()
         resp = client.get(self.status_url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_status_missing_record(self):
         """
@@ -978,9 +978,9 @@ class ExportTestCase(CourseTestCase):
         represented in the database should yield a useful result
         """
         resp = self.client.get(self.status_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         result = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(result['ExportStatus'], 0)
+        self.assertEqual(result['ExportStatus'], 0)  # noqa: PT009
 
     def test_output_non_course_author(self):
         """
@@ -988,7 +988,7 @@ class ExportTestCase(CourseTestCase):
         """
         client, _ = self.create_non_staff_authed_user_client()
         resp = client.get(reverse_course_url('export_output_handler', self.course.id))
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def _mock_artifact(self, spec=None, file_url=None):
         """
@@ -1019,7 +1019,7 @@ class ExportTestCase(CourseTestCase):
         )
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(result['ExportOutput'], '/path/to/testfile.tar.gz')
+        self.assertEqual(result['ExportOutput'], '/path/to/testfile.tar.gz')  # noqa: PT009
 
     @ddt.data(S3Boto3Storage)
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
@@ -1041,7 +1041,7 @@ class ExportTestCase(CourseTestCase):
         )
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
-        self.assertEqual(result['ExportOutput'], '/s3/file/path/testfile.tar.gz')
+        self.assertEqual(result['ExportOutput'], '/s3/file/path/testfile.tar.gz')  # noqa: PT009
 
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
     @patch('user_tasks.models.UserTaskArtifact.objects.get')
@@ -1059,7 +1059,7 @@ class ExportTestCase(CourseTestCase):
         resp = self.client.get(self.status_url)
         result = json.loads(resp.content.decode('utf-8'))
         file_export_output_url = reverse_course_url('export_output_handler', self.course.id)
-        self.assertEqual(result['ExportOutput'], file_export_output_url)
+        self.assertEqual(result['ExportOutput'], file_export_output_url)  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -1100,7 +1100,7 @@ class TestLibraryImportExport(CourseTestCase):
         )
 
         source_library = self.store.get_library(source_library1_key)
-        self.assertEqual(source_library.url_name, 'library')
+        self.assertEqual(source_library.url_name, 'library')  # noqa: PT009
 
         # Import the exported library into a different content library.
         import_library_from_xml(
@@ -1184,9 +1184,9 @@ class TestCourseExportImport(LibraryTestCase):
         source_course_lib_children = self.get_lib_content_block_children(source_course_location)
         dest_course_lib_children = self.get_lib_content_block_children(dest_course_location)
 
-        self.assertEqual(len(source_course_lib_children), len(dest_course_lib_children))
+        self.assertEqual(len(source_course_lib_children), len(dest_course_lib_children))  # noqa: PT009
 
-        for source_child_location, dest_child_location in zip(source_course_lib_children, dest_course_lib_children):
+        for source_child_location, dest_child_location in zip(source_course_lib_children, dest_course_lib_children):  # noqa: B905  # pylint: disable=line-too-long
             # Assert problem names on draft branch.
             with self.store.branch_setting(branch_setting=ModuleStoreEnum.Branch.draft_preferred):
                 self.assert_names(source_child_location, dest_child_location)
@@ -1202,7 +1202,7 @@ class TestCourseExportImport(LibraryTestCase):
         """
         source_child = self.store.get_item(source_child_location)
         dest_child = self.store.get_item(dest_child_location)
-        self.assertEqual(source_child.display_name, dest_child.display_name)
+        self.assertEqual(source_child.display_name, dest_child.display_name)  # noqa: PT009
 
     @ddt.data(*itertools.product([False, True], repeat=2))
     @ddt.unpack
@@ -1304,7 +1304,7 @@ class TestCourseExportImportProblem(CourseTestCase):
         Asserts that problems' data is as expected with pre-tag content maintained.
         """
         problem_content = self.get_problem_content(course_location)
-        self.assertEqual(expected_problem_content, problem_content)
+        self.assertEqual(expected_problem_content, problem_content)  # noqa: PT009
 
     @ddt.data(
         [
@@ -1419,20 +1419,20 @@ class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """User with COURSE_STAFF role can access."""
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.import_file_in_course(self.authorized_client)
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.import_file_in_course(self.unauthorized_client)
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.import_file_in_course(self.authorized_client, other_course.id)
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -1440,7 +1440,7 @@ class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """
         self.client.login(username=self.staff.username, password=self.password)
         resp = self.import_file_in_course(self.client)
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -1450,7 +1450,7 @@ class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.login(username=superuser.username, password=self.password)
 
         resp = self.import_file_in_course(client)
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -1464,7 +1464,7 @@ class ImportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.login(username=non_staff_user.username, password=self.password)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
@@ -1481,13 +1481,13 @@ class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """User with COURSE_STAFF role can access."""
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
@@ -1495,7 +1495,7 @@ class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -1504,7 +1504,7 @@ class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -1514,7 +1514,7 @@ class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.login(username=superuser.username, password=self.password)
 
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -1528,7 +1528,7 @@ class ImportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.login(username=non_staff_user.username, password=self.password)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
@@ -1544,13 +1544,13 @@ class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """User with COURSE_STAFF role can access."""
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
@@ -1558,7 +1558,7 @@ class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -1567,7 +1567,7 @@ class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -1577,7 +1577,7 @@ class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.login(username=superuser.username, password=self.password)
 
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -1591,7 +1591,7 @@ class ExportStatusAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.login(username=non_staff_user.username, password=self.password)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
@@ -1607,13 +1607,13 @@ class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """User with COURSE_STAFF role can access."""
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.post(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.unauthorized_client.post(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
@@ -1621,7 +1621,7 @@ class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.post(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -1630,7 +1630,7 @@ class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.post(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -1640,7 +1640,7 @@ class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.login(username=superuser.username, password=self.password)
 
         resp = client.post(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -1654,7 +1654,7 @@ class ExportAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.login(username=non_staff_user.username, password=self.password)
 
         resp = non_staff_client.post(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
@@ -1682,20 +1682,20 @@ class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         self.authorized_client.post(reverse_course_url('export_handler', self.course_key))
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         self.unauthorized_client.login(username=self.unauthorized_user.username, password=self.password)
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
         self.authorized_client.login(username=self.authorized_user.username, password=self.password)
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -1704,7 +1704,7 @@ class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
         self.client.post(reverse_course_url('export_handler', self.course_key))
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @patch('user_tasks.models.UserTaskArtifact.objects.get')
     @patch('cms.djangoapps.contentstore.views.import_export._latest_task_status')
@@ -1730,7 +1730,7 @@ class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client = APIClient()
         client.login(username=superuser.username, password=self.password)
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -1744,4 +1744,4 @@ class ExportOutputAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.login(username=non_staff_user.username, password=self.password)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

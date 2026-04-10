@@ -28,7 +28,7 @@ def pytest_configure(config):
         logging.info("pytest did not register json_report correctly")
 
 
-@pytest.fixture(autouse=True, scope='function')
+@pytest.fixture(autouse=True, scope='function')  # noqa: PT003
 def _django_clear_site_cache():
     """
     pytest-django uses this fixture to automatically clear the Site object

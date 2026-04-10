@@ -88,7 +88,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         Verify that the dict superset contains the dict subset.
         """
         for key, value in subset.items():
-            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"
+            assert key in superset and superset[key] == value, f"{key}: {value} not found in superset or does not match"  # noqa: PT018  # pylint: disable=line-too-long
 
     def test_login_required(self, mock_get_programs):
         """
@@ -110,7 +110,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         response = self.client.get(self.url)
         assert response.status_code == 200
 
-    def test_404_if_disabled(self, _mock_get_programs):
+    def test_404_if_disabled(self, _mock_get_programs):  # noqa: PT019
         """
         Verify that the page 404s if disabled.
         """
@@ -279,7 +279,7 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         self.assert_program_data_present(response)
         self.assert_pathway_data_present(response)
 
-    def test_404_if_disabled(self, _mock_get_programs, _mock_get_pathways):
+    def test_404_if_disabled(self, _mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """
         Verify that the page 404s if disabled.
         """
@@ -288,7 +288,7 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         response = self.client.get(self.url)
         assert response.status_code == 404
 
-    def test_404_if_no_data(self, mock_get_programs, _mock_get_pathways):
+    def test_404_if_no_data(self, mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """Verify that the page 404s if no program data is found."""
         self.create_programs_config()
 

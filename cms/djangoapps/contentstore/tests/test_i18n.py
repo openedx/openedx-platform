@@ -72,8 +72,8 @@ class TestXBlockI18nService(ModuleStoreTestCase):
         return the block i18n service.
         """
         i18n_service = self.block.runtime.service(block, 'i18n')
-        self.assertIsNotNone(i18n_service)
-        self.assertIsInstance(i18n_service, XBlockI18nService)
+        self.assertIsNotNone(i18n_service)  # noqa: PT009
+        self.assertIsInstance(i18n_service, XBlockI18nService)  # noqa: PT009
         return i18n_service
 
     def test_django_service_translation_works(self):
@@ -111,10 +111,10 @@ class TestXBlockI18nService(ModuleStoreTestCase):
 
             # wrap the ugettext functions so that 'XYZ ' will prefix each translation
             with wrap_ugettext_with_xyz(french_translation):
-                self.assertEqual(i18n_service.ugettext(self.test_language), 'XYZ dummy language')
+                self.assertEqual(i18n_service.ugettext(self.test_language), 'XYZ dummy language')  # noqa: PT009
 
             # Check that the old ugettext has been put back into place
-            self.assertEqual(i18n_service.ugettext(self.test_language), 'dummy language')
+            self.assertEqual(i18n_service.ugettext(self.test_language), 'dummy language')  # noqa: PT009
 
     @mock.patch('django.utils.translation.gettext', mock.Mock(return_value='XYZ-TEST-LANGUAGE'))
     def test_django_translator_in_use_with_empty_block(self):
@@ -122,7 +122,7 @@ class TestXBlockI18nService(ModuleStoreTestCase):
         Test: Django default translator should in use if we have an empty block
         """
         i18n_service = XBlockI18nService(None)
-        self.assertEqual(i18n_service.ugettext(self.test_language), 'XYZ-TEST-LANGUAGE')
+        self.assertEqual(i18n_service.ugettext(self.test_language), 'XYZ-TEST-LANGUAGE')  # noqa: PT009
 
     @mock.patch('django.utils.translation.gettext', mock.Mock(return_value='XYZ-TEST-LANGUAGE'))
     def test_message_catalog_translations(self):
@@ -140,24 +140,24 @@ class TestXBlockI18nService(ModuleStoreTestCase):
         with mock.patch('gettext.translation', return_value=_translator(domain='text', localedir=localedir,
                                                                         languages=[get_language()])):
             i18n_service = self.get_block_i18n_service(self.block)
-            self.assertEqual(i18n_service.ugettext('Hello'), 'es-hello-world')
+            self.assertEqual(i18n_service.ugettext('Hello'), 'es-hello-world')  # noqa: PT009
 
         translation.activate("ar")
         with mock.patch('gettext.translation', return_value=_translator(domain='text', localedir=localedir,
                                                                         languages=[get_language()])):
             i18n_service = self.get_block_i18n_service(self.block)
-            self.assertEqual(i18n_service.gettext('Hello'), 'Hello')
-            self.assertNotEqual(i18n_service.gettext('Hello'), 'fr-hello-world')
-            self.assertNotEqual(i18n_service.gettext('Hello'), 'es-hello-world')
+            self.assertEqual(i18n_service.gettext('Hello'), 'Hello')  # noqa: PT009
+            self.assertNotEqual(i18n_service.gettext('Hello'), 'fr-hello-world')  # noqa: PT009
+            self.assertNotEqual(i18n_service.gettext('Hello'), 'es-hello-world')  # noqa: PT009
 
         translation.activate("fr")
         with mock.patch('gettext.translation', return_value=_translator(domain='text', localedir=localedir,
                                                                         languages=[get_language()])):
             i18n_service = self.get_block_i18n_service(self.block)
-            self.assertEqual(i18n_service.ugettext('Hello'), 'fr-hello-world')
+            self.assertEqual(i18n_service.ugettext('Hello'), 'fr-hello-world')  # noqa: PT009
 
     def test_i18n_service_callable(self):
         """
         Test: i18n service should be callable in studio.
         """
-        self.assertTrue(callable(self.block.runtime._services.get('i18n')))  # pylint: disable=protected-access
+        self.assertTrue(callable(self.block.runtime._services.get('i18n')))  # pylint: disable=protected-access  # noqa: PT009

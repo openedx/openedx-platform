@@ -47,7 +47,7 @@ class CertificateTemplateForm(forms.ModelForm):
 
     class Meta:
         model = CertificateTemplate
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 class CertificateTemplateAdmin(admin.ModelAdmin):

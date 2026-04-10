@@ -140,11 +140,11 @@ class TestSAMLConfigurationSignalHandlers(TestCase):
 
         if is_provider_updated:
             mock_set_custom_attribute.assert_any_call('saml_config_signal.updated_count', 1)
-            self.assertEqual(current_provider.saml_configuration_id, new_saml_config.id,
+            self.assertEqual(current_provider.saml_configuration_id, new_saml_config.id,  # noqa: PT009
                              "Provider should be updated when signal SAML config matches")
         else:
             mock_set_custom_attribute.assert_any_call('saml_config_signal.updated_count', 0)
-            self.assertEqual(current_provider.saml_configuration_id, original_config_id,
+            self.assertEqual(current_provider.saml_configuration_id, original_config_id,  # noqa: PT009
                              "Provider should NOT be updated when signal SAML config doesn't match")
 
     @ddt.data(
@@ -166,18 +166,18 @@ class TestSAMLConfigurationSignalHandlers(TestCase):
         provider_site = self._get_site(provider_site_id)
         signal_saml_site = self._get_site(signal_saml_site_id)
 
-        null_provider = SAMLProviderConfigFactory(
+        null_provider = SAMLProviderConfigFactory(  # noqa: F841
             slug=provider_slug,
             site=provider_site,
             saml_configuration=None
         )
 
-        new_saml_config = SAMLConfigurationFactory(
+        new_saml_config = SAMLConfigurationFactory(  # noqa: F841
             site=signal_saml_site,
             slug=signal_saml_slug,
             entity_id='https://new.example.com'
         )
 
         current_provider = self._get_current_provider(provider_slug)
-        self.assertIsNone(current_provider.saml_configuration_id,
+        self.assertIsNone(current_provider.saml_configuration_id,  # noqa: PT009
                           "Provider with NULL SAML config should never be updated")

@@ -167,7 +167,7 @@ def _get_score_from_submissions(submissions_scores, block):
             first_attempted = submission_value['created_at']
             weighted_earned = submission_value['points_earned']
             weighted_possible = submission_value['points_possible']
-            assert weighted_earned >= 0.0 and weighted_possible > 0.0  # per contract from submissions API
+            assert weighted_earned >= 0.0 and weighted_possible > 0.0  # per contract from submissions API  # noqa: PT018  # pylint: disable=line-too-long
             return (None, None) + (weighted_earned, weighted_possible) + (first_attempted,)
 
 

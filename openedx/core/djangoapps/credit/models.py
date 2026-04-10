@@ -17,7 +17,7 @@ from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db import IntegrityError, models, transaction
 from django.dispatch import receiver
-from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=unused-import
+from django.utils.translation import gettext as _  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from django.utils.translation import gettext_lazy
 from edx_django_utils.cache import RequestCache
 from jsonfield.fields import JSONField
@@ -105,7 +105,7 @@ class CreditProvider(TimeStampedModel):
         )
     )
 
-    fulfillment_instructions = models.TextField(
+    fulfillment_instructions = models.TextField(  # noqa: DJ001
         null=True,
         blank=True,
         help_text=gettext_lazy(
@@ -262,7 +262,7 @@ class CreditCourse(models.Model):
         """
         return cls.objects.get(course_key=course_key, enabled=True)
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         """Unicode representation of the credit course. """
         return str(self.course_key)
 
@@ -508,7 +508,7 @@ class CreditRequirementStatus(TimeStampedModel):
             requirement_status.delete()
         except cls.DoesNotExist:
             log_msg = (
-                'The requirement status {requirement} does not exist for username {username}.'.format(
+                'The requirement status {requirement} does not exist for username {username}.'.format(  # noqa: UP032
                     requirement=requirement,
                     username=username
                 )
@@ -641,7 +641,7 @@ class CreditEligibility(TimeStampedModel):
 
     def __str__(self):
         """Unicode representation of the credit eligibility. """
-        return "{user}, {course}".format(
+        return "{user}, {course}".format(  # noqa: UP032
             user=self.username,
             course=self.course.course_key,
         )
@@ -766,7 +766,7 @@ class CreditRequest(TimeStampedModel):
 
     def __str__(self):
         """Unicode representation of a credit request."""
-        return "{course}, {provider}, {status}".format(
+        return "{course}, {provider}, {status}".format(  # noqa: UP032
             course=self.course.course_key,
             provider=self.provider.provider_id,
             status=self.status,

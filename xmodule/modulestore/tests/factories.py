@@ -607,26 +607,26 @@ def check_sum_of_calls(object_, methods, maximum_calls, minimum_calls=1, include
     messages = []
     # Assertion errors don't handle multi-line values, so pretty-print to std-out instead
     if not minimum_calls <= call_count <= maximum_calls:
-        messages = ["Expected between {} and {} calls, {} were made.\n\n".format(
+        messages = ["Expected between {} and {} calls, {} were made.\n\n".format(  # noqa: UP032
             minimum_calls,
             maximum_calls,
             call_count,
         )]
         for method_name, capture_fn in mocks.items():
             stack_counter = capture_fn.stack_counter
-            messages.append("{!r} was called {} times:\n".format(
+            messages.append("{!r} was called {} times:\n".format(  # noqa: UP032
                 method_name,
                 stack_counter.total_calls
             ))
             for stack in stack_counter:
-                messages.append("  called {} times:\n\n".format(stack_counter.stack_calls(stack)))
+                messages.append("  called {} times:\n\n".format(stack_counter.stack_calls(stack)))  # noqa: UP032
                 messages.append("    " + "    ".join(traceback.format_list(stack)))
                 messages.append("\n\n")
                 if include_arguments:
                     for (args, kwargs), count in stack_counter[stack].items():
                         messages.append(f"      called {count} times with:\n")
                         messages.append(f"      args: {args}\n")
-                        messages.append("      kwargs: {}\n\n".format(dict(kwargs)))
+                        messages.append("      kwargs: {}\n\n".format(dict(kwargs)))  # noqa: UP032
 
     # verify that we called the methods within the desired range
     assert minimum_calls <= call_count <= maximum_calls, "".join(messages)

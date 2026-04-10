@@ -68,8 +68,8 @@ class CohortedTestCase(UrlResetMixin, SharedModuleStoreTestCase):
 # pylint: disable=dangerous-default-value
 def config_course_discussions(
         course,
-        discussion_topics={},
-        divided_discussions=[],
+        discussion_topics={},  # noqa: B006
+        divided_discussions=[],  # noqa: B006
         always_divide_inline_discussions=False,
         reported_content_email_notifications=False,
 ):
@@ -120,7 +120,7 @@ def topic_name_to_id(course, name):
     Given a discussion topic name, return an id for that name (includes
     course and url_name).
     """
-    return "{course}_{run}_{name}".format(
+    return "{course}_{run}_{name}".format(  # noqa: UP032
         course=course.location.course,
         run=course.url_name,
         name=name

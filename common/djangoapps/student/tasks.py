@@ -108,7 +108,7 @@ def send_course_enrollment_email(
                 "min_effort": course_run.get("min_effort"),
                 "max_effort": course_run.get("max_effort"),
                 "weeks_to_complete": course_run.get("weeks_to_complete"),
-                "learners_count": "{:,}".format(enrollment_count) if enrollment_count > 100 else "",
+                "learners_count": "{:,}".format(enrollment_count) if enrollment_count > 100 else "",  # noqa: UP032
                 "banner_image_url": course_run.get("image").get("src", "") if course_run.get("image") else "",
                 "course_title": course_run.get("title"),
                 "short_description": course_run.get("short_description"),
@@ -141,4 +141,4 @@ def send_course_enrollment_email(
     except Exception as exc:  # pylint: disable=broad-except
         log.error(f"[Course Enrollment] Email sending failed with exception: {exc}")
         countdown = 60 * (self.request.retries + 1)
-        raise self.retry(exc=exc, countdown=countdown, max_retries=MAX_RETRIES)
+        raise self.retry(exc=exc, countdown=countdown, max_retries=MAX_RETRIES)  # noqa: B904

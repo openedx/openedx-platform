@@ -151,7 +151,7 @@ class EnrollmentSupportListView(GenericAPIView):
             return HttpResponseBadRequest('Could not parse course key.')
         except User.DoesNotExist:
             return HttpResponseBadRequest(
-                'Could not find user {username}.'.format(
+                'Could not find user {username}.'.format(  # noqa: UP032
                     username=username_or_email
                 )
             )
@@ -207,7 +207,7 @@ class EnrollmentSupportListView(GenericAPIView):
             return HttpResponseBadRequest('Could not parse course key.')
         except (CourseEnrollment.DoesNotExist, User.DoesNotExist):
             return HttpResponseBadRequest(
-                'Could not find enrollment for user {username} in course {course}.'.format(
+                'Could not find enrollment for user {username} in course {course}.'.format(  # noqa: UP032
                     username=username_or_email,
                     course=str(course_key)
                 )

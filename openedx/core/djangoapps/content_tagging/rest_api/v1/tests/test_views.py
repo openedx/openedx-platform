@@ -338,7 +338,7 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
         response = self.client.get(url, query_params, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        self.assertEqual(set(t["name"] for t in response.data["results"]), set(expected_taxonomies))
+        self.assertEqual(set(t["name"] for t in response.data["results"]), set(expected_taxonomies))  # noqa: PT009
 
     def test_list_taxonomy_staff(self) -> None:
         """
@@ -452,7 +452,7 @@ class TestTaxonomyListCreateViewSet(TestTaxonomyObjectsMixin, APITestCase):
 
         assert response.status_code == status.HTTP_200_OK if len(expected_taxonomies) > 0 else status.HTTP_404_NOT_FOUND
         if status.is_success(response.status_code):
-            self.assertEqual(set(t["name"] for t in response.data["results"]), set(expected_taxonomies))
+            self.assertEqual(set(t["name"] for t in response.data["results"]), set(expected_taxonomies))  # noqa: PT009
             parsed_url = urlparse(response.data["next"])
 
             next_page = parse_qs(parsed_url.query).get("page", [None])[0]
@@ -1651,7 +1651,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
         self.client.force_authenticate(user=self.library_userA)
         response = self._call_put_request(object_id, self.tA1.pk, ["Tag 1"])
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         mock_is_user_allowed.assert_called_with(
             self.library_userA.username,
             authz_permissions.MANAGE_LIBRARY_TAGS.identifier,
@@ -1999,7 +1999,7 @@ class TestObjectTagViewSet(TestObjectTagMixin, APITestCase):
             user_attr: str,
             object_attr: str,
             expected_queries: int,
-            expected_perm: bool = True):
+            expected_perm: bool = True):  # noqa: PT028
         """
         Test how many queries are used when retrieving object tags and permissions
         """
@@ -2108,25 +2108,25 @@ class TestContentObjectChildrenExportViewWithAuthz(CourseAuthzTestMixin, SharedM
     def test_authorized_user_can_access(self):
         """User with COURSE_STAFF role can access."""
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
 
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """Staff users should still pass through legacy fallback."""
         self.client.force_authenticate(user=self.staff)
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -2134,7 +2134,7 @@ class TestContentObjectChildrenExportViewWithAuthz(CourseAuthzTestMixin, SharedM
         client = APIClient()
         client.force_authenticate(user=superuser)
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 @skip_unless_cms
 @ddt.ddt

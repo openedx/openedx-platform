@@ -77,7 +77,7 @@ class TestHelpers(TestCase):
         Test that get_dict returns correct value for any given key.
         """
         # Make sure entry is saved and retrieved correctly
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             configuration_helpers.get_dict("REGISTRATION_EXTRA_FIELDS"),
             test_config['REGISTRATION_EXTRA_FIELDS'],
         )
@@ -87,7 +87,7 @@ class TestHelpers(TestCase):
         expected.update(test_config['REGISTRATION_EXTRA_FIELDS'])
 
         # Test that the default value is returned if the value for the given key is not found in the configuration
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             configuration_helpers.get_dict("REGISTRATION_EXTRA_FIELDS", default),
             expected,
         )
@@ -125,7 +125,7 @@ class TestHelpers(TestCase):
             assert configuration_helpers.get_value_for_org(test_org, 'css_overrides_file') ==\
                    test_config['css_overrides_file']
 
-            self.assertCountEqual(
+            self.assertCountEqual(  # noqa: PT009
                 configuration_helpers.get_value_for_org(test_org, "REGISTRATION_EXTRA_FIELDS"),
                 test_config['REGISTRATION_EXTRA_FIELDS']
             )
@@ -155,7 +155,7 @@ class TestHelpers(TestCase):
         """
         test_orgs = [test_config['course_org_filter']]
         with with_site_configuration_context(configuration=test_config):
-            self.assertCountEqual(
+            self.assertCountEqual(  # noqa: PT009
                 list(configuration_helpers.get_all_orgs()),
                 test_orgs,
             )
@@ -163,7 +163,7 @@ class TestHelpers(TestCase):
     @with_site_configuration(configuration=test_config_multi_org)
     def test_get_current_site_orgs(self):
         test_orgs = test_config_multi_org['course_org_filter']
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             list(configuration_helpers.get_current_site_orgs()),
             test_orgs
         )
@@ -173,11 +173,11 @@ class TestHelpers(TestCase):
         Test get_current_site_configuration_values helper function
         """
         site_values = configuration_helpers.get_current_site_configuration_values()
-        self.assertTrue(isinstance(site_values, dict))
+        self.assertTrue(isinstance(site_values, dict))  # noqa: PT009
 
         # without any site configuration it should return empty dict
-        self.assertEqual(site_values, {})
+        self.assertEqual(site_values, {})  # noqa: PT009
 
         with with_site_configuration_context(configuration=test_config):
             site_values = configuration_helpers.get_current_site_configuration_values()
-            self.assertEqual(site_values, test_config)
+            self.assertEqual(site_values, test_config)  # noqa: PT009

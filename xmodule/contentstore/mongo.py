@@ -207,7 +207,7 @@ class MongoContentStore(ContentStore):
                     )
         except NoFile:
             if throw_on_not_found:  # lint-amnesty, pylint: disable=no-else-raise
-                raise NotFoundError(content_id)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise NotFoundError(content_id)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             else:
                 return None
 

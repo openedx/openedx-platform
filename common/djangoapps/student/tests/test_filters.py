@@ -153,7 +153,7 @@ class EnrollmentFiltersTest(ModuleStoreTestCase):
         """
         enrollment = CourseEnrollment.enroll(self.user, self.course.id, mode='audit')
 
-        self.assertEqual('honor', enrollment.mode)
+        self.assertEqual('honor', enrollment.mode)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -173,7 +173,7 @@ class EnrollmentFiltersTest(ModuleStoreTestCase):
             - CourseEnrollmentStarted is triggered and executes TestEnrollmentPipelineStep.
             - The user can't enroll.
         """
-        with self.assertRaises(EnrollmentNotAllowed):
+        with self.assertRaises(EnrollmentNotAllowed):  # noqa: PT027
             CourseEnrollment.enroll(self.user, self.course.id, mode='no-id-professional')
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
@@ -187,8 +187,8 @@ class EnrollmentFiltersTest(ModuleStoreTestCase):
         """
         enrollment = CourseEnrollment.enroll(self.user, self.course.id, mode='audit')
 
-        self.assertEqual('audit', enrollment.mode)
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course.id))
+        self.assertEqual('audit', enrollment.mode)  # noqa: PT009
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course.id))  # noqa: PT009
 
 
 @skip_unless_lms
@@ -234,7 +234,7 @@ class UnenrollmentFiltersTest(ModuleStoreTestCase):
 
         CourseEnrollment.unenroll(self.user, self.course.id)
 
-        self.assertFalse(CourseEnrollment.is_enrolled(self.user, self.course.id))
+        self.assertFalse(CourseEnrollment.is_enrolled(self.user, self.course.id))  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -256,7 +256,7 @@ class UnenrollmentFiltersTest(ModuleStoreTestCase):
         """
         CourseEnrollment.enroll(self.user, self.course.id, mode="no-id-professional")
 
-        with self.assertRaises(UnenrollmentNotAllowed):
+        with self.assertRaises(UnenrollmentNotAllowed):  # noqa: PT027
             CourseEnrollment.unenroll(self.user, self.course.id)
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
@@ -272,7 +272,7 @@ class UnenrollmentFiltersTest(ModuleStoreTestCase):
 
         CourseEnrollment.unenroll(self.user, self.course.id)
 
-        self.assertFalse(CourseEnrollment.is_enrolled(self.user, self.course.id))
+        self.assertFalse(CourseEnrollment.is_enrolled(self.user, self.course.id))  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -301,8 +301,8 @@ class UnenrollmentFiltersTest(ModuleStoreTestCase):
 
         response = self.client.post(reverse("change_enrollment"), params)
 
-        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
-        self.assertEqual("You can't un-enroll from this site.", response.content.decode("utf-8"))
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)  # noqa: PT009
+        self.assertEqual("You can't un-enroll from this site.", response.content.decode("utf-8"))  # noqa: PT009
 
 
 @skip_unless_lms
@@ -397,8 +397,8 @@ class StudentDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual("https://custom-dashboard.com", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual("https://custom-dashboard.com", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -421,8 +421,8 @@ class StudentDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual(settings.ACCOUNT_MICROFRONTEND_URL, response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual(settings.ACCOUNT_MICROFRONTEND_URL, response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -444,7 +444,7 @@ class StudentDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))
+        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_dashboard_render_without_filter_config(self):

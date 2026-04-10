@@ -9,4 +9,4 @@ class CourseModesConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-cla
     verbose_name = "Course Modes"
 
     def ready(self):
-        from . import signals  # pylint: disable=unused-import
+        from . import signals  # pylint: disable=unused-import  # noqa: F401

@@ -80,7 +80,7 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
 
             # Even though MARKETING_EMAILS_OPT_IN=True globally,
             # the field should not be present when skipped via SAML config
-            self.assertIsNone(
+            self.assertIsNone(  # noqa: PT009
                 marketing_field,
                 "marketing_emails_opt_in field should not be present when skipped via SAML config, "
                 "even when MARKETING_EMAILS_OPT_IN=True"
@@ -127,18 +127,18 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
 
             # When MARKETING_EMAILS_OPT_IN=True and SAML config doesn't skip,
             # the field should be present
-            self.assertIsNotNone(
+            self.assertIsNotNone(  # noqa: PT009
                 marketing_field,
                 "marketing_emails_opt_in field should be present when MARKETING_EMAILS_OPT_IN=True "
                 "and SAML config does not skip checkboxes"
             )
             # The field should be visible (exposed)
-            self.assertTrue(
+            self.assertTrue(  # noqa: PT009
                 marketing_field.get('exposed', False),
                 "Marketing checkbox should be visible when SAML config does not skip checkboxes"
             )
             # The field should be optional (not required) when MARKETING_EMAILS_OPT_IN=True
-            self.assertFalse(
+            self.assertFalse(  # noqa: PT009
                 marketing_field.get('required', False),
                 "Marketing checkbox should be optional when MARKETING_EMAILS_OPT_IN=True"
             )
@@ -165,11 +165,11 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
                 marketing_field = field
                 break
 
-        self.assertIsNotNone(marketing_field, "marketing_emails_opt_in field not found")
+        self.assertIsNotNone(marketing_field, "marketing_emails_opt_in field not found")  # noqa: PT009
         # When REGISTRATION_EXTRA_FIELDS is optional, the field should not be required
-        self.assertFalse(marketing_field.get('required', False))
+        self.assertFalse(marketing_field.get('required', False))  # noqa: PT009
         # The field should be visible (exposed=True) by default
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             marketing_field.get('exposed', False),
             "Marketing checkbox should be visible when no SAML config skips it"
         )
@@ -216,7 +216,7 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
 
             # When SAML provider config sets skip_registration_optional_checkboxes=True,
             # the field should not be present in the form at all
-            self.assertIsNone(
+            self.assertIsNone(  # noqa: PT009
                 marketing_field,
                 "marketing_emails_opt_in field should not be present when skipped via SAML config"
             )
@@ -261,12 +261,12 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
                     marketing_field = field
                     break
 
-            self.assertIsNotNone(marketing_field, "marketing_emails_opt_in field not found")
+            self.assertIsNotNone(marketing_field, "marketing_emails_opt_in field not found")  # noqa: PT009
             # When SAML provider config sets skip_registration_optional_checkboxes=False,
             # it should use the global setting (required in this test)
-            self.assertTrue(marketing_field.get('required', False))
+            self.assertTrue(marketing_field.get('required', False))  # noqa: PT009
             # The field should be visible (exposed=True) when config is False
-            self.assertTrue(
+            self.assertTrue(  # noqa: PT009
                 marketing_field.get('exposed', False),
                 "Marketing checkbox should be visible when SAML config is False"
             )
@@ -313,7 +313,7 @@ class SAMLProviderOptionalCheckboxTest(TestCase):
 
             # When SAML provider config sets skip_registration_optional_checkboxes=True,
             # the field should not be present in the form at all
-            self.assertIsNone(
+            self.assertIsNone(  # noqa: PT009
                 marketing_field,
                 "marketing_emails_opt_in field should not be present when skipped via SAML config"
             )

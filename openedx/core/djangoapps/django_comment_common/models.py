@@ -78,7 +78,7 @@ class Role(models.Model):
 
     objects = NoneToEmptyManager()
 
-    name = models.CharField(max_length=30, null=False, blank=False)
+    name = models.CharField(max_length=30, null=False, blank=False)  # noqa: DJ012
     users = models.ManyToManyField(User, related_name="roles")
     course_id = CourseKeyField(max_length=255, blank=True, db_index=True)
 
@@ -213,7 +213,7 @@ def has_permission(user, permission, course_id=None):
     """
     assert isinstance(course_id, (type(None), CourseKey))
     request_cache_dict = DEFAULT_REQUEST_CACHE.data
-    cache_key = "django_comment_client.permissions.has_permission.all_permissions.{}.{}".format(
+    cache_key = "django_comment_client.permissions.has_permission.all_permissions.{}.{}".format(  # noqa: UP032
         user.id, course_id
     )
     if cache_key in request_cache_dict:
@@ -253,7 +253,7 @@ class ForumsConfig(ConfigurationModel):
         return f"ForumsConfig: timeout={self.connection_timeout}"
 
 
-class CourseDiscussionSettings(models.Model):
+class CourseDiscussionSettings(models.Model):  # noqa: DJ008
     """
     Settings for course discussions
 
@@ -272,7 +272,7 @@ class CourseDiscussionSettings(models.Model):
     )
     always_divide_inline_discussions = models.BooleanField(default=False)
     reported_content_email_notifications = models.BooleanField(default=False)
-    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list
+    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001  # pylint: disable=line-too-long
 
     COHORT = 'cohort'
     ENROLLMENT_TRACK = 'enrollment_track'
@@ -341,7 +341,7 @@ class CourseDiscussionSettings(models.Model):
         return self
 
 
-class DiscussionsIdMapping(models.Model):
+class DiscussionsIdMapping(models.Model):  # noqa: DJ008
     """
     This model is a performance optimization, updated on course publish.
 

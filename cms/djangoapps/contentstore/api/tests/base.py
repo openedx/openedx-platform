@@ -66,7 +66,7 @@ class BaseCourseViewTest(SharedModuleStoreTestCase, APITestCase):
             parent_location=cls.section.location,
             category="sequential",
         )
-        unit2 = BlockFactory.create(
+        unit2 = BlockFactory.create(  # noqa: F841
             parent_location=cls.subsection2.location,
             category="vertical",
         )

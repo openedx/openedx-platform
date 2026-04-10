@@ -66,7 +66,7 @@ def get_last_seen_courseware_timezone(user):
     That timezone is often not set, so this field retrieves the browser timezone
     from a recent courseware visit (updated daily)
     """
-    cache_key = 'browser_timezone_{}'.format(str(user.id))
+    cache_key = 'browser_timezone_{}'.format(str(user.id))  # noqa: UP032
     cached_value = TieredCache.get_cached_response(cache_key)
     if not cached_value.is_found:
         try:
@@ -97,5 +97,5 @@ def get_user_timezone_or_last_seen_timezone_or_utc(user):
     user_timezone = ''.join(user_timezone)
     try:
         return timezone(user_timezone)
-    except UnknownTimeZoneError as err:
+    except UnknownTimeZoneError as err:  # noqa: F841
         return timezone('UTC')

@@ -16,7 +16,7 @@ class StudentConfig(AppConfig):
 
     def ready(self):
         # Connect signal handlers.
-        from .signals import receivers  # pylint: disable=unused-import
+        from .signals import receivers  # pylint: disable=unused-import  # noqa: F401
 
         # The django-simple-history model on CourseEnrollment creates performance
         # problems in testing, we mock it here so that the mock impacts all tests.

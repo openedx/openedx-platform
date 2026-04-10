@@ -1,7 +1,7 @@
 """Helper functions for working with Credentials."""
 
 import logging
-from typing import Dict, List
+from typing import Dict, List  # noqa: UP035
 from urllib.parse import urljoin
 
 import requests
@@ -71,7 +71,7 @@ def get_credentials(
     program_uuid: str = None,
     credential_type: str = None,
     raise_on_error: bool = False,
-) -> List[Dict]:
+) -> List[Dict]:  # noqa: UP006
     """
     Given a user, get credentials earned from the credentials service.
 

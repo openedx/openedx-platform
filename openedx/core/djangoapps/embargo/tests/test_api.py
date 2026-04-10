@@ -265,7 +265,7 @@ class EmbargoCheckAccessApiTests(ModuleStoreTestCase):
     )
     @ddt.unpack
     @mock.patch('openedx.core.djangoapps.embargo.api.check_course_access', return_value=False)
-    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):
+    def test_redirect_if_blocked_courseware(self, access_point, check_disabled, allow_access, _mock_access):  # noqa: PT019  # pylint: disable=line-too-long
         self.restricted_course.disable_access_check = check_disabled
         self.restricted_course.save()
 
@@ -361,7 +361,7 @@ class EmbargoMessageUrlApiTests(UrlResetMixin, ModuleStoreTestCase):
         RestrictedCourse.objects.get(course_key=self.course.id).delete()
 
         # Clear the message URL cache
-        message_cache_key = (
+        message_cache_key = (  # noqa: UP032
             'embargo.message_url_path.courseware.{course_key}'
         ).format(course_key=self.course.id)
         cache.delete(message_cache_key)

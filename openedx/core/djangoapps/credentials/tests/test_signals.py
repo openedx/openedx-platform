@@ -3,8 +3,8 @@
 
 from unittest import mock
 
-from django.conf import settings  # lint-amnesty, pylint: disable=unused-import
-from django.test import TestCase, override_settings  # lint-amnesty, pylint: disable=unused-import
+from django.conf import settings  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from django.test import TestCase, override_settings  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory

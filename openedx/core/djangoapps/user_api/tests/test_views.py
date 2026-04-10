@@ -18,9 +18,9 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
-    RetirementTestCase,
-    fake_requested_retirement,
-    setup_retirement_states,
+    RetirementTestCase,  # noqa: F401
+    fake_requested_retirement,  # noqa: F401
+    setup_retirement_states,  # noqa: F401
 )
 from ..models import UserOrgTag
 from ..tests.factories import UserPreferenceFactory
@@ -55,8 +55,8 @@ class UserAPITestCase(ApiTestCase):
 
     def assertUserIsValid(self, user):
         """Assert that the given user result is valid"""
-        self.assertCountEqual(list(user.keys()), ["email", "id", "name", "username", "preferences", "url"])
-        self.assertCountEqual(
+        self.assertCountEqual(list(user.keys()), ["email", "id", "name", "username", "preferences", "url"])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertCountEqual(  # noqa: PT009
             list(user["preferences"].items()),
             [(pref.key, pref.value) for pref in self.prefs if pref.user.id == user["id"]]  # lint-amnesty, pylint: disable=no-member
         )
@@ -66,7 +66,7 @@ class UserAPITestCase(ApiTestCase):
         """
         Assert that the given preference is acknowledged by the system
         """
-        self.assertCountEqual(list(pref.keys()), ["user", "key", "value", "url"])
+        self.assertCountEqual(list(pref.keys()), ["user", "key", "value", "url"])  # noqa: PT009
         self.assertSelfReferential(pref)
         self.assertUserIsValid(pref["user"])
 

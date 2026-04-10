@@ -127,12 +127,12 @@ class EcommerceService:
         if enterprise_catalog_uuid:
             query_params.update({'catalog': enterprise_catalog_uuid})
 
-        url = '{checkout_page_path}?{query_params}'.format(
+        url = '{checkout_page_path}?{query_params}'.format(  # noqa: UP032
             checkout_page_path=self.get_absolute_ecommerce_url(self.config.basket_checkout_page),
             query_params=urlencode(query_params, doseq=True),
         )
         if program_uuid:
-            url = '{url}&bundle={program_uuid}'.format(
+            url = '{url}&bundle={program_uuid}'.format(  # noqa: UP032
                 url=url,
                 program_uuid=program_uuid
             )

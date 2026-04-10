@@ -99,7 +99,7 @@ class TestRandomUserPartitionScheme(PartitionTestCase):
             scheme=RandomUserPartitionScheme
         )
         # get a group assigned to the user
-        with self.assertRaisesRegex(UserPartitionError, "Cannot assign user to an empty user partition"):
+        with self.assertRaisesRegex(UserPartitionError, "Cannot assign user to an empty user partition"):  # noqa: PT027
             RandomUserPartitionScheme.get_group_for_user(self.MOCK_COURSE_ID, self.user, empty_partition)
 
     def test_user_in_deleted_group(self):
@@ -148,5 +148,5 @@ class TestExtension(TestCase):
 
     def test_get_scheme(self):
         assert UserPartition.get_scheme('random') == RandomUserPartitionScheme
-        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):
+        with self.assertRaisesRegex(UserPartitionError, 'Unrecognized scheme'):  # noqa: PT027
             UserPartition.get_scheme('other')

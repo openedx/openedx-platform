@@ -26,7 +26,7 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
 
     def setUp(self):
         super().setUp()
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(timezone.utc)  # noqa: UP017
         freezer = freeze_time(self.now)
         self.addCleanup(freezer.stop)
         freezer.start()
@@ -160,7 +160,7 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
 
     def assertXmlEqual(self, xml_str_a: str, xml_str_b: str) -> None:
         """ Assert that the given XML strings are equal, ignoring attribute order and some whitespace variations. """
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             ElementTree.canonicalize(xml_str_a, strip_text=True),
             ElementTree.canonicalize(xml_str_b, strip_text=True),
         )
@@ -441,8 +441,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             }
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 4)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 4)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
         # 2️⃣ Now, lets modify the upstream problem 1:
         self._set_library_block_olx(
@@ -594,8 +594,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             }
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 4)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 4)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
         # 3️⃣ Now, add and delete a component
         upstream_problem3 = self._add_block_to_library(
@@ -746,8 +746,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             }
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 4)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 4)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
         # 4️⃣ Now, reorder components
         self._patch_container_children(self.upstream_unit["id"], [
@@ -879,8 +879,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             }
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 4)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 4)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
     def test_unit_sync_with_modified_downstream(self):
         """
@@ -1120,8 +1120,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             },
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 1)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 1)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
         # 2️⃣ Now, lets modify the upstream html AND the downstream display_name:
         self._update_course_block_fields(downstream_html1["locator"], {
@@ -1182,8 +1182,8 @@ class CourseToLibraryTestCase(ContentLibrariesRestApiTest, ImmediateOnCommitMixi
             },
         ]
         data = downstreams.json()
-        self.assertEqual(data["count"], 1)
-        self.assertListEqual(data["results"], expected_downstreams)
+        self.assertEqual(data["count"], 1)  # noqa: PT009
+        self.assertListEqual(data["results"], expected_downstreams)  # noqa: PT009
 
         # 3️⃣ Now, sync and check the resulting OLX of the downstream
 

@@ -8,17 +8,17 @@ Note that these views are only for interacting with existing blocks. Other
 Studio APIs cover use cases like adding/deleting/editing blocks.
 """
 import logging
-import threading  # pylint: disable=unused-import
-from datetime import datetime  # pylint: disable=unused-import
+import threading  # pylint: disable=unused-import  # noqa: F401
+from datetime import datetime  # pylint: disable=unused-import  # noqa: F401
 
 # pylint: disable=unused-import
-from enum import Enum
+from enum import Enum  # noqa: F401
 
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.utils.translation import gettext as _
 from opaque_keys.edx.keys import UsageKeyV2
-from opaque_keys.edx.locator import LibraryUsageLocatorV2
+from opaque_keys.edx.locator import LibraryUsageLocatorV2  # noqa: F401
 from openedx_content import api as content_api
 from openedx_content.models_api import Component, ComponentVersion
 from rest_framework.exceptions import NotFound
@@ -29,7 +29,7 @@ from xblock.plugin import PluginMissingError
 from openedx.core.djangoapps.xblock.apps import get_xblock_app_config
 
 # Made available as part of this package's public API:
-from openedx.core.djangoapps.xblock.learning_context import LearningContext
+from openedx.core.djangoapps.xblock.learning_context import LearningContext  # noqa: F401
 from openedx.core.djangoapps.xblock.learning_context.manager import get_learning_context_impl
 from openedx.core.djangoapps.xblock.runtime.openedx_content_runtime import (
     OpenedXContentFieldData,
@@ -38,8 +38,8 @@ from openedx.core.djangoapps.xblock.runtime.openedx_content_runtime import (
 from openedx.core.types import User as UserType
 
 from .data import CheckPerm, LatestVersion
-from .rest_api.url_converters import VersionConverter
-from .runtime.openedx_content_runtime import OpenedXContentRuntime
+from .rest_api.url_converters import VersionConverter  # noqa: F401
+from .runtime.openedx_content_runtime import OpenedXContentRuntime  # noqa: F811
 from .utils import get_auto_latest_version, get_secure_token_for_xblock_handler, get_xblock_id_for_anonymous_user
 
 # Implementation:

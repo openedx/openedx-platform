@@ -73,7 +73,7 @@ def create_email_template_context(username):
         for social_platform in social_media_urls.keys()
         if social_media_icons.get(social_platform)
     }
-    patch = {
+    patch = {  # noqa: F841
         'channel': 'email',
         'value': False
     }

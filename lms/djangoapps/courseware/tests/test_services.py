@@ -97,7 +97,7 @@ class TestUserStateService(ModuleStoreTestCase):
         state = UserStateService().get_state_as_dict(
             self._get_email_or_username(should_use_email), self.problem.location
         )
-        self.assertDictEqual(state, expected_state)
+        self.assertDictEqual(state, expected_state)  # noqa: PT009
 
     @ddt.data(
         *itertools.product(

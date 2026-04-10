@@ -60,18 +60,18 @@ class TestUsersDefaultRole(ModuleStoreTestCase):
         enrolled even the course is deleted and keeps its "Student" forum role for that course
         """
         # check that user has enrollment for this course
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))  # noqa: PT009
 
         # check that user has his default "Student" forum role for this course
-        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))
+        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))  # noqa: PT009
 
         delete_course(self.course_key, self.user.id)
 
         # check that user's enrollment for this course is not deleted
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))  # noqa: PT009
 
         # check that user has forum role for this course even after deleting it
-        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))
+        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))  # noqa: PT009
 
     def test_user_role_on_course_recreate(self):
         """
@@ -79,19 +79,19 @@ class TestUsersDefaultRole(ModuleStoreTestCase):
         forum role "Student" for that course
         """
         # check that user has enrollment and his default "Student" forum role for this course
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))
-        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))  # noqa: PT009
+        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))  # noqa: PT009
 
         # delete this course and recreate this course with same user
         delete_course(self.course_key, self.user.id)
         resp = self._create_course_with_given_location(self.course_key)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # check that user has his enrollment for this course
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))  # noqa: PT009
 
         # check that user has his default "Student" forum role for this course
-        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))
+        self.assertTrue(self.user.roles.filter(name="Student", course_id=self.course_key))  # noqa: PT009
 
     @skip("OldMongo Deprecation")
     # Issue with case-insensitive course keys
@@ -101,17 +101,17 @@ class TestUsersDefaultRole(ModuleStoreTestCase):
         his default forum role "Student" for that course
         """
         # check that user has enrollment and his default "Student" forum role for this course
-        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))
+        self.assertTrue(CourseEnrollment.is_enrolled(self.user, self.course_key))  # noqa: PT009
         # delete this course and recreate this course with same user
         delete_course(self.course_key, self.user.id)
 
         # now create same course with different name case ('uppercase')
         new_course_key = self.course_key.replace(course=self.course_key.course.upper())
         resp = self._create_course_with_given_location(new_course_key)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # check that user has his default "Student" forum role again for this course (with changed name case)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             self.user.roles.filter(name="Student", course_id=new_course_key)
         )
 

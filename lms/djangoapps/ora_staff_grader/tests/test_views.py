@@ -61,7 +61,7 @@ class BaseViewTest(SharedModuleStoreTestCase, APITestCase):
         query_dictionary = QueryDict("", mutable=True)
         query_dictionary.update(params)
 
-        return "{base_url}?{querystring}".format(
+        return "{base_url}?{querystring}".format(  # noqa: UP032
             base_url=reverse(self.view_name), querystring=query_dictionary.urlencode()
         )
 

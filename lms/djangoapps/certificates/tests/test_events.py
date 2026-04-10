@@ -95,7 +95,7 @@ class CertificateEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
             download_url="https://certificate.pdf"
         )
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -149,7 +149,7 @@ class CertificateEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         certificate.grade = "50"
         certificate.save()
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -202,7 +202,7 @@ class CertificateEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         certificate.invalidate()
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

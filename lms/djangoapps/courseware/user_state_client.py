@@ -53,13 +53,13 @@ class XBlockUserState(namedtuple('_XBlockUserState', ['username', 'block_key', '
     __slots__ = ()
 
     def __repr__(self):
-        return "{}{!r}".format(  # pylint: disable=consider-using-f-string
+        return "{}{!r}".format(  # pylint: disable=consider-using-f-string  # noqa: UP032
             self.__class__.__name__,
             tuple(self)
         )
 
 
-class XBlockUserStateClient():
+class XBlockUserStateClient():  # noqa: UP039
     """
     First stab at an interface for accessing XBlock User State. This will have
     use StudentModule as a backing store in the default case.
@@ -445,7 +445,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 # on get_or_create to be able to see rows created in another
                 # process. This seems to happen frequently, and ignoring it is the
                 # best course of action for now
-                log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(
+                log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032  # pylint: disable=line-too-long
                     user, repr(str(usage_key.context_key)), usage_key
                 ))
                 return
@@ -468,10 +468,10 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
                 except IntegrityError:
                     # The UPDATE above failed. Log information - but ignore the error.
                     # See https://openedx.atlassian.net/browse/TNL-5365
-                    log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(
+                    log.warning("set_many: IntegrityError for student {} - course_id {} - usage key {}".format(  # noqa: UP032  # pylint: disable=line-too-long
                         user, repr(str(usage_key.context_key)), usage_key
                     ))
-                    log.warning("set_many: All {} block keys: {}".format(
+                    log.warning("set_many: All {} block keys: {}".format(  # noqa: UP032
                         len(block_keys_to_state), list(block_keys_to_state.keys())
                     ))
 
@@ -490,7 +490,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             num_new_fields_set = num_fields_after - num_fields_before
 
             # Event to record number of existing fields updated in set/set_many.
-            num_fields_updated = max(0, len(state) - num_new_fields_set)
+            num_fields_updated = max(0, len(state) - num_new_fields_set)  # noqa: F841
 
         # Events for the entire set_many call.
         finish_time = time()
@@ -510,7 +510,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
         if scope != Scope.user_state:
             raise ValueError("Only Scope.user_state is supported")
 
-        evt_time = time()  # lint-amnesty, pylint: disable=unused-variable
+        evt_time = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         student_modules = self._get_student_modules(username, block_keys)
         for student_module, _ in student_modules:
             if fields is None:
@@ -527,7 +527,7 @@ class DjangoXBlockUserStateClient(XBlockUserStateClient):
             student_module.save(force_update=True)
 
         # Event for the entire delete_many call.
-        finish_time = time()  # lint-amnesty, pylint: disable=unused-variable
+        finish_time = time()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
     def get_history(self, username, block_key, scope=Scope.user_state):
         """

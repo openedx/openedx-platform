@@ -72,7 +72,7 @@ class TestGroup(TestCase):
             "name": name,
             "version": -1,
         }
-        with self.assertRaisesRegex(TypeError, "has unexpected version"):
+        with self.assertRaisesRegex(TypeError, "has unexpected version"):  # noqa: PT027
             Group.from_json(jsonified)
 
         # Missing key "id"
@@ -80,7 +80,7 @@ class TestGroup(TestCase):
             "name": name,
             "version": Group.VERSION
         }
-        with self.assertRaisesRegex(TypeError, "missing value key 'id'"):
+        with self.assertRaisesRegex(TypeError, "missing value key 'id'"):  # noqa: PT027
             Group.from_json(jsonified)
 
         # Has extra key - should not be a problem
@@ -271,7 +271,7 @@ class TestUserPartition(PartitionTestCase):
             "groups": [group.to_json() for group in self.TEST_GROUPS],
             "version": 2,
         }
-        with self.assertRaisesRegex(TypeError, "missing value key 'scheme'"):
+        with self.assertRaisesRegex(TypeError, "missing value key 'scheme'"):  # noqa: PT027
             UserPartition.from_json(jsonified)
 
         # Test that version 3 partitions have a scheme specified
@@ -315,7 +315,7 @@ class TestUserPartition(PartitionTestCase):
             "version": UserPartition.VERSION,
             "scheme": self.TEST_SCHEME_NAME,
         }
-        with self.assertRaisesRegex(TypeError, "missing value key 'id'"):
+        with self.assertRaisesRegex(TypeError, "missing value key 'id'"):  # noqa: PT027
             UserPartition.from_json(jsonified)
 
         # Missing scheme
@@ -327,7 +327,7 @@ class TestUserPartition(PartitionTestCase):
             "groups": [group.to_json() for group in self.TEST_GROUPS],
             "version": UserPartition.VERSION,
         }
-        with self.assertRaisesRegex(TypeError, "missing value key 'scheme'"):
+        with self.assertRaisesRegex(TypeError, "missing value key 'scheme'"):  # noqa: PT027
             UserPartition.from_json(jsonified)
 
         # Invalid scheme
@@ -340,7 +340,7 @@ class TestUserPartition(PartitionTestCase):
             "version": UserPartition.VERSION,
             "scheme": "no_such_scheme",
         }
-        with self.assertRaisesRegex(UserPartitionError, "Unrecognized scheme"):
+        with self.assertRaisesRegex(UserPartitionError, "Unrecognized scheme"):  # noqa: PT027
             UserPartition.from_json(jsonified)
 
         # Wrong version
@@ -353,7 +353,7 @@ class TestUserPartition(PartitionTestCase):
             "version": -1,
             "scheme": self.TEST_SCHEME_NAME,
         }
-        with self.assertRaisesRegex(TypeError, "has unexpected version"):
+        with self.assertRaisesRegex(TypeError, "has unexpected version"):  # noqa: PT027
             UserPartition.from_json(jsonified)
 
         # Has extra key - should not be a problem

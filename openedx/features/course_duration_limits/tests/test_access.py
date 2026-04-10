@@ -46,7 +46,7 @@ class TestAccess(ModuleStoreTestCase):
         assert strftime_localized(date, 'SHORT_DATE') in message
 
         # But also that the machine-readable version is in there
-        assert 'data-datetime="%s"' % date.isoformat() in message
+        assert 'data-datetime="%s"' % date.isoformat() in message  # noqa: UP031
 
     def test_get_access_expiration_data(self):
         enrollment = CourseEnrollmentFactory()

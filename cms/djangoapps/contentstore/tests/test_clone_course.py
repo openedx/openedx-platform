@@ -69,8 +69,8 @@ class CloneCourseTest(CourseTestCase):
 
         # Get & verify all assets of the course
         assets, count = contentstore().get_all_content_for_course(course.id)
-        self.assertEqual(count, 1)
-        self.assertEqual({asset['asset_key'].block_id for asset in assets}, course_assets)  # lint-amnesty, pylint: disable=consider-using-set-comprehension
+        self.assertEqual(count, 1)  # noqa: PT009
+        self.assertEqual({asset['asset_key'].block_id for asset in assets}, course_assets)  # lint-amnesty, pylint: disable=consider-using-set-comprehension  # noqa: PT009
 
         # rerun from split into split
         split_rerun_id = CourseLocator(org=org, course=course_number, run="2012_Q2")
@@ -83,9 +83,9 @@ class CloneCourseTest(CourseTestCase):
         )
 
         # Check if re-run was successful
-        self.assertEqual(result.get(), "succeeded")
+        self.assertEqual(result.get(), "succeeded")  # noqa: PT009
         rerun_state = CourseRerunState.objects.find_first(course_key=split_rerun_id)
-        self.assertEqual(rerun_state.state, CourseRerunUIStateManager.State.SUCCEEDED)
+        self.assertEqual(rerun_state.state, CourseRerunUIStateManager.State.SUCCEEDED)  # noqa: PT009
 
     def test_rerun_course(self):
         """
@@ -114,14 +114,14 @@ class CloneCourseTest(CourseTestCase):
         CourseRerunState.objects.initiated(split_course.id, split_course3_id, self.user, fields['display_name'])
         result = rerun_course.delay(str(split_course.id), str(split_course3_id), self.user.id,
                                     json.dumps(fields, cls=EdxJSONEncoder))
-        self.assertEqual(result.get(), "succeeded")
-        self.assertTrue(has_course_author_access(self.user, split_course3_id), "Didn't grant access")
+        self.assertEqual(result.get(), "succeeded")  # noqa: PT009
+        self.assertTrue(has_course_author_access(self.user, split_course3_id), "Didn't grant access")  # noqa: PT009
         rerun_state = CourseRerunState.objects.find_first(course_key=split_course3_id)
-        self.assertEqual(rerun_state.state, CourseRerunUIStateManager.State.SUCCEEDED)
+        self.assertEqual(rerun_state.state, CourseRerunUIStateManager.State.SUCCEEDED)  # noqa: PT009
 
         # try creating rerunning again to same name and ensure it generates error
         result = rerun_course.delay(str(split_course.id), str(split_course3_id), self.user.id)
-        self.assertEqual(result.get(), "duplicate course")
+        self.assertEqual(result.get(), "duplicate course")  # noqa: PT009
         # the below will raise an exception if the record doesn't exist
         CourseRerunState.objects.find_first(
             course_key=split_course3_id,
@@ -135,8 +135,8 @@ class CloneCourseTest(CourseTestCase):
             CourseRerunState.objects.initiated(split_course3_id, split_course4_id, self.user, fields['display_name'])
             result = rerun_course.delay(str(split_course3_id), str(split_course4_id), self.user.id,
                                         json.dumps(fields, cls=EdxJSONEncoder))
-            self.assertIn("exception: ", result.get())
-            self.assertIsNone(self.store.get_course(split_course4_id), "Didn't delete course after error")
+            self.assertIn("exception: ", result.get())  # noqa: PT009
+            self.assertIsNone(self.store.get_course(split_course4_id), "Didn't delete course after error")  # noqa: PT009  # pylint: disable=line-too-long
             CourseRerunState.objects.find_first(
                 course_key=split_course4_id,
                 state=CourseRerunUIStateManager.State.FAILED

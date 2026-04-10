@@ -172,8 +172,8 @@ class ResetStudentCourse(TestSubmittingProblems):
             self.mock_clear_block_completion.assert_called_once_with(self.student_user, self.course.id)
             self.mock_clear_user_course_grades.assert_called_once_with(self.student_user.id, self.course.id)
             course_reset_audit = CourseResetAudit.objects.get(course_enrollment=self.enrollment)
-            self.assertIsNotNone(course_reset_audit.completed_at)
-            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.COMPLETE)
+            self.assertIsNotNone(course_reset_audit.completed_at)  # noqa: PT009
+            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.COMPLETE)  # noqa: PT009
             self.assert_email_sent_successfully({
                 'subject': f'The course { self.course.display_name } has been reset !',
                 'body': f'Your progress in course { self.course.display_name } has been reset on your behalf.'
@@ -217,9 +217,9 @@ class ResetStudentCourse(TestSubmittingProblems):
             self.mock_clear_block_completion.assert_called_once_with(self.student_user, self.course.id)
             self.mock_clear_user_course_grades.assert_called_once_with(self.student_user.id, self.course.id)
             course_reset_audit = CourseResetAudit.objects.get(course_enrollment=self.enrollment)
-            self.assertRaises(StudentModule.DoesNotExist, mock_reset_student_attempts)
-            self.assertIsNotNone(course_reset_audit.completed_at)
-            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.COMPLETE)
+            self.assertRaises(StudentModule.DoesNotExist, mock_reset_student_attempts)  # noqa: PT027
+            self.assertIsNotNone(course_reset_audit.completed_at)  # noqa: PT009
+            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.COMPLETE)  # noqa: PT009
 
     @patch('lms.djangoapps.support.tasks.reset_student_attempts')
     def test_reset_student_course_fail(self, mock_reset_student_attempts):
@@ -232,8 +232,8 @@ class ResetStudentCourse(TestSubmittingProblems):
             self.mock_clear_block_completion.assert_not_called()
             self.mock_clear_user_course_grades.assert_not_called()
             course_reset_audit = CourseResetAudit.objects.get(course_enrollment=self.enrollment)
-            self.assertIsNone(course_reset_audit.completed_at)
-            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.FAILED)
+            self.assertIsNone(course_reset_audit.completed_at)  # noqa: PT009
+            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.FAILED)  # noqa: PT009
 
     def test_reset_student_attempts_raise_exception(self):
         with patch(
@@ -246,5 +246,5 @@ class ResetStudentCourse(TestSubmittingProblems):
             self.mock_clear_block_completion.assert_not_called()
             self.mock_clear_user_course_grades.assert_not_called()
             course_reset_audit = CourseResetAudit.objects.get(course_enrollment=self.enrollment)
-            self.assertIsNone(course_reset_audit.completed_at)
-            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.FAILED)
+            self.assertIsNone(course_reset_audit.completed_at)  # noqa: PT009
+            self.assertEqual(course_reset_audit.status, CourseResetAudit.CourseResetStatus.FAILED)  # noqa: PT009

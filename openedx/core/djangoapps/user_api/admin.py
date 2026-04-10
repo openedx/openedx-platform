@@ -194,8 +194,8 @@ class UserRetirementPartnerReportingStatusAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "one user was"
         else:
-            message_bit = "%s users were" % rows_updated
-        self.message_user(request, "%s successfully reset to False." % message_bit)
+            message_bit = "%s users were" % rows_updated  # noqa: UP031
+        self.message_user(request, "%s successfully reset to False." % message_bit)  # noqa: UP031
 
     reset_state_false.short_description = "Reset is_being_processed to False"
 
@@ -207,8 +207,8 @@ class UserRetirementPartnerReportingStatusAdmin(admin.ModelAdmin):
         if rows_updated == 1:
             message_bit = "one user was"
         else:
-            message_bit = "%s users were" % rows_updated
-        self.message_user(request, "%s successfully reset to True." % message_bit)
+            message_bit = "%s users were" % rows_updated  # noqa: UP031
+        self.message_user(request, "%s successfully reset to True." % message_bit)  # noqa: UP031
 
     reset_state_true.short_description = "Reset is_being_processed to True"
 

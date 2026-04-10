@@ -1,7 +1,7 @@
 """
 Handle view-logic for the discussions app.
 """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 
 import edx_api_doc_tools as apidocs
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
@@ -63,7 +63,7 @@ class DiscussionsConfigurationSettingsView(APIView):
         return Response(data)
 
     @staticmethod
-    def get_configuration_data(request: Request, course_key_string: str) -> Dict:
+    def get_configuration_data(request: Request, course_key_string: str) -> Dict:  # noqa: UP006
         """
         Get discussions configuration data for the course
         Args:
@@ -160,7 +160,7 @@ class DiscussionsProvidersView(APIView):
         return Response(data)
 
     @staticmethod
-    def get_provider_data(course_key_string: str, show_all: bool = False) -> Dict:
+    def get_provider_data(course_key_string: str, show_all: bool = False) -> Dict:  # noqa: UP006
         """
         Get provider data for specified course
         Args:

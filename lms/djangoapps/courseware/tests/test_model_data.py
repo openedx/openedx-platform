@@ -41,7 +41,7 @@ def mock_field(scope, name):
     return field
 
 
-def mock_block(fields=[]):  # lint-amnesty, pylint: disable=dangerous-default-value, missing-function-docstring
+def mock_block(fields=[]):  # lint-amnesty, pylint: disable=dangerous-default-value, missing-function-docstring  # noqa: B006
     block = Mock(entry_point=XBlock.entry_point)
     block.scope_ids = ScopeIds('user1', 'mock_problem', LOCATION('def_id'), LOCATION('usage_id'))
     block.module_class.fields.values.return_value = fields
@@ -81,11 +81,11 @@ class TestInvalidScopes(TestCase):  # lint-amnesty, pylint: disable=missing-clas
                       Scope(user=False, block=BlockScope.ALL)):
             key = DjangoKeyValueStore.Key(scope, None, None, 'field')
 
-            self.assertRaises(InvalidScopeError, self.kvs.get, key)
-            self.assertRaises(InvalidScopeError, self.kvs.set, key, 'value')
-            self.assertRaises(InvalidScopeError, self.kvs.delete, key)
-            self.assertRaises(InvalidScopeError, self.kvs.has, key)
-            self.assertRaises(InvalidScopeError, self.kvs.set_many, {key: 'value'})
+            self.assertRaises(InvalidScopeError, self.kvs.get, key)  # noqa: PT027
+            self.assertRaises(InvalidScopeError, self.kvs.set, key, 'value')  # noqa: PT027
+            self.assertRaises(InvalidScopeError, self.kvs.delete, key)  # noqa: PT027
+            self.assertRaises(InvalidScopeError, self.kvs.has, key)  # noqa: PT027
+            self.assertRaises(InvalidScopeError, self.kvs.set_many, {key: 'value'})  # noqa: PT027
 
 
 class OtherUserFailureTestMixin:
@@ -146,7 +146,7 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
         "Test that getting a missing field from an existing StudentModule raises a KeyError"
         # This should only read from the cache, not the database
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.get, user_state_key('not_a_field'))
+            self.assertRaises(KeyError, self.kvs.get, user_state_key('not_a_field'))  # noqa: PT027
 
     def test_set_existing_field(self):
         "Test that setting an existing user_state field changes the value"
@@ -187,12 +187,12 @@ class TestStudentModuleStorage(OtherUserFailureTestMixin, TestCase):
             with self.assertNumQueries(2, using='student_module_history'):
                 self.kvs.delete(user_state_key('a_field'))
         assert 1 == StudentModule.objects.all().count()
-        self.assertRaises(KeyError, self.kvs.get, user_state_key('not_a_field'))
+        self.assertRaises(KeyError, self.kvs.get, user_state_key('not_a_field'))  # noqa: PT027
 
     def test_delete_missing_field(self):
         "Test that deleting a missing field from an existing StudentModule raises a KeyError"
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.delete, user_state_key('not_a_field'))
+            self.assertRaises(KeyError, self.kvs.delete, user_state_key('not_a_field'))  # noqa: PT027
         assert 1 == StudentModule.objects.all().count()
         assert {'b_field': 'b_value', 'a_field': 'a_value'} == json.loads(StudentModule.objects.all()[0].state)
 
@@ -268,7 +268,7 @@ class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # lint-amnes
     def test_get_field_from_missing_student_module(self):
         "Test that getting a field from a missing StudentModule raises a KeyError"
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.get, user_state_key('a_field'))
+            self.assertRaises(KeyError, self.kvs.get, user_state_key('a_field'))  # noqa: PT027
 
     def test_set_field_in_missing_student_module(self):
         "Test that setting a field in a missing StudentModule creates the student module"
@@ -299,7 +299,7 @@ class TestMissingStudentModule(FilteredQueryCountMixin, TestCase):  # lint-amnes
     def test_delete_field_from_missing_student_module(self):
         "Test that deleting a field from a missing StudentModule raises a KeyError"
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.delete, user_state_key('a_field'))
+            self.assertRaises(KeyError, self.kvs.delete, user_state_key('a_field'))  # noqa: PT027
 
     def test_has_field_for_missing_student_module(self):
         "Test that `has` returns False for missing StudentModules"
@@ -353,7 +353,7 @@ class StorageTestBase:
     def test_get_missing_field(self):
         "Test that getting a missing field from an existing Storage Field raises a KeyError"
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.get, self.key_factory('missing_field'))
+            self.assertRaises(KeyError, self.kvs.get, self.key_factory('missing_field'))  # noqa: PT027
 
     def test_set_existing_field(self):
         "Test that setting an existing field changes the value"
@@ -379,7 +379,7 @@ class StorageTestBase:
     def test_delete_missing_field(self):
         "Test that deleting a missing field from an existing Storage Field raises a KeyError"
         with self.assertNumQueries(0):
-            self.assertRaises(KeyError, self.kvs.delete, self.key_factory('missing_field'))
+            self.assertRaises(KeyError, self.kvs.delete, self.key_factory('missing_field'))  # noqa: PT027
         assert 1 == self.storage_class.objects.all().count()
 
     def test_has_existing_field(self):

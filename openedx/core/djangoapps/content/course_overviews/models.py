@@ -72,7 +72,7 @@ class CourseOverview(TimeStampedModel):
     id = CourseKeyField(db_index=True, primary_key=True, max_length=255)
     _location = UsageKeyField(max_length=255)
     org = models.TextField(max_length=255, default='outdated_entry')
-    display_name = models.TextField(null=True)
+    display_name = models.TextField(null=True)  # noqa: DJ001
     display_number_with_default = models.TextField()
     display_org_with_default = models.TextField()
 
@@ -85,18 +85,18 @@ class CourseOverview(TimeStampedModel):
     start_date = models.DateTimeField(null=True)
     end_date = models.DateTimeField(null=True)
 
-    advertised_start = models.TextField(null=True)
+    advertised_start = models.TextField(null=True)  # noqa: DJ001
     announcement = models.DateTimeField(null=True)
 
     # URLs
     # Not allowing null per django convention; not sure why many TextFields in this model do allow null
     banner_image_url = models.TextField()
     course_image_url = models.TextField()
-    social_sharing_url = models.TextField(null=True)
-    end_of_course_survey_url = models.TextField(null=True)
+    social_sharing_url = models.TextField(null=True)  # noqa: DJ001
+    end_of_course_survey_url = models.TextField(null=True)  # noqa: DJ001
 
     # Certification data
-    certificates_display_behavior = models.TextField(null=True)
+    certificates_display_behavior = models.TextField(null=True)  # noqa: DJ001
     certificates_show_before_end = models.BooleanField(default=False)
     cert_html_view_enabled = models.BooleanField(default=False)
     has_any_active_web_certificate = models.BooleanField(default=False)
@@ -116,17 +116,17 @@ class CourseOverview(TimeStampedModel):
     # Enrollment details
     enrollment_start = models.DateTimeField(null=True)
     enrollment_end = models.DateTimeField(null=True)
-    enrollment_domain = models.TextField(null=True)
+    enrollment_domain = models.TextField(null=True)  # noqa: DJ001
     invitation_only = models.BooleanField(default=False)
     max_student_enrollments_allowed = models.IntegerField(null=True)
 
     # Catalog information
-    catalog_visibility = models.TextField(null=True)
-    short_description = models.TextField(null=True)
-    course_video_url = models.TextField(null=True)
-    effort = models.TextField(null=True)
+    catalog_visibility = models.TextField(null=True)  # noqa: DJ001
+    short_description = models.TextField(null=True)  # noqa: DJ001
+    course_video_url = models.TextField(null=True)  # noqa: DJ001
+    effort = models.TextField(null=True)  # noqa: DJ001
     self_paced = models.BooleanField(default=False)
-    marketing_url = models.TextField(null=True)
+    marketing_url = models.TextField(null=True)  # noqa: DJ001
     eligible_for_financial_aid = models.BooleanField(default=True)
 
     # Course highlight info, used to guide course update emails
@@ -134,8 +134,8 @@ class CourseOverview(TimeStampedModel):
 
     # Proctoring
     enable_proctored_exams = models.BooleanField(default=False)
-    proctoring_provider = models.TextField(null=True)
-    proctoring_escalation_email = models.TextField(null=True)
+    proctoring_provider = models.TextField(null=True)  # noqa: DJ001
+    proctoring_escalation_email = models.TextField(null=True)  # noqa: DJ001
     allow_proctoring_opt_out = models.BooleanField(default=False)
 
     # Entrance Exam information
@@ -146,9 +146,9 @@ class CourseOverview(TimeStampedModel):
     # Open Response Assessment configuration
     force_on_flexible_peer_openassessments = models.BooleanField(default=False)
 
-    external_id = models.CharField(max_length=128, null=True, blank=True)
+    external_id = models.CharField(max_length=128, null=True, blank=True)  # noqa: DJ001
 
-    language = models.TextField(null=True)
+    language = models.TextField(null=True)  # noqa: DJ001
 
     history = HistoricalRecords()
 
@@ -1004,11 +1004,11 @@ class CourseOverviewTab(models.Model):
     """
     tab_id = models.CharField(max_length=50)
     course_overview = models.ForeignKey(CourseOverview, db_index=True, related_name="tab_set", on_delete=models.CASCADE)
-    type = models.CharField(max_length=50, null=True)
-    name = models.TextField(null=True)
+    type = models.CharField(max_length=50, null=True)  # noqa: DJ001
+    name = models.TextField(null=True)  # noqa: DJ001
     course_staff_only = models.BooleanField(default=False)
-    url_slug = models.TextField(null=True)
-    link = models.TextField(null=True)
+    url_slug = models.TextField(null=True)  # noqa: DJ001
+    link = models.TextField(null=True)  # noqa: DJ001
     is_hidden = models.BooleanField(default=False)
 
     def __str__(self):
@@ -1152,7 +1152,7 @@ class CourseOverviewImageSet(TimeStampedModel):
             pass
 
     def __str__(self):
-        return "CourseOverviewImageSet({}, small_url={}, large_url={})".format(
+        return "CourseOverviewImageSet({}, small_url={}, large_url={})".format(  # noqa: UP032
             self.course_overview_id, self.small_url, self.large_url
         )
 
@@ -1187,7 +1187,7 @@ class CourseOverviewImageConfig(ConfigurationModel):
         return (self.large_width, self.large_height)
 
     def __str__(self):
-        return "CourseOverviewImageConfig(enabled={}, small={}, large={})".format(
+        return "CourseOverviewImageConfig(enabled={}, small={}, large={})".format(  # noqa: UP032
             self.enabled, self.small, self.large
         )
 

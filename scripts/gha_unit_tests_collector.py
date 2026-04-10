@@ -24,7 +24,7 @@ def update_unit_test_modules(module_name, shard_config, unit_test_modules):
 def get_unit_test_modules(module_name="lms"):
     unit_test_modules = set()
     all_unit_test_shards = get_all_unit_test_shards()
-    for shard_name, shard_config in all_unit_test_shards.items():
+    for shard_name, shard_config in all_unit_test_shards.items():  # noqa: B007
         unit_test_modules = update_unit_test_modules(module_name, shard_config, unit_test_modules)
     return unit_test_modules
 

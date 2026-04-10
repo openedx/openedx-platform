@@ -405,7 +405,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         Tests the result if incorrect json is received.
         """
         mock_get.return_value.content = b"Error"
-        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)
+        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)  # noqa: PT027
 
     @patch("lms.djangoapps.edxnotes.helpers.requests.get", autospec=True)
     def test_get_notes_empty_collection(self, mock_get):
@@ -413,7 +413,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         Tests the result if an empty response is received.
         """
         mock_get.return_value.content = json.dumps({}).encode('utf-8')
-        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)
+        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)  # noqa: PT027
 
     @patch("lms.djangoapps.edxnotes.helpers.requests.get", autospec=True)
     def test_search_correct_data(self, mock_get):
@@ -509,7 +509,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         Tests the result if incorrect json is received.
         """
         mock_get.return_value.content = b"Error"
-        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)
+        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)  # noqa: PT027
 
     @patch("lms.djangoapps.edxnotes.helpers.requests.get", autospec=True)
     def test_search_wrong_data_format(self, mock_get):
@@ -517,7 +517,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         Tests the result if incorrect data structure is received.
         """
         mock_get.return_value.content = json.dumps({"1": 2}).encode('utf-8')
-        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)
+        self.assertRaises(EdxNotesParseError, helpers.get_notes, self.request, self.course)  # noqa: PT027
 
     @patch("lms.djangoapps.edxnotes.helpers.requests.get", autospec=True)
     def test_search_empty_collection(self, mock_get):
@@ -711,7 +711,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         """
         Tests `get_block_context` method for the sequential.
         """
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 "display_name": self.sequential.display_name_with_default,
                 "location": str(self.sequential.location),
@@ -724,7 +724,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         """
         Tests `get_block_context` method for the components.
         """
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 "display_name": self.html_block_1.display_name_with_default,
                 "location": str(self.html_block_1.location),
@@ -736,7 +736,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
         """
         Tests `get_block_context` method for the chapters.
         """
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 "display_name": self.chapter.display_name_with_default,
                 "index": 0,
@@ -745,7 +745,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
             },
             helpers.get_block_context(self.course, self.chapter)
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             {
                 "display_name": self.chapter_2.display_name_with_default,
                 "index": 1,

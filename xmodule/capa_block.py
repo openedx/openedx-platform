@@ -370,7 +370,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         """
         # self.score is initialized in self.lcp but in this method is accessed before self.lcp so just call it first.
         try:
-            self.lcp
+            self.lcp  # noqa: B018
         except Exception as err:  # pylint: disable=broad-exception-caught
             html = self.handle_fatal_lcp_error(err if show_detailed_errors else None)
         else:
@@ -413,7 +413,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
           <other request-specific values here > }
         """
         # self.score is initialized in self.lcp but in this method is accessed before self.lcp so just call it first.
-        self.lcp  # pylint: disable=pointless-statement
+        self.lcp  # pylint: disable=pointless-statement  # noqa: B018
         handlers = {
             "hint_button": self.hint_button,
             "problem_get": self.get_problem,
@@ -817,7 +817,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
             lcp = self.new_lcp(self.get_state_for_lcp())
         except Exception as err:
             msg = f"cannot create LoncapaProblem {str(self.location)}: {err}"
-            raise LoncapaProblemError(msg).with_traceback(sys.exc_info()[2])
+            raise LoncapaProblemError(msg).with_traceback(sys.exc_info()[2])  # noqa: B904
 
         if self.score is None:
             self.set_score(self.score_from_lcp(lcp))
@@ -1467,7 +1467,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         True iff full points
         """
         # self.score is initialized in self.lcp but in this method is accessed before self.lcp so just call it first.
-        self.lcp  # pylint: disable=pointless-statement
+        self.lcp  # pylint: disable=pointless-statement  # noqa: B018
         return self.score.raw_earned == self.score.raw_possible
 
     def answer_available(self):  # pylint: disable=too-many-branches,too-many-return-statements
@@ -2305,7 +2305,7 @@ class _BuiltInProblemBlock(  # pylint: disable=too-many-public-methods,too-many-
         # even if the number of attempts have been reset and this problem is regraded.
         self.lcp.context["attempt"] = max(self.attempts, 1)
         new_correct_map_list = []
-        for student_answers, correct_map in zip(self.student_answers_history, self.correct_map_history):
+        for student_answers, correct_map in zip(self.student_answers_history, self.correct_map_history):  # noqa: B905
             new_correct_map = self.lcp.get_grade_from_current_answers(student_answers, correct_map)
             new_correct_map_list.append(new_correct_map)
         self.lcp.correct_map_history = new_correct_map_list

@@ -181,7 +181,7 @@ class AppleIdAuth(BaseOAuth2):
                 algorithms=['RS256'],
             )
         except PyJWTError:
-            raise AuthFailed(self, 'Token validation failed')
+            raise AuthFailed(self, 'Token validation failed')  # noqa: B904
 
         return decoded
 
@@ -247,6 +247,6 @@ class AppleIdAuth(BaseOAuth2):
         return super().do_auth(
             access_token,
             response=decoded_data,
-            *args,
+            *args,  # noqa: B026
             **kwargs
         )

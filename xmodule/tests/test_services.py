@@ -58,7 +58,7 @@ class TestSettingsService(unittest.TestCase):
 
     def test_get_given_none_throws_value_error(self):
         """  Test that given None throws value error """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self.settings_service.get_settings_bucket(None)
 
     @override_settings()
@@ -116,7 +116,7 @@ class TestConfigurationService(unittest.TestCase):
         Test that instantiating ConfigurationService raises exception on passing
         a class which is not subclass of ConfigurationModel.
         """
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             ConfigurationService(DummyUnexpected)
 
     def test_configuration_service(self):

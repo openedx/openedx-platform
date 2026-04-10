@@ -288,7 +288,7 @@ class OpenedXContentRuntime(XBlockRuntime):
                 raise RuntimeError("You do not have permission to edit this XBlock")
 
         serialized = serialize_modulestore_block_for_openedx_content(block)
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=timezone.utc)  # noqa: UP017
         usage_key = block.scope_ids.usage_id
         with atomic():
             component = self._get_component_from_usage_key(usage_key)
@@ -454,7 +454,7 @@ class OpenedXContentRuntime(XBlockRuntime):
                 # Retry with unquoted path. We don't always unquote because it would not
                 # be backwards-compatible, but we need to try both.
                 asset_path = unquote(asset_path)
-                media = (
+                media = (  # noqa: F841
                     component_version
                     .componentversionmedia_set
                     .filter(media__has_file=True)

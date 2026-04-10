@@ -255,7 +255,7 @@ class TestGetCourseListMultipleCourses(CourseListTestMixin, ModuleStoreTestCase)
             instructor_user,
             permissions={'instructor'})
 
-        self.assertEqual({c.id for c in filtered_courses}, {self.course.id})
+        self.assertEqual({c.id for c in filtered_courses}, {self.course.id})  # noqa: PT009
 
     def test_filter_by_keys(self):
         """
@@ -396,7 +396,7 @@ class TestGetCourseMembers(CourseApiTestMixin, SharedModuleStoreTestCase):
     """
     @classmethod
     def setUpClass(cls):
-        super(TestGetCourseMembers, cls).setUpClass()
+        super(TestGetCourseMembers, cls).setUpClass()  # noqa: UP008
         cls.course = cls.create_course()
         cls.honor = cls.create_user('honor', is_staff=False)
         cls.staff = cls.create_user('staff', is_staff=True)
@@ -417,23 +417,23 @@ class TestGetCourseMembers(CourseApiTestMixin, SharedModuleStoreTestCase):
         with self.assertNumQueries(3):
             members = get_course_members(self.course.id)
 
-        self.assertEqual(len(members), 3)
+        self.assertEqual(len(members), 3)  # noqa: PT009
 
         # Check parameters for all users
         expected_properties = ['id', 'username', 'email', 'name', 'enrollment_mode', 'roles']
         for user_id in members:
-            self.assertCountEqual(members[user_id], expected_properties)
+            self.assertCountEqual(members[user_id], expected_properties)  # noqa: PT009
 
         # Check that users have correct roles
         # Honor should be only a student and have the enrollment mode set
-        self.assertEqual(members[self.honor.id]['roles'], ['student'])
-        self.assertEqual(members[self.honor.id]['enrollment_mode'], 'audit')
+        self.assertEqual(members[self.honor.id]['roles'], ['student'])  # noqa: PT009
+        self.assertEqual(members[self.honor.id]['enrollment_mode'], 'audit')  # noqa: PT009
         # Instructor should have both roles and enrollment_mode set
-        self.assertEqual(members[self.instructor.id]['roles'], ['student', 'instructor'])
-        self.assertEqual(members[self.instructor.id]['enrollment_mode'], 'audit')
+        self.assertEqual(members[self.instructor.id]['roles'], ['student', 'instructor'])  # noqa: PT009
+        self.assertEqual(members[self.instructor.id]['enrollment_mode'], 'audit')  # noqa: PT009
         # Staff should only have the staff role
-        self.assertEqual(members[self.staff.id]['roles'], ['staff'])
-        self.assertEqual(members[self.staff.id]['enrollment_mode'], None)
+        self.assertEqual(members[self.staff.id]['roles'], ['staff'])  # noqa: PT009
+        self.assertEqual(members[self.staff.id]['enrollment_mode'], None)  # noqa: PT009
 
     def test_same_result_with_csa_or_enrollment(self):
         """
@@ -461,7 +461,7 @@ class TestGetCourseMembers(CourseApiTestMixin, SharedModuleStoreTestCase):
 
         # Check properties (except the ones that change depending on role)
         for item in ['id', 'username', 'email', 'name']:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 members_courseaccessroles[user.id][item],
                 members_enrollments[user.id][item]
             )
@@ -472,7 +472,7 @@ class TestGetCourseMembers(CourseApiTestMixin, SharedModuleStoreTestCase):
         Check if trying to retrieve more than settings.COURSE_MEMBER_API_ENROLLMENT_LIMIT
         fails.
         """
-        with self.assertRaises(OverEnrollmentLimitException):
+        with self.assertRaises(OverEnrollmentLimitException):  # noqa: PT027
             get_course_members(self.course.id)
 
 

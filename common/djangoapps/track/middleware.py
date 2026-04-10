@@ -12,7 +12,7 @@ import logging
 import re
 import sys
 
-import six  # lint-amnesty, pylint: disable=unused-import
+import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
 from eventtracking import tracker

@@ -246,7 +246,7 @@ class BlocksView(DeveloperErrorViewMixin, ListAPIView):
                 patch_response_headers(response)
             return response
         except ItemNotFoundError as exception:
-            raise Http404(f"Block not found: {str(exception)}")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404(f"Block not found: {str(exception)}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 @view_auth_classes(is_authenticated=False)
@@ -309,7 +309,7 @@ class BlocksInCourseView(BlocksView):
             course_key = CourseKey.from_string(course_key_string)
             course_usage_key = modulestore().make_course_usage_key(course_key)
         except InvalidKeyError:
-            raise ValidationError(f"'{str(course_key_string)}' is not a valid course key.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f"'{str(course_key_string)}' is not a valid course key.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         response = super().list(request, course_usage_key,
                                 hide_access_denials=hide_access_denials)
         response = filter_discussion_xblocks_from_response(response, course_key)
@@ -387,7 +387,7 @@ class BlockMetadataView(DeveloperErrorViewMixin, ListAPIView):
         try:
             usage_key = UsageKey.from_string(usage_key_string)
         except InvalidKeyError:
-            raise ValidationError(f"'{str(usage_key_string)}' is not a valid usage key.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError(f"'{str(usage_key_string)}' is not a valid usage key.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if not has_access(request.user, "staff", usage_key):
             raise PermissionDenied(f"You do not have permission to access block '{usage_key_string}'.")
@@ -395,7 +395,7 @@ class BlockMetadataView(DeveloperErrorViewMixin, ListAPIView):
         try:
             block = modulestore().get_item(usage_key)
         except ItemNotFoundError as exception:
-            raise Http404(f"Block not found: {str(exception)}")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404(f"Block not found: {str(exception)}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         includes = request.GET.get("include", "").split(",")
         data = get_block_metadata(block, includes)

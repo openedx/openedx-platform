@@ -385,7 +385,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         user._has_global_staff_access.return_value = True
         assert access._has_access_string(user, 'staff', 'global')
 
-        self.assertRaises(ValueError, access._has_access_string, user, 'not_staff', 'global')
+        self.assertRaises(ValueError, access._has_access_string, user, 'not_staff', 'global')  # noqa: PT027
 
     @ddt.data(
         ('load', False, True, True),
@@ -403,7 +403,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         ):
             assert bool(access._has_access_error_block(user, action, block, self.course.id)) == expected_response
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access._has_access_error_block(self.course_instructor, 'not_load_or_staff', block, self.course.id)
 
     def test__has_access_to_block(self):
@@ -416,7 +416,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         # Always returns true because DISABLE_START_DATES is set in test.py
         assert access._has_access_to_block(user, 'load', block)
         assert access._has_access_to_block(user, 'instructor', block)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access._has_access_to_block(user, 'not_load_or_staff', block)
 
     @ddt.data(
@@ -606,11 +606,11 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
 
         # User cannot enroll in the course if it is just invitation only.
         course = self._mock_course_with_invitation(invitation=True)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
         # User can enroll in the course if it is not just invitation only.
         course = self._mock_course_with_invitation(invitation=False)
-        self.assertTrue(access._has_access_course(user, 'enroll', course))
+        self.assertTrue(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
     @override_settings(COURSES_INVITE_ONLY=True)
     def test__course_default_invite_only_flag_true(self):
@@ -622,11 +622,11 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
 
         # User cannot enroll in the course if it is just invitation only and COURSES_INVITE_ONLY is also set.
         course = self._mock_course_with_invitation(invitation=True)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
         # User cannot enroll in the course if COURSES_INVITE_ONLY is set despite of the course invitation_only value.
         course = self._mock_course_with_invitation(invitation=False)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
     @ddt.data(True, False)
     def test_old_mongo_is_invite_only(self, old_mongo):
@@ -635,8 +635,8 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         """
         user = UserFactory.create()
         course = self._mock_course_with_invitation(invitation=False, deprecated=old_mongo)
-        self.assertEqual(course_is_invitation_only(course), old_mongo)
-        self.assertEqual(access._has_access_course(user, 'enroll', course).has_access, not old_mongo)
+        self.assertEqual(course_is_invitation_only(course), old_mongo)  # noqa: PT009
+        self.assertEqual(access._has_access_course(user, 'enroll', course).has_access, not old_mongo)  # noqa: PT009
 
     def _mock_course_with_invitation(self, invitation, deprecated=False):
         yesterday = datetime.datetime.now(pytz.utc) - datetime.timedelta(days=1)
@@ -900,7 +900,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         ValueError.
         """
         overview = CourseOverview.get_from_id(self.course_default.id)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access.has_access(self.user, '_non_existent_action', overview)
 
     @ddt.data(
@@ -985,7 +985,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
             user = getattr(self, user_attr_name)
             user = User.objects.get(id=user.id)
             request.user = user
-            course_enrollment = CourseEnrollmentFactory(user=user, course_id=course.id)
+            course_enrollment = CourseEnrollmentFactory(user=user, course_id=course.id)  # noqa: F841
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(

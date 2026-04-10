@@ -13,7 +13,7 @@ from rest_framework import serializers
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.api import can_show_certificate_available_date_field
 from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
-    CourseOverview,
+    CourseOverview,  # noqa: F401
 )
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.api.fields import AbsoluteURLField

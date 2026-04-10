@@ -184,7 +184,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
 
         userreports = sorted(userreports, key=lambda u: u["username"])
         users = sorted(self.users, key=lambda u: u.username)
-        for userreport, user in zip(userreports, users):
+        for userreport, user in zip(userreports, users):  # noqa: B905
             assert set(userreport.keys()) == set(query_features)
             assert userreport['username'] == user.username
             assert userreport['email'] == user.email
@@ -353,7 +353,7 @@ class TestAnalyticsBasic(ModuleStoreTestCase):
 
         userreports = sorted(userreports, key=lambda u: u["username"])
         users = sorted(self.users, key=lambda u: u.username)
-        for userreport, user in zip(userreports, users):
+        for userreport, user in zip(userreports, users):  # noqa: B905
             assert set(userreport.keys()) == set(query_features)
             assert userreport['age'] == str(user.age)
 

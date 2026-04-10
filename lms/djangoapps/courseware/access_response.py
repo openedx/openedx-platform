@@ -70,7 +70,7 @@ class AccessResponse:
         }
 
     def __repr__(self):
-        return "AccessResponse({!r}, {!r}, {!r}, {!r}, {!r}, {!r})".format(
+        return "AccessResponse({!r}, {!r}, {!r}, {!r}, {!r}, {!r})".format(  # noqa: UP032
             self.has_access,
             self.error_code,
             self.developer_message,

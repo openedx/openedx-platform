@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _  # noqa: F401
 from opaque_keys.edx.locator import LibraryUsageLocatorV2
 
 from .libraries import PublishableItem, library_component_usage_key

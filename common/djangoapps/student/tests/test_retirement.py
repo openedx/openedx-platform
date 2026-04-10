@@ -238,7 +238,7 @@ def test_get_potentially_retired_user_bad_hash():
     """
     fake_username = "fake username"
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         get_potentially_retired_user_by_username_and_hash(fake_username, "bad hash")
 
 

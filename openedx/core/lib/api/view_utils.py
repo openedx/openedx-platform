@@ -291,7 +291,7 @@ class LazySequence(Sequence):
                     self._data.append(next(self.iterable))
                 except StopIteration:
                     self._exhausted = True
-                    raise IndexError("Underlying sequence exhausted")  # lint-amnesty, pylint: disable=raise-missing-from
+                    raise IndexError("Underlying sequence exhausted")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             return self._data[index]
         elif isinstance(index, slice):
@@ -324,12 +324,12 @@ class LazySequence(Sequence):
 
     def __repr__(self):
         if self._exhausted:
-            return "LazySequence({!r}, {!r})".format(
+            return "LazySequence({!r}, {!r})".format(  # noqa: UP032
                 self._data,
                 self.est_len,
             )
         else:
-            return "LazySequence(itertools.chain({!r}, {!r}), {!r})".format(
+            return "LazySequence(itertools.chain({!r}, {!r}), {!r})".format(  # noqa: UP032
                 self._data,
                 self.iterable,
                 self.est_len,

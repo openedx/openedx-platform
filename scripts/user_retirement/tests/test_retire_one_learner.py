@@ -353,7 +353,7 @@ def test_get_segment_id_not_found(*args, **kwargs):
     mock_get_retirement_state = kwargs['get_learner_retirement_state']
 
     mock_get_access_token.return_value = ('THIS_IS_A_JWT', None)
-    mock_get_tracking_key.side_effect = HttpDoesNotExistException('{} not found'.format(username))
+    mock_get_tracking_key.side_effect = HttpDoesNotExistException('{} not found'.format(username))  # noqa: UP032
 
     mock_get_retirement_state.return_value = get_fake_user_retirement(
         original_username=username,

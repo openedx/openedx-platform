@@ -32,7 +32,7 @@ class RetirementStateError(Exception):
     pass
 
 
-class UserPreference(models.Model):
+class UserPreference(models.Model):  # noqa: DJ008
     """
     A user's preference, stored as generic text to be processed by client
 
@@ -146,7 +146,7 @@ def post_delete_callback(sender, **kwargs):
     )
 
 
-class UserCourseTag(models.Model):
+class UserCourseTag(models.Model):  # noqa: DJ008
     """
     Per-course user tags, to be used by various things that want to store tags about
     the user.  Added initially to store assignment to experimental groups.
@@ -196,7 +196,7 @@ class RetirementState(models.Model):
     def __str__(self):
         return f'{self.state_name} (step {self.state_execution_order})'
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         ordering = ('state_execution_order',)
 
     @classmethod
@@ -239,7 +239,7 @@ class UserRetirementPartnerReportingStatus(TimeStampedModel):
         verbose_name_plural = 'User Retirement Reporting Statuses'
 
     def __str__(self):
-        return 'UserRetirementPartnerReportingStatus: {} is being processed: {}'.format(
+        return 'UserRetirementPartnerReportingStatus: {} is being processed: {}'.format(  # noqa: UP032
             self.user,
             self.is_being_processed
         )
@@ -316,7 +316,7 @@ class UserRetirementStatus(TimeStampedModel):
                 raise ValueError()
         except ValueError:
             err = f'{new_state} does not exist or is an eariler state than current state {self.current_state}'
-            raise RetirementStateError(err)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise RetirementStateError(err)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def _validate_update_data(self, data):
         """
@@ -343,7 +343,7 @@ class UserRetirementStatus(TimeStampedModel):
         try:
             pending = RetirementState.objects.all().order_by('state_execution_order')[0]
         except IndexError:
-            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise RetirementStateError('Default state does not exist! Populate retirement states to retire users.')  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
         if cls.objects.filter(user=user).exists():
             raise RetirementStateError(f'User {user} already has a retirement status row!')
@@ -407,13 +407,13 @@ class UserRetirementStatus(TimeStampedModel):
                 break
 
         if retirement is None:
-            raise UserRetirementStatus.DoesNotExist('{} does not have an exact match in UserRetirementStatus. '
+            raise UserRetirementStatus.DoesNotExist('{} does not have an exact match in UserRetirementStatus. '  # noqa: UP032  # pylint: disable=line-too-long
                                                     '{} similar rows found.'.format(username, len(retirements)))
 
         state = retirement.current_state
 
         if state.required or state.state_name.endswith('_COMPLETE'):
-            raise RetirementStateError('{} is in {}, not a valid state to perform retirement '
+            raise RetirementStateError('{} is in {}, not a valid state to perform retirement '  # noqa: UP032
                                        'actions on.'.format(retirement, state.state_name))
 
         return retirement

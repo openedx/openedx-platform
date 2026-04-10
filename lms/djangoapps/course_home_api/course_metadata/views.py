@@ -81,7 +81,7 @@ class CourseHomeMetadataView(RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         course_key_string = kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
-        original_user_is_global_staff = self.request.user.is_staff
+        original_user_is_global_staff = self.request.user.is_staff  # noqa: F841
         original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
 
         try:

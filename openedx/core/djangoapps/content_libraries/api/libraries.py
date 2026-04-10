@@ -445,7 +445,7 @@ def create_library(
     """
     assert isinstance(org, Organization)
     validate_unicode_slug(slug)
-    is_learning_package_loaded = learning_package is not None
+    is_learning_package_loaded = learning_package is not None  # noqa: F841
     try:
         with transaction.atomic():
             ref = ContentLibrary.objects.create(
@@ -475,7 +475,7 @@ def create_library(
             ref.learning_package = learning_package
             ref.save()
     except IntegrityError:
-        raise LibraryAlreadyExists(slug)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise LibraryAlreadyExists(slug)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # .. event_implemented_name: CONTENT_LIBRARY_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.created.v1

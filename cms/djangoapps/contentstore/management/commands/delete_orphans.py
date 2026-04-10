@@ -25,7 +25,7 @@ class Command(BaseCommand):
         try:
             course_key = CourseKey.from_string(options['course_id'])
         except InvalidKeyError:
-            raise CommandError("Invalid course key.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("Invalid course key.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if options['commit']:
             print('Deleting orphans from the course:')

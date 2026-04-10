@@ -53,8 +53,8 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         response = self.client.get(self.mfe_config_api_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), {**default_legacy_config, "EXAMPLE_VAR": "value"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.json(), {**default_legacy_config, "EXAMPLE_VAR": "value"})  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_get_mfe_config_with_queryparam(self, configuration_helpers_mock):
@@ -75,11 +75,11 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         response = self.client.get(f"{self.mfe_config_api_url}?mfe=mymfe")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         calls = [call("MFE_CONFIG", settings.MFE_CONFIG),
                  call("MFE_CONFIG_OVERRIDES", settings.MFE_CONFIG_OVERRIDES)]
         configuration_helpers_mock.get_value.assert_has_calls(calls)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response.json(), {**default_legacy_config, "EXAMPLE_VAR": "mymfe_value", "OTHER": "other"}
         )
 
@@ -151,11 +151,11 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         response = self.client.get(f"{self.mfe_config_api_url}?mfe=mymfe")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         calls = [call("MFE_CONFIG", settings.MFE_CONFIG),
                  call("MFE_CONFIG_OVERRIDES", settings.MFE_CONFIG_OVERRIDES)]
         configuration_helpers_mock.get_value.assert_has_calls(calls)
-        self.assertEqual(response.json(), expected_response)
+        self.assertEqual(response.json(), expected_response)  # noqa: PT009
 
     def test_get_mfe_config_from_django_settings(self):
         """Test that when there is no site configuration, the API takes the django settings.
@@ -164,8 +164,8 @@ class MFEConfigTestCase(APITestCase):
         - The status of the response of the request is a HTTP_200_OK.
         - The json response is equal to MFE_CONFIG in lms/envs/test.py"""
         response = self.client.get(self.mfe_config_api_url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.json(), default_legacy_config | settings.MFE_CONFIG)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.json(), default_legacy_config | settings.MFE_CONFIG)  # noqa: PT009
 
     def test_get_mfe_config_with_queryparam_from_django_settings(self):
         """Test that when there is no site configuration, the API with queryparam takes the django settings.
@@ -175,9 +175,9 @@ class MFEConfigTestCase(APITestCase):
         - The json response is equal to MFE_CONFIG merged with MFE_CONFIG_OVERRIDES['mymfe']
         """
         response = self.client.get(f"{self.mfe_config_api_url}?mfe=mymfe")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         expected = default_legacy_config | settings.MFE_CONFIG | settings.MFE_CONFIG_OVERRIDES["mymfe"]
-        self.assertEqual(response.json(), expected)
+        self.assertEqual(response.json(), expected)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     @override_settings(ENABLE_MFE_CONFIG_API=False)
@@ -190,7 +190,7 @@ class MFEConfigTestCase(APITestCase):
         """
         response = self.client.get(self.mfe_config_api_url)
         configuration_helpers_mock.get_value.assert_not_called()
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_get_mfe_config_for_catalog(self, configuration_helpers_mock):
@@ -224,17 +224,17 @@ class MFEConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         response = self.client.get(f"{self.mfe_config_api_url}?mfe=catalog")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
         data = response.json()
-        self.assertEqual(data["BASE_URL"], "https://catalog.example.com")
-        self.assertEqual(data["SOME_SETTING"], "catalog_value")
-        self.assertEqual(data["ENABLE_COURSE_SORTING_BY_START_DATE"], True)
-        self.assertEqual(data["HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID"], None)
-        self.assertEqual(data["HOMEPAGE_COURSE_MAX"], 8)
-        self.assertEqual(data["COURSE_ABOUT_TWITTER_ACCOUNT"], "@TestAccount")
-        self.assertEqual(data["NON_BROWSABLE_COURSES"], True)
-        self.assertEqual(data["ENABLE_COURSE_DISCOVERY"], False)
+        self.assertEqual(data["BASE_URL"], "https://catalog.example.com")  # noqa: PT009
+        self.assertEqual(data["SOME_SETTING"], "catalog_value")  # noqa: PT009
+        self.assertEqual(data["ENABLE_COURSE_SORTING_BY_START_DATE"], True)  # noqa: PT009
+        self.assertEqual(data["HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID"], None)  # noqa: PT009
+        self.assertEqual(data["HOMEPAGE_COURSE_MAX"], 8)  # noqa: PT009
+        self.assertEqual(data["COURSE_ABOUT_TWITTER_ACCOUNT"], "@TestAccount")  # noqa: PT009
+        self.assertEqual(data["NON_BROWSABLE_COURSES"], True)  # noqa: PT009
+        self.assertEqual(data["ENABLE_COURSE_DISCOVERY"], False)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_config_order_of_precedence(self, configuration_helpers_mock):
@@ -282,44 +282,44 @@ class MFEConfigTestCase(APITestCase):
         ):
             response = self.client.get(f"{self.mfe_config_api_url}?mfe=catalog")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
 
         # MFE_CONFIG_OVERRIDES from site conf (highest precedence)
-        self.assertEqual(data["HOMEPAGE_COURSE_MAX"], 15)
+        self.assertEqual(data["HOMEPAGE_COURSE_MAX"], 15)  # noqa: PT009
 
         # MFE_CONFIG from site conf takes precedence over plain site configuration and settings
-        self.assertEqual(data["ENABLE_COURSE_SORTING_BY_START_DATE"], False)
+        self.assertEqual(data["ENABLE_COURSE_SORTING_BY_START_DATE"], False)  # noqa: PT009
 
         # Plain site configuration takes precedence over plain settings
-        self.assertEqual(data["HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID"], "site-conf-youtube-id")
+        self.assertEqual(data["HOMEPAGE_PROMO_VIDEO_YOUTUBE_ID"], "site-conf-youtube-id")  # noqa: PT009
 
         # Value in original MFE_CONFIG not overridden by catalog config should be preserved
-        self.assertEqual(data["PRESERVED_SETTING"], "preserved")
+        self.assertEqual(data["PRESERVED_SETTING"], "preserved")  # noqa: PT009
 
 
 class MfeNameToAppIdTests(SimpleTestCase):
     """Tests for the mfe_name_to_app_id helper."""
 
     def test_simple_name(self):
-        self.assertEqual(mfe_name_to_app_id("authn"), "org.openedx.frontend.app.authn")
+        self.assertEqual(mfe_name_to_app_id("authn"), "org.openedx.frontend.app.authn")  # noqa: PT009
 
     def test_kebab_case_name(self):
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             mfe_name_to_app_id("learner-dashboard"),
             "org.openedx.frontend.app.learnerDashboard",
         )
 
     def test_mapped_alias(self):
         """course-authoring is an alias for authoring in the explicit map."""
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             mfe_name_to_app_id("course-authoring"),
             "org.openedx.frontend.app.authoring",
         )
 
     def test_fallback_for_unknown_name(self):
         """Unknown names fall back to programmatic kebab-to-camelCase conversion."""
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             mfe_name_to_app_id("admin-portal-enterprise"),
             "org.openedx.frontend.app.adminPortalEnterprise",
         )
@@ -337,7 +337,7 @@ class FrontendSiteConfigTestCase(APITestCase):
     def test_404_when_disabled(self):
         """API returns 404 when ENABLE_MFE_CONFIG_API is False."""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_site_level_keys_translated(self, configuration_helpers_mock):
@@ -366,25 +366,25 @@ class FrontendSiteConfigTestCase(APITestCase):
         configuration_helpers_mock.get_value.side_effect = side_effect
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
 
         # RequiredSiteConfig
-        self.assertEqual(data["siteName"], "Test Site")
-        self.assertEqual(data["baseUrl"], "https://apps.example.com")
-        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")
-        self.assertEqual(data["loginUrl"], "https://courses.example.com/login")
-        self.assertEqual(data["logoutUrl"], "https://courses.example.com/logout")
+        self.assertEqual(data["siteName"], "Test Site")  # noqa: PT009
+        self.assertEqual(data["baseUrl"], "https://apps.example.com")  # noqa: PT009
+        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")  # noqa: PT009
+        self.assertEqual(data["loginUrl"], "https://courses.example.com/login")  # noqa: PT009
+        self.assertEqual(data["logoutUrl"], "https://courses.example.com/logout")  # noqa: PT009
         # OptionalSiteConfig
-        self.assertEqual(data["headerLogoImageUrl"], "https://courses.example.com/logo.png")
-        self.assertEqual(data["accessTokenCookieName"], "edx-jwt")
-        self.assertEqual(data["languagePreferenceCookieName"], "lang-pref")
-        self.assertEqual(data["userInfoCookieName"], "edx-user-info")
-        self.assertEqual(data["csrfTokenApiPath"], "/csrf/api/v1/token")
-        self.assertEqual(data["refreshAccessTokenApiPath"], "/login_refresh")
-        self.assertEqual(data["segmentKey"], "abc123")
+        self.assertEqual(data["headerLogoImageUrl"], "https://courses.example.com/logo.png")  # noqa: PT009
+        self.assertEqual(data["accessTokenCookieName"], "edx-jwt")  # noqa: PT009
+        self.assertEqual(data["languagePreferenceCookieName"], "lang-pref")  # noqa: PT009
+        self.assertEqual(data["userInfoCookieName"], "edx-user-info")  # noqa: PT009
+        self.assertEqual(data["csrfTokenApiPath"], "/csrf/api/v1/token")  # noqa: PT009
+        self.assertEqual(data["refreshAccessTokenApiPath"], "/login_refresh")  # noqa: PT009
+        self.assertEqual(data["segmentKey"], "abc123")  # noqa: PT009
         # LOGOUT_URL also generates an externalRoute for frontend-base
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             data["externalRoutes"],
             [{"role": "org.openedx.frontend.role.logout", "url": "https://courses.example.com/logout"}],
         )
@@ -410,15 +410,15 @@ class FrontendSiteConfigTestCase(APITestCase):
         data = response.json()
 
         # Site-level key translated to top level
-        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")
+        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")  # noqa: PT009
         # Unmapped MFE_CONFIG keys appear in commonAppConfig (not at the top level)
-        self.assertNotIn("CREDENTIALS_BASE_URL", data)
+        self.assertNotIn("CREDENTIALS_BASE_URL", data)  # noqa: PT009
         common = data["commonAppConfig"]
-        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")
-        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")
+        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")  # noqa: PT009
+        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")  # noqa: PT009
         # Legacy config keys also appear in commonAppConfig
         for legacy_key in default_legacy_config:
-            self.assertIn(legacy_key, common)
+            self.assertIn(legacy_key, common)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_apps_from_overrides(self, configuration_helpers_mock):
@@ -448,28 +448,28 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        self.assertIn("apps", data)
-        self.assertEqual(len(data["apps"]), 2)
+        self.assertIn("apps", data)  # noqa: PT009
+        self.assertEqual(len(data["apps"]), 2)  # noqa: PT009
 
         # Shared config (unmapped MFE_CONFIG keys + legacy config) is in commonAppConfig.
         common = data["commonAppConfig"]
-        self.assertEqual(common["SHARED_SETTING"], "shared_value")
+        self.assertEqual(common["SHARED_SETTING"], "shared_value")  # noqa: PT009
         for legacy_key in default_legacy_config:
-            self.assertIn(legacy_key, common)
+            self.assertIn(legacy_key, common)  # noqa: PT009
 
         # Apps should be sorted by MFE name; each carries only its own overrides.
         authn = data["apps"][0]
-        self.assertEqual(authn["appId"], "org.openedx.frontend.app.authn")
-        self.assertEqual(authn["config"]["ALLOW_PUBLIC_ACCOUNT_CREATION"], True)
-        self.assertIsNone(authn["config"]["ACTIVATION_EMAIL_SUPPORT_LINK"])
+        self.assertEqual(authn["appId"], "org.openedx.frontend.app.authn")  # noqa: PT009
+        self.assertEqual(authn["config"]["ALLOW_PUBLIC_ACCOUNT_CREATION"], True)  # noqa: PT009
+        self.assertIsNone(authn["config"]["ACTIVATION_EMAIL_SUPPORT_LINK"])  # noqa: PT009
         # Shared keys are NOT duplicated into per-app config
-        self.assertNotIn("SHARED_SETTING", authn["config"])
+        self.assertNotIn("SHARED_SETTING", authn["config"])  # noqa: PT009
 
         dashboard = data["apps"][1]
-        self.assertEqual(dashboard["appId"], "org.openedx.frontend.app.learnerDashboard")
-        self.assertEqual(dashboard["config"]["LEARNING_BASE_URL"], "http://apps.local.openedx.io:2000")
-        self.assertEqual(dashboard["config"]["ENABLE_PROGRAMS"], False)
-        self.assertNotIn("SHARED_SETTING", dashboard["config"])
+        self.assertEqual(dashboard["appId"], "org.openedx.frontend.app.learnerDashboard")  # noqa: PT009
+        self.assertEqual(dashboard["config"]["LEARNING_BASE_URL"], "http://apps.local.openedx.io:2000")  # noqa: PT009
+        self.assertEqual(dashboard["config"]["ENABLE_PROGRAMS"], False)  # noqa: PT009
+        self.assertNotIn("SHARED_SETTING", dashboard["config"])  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_app_overrides_separate_from_common(self, configuration_helpers_mock):
@@ -485,8 +485,8 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        self.assertEqual(data["commonAppConfig"]["SOME_KEY"], "base_value")
-        self.assertEqual(data["apps"][0]["config"]["SOME_KEY"], "overridden_value")
+        self.assertEqual(data["commonAppConfig"]["SOME_KEY"], "base_value")  # noqa: PT009
+        self.assertEqual(data["apps"][0]["config"]["SOME_KEY"], "overridden_value")  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_site_level_keys_stripped_from_app_overrides(self, configuration_helpers_mock):
@@ -513,13 +513,13 @@ class FrontendSiteConfigTestCase(APITestCase):
 
         app_config = data["apps"][0]["config"]
         # Site-level keys from overrides must not appear in app config
-        self.assertNotIn("BASE_URL", app_config)
-        self.assertNotIn("LOGIN_URL", app_config)
+        self.assertNotIn("BASE_URL", app_config)  # noqa: PT009
+        self.assertNotIn("LOGIN_URL", app_config)  # noqa: PT009
         # Non-site-level override keys are kept
-        self.assertEqual(app_config["APP_SPECIFIC_KEY"], "app_value")
+        self.assertEqual(app_config["APP_SPECIFIC_KEY"], "app_value")  # noqa: PT009
         # Site-level keys from overrides also must not appear in commonAppConfig
-        self.assertNotIn("BASE_URL", data["commonAppConfig"])
-        self.assertNotIn("LOGIN_URL", data["commonAppConfig"])
+        self.assertNotIn("BASE_URL", data["commonAppConfig"])  # noqa: PT009
+        self.assertNotIn("LOGIN_URL", data["commonAppConfig"])  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_no_apps_when_no_overrides(self, configuration_helpers_mock):
@@ -535,11 +535,11 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        self.assertNotIn("apps", data)
+        self.assertNotIn("apps", data)  # noqa: PT009
         # commonAppConfig is still present with legacy keys
-        self.assertIn("commonAppConfig", data)
+        self.assertIn("commonAppConfig", data)  # noqa: PT009
         for legacy_key in default_legacy_config:
-            self.assertIn(legacy_key, data["commonAppConfig"])
+            self.assertIn(legacy_key, data["commonAppConfig"])  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_unmapped_keys_in_common_app_config_without_overrides(self, configuration_helpers_mock):
@@ -560,11 +560,11 @@ class FrontendSiteConfigTestCase(APITestCase):
         data = response.json()
 
         # Site-level key is promoted to the top level
-        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")
+        self.assertEqual(data["lmsBaseUrl"], "https://courses.example.com")  # noqa: PT009
         # Unmapped keys are preserved in commonAppConfig
         common = data["commonAppConfig"]
-        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")
-        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")
+        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://credentials.example.com")  # noqa: PT009
+        self.assertEqual(common["STUDIO_BASE_URL"], "https://studio.example.com")  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_invalid_override_entry_skipped(self, configuration_helpers_mock):
@@ -585,34 +585,34 @@ class FrontendSiteConfigTestCase(APITestCase):
         response = self.client.get(self.url)
         data = response.json()
 
-        self.assertEqual(len(data["apps"]), 1)
-        self.assertEqual(data["apps"][0]["appId"], "org.openedx.frontend.app.authn")
+        self.assertEqual(len(data["apps"]), 1)  # noqa: PT009
+        self.assertEqual(data["apps"][0]["appId"], "org.openedx.frontend.app.authn")  # noqa: PT009
 
     def test_from_django_settings(self):
         """When there is no site configuration, the API uses django settings."""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
 
         # settings.MFE_CONFIG in test.py has LANGUAGE_PREFERENCE_COOKIE_NAME and LOGO_URL
-        self.assertEqual(data.get("languagePreferenceCookieName"), "example-language-preference")
-        self.assertEqual(data.get("headerLogoImageUrl"), "https://courses.example.com/logo.png")
+        self.assertEqual(data.get("languagePreferenceCookieName"), "example-language-preference")  # noqa: PT009
+        self.assertEqual(data.get("headerLogoImageUrl"), "https://courses.example.com/logo.png")  # noqa: PT009
 
         # Legacy config keys live in commonAppConfig
         for legacy_key in default_legacy_config:
-            self.assertIn(legacy_key, data["commonAppConfig"])
+            self.assertIn(legacy_key, data["commonAppConfig"])  # noqa: PT009
 
         # MFE_CONFIG_OVERRIDES in test.py has mymfe and yourmfe
-        self.assertIn("apps", data)
+        self.assertIn("apps", data)  # noqa: PT009
         app_ids = [app["appId"] for app in data["apps"]]
-        self.assertIn("org.openedx.frontend.app.mymfe", app_ids)
-        self.assertIn("org.openedx.frontend.app.yourmfe", app_ids)
+        self.assertIn("org.openedx.frontend.app.mymfe", app_ids)  # noqa: PT009
+        self.assertIn("org.openedx.frontend.app.yourmfe", app_ids)  # noqa: PT009
 
         # Site-level keys from overrides (LANGUAGE_PREFERENCE_COOKIE_NAME,
         # LOGO_URL in test settings) are stripped from per-app config
         for app in data["apps"]:
-            self.assertNotIn("LANGUAGE_PREFERENCE_COOKIE_NAME", app["config"])
-            self.assertNotIn("LOGO_URL", app["config"])
+            self.assertNotIn("LANGUAGE_PREFERENCE_COOKIE_NAME", app["config"])  # noqa: PT009
+            self.assertNotIn("LOGO_URL", app["config"])  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_frontend_site_config_overrides_translated(self, configuration_helpers_mock):
@@ -640,11 +640,11 @@ class FrontendSiteConfigTestCase(APITestCase):
         data = response.json()
 
         # Translated value is overridden by FRONTEND_SITE_CONFIG
-        self.assertEqual(data["logoutUrl"], "https://courses.example.com/custom-logout")
+        self.assertEqual(data["logoutUrl"], "https://courses.example.com/custom-logout")  # noqa: PT009
         # Translated value not in FRONTEND_SITE_CONFIG is preserved
-        self.assertEqual(data["loginUrl"], "https://courses.example.com/login")
+        self.assertEqual(data["loginUrl"], "https://courses.example.com/login")  # noqa: PT009
         # New keys from FRONTEND_SITE_CONFIG are included
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             data["externalRoutes"],
             [{"role": "learnerDashboard", "url": "https://courses.example.com/dashboard"}],
         )
@@ -675,12 +675,12 @@ class FrontendSiteConfigTestCase(APITestCase):
 
         common = data["commonAppConfig"]
         # FRONTEND_SITE_CONFIG overrides individual keys
-        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://new-credentials.example.com")
+        self.assertEqual(common["CREDENTIALS_BASE_URL"], "https://new-credentials.example.com")  # noqa: PT009
         # New keys from FRONTEND_SITE_CONFIG are added
-        self.assertEqual(common["NEW_KEY"], "new_value")
+        self.assertEqual(common["NEW_KEY"], "new_value")  # noqa: PT009
         # Legacy translated keys are preserved
         for legacy_key in default_legacy_config:
-            self.assertIn(legacy_key, common)
+            self.assertIn(legacy_key, common)  # noqa: PT009
 
     @patch("lms.djangoapps.mfe_config_api.views.configuration_helpers")
     def test_frontend_site_config_deep_merges_apps(self, configuration_helpers_mock):
@@ -714,9 +714,9 @@ class FrontendSiteConfigTestCase(APITestCase):
         apps_by_id = {app["appId"]: app for app in data["apps"]}
         # Existing app's config is merged, not replaced
         authn = apps_by_id["org.openedx.frontend.app.authn"]["config"]
-        self.assertEqual(authn["LEGACY_KEY"], "legacy_value")
-        self.assertEqual(authn["SHARED_KEY"], "new_value")
-        self.assertEqual(authn["NEW_KEY"], "added")
+        self.assertEqual(authn["LEGACY_KEY"], "legacy_value")  # noqa: PT009
+        self.assertEqual(authn["SHARED_KEY"], "new_value")  # noqa: PT009
+        self.assertEqual(authn["NEW_KEY"], "added")  # noqa: PT009
         # Brand new app from FRONTEND_SITE_CONFIG is appended
         brand_new = apps_by_id["org.openedx.frontend.app.brand.new"]["config"]
-        self.assertEqual(brand_new["BRAND_NEW_KEY"], "value")
+        self.assertEqual(brand_new["BRAND_NEW_KEY"], "value")  # noqa: PT009

@@ -31,7 +31,7 @@ class CrossDomainAuthTest(TestCase):
 
     def test_perform_csrf_referer_check(self):
         request = self._fake_request()
-        with self.assertRaisesRegex(PermissionDenied, 'CSRF'):
+        with self.assertRaisesRegex(PermissionDenied, 'CSRF'):  # noqa: PT027
             self.auth.enforce_csrf(request)
 
     @patch.dict(settings.FEATURES, {

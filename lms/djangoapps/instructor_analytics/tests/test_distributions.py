@@ -29,7 +29,7 @@ class TestAnalyticsDistributions(TestCase):
     def test_profile_distribution_bad_feature(self):
         feature = 'robot-not-a-real-feature'
         assert feature not in AVAILABLE_PROFILE_FEATURES
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             profile_distribution(self.course_id, feature)
 
     def test_profile_distribution_easy_choice(self):

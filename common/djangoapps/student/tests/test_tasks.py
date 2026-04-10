@@ -383,8 +383,8 @@ class TestCourseEnrollmentEmailTask(ModuleStoreTestCase):
             task = send_course_enrollment_email.apply_async(
                 kwargs=self.send_course_enrollment_email_kwargs
             )
-        pytest.raises(Exception, task.get)
-        self.assertEqual(mock_get_email_client.call_count, (MAX_RETRIES + 1))
+        pytest.raises(Exception, task.get)  # noqa: B017
+        self.assertEqual(mock_get_email_client.call_count, (MAX_RETRIES + 1))  # noqa: PT009
 
     @patch("common.djangoapps.student.tasks.get_course_uuid_for_course")
     @patch("common.djangoapps.student.tasks.get_owners_for_course")

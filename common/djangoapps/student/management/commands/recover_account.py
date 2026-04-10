@@ -96,13 +96,13 @@ class Command(BaseCommand):
                 self.send_password_reset_email(user, site)
                 successful_updates.append(desired_email)
             except Exception as exc:  # pylint: disable=broad-except
-                logger.exception('Unable to send email to {desired_email} and exception was {exp}'.
+                logger.exception('Unable to send email to {desired_email} and exception was {exp}'.  # noqa: UP032
                                  format(desired_email=desired_email, exp=exc)
                                  )
 
                 failed_updates.append(current_email)
 
-        logger.info('Successfully updated {successful} accounts. Failed to update {failed} '
+        logger.info('Successfully updated {successful} accounts. Failed to update {failed} '  # noqa: UP032
                     'accounts'.format(successful=successful_updates, failed=failed_updates)
                     )
 

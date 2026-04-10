@@ -107,20 +107,20 @@ class TestCourseListing(ModuleStoreTestCase):
         # get courses through iterating all courses
         courses_iter, __ = _accessible_courses_iter_for_tests(self.request)
         courses_list = list(courses_iter)
-        self.assertEqual(len(courses_list), 1)
+        self.assertEqual(len(courses_list), 1)  # noqa: PT009
 
         courses_summary_list, __ = _accessible_courses_summary_iter(self.request)
-        self.assertEqual(len(list(courses_summary_list)), 1)
+        self.assertEqual(len(list(courses_summary_list)), 1)  # noqa: PT009
 
         # get courses by reversing group name formats
         courses_list_by_groups, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list_by_groups), 1)
+        self.assertEqual(len(courses_list_by_groups), 1)  # noqa: PT009
 
         # check both course lists have same courses
         course_keys_in_course_list = [course.id for course in courses_list]
         course_keys_in_courses_list_by_groups = [course.id for course in courses_list_by_groups]
 
-        self.assertEqual(course_keys_in_course_list, course_keys_in_courses_list_by_groups)
+        self.assertEqual(course_keys_in_course_list, course_keys_in_courses_list_by_groups)  # noqa: PT009
 
     def test_courses_list_with_ccx_courses(self):
         """
@@ -136,8 +136,8 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # Test that CCX courses are filtered out.
         courses_list, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list), 1)
-        self.assertNotIn(
+        self.assertEqual(len(courses_list), 1)  # noqa: PT009
+        self.assertNotIn(  # noqa: PT009
             ccx_course_key,
             [course.id for course in courses_list]
         )
@@ -148,7 +148,7 @@ class TestCourseListing(ModuleStoreTestCase):
         all_courses = (instructor_courses | staff_courses)
 
         # Verify that CCX course exists in access but filtered by `_accessible_courses_list_from_groups`.
-        self.assertIn(
+        self.assertIn(  # noqa: PT009
             ccx_course_key,
             [access.course_id for access in all_courses]
         )
@@ -160,7 +160,7 @@ class TestCourseListing(ModuleStoreTestCase):
             return_value=[mocked_ccx_course],
         ):
             courses_iter, __ = _accessible_courses_iter_for_tests(self.request)
-            self.assertEqual(len(list(courses_iter)), 0)
+            self.assertEqual(len(list(courses_iter)), 0)  # noqa: PT009
 
     def test_staff_course_listing(self):
         """
@@ -170,7 +170,7 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # Assign & verify staff role to the user
         GlobalStaff().add_users(self.user)
-        self.assertTrue(GlobalStaff().has_user(self.user))
+        self.assertTrue(GlobalStaff().has_user(self.user))  # noqa: PT009
 
         # Create few courses
         for num in range(TOTAL_COURSES_COUNT):
@@ -180,8 +180,8 @@ class TestCourseListing(ModuleStoreTestCase):
         # Fetch accessible courses list & verify their count
         courses_list_by_staff, __ = get_courses_accessible_to_user(self.request)
 
-        self.assertEqual(len(list(courses_list_by_staff)), TOTAL_COURSES_COUNT)
-        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_list_by_staff))
+        self.assertEqual(len(list(courses_list_by_staff)), TOTAL_COURSES_COUNT)  # noqa: PT009
+        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_list_by_staff))  # noqa: PT009
 
         # Now count the db queries for staff
         with self.assertNumQueries(2):
@@ -199,7 +199,7 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # Add the user as a course_limited_staff on the course
         CourseLimitedStaffRole(course.id).add_users(self.user)
-        self.assertTrue(CourseLimitedStaffRole(course.id).has_user(self.user))
+        self.assertTrue(CourseLimitedStaffRole(course.id).has_user(self.user))  # noqa: PT009
 
         # Fetch accessible courses list & verify their count
         courses_list_by_staff, __ = get_courses_accessible_to_user(self.request)
@@ -216,7 +216,7 @@ class TestCourseListing(ModuleStoreTestCase):
             number=course_location.course,
             run=course_location.run
         )
-        course = CourseOverviewFactory.create(id=course_location, org=course_location.org)
+        course = CourseOverviewFactory.create(id=course_location, org=course_location.org)  # noqa: F841
 
         # Add a user as course_limited_staff on the org
         # This is not possible using the course roles classes but is possible via Django admin so we
@@ -240,21 +240,21 @@ class TestCourseListing(ModuleStoreTestCase):
         # get courses through iterating all courses
         courses_iter, __ = _accessible_courses_iter_for_tests(self.request)
         courses_list = list(courses_iter)
-        self.assertEqual(len(courses_list), 1)
+        self.assertEqual(len(courses_list), 1)  # noqa: PT009
 
         courses_summary_iter, __ = _accessible_courses_summary_iter(self.request)
         courses_summary_list = list(courses_summary_iter)
-        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_summary_list))
-        self.assertEqual(len(courses_summary_list), 1)
+        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_summary_list))  # noqa: PT009
+        self.assertEqual(len(courses_summary_list), 1)  # noqa: PT009
 
         # get courses by reversing group name formats
         courses_list_by_groups, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list_by_groups), 1)
+        self.assertEqual(len(courses_list_by_groups), 1)  # noqa: PT009
 
         course_keys_in_course_list = [course.id for course in courses_list]
         course_keys_in_courses_list_by_groups = [course.id for course in courses_list_by_groups]
         # check course lists have same courses
-        self.assertEqual(course_keys_in_course_list, course_keys_in_courses_list_by_groups)
+        self.assertEqual(course_keys_in_course_list, course_keys_in_courses_list_by_groups)  # noqa: PT009
         # now delete this course and re-add user to instructor group of this course
         delete_course(course_key, self.user.id)
         course.delete()
@@ -271,7 +271,7 @@ class TestCourseListing(ModuleStoreTestCase):
         courses_list_by_groups, __ = _accessible_courses_list_from_groups(self.request)
 
         # Test that course list returns no course
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             [len(list(courses_iter)), len(courses_list_by_groups), len(list(courses_summary_iter))],
             [0, 0, 0]
         )
@@ -298,19 +298,19 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # get courses by iterating through all courses
         courses_iter, __ = _accessible_courses_iter_for_tests(self.request)
-        self.assertEqual(len(list(courses_iter)), USER_COURSES_COUNT)
+        self.assertEqual(len(list(courses_iter)), USER_COURSES_COUNT)  # noqa: PT009
 
         # again get courses by iterating through all courses
         courses_iter, __ = _accessible_courses_iter_for_tests(self.request)
-        self.assertEqual(len(list(courses_iter)), USER_COURSES_COUNT)
+        self.assertEqual(len(list(courses_iter)), USER_COURSES_COUNT)  # noqa: PT009
 
         # get courses by reversing django groups
         courses_list, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list), USER_COURSES_COUNT)
+        self.assertEqual(len(courses_list), USER_COURSES_COUNT)  # noqa: PT009
 
         # again get courses by reversing django groups
         courses_list, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list), USER_COURSES_COUNT)
+        self.assertEqual(len(courses_list), USER_COURSES_COUNT)  # noqa: PT009
 
         with self.assertNumQueries(2, table_ignorelist=QUERY_COUNT_TABLE_IGNORELIST):
             _accessible_courses_list_from_groups(self.request)
@@ -331,7 +331,7 @@ class TestCourseListing(ModuleStoreTestCase):
         course.delete()
 
         courses_list, __ = _accessible_courses_list_from_groups(self.request)
-        self.assertEqual(len(courses_list), 1, courses_list)
+        self.assertEqual(len(courses_list), 1, courses_list)  # noqa: PT009
 
     @ddt.data(OrgStaffRole('AwesomeOrg'), OrgInstructorRole('AwesomeOrg'))
     def test_course_listing_org_permissions(self, role):
@@ -362,8 +362,8 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # Verify fetched accessible courses list is a list of CourseSummery instances and test expacted
         # course count is returned
-        self.assertEqual(len(list(courses_list)), 2)
-        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_list))
+        self.assertEqual(len(list(courses_list)), 2)  # noqa: PT009
+        self.assertTrue(all(isinstance(course, CourseOverview) for course in courses_list))  # noqa: PT009
 
     @ddt.data(OrgStaffRole(), OrgInstructorRole())
     def test_course_listing_org_permissions_exception(self, role):
@@ -373,7 +373,7 @@ class TestCourseListing(ModuleStoreTestCase):
         """
         role.add_users(self.user)
 
-        with self.assertRaises(AccessListFallback):
+        with self.assertRaises(AccessListFallback):  # noqa: PT027
             _accessible_courses_list_from_groups(self.request)
 
     def test_course_listing_with_actions_in_progress(self):
@@ -407,8 +407,8 @@ class TestCourseListing(ModuleStoreTestCase):
             return {getattr(c, key_attribute_name) for c in course_list}
 
         found_courses, unsucceeded_course_actions = _accessible_courses_iter_for_tests(self.request)
-        self.assertSetEqual(_set_of_course_keys(courses + courses_in_progress), _set_of_course_keys(found_courses))
-        self.assertSetEqual(
+        self.assertSetEqual(_set_of_course_keys(courses + courses_in_progress), _set_of_course_keys(found_courses))  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertSetEqual(  # noqa: PT009
             _set_of_course_keys(courses_in_progress), _set_of_course_keys(unsucceeded_course_actions, 'course_key')
         )
 
@@ -472,7 +472,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         course1 = self._create_course(course_key_1)
 
         course_key_2 = CourseLocator("Org1", "Course2", "Run1")
-        course2 = self._create_course(course_key_2)
+        course2 = self._create_course(course_key_2)  # noqa: F841
 
         assign_role_to_user_in_scope(
             self.authorized_user.username,
@@ -487,9 +487,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
         courses = list(courses_list)
 
-        self.assertEqual(len(courses), 1)
-        self.assertEqual(courses[0].id, course1.id)
-        self.assertNotIn(course_key_2, {c.id for c in courses})
+        self.assertEqual(len(courses), 1)  # noqa: PT009
+        self.assertEqual(courses[0].id, course1.id)  # noqa: PT009
+        self.assertNotIn(course_key_2, {c.id for c in courses})  # noqa: PT009
 
     def test_course_listing_with_course_editor_authz_permission(self):
         """
@@ -501,7 +501,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
         course1 = self._create_course(course_key_1)
 
         course_key_2 = CourseLocator("Org1", "Course2", "Run1")
-        course2 = self._create_course(course_key_2)
+        course2 = self._create_course(course_key_2)  # noqa: F841
 
         assign_role_to_user_in_scope(
             self.authorized_user.username,
@@ -516,9 +516,9 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
         courses = list(courses_list)
 
-        self.assertEqual(len(courses), 1)
-        self.assertEqual(courses[0].id, course1.id)
-        self.assertNotIn(course_key_2, {c.id for c in courses})
+        self.assertEqual(len(courses), 1)  # noqa: PT009
+        self.assertEqual(courses[0].id, course1.id)  # noqa: PT009
+        self.assertNotIn(course_key_2, {c.id for c in courses})  # noqa: PT009
 
     def test_course_listing_without_permissions(self):
         """
@@ -534,7 +534,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
         courses_list, _ = get_courses_accessible_to_user(request)
 
-        self.assertEqual(len(list(courses_list)), 0)
+        self.assertEqual(len(list(courses_list)), 0)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -551,7 +551,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
 
         courses_list, _ = get_courses_accessible_to_user(request)
 
-        self.assertEqual(len(list(courses_list)), 0)
+        self.assertEqual(len(list(courses_list)), 0)  # noqa: PT009
 
     def test_authz_and_legacy_basic(self):
         """
@@ -593,7 +593,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
                 legacy_courses[0].id,
             }
 
-            self.assertEqual(result_ids, expected_ids)
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009
 
     def test_authz_role_ignored_when_toggle_off(self):
         """
@@ -621,7 +621,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             result_ids = {c.id for c in courses}
             expected_ids = set()  # no access since toggle is off
 
-            self.assertEqual(result_ids, expected_ids)
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009
 
     def test_multiple_roles_mixed_authz_and_legacy(self):
         """
@@ -665,7 +665,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
                 legacy_courses[2].id,
             }
 
-            self.assertEqual(result_ids, expected_ids)
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009
 
     def test_staff_gets_all_courses(self):
         """
@@ -690,7 +690,7 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
                 *(c.id for c in legacy_courses),
             }
 
-            self.assertEqual(result_ids, expected_ids)
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009
 
     def test_superuser_gets_all_courses(self):
         """
@@ -714,4 +714,4 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
                 *(c.id for c in legacy_courses),
             }
 
-            self.assertEqual(result_ids, expected_ids)
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009

@@ -93,7 +93,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_ajax_status_anon_user(self):
         request = self.request_factory.get("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_status, request)
+        self.assertRaises(PermissionDenied, ajax_status, request)  # noqa: PT027
 
     # AJAX enable view
 
@@ -107,7 +107,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_ajax_enable_anon_user(self):
         request = self.request_factory.post("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_enable, request)
+        self.assertRaises(PermissionDenied, ajax_enable, request)  # noqa: PT027
         self.assertNotPrefExists(self.user)
 
     @patch("os.urandom")
@@ -159,7 +159,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
         self.create_prefs()
         request = self.request_factory.post("dummy")
         request.user = AnonymousUser()
-        self.assertRaises(PermissionDenied, ajax_disable, request)
+        self.assertRaises(PermissionDenied, ajax_disable, request)  # noqa: PT027
         self.assertPrefValid(self.user)
 
     def test_ajax_disable_success(self):
@@ -187,7 +187,7 @@ class NotificationPrefViewTest(UrlResetMixin, TestCase):  # lint-amnesty, pylint
     def test_unsubscribe_invalid_token(self):
         def test_invalid_token(token, message):
             request = self.request_factory.get("dummy")
-            self.assertRaisesRegex(Http404, f"^{message}$", set_subscription, request, token, False)
+            self.assertRaisesRegex(Http404, f"^{message}$", set_subscription, request, token, False)  # noqa: PT027
 
         # Invalid base64 encoding
         test_invalid_token("ZOMG INVALID BASE64 CHARS!!!", "base64url")

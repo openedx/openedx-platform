@@ -138,7 +138,7 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
             response.content
         )
 
-        self.assertFalse(matches)
+        self.assertFalse(matches)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -184,8 +184,8 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual("https://custom-dashboard.com", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual("https://custom-dashboard.com", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -207,7 +207,7 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.dashboard_url)
 
-        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))
+        self.assertEqual("This is a custom response.", response.content.decode("utf-8"))  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={})
     def test_dashboard_render_without_filter_config(self):
@@ -227,5 +227,5 @@ class InstructorDashboardFiltersTest(ModuleStoreTestCase):
             response.content
         )
 
-        self.assertEqual(status.HTTP_200_OK, response.status_code)
-        self.assertTrue(matches)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)  # noqa: PT009
+        self.assertTrue(matches)  # noqa: PT009

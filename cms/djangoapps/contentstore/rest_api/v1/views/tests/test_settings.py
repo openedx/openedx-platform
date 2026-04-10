@@ -59,8 +59,8 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
             "licensing_enabled": False,
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
     def test_credit_eligibility_setting(self):
@@ -69,9 +69,9 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
         """
         _ = CreditCourseFactory(course_key=self.course.id, enabled=True)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("credit_requirements", response.data)
-        self.assertTrue(response.data["is_credit_course"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("credit_requirements", response.data)  # noqa: PT009
+        self.assertTrue(response.data["is_credit_course"])  # noqa: PT009
 
     @patch.dict(
         "django.conf.settings.FEATURES",
@@ -85,8 +85,8 @@ class CourseSettingsViewTest(CourseTestCase, PermissionAccessMixin):
         Make sure if the feature flags are enabled we have updated the dict keys in response.
         """
         response = self.client.get(self.url)
-        self.assertIn("possible_pre_requisite_courses", response.data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("possible_pre_requisite_courses", response.data)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 
 @ddt.ddt
@@ -107,14 +107,14 @@ class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase)
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
         response = self.authorized_client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("course_display_name", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("course_display_name", response.data)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access_course_settings(self):
         """Unauthorized user should receive 403."""
         response = self.unauthorized_client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_user_without_role_then_added_can_access(self):
         """
@@ -122,7 +122,7 @@ class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase)
         """
         # Initially unauthorized
         response = self.unauthorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
         # Assign role dynamically
         self.add_user_to_role_in_course(
@@ -132,7 +132,7 @@ class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase)
         )
 
         response = self.unauthorized_client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
     def test_credit_eligibility_setting_with_authz(self):
@@ -144,21 +144,21 @@ class CourseSettingsAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase)
         self.add_user_to_role_in_course(self.authorized_user, COURSE_EDITOR.external_key, self.course.id)
         response = self.authorized_client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("credit_requirements", response.data)
-        self.assertTrue(response.data["is_credit_course"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("credit_requirements", response.data)  # noqa: PT009
+        self.assertTrue(response.data["is_credit_course"])  # noqa: PT009
 
     def test_staff_user_can_access_without_authz_role(self):
         """Django staff user should access course settings without AuthZ role."""
 
         response = self.staff_client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("course_display_name", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("course_display_name", response.data)  # noqa: PT009
 
     def test_superuser_can_access_without_authz_role(self):
         """Superuser should access course settings without AuthZ role."""
         response = self.super_client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("course_display_name", response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn("course_display_name", response.data)  # noqa: PT009

@@ -19,7 +19,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from .utils import CourseTestCase
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -46,7 +46,7 @@ class TestExportGit(CourseTestCase):
         os.mkdir(repo_dir)
         self.addCleanup(shutil.rmtree, repo_dir)
 
-        bare_repo_dir = '{}/{}.git'.format(
+        bare_repo_dir = '{}/{}.git'.format(  # noqa: UP032
             os.path.abspath(git_export_utils.GIT_REPO_EXPORT_DIR),
             repo_name
         )
@@ -136,7 +136,7 @@ class TestExportGit(CourseTestCase):
         )
         test_file = os.path.join(repo_dir, 'test.txt')
         open(test_file, 'a').close()
-        self.assertTrue(os.path.isfile(test_file))
+        self.assertTrue(os.path.isfile(test_file))  # noqa: PT009
         git_export_utils.export_to_git(self.course.id,
                                        self.course_block.giturl, self.user)
-        self.assertFalse(os.path.isfile(test_file))
+        self.assertFalse(os.path.isfile(test_file))  # noqa: PT009

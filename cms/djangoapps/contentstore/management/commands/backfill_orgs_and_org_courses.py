@@ -5,7 +5,7 @@ A backfill command to migrate Open edX instances to the new world of
 For full context, see:
 https://github.com/openedx/edx-organizations/blob/master/docs/decisions/0001-phase-in-db-backed-organizations-to-all.rst
 """
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple  # noqa: UP035
 
 from django.core.management import BaseCommand, CommandError
 from organizations import api as organizations_api
@@ -151,9 +151,9 @@ class Command(BaseCommand):
 
 
 def confirm_changes(
-        options: Dict[str, str],
-        orgs: List[dict],
-        org_courseid_pairs: List[Tuple[dict, str]],
+        options: Dict[str, str],  # noqa: UP006
+        orgs: List[dict],  # noqa: UP006
+        org_courseid_pairs: List[Tuple[dict, str]],  # noqa: UP006
 ) -> bool:
     """
     Should we apply the changes to the database?
@@ -192,8 +192,8 @@ def confirm_changes(
 
 
 def bulk_add_data(
-        orgs: List[dict],
-        org_courseid_pairs: List[Tuple[dict, str]],
+        orgs: List[dict],  # noqa: UP006
+        org_courseid_pairs: List[Tuple[dict, str]],  # noqa: UP006
         dry_run: bool,
         activate: bool,
 ):
@@ -246,7 +246,7 @@ def bulk_add_data(
     print("------------------------------------------------------")
 
 
-def find_orgslug_courseid_pairs() -> Set[Tuple[str, str]]:
+def find_orgslug_courseid_pairs() -> Set[Tuple[str, str]]:  # noqa: UP006
     """
     Returns the unique pairs of (organization short name, course run key string)
     from the CourseOverviews table, which should contain all course runs in the
@@ -266,7 +266,7 @@ def find_orgslug_courseid_pairs() -> Set[Tuple[str, str]]:
     }
 
 
-def find_orgslug_libraryid_pairs() -> Set[Tuple[str, str]]:
+def find_orgslug_libraryid_pairs() -> Set[Tuple[str, str]]:  # noqa: UP006
     """
     Returns the unique pairs of (organization short name, content library key string)
     from the modulestore.

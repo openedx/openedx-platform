@@ -58,7 +58,7 @@ def register_exams(course_key):
     for timed_exam in timed_exams:
         location = str(timed_exam.location)
         msg = (
-            'Found {location} as an exam in course structure.'.format(
+            'Found {location} as an exam in course structure.'.format(  # noqa: UP032
                 location=location
             )
         )

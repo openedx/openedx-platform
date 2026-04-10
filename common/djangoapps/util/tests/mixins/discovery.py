@@ -14,7 +14,7 @@ class CourseCatalogServiceMockMixin:
     """
     Mocks for the Open edX service 'Course Catalog Service' responses.
     """
-    COURSE_DISCOVERY_CATALOGS_URL = '{}/catalogs/'.format(
+    COURSE_DISCOVERY_CATALOGS_URL = '{}/catalogs/'.format(  # noqa: UP032
         settings.COURSE_CATALOG_API_URL,
     )
 

@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 HOST = MONGO_HOST
 PORT = MONGO_PORT_NUM
-DB = 'test_mongo_%s' % uuid4().hex[:5]
+DB = 'test_mongo_%s' % uuid4().hex[:5]  # noqa: UP031
 
 
 @ddt.ddt

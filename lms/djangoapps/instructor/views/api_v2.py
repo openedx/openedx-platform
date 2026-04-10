@@ -12,7 +12,7 @@ import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple  # noqa: UP035
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings
@@ -398,10 +398,10 @@ class UnitDueDateExtension:
     email: str
     unit_title: str
     unit_location: str
-    extended_due_date: Optional[str]
+    extended_due_date: Optional[str]  # noqa: UP045
 
     @classmethod
-    def from_block_tuple(cls, row: Tuple, unit):
+    def from_block_tuple(cls, row: Tuple, unit):  # noqa: UP006
         username, full_name, due_date, email, location = row
         unit_title = title_or_url(unit)
         return cls(
@@ -414,7 +414,7 @@ class UnitDueDateExtension:
         )
 
     @classmethod
-    def from_course_tuple(cls, row: Tuple, units_dict: dict):
+    def from_course_tuple(cls, row: Tuple, units_dict: dict):  # noqa: UP006
         username, full_name, email, location, due_date = row
         unit_title = title_or_url(units_dict[str(location)])
         return cls(

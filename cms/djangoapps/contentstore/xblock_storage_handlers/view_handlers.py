@@ -310,7 +310,7 @@ def handle_xblock(request, usage_key_string=None):
                 request.json["duplicate_source_locator"]
             )
             source_course = duplicate_source_usage_key.course_key
-            dest_course = parent_usage_key.course_key
+            dest_course = parent_usage_key.course_key  # noqa: F841
 
             # Check authz permission for destination
             permission = _check_xblock_permission(request, parent_usage_key)
@@ -746,7 +746,7 @@ def _create_block(request):
             )
         except Exception:  # pylint: disable=broad-except
             log.exception(
-                "Could not paste component into location {}".format(usage_key)
+                "Could not paste component into location {}".format(usage_key)  # noqa: UP032
             )
             return JsonResponse(
                 {"error": _("There was a problem pasting your component.")}, status=400
@@ -767,7 +767,7 @@ def _create_block(request):
         # Only these categories are supported at this time.
         if category not in ["html", "problem", "video"]:
             return HttpResponseBadRequest(
-                "Category '%s' not supported for Libraries" % category,
+                "Category '%s' not supported for Libraries" % category,  # noqa: UP031
                 content_type="text/plain",
             )
 
@@ -1306,7 +1306,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "studio_url": xblock_studio_url(xblock, parent_xblock),
                 "lms_url": xblock_lms_url(xblock),
                 "embed_lms_url": xblock_embed_lms_url(xblock),
-                "released_to_students": datetime.now(timezone.utc) > xblock.start,
+                "released_to_students": datetime.now(timezone.utc) > xblock.start,  # noqa: UP017
                 "release_date": release_date,
                 "visibility_state": visibility_state,
                 "has_explicit_staff_lock": xblock.fields[
@@ -1645,7 +1645,7 @@ def _compute_visibility_state(
         return VisibilityState.needs_attention
 
     is_unscheduled = xblock.start == DEFAULT_START_DATE
-    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start
+    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start  # noqa: UP017
     if child_info and child_info.get("children", []):  # pylint: disable=too-many-nested-blocks
         all_staff_only = True
         all_unscheduled = True

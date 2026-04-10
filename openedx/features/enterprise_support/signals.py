@@ -49,7 +49,7 @@ def update_dsc_cache_on_enterprise_customer_update(sender, instance, **kwargs):
         if new_value != old_value:
             kwargs = {'enterprise_customer_uuid': str(instance.uuid)}
             result = clear_enterprise_customer_data_consent_share_cache.apply_async(kwargs=kwargs)
-            log.info("DSC: Created {task_name}[{task_id}] with arguments {kwargs}".format(
+            log.info("DSC: Created {task_name}[{task_id}] with arguments {kwargs}".format(  # noqa: UP032
                 task_name=clear_enterprise_customer_data_consent_share_cache.name,
                 task_id=result.task_id,
                 kwargs=kwargs,

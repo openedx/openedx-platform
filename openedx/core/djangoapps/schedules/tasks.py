@@ -60,7 +60,7 @@ def update_course_schedules(self, **kwargs):  # lint-amnesty, pylint: disable=mi
     except Exception as exc:
         if not isinstance(exc, KNOWN_RETRY_ERRORS):
             LOG.exception(f"Unexpected failure: task id: {self.request.id}, kwargs={kwargs}")
-        raise self.retry(kwargs=kwargs, exc=exc)
+        raise self.retry(kwargs=kwargs, exc=exc)  # noqa: B904
 
 
 class ScheduleMessageBaseTask(LoggedTask):  # lint-amnesty, pylint: disable=abstract-method

@@ -70,7 +70,7 @@ def user_has_course_permission(
         # If AuthZ is enabled for this course, check the permission via AuthZ only.
         is_user_allowed = authz_api.is_user_allowed(user.username, authz_permission, str(course_key))
         log.info(
-            "AuthZ permission granted = {}".format(is_user_allowed),
+            "AuthZ permission granted = {}".format(is_user_allowed),  # noqa: UP032
             extra={
                 "user_id": user.id,
                 "authz_permission": authz_permission,

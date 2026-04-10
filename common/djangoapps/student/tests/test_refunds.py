@@ -295,7 +295,7 @@ class RefundableTest(SharedModuleStoreTestCase):
         )
 
         # creating multiple attributes for same order.
-        for attribute_count in range(2):  # pylint: disable=unused-variable
+        for attribute_count in range(2):  # pylint: disable=unused-variable  # noqa: B007
             self.enrollment.attributes.create(
                 enrollment=self.enrollment,
                 namespace='order',

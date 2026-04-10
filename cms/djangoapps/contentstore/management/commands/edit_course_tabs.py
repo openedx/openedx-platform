@@ -98,4 +98,4 @@ command again, adding --insert or --delete to edit the list.
                     tabs.primitive_insert(course, num - 1, tab_type, name)  # -1 as above
         except ValueError as e:
             # Cute: translate to CommandError so the CLI error prints nicely.
-            raise CommandError(e)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(e)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

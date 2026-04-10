@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch.dispatcher import receiver
 
 from common.djangoapps.student.models_api import get_name, get_pending_name_change
-from lms.djangoapps.verify_student.apps import VerifyStudentConfig  # pylint: disable=unused-import
+from lms.djangoapps.verify_student.apps import VerifyStudentConfig  # pylint: disable=unused-import  # noqa: F401
 from lms.djangoapps.verify_student.models import (
     SoftwareSecurePhotoVerification,
     VerificationAttempt,
@@ -59,7 +59,7 @@ def send_idv_update(sender, instance, **kwargs):  # pylint: disable=unused-argum
         full_name = get_name(instance.user.id)
 
     log.info(
-        'IDV sending name_affirmation task (idv_id={idv_id}, user_id={user_id}) to update status={status}'.format(
+        'IDV sending name_affirmation task (idv_id={idv_id}, user_id={user_id}) to update status={status}'.format(  # noqa: UP032  # pylint: disable=line-too-long
             user_id=instance.user.id,
             status=instance.status,
             idv_id=instance.id

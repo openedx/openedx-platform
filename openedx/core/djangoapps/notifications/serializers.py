@@ -180,7 +180,7 @@ class UserNotificationPreferenceUpdateAllSerializer(serializers.Serializer):
         """
         Cross-field validation for notification preference update.
         """
-        notification_app = attrs.get('notification_app')
+        notification_app = attrs.get('notification_app')  # noqa: F841
         notification_type = attrs.get('notification_type')
         notification_channel = attrs.get('notification_channel')
         email_cadence = attrs.get('email_cadence')

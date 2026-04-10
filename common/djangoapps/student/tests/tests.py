@@ -859,7 +859,7 @@ class EnrollInCourseTest(EnrollmentEventTestMixin, CacheIsolationTestCase):
         assert CourseEnrollment.enroll_by_email('not_jack@fake.edx.org', course_id) is None
         self.assert_no_events_were_emitted()
 
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             User.DoesNotExist,
             CourseEnrollment.enroll_by_email,
             "not_jack@fake.edx.org",

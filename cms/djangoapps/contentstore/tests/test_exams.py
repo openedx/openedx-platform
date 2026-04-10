@@ -182,7 +182,7 @@ class TestExamService(ModuleStoreTestCase):
     @ddt.data(
         *itertools.product(
             (True, False),
-            (datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc), None),
+            (datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc), None),  # noqa: UP017
             ('null', 'lti_external'),
         )
     )
@@ -236,7 +236,7 @@ class TestExamService(ModuleStoreTestCase):
         Test that exam due date is computed correctly.
         """
         self.course.self_paced = is_self_paced
-        self.course.end = datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc)
+        self.course.end = datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         self.course.proctoring_provider = proctoring_provider
         self.course = self.update_course(self.course, 1)
 

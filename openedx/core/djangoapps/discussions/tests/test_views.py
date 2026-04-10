@@ -534,7 +534,7 @@ class DataTest(AuthorizedApiTest, DataTestMixin):
             'provider_type': Provider.LEGACY,
             'plugin_configuration': plugin_configuration,
         }
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError):  # noqa: PT027
             response = self._post(payload)
             if status.is_client_error(response.status_code):
                 raise ValidationError(str(response.status_code))
@@ -573,7 +573,7 @@ class DataTest(AuthorizedApiTest, DataTestMixin):
                 key: value,
             }
         }
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError):  # noqa: PT027
             response = self._post(payload)
             if status.is_client_error(response.status_code):
                 raise ValidationError(str(response.status_code))
@@ -641,7 +641,7 @@ class DataTest(AuthorizedApiTest, DataTestMixin):
         """
         Ensure that certain users cannot change provider for a running course.
         """
-        self.course.start = datetime.now(timezone.utc) - timedelta(days=5)
+        self.course.start = datetime.now(timezone.utc) - timedelta(days=5)  # noqa: UP017
         self.course = self.update_course(self.course, self.user.id)
 
         # use the global staff user to do the initial config
@@ -664,7 +664,7 @@ class DataTest(AuthorizedApiTest, DataTestMixin):
         """
         Ensure that global staff can change provider for a running course.
         """
-        self.course.start = datetime.now(timezone.utc) - timedelta(days=5)
+        self.course.start = datetime.now(timezone.utc) - timedelta(days=5)  # noqa: UP017
         self.course = self.update_course(self.course, self.user.id)
 
         # use the global staff user to do the initial config
@@ -880,8 +880,8 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.post(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
         mock_update.assert_called_once_with(self.course_key_string)
 
     @patch('openedx.core.djangoapps.discussions.views.update_discussions_settings_from_course_task')
@@ -896,8 +896,8 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
 
         response = self.client.post(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'success')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['status'], 'success')  # noqa: PT009
         mock_update.assert_called_once()
 
     def test_sync_discussion_topics_unauthorized(self):
@@ -907,7 +907,7 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         # Don't authenticate the request
         response = self.client.post(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_sync_discussion_topics_forbidden(self):
         """
@@ -920,7 +920,7 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
 
         response = self.client.post(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_invalid_http_method(self):
         """
@@ -929,4 +929,4 @@ class SyncDiscussionTopicsViewTests(ModuleStoreTestCase, APITestCase):
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)  # noqa: PT009

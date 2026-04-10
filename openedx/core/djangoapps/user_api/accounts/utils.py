@@ -179,7 +179,7 @@ def retrieve_last_sitewide_block_completed(user):
     if not (lms_root and item):
         return
 
-    return "{lms_root}/courses/{course_key}/jump_to/{location}".format(
+    return "{lms_root}/courses/{course_key}/jump_to/{location}".format(  # noqa: UP032
         lms_root=lms_root,
         course_key=str(item.location.course_key),
         location=str(item.location),

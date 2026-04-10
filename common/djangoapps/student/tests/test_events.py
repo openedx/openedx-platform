@@ -63,7 +63,7 @@ class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
         # Verify that we remove the temporary `_changed_fields` property from
         # the model after we're done emitting events.
         with pytest.raises(AttributeError):
-            self.profile._changed_fields    # pylint: disable=pointless-statement, protected-access
+            self.profile._changed_fields    # pylint: disable=pointless-statement, protected-access  # noqa: B018
 
     def test_change_many_fields(self):
         """
@@ -102,7 +102,7 @@ class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
         self.assert_no_events_were_emitted()
 
     @mock.patch('common.djangoapps.student.models.user.UserProfile.save', side_effect=IntegrityError)
-    def test_no_event_if_save_failed(self, _save_mock):
+    def test_no_event_if_save_failed(self, _save_mock):  # noqa: PT019
         """
         Verify no event is triggered if the save does not complete. Note that the pre_save
         signal is not called in this case either, but the intent is to make it clear that this model
@@ -163,7 +163,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
         self.assert_no_events_were_emitted()
 
     @mock.patch('django.contrib.auth.models.User.save', side_effect=IntegrityError)
-    def test_no_event_if_save_failed(self, _save_mock):
+    def test_no_event_if_save_failed(self, _save_mock):  # noqa: PT019
         """
         Verify no event is triggered if the save does not complete. Note that the pre_save
         signal is not called in this case either, but the intent is to make it clear that this model
@@ -272,7 +272,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         enrollment = CourseEnrollment.enroll(self.user, self.course.id)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -316,7 +316,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         enrollment.update_enrollment(mode="verified")
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -360,7 +360,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         CourseEnrollment.unenroll(self.user, self.course.id)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -434,7 +434,7 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         role = AccessRole(self.course_key)
         role.add_users(self.user)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -473,7 +473,7 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         COURSE_ACCESS_ROLE_REMOVED.connect(event_receiver)
         role.remove_users(self.user)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

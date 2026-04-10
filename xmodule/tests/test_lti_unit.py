@@ -85,7 +85,7 @@ class _TestLTIBase(TestCase):
         self.user_id = current_user.opt_attrs.get(ATTR_KEY_ANONYMOUS_USER_ID)
         self.lti_id = self.xblock.lti_id
 
-        self.unquoted_resource_link_id = '{}-i4x-2-3-lti-31de800015cf4afb973356dbe81496df'.format(
+        self.unquoted_resource_link_id = '{}-i4x-2-3-lti-31de800015cf4afb973356dbe81496df'.format(  # noqa: UP032
             settings.LMS_BASE
         )
 
@@ -139,7 +139,7 @@ class _TestLTIBase(TestCase):
         'xmodule.lti_block.LTIBlock.get_client_key_secret',
         return_value=('test_client_key', 'test_client_secret')
     )
-    def test_authorization_header_not_present(self, _get_key_secret):
+    def test_authorization_header_not_present(self, _get_key_secret):  # noqa: PT019
         """
         Request has no Authorization header.
 
@@ -157,13 +157,13 @@ class _TestLTIBase(TestCase):
         }
 
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     @patch(
         'xmodule.lti_block.LTIBlock.get_client_key_secret',
         return_value=('test_client_key', 'test_client_secret')
     )
-    def test_authorization_header_empty(self, _get_key_secret):
+    def test_authorization_header_empty(self, _get_key_secret):  # noqa: PT019
         """
         Request Authorization header has no value.
 
@@ -181,7 +181,7 @@ class _TestLTIBase(TestCase):
             'messageIdentifier': self.defaults['messageIdentifier'],
         }
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     def test_real_user_is_none(self):
         """
@@ -201,7 +201,7 @@ class _TestLTIBase(TestCase):
             'messageIdentifier': self.defaults['messageIdentifier'],
         }
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     def test_grade_past_due(self):
         """
@@ -239,7 +239,7 @@ class _TestLTIBase(TestCase):
             'messageIdentifier': 'unknown',
         }
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     def test_bad_grade_decimal(self):
         """
@@ -258,7 +258,7 @@ class _TestLTIBase(TestCase):
             'messageIdentifier': 'unknown',
         }
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     def test_unsupported_action(self):
         """
@@ -277,7 +277,7 @@ class _TestLTIBase(TestCase):
             'messageIdentifier': self.defaults['messageIdentifier'],
         }
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
 
     def test_good_request(self):
         """
@@ -301,7 +301,7 @@ class _TestLTIBase(TestCase):
         }
 
         assert response.status_code == 200
-        self.assertDictEqual(expected_response, real_response)
+        self.assertDictEqual(expected_response, real_response)  # noqa: PT009
         assert self.xblock.module_score == float(self.defaults['grade'])
 
     def test_user_id(self):
@@ -452,7 +452,7 @@ class _TestLTIBase(TestCase):
 
         Tests that tool provider returned grade back with wrong XML Namespace.
         """
-        with pytest.raises(IndexError):
+        with pytest.raises(IndexError):  # noqa: PT012
             mocked_request = self.get_signed_grade_mock_request(namespace_lti_v1p1=False)
             self.xblock.parse_grade_xml_body(mocked_request.body)
 
@@ -478,7 +478,7 @@ class _TestLTIBase(TestCase):
         """
         Oauth signing verify fail.
         """
-        with pytest.raises(self.LTIError):
+        with pytest.raises(self.LTIError):  # noqa: PT012
             req = self.get_signed_grade_mock_request()
             self.xblock.verify_oauth_body_sign(req)
 

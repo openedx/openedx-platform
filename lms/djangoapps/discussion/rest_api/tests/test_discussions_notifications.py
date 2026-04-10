@@ -45,18 +45,18 @@ class TestDiscussionNotificationSender(unittest.TestCase):
         notification_type, audience_filters, context = mock_send_notification.call_args[0]
         mock_send_notification.assert_called_once()
 
-        self.assertEqual(notification_type, "content_reported")
-        self.assertEqual(context, {
+        self.assertEqual(notification_type, "content_reported")  # noqa: PT009
+        self.assertEqual(context, {  # noqa: PT009
             'username': self.thread.username,
             'content_type': expected_content_type,
             'content': 'Thread body',
             'email_content': 'Thread body',
         })
-        self.assertEqual(audience_filters, {
+        self.assertEqual(audience_filters, {  # noqa: PT009
             'discussion_roles': ['Administrator', 'Moderator', 'Community TA']
         })
-        self.assertEqual(len(audience_filters), 1)
-        self.assertEqual(list(audience_filters.keys()), ['discussion_roles'])
+        self.assertEqual(len(audience_filters), 1)  # noqa: PT009
+        self.assertEqual(list(audience_filters.keys()), ['discussion_roles'])  # noqa: PT009
 
     def test_send_reported_content_notification_for_response(self, mock_send_notification, mock_create_audience):
         """
@@ -131,7 +131,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         normalized_result = normalize_html(result)
         normalized_expected_output = normalize_html(expected_output)
 
-        self.assertEqual(normalized_result, normalized_expected_output)
+        self.assertEqual(normalized_result, normalized_expected_output)  # noqa: PT009
 
     def test_truncate_html_body(self):
         """
@@ -139,7 +139,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         """
         html_body = "This is a long text that should be truncated to 500 characters." * 20
         result = clean_thread_html_body(f"<p>{html_body}</p>")
-        self.assertGreaterEqual(525, len(result))    # 500 characters + 25 characters for the HTML tags
+        self.assertGreaterEqual(525, len(result))    # 500 characters + 25 characters for the HTML tags  # noqa: PT009
 
     def test_no_tags_to_remove(self):
         """
@@ -149,7 +149,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         expected_output = '<p style="margin: 0">This paragraph has no tags to remove.</p>'
 
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
     def test_empty_html_body(self):
         """
@@ -159,7 +159,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         expected_output = ""
 
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
     def test_only_script_tag(self):
         """
@@ -169,7 +169,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         expected_output = "alert('Hello');"
 
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result.strip(), expected_output)
+        self.assertEqual(result.strip(), expected_output)  # noqa: PT009
 
     def test_tag_replace(self):
         """
@@ -178,7 +178,7 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         for tag in ["div", "section", "article", "h1", "h2", "h3", "h4", "h5", "h6"]:
             html_body = f'<{tag}>Text</{tag}>'
             result = clean_thread_html_body(html_body)
-            self.assertEqual(result, '<p style="margin: 0">Text</p>')
+            self.assertEqual(result, '<p style="margin: 0">Text</p>')  # noqa: PT009
 
     def test_button_tag_replace(self):
         """
@@ -187,13 +187,13 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         html_body = '<button class="abc">Button</button>'
         expected_output = '<span style="margin: 0">Button</span>'
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
         html_body = '<p><p>abc</p><button class="abc"></button><p>abc</p></p>'
         expected_output = '<p style="margin: 0"><p style="margin: 0">abc</p>'\
                           '<span style="margin: 0"></span><p style="margin: 0">abc</p></p>'
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
     def test_button_tag_removal(self):
         """
@@ -202,13 +202,13 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         html_body = '<button class="abc"></button>'
         expected_output = ''
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, expected_output)
+        self.assertEqual(result, expected_output)  # noqa: PT009
 
     def test_attributes_removal_from_tag(self):
         # Tests for removal of attributes from tags
         html_body = '<p class="abc" style="color:red" aria-disabled=true>Paragraph</p>'
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, '<p style="margin: 0">Paragraph</p>')
+        self.assertEqual(result, '<p style="margin: 0">Paragraph</p>')  # noqa: PT009
 
     def test_strip_empty_tags(self):
         """
@@ -216,4 +216,4 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         """
         html_body = '<div><p></p><p>content</p><p></p></div>'
         result = clean_thread_html_body(html_body)
-        self.assertEqual(result, '<p style="margin: 0"><p style="margin: 0">content</p></p>')
+        self.assertEqual(result, '<p style="margin: 0"><p style="margin: 0">content</p></p>')  # noqa: PT009

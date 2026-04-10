@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import typing as t
 
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _  # noqa: F401
 from opaque_keys.edx.locator import LibraryContainerLocator
 from xblock.core import XBlock
 

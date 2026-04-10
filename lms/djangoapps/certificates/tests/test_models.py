@@ -110,7 +110,7 @@ class ExampleCertificateTest(TestCase, OpenEdxEventsTestMixin):
                 'error_reason': self.ERROR_REASON}
 
     def test_update_status_invalid(self):
-        with self.assertRaisesRegex(ValueError, 'status'):
+        with self.assertRaisesRegex(ValueError, 'status'):  # noqa: PT027
             self.cert.update_status('invalid')
 
     def test_latest_status_unavailable(self):

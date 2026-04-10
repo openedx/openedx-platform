@@ -313,7 +313,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         """
         return None
 
-    @classmethod
+    @classmethod  # noqa: B027
     def supplemental_index_information(cls, modulestore, structure):
         """
         Perform any supplemental indexing given that the structure object has

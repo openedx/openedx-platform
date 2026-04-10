@@ -4,7 +4,7 @@ Script to process pytest warnings output by pytest-json-report plugin and output
 """
 
 import argparse
-import io  # lint-amnesty, pylint: disable=unused-import
+import io  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 import itertools
 import json
 import os
@@ -102,7 +102,7 @@ def read_warning_data(dir_path):
     # go through each warning file and aggregate warnings into warnings_data
     warnings_data = []
     for temp_file in warnings_files:
-        with open(os.path.expanduser(dir_path + "/" + temp_file), "r") as read_file:
+        with open(os.path.expanduser(dir_path + "/" + temp_file), "r") as read_file:  # noqa: UP015
             json_input = json.load(read_file)
             if "warnings" in json_input:
                 data = [
@@ -209,7 +209,7 @@ def write_html_report(warnings_data, html_path):
         )
         for category, group_in_category, category_count in category_sorted_by_count:
             # xss-lint: disable=python-wrap-html
-            html = '<span class="count">{category}, count: {count}</span> '.format(
+            html = '<span class="count">{category}, count: {count}</span> '.format(  # noqa: UP032
                 category=escape(category), count=category_count
             )
             html_writer.start_section(html, klass="category")
@@ -223,7 +223,7 @@ def write_html_report(warnings_data, html_path):
                 location_count,
             ) in locations_sorted_by_count:
                 # xss-lint: disable=python-wrap-html
-                html = '<span class="count">{location}, count: {count}</span> '.format(
+                html = '<span class="count">{location}, count: {count}</span> '.format(  # noqa: UP032
                     location=escape(location), count=location_count
                 )
                 html_writer.start_section(html, klass="location")
@@ -236,7 +236,7 @@ def write_html_report(warnings_data, html_path):
                     message_count,
                 ) in message_group_sorted_by_count:
                     # xss-lint: disable=python-wrap-html
-                    html = '<span class="count">{warning_text}, count: {count}</span> '.format(
+                    html = '<span class="count">{warning_text}, count: {count}</span> '.format(  # noqa: UP032
                         warning_text=escape(message), count=message_count
                     )
                     html_writer.start_section(html, klass="warning_text")

@@ -90,7 +90,7 @@ class PersistentGradeEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixi
 
         PERSISTENT_GRADE_SUMMARY_CHANGED.connect(event_receiver)
         grade = PersistentCourseGrade.update_or_create(**self.params)
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -152,7 +152,7 @@ class CoursePassingStatusEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTest
         with mock_passing_grade():
             grade_factory.update(self.user, self.course)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -226,7 +226,7 @@ class CCXCoursePassingStatusEventsTest(
         with mock_passing_grade():
             grade_factory.update(self.user, self.store.get_course(self.ccx_locator))
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

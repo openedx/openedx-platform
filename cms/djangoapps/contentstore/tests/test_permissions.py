@@ -80,7 +80,7 @@ class TestCourseAccess(ModuleStoreTestCase):
         """
         # first check the course creator.has explicit access (don't use has_access as is_staff
         # will trump the actual test)
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             CourseInstructorRole(self.course_key).has_user(self.user),
             "Didn't add creator as instructor."
         )
@@ -101,7 +101,7 @@ class TestCourseAccess(ModuleStoreTestCase):
             user = users.pop()
             group.add_users(user)
             user_by_role[role].append(user)
-            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # lint-amnesty, pylint: disable=line-too-long
+            self.assertTrue(auth.has_course_author_access(user, self.course_key), f"{user} does not have access")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
 
         course_team_url = reverse_course_url('course_team_handler', self.course_key)
         response = self.client.get_html(course_team_url)
@@ -134,9 +134,9 @@ class TestCourseAccess(ModuleStoreTestCase):
                 if hasattr(user, '_roles'):
                     del user._roles
 
-                self.assertTrue(auth.has_course_author_access(user, copy_course_key), f"{user} no copy access")
+                self.assertTrue(auth.has_course_author_access(user, copy_course_key), f"{user} no copy access")  # noqa: PT009  # pylint: disable=line-too-long
                 if (role is OrgStaffRole) or (role is OrgInstructorRole):
                     auth.remove_users(self.user, role(self.course_key.org), user)
                 else:
                     auth.remove_users(self.user, role(self.course_key), user)
-                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # lint-amnesty, pylint: disable=line-too-long
+                self.assertFalse(auth.has_course_author_access(user, self.course_key), f"{user} remove didn't work")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009

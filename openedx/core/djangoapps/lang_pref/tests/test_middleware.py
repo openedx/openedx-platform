@@ -155,7 +155,7 @@ class TestUserPreferenceMiddleware(CacheIsolationTestCase):
             accept_lang_out = parse_accept_lang_header(accept_lang_out)
 
         if accept_lang_out and accept_lang_result:
-            self.assertCountEqual(accept_lang_result, accept_lang_out)
+            self.assertCountEqual(accept_lang_result, accept_lang_out)  # noqa: PT009
         else:
             assert accept_lang_result == accept_lang_out
 

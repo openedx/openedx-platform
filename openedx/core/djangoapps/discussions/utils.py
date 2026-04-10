@@ -2,7 +2,7 @@
 Shared utility code related to discussions.
 """
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple  # noqa: UP035
 
 from opaque_keys.edx.keys import CourseKey
 
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 def get_divided_discussions(
     course: CourseBlock,
     discussion_settings: CourseDiscussionSettings,
-) -> Tuple[List[str], List[str]]:
+) -> Tuple[List[str], List[str]]:  # noqa: UP006
     """
     Returns the course-wide and inline divided discussion ids separately.
     """
@@ -46,7 +46,7 @@ def get_divided_discussions(
     return divided_course_wide_discussions, divided_inline_discussions
 
 
-def get_discussion_categories_ids(course: CourseBlock, user: Optional[User], include_all: bool = False) -> List[str]:
+def get_discussion_categories_ids(course: CourseBlock, user: Optional[User], include_all: bool = False) -> List[str]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Returns a list of available ids of categories for the course that
     are accessible to the given user.
@@ -65,9 +65,9 @@ def get_discussion_categories_ids(course: CourseBlock, user: Optional[User], inc
 
 def get_accessible_discussion_xblocks(
     course: CourseBlock,
-    user: Optional[User],
+    user: Optional[User],  # noqa: UP045
     include_all: bool = False,
-) -> List[DiscussionXBlock]:
+) -> List[DiscussionXBlock]:  # noqa: UP006
     """
     Return a list of all valid discussion xblocks in this course that
     are accessible to the given user.
@@ -79,9 +79,9 @@ def get_accessible_discussion_xblocks(
 @request_cached()
 def get_accessible_discussion_xblocks_by_course_id(
     course_id: CourseKey,
-    user: Optional[User] = None,
+    user: Optional[User] = None,  # noqa: UP045
     include_all: bool = False
-) -> List[DiscussionXBlock]:
+) -> List[DiscussionXBlock]:  # noqa: UP006
     """
     Return a list of all valid discussion xblocks in this course.
     Checks for the given user's access if include_all is False.
@@ -94,7 +94,7 @@ def get_accessible_discussion_xblocks_by_course_id(
     ]
 
 
-def available_division_schemes(course_key: CourseKey) -> List[str]:
+def available_division_schemes(course_key: CourseKey) -> List[str]:  # noqa: UP006
     """
     Returns a list of possible discussion division schemes for this course.
     This takes into account if cohorts are enabled and if there are multiple
@@ -139,7 +139,7 @@ def enrollment_track_group_count(course_key: CourseKey) -> int:
     return len(_get_enrollment_track_groups(course_key))
 
 
-def _get_enrollment_track_groups(course_key: CourseKey) -> List[Group]:
+def _get_enrollment_track_groups(course_key: CourseKey) -> List[Group]:  # noqa: UP006
     """
     Helper method that returns an array of the Groups in the EnrollmentTrackUserPartition for the given course.
     If no such partition exists on the course, an empty array is returned.
@@ -149,7 +149,7 @@ def _get_enrollment_track_groups(course_key: CourseKey) -> List[Group]:
     return partition.groups if partition else []
 
 
-def get_group_names_by_id(course_discussion_settings: CourseDiscussionSettings) -> Dict[str, str]:
+def get_group_names_by_id(course_discussion_settings: CourseDiscussionSettings) -> Dict[str, str]:  # noqa: UP006
     """
     Creates of a dict of group_id to learner-facing group names, for the division_scheme
     in use as specified by course_discussion_settings.

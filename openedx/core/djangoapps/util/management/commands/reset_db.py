@@ -39,7 +39,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         router = options.get('router')
         dbinfo = settings.DATABASES.get(router)
         if dbinfo is None:
-            raise CommandError("Unknown database router %s" % router)
+            raise CommandError("Unknown database router %s" % router)  # noqa: UP031
 
         engine = dbinfo.get('ENGINE').split('.')[-1]
 
@@ -83,7 +83,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
                 kwargs['port'] = int(database_port)
 
             connection = Database.connect(**kwargs)
-            drop_query = 'DROP DATABASE IF EXISTS `%s`' % database_name
+            drop_query = 'DROP DATABASE IF EXISTS `%s`' % database_name  # noqa: UP031
             utf8_support = 'CHARACTER SET utf8'
             create_query = f'CREATE DATABASE `{database_name}` {utf8_support}'
             logging.info('Executing... "' + drop_query + '"')  # lint-amnesty, pylint: disable=logging-not-lazy
@@ -111,16 +111,16 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
             connection.set_isolation_level(0)  # autocommit false
             cursor = connection.cursor()
 
-            drop_query = "DROP DATABASE \"%s\";" % database_name
+            drop_query = "DROP DATABASE \"%s\";" % database_name  # noqa: UP031
             logging.info('Executing... "' + drop_query + '"')  # lint-amnesty, pylint: disable=logging-not-lazy
             try:
                 cursor.execute(drop_query)
             except Database.ProgrammingError as e:
                 logging.exception("Error: %s", e)
 
-            create_query = "CREATE DATABASE \"%s\"" % database_name
+            create_query = "CREATE DATABASE \"%s\"" % database_name  # noqa: UP031
             if owner:
-                create_query += " WITH OWNER = \"%s\" " % owner
+                create_query += " WITH OWNER = \"%s\" " % owner  # noqa: UP031
             create_query += " ENCODING = 'UTF8'"
 
             if engine == 'postgis' and django.VERSION < (1, 9):
@@ -128,10 +128,10 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
                 from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper
                 postgis_template = DatabaseWrapper(dbinfo).template_postgis  # lint-amnesty, pylint: disable=no-member
                 if postgis_template is not None:
-                    create_query += ' TEMPLATE = %s' % postgis_template
+                    create_query += ' TEMPLATE = %s' % postgis_template  # noqa: UP031
 
             if settings.DEFAULT_TABLESPACE:
-                create_query += ' TABLESPACE = %s;' % settings.DEFAULT_TABLESPACE
+                create_query += ' TABLESPACE = %s;' % settings.DEFAULT_TABLESPACE  # noqa: UP031
             else:
                 create_query += ';'
 
@@ -139,7 +139,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
             cursor.execute(create_query)
 
         else:
-            raise CommandError("Unknown database engine %s" % engine)
+            raise CommandError("Unknown database engine %s" % engine)  # noqa: UP031
 
         if verbosity >= 2:
             print("Reset successful.")

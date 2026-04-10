@@ -109,10 +109,10 @@ class CourseMode(models.Model):
 
     # optional description override
     # WARNING: will not be localized
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True)  # noqa: DJ001
 
     # Optional SKU for integration with the ecommerce service
-    sku = models.CharField(
+    sku = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -124,7 +124,7 @@ class CourseMode(models.Model):
     )
 
     # Optional Android SKU for integration with mobile and the ecommerce service
-    android_sku = models.CharField(
+    android_sku = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -136,7 +136,7 @@ class CourseMode(models.Model):
     )
 
     # Optional iOS SKU for integration with mobile and the ecommerce service
-    ios_sku = models.CharField(
+    ios_sku = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -148,7 +148,7 @@ class CourseMode(models.Model):
     )
 
     # Optional bulk order SKU for integration with the ecommerce service
-    bulk_sku = models.CharField(
+    bulk_sku = models.CharField(  # noqa: DJ001
         max_length=255,
         null=True,
         blank=True,
@@ -261,7 +261,7 @@ class CourseMode(models.Model):
                 )
             )
 
-    def save(self, force_insert=False, force_update=False, using=None):  # lint-amnesty, pylint: disable=arguments-differ
+    def save(self, force_insert=False, force_update=False, using=None):  # lint-amnesty, pylint: disable=arguments-differ  # noqa: DJ012
         # Ensure currency is always lowercase.
         self.clean()  # ensure object-level validation is performed before we save.
         self.currency = self.currency.lower()
@@ -857,8 +857,8 @@ class CourseMode(models.Model):
             self.bulk_sku
         )
 
-    def __str__(self):
-        return "{} : {}, min={}".format(
+    def __str__(self):  # noqa: DJ012
+        return "{} : {}, min={}".format(  # noqa: UP032
             self.course_id, self.mode_slug, self.min_price
         )
 
@@ -930,7 +930,7 @@ def format_course_price(price):
     return cosmetic_display_price
 
 
-class CourseModesArchive(models.Model):
+class CourseModesArchive(models.Model):  # noqa: DJ008
     """
     Store the past values of course_mode that a course had in the past. We decided on having
     separate model, because there is a uniqueness contraint on (course_mode, course_id)
@@ -947,7 +947,7 @@ class CourseModesArchive(models.Model):
 
     # the reference to this mode that can be used by Enrollments to generate
     # similar behavior for the same slug across courses
-    mode_slug = models.CharField(max_length=100)
+    mode_slug = models.CharField(max_length=100)  # noqa: DJ012
 
     # The 'pretty' name that can be translated and displayed
     mode_display_name = models.CharField(max_length=255)

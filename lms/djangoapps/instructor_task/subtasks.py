@@ -57,10 +57,10 @@ def track_memory_usage(metric, course_id):  # lint-amnesty, pylint: disable=unus
     baseline_memory_info = process.memory_info()
     baseline_usages = [getattr(baseline_memory_info, memory_type) for memory_type in memory_types]
     yield
-    for memory_type, baseline_usage in zip(memory_types, baseline_usages):
+    for memory_type, baseline_usage in zip(memory_types, baseline_usages):  # noqa: B905
         total_memory_info = process.memory_info()
         total_usage = getattr(total_memory_info, memory_type)
-        memory_used = total_usage - baseline_usage  # lint-amnesty, pylint: disable=unused-variable
+        memory_used = total_usage - baseline_usage  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
 
 def _generate_items_for_subtask(
@@ -245,7 +245,7 @@ def initialize_subtask_info(entry, action_name, total_num, subtask_id_list):
         'skipped': 0,
         'succeeded': 0,
         'total': total_num,
-        'duration_ms': int(0),
+        'duration_ms': int(0),  # noqa: UP018
         'start_time': time()
     }
     entry.task_output = InstructorTask.create_output_for_success(task_progress)

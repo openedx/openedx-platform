@@ -128,7 +128,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
                 (graded_problem_1.location, {'due': 5}),
             ]
             sequence = self.store.get_item(sequence.location)
-            self.assertCountEqual(_gather_graded_items(sequence, 5), expected_graded_items)
+            self.assertCountEqual(_gather_graded_items(sequence, 5), expected_graded_items)  # noqa: PT009
 
     def test_sequence_with_ora_and_non_ora_assignments(self):
         """
@@ -159,7 +159,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
                 (graded_problem_1.location, {'due': 5}),
             ]
             sequence = self.store.get_item(sequence.location)
-            self.assertCountEqual(_gather_graded_items(sequence, 5), expected_graded_items)
+            self.assertCountEqual(_gather_graded_items(sequence, 5), expected_graded_items)  # noqa: PT009
 
     def test_get_custom_pacing_children(self):
         """
@@ -179,7 +179,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
                 (vertical3.location, {'due': timedelta(weeks=2)})
             ]
         sequence = self.store.get_item(sequence.location)
-        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)
+        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)  # noqa: PT009
 
         with self.store.bulk_operations(self.course.id):
             # A subsection with multiple units, each of which has a problem.
@@ -191,19 +191,19 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
                 (problem2.location, {'due': timedelta(weeks=2)})
             ])
         sequence = self.store.get_item(sequence.location)
-        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)
+        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)  # noqa: PT009
 
         # A subsection that has ORA as a problem. ORA should not inherit due date.
         BlockFactory.create(parent=vertical3, category='openassessment')
         sequence = self.store.get_item(sequence.location)
-        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)
+        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)  # noqa: PT009
 
         # A subsection that has an ORA problem and a non ORA problem. ORA should
         # not inherit due date, but non ORA problems should.
         problem3 = BlockFactory(parent=vertical3, category='problem')
         expected_dates.append((problem3.location, {'due': timedelta(weeks=2)}))
         sequence = self.store.get_item(sequence.location)
-        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)
+        self.assertCountEqual(_get_custom_pacing_children(sequence, 2), expected_dates)  # noqa: PT009
 
 
 class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
@@ -239,7 +239,7 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
                 (problem.location, {'due': timedelta(days=21)})
             ]
         course = self.store.get_item(self.course.location)
-        self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+        self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_one_subsection(self):
@@ -260,7 +260,7 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
                 (sequential.location, {'due': timedelta(days=21)})
             ]
         course = self.store.get_item(self.course.location)
-        self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+        self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_one_subsection_graded(self):
@@ -294,7 +294,7 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
             ]
         course = self.store.get_item(self.course.location)
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=6)):
-            self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+            self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_custom_and_default_pls_multiple_subsections_graded(self):
@@ -335,7 +335,7 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
 
         course = self.store.get_item(self.course.location)
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=8)):
-            self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+            self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_all_subsections(self):
@@ -356,7 +356,7 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
                 (sequential3.location, {'due': timedelta(days=35)})
             ]
         course = self.store.get_item(self.course.location)
-        self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+        self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009
 
     @override_waffle_flag(CUSTOM_RELATIVE_DATES, active=True)
     def test_extract_dates_from_course_no_subsections(self):
@@ -369,4 +369,4 @@ class SelfPacedCustomDueDateTests(ModuleStoreTestCase):
                 BlockFactory.create(category='sequential', parent=self.chapter)
             expected_dates = [(self.course.location, {})]
         course = self.store.get_item(self.course.location)
-        self.assertCountEqual(extract_dates_from_course(course), expected_dates)
+        self.assertCountEqual(extract_dates_from_course(course), expected_dates)  # noqa: PT009

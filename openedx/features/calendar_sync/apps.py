@@ -15,4 +15,4 @@ class UserCalendarSyncConfig(AppConfig):  # lint-amnesty, pylint: disable=missin
         super().ready()
 
         # noinspection PyUnresolvedReferences
-        import openedx.features.calendar_sync.signals  # pylint: disable=import-outside-toplevel,unused-import
+        import openedx.features.calendar_sync.signals  # pylint: disable=import-outside-toplevel,unused-import  # noqa: F401

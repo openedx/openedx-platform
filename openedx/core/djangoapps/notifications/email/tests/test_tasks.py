@@ -2,7 +2,7 @@
 Test cases for notifications/email/tasks.py
 """
 import datetime
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: F811
 from unittest.mock import Mock, patch
 
 import ddt
@@ -540,7 +540,7 @@ class TestDecideEmailAction(ModuleStoreTestCase):
         notification2 = self._create_notification()
 
         # Both should see no recent email initially
-        with patch('openedx.core.djangoapps.notifications.email.tasks.logger') as mock_logger:
+        with patch('openedx.core.djangoapps.notifications.email.tasks.logger') as mock_logger:  # noqa: F841
             decision1 = decide_email_action(self.user, self.course_key, notification1)
 
             # Mark first as sent to simulate race
@@ -937,7 +937,7 @@ class TestSendBufferedDigest(ModuleStoreTestCase):
         mock_task = Mock()
         mock_task.request.retries = 0
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017, PT027
             send_buffered_digest.bind(mock_task)(
                 user_id=self.user.id,
                 course_key=self.course_key,
@@ -1109,7 +1109,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
         course2 = CourseFactory.create()
 
         # Notifications in course 1
-        notif1 = Notification.objects.create(
+        notif1 = Notification.objects.create(  # noqa: F841
             user=self.user,
             course_id=self.course.id,
             app_name='discussion',

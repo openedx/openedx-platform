@@ -185,7 +185,7 @@ class TestSendVerificationExpiryEmail(MockS3Boto3Mixin, TestCase):
             call_command('send_verification_expiry_email')
             logger.check(
                 (LOGGER_NAME,
-                 'INFO', "No approved expired entries found in SoftwareSecurePhotoVerification for the "
+                 'INFO', "No approved expired entries found in SoftwareSecurePhotoVerification for the "  # noqa: UP032
                          "date range {} - {}".format(start_date.date(), now().date()))
             )
 
@@ -207,12 +207,12 @@ class TestSendVerificationExpiryEmail(MockS3Boto3Mixin, TestCase):
             logger.check(
                 (LOGGER_NAME,
                  'INFO',
-                 "For the date range {} - {}, total Software Secure Photo verification filtered are {}"
+                 "For the date range {} - {}, total Software Secure Photo verification filtered are {}"  # noqa: UP032
                  .format(start_date.date(), now().date(), count)
                  ),
                 (LOGGER_NAME,
                  'INFO',
-                 "This was a dry run, no email was sent. For the actual run email would have been sent "
+                 "This was a dry run, no email was sent. For the actual run email would have been sent "  # noqa: UP032
                  "to {} learner(s)".format(count)
                  ))
         assert len(mail.outbox) == 0
@@ -272,7 +272,7 @@ class TestSendVerificationExpiryEmail(MockS3Boto3Mixin, TestCase):
     def test_command_error(self):
         err_string = "DEFAULT_EMAILS must be a positive integer. If you do not wish to send " \
                      "emails use --dry-run flag instead."
-        with self.assertRaisesRegex(CommandError, err_string):
+        with self.assertRaisesRegex(CommandError, err_string):  # noqa: PT027
             call_command('send_verification_expiry_email')
 
     def test_one_failed_but_others_succeeded(self):
@@ -290,7 +290,7 @@ class TestSendVerificationExpiryEmail(MockS3Boto3Mixin, TestCase):
 
         with patch('lms.djangoapps.verify_student.management.commands.send_verification_expiry_email.ace') as mock_ace:
             mock_ace.send.side_effect = (Exception('Aw shucks'), None)
-            with self.assertRaisesRegex(CommandError, 'One or more email attempts failed.*'):
+            with self.assertRaisesRegex(CommandError, 'One or more email attempts failed.*'):  # noqa: PT027
                 with LogCapture(LOGGER_NAME) as logger:
                     call_command('send_verification_expiry_email')
 

@@ -27,14 +27,14 @@ urlpatterns = [
         name="teams_list"
     ),
     re_path(
-        r'^v0/teams/{team_id_pattern}$'.format(
+        r'^v0/teams/{team_id_pattern}$'.format(  # noqa: UP032
             team_id_pattern=TEAM_ID_PATTERN,
         ),
         TeamsDetailView.as_view(),
         name="teams_detail"
     ),
     re_path(
-        r'^v0/teams/{team_id_pattern}/assignments$'.format(
+        r'^v0/teams/{team_id_pattern}/assignments$'.format(  # noqa: UP032
             team_id_pattern=TEAM_ID_PATTERN,
         ),
         TeamsAssignmentsView.as_view(),
@@ -46,7 +46,7 @@ urlpatterns = [
         name="topics_list"
     ),
     re_path(
-        r'^v0/topics/{topic_id_pattern},{course_id_pattern}$'.format(
+        r'^v0/topics/{topic_id_pattern},{course_id_pattern}$'.format(  # noqa: UP032
             topic_id_pattern=TOPIC_ID_PATTERN,
             course_id_pattern=settings.COURSE_ID_PATTERN,
         ),
@@ -59,7 +59,7 @@ urlpatterns = [
         name="team_membership_list"
     ),
     re_path(
-        r'^v0/team_membership/{team_id_pattern},{username_pattern}$'.format(
+        r'^v0/team_membership/{team_id_pattern},{username_pattern}$'.format(  # noqa: UP032
             team_id_pattern=TEAM_ID_PATTERN,
             username_pattern=settings.USERNAME_PATTERN,
         ),
@@ -67,7 +67,7 @@ urlpatterns = [
         name="team_membership_detail"
     ),
     re_path(
-        r'^v0/bulk_team_membership/{course_id_pattern}$'.format(
+        r'^v0/bulk_team_membership/{course_id_pattern}$'.format(  # noqa: UP032
             course_id_pattern=settings.COURSE_ID_PATTERN,
         ),
         MembershipBulkManagementView.as_view(),

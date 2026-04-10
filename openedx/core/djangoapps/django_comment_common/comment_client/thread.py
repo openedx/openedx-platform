@@ -100,7 +100,7 @@ class Thread(models.Model):
                 }
             )
             log.info(
-                'forum_text_search query="{search_query}" corrected_text="{corrected_text}" course_id={course_id} '
+                'forum_text_search query="{search_query}" corrected_text="{corrected_text}" course_id={course_id} '  # noqa: UP032  # pylint: disable=line-too-long
                 'group_id={group_id} page={requested_page} total_results={total_results}'.format(
                     search_query=search_query,
                     corrected_text=corrected_text,

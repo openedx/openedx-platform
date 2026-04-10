@@ -208,7 +208,7 @@ class GradesTransformerTestCase(CourseStructureTestCase):
         }
         blocks = self.build_complicated_hypothetical_course()
         block_structure = get_course_blocks(self.student, blocks['course'].location, self.transformers)
-        for block_ref, expected_subsections in expected_subsections.items():
+        for block_ref, expected_subsections in expected_subsections.items():  # noqa: B020
             actual_subsections = block_structure.get_transformer_block_field(
                 blocks[block_ref].location,
                 self.TRANSFORMER_CLASS_TO_TEST,
@@ -458,7 +458,7 @@ class MultiProblemModulestoreAccessTestCase(CourseStructureTestCase, SharedModul
                             <numericalresponse answer="{number}">
                                 <textline label="1*{number}" />
                             </numericalresponse>
-                        </problem>'''.format(number=problem_number),
+                        </problem>'''.format(number=problem_number),  # noqa: UP032
                 }
             )
         with self.store.default_store(store_type):

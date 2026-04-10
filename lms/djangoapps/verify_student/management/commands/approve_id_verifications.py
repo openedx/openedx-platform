@@ -75,7 +75,7 @@ class Command(BaseCommand):
         )
 
         if failed_user_ids:
-            log.error('Completed ID verification approvals. {} of {} failed.'.format(
+            log.error('Completed ID verification approvals. {} of {} failed.'.format(  # noqa: UP032
                 len(failed_user_ids),
                 total_users,
             ))

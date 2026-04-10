@@ -82,7 +82,7 @@ class TestGoogleAnalyticsTrackingPixel(QueryStringAssertionMixin, CacheIsolation
             scheme='https',
             netloc='www.google-analytics.com',
             path='/collect',
-            query='v=1&t=event&cs={cs}&cm={cm}&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1'.format(
+            query='v=1&t=event&cs={cs}&cm={cm}&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 cs=DEFAULT_CAMPAIGN_SOURCE,
                 cm=DEFAULT_CAMPAIGN_MEDIUM,
                 cid=GoogleAnalyticsTrackingPixel.ANONYMOUS_USER_CLIENT_ID,
@@ -138,7 +138,7 @@ class TestGoogleAnalyticsTrackingPixel(QueryStringAssertionMixin, CacheIsolation
         assert pixel.generate_image_url() is not None
         self.assert_url_components_equal(
             pixel.generate_image_url(),
-            query='v=1&t=event&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1&cd40=10&uid=10'.format(
+            query='v=1&t=event&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1&cd40=10&uid=10'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 cid=GoogleAnalyticsTrackingPixel.ANONYMOUS_USER_CLIENT_ID,
             )
         )
@@ -152,7 +152,7 @@ class TestGoogleAnalyticsTrackingPixel(QueryStringAssertionMixin, CacheIsolation
         assert pixel.generate_image_url() is not None
         self.assert_url_components_equal(
             pixel.generate_image_url(),
-            query='v=1&t=event&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1'.format(
+            query='v=1&t=event&ec=email&ea=edx.bi.email.opened&cid={cid}&tid=UA-123456-1'.format(  # noqa: UP032
                 cid=GoogleAnalyticsTrackingPixel.ANONYMOUS_USER_CLIENT_ID,
             )
         )

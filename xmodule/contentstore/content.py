@@ -63,7 +63,7 @@ class StaticContent:  # lint-amnesty, pylint: disable=missing-class-docstring
             width, height = dimensions
             name_root += f"-{width}x{height}"
 
-        return "{name_root}{extension}".format(
+        return "{name_root}{extension}".format(  # noqa: UP032
             name_root=name_root,
             extension=extension,
         )
@@ -458,7 +458,7 @@ class ContentStore:
         except Exception as exc:  # pylint: disable=broad-except
             # log and continue as thumbnails are generally considered as optional
             logging.exception(
-                "Failed to generate thumbnail for {}. Exception: {}".format(content.location, str(exc))
+                "Failed to generate thumbnail for {}. Exception: {}".format(content.location, str(exc))  # noqa: UP032
             )
 
         return thumbnail_content, thumbnail_file_location

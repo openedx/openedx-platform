@@ -486,7 +486,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         This test generates three scheduled tasks; one that has been processed, one that is due for processing, and one
         that is due in the future. In this test, one only of these tasks should be eligible for processing.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         executed_instructor_task = self._generate_scheduled_task(task_state=SUCCESS)
         executed_instructor_task_due_date = base_date - datetime.timedelta(days=5)
         self._generate_scheduled_task_schedule(executed_instructor_task, executed_instructor_task_due_date)
@@ -518,7 +518,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         A test that verifies the behavior of the `process_scheduled_tasks` function when there is an error processing
         the request.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         due_instructor_task = self._generate_scheduled_task()
         due_instructor_task_due_date = base_date - datetime.timedelta(days=1)
         self._generate_scheduled_task_schedule(due_instructor_task, due_instructor_task_due_date)

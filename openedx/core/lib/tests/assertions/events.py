@@ -234,7 +234,7 @@ def compare_structs(expected, actual, should_strict_compare=None, path=None):
             differences.extend(child_differences)
 
     elif expected != actual:
-        differences.append('{path}: {a} != {b} (expected != actual)'.format(
+        differences.append('{path}: {a} != {b} (expected != actual)'.format(  # noqa: UP032
             path=_path_to_string(path),
             a=repr(expected),
             b=repr(actual)

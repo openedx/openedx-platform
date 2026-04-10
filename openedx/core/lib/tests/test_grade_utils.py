@@ -61,5 +61,5 @@ class TestGradeUtils(TestCase):
         (0.0, 0.0)
     )
     @ddt.unpack
-    def test_round_away_from_zero(self, precise, expected_rounded_number, rounding_precision=0):
+    def test_round_away_from_zero(self, precise, expected_rounded_number, rounding_precision=0):  # noqa: PT028
         assert round_away_from_zero(precise, rounding_precision) == expected_rounded_number

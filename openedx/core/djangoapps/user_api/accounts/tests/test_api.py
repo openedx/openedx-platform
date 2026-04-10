@@ -39,7 +39,7 @@ from openedx.core.djangoapps.user_api.accounts.api import (
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     fake_requested_retirement,
-    setup_retirement_states,
+    setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
@@ -339,7 +339,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
             update_account_settings(self.user, {'name': account_settings['name']})
             # The name should not be added to profile metadata
             updated_meta = user_profile.get_meta()
-            self.assertEqual(meta, updated_meta)
+            self.assertEqual(meta, updated_meta)  # noqa: PT009
 
     @patch('openedx.core.djangoapps.user_api.accounts.api._does_name_change_require_verification',
            Mock(return_value=True))
@@ -533,7 +533,7 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         assert account_settings['country'] == UserProfile.COUNTRY_WITH_STATES
         assert account_settings['state'] == 'MA'
 
-        with self.assertRaises(AccountValidationError):
+        with self.assertRaises(AccountValidationError):  # noqa: PT027
             update_account_settings(self.user, {"country": "KP"})
 
     def test_get_name_validation_error_too_long(self):

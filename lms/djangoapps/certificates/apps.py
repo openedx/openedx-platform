@@ -22,7 +22,7 @@ class CertificatesConfig(AppConfig):
         """
         # Can't import models at module level in AppConfigs, and models get
         # included from the signal handlers
-        from lms.djangoapps.certificates import signals  # pylint: disable=unused-import
+        from lms.djangoapps.certificates import signals  # pylint: disable=unused-import  # noqa: F401
         if settings.FEATURES.get('ENABLE_SPECIAL_EXAMS'):
             from lms.djangoapps.certificates.services import CertificateService
             set_runtime_service('certificates', CertificateService())

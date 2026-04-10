@@ -478,7 +478,7 @@ def _copy_overrides(
         if field.scope == Scope.settings and field.is_set_on(source_block):
             setattr(dest_block, field.name, field.read_from(source_block))
     if source_block.has_children:
-        for source_child_key, dest_child_key in zip(source_block.children, dest_block.children):
+        for source_child_key, dest_child_key in zip(source_block.children, dest_block.children):  # noqa: B905
             _copy_overrides(
                 store=store,
                 user_id=user_id,

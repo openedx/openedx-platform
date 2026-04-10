@@ -77,4 +77,4 @@ def dump_theming_info():
                 continue
             with open(os.path.join(dirname, filename)) as f:
                 content = len(f.read())
-            print("    %s: %d" % (filename, content))
+            print("    %s: %d" % (filename, content))  # noqa: UP031

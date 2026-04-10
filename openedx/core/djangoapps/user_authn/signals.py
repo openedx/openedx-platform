@@ -2,7 +2,7 @@
 Signals for user_authn
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple  # noqa: UP035
 
 from common.djangoapps.student.models import UserProfile
 from common.djangoapps.track import segment
@@ -11,7 +11,7 @@ from common.djangoapps.track import segment
 def user_fields_changed(
     user=None,
     table=None,
-    changed_fields: Optional[Dict[str, Tuple[Any, Any]]] = None,
+    changed_fields: Optional[Dict[str, Tuple[Any, Any]]] = None,  # noqa: UP006, UP045
     **_kwargs,
 ):
     """

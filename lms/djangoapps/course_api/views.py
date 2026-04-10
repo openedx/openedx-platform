@@ -195,7 +195,7 @@ class LazyPageNumberPagination(NamespacedPageNumberPagination):
                 page_number=page_number, message=str(exc)
             )
             self.page.number = self.page.paginator.num_pages
-            raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return super().get_paginated_response(data)
 
@@ -229,7 +229,7 @@ class LazyPageNumberPagination(NamespacedPageNumberPagination):
                 msg = self.invalid_page_message.format(
                     page_number=page_number, message=str(exc)
                 )
-                raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         with function_trace('pagination_paginate_queryset_get_num_pages'):
             if paginator.num_pages > 1 and self.template is not None:

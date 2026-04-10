@@ -37,5 +37,5 @@ class TestExpireWaitingEnrollments(TestCase):
     @patch('lms.djangoapps.program_enrollments.tasks.expire_waiting_enrollments', autospec=True)
     def test_task_failure_fails_command(self, mock_task):
         mock_task.side_effect = Exception('BOOM!')
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             call_command('expire_waiting_enrollments')

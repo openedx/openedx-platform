@@ -168,4 +168,4 @@ class GetCoursewareUrlTests(SharedModuleStoreTestCase):
             url = url_helpers.get_courseware_url(block.location)
         path = url.split('?')[0]
         assert path == expected_path
-        course_run = self.items['course_run']
+        course_run = self.items['course_run']  # noqa: F841

@@ -187,7 +187,7 @@ def set_has_profile_image(username, is_uploaded, upload_dt=None):
     try:
         profile = UserProfile.objects.get(user__username=username)
     except ObjectDoesNotExist:
-        raise UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     profile.profile_image_uploaded_at = upload_dt
     profile.save()

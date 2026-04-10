@@ -114,13 +114,13 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
 
     def test_email_missing_current_task(self):
         task_entry = self._create_input_entry()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             send_bulk_course_email(task_entry.id, {})
 
     def test_email_undefined_course(self):
         # Check that we fail when passing in a course that doesn't exist.
         task_entry = self._create_input_entry(course_id=CourseLocator("bogus", "course", "id"))
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self._run_task_with_mock_celery(send_bulk_course_email, task_entry.id, task_entry.task_id)
 
     def test_bad_task_id_on_update(self):
@@ -131,13 +131,13 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
             bogus_task_id = "this-is-bogus"
             update_subtask_status(entry_id, bogus_task_id, new_subtask_status)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with patch('lms.djangoapps.bulk_email.tasks.update_subtask_status', dummy_update_subtask_status):
                 send_bulk_course_email(task_entry.id, {})
 
     def _create_students(self, num_students):
         """Create students for testing"""
-        return [self.create_student('robot%d' % i) for i in range(num_students)]
+        return [self.create_student('robot%d' % i) for i in range(num_students)]  # noqa: UP031
 
     def _assert_single_subtask_status(self, entry, succeeded, failed=0, skipped=0, retried_nomax=0, retried_withmax=0):
         """Compare counts with 'subtasks' entry in InstructorTask table."""
@@ -290,7 +290,7 @@ class TestBulkEmailInstructorTask(InstructorTaskCourseTestCase):
         emails_with_non_ascii_chars = 3
         num_of_course_instructors = 1
 
-        students = [self.create_student('robot%d' % i) for i in range(num_emails)]
+        students = [self.create_student('robot%d' % i) for i in range(num_emails)]  # noqa: UP031
         for student in students[:emails_with_non_ascii_chars]:
             student.email = f'{student.username}@tesá.com'
             student.save()

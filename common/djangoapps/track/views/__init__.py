@@ -2,13 +2,13 @@
 
 import json
 
-import six
+import six  # noqa: F401
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.http import HttpResponse
 from eventtracking import tracker as eventtracker
 from ipware.ip import get_client_ip
 
-from common.djangoapps.track import contexts, shim, tracker
+from common.djangoapps.track import contexts, shim, tracker  # noqa: F401
 from lms.djangoapps.utils import OptimizelyClient
 
 

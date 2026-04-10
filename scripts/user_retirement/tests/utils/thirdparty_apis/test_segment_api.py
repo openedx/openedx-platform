@@ -18,7 +18,7 @@ TEST_SEGMENT_CONFIG = {
     'fake_base_url': 'https://segment.invalid/',
     'fake_auth_token': FAKE_AUTH_TOKEN,
     'fake_workspace': 'FakeEdx',
-    'headers': {"Authorization": "Bearer {}".format(FAKE_AUTH_TOKEN), "Content-Type": "application/json"}
+    'headers': {"Authorization": "Bearer {}".format(FAKE_AUTH_TOKEN), "Content-Type": "application/json"}  # noqa: UP032
 }
 
 
@@ -110,7 +110,7 @@ def test_bulk_delete_error(setup_regulation_api, caplog):  # pylint: disable=red
     mock_post.return_value = FakeErrorResponse()
 
     learner = TEST_SEGMENT_CONFIG['learner']
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         segment.delete_and_suppress_learners(learner, 1000)
 
     assert mock_post.call_count == 4
@@ -158,7 +158,7 @@ def test_bulk_unsuppress_error(setup_regulation_api, caplog):  # pylint: disable
     mock_post.return_value = FakeErrorResponse()
 
     learner = TEST_SEGMENT_CONFIG['learner']
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         segment.unsuppress_learners_by_key('original_username', learner, 100)
 
     assert mock_post.call_count == 4

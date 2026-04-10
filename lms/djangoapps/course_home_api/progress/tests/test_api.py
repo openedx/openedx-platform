@@ -20,7 +20,7 @@ def _make_subsection(fmt, earned, possible, show_corr, *, due_delta_days=None, i
     graded_total = SimpleNamespace(earned=earned, possible=possible)
     due = None
     if due_delta_days is not None:
-        due = datetime.now(timezone.utc) + timedelta(days=due_delta_days)
+        due = datetime.now(timezone.utc) + timedelta(days=due_delta_days)  # noqa: UP017
     return SimpleNamespace(
         graded=True,
         format=fmt,
@@ -178,7 +178,7 @@ class ProgressApiTests(TestCase):
                     has_staff_access=False,
                 )
 
-                assert 'results' in result and 'final_grades' in result
+                assert 'results' in result and 'final_grades' in result  # noqa: PT018
                 assert result['final_grades'] == expected['final']
                 assert len(result['results']) == 1
 

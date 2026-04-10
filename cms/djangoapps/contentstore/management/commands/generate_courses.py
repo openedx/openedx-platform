@@ -33,9 +33,9 @@ class Command(BaseCommand):
         try:
             courses = json.loads(options["courses_json"])["courses"]
         except ValueError:
-            raise CommandError("Invalid JSON object")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("Invalid JSON object")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         except KeyError:
-            raise CommandError("JSON object is missing courses list")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("JSON object is missing courses list")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         for course_settings in courses:
             # Validate course

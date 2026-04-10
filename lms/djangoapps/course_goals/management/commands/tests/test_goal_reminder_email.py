@@ -318,5 +318,5 @@ class TestGoalReminderEmailSES(TestCase):
                 options=options,
             )
             # expect an exception here
-            with self.assertRaises(NoCredentialsError):
+            with self.assertRaises(NoCredentialsError):  # noqa: PT027
                 send_email_using_ses(user, msg)

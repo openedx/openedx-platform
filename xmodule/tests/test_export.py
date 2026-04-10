@@ -136,7 +136,7 @@ class RoundTripTestCase(unittest.TestCase):
         course_id = initial_course.id
 
         print("Checking key equality")
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             list(initial_import.modules[course_id].keys()),
             list(second_import.modules[course_id].keys())
         )

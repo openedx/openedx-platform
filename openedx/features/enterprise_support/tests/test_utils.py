@@ -363,7 +363,7 @@ class TestEnterpriseUtils(TestCase):
         other_enterprise_customer_user.save()
 
         portal = get_enterprise_learner_portal(request)
-        self.assertDictEqual(portal, {
+        self.assertDictEqual(portal, {  # noqa: PT009
             'name': enterprise_customer_user.enterprise_customer.name,
             'slug': enterprise_customer_user.enterprise_customer.slug,
             'logo': enterprise_customer_user.enterprise_customer.safe_branding_configuration.safe_logo_url,
@@ -385,7 +385,7 @@ class TestEnterpriseUtils(TestCase):
         request.GET = {'enterprise_customer': enterprise_customer_user.enterprise_customer.uuid}
 
         portal = get_enterprise_learner_portal(request)
-        self.assertDictEqual(portal, {
+        self.assertDictEqual(portal, {  # noqa: PT009
             'name': enterprise_customer_user.enterprise_customer.name,
             'slug': enterprise_customer_user.enterprise_customer.slug,
             'logo': enterprise_customer_user.enterprise_customer.safe_branding_configuration.safe_logo_url,
@@ -419,7 +419,7 @@ class TestEnterpriseUtils(TestCase):
         ):
             portal = get_enterprise_learner_portal(request)
 
-        self.assertDictEqual(portal, {
+        self.assertDictEqual(portal, {  # noqa: PT009
             'name': enterprise_customer_user.enterprise_customer.name,
             'slug': enterprise_customer_user.enterprise_customer.slug,
             'logo': enterprise_customer_user.enterprise_customer.safe_branding_configuration.safe_logo_url,
@@ -436,7 +436,7 @@ class TestEnterpriseUtils(TestCase):
             'enterprise_learner_portal': json.dumps(enterprise_customer_data)
         }, user=self.user)
         portal = get_enterprise_learner_portal(request)
-        self.assertDictEqual(portal, enterprise_customer_data)
+        self.assertDictEqual(portal, enterprise_customer_data)  # noqa: PT009
 
     @override_waffle_flag(ENTERPRISE_HEADER_LINKS, True)
     def test_get_enterprise_learner_portal_no_enterprise_user(self):
@@ -492,7 +492,7 @@ class TestEnterpriseUtils(TestCase):
     @mock.patch('django.core.cache.cache.set')
     @mock.patch('django.core.cache.cache.get')
     @mock.patch('openedx.features.enterprise_support.api.enterprise_enabled', return_value=False)
-    def test_is_enterprise_learner_enterprise_disabled(self, _, mock_cache_get, mock_cache_set):
+    def test_is_enterprise_learner_enterprise_disabled(self, _, mock_cache_get, mock_cache_set):  # noqa: PT019
         assert not is_enterprise_learner(self.user)
         assert not is_enterprise_learner(self.user.id)
         assert not mock_cache_get.called
@@ -684,4 +684,4 @@ class TestCourseAccessed(SharedModuleStoreTestCase, CompletionWaffleTestMixin):
 
         self.complete_sequential(self.course, vertical1)
         course_accessed = is_course_accessed(self.user, str(self.course.id))
-        self.assertTrue(course_accessed)
+        self.assertTrue(course_accessed)  # noqa: PT009

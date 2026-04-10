@@ -210,5 +210,5 @@ class ModuleStoreSettingsMigration(TestCase):
 
     def test_update_settings_error(self):
         mixed_setting = self.ALREADY_UPDATED_MIXED_CONFIG
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             update_module_store_settings(mixed_setting, default_store='non-existent store')

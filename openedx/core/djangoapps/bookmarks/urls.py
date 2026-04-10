@@ -13,7 +13,7 @@ urlpatterns = [
          name='bookmarks'
          ),
     re_path(
-        r'^v1/bookmarks/{username},{usage_key}/$'.format(
+        r'^v1/bookmarks/{username},{usage_key}/$'.format(  # noqa: UP032
             username=settings.USERNAME_PATTERN,
             usage_key=settings.USAGE_ID_PATTERN
         ),

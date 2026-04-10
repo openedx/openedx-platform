@@ -70,7 +70,7 @@ class TestCourseOverviewsApi(ModuleStoreTestCase):
         Test for `test_get_course_overview_or_404` function when the overview does not exist.
         """
         course_run_key = CourseKey.from_string('course-v1:coping+with+deletions')
-        with self.assertRaises(Http404):
+        with self.assertRaises(Http404):  # noqa: PT027
             get_course_overview_or_404(course_run_key)
 
     def test_get_course_overview_from_ids(self):

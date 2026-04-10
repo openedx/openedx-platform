@@ -38,6 +38,6 @@ class LockedTest(ModuleStoreTestCase):
         handle_grading_policy_changed(sender, course_key=str(self.course.id))
 
         cache_key = f'handle_grading_policy_changed-{str(self.course.id)}'
-        self.assertEqual(lock_available, compute_grades_async_mock.called)
+        self.assertEqual(lock_available, compute_grades_async_mock.called)  # noqa: PT009
         if lock_available:
             add_mock.assert_called_once_with(cache_key, "true", GRADING_POLICY_COUNTDOWN_SECONDS)

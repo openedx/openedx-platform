@@ -171,12 +171,12 @@ class CertificatesModelTest(ModuleStoreTestCase, MilestonesTestCaseMixin):
         )
 
         # User with no certs should return an empty set.
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             GeneratedCertificate.course_ids_with_certs_for_user(student_no_certs),
             set()
         )
         # User with certs should return a set with the two course_ids
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             GeneratedCertificate.course_ids_with_certs_for_user(student_with_certs),
             {course_1.id, course_2.id}
         )

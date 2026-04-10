@@ -388,13 +388,13 @@ def load_metadata_from_youtube(video_id, request):
                     if res_json.get('items', []):
                         metadata = res_json
                     else:
-                        logging.warning('Unable to find the items in response. Following response '
+                        logging.warning('Unable to find the items in response. Following response '  # noqa: UP032
                                         'was received: {res}'.format(res=res.text))
                 except ValueError:
-                    logging.warning('Unable to decode response to json. Following response '
+                    logging.warning('Unable to decode response to json. Following response '  # noqa: UP032
                                     'was received: {res}'.format(res=res.text))
             else:
-                logging.warning('YouTube API request failed with status code={status} - '
+                logging.warning('YouTube API request failed with status code={status} - '  # noqa: UP032
                                 'Error message is={message}'.format(status=status_code, message=res.text))
         except (Timeout, ConnectionError):
             logging.warning('YouTube API request failed because of connection time out or connection error')
@@ -999,7 +999,7 @@ def _progress(request, course_key, student_id):
             student_id = int(student_id)
         # Check for ValueError if 'student_id' cannot be converted to integer.
         except ValueError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     course = get_course_with_access(request.user, 'load', course_key)
 
@@ -1023,7 +1023,7 @@ def _progress(request, course_key, student_id):
         try:
             student = User.objects.get(id=student_id)
         except User.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # NOTE: To make sure impersonation by instructor works, use
     # student instead of request.user in the rest of the function.
@@ -1614,7 +1614,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
             try:
                 course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=check_if_enrolled)
             except CourseAccessRedirect:
-                raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             # with course access now verified:
             # assume masquerading role, if applicable.
@@ -2122,7 +2122,7 @@ def financial_assistance_request(request):
     zendesk_submitted = create_zendesk_ticket(
         legal_name,
         email,
-        'Financial assistance request for learner {username} in course {course_name}'.format(
+        'Financial assistance request for learner {username} in course {course_name}'.format(  # noqa: UP032
             username=username,
             course_name=course.display_name
         ),
@@ -2387,7 +2387,7 @@ def courseware_mfe_navigation_sidebar_toggles(request, course_id=None):
     GET endpoint to return navigation sidebar toggles.
     """
     try:
-        course_key = CourseKey.from_string(course_id) if course_id else None
+        course_key = CourseKey.from_string(course_id) if course_id else None  # noqa: F841
     except InvalidKeyError:
         return JsonResponse({"error": "Invalid course_id"})
 

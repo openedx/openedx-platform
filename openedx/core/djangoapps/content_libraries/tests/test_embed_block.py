@@ -168,7 +168,7 @@ class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
 
         # Now try changing the authored fields of a specific past version using a handler:
         html = self._embed_block(block_id, version=2)
-        with pytest.raises(ValidationError, match=expected_msg) as err:
+        with pytest.raises(ValidationError, match=expected_msg) as err:  # noqa: F841
             call_update_handler(display_name="DN-X", setting_field="SV-X", content_field="CV-X")
 
         # Make sure the fields were not updated:

@@ -146,7 +146,7 @@ def container_handler(request, usage_key_string):  # pylint: disable=too-many-st
         try:
             usage_key = UsageKey.from_string(usage_key_string)
         except InvalidKeyError:  # Raise Http404 on invalid 'usage_key_string'
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         with modulestore().bulk_operations(usage_key.course_key):
             try:
                 course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
@@ -194,7 +194,7 @@ def container_embed_handler(request, usage_key_string):  # pylint: disable=too-m
         try:
             course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
         except ItemNotFoundError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         container_handler_context = get_container_handler_context(request, usage_key, course, xblock)
         return render_to_response('container_chromeless.html', container_handler_context)
@@ -580,7 +580,7 @@ def component_handler(request, usage_key_string, handler, suffix=''):
         resp = handler_block.handle(handler, req, suffix)
     except NoSuchHandlerError:
         log.info("XBlock %s attempted to access missing handler %r", handler_block, handler, exc_info=True)
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # unintentional update to handle any side effects of handle call
     # could potentially be updating actual course data or simply caching its values

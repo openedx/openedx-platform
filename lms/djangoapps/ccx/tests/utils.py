@@ -56,7 +56,7 @@ class CcxTestCase(EmailTemplateTagMixin, SharedModuleStoreTestCase):
         # Trying to wrap the whole thing in a bulk operation fails because it
         # doesn't find the parents. But we can at least wrap this part...
         with cls.store.bulk_operations(course.id, emit_signals=False):
-            blocks = flatten([  # pylint: disable=unused-variable
+            blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
                 [
                     BlockFactory.create(parent=vertical) for _ in range(2)
                 ] for vertical in cls.verticals

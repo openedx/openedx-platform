@@ -324,7 +324,7 @@ class TeamMembershipImportManager:
         This method will add a validation error and return False if this is the case.
         """
         if None in row:
-            error_message = "Team(s) {} don't have matching teamsets.".format(
+            error_message = "Team(s) {} don't have matching teamsets.".format(  # noqa: UP032
                 row[None]
             )
             if self.add_error_and_check_if_max_exceeded(error_message):
@@ -440,7 +440,7 @@ class TeamMembershipImportManager:
                 key = (teamset_id, team_name)
                 if self.user_count_by_team[key] > max_team_size:
                     self.add_error_and_check_if_max_exceeded(
-                        'New membership for team {} would exceed max size of {}.'.format(
+                        'New membership for team {} would exceed max size of {}.'.format(  # noqa: UP032
                             team_name, max_team_size
                         )
                     )

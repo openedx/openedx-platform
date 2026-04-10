@@ -298,7 +298,7 @@ def _get_thread_url(context, domain_url=None):  # lint-amnesty, pylint: disable=
     scheme = 'https' if settings.HTTPS == 'on' else 'http'
     if domain_url is None:
         domain_url = context['site'].domain
-    base_url = '{}://{}'.format(scheme, domain_url)
+    base_url = '{}://{}'.format(scheme, domain_url)  # noqa: UP032
     thread_content = {
         'type': 'thread',
         'course_id': context['course_id'],

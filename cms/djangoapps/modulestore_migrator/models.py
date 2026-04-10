@@ -82,7 +82,7 @@ class ModulestoreMigration(models.Model):
         on_delete=models.CASCADE,
         related_name="migrations",
     )
-    source_version = models.CharField(
+    source_version = models.CharField(  # noqa: DJ001
         max_length=255,
         blank=True,
         null=True,
@@ -240,7 +240,7 @@ class ModulestoreBlockMigration(TimeStampedModel):
         null=True,
         on_delete=models.SET_NULL,
     )
-    unsupported_reason = models.TextField(
+    unsupported_reason = models.TextField(  # noqa: DJ001
         null=True,
         blank=True,
         help_text=_('Reason if the block is unsupported and target is set to null'),

@@ -434,13 +434,13 @@ class ReadOnlyKeyValueStore(DictKeyValueStore):
     """
 
     def set(self, key, value):
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
     def delete(self, key):
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
     def set_many(self, update_dict):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
-        assert False, "ReadOnlyKeyValueStore may not be modified."
+        assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
 
 class FakeSession(dict):

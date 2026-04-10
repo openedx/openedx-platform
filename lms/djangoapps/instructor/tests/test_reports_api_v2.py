@@ -66,17 +66,17 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('downloads', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('downloads', response.data)  # noqa: PT009
         downloads = response.data['downloads']
-        self.assertEqual(len(downloads), 2)
+        self.assertEqual(len(downloads), 2)  # noqa: PT009
 
         # Verify first report structure
         report = downloads[0]
-        self.assertIn('report_name', report)
-        self.assertIn('report_url', report)
-        self.assertIn('date_generated', report)
-        self.assertIn('report_type', report)
+        self.assertIn('report_name', report)  # noqa: PT009
+        self.assertIn('report_url', report)  # noqa: PT009
+        self.assertIn('date_generated', report)  # noqa: PT009
+        self.assertIn('report_type', report)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.ReportStore.from_config')
     def test_get_report_downloads_as_staff(self, mock_report_store):
@@ -90,8 +90,8 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.staff)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('downloads', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('downloads', response.data)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.ReportStore.from_config')
     def test_get_report_downloads_as_data_researcher(self, mock_report_store):
@@ -105,8 +105,8 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('downloads', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('downloads', response.data)  # noqa: PT009
 
     def test_get_report_downloads_unauthorized(self):
         """
@@ -115,14 +115,14 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.student)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_get_report_downloads_unauthenticated(self):
         """
         Test that unauthenticated users cannot access the endpoint.
         """
         response = self.client.get(self._get_url())
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_get_report_downloads_nonexistent_course(self):
         """
@@ -132,7 +132,7 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
         response = self.client.get(self._get_url(course_id=nonexistent_course_id))
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.ReportStore.from_config')
     @ddt.data(
@@ -206,11 +206,11 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         downloads = response.data['downloads']
-        self.assertEqual(len(downloads), 1)
-        self.assertEqual(downloads[0]['report_type'], expected_type)
-        self.assertEqual(downloads[0]['date_generated'], expected_date)
+        self.assertEqual(len(downloads), 1)  # noqa: PT009
+        self.assertEqual(downloads[0]['report_type'], expected_type)  # noqa: PT009
+        self.assertEqual(downloads[0]['date_generated'], expected_date)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.ReportStore.from_config')
     def test_report_without_date(self, mock_report_store):
@@ -226,10 +226,10 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         downloads = response.data['downloads']
-        self.assertEqual(len(downloads), 1)
-        self.assertIsNone(downloads[0]['date_generated'])
+        self.assertEqual(len(downloads), 1)  # noqa: PT009
+        self.assertIsNone(downloads[0]['date_generated'])  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.ReportStore.from_config')
     def test_empty_reports_list(self, mock_report_store):
@@ -243,8 +243,8 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['downloads'], [])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response.data['downloads'], [])  # noqa: PT009
 
 
 @ddt.ddt
@@ -288,8 +288,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.instructor_analytics_basic.get_available_features')
@@ -305,8 +305,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='enrolled_students'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_get_features.assert_called_once_with(self.course.id)
         mock_submit.assert_called_once()
 
@@ -320,8 +320,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='pending_enrollments'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_inactive_enrolled_students_csv')
@@ -334,8 +334,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='pending_activations'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.generate_anonymous_ids')
@@ -348,8 +348,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='anonymized_student_ids'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_problem_grade_report')
@@ -362,8 +362,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='problem_grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     def test_generate_problem_responses_report_missing_location(self):
@@ -373,7 +373,7 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='problem_responses'))
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_problem_responses_csv')
     @patch('lms.djangoapps.instructor.views.api_v2.modulestore')
@@ -397,7 +397,7 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
             {'problem_location': 'block-v1:edX+GenReportTestX+GenReport_Test_Course+type@problem+block@test'}
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_summary')
@@ -410,8 +410,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_summary'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_data')
@@ -424,8 +424,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_data'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_export_ora2_submission_files')
@@ -438,8 +438,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='ora2_submission_files'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_submit.assert_called_once()
 
     @patch('lms.djangoapps.instructor.views.api_v2.instructor_analytics_basic.issued_certificates')
@@ -458,8 +458,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.staff)
         response = self.client.post(self._get_url(report_type='issued_certificates'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('status', response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertIn('status', response.data)  # noqa: PT009
         mock_issued_certs.assert_called_once()
         mock_upload.assert_called_once()
 
@@ -470,8 +470,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='invalid_type'))
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertIn('error', response.data)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_grades_csv')
     def test_generate_report_already_running(self, mock_submit):
@@ -484,8 +484,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertIn('error', response.data)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_grades_csv')
     def test_generate_report_queue_connection_error(self, mock_submit):
@@ -498,8 +498,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-        self.assertIn('error', response.data)
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)  # noqa: PT009
+        self.assertIn('error', response.data)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_problem_responses_csv')
     def test_generate_report_value_error(self, mock_submit):
@@ -511,8 +511,8 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.data_researcher)
         response = self.client.post(self._get_url(report_type='problem_responses'))
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009
+        self.assertIn('error', response.data)  # noqa: PT009
 
     def test_generate_report_unauthorized_student(self):
         """
@@ -521,14 +521,14 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.student)
         response = self.client.post(self._get_url(report_type='grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_generate_report_unauthenticated(self):
         """
         Test that unauthenticated users cannot generate reports.
         """
         response = self.client.post(self._get_url(report_type='grade'))
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_generate_report_nonexistent_course(self):
         """
@@ -538,7 +538,7 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
         nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
         response = self.client.post(self._get_url(course_id=nonexistent_course_id, report_type='grade'))
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.views.api_v2.modulestore')
     @patch('lms.djangoapps.instructor.views.api_v2.task_api.submit_calculate_problem_responses_csv')
@@ -556,4 +556,4 @@ class GenerateReportViewTest(SharedModuleStoreTestCase):
             {'problem_location': 'invalid-location'}
         )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)  # noqa: PT009

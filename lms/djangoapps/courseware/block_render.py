@@ -9,7 +9,7 @@ import logging
 import textwrap
 from collections import OrderedDict
 from functools import partial
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable  # noqa: UP035
 
 from completion.services import CompletionService
 from django.conf import settings
@@ -806,13 +806,13 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         try:
             course = modulestore().get_course(course_key)
         except ItemNotFoundError:
-            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course=course)
 
@@ -973,12 +973,12 @@ def _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course
 
         except NoSuchHandlerError:
             log.exception("XBlock %s attempted to access missing handler %r", instance, handler)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # If we can't find the block, respond with a 404
         except (XModuleNotFoundError, NotFoundError, TranscriptNotFoundError):
             log.exception("Module indicating to user that request doesn't exist")
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # For XBlock-specific errors, we log the error and respond with an error message
         except ProcessingError as err:
@@ -1013,7 +1013,7 @@ def xblock_view(request, course_id, usage_id, view_name):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404("Invalid location")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Invalid location")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         course = modulestore().get_course(course_key)
@@ -1023,7 +1023,7 @@ def xblock_view(request, course_id, usage_id, view_name):
             fragment = instance.render(view_name, context=request.GET)
         except NoSuchViewError:
             log.exception("Attempt to render missing view on %s: %s", instance, view_name)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         hashed_resources = OrderedDict()
         for resource in fragment.resources:
@@ -1050,14 +1050,14 @@ def _check_files_limits(files):
         # Check number of files submitted
         if len(inputfiles) > settings.MAX_FILEUPLOADS_PER_INPUT:
             msg = 'Submission aborted! Maximum %d files may be submitted at once' % \
-                  settings.MAX_FILEUPLOADS_PER_INPUT
+                  settings.MAX_FILEUPLOADS_PER_INPUT  # noqa: UP031
             return msg
 
         # Check file sizes
         for inputfile in inputfiles:
             if inputfile.size > settings.STUDENT_FILEUPLOAD_MAX_SIZE:  # Bytes
                 msg = 'Submission aborted! Your file "%s" is too large (max size: %d MB)' % \
-                      (inputfile.name, settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))
+                      (inputfile.name, settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))  # noqa: UP031
                 return msg
 
     return None

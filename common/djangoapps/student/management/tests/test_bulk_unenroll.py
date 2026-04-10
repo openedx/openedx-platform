@@ -130,7 +130,7 @@ class BulkUnenrollTests(SharedModuleStoreTestCase):
                 (
                     LOGGER_NAME,
                     'INFO',
-                    'User [{}] have been successfully unenrolled from the course: {}'.format(
+                    'User [{}] have been successfully unenrolled from the course: {}'.format(  # noqa: UP032
                         self.enrollments[0].username, self.enrollments[0].course.id
                     )
                 ),

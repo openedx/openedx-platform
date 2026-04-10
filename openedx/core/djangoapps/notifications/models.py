@@ -47,7 +47,7 @@ class Notification(TimeStampedModel):
     app_name = models.CharField(max_length=64, db_index=True)
     notification_type = models.CharField(max_length=64)
     content_context = models.JSONField(default=dict)
-    content_url = models.URLField(null=True, blank=True)
+    content_url = models.URLField(null=True, blank=True)  # noqa: DJ001
     web = models.BooleanField(default=True, null=False, blank=False)
     email = models.BooleanField(default=False, null=False, blank=False)
     push = models.BooleanField(default=False, null=False, blank=False)

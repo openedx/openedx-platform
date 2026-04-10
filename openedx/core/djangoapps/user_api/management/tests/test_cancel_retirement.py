@@ -10,15 +10,15 @@ from django.core.management import CommandError, call_command
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
-    logged_out_retirement_request,
-    setup_retirement_states,
+    logged_out_retirement_request,  # noqa: F401
+    setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementRequest, UserRetirementStatus
 
 pytestmark = pytest.mark.django_db
 
 
-def test_successful_cancellation(setup_retirement_states, logged_out_retirement_request, capsys):  # pylint: disable=redefined-outer-name, unused-argument
+def test_successful_cancellation(setup_retirement_states, logged_out_retirement_request, capsys):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     """
     Test a successfully cancelled retirement request.
     """
@@ -38,7 +38,7 @@ def test_successful_cancellation(setup_retirement_states, logged_out_retirement_
     assert logged_out_retirement_request.original_email in output
 
 
-def test_cancellation_in_unrecoverable_state(setup_retirement_states, logged_out_retirement_request):  # pylint: disable=redefined-outer-name, unused-argument
+def test_cancellation_in_unrecoverable_state(setup_retirement_states, logged_out_retirement_request):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     """
     Test a failed cancellation of a retirement request due to the retirement already beginning.
     """
@@ -49,7 +49,7 @@ def test_cancellation_in_unrecoverable_state(setup_retirement_states, logged_out
         call_command('cancel_user_retirement_request', logged_out_retirement_request.original_email)
 
 
-def test_cancellation_unknown_email_address(setup_retirement_states, logged_out_retirement_request):  # pylint: disable=redefined-outer-name, unused-argument
+def test_cancellation_unknown_email_address(setup_retirement_states, logged_out_retirement_request):  # pylint: disable=redefined-outer-name, unused-argument  # noqa: F811
     """
     Test attempting to cancel a non-existent request of a user.
     """

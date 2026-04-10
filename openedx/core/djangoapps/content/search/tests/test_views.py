@@ -110,12 +110,12 @@ class StudioSearchViewTest(StudioSearchTestMixin, SharedModuleStoreTestCase):
         so any logged-in user can get a restricted API key for Meilisearch using the REST API.
         """
         self.client.login(username='student', password='student_pass')
-        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)
+        mock_generate_tenant_token = self._mock_generate_tenant_token(mock_search_client)  # noqa: F841
         result = self.client.get(STUDIO_SEARCH_ENDPOINT_URL)
         assert result.status_code == 200
         assert result.data["index_name"] == "studio_content"
         assert result.data["url"] == "http://meilisearch.url"
-        assert result.data["api_key"] and isinstance(result.data["api_key"], str)
+        assert result.data["api_key"] and isinstance(result.data["api_key"], str)  # noqa: PT018
 
     @mock_meilisearch(enabled=True)
     @patch('openedx.core.djangoapps.content.search.api.MeilisearchClient')

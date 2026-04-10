@@ -4,7 +4,7 @@ import copy
 import datetime
 import logging
 import uuid
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Union  # noqa: UP035
 from zoneinfo import ZoneInfo
 
 import pycountry
@@ -84,7 +84,7 @@ def check_catalog_integration_and_get_user(error_message_field):
             user = catalog_integration.get_service_user()
         except ObjectDoesNotExist:
             logger.error(
-                "Catalog service user with username [{username}] does not exist. "
+                "Catalog service user with username [{username}] does not exist. "  # noqa: UP032
                 "{field} will not be retrieved.".format(
                     username=catalog_integration.service_username,
                     field=error_message_field,
@@ -94,7 +94,7 @@ def check_catalog_integration_and_get_user(error_message_field):
         return user, catalog_integration
     else:
         logger.info(
-            "Unable to retrieve details about {field} because Catalog Integration is not enabled".format(
+            "Unable to retrieve details about {field} because Catalog Integration is not enabled".format(  # noqa: UP032
                 field=error_message_field,
             )
         )
@@ -105,11 +105,11 @@ def check_catalog_integration_and_get_user(error_message_field):
 def get_programs(
     site: "Site" = None,
     uuid: str = None,
-    uuids: List[str] = None,
+    uuids: List[str] = None,  # noqa: UP006
     course: str = None,
     catalog_course_uuid: str = None,
     organization: str = None,
-) -> Union[str, List[str]]:
+) -> Union[str, List[str]]:  # noqa: UP006, UP007
     """Read programs from the cache.
 
     The cache is populated by a management command, cache_programs.
@@ -205,7 +205,7 @@ def get_programs_by_type_slug(site, program_type_slug):
     return get_programs_by_uuids(uuids)
 
 
-def get_programs_by_uuids(uuids: List[Any]) -> List[str]:
+def get_programs_by_uuids(uuids: List[Any]) -> List[str]:  # noqa: UP006
     """
     Gets a list of programs for the provided uuids
     """

@@ -119,7 +119,7 @@ def check_keys_exist(shared_secret_key, provider_id):
     """
     # Accounts for old way of storing provider key
     if shared_secret_key is None:  # lint-amnesty, pylint: disable=no-else-raise
-        msg = 'Credit provider with ID "{provider_id}" does not have a secret key configured.'.format(
+        msg = 'Credit provider with ID "{provider_id}" does not have a secret key configured.'.format(  # noqa: UP032
             provider_id=provider_id
         )
         log.error(msg)
@@ -128,7 +128,7 @@ def check_keys_exist(shared_secret_key, provider_id):
     # Accounts for new way of storing provider key
     elif isinstance(shared_secret_key, list) and not any(shared_secret_key):
         msg = 'Could not retrieve secret key for credit provider [{}]. ' \
-              'Unable to validate requests from provider.'.format(provider_id)
+              'Unable to validate requests from provider.'.format(provider_id)  # noqa: UP032
         log.error(msg)
         raise CreditProviderNotConfigured(msg)
 
@@ -211,10 +211,10 @@ def create_credit_request(course_key, provider_id, username):
             'but the user is not eligible for credit',
             username, course_key
         )
-        raise UserIsNotEligible  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserIsNotEligible  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except CreditProvider.DoesNotExist:
         log.error('Credit provider with ID "%s" has not been configured.', provider_id)
-        raise CreditProviderNotConfigured  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CreditProviderNotConfigured  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Check if we've enabled automatic integration with the credit
     # provider.  If not, we'll show the user a link to a URL
@@ -283,9 +283,9 @@ def create_credit_request(course_key, provider_id, username):
 
     except (CreditRequirementStatus.DoesNotExist, TypeError, KeyError):
         msg = 'Could not retrieve final grade from the credit eligibility table for ' \
-              'user [{user_id}] in course [{course_key}].'.format(user_id=user.id, course_key=course_key)
+              'user [{user_id}] in course [{course_key}].'.format(user_id=user.id, course_key=course_key)  # noqa: UP032
         log.exception(msg)
-        raise UserIsNotEligible(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserIsNotEligible(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Getting the students's enrollment date
     course_enrollment = CourseEnrollment.get_enrollment(user, course_key)
@@ -375,13 +375,13 @@ def update_credit_request_status(request_uuid, provider_id, status):
             request_uuid, old_status, status, provider_id
         )
     except CreditRequest.DoesNotExist:
-        msg = (
+        msg = (  # noqa: UP032
             'Credit provider with ID "{provider_id}" attempted to '
             'update request with UUID "{request_uuid}", but no request '
             'with this UUID is associated with the provider.'
         ).format(provider_id=provider_id, request_uuid=request_uuid)
         log.warning(msg)
-        raise CreditRequestNotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CreditRequestNotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def get_credit_requests_for_user(username):

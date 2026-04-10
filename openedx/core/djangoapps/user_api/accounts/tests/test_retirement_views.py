@@ -75,7 +75,7 @@ from .retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     create_retirement_status,
     fake_completed_retirement,
-    setup_retirement_states,
+    setup_retirement_states,  # noqa: F401
 )
 
 
@@ -593,7 +593,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
                 for config in orgs_config:
                     config[AccountRetirementPartnerReportView.ORGS_CONFIG_FIELD_HEADINGS_KEY].sort()
 
-        self.assertCountEqual(returned_users, expected_users)
+        self.assertCountEqual(returned_users, expected_users)  # noqa: PT009
 
     def test_success(self):
         """
@@ -690,7 +690,7 @@ class TestAccountRetirementList(RetirementTestCase):
                     del retirement['created']
                     del retirement['modified']
 
-            self.assertCountEqual(response_data, expected_data)
+            self.assertCountEqual(response_data, expected_data)  # noqa: PT009
 
     def test_empty(self):
         """
@@ -875,7 +875,7 @@ class TestAccountRetirementsByStatusAndDate(RetirementTestCase):
                     except KeyError:
                         pass
 
-            self.assertCountEqual(response_data, expected_data)
+            self.assertCountEqual(response_data, expected_data)  # noqa: PT009
 
     def test_empty(self):
         """
@@ -996,7 +996,7 @@ class TestAccountRetirementRetrieve(RetirementTestCase):
                 del data['created']
                 del data['modified']
 
-            self.assertDictEqual(response_data, expected_data)
+            self.assertDictEqual(response_data, expected_data)  # noqa: PT009
             return response_data
 
     def test_no_retirement(self):

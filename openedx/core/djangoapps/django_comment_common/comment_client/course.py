@@ -2,14 +2,14 @@
 """Provides base Commentable model class"""
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from edx_django_utils.monitoring import function_trace
 from forum import api as forum_api
 from opaque_keys.edx.keys import CourseKey
 
 
-def get_course_commentable_counts(course_key: CourseKey) -> Dict[str, Dict[str, int]]:
+def get_course_commentable_counts(course_key: CourseKey) -> Dict[str, Dict[str, int]]:  # noqa: UP006
     """
     Get stats about the count of different types of threads for each commentable (topic).
 
@@ -32,7 +32,7 @@ def get_course_commentable_counts(course_key: CourseKey) -> Dict[str, Dict[str, 
 
 
 @function_trace("get_course_user_stats")
-def get_course_user_stats(course_key: CourseKey, params: Optional[Dict] = None) -> Dict[str, Dict[str, int]]:
+def get_course_user_stats(course_key: CourseKey, params: Optional[Dict] = None) -> Dict[str, Dict[str, int]]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
     """
     Get stats about a user's participation in a course.
 
@@ -70,7 +70,7 @@ def get_course_user_stats(course_key: CourseKey, params: Optional[Dict] = None) 
 
 
 @function_trace("update_course_users_stats")
-def update_course_users_stats(course_key: CourseKey) -> Dict:
+def update_course_users_stats(course_key: CourseKey) -> Dict:  # noqa: UP006
     """
     Update the user stats for all users for a particular course.
 

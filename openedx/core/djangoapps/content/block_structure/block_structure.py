@@ -302,7 +302,7 @@ class FieldData:
         try:
             return self.fields[field_name]
         except KeyError:
-            raise AttributeError(f"Field {field_name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AttributeError(f"Field {field_name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def __setattr__(self, field_name, field_value):
         if self._is_own_field(field_name):

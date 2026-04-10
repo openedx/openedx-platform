@@ -63,7 +63,7 @@ def _generate_grades(course_key, enrollments):
     prefetch_course_grades(course_key, users)
     try:
         grades_iter = CourseGradeFactory().iter(users, course_key=course_key)
-        for enrollment, grade_tuple in zip(enrollments, grades_iter):
+        for enrollment, grade_tuple in zip(enrollments, grades_iter):  # noqa: B905
             user, course_grade, exception = grade_tuple
             if course_grade:
                 yield ProgramCourseGradeOk(enrollment, course_grade)

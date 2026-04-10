@@ -65,8 +65,8 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             str(created_block.location),
             self.milestone_relationship_types['FULFILLS']
         )
-        self.assertTrue(len(content_milestones))
-        self.assertEqual(len(milestones_helpers.get_course_milestones(self.course.id)), 1)
+        self.assertTrue(len(content_milestones))  # noqa: PT009
+        self.assertEqual(len(milestones_helpers.get_course_milestones(self.course.id)), 1)  # noqa: PT009
 
     def test_entrance_exam_milestone_removal(self):
         """
@@ -86,7 +86,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             str(created_block.location),
             self.milestone_relationship_types['FULFILLS']
         )
-        self.assertEqual(len(content_milestones), 1)
+        self.assertEqual(len(content_milestones), 1)  # noqa: PT009
         user = UserFactory()
         request = RequestFactory().request()
         request.user = user
@@ -96,39 +96,39 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             str(created_block.location),
             self.milestone_relationship_types['FULFILLS']
         )
-        self.assertEqual(len(content_milestones), 0)
+        self.assertEqual(len(content_milestones), 0)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_post(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_post
         """
         resp = self.client.post(self.exam_url, {}, http_accept='application/json')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Reload the test course now that the exam block has been added
         self.course = modulestore().get_course(self.course.id)
         metadata = CourseMetadata.fetch_all(self.course)
-        self.assertTrue(metadata['entrance_exam_enabled'])
-        self.assertIsNotNone(metadata['entrance_exam_minimum_score_pct'])
-        self.assertIsNotNone(metadata['entrance_exam_id']['value'])
-        self.assertTrue(len(milestones_helpers.get_course_milestones(str(self.course.id))))
+        self.assertTrue(metadata['entrance_exam_enabled'])  # noqa: PT009
+        self.assertIsNotNone(metadata['entrance_exam_minimum_score_pct'])  # noqa: PT009
+        self.assertIsNotNone(metadata['entrance_exam_id']['value'])  # noqa: PT009
+        self.assertTrue(len(milestones_helpers.get_course_milestones(str(self.course.id))))  # noqa: PT009
         content_milestones = milestones_helpers.get_course_content_milestones(
             str(self.course.id),
             metadata['entrance_exam_id']['value'],
             self.milestone_relationship_types['FULFILLS']
         )
-        self.assertTrue(len(content_milestones))
+        self.assertTrue(len(content_milestones))  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_post_new_sequential_confirm_grader(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_post
         """
         resp = self.client.post(self.exam_url, {}, http_accept='application/json')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Reload the test course now that the exam block has been added
         self.course = modulestore().get_course(self.course.id)
@@ -146,7 +146,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         seq_locator_string = json.loads(resp.content.decode('utf-8')).get('locator')
         seq_locator = UsageKey.from_string(seq_locator_string)
         section_grader_type = CourseGradingModel.get_section_grader_type(seq_locator)
-        self.assertEqual(GRADER_TYPES['ENTRANCE_EXAM'], section_grader_type['graderType'])
+        self.assertEqual(GRADER_TYPES['ENTRANCE_EXAM'], section_grader_type['graderType'])  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_get(self):
         """
@@ -157,22 +157,22 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             {'entrance_exam_minimum_score_pct': settings.ENTRANCE_EXAM_MIN_SCORE_PCT},
             http_accept='application/json'
         )
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_delete(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_delete
         """
         resp = self.client.post(self.exam_url, {}, http_accept='application/json')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         resp = self.client.delete(self.exam_url)
-        self.assertEqual(resp.status_code, 204)
+        self.assertEqual(resp.status_code, 204)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
         user = UserFactory.create(
             username='test_user',
@@ -182,7 +182,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         user.set_password('test')
         user.save()
         milestones = milestones_helpers.get_course_milestones(str(self.course_key))
-        self.assertEqual(len(milestones), 1)
+        self.assertEqual(len(milestones), 1)  # noqa: PT009
         milestone_key = '{}.{}'.format(milestones[0]['namespace'], milestones[0]['name'])
         paths = milestones_helpers.get_course_milestones_fulfillment_paths(
             str(self.course_key),
@@ -193,14 +193,14 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         # paths for the specified user.  The LMS is going to have to ignore this situation,
         # because we can't confidently prevent it from occuring at some point in the future.
         # milestone_key_1 =
-        self.assertEqual(len(paths[milestone_key]), 0)
+        self.assertEqual(len(paths[milestone_key]), 0)  # noqa: PT009
 
         # Re-adding an entrance exam to the course should fix the missing link
         # It wipes out any old entrance exam artifacts and inserts a new exam course chapter/block
         resp = self.client.post(self.exam_url, {}, http_accept='application/json')
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         # Confirm that we have only one Entrance Exam grader after re-adding the exam (validates SOL-475)
         graders = CourseGradingModel.fetch(self.course_key).graders
@@ -208,21 +208,21 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         for grader in graders:
             if grader['type'] == GRADER_TYPES['ENTRANCE_EXAM']:
                 count += 1
-        self.assertEqual(count, 1)
+        self.assertEqual(count, 1)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_delete_bogus_course(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_delete_bogus_course
         """
         resp = self.client.delete('/course/bad/course/key/entrance_exam')
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_get_bogus_course(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_get_bogus_course
         """
         resp = self.client.get('/course/bad/course/key/entrance_exam')
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_get_bogus_exam(self):
         """
@@ -234,9 +234,9 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             http_accept='application/json'
         )
 
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 200)  # noqa: PT009
         self.course = modulestore().get_course(self.course.id)
         # Should raise an ItemNotFoundError and return a 404
         updated_metadata = {'entrance_exam_id': 'i4x://org.4/course_4/chapter/ed7c4c6a4d68409998e2c8554c4629d1'}
@@ -248,7 +248,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         )
         self.course = modulestore().get_course(self.course.id)
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
         # Should raise an InvalidKeyError and return a 404
         updated_metadata = {'entrance_exam_id': '123afsdfsad90f87'}
@@ -260,7 +260,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         )
         self.course = modulestore().get_course(self.course.id)
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.status_code, 404)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_post_bogus_course(self):
         """
@@ -271,7 +271,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             {},
             http_accept='application/json'
         )
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_post_invalid_http_accept(self):
         """
@@ -282,7 +282,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
             {},
             http_accept='text/html'
         )
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_get_invalid_user(self):
         """
@@ -298,14 +298,14 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         self.client = AjaxEnabledTestClient()
         self.client.login(username='test_user', password='test')
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
 
     def test_contentstore_views_entrance_exam_unsupported_method(self):
         """
         Unit Test: test_contentstore_views_entrance_exam_unsupported_method
         """
         resp = self.client.put(self.exam_url)
-        self.assertEqual(resp.status_code, 405)
+        self.assertEqual(resp.status_code, 405)  # noqa: PT009
 
     def test_entrance_exam_view_direct_missing_score_setting(self):
         """
@@ -317,7 +317,7 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         request.user = user
 
         resp = create_entrance_exam(request, self.course.id, None)
-        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(resp.status_code, 201)  # noqa: PT009
 
     @override_settings(ENTRANCE_EXAMS=False)
     def test_entrance_exam_feature_flag_gating(self):
@@ -327,13 +327,13 @@ class EntranceExamHandlerTests(CourseTestCase, MilestonesTestCaseMixin):
         request.user = user
 
         resp = self.client.get(self.exam_url)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
         resp = create_entrance_exam(request, self.course.id, None)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
         resp = delete_entrance_exam(request, self.course.id)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 400)  # noqa: PT009
 
         # No return, so we'll just ensure no exception is thrown
         update_entrance_exam(request, self.course.id, {})

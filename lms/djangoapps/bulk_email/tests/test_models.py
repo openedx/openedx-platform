@@ -82,7 +82,7 @@ class CourseEmailTest(ModuleStoreTestCase):
         to_option = "fake"
         subject = "dummy subject"
         html_message = "<html>dummy message</html>"
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             CourseEmail.create(course_id, sender, to_option, subject, html_message)
 
     @ddt.data(

@@ -380,7 +380,7 @@ class ContentLibrariesRestApiTest(APITransactionTestCase):
         if version is not None:
             url += f"?version={version}"
         response = self.client.get(url)
-        assert response.status_code == expect_response, 'Unexpected response code {}:'.format(response.status_code)
+        assert response.status_code == expect_response, 'Unexpected response code {}:'.format(response.status_code)  # noqa: UP032  # pylint: disable=line-too-long
         return response.content.decode()
 
     def _get_block_handler_url(self, block_key, handler_name):

@@ -42,7 +42,7 @@ def create_test_graph(*version_histories):
     all_structures = {}
     all_active_version_branches = []
 
-    active_id_pool = ("A{:023x}".format(i) for i in itertools.count(1))
+    active_id_pool = ("A{:023x}".format(i) for i in itertools.count(1))  # noqa: UP032
     course_key_pool = (
         CourseLocator('edx', 'splitmongo', str(i)) for i in itertools.count(1)
     )
@@ -57,7 +57,7 @@ def create_test_graph(*version_histories):
         history = [Structure(original_id, original_id, None)]
 
         # Create all other Structures (if any)
-        for previous_id, current_id in zip(structure_ids, structure_ids[1:]):
+        for previous_id, current_id in zip(structure_ids, structure_ids[1:]):  # noqa: B905
             history.append(Structure(current_id, original_id, previous_id))
 
         # Add to our overall Structures dict (overwrites should be identical or
@@ -95,18 +95,18 @@ class TestCourseChangePlan(unittest.TestCase):
 
         # Preserve no intermediate structures -- prune the middle structures.
         plan_no_intermediate = ChangePlan.create(graph, 0, False, False)
-        self.assertEqual(plan_no_intermediate.delete, ["2", "3"])
-        self.assertEqual(plan_no_intermediate.update_parents, [("4", "1")])
+        self.assertEqual(plan_no_intermediate.delete, ["2", "3"])  # noqa: PT009
+        self.assertEqual(plan_no_intermediate.update_parents, [("4", "1")])  # noqa: PT009
 
         # Preserve one intermediate structure
         plan_1_intermediate = ChangePlan.create(graph, 1, False, False)
-        self.assertEqual(plan_1_intermediate.delete, ["2"])
-        self.assertEqual(plan_1_intermediate.update_parents, [("3", "1")])
+        self.assertEqual(plan_1_intermediate.delete, ["2"])  # noqa: PT009
+        self.assertEqual(plan_1_intermediate.update_parents, [("3", "1")])  # noqa: PT009
 
         # Preserve two intermediate structures -- Do nothing
         plan_2_intermediate = ChangePlan.create(graph, 2, False, False)
-        self.assertEqual(plan_2_intermediate.delete, [])
-        self.assertEqual(plan_2_intermediate.update_parents, [])
+        self.assertEqual(plan_2_intermediate.delete, [])  # noqa: PT009
+        self.assertEqual(plan_2_intermediate.update_parents, [])  # noqa: PT009
 
     @ddt.data(
         create_test_graph(["1"]),  # Original (is also Active)
@@ -116,9 +116,9 @@ class TestCourseChangePlan(unittest.TestCase):
         """These scenarios should result in no Changes."""
         plan_1 = ChangePlan.create(graph, 0, False, False)
         plan_2 = ChangePlan.create(graph, 2, False, False)
-        self.assertEqual(plan_1, plan_2)
-        self.assertEqual(plan_1.delete, [])
-        self.assertEqual(plan_1.update_parents, [])
+        self.assertEqual(plan_1, plan_2)  # noqa: PT009
+        self.assertEqual(plan_1.delete, [])  # noqa: PT009
+        self.assertEqual(plan_1.update_parents, [])  # noqa: PT009
 
     def test_overlapping_shared_history(self):
         """Test multiple branches that overlap in what history to preserve."""
@@ -145,8 +145,8 @@ class TestCourseChangePlan(unittest.TestCase):
         # "8" is marked for deletion by the fourth branch.
         # "9" is preserved by the fourth branch.
         # "10" is the Active Structure for the fourth branch.
-        self.assertEqual(plan.delete, ["7", "8"])
-        self.assertEqual(plan.update_parents, [("9", "1")])
+        self.assertEqual(plan.delete, ["7", "8"])  # noqa: PT009
+        self.assertEqual(plan.update_parents, [("9", "1")])  # noqa: PT009
 
     def test_non_overlapping_shared_history(self):
         """Test shared history, preserved intermediate set doesn't overlap."""
@@ -155,16 +155,16 @@ class TestCourseChangePlan(unittest.TestCase):
             ["1", "2", "3", "4", "5", "6"],
         )
         plan = ChangePlan.create(graph, 0, False, False)
-        self.assertEqual(plan.delete, ["2", "4", "5"])
-        self.assertEqual(plan.update_parents, [("3", "1"), ("6", "1")])
+        self.assertEqual(plan.delete, ["2", "4", "5"])  # noqa: PT009
+        self.assertEqual(plan.update_parents, [("3", "1"), ("6", "1")])  # noqa: PT009
 
         graph_save_1 = create_test_graph(
             ["1", "2", "3", "4"],
             ["1", "2", "3", "4", "5", "6", "7"],
         )
         plan_save_1 = ChangePlan.create(graph_save_1, 1, False, False)
-        self.assertEqual(plan_save_1.delete, ["2", "5"])
-        self.assertEqual(plan_save_1.update_parents, [("3", "1"), ("6", "1")])
+        self.assertEqual(plan_save_1.delete, ["2", "5"])  # noqa: PT009
+        self.assertEqual(plan_save_1.update_parents, [("3", "1"), ("6", "1")])  # noqa: PT009
 
     def test_details_output(self):
         """Test our details file output."""
@@ -204,8 +204,8 @@ class TestCourseChangePlan(unittest.TestCase):
             """
         ).lstrip()
         # pylint: enable=line-too-long
-        self.assertEqual(expected_output, details_txt)
-        self.assertEqual(
+        self.assertEqual(expected_output, details_txt)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             plan,
             ChangePlan(
                 delete=["5"],
@@ -231,11 +231,11 @@ class TestSplitMongoBackendHelpers(unittest.TestCase):
                 'extra_data': "This is ignored"
             }
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             original_structure,
             Structure(id=str_id(1), original_id=str_id(1), previous_id=None)
         )
-        self.assertTrue(original_structure.is_original())
+        self.assertTrue(original_structure.is_original())  # noqa: PT009
 
         other_structure = SplitMongoBackend.parse_structure_doc(
             {
@@ -245,27 +245,27 @@ class TestSplitMongoBackendHelpers(unittest.TestCase):
                 'extra_data': "This is ignored"
             }
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             other_structure,
             Structure(id=str_id(2), original_id=str_id(1), previous_id=str_id(1))
         )
-        self.assertFalse(other_structure.is_original())
+        self.assertFalse(other_structure.is_original())  # noqa: PT009
 
     def test_batch(self):
         """Test the batch helper that breaks up iterables for DB operations."""
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.batch([], 1)),
             []
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.batch([1, 2, 3], 1)),
             [[1], [2], [3]]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.batch([1, 2, 3], 2)),
             [[1, 2], [3]]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.batch([1, 2, 3, 4], 2)),
             [[1, 2], [3, 4]]
         )
@@ -273,23 +273,23 @@ class TestSplitMongoBackendHelpers(unittest.TestCase):
     def test_iter_from_start(self):
         """Test what we use to resume deletion from a given Structure ID."""
         all_ids = [1, 2, 3]
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.iter_from_start(all_ids, None)),
             all_ids
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.iter_from_start(all_ids, 1)),
             all_ids
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.iter_from_start(all_ids, 2)),
             [2, 3]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.iter_from_start(all_ids, 3)),
             [3]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(SplitMongoBackend.iter_from_start(all_ids, 4)),
             []
         )
@@ -382,7 +382,7 @@ class TestSplitMongoBackend(unittest.TestCase):
     def test_structures_graph(self):
         """Test pulling a full graph out."""
         graph = self.backend.structures_graph(0, 100)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             graph.branches,
             [
                 ActiveVersionBranch(
@@ -408,7 +408,7 @@ class TestSplitMongoBackend(unittest.TestCase):
                 ),
             ]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(graph.structures.keys()),
             [str_id(i) for i in [1, 2, 3, 4, 10, 11, 20]]
         )
@@ -423,11 +423,11 @@ class TestSplitMongoBackend(unittest.TestCase):
             delay=0
         )
         graph = self.backend.structures_graph(0, 100)
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             list(graph.structures.keys()),
             [str_id(i) for i in [1, 4, 10, 11, 20]]
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             graph.structures,
             {
                 str_id(1): Structure(id=str_id(1), original_id=str_id(1), previous_id=None),
@@ -486,19 +486,19 @@ class TestSplitMongoBackend(unittest.TestCase):
         with patch.object(SplitMongoBackend, '_all_structures', autospec=True) as all_structures_mock:
             all_structures_mock.side_effect = add_structures
             graph = self.backend.structures_graph(0, 100)
-            self.assertEqual(len(graph.structures), 10)
-            self.assertEqual(len(graph.branches), 4)
+            self.assertEqual(len(graph.structures), 10)  # noqa: PT009
+            self.assertEqual(len(graph.branches), 4)  # noqa: PT009
 
             plan = ChangePlan.create(graph, 0, False, False)
-            self.assertNotIn(str_id(5), plan.delete)  # Active updated to this for our course.
-            self.assertNotIn(str_id(7), plan.delete)  # Active for our new Library
-            self.assertIn(str_id(4), plan.delete)  # Was our Active before
-            self.assertIn(str_id(6), plan.delete)  # Intermediate structure to new Library
+            self.assertNotIn(str_id(5), plan.delete)  # Active updated to this for our course.  # noqa: PT009
+            self.assertNotIn(str_id(7), plan.delete)  # Active for our new Library  # noqa: PT009
+            self.assertIn(str_id(4), plan.delete)  # Was our Active before  # noqa: PT009
+            self.assertIn(str_id(6), plan.delete)  # Intermediate structure to new Library  # noqa: PT009
 
 
 def str_id(int_id):
     """Return the string version of Object IDs that PyMongo will accept."""
-    return "{:024}".format(int_id)
+    return "{:024}".format(int_id)  # noqa: UP032
 
 
 def obj_id(int_id):

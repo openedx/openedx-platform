@@ -28,7 +28,7 @@ class ProgramHasNoAuthoringOrganizationException(OrganizationDoesNotExistExcepti
         self.program_uuid = program_uuid
 
     def __str__(self):
-        return (
+        return (  # noqa: UP032
             'Cannot determine authoring organization key for catalog program {}'
         ).format(self.program_uuid)
 
@@ -39,7 +39,7 @@ class BadOrganizationShortNameException(OrganizationDoesNotExistException):
         self.organization_short_name = organization_short_name
 
     def __str__(self):
-        return 'Unable to find organization for short_name {}'.format(
+        return 'Unable to find organization for short_name {}'.format(  # noqa: UP032
             self.organization_short_name
         )
 
@@ -50,6 +50,6 @@ class ProviderDoesNotExistException(Exception):
         self.organization = organization
 
     def __str__(self):
-        return 'Unable to find organization for short_name {}'.format(
+        return 'Unable to find organization for short_name {}'.format(  # noqa: UP032
             self.organization.id
         )

@@ -108,7 +108,7 @@ class BaseUpstreamLinksHelpers(TestCase):
             'version_synced',
             'version_declined',
         ))
-        self.assertListEqual(links, expected_component_links)
+        self.assertListEqual(links, expected_component_links)  # noqa: PT009
         container_links = list(ContainerLink.objects.filter(downstream_context_key=course_key).values(
             'upstream_container',
             'upstream_container_key',
@@ -118,7 +118,7 @@ class BaseUpstreamLinksHelpers(TestCase):
             'version_synced',
             'version_declined',
         ))
-        self.assertListEqual(container_links, expected_container_links)
+        self.assertListEqual(container_links, expected_container_links)  # noqa: PT009
 
 
 @skip_unless_cms
@@ -167,9 +167,9 @@ class TestRecreateUpstreamLinks(ModuleStoreTestCase, OpenEdxEventsTestMixin, Bas
         """
         Test command with invalid args.
         """
-        with self.assertRaisesRegex(CommandError, 'Either --course or --all argument'):
+        with self.assertRaisesRegex(CommandError, 'Either --course or --all argument'):  # noqa: PT027
             self.call_command()
-        with self.assertRaisesRegex(CommandError, 'Only one of --course or --all argument'):
+        with self.assertRaisesRegex(CommandError, 'Only one of --course or --all argument'):  # noqa: PT027
             self.call_command('--all', '--course', str(self.course_key_1))
 
     def test_call_for_single_course(self):
@@ -246,7 +246,7 @@ class TestRecreateUpstreamLinks(ModuleStoreTestCase, OpenEdxEventsTestMixin, Bas
         course_key = "invalid-course"
         with self.assertLogs(level="ERROR") as ctx:
             self.call_command('--course', course_key)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 f'Invalid course key: {course_key}, skipping..',
                 ctx.records[0].getMessage()
             )
@@ -258,7 +258,7 @@ class TestRecreateUpstreamLinks(ModuleStoreTestCase, OpenEdxEventsTestMixin, Bas
         course_key = "course-v1:unix+ux1+2024_T2"
         with self.assertLogs(level="ERROR") as ctx:
             self.call_command('--course', course_key)
-            self.assertIn(
+            self.assertIn(  # noqa: PT009
                 f'Could not find items for given course: {course_key}',
                 ctx.records[0].getMessage()
             )

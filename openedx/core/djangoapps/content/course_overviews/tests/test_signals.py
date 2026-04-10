@@ -89,7 +89,7 @@ class CourseOverviewSignalsTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase)
         assert not course_overview_2.mobile_available
 
         # Verify that when the course is deleted, the corresponding CourseOverview is deleted as well.
-        with pytest.raises(CourseOverview.DoesNotExist):
+        with pytest.raises(CourseOverview.DoesNotExist):  # noqa: PT012
             self.store.delete_course(course.id, ModuleStoreEnum.UserID.test)
             CourseOverview.get_from_id(course.id)
 

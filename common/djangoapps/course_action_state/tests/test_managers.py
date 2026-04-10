@@ -116,7 +116,7 @@ class TestCourseActionUIStateManager(TestCourseActionStateManagerBase):
 
     def assertCourseActionStatesEqual(self, expected, found):
         """Asserts that the set of course keys in the expected state equal those that are found"""
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             {course_action_state.course_key for course_action_state in expected},
             {course_action_state.course_key for course_action_state in found})
 

@@ -90,7 +90,7 @@ class EmailEnrollmentState:
         self.mode = mode
 
     def __repr__(self):
-        return "{}(user={}, enrollment={}, allowed={}, auto_enroll={})".format(
+        return "{}(user={}, enrollment={}, allowed={}, auto_enroll={})".format(  # noqa: UP032
             self.__class__.__name__,
             bool(self.user),
             self.enrollment,
@@ -255,7 +255,7 @@ def send_beta_role_email(action, user, message_params):
     `message_params` parameters used while parsing email templates (a `dict`).
     """
     if action in ('add', 'remove'):
-        message_params['message_type'] = '%s_beta_tester' % action
+        message_params['message_type'] = '%s_beta_tester' % action  # noqa: UP031
         message_params['email_address'] = user.email
         message_params['user_id'] = user.id
         message_params['full_name'] = user.profile.name

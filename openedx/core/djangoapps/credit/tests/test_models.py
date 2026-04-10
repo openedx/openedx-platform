@@ -17,7 +17,7 @@ from openedx.core.djangoapps.credit.models import (
 )
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
-    setup_retirement_states,
+    setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.models import UserRetirementStatus
 

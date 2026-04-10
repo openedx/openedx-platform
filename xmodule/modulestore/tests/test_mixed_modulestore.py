@@ -76,7 +76,7 @@ class CommonMixedModuleStoreSetup(CourseComparisonTest, OpenEdxEventsTestMixin):
     """
     HOST = MONGO_HOST
     PORT = MONGO_PORT_NUM
-    DB = 'test_mongo_%s' % uuid4().hex[:5]
+    DB = 'test_mongo_%s' % uuid4().hex[:5]  # noqa: UP031
     COLLECTION = 'modulestore'
     ASSET_COLLECTION = 'assetstore'
     FS_ROOT = DATA_DIR
@@ -1330,7 +1330,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
             assert parent_location.for_branch(None) if parent_location else parent_location == \
                 self.store.get_parent_location(child_location, revision=revision)
 
-    def verify_item_parent(self, item_location, expected_parent_location, old_parent_location, is_reverted=False):
+    def verify_item_parent(self, item_location: BlockUsageLocator, expected_parent_location, old_parent_location, is_reverted=False):  # pylint: disable=line-too-long
         """
         Verifies that item is placed under expected parent.
 
@@ -1669,7 +1669,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
         # Create some children in vertical_x1a
         problem_item2 = self.store.create_child(self.user_id, self.vertical_x1a, 'problem', 'Problem_Item2')  # lint-amnesty, pylint: disable=no-member
-        orig_display_name = problem_item2.display_name  # lint-amnesty, pylint: disable=unused-variable
+        orig_display_name = problem_item2.display_name  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         # Publish the course.
         self.course = self.store.publish(self.course.location, self.user_id)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
@@ -1990,7 +1990,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         for store in self.store.modulestores:
             if isinstance(store, SplitMongoModuleStore):
                 return store
-        assert False, "SplitMongoModuleStore was not found in MixedModuleStore"
+        assert False, "SplitMongoModuleStore was not found in MixedModuleStore"  # noqa: B011, PT015
 
     # Split: active_versions (mysql), structure (mongo)
     @ddt.data((ModuleStoreEnum.Type.split, 1, 1, 0))
@@ -2029,7 +2029,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
         with check_mongo_calls(max_find, max_send), self.assertNumQueries(num_mysql):
             found_orphans = self.store.get_orphans(self.course_locations[self.MONGO_COURSEID].course_key)
-        self.assertCountEqual(found_orphans, orphan_locations)
+        self.assertCountEqual(found_orphans, orphan_locations)  # noqa: PT009
 
     @ddt.data(ModuleStoreEnum.Type.split)
     def test_create_item_populates_edited_info(self, default_ms):
@@ -2493,7 +2493,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         assert store.get_modulestore_type() == store_type
 
         # verify store used for creating a course
-        course = self.store.create_course("org", "course{}".format(uuid4().hex[:5]), "run", self.user_id)
+        course = self.store.create_course("org", "course{}".format(uuid4().hex[:5]), "run", self.user_id)  # noqa: UP032
         assert course.runtime.modulestore.get_modulestore_type() == store_type
 
     @ddt.data(ModuleStoreEnum.Type.split)
@@ -2515,7 +2515,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         self._initialize_mixed(mappings={})
 
         fake_store = "fake"
-        with self.assertRaisesRegex(Exception, f"Cannot find store of type {fake_store}"):
+        with self.assertRaisesRegex(Exception, f"Cannot find store of type {fake_store}"):  # noqa: PT027
             with self.store.default_store(fake_store):
                 pass  # pragma: no cover
 

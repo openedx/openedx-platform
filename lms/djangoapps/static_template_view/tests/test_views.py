@@ -85,7 +85,7 @@ class MarketingSiteViewTests(TestCase):
         resp = self.client.get(url)
         self.assertContains(
             resp,
-            'There has been a 500 error on the <em>{platform_name}</em> servers'.format(
+            'There has been a 500 error on the <em>{platform_name}</em> servers'.format(  # noqa: UP032
                 platform_name=settings.PLATFORM_NAME
             ),
             status_code=500

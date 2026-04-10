@@ -84,7 +84,7 @@ class TestScoreRender(ModuleStoreTestCase):
             )
 
             # Assertions
-            self.assertIsNotNone(result, "Should return a block instance")
+            self.assertIsNotNone(result, "Should return a block instance")  # noqa: PT009
             mock_modulestore.return_value.get_item.assert_called_once()
             mock_field_data_cache.cache_for_block_descendents.assert_called_once()
             mock_get_block.assert_called_once()
@@ -101,7 +101,7 @@ class TestScoreRender(ModuleStoreTestCase):
         mock_modulestore.return_value.get_item.side_effect = Exception("Block not found")
 
         # Test that Http404 is raised
-        with self.assertRaises(Http404):
+        with self.assertRaises(Http404):  # noqa: PT027
             load_xblock_for_external_grader(
                 self.anonymous_user_id, str(self.course.id), str(self.problem.location), self.course
             )
@@ -122,7 +122,7 @@ class TestScoreRender(ModuleStoreTestCase):
         )
 
         # Assertions
-        self.assertIsNotNone(result, "Should return a block instance")
+        self.assertIsNotNone(result, "Should return a block instance")  # noqa: PT009
         mock_prepare_runtime.assert_called_once()
         block.bind_for_student.assert_called_once()
 
@@ -155,20 +155,20 @@ class TestScoreRender(ModuleStoreTestCase):
         mock_load_xblock.assert_called_once()
         call_args, call_kwargs = mock_load_xblock.call_args
 
-        self.assertEqual(call_args[0], score.user_id)
-        self.assertIsInstance(call_args[1], CourseKey)
-        self.assertEqual(str(call_args[1]), score.course_id)
-        self.assertIsInstance(call_args[2], UsageKey)
-        self.assertEqual(str(call_args[2]), score.module_id)
+        self.assertEqual(call_args[0], score.user_id)  # noqa: PT009
+        self.assertIsInstance(call_args[1], CourseKey)  # noqa: PT009
+        self.assertEqual(str(call_args[1]), score.course_id)  # noqa: PT009
+        self.assertIsInstance(call_args[2], UsageKey)  # noqa: PT009
+        self.assertEqual(str(call_args[2]), score.module_id)  # noqa: PT009
 
-        self.assertIn("course", call_kwargs)
+        self.assertIn("course", call_kwargs)  # noqa: PT009
 
         mock_instance.handle_ajax.assert_called_once()
         ajax_args, _ = mock_instance.handle_ajax.call_args
-        self.assertEqual(ajax_args[0], "score_update")
-        self.assertIn("xqueue_header", ajax_args[1])
-        self.assertIn("xqueue_body", ajax_args[1])
-        self.assertIn("queuekey", ajax_args[1])
+        self.assertEqual(ajax_args[0], "score_update")  # noqa: PT009
+        self.assertIn("xqueue_header", ajax_args[1])  # noqa: PT009
+        self.assertIn("xqueue_body", ajax_args[1])  # noqa: PT009
+        self.assertIn("queuekey", ajax_args[1])  # noqa: PT009
         mock_instance.save.assert_called_once()
 
     @patch("lms.djangoapps.grades.score_render.modulestore")
@@ -195,7 +195,7 @@ class TestScoreRender(ModuleStoreTestCase):
         )
 
         # json.loads must fail BEFORE anything else runs
-        with self.assertRaises(json.JSONDecodeError):
+        with self.assertRaises(json.JSONDecodeError):  # noqa: PT027
             handle_external_grader_score(None, None, score)
 
         # Assertions
@@ -227,7 +227,7 @@ class TestScoreRender(ModuleStoreTestCase):
         )
 
         # Call the handler and expect exception to be raised
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017, PT027
             handle_external_grader_score(None, None, score)
 
     @patch("lms.djangoapps.grades.score_render.AnonymousUserId.objects.get")
@@ -249,11 +249,11 @@ class TestScoreRender(ModuleStoreTestCase):
         mock_get_block.return_value = None
 
         # Test that Http404 is raised
-        with self.assertRaises(Http404) as context:
+        with self.assertRaises(Http404) as context:  # noqa: PT027
             load_xblock_for_external_grader(self.anonymous_user_id, str(self.course.id), str(self.problem.location))
 
         expected_msg = f"Could not bind XBlock instance for usage key: {str(self.problem.location)}"
-        self.assertEqual(str(context.exception), expected_msg)
+        self.assertEqual(str(context.exception), expected_msg)  # noqa: PT009
 
         # Verify that all mocks were called
         mock_anon_user.assert_called_once()
@@ -313,19 +313,19 @@ class TestScoreRenderIntegration(ModuleStoreTestCase):
 
             # Verify the data structure passed to handle_ajax
             handle_ajax_args = mock_instance.handle_ajax.call_args[0]
-            self.assertEqual(handle_ajax_args[0], "score_update")
+            self.assertEqual(handle_ajax_args[0], "score_update")  # noqa: PT009
 
             data = handle_ajax_args[1]
-            self.assertIn("xqueue_header", data)
-            self.assertIn("xqueue_body", data)
-            self.assertIn("queuekey", data)
+            self.assertIn("xqueue_header", data)  # noqa: PT009
+            self.assertIn("xqueue_body", data)  # noqa: PT009
+            self.assertIn("queuekey", data)  # noqa: PT009
 
             header = json.loads(data["xqueue_header"])
-            self.assertEqual(header["lms_key"], "sub_123")
-            self.assertEqual(header["queue_name"], "test_queue")
+            self.assertEqual(header["lms_key"], "sub_123")  # noqa: PT009
+            self.assertEqual(header["queue_name"], "test_queue")  # noqa: PT009
 
             # Verify the body is the correct JSON
             body = json.loads(data["xqueue_body"])
-            self.assertEqual(body["score"], 1)
-            self.assertEqual(body["max_score"], 1)
-            self.assertTrue(body["correct"])
+            self.assertEqual(body["score"], 1)  # noqa: PT009
+            self.assertEqual(body["max_score"], 1)  # noqa: PT009
+            self.assertTrue(body["correct"])  # noqa: PT009

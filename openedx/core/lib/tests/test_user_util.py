@@ -67,7 +67,7 @@ def test_unicode_username_to_hash():
     assert len(retired_username.split('_')[-1]) == 40
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))  # noqa: PT007
 def test_correct_username_hash(salt_list):
     """
     Verify that get_retired_username uses the current salt and returns the expected hash.
@@ -83,7 +83,7 @@ def test_correct_username_hash(salt_list):
     assert retired_username == valid_retired_usernames[-1]
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))  # noqa: PT007
 def test_all_usernames_to_hash(salt_list):
     username = 'ALearnerUserName'
     retired_username_generator = user_util.get_all_retired_usernames(username, salt_list)
@@ -136,7 +136,7 @@ def test_unicode_email_to_hash():
     assert len(retired_email.split('@')[0]) == len('retired_email_') + 40
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))  # noqa: PT007
 def test_correct_email_hash(salt_list):
     """
     Verify that get_retired_email uses the current salt and returns the expected hash.
@@ -152,7 +152,7 @@ def test_correct_email_hash(salt_list):
     assert retired_email == valid_retired_emails[-1]
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))  # noqa: PT007
 def test_all_emails_to_hash(salt_list):
     email = 'a.learner@example.com'
     retired_email_generator = user_util.get_all_retired_emails(email, salt_list)
@@ -206,7 +206,7 @@ def test_unicode_external_key_to_hash():
     assert len(retired_external_key) == len('retired_external_key_') + 40
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_THREE_SALTS,))  # noqa: PT007
 def test_correct_external_key_hash(salt_list):
     """
     Verify that get_retired_external_key uses the current salt and returns the expected hash.
@@ -223,7 +223,7 @@ def test_correct_external_key_hash(salt_list):
     assert retired_email == valid_retired_external_keys[-1]
 
 
-@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))
+@pytest.mark.parametrize('salt_list', (VALID_SALT_LIST_FIVE_SALTS,))  # noqa: PT007
 def test_all_external_keys_to_hash(salt_list):
     external_key = 'S34839GEF3'
     retired_external_key_generator = user_util.get_all_retired_external_keys(external_key, salt_list)

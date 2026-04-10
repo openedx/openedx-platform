@@ -83,7 +83,7 @@ def intercept_errors(api_error, ignore_errors=None):
                     caller=caller.strip(),
                 )
                 LOGGER.exception(msg)
-                raise api_error(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise api_error(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return _wrapped
     return _decorator
 

@@ -34,7 +34,7 @@ from common.djangoapps.util.milestones_helpers import (
     remove_prerequisite_course,
     set_prerequisite_courses,
 )
-from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.commerce.utils import EcommerceService
@@ -674,7 +674,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                 &nbsp;{course_run}
               </span>
             </a>
-        '''.format(course_key=course_key_string, course_run=course_run_string)
+        '''.format(course_key=course_key_string, course_run=course_run_string)  # noqa: UP032
 
     @staticmethod
     def _get_html_for_resume_course_button(course_key_string, resume_block_key_string, course_run_string):
@@ -687,7 +687,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                 &nbsp;{course_run}
               </span>
             </a>
-        '''.format(
+        '''.format(  # noqa: UP032
             course_key=course_key_string,
             url_to_block=resume_block_key_string,
             course_run=course_run_string
@@ -703,7 +703,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
             <button class="change-session btn-link ">Change or Leave Session</button>
             </span>
             </div>
-        '''.format(
+        '''.format(  # noqa: UP032
             org=course_key.org,
             course=course_key.course,
         )

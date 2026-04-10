@@ -23,7 +23,7 @@ from openedx.core.lib.hash_utils import short_token
 log = logging.getLogger("edx.lti_provider")
 
 
-class LtiConsumer(models.Model):
+class LtiConsumer(models.Model):  # noqa: DJ008
     """
     Database model representing an LTI consumer. This model stores the consumer
     specific settings, such as the OAuth key/secret pair and any LTI fields
@@ -88,7 +88,7 @@ class LtiConsumer(models.Model):
         return consumer
 
 
-class OutcomeService(models.Model):
+class OutcomeService(models.Model):  # noqa: DJ008
     """
     Model for a single outcome service associated with an LTI consumer. Note
     that a given consumer may have more than one outcome service URL over its
@@ -112,7 +112,7 @@ class OutcomeService(models.Model):
     lti_consumer = models.ForeignKey(LtiConsumer, on_delete=models.CASCADE)
 
 
-class GradedAssignment(models.Model):
+class GradedAssignment(models.Model):  # noqa: DJ008
     """
     Model representing a single launch of a graded assignment by an individual
     user. There will be a row created here only if the LTI consumer may require
@@ -139,7 +139,7 @@ class GradedAssignment(models.Model):
         unique_together = ('outcome_service', 'lis_result_sourcedid')
 
 
-class LtiUser(models.Model):
+class LtiUser(models.Model):  # noqa: DJ008
     """
     Model mapping the identity of an LTI user to an account on the edX platform.
     The LTI user_id field is guaranteed to be unique per LTI consumer (per

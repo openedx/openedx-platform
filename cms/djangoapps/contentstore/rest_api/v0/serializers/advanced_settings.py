@@ -1,6 +1,6 @@
 """ Serializers for course advanced settings"""
-from typing import Dict as DictType
-from typing import Type
+from typing import Dict as DictType  # noqa: UP035
+from typing import Type  # noqa: UP035
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -51,7 +51,7 @@ class CourseAdvancedSettingsSerializer(serializers.Serializer):  # pylint: disab
     """
 
     @staticmethod
-    def _get_drf_field_type_from_xblock_field(xblock_field: XBlockField) -> Type[SerializerField]:
+    def _get_drf_field_type_from_xblock_field(xblock_field: XBlockField) -> Type[SerializerField]:  # noqa: UP006
         """
         Return the corresponding DRF Serializer field for an XBlock field.
 
@@ -67,7 +67,7 @@ class CourseAdvancedSettingsSerializer(serializers.Serializer):  # pylint: disab
                 return drf_type
         return serializers.JSONField
 
-    def get_fields(self) -> DictType[str, SerializerField]:
+    def get_fields(self) -> DictType[str, SerializerField]:  # noqa: UP006
         """
         Return the fields for this serializer.
 

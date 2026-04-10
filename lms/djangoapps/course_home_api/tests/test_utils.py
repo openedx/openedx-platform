@@ -41,8 +41,8 @@ class GetCourseOr403Test(ModuleStoreTestCase):
                 get_course_or_403()
                 self.fail('Call to get_course_or_403 should raise exception')
             except PermissionDenied as e:
-                assert str(e.detail) == mock_access_error.user_message
-                assert e.detail.code == mock_access_error.error_code
+                assert str(e.detail) == mock_access_error.user_message  # noqa: PT017
+                assert e.detail.code == mock_access_error.error_code  # noqa: PT017
 
     def test_other_exception(self):
         """ Any other exception should not be caught """
@@ -50,5 +50,5 @@ class GetCourseOr403Test(ModuleStoreTestCase):
             pass
 
         with self.mock_get_course(side_effect=MyException()):
-            with self.assertRaises(MyException):
+            with self.assertRaises(MyException):  # noqa: PT027
                 get_course_or_403()

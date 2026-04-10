@@ -48,7 +48,7 @@ class CommandsTestBase(SharedModuleStoreTestCase):
         """
         store = modulestore()
 
-        unique_org = factory.Sequence(lambda n: 'edX.%d' % n)
+        unique_org = factory.Sequence(lambda n: 'edX.%d' % n)  # noqa: UP031
         cls.course = CourseFactory.create(
             emit_signals=True,
             org=unique_org,
@@ -150,7 +150,7 @@ class CommandsTestBase(SharedModuleStoreTestCase):
         assert dump[video_id]['category'] == 'video'
         video_metadata = dump[video_id]['metadata']
         video_metadata.pop('edx_video_id', None)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             list(video_metadata.keys()),
             ['youtube_id_0_75', 'youtube_id_1_0', 'youtube_id_1_25', 'youtube_id_1_5']
         )

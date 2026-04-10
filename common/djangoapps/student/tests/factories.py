@@ -133,7 +133,7 @@ class RequestFactoryNoCsrf(RequestFactory):
     """
     def request(self, **kwargs):
         request = super().request(**kwargs)
-        setattr(request, '_dont_enforce_csrf_checks', True)  # pylint: disable=literal-used-as-attribute
+        setattr(request, '_dont_enforce_csrf_checks', True)  # pylint: disable=literal-used-as-attribute  # noqa: B010
         return request
 
 

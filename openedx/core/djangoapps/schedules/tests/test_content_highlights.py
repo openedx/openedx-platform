@@ -157,7 +157,7 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, three_days.date()) == (None, None)
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, four_days.date()) ==\
                (['final week!'], 4)
-        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'
+        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'  # noqa: F841  # pylint: disable=line-too-long
         with pytest.raises(CourseUpdateDoesNotExist):
             get_next_section_highlights(self.user, self.course_key, two_days_ago, six_days.date())
 
@@ -168,10 +168,10 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
         with self.store.bulk_operations(self.course_key):
             self._create_chapter(highlights=['Test highlight'])
 
-        with self.assertRaisesRegex(CourseUpdateDoesNotExist, 'Course block .* not found'):
+        with self.assertRaisesRegex(CourseUpdateDoesNotExist, 'Course block .* not found'):  # noqa: PT027
             get_week_highlights(self.user, self.course_key, 1)
 
         yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         today = datetime.datetime.utcnow()
-        with self.assertRaisesRegex(CourseUpdateDoesNotExist, 'Course block .* not found'):
+        with self.assertRaisesRegex(CourseUpdateDoesNotExist, 'Course block .* not found'):  # noqa: PT027
             get_next_section_highlights(self.user, self.course_key, yesterday, today.date())

@@ -18,36 +18,36 @@ class TestHandlerUrl(TestCase):
         self.block = Mock()
 
     def test_trailing_characters(self):
-        self.assertFalse(handler_url(self.block, 'handler').endswith('?'))
-        self.assertFalse(handler_url(self.block, 'handler').endswith('/'))
+        self.assertFalse(handler_url(self.block, 'handler').endswith('?'))  # noqa: PT009
+        self.assertFalse(handler_url(self.block, 'handler').endswith('/'))  # noqa: PT009
 
-        self.assertFalse(handler_url(self.block, 'handler', 'suffix').endswith('?'))
-        self.assertFalse(handler_url(self.block, 'handler', 'suffix').endswith('/'))
+        self.assertFalse(handler_url(self.block, 'handler', 'suffix').endswith('?'))  # noqa: PT009
+        self.assertFalse(handler_url(self.block, 'handler', 'suffix').endswith('/'))  # noqa: PT009
 
-        self.assertFalse(handler_url(self.block, 'handler', 'suffix', 'query').endswith('?'))
-        self.assertFalse(handler_url(self.block, 'handler', 'suffix', 'query').endswith('/'))
+        self.assertFalse(handler_url(self.block, 'handler', 'suffix', 'query').endswith('?'))  # noqa: PT009
+        self.assertFalse(handler_url(self.block, 'handler', 'suffix', 'query').endswith('/'))  # noqa: PT009
 
-        self.assertFalse(handler_url(self.block, 'handler', query='query').endswith('?'))
-        self.assertFalse(handler_url(self.block, 'handler', query='query').endswith('/'))
+        self.assertFalse(handler_url(self.block, 'handler', query='query').endswith('?'))  # noqa: PT009
+        self.assertFalse(handler_url(self.block, 'handler', query='query').endswith('/'))  # noqa: PT009
 
     def _parsed_query(self, query_string):
         """Return the parsed query string from a handler_url generated with the supplied query_string"""
         return urlparse(handler_url(self.block, 'handler', query=query_string)).query
 
     def test_query_string(self):
-        self.assertIn('foo=bar', self._parsed_query('foo=bar'))
-        self.assertIn('foo=bar&baz=true', self._parsed_query('foo=bar&baz=true'))
-        self.assertIn('foo&bar&baz', self._parsed_query('foo&bar&baz'))
+        self.assertIn('foo=bar', self._parsed_query('foo=bar'))  # noqa: PT009
+        self.assertIn('foo=bar&baz=true', self._parsed_query('foo=bar&baz=true'))  # noqa: PT009
+        self.assertIn('foo&bar&baz', self._parsed_query('foo&bar&baz'))  # noqa: PT009
 
     def _parsed_path(self, handler_name='handler', suffix=''):
         """Return the parsed path from a handler_url with the supplied handler_name and suffix"""
         return urlparse(handler_url(self.block, handler_name, suffix=suffix)).path
 
     def test_suffix(self):
-        self.assertTrue(self._parsed_path(suffix="foo").endswith('foo'))
-        self.assertTrue(self._parsed_path(suffix="foo/bar").endswith('foo/bar'))
-        self.assertTrue(self._parsed_path(suffix="/foo/bar").endswith('/foo/bar'))
+        self.assertTrue(self._parsed_path(suffix="foo").endswith('foo'))  # noqa: PT009
+        self.assertTrue(self._parsed_path(suffix="foo/bar").endswith('foo/bar'))  # noqa: PT009
+        self.assertTrue(self._parsed_path(suffix="/foo/bar").endswith('/foo/bar'))  # noqa: PT009
 
     def test_handler_name(self):
-        self.assertIn('handler1', self._parsed_path('handler1'))
-        self.assertIn('handler_a', self._parsed_path('handler_a'))
+        self.assertIn('handler1', self._parsed_path('handler1'))  # noqa: PT009
+        self.assertIn('handler_a', self._parsed_path('handler_a'))  # noqa: PT009

@@ -30,14 +30,14 @@ class TestGetLinkCheckStatus(AuthorizeStaffTestCase, ModuleStoreTestCase, TestCa
         Test course_id validation
         '''
         response = self.make_request(course_id='invalid_course_id')
-        self.assertIn(response.status_code, range(400, 500))
+        self.assertIn(response.status_code, range(400, 500))  # noqa: PT009
 
     def test_produces_4xx_when_additional_kwargs(self):
         '''
         Test additional kwargs validation
         '''
         response = self.make_request(course_id=self.course.id, malicious_kwarg='malicious_kwarg')
-        self.assertIn(response.status_code, range(400, 500))
+        self.assertIn(response.status_code, range(400, 500))  # noqa: PT009
 
 
 class TestPostLinkCheck(AuthorizeStaffTestCase, ModuleStoreTestCase, TestCase):
@@ -62,18 +62,18 @@ class TestPostLinkCheck(AuthorizeStaffTestCase, ModuleStoreTestCase, TestCase):
         Test course_id validation
         '''
         response = self.make_request(course_id='invalid_course_id')
-        self.assertIn(response.status_code, range(400, 500))
+        self.assertIn(response.status_code, range(400, 500))  # noqa: PT009
 
     def test_produces_4xx_when_additional_kwargs(self):
         '''
         Test additional kwargs validation
         '''
         response = self.make_request(course_id=self.course.id, malicious_kwarg='malicious_kwarg')
-        self.assertIn(response.status_code, range(400, 500))
+        self.assertIn(response.status_code, range(400, 500))  # noqa: PT009
 
     def test_produces_4xx_when_unexpected_data(self):
         '''
         Test validation when request contains unexpected data
         '''
         response = self.make_request(course_id=self.course.id, data={'unexpected_data': 'unexpected_data'})
-        self.assertIn(response.status_code, range(400, 500))
+        self.assertIn(response.status_code, range(400, 500))  # noqa: PT009

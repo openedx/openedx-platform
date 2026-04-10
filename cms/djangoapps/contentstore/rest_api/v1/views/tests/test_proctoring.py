@@ -181,7 +181,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -218,7 +218,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -249,7 +249,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_200_OK
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -282,7 +282,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        self.assertIn(
+        self.assertIn(  # noqa: PT009
             {
                 "proctoring_provider": (
                     "The selected proctoring provider, notvalidprovider, is not a valid provider. "
@@ -349,7 +349,7 @@ class ProctoringExamSettingsPostTests(
         assert response.status_code == status.HTTP_200_OK
         if expect_log:
             logger_string = (
-                "create_zendesk_tickets set to {ticket_value} but proctoring "
+                "create_zendesk_tickets set to {ticket_value} but proctoring "  # noqa: UP032
                 "provider is {provider} for course {course_id}. create_zendesk_tickets "
                 "should be updated for this course.".format(
                     ticket_value=create_zendesk_tickets,
@@ -377,7 +377,7 @@ class ProctoringExamSettingsPostTests(
         # response is correct
         assert response.status_code == status.HTTP_200_OK
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response.data,
             {
                 "proctored_exam_settings": {
@@ -409,7 +409,7 @@ class ProctoringExamSettingsPostTests(
 
         # response is correct
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        self.assertIn(
+        self.assertIn(  # noqa: PT009
             {
                 "proctoring_provider": (
                     "The selected proctoring provider, lti_external, is not a valid provider. "
@@ -449,7 +449,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
             FEATURES={"DISABLE_ADVANCED_SETTINGS": disable_advanced_settings}
         ):
             response = self.non_staff_client.get(self.url)
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 response.status_code, 403 if disable_advanced_settings else 200
             )
 
@@ -459,7 +459,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         """User with authz permission can access proctoring errors."""
         mock_is_user_allowed.return_value = True
         response = self.non_staff_client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         mock_is_user_allowed.assert_called_once()
 
     @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
@@ -468,7 +468,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         """User without authz permission cannot access proctoring errors."""
         mock_is_user_allowed.return_value = False
         response = self.non_staff_client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
         mock_is_user_allowed.assert_called_once()
 
     @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
@@ -477,7 +477,7 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         """Staff user can access when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
         with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
             response = self.client.get(self.url)
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             mock_is_user_allowed.assert_not_called()
 
     @patch.object(core_toggles.AUTHZ_COURSE_AUTHORING_FLAG, 'is_enabled', return_value=True)
@@ -486,5 +486,5 @@ class CourseProctoringErrorsViewTest(CourseTestCase, PermissionAccessMixin):
         """Non-staff user is denied when DISABLE_ADVANCED_SETTINGS is enabled, bypassing authz."""
         with override_settings(FEATURES={"DISABLE_ADVANCED_SETTINGS": True}):
             response = self.non_staff_client.get(self.url)
-            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.status_code, 403)  # noqa: PT009
             mock_is_user_allowed.assert_not_called()

@@ -1,4 +1,4 @@
-# coding=utf-8
+# coding=utf-8  # noqa: UP009
 """
 Test the retire_one_learner.py script
 """
@@ -122,11 +122,11 @@ def _call_script(expect_success=True, expected_num_rows=10, config_orgs=None, ex
             config_org_vals = [unicodedata.normalize('NFKC', org) for org in config_org_vals]
 
             for org in config_org_vals:
-                outfile = os.path.join(tmp_output_dir, '{}_{}_{}_{}.csv'.format(
+                outfile = os.path.join(tmp_output_dir, '{}_{}_{}_{}.csv'.format(  # noqa: UP032
                     REPORTING_FILENAME_PREFIX, TEST_PLATFORM_NAME, org, date.today().isoformat()
                 ))
 
-                with open(outfile, 'r') as csvfile:
+                with open(outfile, 'r') as csvfile:  # noqa: UP015
                     reader = csv.DictReader(csvfile)
                     rows = []
                     for row in reader:
@@ -151,9 +151,9 @@ def _fake_retirement_report_user(seed_val, user_orgs=None, user_orgs_config=None
     """
     user_info = {
         'user_id': USER_ID,
-        LEARNER_ORIGINAL_USERNAME_KEY: 'username_{}'.format(seed_val),
-        'original_email': 'user_{}@foo.invalid'.format(seed_val),
-        'original_name': '{} {}'.format(UNICODE_NAME_CONSTANT, seed_val),
+        LEARNER_ORIGINAL_USERNAME_KEY: 'username_{}'.format(seed_val),  # noqa: UP032
+        'original_email': 'user_{}@foo.invalid'.format(seed_val),  # noqa: UP032
+        'original_name': '{} {}'.format(UNICODE_NAME_CONSTANT, seed_val),  # noqa: UP032
         LEARNER_CREATED_KEY: DELETION_TIME,
     }
 
@@ -199,7 +199,7 @@ def test_report_generation_multiple_partners(*args, **kwargs):
     SETUP_LMS_OR_EXIT(config)
     orgs, usernames = _get_orgs_and_learners_or_exit(config)
 
-    assert usernames == [{'original_username': 'username_{}'.format(username)} for username in range(1, 5)]
+    assert usernames == [{'original_username': 'username_{}'.format(username)} for username in range(1, 5)]  # noqa: UP032
 
     def _get_learner_usernames(org_data):
         return [learner['original_username'] for learner in org_data['learners']]
@@ -274,7 +274,7 @@ def test_successful_report(*args, **kwargs):
     # Make sure we tried to add comments to the files
     assert mock_create_comments.call_count == 1
     # First [0] returns all positional args, second [0] gets the first positional arg.
-    create_comments_file_ids, create_comments_messages = zip(*mock_create_comments.call_args[0][0])
+    create_comments_file_ids, create_comments_messages = zip(*mock_create_comments.call_args[0][0])  # noqa: B905
     assert set(create_comments_file_ids).issubset(set(['foo', 'bar', 'baz', 'qux']))
     assert len(create_comments_file_ids) == 2  # only two comments created, the third didn't have a POC.
     assert all('+some.contact@example.com' in msg for msg in create_comments_messages)
@@ -711,17 +711,17 @@ def test_google_unicode_folder_names(*args, **kwargs):
             {'emailAddress': 'another.contact@edx.org'},
         ]
         for partner in [
-            unicodedata.normalize('NFKC', u'TéstX'),
-            unicodedata.normalize('NFKC', u'TéstX2'),
-            unicodedata.normalize('NFKC', u'TéstX3'),
+            unicodedata.normalize('NFKC', u'TéstX'),  # noqa: UP025
+            unicodedata.normalize('NFKC', u'TéstX2'),  # noqa: UP025
+            unicodedata.normalize('NFKC', u'TéstX3'),  # noqa: UP025
         ]
     }
     mock_walk_files.return_value = [
         {'name': partner, 'id': 'folder' + partner}
         for partner in [
-            unicodedata.normalize('NFKC', u'TéstX'),
-            unicodedata.normalize('NFKC', u'TéstX2'),
-            unicodedata.normalize('NFKC', u'TéstX3'),
+            unicodedata.normalize('NFKC', u'TéstX'),  # noqa: UP025
+            unicodedata.normalize('NFKC', u'TéstX2'),  # noqa: UP025
+            unicodedata.normalize('NFKC', u'TéstX3'),  # noqa: UP025
         ]
     ]
     mock_create_files.side_effect = ['foo', 'bar', 'baz']
@@ -729,9 +729,9 @@ def test_google_unicode_folder_names(*args, **kwargs):
     mock_retirement_report.return_value = _fake_retirement_report(user_orgs=list(FAKE_ORGS.keys()))
 
     config_orgs = {
-        'org1': [unicodedata.normalize('NFKC', u'TéstX')],
-        'org2': [unicodedata.normalize('NFD', u'TéstX2')],
-        'org3': [unicodedata.normalize('NFKD', u'TéstX3')],
+        'org1': [unicodedata.normalize('NFKC', u'TéstX')],  # noqa: UP025
+        'org2': [unicodedata.normalize('NFD', u'TéstX2')],  # noqa: UP025
+        'org3': [unicodedata.normalize('NFKD', u'TéstX3')],  # noqa: UP025
     }
 
     result = _call_script(config_orgs=config_orgs)
@@ -748,7 +748,7 @@ def test_google_unicode_folder_names(*args, **kwargs):
     # Make sure we tried to add comments to the files
     assert mock_create_comments.call_count == 1
     # First [0] returns all positional args, second [0] gets the first positional arg.
-    create_comments_file_ids, create_comments_messages = zip(*mock_create_comments.call_args[0][0])
+    create_comments_file_ids, create_comments_messages = zip(*mock_create_comments.call_args[0][0])  # noqa: B905
     assert set(create_comments_file_ids) == set(['foo', 'bar', 'baz'])
     assert all('+some.contact@example.com' in msg for msg in create_comments_messages)
     assert all('+another.contact@edx.org' not in msg for msg in create_comments_messages)

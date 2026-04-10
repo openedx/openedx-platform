@@ -497,4 +497,4 @@ def send_buffered_digest(
     except Exception as exc:
         logger.exception(f'Email Buffered Digest: Failed to send buffered digest: {exc}')
         retry_countdown = 60 * (2 ** self.request.retries)
-        raise self.retry(exc=exc, countdown=retry_countdown)
+        raise self.retry(exc=exc, countdown=retry_countdown)  # noqa: B904

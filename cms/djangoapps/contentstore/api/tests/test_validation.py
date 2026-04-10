@@ -96,7 +96,7 @@ class CourseValidationViewTest(SharedModuleStoreTestCase, APITestCase):
     def test_student_fails(self):
         self.client.login(username=self.student.username, password=self.password)
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     @ddt.data(
         (False, False),
@@ -116,7 +116,7 @@ class CourseValidationViewTest(SharedModuleStoreTestCase, APITestCase):
                 )
             self.client.login(username=self.staff.username, password=self.password)
             resp = self.client.get(self.get_url(self.course_key), {'all': 'true'})
-            self.assertEqual(resp.status_code, status.HTTP_200_OK)
+            self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
             expected_data = {
                 'assignments': {
                     'total_number': 1,
@@ -148,7 +148,7 @@ class CourseValidationViewTest(SharedModuleStoreTestCase, APITestCase):
                 },
                 'is_self_paced': True,
             }
-            self.assertDictEqual(resp.data, expected_data)
+            self.assertDictEqual(resp.data, expected_data)  # noqa: PT009
 
 
 class TestMigrationViewSetCreate(SharedModuleStoreTestCase, APITestCase):
@@ -270,7 +270,7 @@ class TestMigrationViewSetCreate(SharedModuleStoreTestCase, APITestCase):
         assert response.status_code == status.HTTP_200_OK
 
         data = response.json()
-        self.assertListEqual(data, [
+        self.assertListEqual(data, [  # noqa: PT009
             {'usage_key': str(self.block1.location)},
             {'usage_key': str(self.block2.location)},
         ])
@@ -292,7 +292,7 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """
         resp = self.authorized_client.get(self.get_url(self.course_key))
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """
@@ -300,7 +300,7 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         """
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
 
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """
@@ -315,7 +315,7 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         resp = self.authorized_client.get(self.get_url(other_course.id))
 
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -325,7 +325,7 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         resp = self.client.get(self.get_url(self.course_key))
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """
@@ -338,7 +338,7 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         resp = client.get(self.get_url(self.course_key))
 
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -352,4 +352,4 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.force_authenticate(user=non_staff_user)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

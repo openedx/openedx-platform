@@ -110,7 +110,7 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
         item = self.store.get_item(item_location)
         html = item.visibility_view().body_html()
         for string in substrings:
-            self.assertIn(string, html)
+            self.assertIn(string, html)  # noqa: PT009
 
     def verify_visibility_view_does_not_contain(self, item_location, substrings):
         """
@@ -120,7 +120,7 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
         item = self.store.get_item(item_location)
         html = item.visibility_view().body_html()
         for string in substrings:
-            self.assertNotIn(string, html)
+            self.assertNotIn(string, html)  # noqa: PT009
 
     def test_html_no_partition(self):
         self.verify_visibility_view_contains(self.video_location, [self.NO_CONTENT_OR_ENROLLMENT_GROUPS])

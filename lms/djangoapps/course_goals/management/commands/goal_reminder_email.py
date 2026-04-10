@@ -234,7 +234,7 @@ class Command(BaseCommand):
                 'goal_count': total_goals,
             }
         )
-        log.info('Processing course goals, total goal count {}, timestamp: {}, uuid: {}'.format(
+        log.info('Processing course goals, total goal count {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032
             total_goals,
             datetime.now(),
             session_id
@@ -247,7 +247,7 @@ class Command(BaseCommand):
                 else:
                     filtered_count += 1
             if (sent_count + filtered_count) % 10000 == 0:
-                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(
+                log.info('Processing course goals: sent {} filtered {} out of {}, timestamp: {}, uuid: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     sent_count,
                     filtered_count,
                     total_goals,
@@ -265,7 +265,7 @@ class Command(BaseCommand):
                 'emails_filtered': filtered_count,
             }
         )
-        log.info('Processing course goals complete: sent {} emails, '
+        log.info('Processing course goals complete: sent {} emails, '  # noqa: UP032
                  'filtered out {} emails, timestamp: {}, '
                  'uuid: {}'.format(sent_count, filtered_count, datetime.now(), session_id)
                  )

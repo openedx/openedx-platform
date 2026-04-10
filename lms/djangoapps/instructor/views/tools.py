@@ -75,7 +75,7 @@ def require_student_from_identifier(unique_student_identifier):
     try:
         return get_student_from_identifier(unique_student_identifier)
     except User.DoesNotExist:
-        raise DashboardError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise DashboardError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             _("Could not find student matching identifier: {student_identifier}").format(
                 student_identifier=unique_student_identifier
             )
@@ -90,7 +90,7 @@ def parse_datetime(datestr):
     try:
         return dateutil.parser.parse(datestr).replace(tzinfo=UTC)
     except ValueError:
-        raise DashboardError(_("Unable to parse date: ") + datestr)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise DashboardError(_("Unable to parse date: ") + datestr)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def find_unit(course, url):
@@ -220,9 +220,9 @@ def dump_block_extensions(course, unit):
     """
     header = [_("Username"), _("Full Name"), _("Extended Due Date")]
     data = []
-    for username, fullname, due_date, *unused in api.get_overrides_for_block(course.id, unit.location):
+    for username, fullname, due_date, *unused in api.get_overrides_for_block(course.id, unit.location):  # noqa: B007
         due_date = due_date.strftime('%Y-%m-%d %H:%M')
-        data.append(dict(list(zip(header, (username, fullname, due_date)))))
+        data.append(dict(list(zip(header, (username, fullname, due_date)))))  # noqa: B905
     data.sort(key=operator.itemgetter(_("Username")))
     return {
         "header": header,
@@ -249,7 +249,7 @@ def dump_student_extensions(course, student):
         due = override['actual_date']
         due = due.strftime("%Y-%m-%d %H:%M")
         title = title_or_url(units[location])
-        data.append(dict(list(zip(header, (title, due)))))
+        data.append(dict(list(zip(header, (title, due)))))  # noqa: B905
     data.sort(key=operator.itemgetter(_("Unit")))
     return {
         "header": header,

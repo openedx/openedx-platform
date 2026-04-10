@@ -114,7 +114,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
             parent_id=parent_id
         )
         saved = self.save_and_reserialize(data)
-        expected_url = (
+        expected_url = (  # noqa: F841
             f"/api/v1/comments/{parent_id}" if parent_id else
             "/api/v1/threads/test_thread/comments"
         )
@@ -179,7 +179,7 @@ class CommentSerializerDeserializationTest(ForumMockUtilsMixin, SharedModuleStor
         )
         saved = self.save_and_reserialize(data, instance=self.existing_comment)
 
-        params = {
+        params = {  # noqa: F841
             'body': 'Edited body',
             'course_id': str(self.course.id),
             'user_id': str(self.user.id),

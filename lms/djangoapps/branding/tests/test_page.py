@@ -319,7 +319,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
     def test_invisible_courses_are_not_displayed(self):
-        response = self.client.get(reverse('courses'))
+        response = self.client.get(reverse('courses'))  # noqa: F841
         ((_template, context), _) = RENDER_MOCK.call_args  # pylint: disable=unpacking-non-sequence
 
         rendered_ids = [course.id for course in context["courses"]]

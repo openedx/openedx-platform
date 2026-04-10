@@ -1341,7 +1341,7 @@ class CertificateInvalidationViewTests(SharedModuleStoreTestCase):
 
         # Verify that certificate invalidation successfully removed from database
 
-        with pytest.raises(ObjectDoesNotExist):
+        with pytest.raises(ObjectDoesNotExist):  # noqa: PT012
             certs_filter_args = {
                 "generated_certificate": self.generated_certificate,
                 "invalidated_by": self.global_staff,

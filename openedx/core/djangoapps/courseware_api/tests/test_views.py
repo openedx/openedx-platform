@@ -181,7 +181,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
                 request = RequestFactory().request()
                 cert_url = get_certificate_url(course_id=self.course.id, uuid=cert.verify_uuid)
                 linkedin_url_params = {
-                    'name': '{platform_name} Verified Certificate for {course_name}'.format(
+                    'name': '{platform_name} Verified Certificate for {course_name}'.format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME, course_name=self.course.display_name,
                     ),
                     'certUrl': request.build_absolute_uri(cert_url),
@@ -192,7 +192,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
                     'issueMonth': cert.created_date.month,
                 }
                 expected_linkedin_url = (
-                    'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&{params}'.format(
+                    'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME&{params}'.format(  # noqa: UP032
                         params=urlencode(linkedin_url_params)
                     )
                 )
@@ -279,7 +279,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
             mfe_is_visible: bool,
             username: str,
             enroll_user: bool,
-            masquerade_role: Optional[str],
+            masquerade_role: Optional[str],  # noqa: UP045
     ):
         """
         Test that course_access is calculated correctly based on
@@ -437,7 +437,7 @@ class CourseApiTestViews(BaseCoursewareTests, MasqueradeMixin):
             response = self.client.get(self.url)
 
         learning_assistant_enabled = response.json()['learning_assistant_enabled']
-        self.assertEqual(learning_assistant_enabled, setting_enabled)
+        self.assertEqual(learning_assistant_enabled, setting_enabled)  # noqa: PT009
 
 
 @ddt.ddt

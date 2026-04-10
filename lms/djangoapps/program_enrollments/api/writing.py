@@ -409,7 +409,7 @@ def enroll_in_masters_track(user, course_key, status):
                 message_template.format(user.id, course_key, course_enrollment.mode)
             )
         elif course_enrollment.mode != CourseMode.MASTERS:
-            error_message = (
+            error_message = (  # noqa: UP032
                 "Cannot convert CourseEnrollment to Master's from mode {}. "
                 "user id={}, course_key={}."
             ).format(
@@ -478,7 +478,7 @@ def _ensure_course_exists(course_key, user_key_or_id):
     if CourseOverview.course_exists(course_key):
         return
     logger.error(
-        "Cannot enroll user={} in non-existent course={}".format(
+        "Cannot enroll user={} in non-existent course={}".format(  # noqa: UP032
             user_key_or_id,
             course_key,
         )
@@ -554,7 +554,7 @@ def _get_conflicting_active_course_enrollments(
             and str(existing_enrollment.program_enrollment.program_uuid) != str(program_uuid)
         ):
             logger.error(
-                'Detected conflicting active ProgramCourseEnrollment. This is happening on'
+                'Detected conflicting active ProgramCourseEnrollment. This is happening on'  # noqa: UP032
                 ' The program_uuid [{}] with course_key [{}] for external_user_key [{}]'.format(
                     program_uuid,
                     course_key,

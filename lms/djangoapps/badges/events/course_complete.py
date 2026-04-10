@@ -25,7 +25,7 @@ def course_slug(course_key, mode):
     """
     # Seven digits should be enough to realistically avoid collisions. That's what git services use.
     digest = hashlib.sha256(
-        f"{str(course_key)}{str(mode)}".encode('utf-8')
+        f"{str(course_key)}{str(mode)}".encode('utf-8')  # noqa: UP012
     ).hexdigest()[:7]
     base_slug = slugify(str(course_key) + f'_{mode}_')[:248]
 

@@ -813,7 +813,7 @@ class ProblemWithUploadedFilesTest(TestSubmittingProblems):
         args, kwargs = mock_xqueue_post.call_args
         assert len(args) == 2
         assert args[0].endswith('/submit/')
-        self.assertEqual(list(kwargs['files'].keys()), filenames.split())
+        self.assertEqual(list(kwargs['files'].keys()), filenames.split())  # noqa: PT009
 
 
 @UseUnsafeCodejail()

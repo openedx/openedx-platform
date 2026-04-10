@@ -11,13 +11,13 @@ import sys
 import types
 import typing as t
 
-Settings: t.TypeAlias = types.ModuleType
+Settings: t.TypeAlias = types.ModuleType  # noqa: UP040
 
 
 T = t.TypeVar('T')
 
 
-class Derived(t.Generic[T]):
+class Derived(t.Generic[T]):  # noqa: UP046
     """
     A temporary Django setting value, defined with a function which generates the setting's eventual value.
 

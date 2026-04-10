@@ -62,7 +62,7 @@ class ScheduleConfig(ConfigurationModel):
     deliver_course_update = models.BooleanField(default=False)
 
 
-class ScheduleExperience(models.Model):
+class ScheduleExperience(models.Model):  # noqa: DJ008
     """
     .. no_pii:
     """

@@ -91,9 +91,9 @@ class TestXSSLinter(TestCase):
         assert re.search(f'test\\.py.*{self.ruleset.python_parse_error.rule_id}', output) is None
         assert re.search(f'test\\.py.*{self.ruleset.python_wrap_html.rule_id}', output) is not None
         # Assert no rule totals.
-        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None
+        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None  # noqa: UP032
         # Assert final total
-        assert re.search('{} violations total'.format(5), output) is not None
+        assert re.search('{} violations total'.format(5), output) is not None  # noqa: UP032
 
     def test_lint_with_verbose(self):
         """
@@ -124,9 +124,9 @@ class TestXSSLinter(TestCase):
         assert lines_with_rule >= 1
         assert lines_without_rule >= 1
         # Assert no rule totals.
-        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None
+        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None  # noqa: UP032
         # Assert final total
-        assert re.search('{} violations total'.format(5), output) is not None
+        assert re.search('{} violations total'.format(5), output) is not None  # noqa: UP032
 
     def test_lint_with_rule_totals(self):
         """
@@ -150,9 +150,9 @@ class TestXSSLinter(TestCase):
         assert re.search(f'test\\.py.*{self.ruleset.python_wrap_html.rule_id}', output) is not None
 
         # Assert totals output.
-        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is not None
-        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_wrap_html.rule_id, 1), output) is not None
-        assert re.search('{} violations total'.format(5), output) is not None
+        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is not None  # noqa: UP032
+        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_wrap_html.rule_id, 1), output) is not None  # noqa: UP032
+        assert re.search('{} violations total'.format(5), output) is not None  # noqa: UP032
 
     def test_lint_with_json_output(self):
         """
@@ -209,5 +209,5 @@ class TestXSSLinter(TestCase):
         assert re.search('test\\.py', output) is not None
 
         # Assert no totals.
-        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None
-        assert re.search('{} violations total'.format(7), output) is None
+        assert re.search('{}:\\s*{} violations'.format(self.ruleset.python_parse_error.rule_id, 0), output) is None  # noqa: UP032
+        assert re.search('{} violations total'.format(7), output) is None  # noqa: UP032

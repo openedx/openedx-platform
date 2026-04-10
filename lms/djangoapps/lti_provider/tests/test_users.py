@@ -44,12 +44,12 @@ class UserManagementHelperTest(TestCase):
         )
 
     @patch('django.contrib.auth.authenticate', return_value=None)
-    def test_permission_denied_for_unknown_user(self, _authenticate_mock):
+    def test_permission_denied_for_unknown_user(self, _authenticate_mock):  # noqa: PT019
         with pytest.raises(PermissionDenied):
             users.switch_user(self.request, self.lti_user, self.lti_consumer)
 
     @patch('lms.djangoapps.lti_provider.users.login')
-    def test_authenticate_called(self, _login_mock):
+    def test_authenticate_called(self, _login_mock):  # noqa: PT019
         with patch('lms.djangoapps.lti_provider.users.authenticate', return_value=self.new_user) as authenticate:
             users.switch_user(self.request, self.lti_user, self.lti_consumer)
             authenticate.assert_called_with(
@@ -117,7 +117,7 @@ class AuthenticateLtiUserTest(TestCase):
         lti_user.save()
         return lti_user
 
-    def test_authentication_with_new_user(self, _create_user, switch_user):
+    def test_authentication_with_new_user(self, _create_user, switch_user):  # noqa: PT019
         lti_user = MagicMock()
         lti_user.edx_user_id = self.edx_user_id
         with patch('lms.djangoapps.lti_provider.users.create_lti_user', return_value=lti_user) as create_user:
@@ -180,14 +180,14 @@ class AuthenticateLtiUserTest(TestCase):
         request = RequestFactory().post("/")
         request.user = AnonymousUser()
 
-        with self.assertRaises(PermissionDenied):
+        with self.assertRaises(PermissionDenied):  # noqa: PT027
             users.authenticate_lti_user(request, self.lti_user_id, self.auto_linking_consumer)
 
     def test_raise_exception_on_mismatched_user_and_lis_email(self, create_user, switch_user):
         request = RequestFactory().post("/", {"lis_person_contact_email_primary": "wrong_email@example.com"})
         request.user = self.old_user
 
-        with self.assertRaises(PermissionDenied):
+        with self.assertRaises(PermissionDenied):  # noqa: PT027
             users.authenticate_lti_user(request, self.lti_user_id, self.auto_linking_consumer)
 
     def test_authenticate_unauthenticated_user_after_auto_linking_of_user_account(self, create_user, switch_user):
@@ -270,7 +270,7 @@ class CreateLtiUserTest(TestCase):
 
     @patch('uuid.uuid4', return_value='random_uuid')
     @patch('lms.djangoapps.lti_provider.users.generate_random_edx_username', return_value='edx_id')
-    def test_create_lti_user_creates_correct_user(self, uuid_mock, _username_mock):
+    def test_create_lti_user_creates_correct_user(self, uuid_mock, _username_mock):  # noqa: PT019
         users.create_lti_user('lti_user_id', self.lti_consumer)
         assert User.objects.count() == 2
         user = User.objects.get(username='edx_id')

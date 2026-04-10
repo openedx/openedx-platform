@@ -99,7 +99,7 @@ def create_zendesk_ticket(
             except (ValueError, KeyError):
                 log.error(
                     _std_error_message(
-                        "Got an unexpected response from zendesk api. Can't"
+                        "Got an unexpected response from zendesk api. Can't"  # noqa: UP032
                         " get the ticket number to add extra info. {}".format(additional_info),
                         response.content
                     )

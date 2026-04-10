@@ -51,7 +51,7 @@ class UserAgreementModelTest(TestCase):
         )
         assert agreement.pk is not None
 
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(IntegrityError):  # noqa: PT027
             UserAgreement.objects.create(
                 type="type4",
                 name="Name 4",

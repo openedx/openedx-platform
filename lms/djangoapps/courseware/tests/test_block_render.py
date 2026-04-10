@@ -324,7 +324,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         with patch('lms.djangoapps.courseware.block_render.load_single_xblock', return_value=self.mock_block):
             # Test with missing xqueue data
-            with pytest.raises(Http404):
+            with pytest.raises(Http404):  # noqa: PT012
                 request = self.request_factory.post(self.callback_url, {})
                 render.xqueue_callback(
                     request,
@@ -335,7 +335,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
                 )
 
             # Test with missing xqueue_header
-            with pytest.raises(Http404):
+            with pytest.raises(Http404):  # noqa: PT012
                 request = self.request_factory.post(self.callback_url, data)
                 render.xqueue_callback(
                     request,
@@ -499,8 +499,8 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             def_id = runtime.id_generator.create_definition(block_type)
             usage_id = AsideUsageKeyV2(runtime.id_generator.create_usage(def_id), "aside")
             aside = AsideTestType(scope_ids=ScopeIds('user', block_type, def_id, usage_id), runtime=runtime)
-            aside.content = '%s_new_value11' % block_type
-            aside.data_field = '%s_new_value12' % block_type
+            aside.content = '%s_new_value11' % block_type  # noqa: UP031
+            aside.data_field = '%s_new_value12' % block_type  # noqa: UP031
             aside.has_score = False
 
             modulestore().update_item(item, self.mock_user.id, asides=[aside])
@@ -691,7 +691,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
             data={'file_id': inputfile}
         )
         request.user = self.mock_user
-        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # pylint: disable=line-too-long
+        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # pylint: disable=line-too-long  # noqa: UP031
 
     def test_xblock_dispatch(self):
         request = self.request_factory.post('dummy_url', data={'position': 1})
@@ -878,7 +878,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
         with patch(
             'lms.djangoapps.courseware.block_render.is_xblock_aside',
             return_value=True
-        ), self.assertRaises(Http404):
+        ), self.assertRaises(Http404):  # noqa: PT027
             render.handle_xblock_callback(
                 request,
                 str(course.id),
@@ -2253,7 +2253,7 @@ class TestRebindBlock(TestSubmittingProblems):
         block = self.get_block_for_user(self.user)
         user2 = UserFactory()
         user2.id = 2
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             RebindUserServiceError,
             "rebind_noauth_module_to_user can only be called from a module bound to an anonymous user"
         ):
@@ -2404,11 +2404,11 @@ class LMSXBlockServiceBindingTest(LMSXBlockServiceMixin):
         assert tag == set_value
 
         # Try to set tag in wrong scope
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self.block.runtime.service(self.block, 'user_tags').set_tag('fake_scope', key, set_value)
 
         # Try to get tag in wrong scope
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             self.block.runtime.service(self.block, 'user_tags').get_tag('fake_scope', key)
 
 
@@ -2878,7 +2878,7 @@ class LmsModuleSystemShimTest(SharedModuleStoreTestCase):
         assert self.block.runtime.get_python_lib_zip() == zipfile
 
     def test_no_get_python_lib_zip(self):
-        zipfile = upload_file_to_course(
+        zipfile = upload_file_to_course(  # noqa: F841
             course_key=self.course.id,
             contentstore=self.contentstore,
             source_file=self.PYTHON_LIB_SOURCE_FILE,

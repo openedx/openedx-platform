@@ -85,7 +85,7 @@ def marketing_link(name):
     elif not enable_mktg_site and name in link_map:
         # don't try to reverse disabled marketing links
         if link_map[name] is not None:
-            host_name = get_current_request_hostname()  # lint-amnesty, pylint: disable=unused-variable
+            host_name = get_current_request_hostname()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             if link_map[name].startswith('http'):
                 return link_map[name]
             else:

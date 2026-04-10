@@ -71,7 +71,7 @@ class TestExportCourseMetadata(SharedModuleStoreTestCase):
     def test_resolve_default_storage(self):
         """ Ensure the default storage is invoked, even if course export storage is configured """
         storage = storages["default"]
-        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")
+        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")  # noqa: PT009
 
     @override_settings(
         COURSE_METADATA_EXPORT_STORAGE="cms.djangoapps.export_course_metadata.storage.CourseMetadataExportS3Storage",
@@ -88,8 +88,8 @@ class TestExportCourseMetadata(SharedModuleStoreTestCase):
             storage_key="course_metadata_export_storage",
             legacy_setting_key="COURSE_METADATA_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "CourseMetadataExportS3Storage")
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, "CourseMetadataExportS3Storage")  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009
 
     @override_settings()
     def test_resolve_storage_with_no_config(self):
@@ -100,7 +100,7 @@ class TestExportCourseMetadata(SharedModuleStoreTestCase):
             storage_key="course_metadata_export_storage",
             legacy_setting_key="COURSE_METADATA_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")
+        self.assertEqual(storage.__class__.__name__, "FileSystemStorage")  # noqa: PT009
 
     @override_settings(
         COURSE_METADATA_EXPORT_STORAGE=None,
@@ -118,8 +118,8 @@ class TestExportCourseMetadata(SharedModuleStoreTestCase):
             storage_key="course_metadata_export_storage",
             legacy_setting_key="COURSE_METADATA_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, "CourseMetadataExportS3Storage")
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, "CourseMetadataExportS3Storage")  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009
 
     @override_settings(
         STORAGES={
@@ -139,5 +139,5 @@ class TestExportCourseMetadata(SharedModuleStoreTestCase):
             storage_key="course_metadata_export_storage",
             legacy_setting_key="COURSE_METADATA_EXPORT_STORAGE"
         )
-        self.assertEqual(storage.__class__.__name__, S3Boto3Storage.__name__)
-        self.assertEqual(storage.bucket_name, "bucket_name_test")
+        self.assertEqual(storage.__class__.__name__, S3Boto3Storage.__name__)  # noqa: PT009
+        self.assertEqual(storage.bucket_name, "bucket_name_test")  # noqa: PT009

@@ -88,7 +88,7 @@ def test_base_atlas_pull_command(tmp_path):
     command = BaseAtlasPullCommand()
 
     assert command.ensure_empty_directory(tmp_path) is None, 'Should not raise an exception if the directory is empty'
-    with pytest.raises(CommandError):
+    with pytest.raises(CommandError):  # noqa: PT012
         with open(tmp_path / 'test.txt', 'w'):
             # Directory is not empty anymore
             pass

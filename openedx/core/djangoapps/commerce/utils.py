@@ -66,7 +66,7 @@ def user_agent():
         client_name = os.environ.get("EDX_REST_API_CLIENT_NAME") or socket.gethostbyname(socket.gethostname())
     except:  # pylint: disable=bare-except
         pass  # using 'unknown_client_name' is good enough.  no need to log.
-    return "{} edx-rest-api-client/{} {}".format(
+    return "{} edx-rest-api-client/{} {}".format(  # noqa: UP032
         requests.utils.default_user_agent(),  # e.g. "python-requests/2.9.1"
         __version__,  # version of this client
         client_name
@@ -173,7 +173,7 @@ def get_and_cache_oauth_access_token(url, client_id, client_secret, token_type='
 
     """
     oauth_url = _get_oauth_url(url)
-    cache_key = 'edx_rest_api_client.access_token.{}.{}.{}.{}'.format(
+    cache_key = 'edx_rest_api_client.access_token.{}.{}.{}.{}'.format(  # noqa: UP032
         token_type,
         grant_type,
         client_id,

@@ -453,7 +453,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         assert json.loads(module().state)['attempts'] == 0
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_student_attempts(self, _mock_signal):
+    def test_delete_student_attempts(self, _mock_signal):  # noqa: PT019
         msk = self.course_key.make_usage_key('dummy', 'module')
         original_state = json.dumps({'attempts': 32, 'otherstuff': 'alsorobots'})
         StudentModule.objects.create(
@@ -589,7 +589,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             student_module = self.get_student_module(user, team_ora_location)
             assert student_module is not None
             student_state = json.loads(student_module.state)
-            self.assertDictEqual(student_state, attempt_reset_team_state_dict)
+            self.assertDictEqual(student_state, attempt_reset_team_state_dict)  # noqa: PT009
 
         _assert_student_module(self.user)
         _assert_student_module(self.teammate_a)
@@ -598,7 +598,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         self.assert_no_student_module(self.lazy_teammate, team_ora_location)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_team_attempts(self, _mock_signal):
+    def test_delete_team_attempts(self, _mock_signal):  # noqa: PT019
         self.setup_team()
         team_ora_location = self.team_enabled_ora.location
         # All teammates should have a student module (except lazy_teammate)
@@ -618,7 +618,7 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
         self.assert_no_student_module(self.lazy_teammate, team_ora_location)
 
     @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
-    def test_delete_team_attempts_no_team_fallthrough(self, _mock_signal):
+    def test_delete_team_attempts_no_team_fallthrough(self, _mock_signal):  # noqa: PT019
         self.setup_team()
         team_ora_location = self.team_enabled_ora.location
 
@@ -704,8 +704,8 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             delete_module=True,
         )
 
-        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.parent.location)
-        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.child.location)
+        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.parent.location)  # noqa: PT027
+        self.assertRaises(StudentModule.DoesNotExist, self.get_state, self.child.location)  # noqa: PT027
 
         unrelated_state = json.loads(self.get_state(self.unrelated.location))
         assert unrelated_state['attempts'] == 12
@@ -774,7 +774,7 @@ class TestStudentModuleGrading(SharedModuleStoreTestCase):
         assert grade.graded_total.possible == graded_possible
 
     @patch('crum.get_current_request')
-    def test_delete_student_state(self, _crum_mock):
+    def test_delete_student_state(self, _crum_mock):  # noqa: PT019
         problem_location = self.problem.location
         self._get_subsection_grade_and_verify(0, 1, 0, 1)
         answer_problem(course=self.course, request=self.request, problem=self.problem, score=1, max_value=1)
@@ -874,7 +874,7 @@ class TestSendBetaRoleEmail(CacheIsolationTestCase):
     def test_bad_action(self):
         bad_action = 'beta_tester'
         error_msg = f"Unexpected action received '{bad_action}' - expected 'add' or 'remove'"
-        with self.assertRaisesRegex(ValueError, error_msg):
+        with self.assertRaisesRegex(ValueError, error_msg):  # noqa: PT027
             send_beta_role_email(bad_action, self.user, self.email_params)
 
 
@@ -898,7 +898,7 @@ class TestGetEmailParamsCCX(SharedModuleStoreTestCase):
 
         # Explicitly construct what we expect the course URLs to be
         site = settings.SITE_NAME
-        self.course_url = 'https://{}/courses/{}/'.format(
+        self.course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             self.course_key
         )
@@ -935,7 +935,7 @@ class TestGetEmailParams(SharedModuleStoreTestCase):
 
         # Explicitly construct what we expect the course URLs to be
         site = settings.SITE_NAME
-        cls.course_url = 'https://{}/courses/{}/'.format(
+        cls.course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             str(cls.course.id)
         )
@@ -1074,7 +1074,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For EDX members.
         """
         subject_template = 'instructor/edx_ace/enrollenrolled/email/subject.txt'
-        body_template = 'instructor/edx_ace/enrollenrolled/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/enrollenrolled/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1083,7 +1083,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         assert self.ccx.display_name in subject
         assert self.ccx.display_name in message
         site = settings.SITE_NAME
-        course_url = 'https://{}/courses/{}/'.format(
+        course_url = 'https://{}/courses/{}/'.format(  # noqa: UP032
             site,
             self.course_key
         )
@@ -1097,7 +1097,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For EDX members.
         """
         subject_template = 'instructor/edx_ace/enrolledunenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/enrolledunenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/enrolledunenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1113,7 +1113,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For non EDX members.
         """
         subject_template = 'instructor/edx_ace/allowedenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/allowedenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/allowedenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 
@@ -1132,7 +1132,7 @@ class TestRenderMessageToString(EmailTemplateTagMixin, SharedModuleStoreTestCase
         For non EDX members.
         """
         subject_template = 'instructor/edx_ace/allowedunenroll/email/subject.txt'
-        body_template = 'instructor/edx_ace/allowedunenroll/email/{body_file_name}'.format(
+        body_template = 'instructor/edx_ace/allowedunenroll/email/{body_file_name}'.format(  # noqa: UP032
             body_file_name=body_file_name,
         )
 

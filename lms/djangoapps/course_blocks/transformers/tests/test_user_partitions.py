@@ -221,7 +221,7 @@ class UserPartitionTransformerTestCase(UserPartitionTestMixin, CourseStructureTe
             self.course.location,
             self.transformers,
         )
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             set(trans_block_structure.get_block_keys()),
             self.get_block_key_set(self.blocks, *expected_blocks)
         )
@@ -250,7 +250,7 @@ class UserPartitionTransformerTestCase(UserPartitionTestMixin, CourseStructureTe
             )
             xblocks_denial_reason = [trans_block_structure.get_xblock_field(b, 'authorization_denial_reason')
                                      for b in trans_block_structure.get_block_keys()]
-            self.assertSetEqual(set(xblocks_denial_reason), {'Feature-based Enrollments'})
+            self.assertSetEqual(set(xblocks_denial_reason), {'Feature-based Enrollments'})  # noqa: PT009
 
     def test_transform_on_inactive_partition(self):
         """
@@ -268,7 +268,7 @@ class UserPartitionTransformerTestCase(UserPartitionTestMixin, CourseStructureTe
             self.transformers,
         )
 
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             set(trans_block_structure.get_block_keys()),
             self.get_block_key_set(self.blocks, *expected_blocks)
         )

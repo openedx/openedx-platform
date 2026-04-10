@@ -68,16 +68,16 @@ class BaseApiClient:
 
             if status_code == 404 and not log_404_as_error:
                 # Immediately raise the error so that a 404 isn't logged as an API error in this case.
-                raise HttpDoesNotExistException(str(exc))
+                raise HttpDoesNotExistException(str(exc))  # noqa: B904
 
             LOG.error(f"API Error: {str(exc)} with status code: {status_code}")
 
             if status_code == 504:
                 # Differentiate gateway errors so different backoff can be used.
-                raise EdxGatewayTimeoutError(str(exc))
+                raise EdxGatewayTimeoutError(str(exc))  # noqa: B904
 
             if status_code == 404:
-                raise HttpDoesNotExistException(str(exc))
+                raise HttpDoesNotExistException(str(exc))  # noqa: B904
             raise
 
         except Timeout:

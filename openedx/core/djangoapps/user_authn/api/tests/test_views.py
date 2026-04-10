@@ -258,7 +258,7 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
             'goals': {
                 'name': 'goals',
                 'type': 'textarea',
-                'label': "Tell us why you're interested in {platform_name}".format(
+                'label': "Tell us why you're interested in {platform_name}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME
                 ),
                 'error_message': '',
@@ -360,13 +360,13 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
         Test MFE Context API serialized response
         """
         response = self.client.get(self.url, self.query_params)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
         params = {
             'next': self.query_params['next']
         }
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response.data,
             self.get_context(params)
         )
@@ -376,10 +376,10 @@ class MFEContextViewTest(ThirdPartyAuthTestMixin, APITestCase):
         Test MFE Context API response keys
         """
         response = self.client.get(self.url, self.query_params)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
         response_keys = set(response.data.keys())
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             response_keys,
             {
                 'contextData',

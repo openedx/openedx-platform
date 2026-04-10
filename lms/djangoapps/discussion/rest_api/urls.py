@@ -31,14 +31,14 @@ ROUTER.register("comments", CommentViewSet, basename="comment")
 
 urlpatterns = [
     re_path(
-        r"^v1/courses/{}/settings$".format(
+        r"^v1/courses/{}/settings$".format(  # noqa: UP032
             settings.COURSE_ID_PATTERN
         ),
         CourseDiscussionSettingsAPIView.as_view(),
         name="discussion_course_settings",
     ),
     re_path(
-        r"^v1/courses/{}/learner/$".format(
+        r"^v1/courses/{}/learner/$".format(  # noqa: UP032
             settings.COURSE_ID_PATTERN
         ),
         LearnerThreadView.as_view(),
@@ -55,7 +55,7 @@ urlpatterns = [
         name="upload_file",
     ),
     re_path(
-        r"^v1/courses/{}/roles/(?P<rolename>[A-Za-z0-9+ _-]+)/?$".format(
+        r"^v1/courses/{}/roles/(?P<rolename>[A-Za-z0-9+ _-]+)/?$".format(  # noqa: UP032
             settings.COURSE_ID_PATTERN
         ),
         CourseDiscussionRolesAPIView.as_view(),

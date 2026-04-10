@@ -126,7 +126,7 @@ def parse_metadata_xml(xml, entity_id):
         # The only binding supported by python-saml and python-social-auth is HTTP-Redirect:
         sso_url = sso_bindings['urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect']
     except KeyError:
-        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise MetadataParseError("Unable to find SSO URL with HTTP-Redirect binding.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return public_keys, sso_url, expires_at
 
 

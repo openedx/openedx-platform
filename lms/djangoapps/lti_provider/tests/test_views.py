@@ -101,7 +101,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.LTI_PROVIDER_LAUNCH_SUCCESS.send_event')
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_valid_launch(self, _authenticate, render, lti_launch_success_send_event):
+    def test_valid_launch(self, _authenticate, render, lti_launch_success_send_event):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -132,7 +132,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_valid_launch_with_optional_params(self, _authenticate, store_params, _render):
+    def test_valid_launch_with_optional_params(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -148,7 +148,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
     @override_settings(LTI_CUSTOM_PARAMS=["extra_param1", "extra_param2"])
-    def test_valid_launch_with_extra_params(self, _authenticate, store_params, _render):
+    def test_valid_launch_with_extra_params(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -163,7 +163,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
 
     @patch('lms.djangoapps.courseware.views.views.render_xblock')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_render_xblock_params(self, _authenticate, render):
+    def test_render_xblock_params(self, _authenticate, render):  # noqa: PT019
         """
         Verifies that the LTI renders an XBlock without:
         1. Checking the enrollment.
@@ -176,7 +176,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
     @patch('lms.djangoapps.lti_provider.views.store_outcome_parameters')
     @patch('lms.djangoapps.lti_provider.views.authenticate_lti_user')
-    def test_outcome_service_registered(self, _authenticate, store_params, _render):
+    def test_outcome_service_registered(self, _authenticate, store_params, _render):  # noqa: PT019
         """
         Verifies that the LTI launch succeeds when passed a valid request.
         """
@@ -227,7 +227,7 @@ class LtiLaunchTest(LtiTestMixin, TestCase):
         assert response.status_code == 403
 
     @patch('lms.djangoapps.lti_provider.views.render_courseware')
-    def test_lti_consumer_record_supplemented_with_guid(self, _render):
+    def test_lti_consumer_record_supplemented_with_guid(self, _render):  # noqa: PT019
         self.mock_verify.return_value = False
 
         request = build_launch_request(LTI_OPTIONAL_PARAMS)

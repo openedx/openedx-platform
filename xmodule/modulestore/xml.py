@@ -236,7 +236,7 @@ class XMLImportingModuleStoreRuntime(XMLParsingModuleStoreRuntime):  # pylint: d
                     # put it in the error tracker--content folks need to see it.
 
                     if tag in need_uniq_names:
-                        error_tracker("PROBLEM: no name of any kind specified for {tag}.  Student "
+                        error_tracker("PROBLEM: no name of any kind specified for {tag}.  Student "  # noqa: UP032
                                       "state will not be properly tracked for this block.  Problem xml:"
                                       " '{xml}...'".format(tag=tag, xml=xml[:100]))
                     else:
@@ -251,7 +251,7 @@ class XMLImportingModuleStoreRuntime(XMLParsingModuleStoreRuntime):  # pylint: d
                     # doesn't store state, don't complain about things that are
                     # hashed.
                     if tag in need_uniq_names:
-                        msg = ("Non-unique url_name in xml.  This may break state tracking for content."
+                        msg = ("Non-unique url_name in xml.  This may break state tracking for content."  # noqa: UP032
                                "  url_name={}.  Content={}".format(url_name, xml[:100]))
                         error_tracker("PROBLEM: " + msg)
                         log.warning(msg)
@@ -532,7 +532,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         '''
         String representation - for debugging
         '''
-        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html
+        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html  # noqa: UP031  # pylint: disable=line-too-long
             self.__class__.__name__, self.data_dir, len(self.courses), len(self.modules)
         )
 
@@ -575,7 +575,7 @@ class XMLModuleStore(ModuleStoreReadBase):
             org = course_data.get('org')
 
             if org is None:
-                msg = ("No 'org' attribute set for courselike in {dir}. "
+                msg = ("No 'org' attribute set for courselike in {dir}. "  # noqa: UP032
                        "Using default 'edx'".format(dir=course_dir))
                 log.warning(msg)
                 tracker(msg)
@@ -588,7 +588,7 @@ class XMLModuleStore(ModuleStoreReadBase):
 
             if course is None:
                 msg = (
-                    "No '{courselike_label}' attribute set for course in {dir}."
+                    "No '{courselike_label}' attribute set for course in {dir}."  # noqa: UP032
                     " Using default '{default}'".format(
                         courselike_label=courselike_label,
                         dir=course_dir,
@@ -837,7 +837,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         try:
             return self.modules[usage_key.course_key][usage_key]
         except KeyError:
-            raise ItemNotFoundError(usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ItemNotFoundError(usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def get_items(self, course_id, settings=None, content=None, revision=None, qualifiers=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
         """

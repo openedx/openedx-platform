@@ -19,7 +19,7 @@ def record_request_exception(sender, **kwargs):
     Logs the stack trace whenever an exception
     occurs in processing a request.
     """
-    logging.exception("Uncaught exception from {sender}".format(
+    logging.exception("Uncaught exception from {sender}".format(  # noqa: UP032
         sender=sender
     ))
 

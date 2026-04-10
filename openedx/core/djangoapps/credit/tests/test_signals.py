@@ -206,7 +206,7 @@ class TestExamEvents(ModuleStoreTestCase):
             minorversion=0,
             source='openedx/lms/web',
             sourcehost='lms.test',
-            time=datetime.now(timezone.utc)
+            time=datetime.now(timezone.utc)  # noqa: UP017
         )
 
     @mock.patch('openedx.core.djangoapps.credit.signals.handlers.remove_credit_requirement_status', autospec=True)

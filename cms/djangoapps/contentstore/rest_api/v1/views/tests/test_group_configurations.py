@@ -47,12 +47,12 @@ class CourseGroupConfigurationsViewTest(CourseTestCase, PermissionAccessMixin):
             self.store.update_item(self.course, self.user.id)
 
         response = self.client.get(self.url)
-        self.assertEqual(len(response.data["all_group_configurations"]), 1)
-        self.assertEqual(len(response.data["experiment_group_configurations"]), 1)
+        self.assertEqual(len(response.data["all_group_configurations"]), 1)  # noqa: PT009
+        self.assertEqual(len(response.data["experiment_group_configurations"]), 1)  # noqa: PT009
         self.assertContains(response, "First name", count=1)
         self.assertContains(response, "Group C")
         self.assertContains(response, CONTENT_GROUP_CONFIGURATION_NAME)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     """
@@ -66,19 +66,19 @@ class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTes
     def test_authorized_user_can_access(self):
         """User with COURSE_STAFF role can access."""
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
 
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -87,7 +87,7 @@ class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTes
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -97,7 +97,7 @@ class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTes
         client.force_authenticate(user=superuser)
 
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -110,4 +110,4 @@ class CourseGroupConfigurationsAuthzTest(CourseAuthzTestMixin, BaseCourseViewTes
         non_staff_client.force_authenticate(user=non_staff_user)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

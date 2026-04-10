@@ -177,15 +177,15 @@ class ClearGradeTests(ModuleStoreTestCase):
             self.subsection.location
         )
         course_grade = PersistentCourseGrade.read(self.user.id, self.course.id)
-        self.assertIsNotNone(course_grade)
-        self.assertIsNotNone(override_obj)
+        self.assertIsNotNone(course_grade)  # noqa: PT009
+        self.assertIsNotNone(override_obj)  # noqa: PT009
 
         api.clear_user_course_grades(self.user.id, self.course.id)
 
-        with self.assertRaises(PersistentCourseGrade.DoesNotExist):
+        with self.assertRaises(PersistentCourseGrade.DoesNotExist):  # noqa: PT027
             PersistentCourseGrade.read(self.user.id, self.course.id)
 
-        with self.assertRaises(PersistentSubsectionGrade.DoesNotExist):
+        with self.assertRaises(PersistentSubsectionGrade.DoesNotExist):  # noqa: PT027
             api.get_subsection_grade_override(
                 self.user.id,
                 self.course.id,
@@ -220,10 +220,10 @@ class ClearGradeTests(ModuleStoreTestCase):
         # fetch and assert grades are available for both users
         user_course_grade = PersistentCourseGrade.read(self.user.id, self.course.id)
         other_user_course_grade = PersistentCourseGrade.read(self.user.id, self.course.id)
-        self.assertIsNotNone(user_course_grade)
-        self.assertIsNotNone(user_override_obj)
-        self.assertIsNotNone(other_user_override_obj)
-        self.assertIsNotNone(other_user_course_grade)
+        self.assertIsNotNone(user_course_grade)  # noqa: PT009
+        self.assertIsNotNone(user_override_obj)  # noqa: PT009
+        self.assertIsNotNone(other_user_override_obj)  # noqa: PT009
+        self.assertIsNotNone(other_user_course_grade)  # noqa: PT009
 
         api.clear_user_course_grades(other_user.id, self.course.id)
 
@@ -234,10 +234,10 @@ class ClearGradeTests(ModuleStoreTestCase):
             self.subsection.location
         )
         after_clear_user_course_grade = PersistentCourseGrade.read(self.user.id, self.course.id)
-        with self.assertRaises(PersistentCourseGrade.DoesNotExist):
+        with self.assertRaises(PersistentCourseGrade.DoesNotExist):  # noqa: PT027
             PersistentCourseGrade.read(other_user.id, self.course.id)
-        self.assertIsNotNone(after_clear_override_obj)
-        self.assertIsNotNone(after_clear_user_course_grade)
+        self.assertIsNotNone(after_clear_override_obj)  # noqa: PT009
+        self.assertIsNotNone(after_clear_user_course_grade)  # noqa: PT009
 
     @patch('lms.djangoapps.grades.models_api._PersistentSubsectionGrade')
     @patch('lms.djangoapps.grades.models_api._PersistentCourseGrade')

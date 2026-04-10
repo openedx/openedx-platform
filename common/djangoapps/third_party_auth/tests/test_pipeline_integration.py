@@ -156,7 +156,7 @@ class UrlFormationTestCase(TestCase):
 
         assert provider.Registry.get(provider_name) is None
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_complete_url(provider_name)
 
     def test_complete_url_returns_expected_format(self):
@@ -170,21 +170,21 @@ class UrlFormationTestCase(TestCase):
 
         assert provider.Registry.get(provider_name) is None
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_disconnect_url(provider_name, 1000)
 
     def test_disconnect_url_returns_expected_format(self):
         disconnect_url = pipeline.get_disconnect_url(self.enabled_provider.provider_id, 1000)
         disconnect_url = disconnect_url.rstrip('?')
         assert disconnect_url == '/auth/disconnect_json/{backend}/{association_id}/'\
-            .format(backend=self.enabled_provider.backend_name, association_id=1000)
+            .format(backend=self.enabled_provider.backend_name, association_id=1000)  # noqa: UP032
 
     def test_login_url_raises_value_error_if_provider_not_enabled(self):
         provider_id = 'oa2-not-enabled'
 
         assert provider.Registry.get(provider_id) is None
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_login_url(provider_id, pipeline.AUTH_ENTRY_LOGIN)
 
     def test_login_url_returns_expected_format(self):
@@ -197,16 +197,16 @@ class UrlFormationTestCase(TestCase):
     def test_for_value_error_if_provider_id_invalid(self):
         provider_id = 'invalid'  # Format is normally "{prefix}-{identifier}"
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             provider.Registry.get(provider_id)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_login_url(provider_id, pipeline.AUTH_ENTRY_LOGIN)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_disconnect_url(provider_id, 1000)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             pipeline.get_complete_url(provider_id)
 
 
@@ -615,7 +615,7 @@ class ParseQueryParamsPipelineTestCase(TestCase):
 
         query_params = pipeline.parse_query_params(self.strategy, self.response)
 
-        self.assertDictEqual(expected_query_params, query_params)
+        self.assertDictEqual(expected_query_params, query_params)  # noqa: PT009
 
     def test_login_url_with_auth_entry_none(self):
         """
@@ -630,7 +630,7 @@ class ParseQueryParamsPipelineTestCase(TestCase):
 
         query_params = pipeline.parse_query_params(self.strategy, self.response)
 
-        self.assertDictEqual(expected_query_params, query_params)
+        self.assertDictEqual(expected_query_params, query_params)  # noqa: PT009
 
     def test_login_url_without_auth_entry(self):
         """
@@ -643,7 +643,7 @@ class ParseQueryParamsPipelineTestCase(TestCase):
 
         query_params = pipeline.parse_query_params(self.strategy, self.response)
 
-        self.assertDictEqual(expected_query_params, query_params)
+        self.assertDictEqual(expected_query_params, query_params)  # noqa: PT009
 
     def test_login_url_invalid_auth_entry(self):
         """
@@ -653,7 +653,7 @@ class ParseQueryParamsPipelineTestCase(TestCase):
             "auth_entry": "not-valid",
         }
 
-        with self.assertRaises(pipeline.AuthEntryError):
+        with self.assertRaises(pipeline.AuthEntryError):  # noqa: PT027
             pipeline.parse_query_params(self.strategy, self.response)
 
 

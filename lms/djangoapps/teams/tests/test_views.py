@@ -219,7 +219,7 @@ class TestDashboard(SharedModuleStoreTestCase):
 
         # Create teams in both courses
         course_one_team = CourseTeamFactory.create(name="Course one team", course_id=self.course.id, topic_id=1)
-        course_two_team = CourseTeamFactory.create(  # pylint: disable=unused-variable
+        course_two_team = CourseTeamFactory.create(  # pylint: disable=unused-variable  # noqa: F841
             name="Course two team", course_id=course_two.id, topic_id=1,
         )
 
@@ -662,7 +662,7 @@ class TeamAPITestCase(APITestCase, SharedModuleStoreTestCase):
         else:
             response = func(url, data=data)
         assert expected_status == response.status_code, "Expected status {expected} but got {actual}: {content}" \
-            .format(
+            .format(  # noqa: UP032
                 expected=expected_status,
                 actual=response.status_code,
                 content=response.content.decode(response.charset),
@@ -811,7 +811,7 @@ class TestListTeamsAPI(EventTestMixin, TeamAPITestCase):
         ('student_masters', 200, 1)
     )
     @ddt.unpack
-    def test_access(self, user, status, expected_teams_count=0):
+    def test_access(self, user, status, expected_teams_count=0):  # noqa: PT028
         teams = self.get_teams_list(user=user, expected_status=status)
         if status == 200:
             assert expected_teams_count == teams['count']
@@ -1717,7 +1717,7 @@ class TestTeamAssignmentsView(TeamAPITestCase):
             parent=subsection,
             category="vertical"
         )
-        off_team_open_assessment = BlockFactory.create(  # pylint: disable=unused-variable
+        off_team_open_assessment = BlockFactory.create(  # pylint: disable=unused-variable  # noqa: F841
             parent=unit_2,
             category="openassessment",
             teams_enabled=True,
@@ -2777,7 +2777,7 @@ class TestElasticSearchErrors(TeamAPITestCase):
     ES_ERROR = ConnectionError('N/A', 'connection error', {})
 
     @patch.object(SearchEngine, 'get_search_engine', side_effect=ES_ERROR)
-    def test_list_teams(self, __):
+    def test_list_teams(self, __):  # noqa: PT019
         """Test that text searches return a 503 when Elasticsearch is down.
 
         The endpoint should still return 200 when a search is not supplied."""
@@ -2793,7 +2793,7 @@ class TestElasticSearchErrors(TeamAPITestCase):
         )
 
     @patch.object(SearchEngine, 'get_search_engine', side_effect=ES_ERROR)
-    def test_create_team(self, __):
+    def test_create_team(self, __):  # noqa: PT019
         """Test that team creation is robust to Elasticsearch errors."""
         self.post_create_team(
             expected_status=200,
@@ -2802,12 +2802,12 @@ class TestElasticSearchErrors(TeamAPITestCase):
         )
 
     @patch.object(SearchEngine, 'get_search_engine', side_effect=ES_ERROR)
-    def test_delete_team(self, __):
+    def test_delete_team(self, __):  # noqa: PT019
         """Test that team deletion is robust to Elasticsearch errors."""
         self.delete_team(self.wind_team.team_id, 204, user='staff')
 
     @patch.object(SearchEngine, 'get_search_engine', side_effect=ES_ERROR)
-    def test_patch_team(self, __):
+    def test_patch_team(self, __):  # noqa: PT019
         """Test that team updates are robust to Elasticsearch errors."""
         self.patch_team_detail(
             self.wind_team.team_id,
@@ -2953,11 +2953,11 @@ class TestBulkMembershipManagement(TeamAPITestCase):
         )
 
         csv_content = 'username,mode,topic_1,topic_2\n'
-        csv_content += 'a_user,masters,{},{}\n'.format(
+        csv_content += 'a_user,masters,{},{}\n'.format(  # noqa: UP032
             existing_team_1.name,
             existing_team_2.name
         )
-        csv_content += 'b_user,masters,{},{}\n'.format(
+        csv_content += 'b_user,masters,{},{}\n'.format(  # noqa: UP032
             existing_team_1.name,
             existing_team_2.name
         )
@@ -3208,7 +3208,7 @@ class TestBulkMembershipManagement(TeamAPITestCase):
             user='staff'
         )
         response_text = json.loads(response.content.decode('utf-8'))
-        expected_message = 'Team {} cannot have Master’s track users mixed with users in other tracks.'.format(
+        expected_message = "Team {} cannot have Master’s track users mixed with users in other tracks.".format(  # noqa: UP032  # pylint: disable=line-too-long
             team.name
         )
         assert response_text['errors'][0] == expected_message

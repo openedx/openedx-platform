@@ -33,8 +33,8 @@ class PermissionAccessMixin:
         self.client.logout()
         response = self.client.get(self.url)
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "Authentication credentials were not provided.")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(error, "Authentication credentials were not provided.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"DISABLE_ADVANCED_SETTINGS": True})
     def test_permissions_unauthorized(self):
@@ -44,8 +44,8 @@ class PermissionAccessMixin:
         client, _ = self.create_non_staff_authed_user_client()
         response = client.get(self.url)
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "You do not have permission to perform this action.")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(error, "You do not have permission to perform this action.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class ContainerHandlerMixin:

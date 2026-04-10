@@ -342,7 +342,7 @@ class ExperimentUserMetaDataViewTests(APITestCase, ModuleStoreTestCase):
         """ Request fails when not course not found  """
         lookup_user = UserFactory()
         lookup_course = CourseFactory.create(start=now() - timedelta(days=30))
-        call_args = [lookup_user.username, lookup_course.id]  # lint-amnesty, pylint: disable=unused-variable
+        call_args = [lookup_user.username, lookup_course.id]  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         self.client.login(username=lookup_user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
         bogus_course_name = str(lookup_course.id) + '_FOOBAR'
 

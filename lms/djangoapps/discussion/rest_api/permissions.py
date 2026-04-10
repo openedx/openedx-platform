@@ -1,7 +1,7 @@
 """
 Discussion API permission logic
 """
-from typing import Dict, Set, Union
+from typing import Dict, Set, Union  # noqa: UP035
 
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions
@@ -66,7 +66,7 @@ def get_initializable_comment_fields(context):
     return ret
 
 
-def _filter_fields(editable_fields: Dict[str, bool]) -> Set[str]:
+def _filter_fields(editable_fields: Dict[str, bool]) -> Set[str]:  # noqa: UP006
     """
     Helper function that returns only the keys marked as True.
     Args:
@@ -79,7 +79,7 @@ def _filter_fields(editable_fields: Dict[str, bool]) -> Set[str]:
     return {field for field, is_editable in editable_fields.items() if is_editable}
 
 
-def get_editable_fields(cc_content: Union[Thread, Comment], context: Dict) -> Set[str]:
+def get_editable_fields(cc_content: Union[Thread, Comment], context: Dict) -> Set[str]:  # noqa: UP006, UP007
     """
     Return the set of fields that the requester can edit on the given content
     """

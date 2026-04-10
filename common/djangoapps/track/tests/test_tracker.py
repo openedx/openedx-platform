@@ -47,16 +47,16 @@ class TestTrackerInstantiation(TestCase):
 
         options = {}
         name = 'common.djangoapps.track.backends.logger'
-        self.assertRaises(ValueError, get_invalid_backend, name, options)
+        self.assertRaises(ValueError, get_invalid_backend, name, options)  # noqa: PT027
 
         name = 'common.djangoapps.track.backends.logger.Foo'
-        self.assertRaises(ValueError, get_invalid_backend, name, options)
+        self.assertRaises(ValueError, get_invalid_backend, name, options)  # noqa: PT027
 
         name = 'this.package.does.not.exists'
-        self.assertRaises(ValueError, get_invalid_backend, name, options)
+        self.assertRaises(ValueError, get_invalid_backend, name, options)  # noqa: PT027
 
         name = 'unittest.TestCase'
-        self.assertRaises(ValueError, get_invalid_backend, name, options)
+        self.assertRaises(ValueError, get_invalid_backend, name, options)  # noqa: PT027
 
 
 class TestTrackerDjangoInstantiation(TestCase):

@@ -4,7 +4,7 @@ import logging
 import re
 from collections import defaultdict
 from datetime import datetime
-from typing import Set
+from typing import Set  # noqa: UP035
 
 import regex
 from django.conf import settings
@@ -91,7 +91,7 @@ def get_role_ids(course_id):
     return {role.name: list(role.users.values_list('id', flat=True)) for role in roles}
 
 
-def get_user_role_names(user: User, course_key: CourseKey) -> Set[str]:
+def get_user_role_names(user: User, course_key: CourseKey) -> Set[str]:  # noqa: UP006
     """
     Get a set of discussion roles a user has for the specified course.
 
@@ -220,7 +220,7 @@ def get_cached_discussion_key(course_id, discussion_id):
         else:
             return None
     except DiscussionsIdMapping.DoesNotExist:
-        raise DiscussionIdMapIsNotCached()
+        raise DiscussionIdMapIsNotCached()  # noqa: B904
 
 
 def get_cached_discussion_id_map(course, discussion_ids, user):
@@ -510,7 +510,7 @@ class JsonError(HttpResponse):
     """
     Django response object delivering JSON exceptions
     """
-    def __init__(self, error_messages=[], status=400):
+    def __init__(self, error_messages=[], status=400):  # noqa: B006
         """
         Object constructor, returns an error response containing the provided exception messages
         """
@@ -707,7 +707,7 @@ def extend_content(content):
     if content.get('user_id'):
         try:
             user = User.objects.get(pk=content['user_id'])
-            roles = {'name': role.name.lower() for role in user.roles.filter(course_id=content['course_id'])}
+            roles = {'name': role.name.lower() for role in user.roles.filter(course_id=content['course_id'])}  # noqa: B035
         except User.DoesNotExist:
             log.error(
                 'User ID %s in comment content %s but not in our DB.',
