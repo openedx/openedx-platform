@@ -235,7 +235,6 @@
     "paths": [
       "cms/djangoapps/api/",
       "cms/djangoapps/cms_user_tasks/",
-      "cms/djangoapps/contentstore/",
       "cms/djangoapps/course_creators/",
       "cms/djangoapps/export_course_metadata/",
       "cms/djangoapps/models/",
@@ -244,6 +243,12 @@
       "cms/djangoapps/xblock_config/",
       "cms/envs/",
       "cms/lib/"
+    ]
+  },
+  "cms-2": {
+    "settings": "cms.envs.test",
+    "paths": [
+      "cms/djangoapps/contentstore/"
     ]
   }
 }

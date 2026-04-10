@@ -39,6 +39,7 @@ jobs:
           # https://github.com/openedx/openedx-platform/issues/38355
           - "shared-with-cms-1"
           - "cms-1"
+          - "cms-2"
         mongo-version:
           - "7.0"
         os-version:
