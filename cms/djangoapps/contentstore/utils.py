@@ -101,6 +101,7 @@ from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.partitions.partitions_service import (
     get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
@@ -1217,6 +1218,15 @@ def duplicate_block(
             else:
                 parent.children.append(dest_block.location)
             store.update_item(parent, user.id)
+
+        # When a direct-only container (section/subsection) is duplicated at the top
+        # level, re-publish the full subtree so the published branch picks up the
+        # children that were built in the draft branch. The per-item auto-publish
+        # inside create_item/update_item uses EXCLUDE_ALL and leaves the published
+        # children list empty, which causes the generated course outline to omit
+        # the duplicated blocks until another publish happens. See issue #35535.
+        if not is_child and category in DIRECT_ONLY_CATEGORIES:
+            store.publish(dest_block.location, user.id)
 
         # .. event_implemented_name: XBLOCK_DUPLICATED
         # .. event_type: org.openedx.content_authoring.xblock.duplicated.v1

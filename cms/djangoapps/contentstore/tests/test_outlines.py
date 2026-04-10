@@ -551,3 +551,79 @@ class OutlineFromModuleStoreTaskTestCase(ModuleStoreTestCase):
         outline = get_course_outline(course_key)
         assert len(outline.sections) == 1
         assert len(outline.sequences) == 2
+
+    def test_bug_35535_regression_duplicate_section_appears_in_outline(self):
+        """
+        Regression for https://github.com/openedx/edx-platform/issues/35535.
+
+        Duplicating a Section (chapter) must leave the published branch in a
+        state where the generated outline includes the duplicated section AND
+        its sequences, without requiring any further Studio edit.
+        """
+        from cms.djangoapps.contentstore.utils import duplicate_block
+
+        with self.store.bulk_operations(self.course_key):
+            section = BlockFactory.create(
+                parent=self.draft_course,
+                category='chapter',
+                display_name="Original Section",
+            )
+            for i in range(2):
+                BlockFactory.create(
+                    parent=section,
+                    category='sequential',
+                    display_name=f"Original Seq {i}",
+                )
+
+        duplicate_block(
+            parent_usage_key=self.draft_course.location,
+            duplicate_source_usage_key=section.location,
+            user=self.user,
+        )
+
+        outline, _errs = get_outline_from_modulestore(self.course_key)
+        assert len(outline.sections) == 2
+        # Each section must contain its two sequences (the original plus
+        # the fully-published duplicate subtree).
+        for outline_section in outline.sections:
+            assert len(outline_section.sequences) == 2
+
+    def test_bug_35535_regression_duplicate_subsection_appears_in_outline(self):
+        """
+        Regression for #35535: duplicating a Subsection (sequential) must
+        make the duplicated sequence visible in the outline without any
+        follow-up publish.
+        """
+        from cms.djangoapps.contentstore.utils import duplicate_block
+
+        with self.store.bulk_operations(self.course_key):
+            section = BlockFactory.create(
+                parent=self.draft_course,
+                category='chapter',
+                display_name="Section For Subsection Duplicate",
+            )
+            seq = BlockFactory.create(
+                parent=section,
+                category='sequential',
+                display_name="Original Seq",
+            )
+            BlockFactory.create(
+                parent=seq,
+                category='vertical',
+                display_name="Unit",
+            )
+
+        duplicate_block(
+            parent_usage_key=section.location,
+            duplicate_source_usage_key=seq.location,
+            user=self.user,
+        )
+
+        outline, _errs = get_outline_from_modulestore(self.course_key)
+        duplicate_section = next(
+            (s for s in outline.sections
+             if s.title == "Section For Subsection Duplicate"),
+            None,
+        )
+        assert duplicate_section is not None
+        assert len(duplicate_section.sequences) == 2
