@@ -54,7 +54,6 @@ class TestDiscussionXBlock(XModuleRenderingTestBase):
             'discussion_id': self.discussion_id
         })
         scope_ids = mock.Mock()
-        scope_ids.usage_id.course_key = self.course_id
         scope_ids.usage_id.context_key = self.course_id
         self.block = DiscussionXBlock(
             self.runtime,
