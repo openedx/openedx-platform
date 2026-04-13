@@ -11,8 +11,10 @@ from django.urls import reverse
 from freezegun import freeze_time
 from opaque_keys.edx.keys import ContainerKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants.roles import COURSE_EDITOR
 from openedx_content import models_api as content_models
 from organizations.models import Organization
+from rest_framework import status
 
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
@@ -22,6 +24,7 @@ from cms.lib.xblock.upstream_sync import BadUpstream, UpstreamLink
 from common.djangoapps.student.auth import add_users
 from common.djangoapps.student.roles import CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_libraries import api as lib_api
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ImmediateOnCommitMixin, SharedModuleStoreTestCase
@@ -1515,6 +1518,68 @@ class GetDownstreamSummaryViewTest(
             'last_published_at': self.now.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         }]
         self.assertListEqual(data, expected)  # noqa: PT009
+
+
+class GetDownstreamSummaryAuthzViewTest(
+    CourseAuthoringAuthzTestMixin,
+    _BaseDownstreamViewTestMixin,
+    ImmediateOnCommitMixin,
+    SharedModuleStoreTestCase,
+):
+    """
+    AuthZ tests for:
+    GET /api/contentstore/v2/downstreams/<course_id>/summary
+    """
+
+    def call_api(self, client, course_id): # pylint: disable=arguments-differ
+        return client.get(f"/api/contentstore/v2/downstreams/{course_id}/summary")
+
+    def test_authorized_user_can_access_summary(self):
+        """Authorized user with COURSE_EDITOR role can access summary."""
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.call_api(self.authorized_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
+
+    def test_unauthorized_user_cannot_access_summary(self):
+        """Unauthorized user should receive 403."""
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_user_without_role_then_added_can_access(self):
+        """Validate dynamic role assignment works."""
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.call_api(self.unauthorized_client, str(self.course.id))
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_staff_user_can_access_without_authz_role(self):
+        """Staff user should access without explicit AuthZ role."""
+        response = self.call_api(self.staff_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
+
+    def test_superuser_can_access_without_authz_role(self):
+        """Superuser should access without explicit AuthZ role."""
+        response = self.call_api(self.super_client, str(self.course.id))
+
+        assert response.status_code == status.HTTP_200_OK
+        assert isinstance(response.json(), list)
 
 
 class GetDownstreamDeletedUpstream(

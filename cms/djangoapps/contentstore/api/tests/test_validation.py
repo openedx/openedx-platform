@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test.utils import override_settings
 from django.urls import reverse
-from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -19,7 +19,7 @@ from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.tests.factories import StaffFactory, UserFactory
-from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin, CourseAuthzTestMixin
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -247,7 +247,7 @@ class TestMigrationViewSetCreate(SharedModuleStoreTestCase, APITestCase):
 
         mock_auth.assert_called_once()
 
-    @patch('cms.djangoapps.contentstore.api.views.utils.has_course_author_access')
+    @patch('openedx.core.djangoapps.authz.decorators.user_has_course_permission')
     @patch('xmodule.library_content_block.LegacyLibraryContentBlock.is_ready_to_migrate_to_v2')
     def test_list_ready_to_update_reference_success(self, mock_block, mock_auth):
         """
@@ -353,3 +353,83 @@ class CourseValidationAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
 
         resp = non_staff_client.get(self.get_url(self.course_key))
         self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
+
+
+class TestMigrationViewSetCreateAuthz(
+    CourseAuthoringAuthzTestMixin,
+    SharedModuleStoreTestCase,
+    APITestCase,
+):
+    """
+    AuthZ tests for:
+    /api/courses/v1/migrate_legacy_content_blocks/<course_id>/
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.course = CourseFactory.create(
+            display_name='test course',
+            run="Testing_course",
+        )
+        cls.course_key = cls.course.id
+
+        cls.initialize_course(cls.course)
+
+    @classmethod
+    def initialize_course(cls, course):
+        """Sets up test course structure."""
+        section = BlockFactory.create(
+            parent_location=course.location,
+            category="chapter",
+        )
+        subsection = BlockFactory.create(
+            parent_location=section.location,
+            category="sequential",
+        )
+        unit = BlockFactory.create(
+            parent_location=subsection.location,
+            category="vertical",
+        )
+        BlockFactory.create(
+            parent_location=unit.location,
+            category="library_content",
+        )
+
+    def url(self):
+        return f"/api/courses/v1/migrate_legacy_content_blocks/{self.course_key}/"
+
+    # ---- GET (list) ----
+
+    def test_authorized_user_can_list_blocks(self):
+        """Authorized user can list migratable blocks."""
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id,
+        )
+
+        response = self.authorized_client.get(self.url())
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_unauthorized_user_cannot_list_blocks(self):
+        """Unauthorized user should receive 403."""
+        response = self.unauthorized_client.get(self.url())
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    # ---- elevated users ----
+
+    def test_staff_user_can_access_without_authz_role(self):
+        """Staff user bypasses AuthZ."""
+        response = self.staff_client.get(self.url())
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_superuser_can_access_without_authz_role(self):
+        """Superuser bypasses AuthZ."""
+        response = self.super_client.get(self.url())
+
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]

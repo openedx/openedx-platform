@@ -11,10 +11,13 @@ from django.contrib.auth.models import AnonymousUser
 from django.http import Http404
 from django.test import TestCase, override_settings
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.roles import COURSE_EDITOR
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
@@ -106,6 +109,137 @@ class TestGetCourseDetail(CourseDetailTestMixin, SharedModuleStoreTestCase):
     def test_hidden_course_for_staff_as_honor(self):
         with pytest.raises(Http404):
             self._make_api_call(self.staff_user, self.honor_user, self.hidden_course.id)
+
+
+class CourseDetailSeeAboutPermTestMixin(CourseApiTestMixin):
+    """
+    Common functionality for course_detail tests
+    """
+    ENABLED_SIGNALS = ['course_published']
+
+    def _make_api_call(self, requesting_user, target_user, course_key):
+        """
+        Call the `course_detail` api endpoint to get information on the course
+        identified by `course_key`.
+        """
+        mock_path = 'lms.djangoapps.course_api.api.get_permission_for_course_about'
+        with mock.patch(mock_path) as mock_get_permission:
+            mock_get_permission.return_value = "see_about_page"
+            request = Request(self.request_factory.get('/'))
+            request.user = requesting_user
+            with check_mongo_calls(0):
+                return course_detail(request, target_user.username, course_key)
+
+
+class TestGetCourseDetailAuthz(
+    CourseAuthoringAuthzTestMixin,
+    CourseDetailSeeAboutPermTestMixin,
+    SharedModuleStoreTestCase,
+):
+    """
+    AuthZ-based tests for course_detail API function.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.course = cls.create_course()
+        cls.hidden_course = cls.create_course(
+            course='hidden',
+            visible_to_staff_only=True
+        )
+
+    def test_get_existing_course_as_authorized_user(self):
+        """User with COURSE_EDITOR role can access course."""
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        course = self._make_api_call(
+            self.authorized_user,
+            self.authorized_user,
+            self.course.id
+        )
+
+        self.verify_course(course)
+
+    def test_get_existing_course_as_unauthorized_user(self):
+        """User without role should be denied."""
+        with pytest.raises(CourseAccessRedirect):
+            self._make_api_call(
+                self.unauthorized_user,
+                self.unauthorized_user,
+                self.course.id
+            )
+
+    def test_get_nonexistent_course(self):
+        """Nonexistent course should raise 404."""
+        course_key = CourseKey.from_string('edX/toy/nope')
+
+        with pytest.raises(Http404):
+            self._make_api_call(
+                self.authorized_user,
+                self.authorized_user,
+                course_key
+            )
+
+    def test_hidden_course_for_staff(self):
+        """Staff can access hidden course."""
+        course = self._make_api_call(
+            self.staff_user,
+            self.staff_user,
+            self.hidden_course.id
+        )
+
+        self.verify_course(
+            course,
+            course_id='course-v1:edX+hidden+2012_Fall'
+        )
+
+    def test_hidden_course_for_staff_as_unauthorized_user(self):
+        """
+        Staff requesting data for another user without permissions
+        should not bypass visibility rules.
+        """
+        with pytest.raises(CourseAccessRedirect):
+            self._make_api_call(
+                self.staff_user,
+                self.unauthorized_user,
+                self.hidden_course.id
+            )
+
+    def test_user_gains_access_after_role_assignment(self):
+        """User initially denied, then allowed after role assignment."""
+        with pytest.raises(CourseAccessRedirect):
+            self._make_api_call(
+                self.unauthorized_user,
+                self.unauthorized_user,
+                self.course.id
+            )
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+        course = self._make_api_call(
+            self.unauthorized_user,
+            self.unauthorized_user,
+            self.course.id
+        )
+        self.verify_course(course)
+
+    def test_staff_access_without_authz_role(self):
+        """Staff bypasses AuthZ roles."""
+        course = self._make_api_call(
+            self.staff_user,
+            self.staff_user,
+            self.course.id
+        )
+
+        self.verify_course(course)
 
 
 class CourseListTestMixin(CourseApiTestMixin):

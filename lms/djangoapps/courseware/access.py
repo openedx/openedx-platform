@@ -18,6 +18,7 @@ from django.conf import settings  # pylint: disable=unused-import
 from django.contrib.auth.models import AnonymousUser
 from edx_django_utils.monitoring import function_trace
 from opaque_keys.edx.keys import CourseKey, UsageKey
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from xblock.core import XBlock
 
 from common.djangoapps.student import auth
@@ -62,6 +63,8 @@ from lms.djangoapps.courseware.access_utils import (
 from lms.djangoapps.courseware.masquerade import get_masquerade_role, is_masquerading_as_student
 from lms.djangoapps.courseware.toggles import course_is_invitation_only
 from lms.djangoapps.mobile_api.models import IgnoreMobileAvailableFlagConfig
+from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
@@ -431,13 +434,7 @@ def _has_access_course(user, action, courselike):
         # can provide a meaningful error message instead of a generic 404.
         return catalog_response
 
-    @function_trace('can_see_about_page')
-    def can_see_about_page():
-        """
-        Implements the "can see course about page" logic if a course about page should be visible
-        In this case we use the catalog_visibility property on the course block
-        but also allow course staff to see this.
-        """
+    def legacy_can_see_about_page():
         both_response = _has_catalog_visibility(courselike, CATALOG_VISIBILITY_CATALOG_AND_ABOUT)
         if both_response:
             return ACCESS_GRANTED
@@ -449,6 +446,18 @@ def _has_access_course(user, action, courselike):
         # Return the typed CatalogVisibilityError so downstream handlers
         # can provide a meaningful error message instead of a generic 404.
         return both_response
+
+    @function_trace('can_see_about_page')
+    def can_see_about_page():
+        """
+        Implements the "can see course about page" logic if a course about page should be visible
+        In this case we use the catalog_visibility property on the course block
+        but also allow course staff to see this.
+        """
+        if user and not user.is_anonymous and core_toggles.enable_authz_course_authoring(courselike.id):
+            is_authz_allowed = user_has_course_permission(user, COURSES_VIEW_COURSE.identifier, courselike.id)
+            return ACCESS_GRANTED if is_authz_allowed else CatalogVisibilityError()
+        return legacy_can_see_about_page()
 
     checkers = {
         'load': can_load,

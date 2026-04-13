@@ -11,7 +11,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from opaque_keys.edx.locator import LibraryLocator
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_ADVANCED_SETTINGS
+from openedx_authz.constants.permissions import COURSES_CREATE_COURSE, COURSES_MANAGE_ADVANCED_SETTINGS
 
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
@@ -224,6 +224,48 @@ def check_course_advanced_settings_access(user, course_key, access_type='read'):
 
 
 def is_content_creator(user, org):
+    """
+    Determine whether a user is allowed to create course content for a given organization.
+
+    This function abstracts the permission check for course creation. Depending on the
+    state of the AuthZ feature flag, it delegates the evaluation to either the AuthZ-based
+    RBAC system or the legacy role-based permission system.
+
+    Args:
+        user (User): The user whose permissions are being evaluated.
+        org (str): The organization identifier used as the permission scope.
+
+    Returns:
+        bool: True if the user has permission to create course content in the given
+        organization, False otherwise.
+
+    Notes:
+        - When AuthZ is enabled, this checks permissions via RBAC policies.
+        - When AuthZ is disabled, this falls back to legacy Django role checks.
+        - Course creation may still be blocked by global feature flags (e.g.,
+          DISABLE_COURSE_CREATION), which are enforced downstream.
+    """
+    if core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled():
+        return _has_content_creator_access(user, org)
+    return _has_legacy_content_creator_access(user, org)
+
+
+def _has_content_creator_access(user, org):
+    """
+    Check if the user has content creator access based on AuthZ permissions.
+    """
+    if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
+        return False
+    org_scope_key = f"course-v1:{org}+*"
+
+    return authz_api.is_user_allowed(
+        user.username,
+        COURSES_CREATE_COURSE.identifier,
+        org_scope_key
+    )
+
+
+def _has_legacy_content_creator_access(user, org):
     """
     Check if the user has the role to create content.
 

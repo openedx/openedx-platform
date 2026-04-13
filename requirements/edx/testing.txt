@@ -538,6 +538,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r requirements/edx/base.txt
     #   lti-consumer-xblock
+    #   openedx-authz
     #   openedx-events
 edx-celeryutils==1.4.0
     # via
@@ -1050,7 +1051,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.2.0
+openedx-authz==1.5.0
     # via -r requirements/edx/base.txt
 openedx-calc==5.0.0
     # via
