@@ -111,15 +111,20 @@ jobs:
         shell: bash
         run: |
           echo "unit_test_paths=$(python scripts/unit_test_shards_parser.py --shard-name=${{ matrix.shard_name }} )" >> $GITHUB_ENV
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "report_log_arg=--report-log=reports/pytest-report-${{ matrix.shard_name }}.jsonl" >> $GITHUB_ENV
+          else
+            echo "report_log_arg=" >> $GITHUB_ENV
+          fi
 
       - name: run tests
         shell: bash
         run: |
           python -Wd -m pytest -p no:randomly --ds=${{ env.settings_path }} ${{ env.unit_test_paths }} --cov=. \
-            --report-log=reports/pytest-report-${{ matrix.shard_name }}.jsonl
+            ${{ env.report_log_arg }}
 
       - name: Upload pytest timing report
-        if: always()
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v7
         with:
           name: pytest-report-${{ matrix.shard_name }}-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.mongo-version }}-${{ matrix.os-version }}
