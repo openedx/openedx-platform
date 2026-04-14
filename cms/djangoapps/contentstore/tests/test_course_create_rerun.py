@@ -14,6 +14,7 @@ from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.roles import COURSE_EDITOR
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
@@ -25,6 +26,7 @@ from cms.djangoapps.course_creators.models import CourseCreator
 from common.djangoapps.student.auth import update_org_role
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgContentCreatorRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from xmodule.course_block import CourseFields
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -375,3 +377,117 @@ class TestCourseListing(ModuleStoreTestCase):
                 source_course.force_on_flexible_peer_openassessments,
                 dest_course.force_on_flexible_peer_openassessments
             )
+
+
+class TestCourseHandlerAuthz(
+    CourseAuthoringAuthzTestMixin,
+    ModuleStoreTestCase,
+):
+    """
+    AuthZ integration tests for course_handler using real RBAC (no mocks).
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.url = reverse("course_handler")
+
+        # Create a base course to extract org
+        self.course = CourseFactory.create()
+        self.course_key = self.course.id
+        self.org = self.course_key.org
+
+        # If your policy expects this format, keep it
+        self.org_key = f"course-v1:{self.org}+*"
+
+        self.authorized_client = AjaxEnabledTestClient()
+        self.authorized_client.login(
+            username=self.authorized_user.username,
+            password=self.password,
+        )
+
+        self.unauthorized_client = AjaxEnabledTestClient()
+        self.unauthorized_client.login(
+            username=self.unauthorized_user.username,
+            password=self.password,
+        )
+        self.authorized_staff_client = AjaxEnabledTestClient()
+        self.authorized_staff_client.login(
+            username=self.staff_user.username,
+            password=self.password,
+        )
+
+    # ------------------------------------------------------------
+    # CREATE COURSE -- Non-staff users and existing Organization
+    # ------------------------------------------------------------
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    def test_create_course_unauthorized(self):
+        """
+        User without role cannot create course.
+        """
+
+        response = self.unauthorized_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403
+
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    def test_create_course_unauthorized_with_role(self):
+        """
+        User with role but without required permission cannot create course.
+        """
+
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            "course-v1:someotherorg+*",
+        )
+
+        response = self.unauthorized_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403
+
+    # ------------------------------------------------------------
+    # CREATE COURSE -- Staff users
+    # Only staff users can create course, and they can do it
+    # without an org role.
+    # ------------------------------------------------------------
+    def test_create_course_staff(self):
+        """
+        Staff user can create course.
+        """
+        response = self.authorized_staff_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 200
+
+    # ------------------------------------------------------------
+    # FEATURE FLAG
+    # ------------------------------------------------------------
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": True})
+    def test_create_course_disabled_by_flag(self):
+        """
+        Even authorized users cannot create course if feature flag is off.
+        """
+
+        response = self.authorized_staff_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403

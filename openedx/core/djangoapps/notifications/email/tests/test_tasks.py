@@ -1,11 +1,12 @@
 """
 Test cases for notifications/email/tasks.py
 """
-import datetime
-from datetime import datetime, timedelta  # noqa: F811
+
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import ddt
+import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.utils import timezone
@@ -14,19 +15,27 @@ from freezegun import freeze_time
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.notifications.email.tasks import (
+    _claim_digest_schedule,
     add_to_existing_buffer,
     decide_email_action,
-    get_audience_for_cadence_email,
+    get_next_digest_delivery_time,
+    is_digest_already_scheduled,
+    is_digest_already_sent_in_window,
+    schedule_bulk_digest_emails,
     schedule_digest_buffer,
     send_buffered_digest,
-    send_digest_email_to_all_users,
     send_digest_email_to_user,
     send_immediate_cadence_email,
     send_immediate_email,
+    send_user_digest_email_task,
 )
 from openedx.core.djangoapps.notifications.email.utils import get_start_end_date
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
-from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference
+from openedx.core.djangoapps.notifications.models import (
+    DigestSchedule,
+    Notification,
+    NotificationPreference,
+)
 from openedx.core.djangoapps.notifications.tasks import send_notifications
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
@@ -228,75 +237,6 @@ class TestEmailDigestForUserWithAccountPreferences(ModuleStoreTestCase):
 
 
 @ddt.ddt
-class TestEmailDigestAudience(ModuleStoreTestCase):
-    """
-    Tests audience for notification digest email
-    """
-
-    def setUp(self):
-        """
-        Setup
-        """
-        super().setUp()
-        self.user = UserFactory()
-        self.course = CourseFactory.create(display_name='test course', run="Testing_course")
-
-    @patch('openedx.core.djangoapps.notifications.email.tasks.send_digest_email_to_user')
-    def test_email_func_not_called_if_no_notification(self, mock_func):
-        """
-        Tests email sending function is not called if user has no notifications
-        """
-        send_digest_email_to_all_users(EmailCadence.DAILY)
-        assert not mock_func.called
-
-    @patch('openedx.core.djangoapps.notifications.email.tasks.send_digest_email_to_user')
-    def test_email_func_called_if_user_has_notification(self, mock_func):
-        """
-        Tests email sending function is called if user has notification
-        """
-        created_date = datetime.now() - timedelta(days=1)
-        create_notification(self.user, self.course.id, created=created_date)
-        send_digest_email_to_all_users(EmailCadence.DAILY)
-        assert mock_func.called
-
-    @patch('openedx.core.djangoapps.notifications.email.tasks.send_digest_email_to_user')
-    def test_email_func_not_called_if_user_notification_is_not_duration(self, mock_func):
-        """
-        Tests email sending function is not called if user has notification
-        which is not in duration
-        """
-        created_date = datetime.now() - timedelta(days=10)
-        create_notification(self.user, self.course.id, created=created_date)
-        send_digest_email_to_all_users(EmailCadence.DAILY)
-        assert not mock_func.called
-
-    @patch('edx_ace.ace.send')
-    def test_email_is_sent_to_user_when_task_is_called(self, mock_func):
-        created_date = datetime.now() - timedelta(days=1)
-        create_notification(self.user, self.course.id, created=created_date)
-        send_digest_email_to_all_users(EmailCadence.DAILY)
-        assert mock_func.called
-        assert mock_func.call_count == 1
-
-    def test_audience_query_count(self):
-        with self.assertNumQueries(1):
-            audience = get_audience_for_cadence_email(EmailCadence.DAILY)
-            list(audience)  # evaluating queryset
-
-    @ddt.data(True, False)
-    @patch('edx_ace.ace.send')
-    def test_digest_should_contain_email_enabled_notifications(self, email_value, mock_func):
-        """
-        Tests email is sent only when notifications with email=True exists
-        """
-        start_date, end_date = get_start_end_date(EmailCadence.DAILY)
-        created_date = datetime.now() - timedelta(hours=23, minutes=59)
-        create_notification(self.user, self.course.id, created=created_date, email=email_value)
-        send_digest_email_to_user(self.user, EmailCadence.DAILY, start_date, end_date)
-        assert mock_func.called is email_value
-
-
-@ddt.ddt
 class TestAccountPreferences(ModuleStoreTestCase):
     """
     Tests preferences
@@ -408,10 +348,12 @@ class TestImmediateEmailNotifications(ModuleStoreTestCase):
 
         assert mock_ace_send.call_count == 1
 
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
     @patch('edx_ace.ace.send')
-    def test_email_not_sent_when_cadence_is_not_immediate(self, mock_ace_send):
+    def test_email_not_sent_when_cadence_is_not_immediate(self, mock_ace_send, mock_apply_async):
         """
         Tests that an email is NOT sent via send_notifications when cadence is DAILY.
+        The digest is scheduled for later delivery — ace.send must not be called immediately.
         """
         # Modify preference for this test case
         self.preference.email = True
@@ -500,7 +442,7 @@ class TestDecideEmailAction(ModuleStoreTestCase):
         assert decision == 'add_to_buffer'
 
     @freeze_time("2025-12-15 10:00:00")
-    @override_settings(NOTIFICATION_EMAIL_BUFFER_MINUTES=15)
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
     def test_old_email_triggers_new_immediate_send(self):
         """Test that email sent outside buffer period triggers new immediate send."""
         # Email sent 20 minutes ago (outside 15-minute buffer)
@@ -625,7 +567,7 @@ class TestScheduleDigestBuffer(ModuleStoreTestCase):
 
     @freeze_time("2025-12-15 10:00:00", tz_offset=0)
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_buffered_digest.apply_async')
-    @override_settings(NOTIFICATION_EMAIL_BUFFER_MINUTES=15)
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
     def test_buffer_scheduled_with_correct_delay(self, mock_apply_async):
         """Test that buffer task is scheduled with correct countdown."""
         # Create notification that was sent 5 minutes ago
@@ -736,7 +678,7 @@ class TestAddToExistingBuffer(ModuleStoreTestCase):
         assert notification.email_scheduled is True
 
     def test_only_scheduled_field_updated(self):
-        """Test that only email_scheduled field is updated."""
+        """Test that only email_scheduled field is updated, other fields remain unchanged."""
         notification = Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -746,12 +688,16 @@ class TestAddToExistingBuffer(ModuleStoreTestCase):
             email=True,
             content_context=get_new_post_notification_content_context()
         )
+        original_content_url = notification.content_url
+        original_email_sent_on = notification.email_sent_on
 
         add_to_existing_buffer(notification)
 
         notification.refresh_from_db()
-        assert 'Hello world' in notification.content
         assert notification.email_scheduled is True
+        assert notification.content_url == original_content_url
+        assert notification.email_sent_on == original_email_sent_on
+        assert notification.email is True
 
 
 @ddt.ddt
@@ -967,7 +913,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
     @freeze_time("2025-12-15 10:00:00")
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_buffered_digest.apply_async')
-    @override_settings(NOTIFICATION_EMAIL_BUFFER_MINUTES=15)
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
     def test_complete_three_notification_flow(self, mock_digest_async, mock_ace_send):
         """Test complete flow: immediate → buffer → add to buffer."""
         email_mapping = {}
@@ -1063,7 +1009,7 @@ class TestIntegrationScenarios(ModuleStoreTestCase):
 
     @freeze_time("2025-12-15 10:00:00")
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
-    @override_settings(NOTIFICATION_EMAIL_BUFFER_MINUTES=15)
+    @override_settings(NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES=15)
     def test_notification_after_buffer_expires_sends_immediate(self, mock_ace_send):
         """Test that notification after buffer period sends immediately again."""
         # First notification
@@ -1147,3 +1093,780 @@ def get_new_post_notification_content_context(**kwargs):
         "email_content": "<p style=\"margin: 0\">Email content</p>",
         **kwargs
     }
+
+
+@ddt.ddt
+class TestGetNextDigestDeliveryTime(ModuleStoreTestCase):
+    """Tests for get_next_digest_delivery_time function."""
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)  # Friday 10 AM UTC
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    def test_daily_delivery_time_later_today(self):
+        """Test daily delivery is scheduled for later today if time hasn't passed."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.DAILY)
+        assert delivery_time.hour == 17
+        assert delivery_time.minute == 0
+        assert delivery_time.day == 6  # Today
+
+    @freeze_time("2026-03-06 18:00:00", tz_offset=0)  # Friday 6 PM UTC
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    def test_daily_delivery_time_tomorrow_if_passed(self):
+        """Test daily delivery is scheduled for tomorrow if today's time has passed."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.DAILY)
+        assert delivery_time.hour == 17
+        assert delivery_time.day == 7  # Tomorrow
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)  # Friday
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=0,  # Monday
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=17,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=0
+    )
+    def test_weekly_delivery_time_next_monday(self):
+        """Test weekly delivery scheduled for next Monday."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.WEEKLY)
+        assert delivery_time.weekday() == 0  # Monday
+        assert delivery_time.hour == 17
+        assert delivery_time.day == 9  # Next Monday (March 9)
+
+    @freeze_time("2026-03-09 10:00:00", tz_offset=0)  # Monday 10 AM UTC
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=0,  # Monday
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=17,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=0
+    )
+    def test_weekly_delivery_time_today_if_not_passed(self):
+        """Test weekly delivery scheduled for today if it's the right day and time hasn't passed."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.WEEKLY)
+        assert delivery_time.weekday() == 0  # Monday
+        assert delivery_time.day == 9  # Today
+        assert delivery_time.hour == 17
+
+    @freeze_time("2026-03-09 18:00:00", tz_offset=0)  # Monday 6 PM UTC
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=0,  # Monday
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=17,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=0
+    )
+    def test_weekly_delivery_time_next_week_if_passed(self):
+        """Test weekly delivery scheduled for next week if today's time has passed."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.WEEKLY)
+        assert delivery_time.weekday() == 0  # Monday
+        assert delivery_time.day == 16  # Next Monday
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(
+        NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=9,
+        NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=30
+    )
+    def test_daily_custom_delivery_time(self):
+        """Test custom delivery hour and minute from settings."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.DAILY)
+        # 9:30 has passed (it's 10:00), so should be tomorrow
+        assert delivery_time.day == 7
+        assert delivery_time.hour == 9
+        assert delivery_time.minute == 30
+
+    def test_invalid_cadence_raises_error(self):
+        """Test that invalid cadence type raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid cadence_type for digest scheduling"):
+            get_next_digest_delivery_time(EmailCadence.IMMEDIATELY)
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=4,  # Friday
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=17,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=0
+    )
+    def test_weekly_delivery_same_day_future_time(self):
+        """Test weekly delivery on same weekday but later time."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.WEEKLY)
+        assert delivery_time.weekday() == 4  # Friday
+        assert delivery_time.day == 6  # Today (Friday)
+        assert delivery_time.hour == 17
+
+
+@ddt.ddt
+class TestIsDigestAlreadyScheduled(ModuleStoreTestCase):
+    """Tests for is_digest_already_scheduled function."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+        self.course = CourseFactory.create()
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    def test_no_scheduled_notifications(self):
+        """Test returns False when no DigestSchedule record exists."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        assert is_digest_already_scheduled(self.user.id, EmailCadence.DAILY, delivery_time) is False
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    def test_has_scheduled_notification(self):
+        """Test returns True when a DigestSchedule record exists for the exact delivery_time."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=delivery_time,
+            task_id='test-task-id',
+        )
+        assert is_digest_already_scheduled(self.user.id, EmailCadence.DAILY, delivery_time) is True
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    def test_scheduled_notification_outside_window(self):
+        """Test returns False when DigestSchedule record has a different delivery_time."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        different_delivery_time = datetime(2026, 3, 5, 17, 0, tzinfo=UTC)  # Yesterday
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=different_delivery_time,
+            task_id='test-task-id',
+        )
+        assert is_digest_already_scheduled(self.user.id, EmailCadence.DAILY, delivery_time) is False
+
+
+@ddt.ddt
+class TestIsDigestAlreadySentInWindow(ModuleStoreTestCase):
+    """Tests for is_digest_already_sent_in_window function."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+        self.course = CourseFactory.create()
+
+    def test_no_sent_notifications(self):
+        """Test returns False when no digest has been sent."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        assert is_digest_already_sent_in_window(self.user.id, EmailCadence.DAILY, delivery_time) is False
+
+    def test_has_sent_notification_in_window(self):
+        """Test returns True when digest was already sent in window."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_sent_on=datetime(2026, 3, 6, 10, 0, tzinfo=UTC),
+        )
+        assert is_digest_already_sent_in_window(self.user.id, EmailCadence.DAILY, delivery_time) is True
+
+
+@ddt.ddt
+class TestScheduleBulkDigestEmails(ModuleStoreTestCase):
+    """Tests for schedule_bulk_digest_emails function."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+        self.course = CourseFactory.create()
+        # Patch transaction.on_commit to execute callbacks immediately in tests
+        self.on_commit_patcher = patch('django.db.transaction.on_commit', side_effect=lambda func: func())
+        self.on_commit_patcher.start()
+
+    def tearDown(self):
+        self.on_commit_patcher.stop()
+        super().tearDown()
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_schedules_daily_digest_task(self, mock_apply_async):
+        """Test that a daily digest task is scheduled when notification exists."""
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_scheduled=False,
+            email_sent_on=None,
+        )
+
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.DAILY})
+
+        assert mock_apply_async.called
+        call_kwargs = mock_apply_async.call_args[1]
+        assert call_kwargs['kwargs']['user_id'] == self.user.id
+        assert call_kwargs['kwargs']['cadence_type'] == EmailCadence.DAILY
+        # Should be scheduled for 5 PM UTC today
+        assert call_kwargs['eta'].hour == 17
+        assert call_kwargs['eta'].day == 6
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_does_not_schedule_if_already_scheduled(self, mock_apply_async):
+        """Test that no duplicate task is scheduled when a DigestSchedule record already exists."""
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=delivery_time,
+            task_id='existing-task-id',
+        )
+
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.DAILY})
+
+        assert not mock_apply_async.called
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_invalid_cadence_does_not_schedule(self, mock_apply_async):
+        """Test that IMMEDIATELY cadence does not schedule a digest."""
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.IMMEDIATELY})
+        assert not mock_apply_async.called
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=0,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=17,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=0
+    )
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_schedules_weekly_digest_task(self, mock_apply_async):
+        """Test that a weekly digest task is scheduled correctly."""
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_scheduled=False,
+            email_sent_on=None,
+        )
+
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.WEEKLY})
+
+        assert mock_apply_async.called
+        call_kwargs = mock_apply_async.call_args[1]
+        assert call_kwargs['kwargs']['cadence_type'] == EmailCadence.WEEKLY
+        # Should be scheduled for next Monday 5 PM
+        assert call_kwargs['eta'].weekday() == 0
+        assert call_kwargs['eta'].hour == 17
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_marks_notifications_as_scheduled(self, mock_apply_async):
+        """Test that notifications are marked as email_scheduled=True."""
+        notif = Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_scheduled=False,
+            email_sent_on=None,
+        )
+
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.DAILY})
+
+        notif.refresh_from_db()
+        assert notif.email_scheduled is True
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_creates_digest_schedule_record(self, mock_apply_async):
+        """Test that a DigestSchedule record is created after scheduling."""
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            email=True,
+            email_scheduled=False,
+            email_sent_on=None,
+        )
+
+        schedule_bulk_digest_emails({self.user.id: EmailCadence.DAILY})
+
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        assert DigestSchedule.objects.filter(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=delivery_time,
+        ).exists()
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_empty_map_does_nothing(self, mock_apply_async):
+        """Test that an empty user_cadence_map does nothing."""
+        schedule_bulk_digest_emails({})
+        assert not mock_apply_async.called
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_schedules_for_multiple_users(self, mock_apply_async):
+        """Test that digest tasks are scheduled for multiple users in one call."""
+        user2 = UserFactory()
+        for user in [self.user, user2]:
+            Notification.objects.create(
+                user=user,
+                course_id=str(self.course.id),
+                app_name='discussion',
+                notification_type='new_discussion_post',
+                content_url='http://example.com',
+                email=True,
+                email_scheduled=False,
+                email_sent_on=None,
+            )
+
+        schedule_bulk_digest_emails({
+            self.user.id: EmailCadence.DAILY,
+            user2.id: EmailCadence.DAILY,
+        })
+
+        assert mock_apply_async.call_count == 2
+        assert DigestSchedule.objects.count() == 2
+
+
+@ddt.ddt
+class TestSendUserDigestEmailTask(ModuleStoreTestCase):
+    """Tests for the send_user_digest_email_task celery task."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+        self.course = CourseFactory.create(display_name='Test Course')
+
+        NotificationPreference.objects.filter(user=self.user).delete()
+        NotificationPreference.objects.create(
+            user=self.user,
+            app='discussion',
+            type='new_discussion_post',
+            email=True,
+            email_cadence=EmailCadence.DAILY,
+        )
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_sends_digest_email(self, mock_ace_send):
+        """Test that digest email is sent successfully."""
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            content_context=get_new_post_notification_content_context(),
+            email=True,
+            email_scheduled=True,
+            created=created_time,
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='test-task-id',
+        )
+
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        assert mock_ace_send.called
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_skips_if_already_sent_by_cron(self, mock_ace_send):
+        """Test that digest is skipped if cron already sent it."""
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            content_context=get_new_post_notification_content_context(),
+            email=True,
+            email_scheduled=True,
+            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=UTC),  # Already sent by cron
+            created=created_time,
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='test-task-id',
+        )
+
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        assert not mock_ace_send.called
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_clears_scheduled_flags_after_send(self, mock_ace_send):
+        """Test that email_scheduled flags are cleared after successful send."""
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+        notif = Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            content_context=get_new_post_notification_content_context(),
+            email=True,
+            email_scheduled=True,
+            created=created_time,
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='test-task-id',
+        )
+
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        notif.refresh_from_db()
+        assert notif.email_scheduled is False
+        assert not DigestSchedule.objects.filter(user=self.user, cadence_type=EmailCadence.DAILY).exists()
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_skips_disabled_user(self, mock_ace_send):
+        """Test that digest is not sent to disabled user and DigestSchedule is cleaned up."""
+        self.user.set_unusable_password()
+        self.user.save()
+
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+        Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            content_context=get_new_post_notification_content_context(),
+            email=True,
+            email_scheduled=True,
+            created=created_time,
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='test-task-id',
+        )
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        assert not mock_ace_send.called
+        # Verify DigestSchedule was cleaned up even though user is disabled
+        assert not DigestSchedule.objects.filter(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+        ).exists()
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    def test_handles_missing_user(self):
+        """Test that task handles non-existent user gracefully and cleans up DigestSchedule."""
+        # Create a DigestSchedule record for the non-existent user
+        DigestSchedule.objects.create(
+            user_id=99999,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='orphan-task-id',
+        )
+        # Should not raise
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=99999,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        # Verify orphaned DigestSchedule was cleaned up
+        assert not DigestSchedule.objects.filter(user_id=99999).exists()
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    def test_clears_scheduled_flags_even_when_cron_sent(self, mock_ace_send):
+        """Test that scheduled flags and DigestSchedule record are cleared even when cron already sent."""
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+        notif = Notification.objects.create(
+            user=self.user,
+            course_id=str(self.course.id),
+            app_name='discussion',
+            notification_type='new_discussion_post',
+            content_url='http://example.com',
+            content_context=get_new_post_notification_content_context(),
+            email=True,
+            email_scheduled=True,
+            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=UTC),  # Sent by cron
+            created=created_time,
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='test-task-id',
+        )
+        send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
+            user_id=self.user.id,
+            cadence_type=EmailCadence.DAILY,
+        )
+
+        notif.refresh_from_db()
+        assert notif.email_scheduled is False
+        assert not mock_ace_send.called
+        assert not DigestSchedule.objects.filter(user=self.user, cadence_type=EmailCadence.DAILY).exists()
+
+
+@ddt.ddt
+class TestDigestSchedulingIntegration(ModuleStoreTestCase):
+    """Integration tests for the full digest scheduling flow."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+        self.course = CourseFactory.create(display_name='Test Course')
+
+        NotificationPreference.objects.filter(user=self.user).delete()
+        NotificationPreference.objects.create(
+            user=self.user,
+            app='discussion',
+            type='new_discussion_post',
+            email=True,
+            email_cadence=EmailCadence.DAILY,
+        )
+        # Patch transaction.on_commit to execute callbacks immediately in tests
+        self.on_commit_patcher = patch('django.db.transaction.on_commit', side_effect=lambda func: func())
+        self.on_commit_patcher.start()
+
+    def tearDown(self):
+        self.on_commit_patcher.stop()
+        super().tearDown()
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_notification_triggers_digest_scheduling(self, mock_apply_async):
+        """Test that creating a notification triggers digest scheduling via send_notifications."""
+        context = {
+            'username': 'User',
+            'post_title': 'Test Post'
+        }
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_discussion_post',
+            context,
+            'http://test.url'
+        )
+
+        # A digest task should have been scheduled
+        assert mock_apply_async.called
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_multiple_notifications_schedule_only_once(self, mock_apply_async):
+        """Test that multiple notifications in same window only schedule one task."""
+        context = {
+            'username': 'User',
+            'post_title': 'Test Post'
+        }
+
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_discussion_post',
+            context.copy(),
+            'http://test.url'
+        )
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_discussion_post',
+            context.copy(),
+            'http://test.url'
+        )
+
+        # Should be called only once because second time notifications are already scheduled
+        assert mock_apply_async.call_count == 1
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=17, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=0)
+    @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
+    @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
+    def test_immediate_cadence_does_not_trigger_digest(self, mock_digest_async, mock_ace_send):
+        """Test that immediate cadence users don't get digest scheduled."""
+        NotificationPreference.objects.filter(user=self.user).delete()
+        NotificationPreference.objects.create(
+            user=self.user,
+            app='discussion',
+            type='new_discussion_post',
+            email=True,
+            email_cadence=EmailCadence.IMMEDIATELY,
+        )
+
+        context = {
+            'username': 'User',
+            'post_title': 'Test Post'
+        }
+
+        send_notifications(
+            [self.user.id],
+            str(self.course.id),
+            'discussion',
+            'new_discussion_post',
+            context,
+            'http://test.url'
+        )
+
+        # Immediate email should be sent, NOT a digest scheduled
+        assert mock_ace_send.called
+        assert not mock_digest_async.called
+
+
+@ddt.ddt
+class TestGetNextDigestDeliveryTimeSettingsValidation(ModuleStoreTestCase):
+    """Tests for settings validation in get_next_digest_delivery_time."""
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR=25, NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE=99)
+    def test_daily_invalid_settings_clamped(self):
+        """Test that invalid hour/minute values are clamped to valid ranges."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.DAILY)
+        assert delivery_time.hour == 23  # clamped from 25
+        assert delivery_time.minute == 59  # clamped from 99
+
+    @freeze_time("2026-03-06 10:00:00", tz_offset=0)
+    @override_settings(
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY=10,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR=-1,
+        NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE=-5,
+    )
+    def test_weekly_invalid_settings_clamped(self):
+        """Test that invalid day/hour/minute values are clamped to valid ranges."""
+        delivery_time = get_next_digest_delivery_time(EmailCadence.WEEKLY)
+        assert delivery_time.weekday() == 6  # clamped from 10 → min(6, max(0, 10)) = 6 (Sunday)
+        assert delivery_time.hour == 0  # clamped from -1
+        assert delivery_time.minute == 0  # clamped from -5
+
+
+@ddt.ddt
+class TestClaimDigestSchedule(ModuleStoreTestCase):
+    """Tests for _claim_digest_schedule."""
+
+    def setUp(self):
+        super().setUp()
+        self.user = UserFactory()
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    def test_claims_current_window_record(self):
+        """Test that the current window's DigestSchedule record is deleted and returns True."""
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='current-task-id',
+        )
+
+        result = _claim_digest_schedule(self.user.id, EmailCadence.DAILY)
+
+        assert result is True
+        assert not DigestSchedule.objects.filter(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+        ).exists()
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    def test_second_claim_returns_false(self):
+        """Test that a second claim attempt returns False (dedup)."""
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='current-task-id',
+        )
+
+        first = _claim_digest_schedule(self.user.id, EmailCadence.DAILY)
+        second = _claim_digest_schedule(self.user.id, EmailCadence.DAILY)
+
+        assert first is True
+        assert second is False
+
+    @freeze_time("2026-03-06 17:00:00", tz_offset=0)
+    def test_preserves_future_window_record(self):
+        """Test that a future window's DigestSchedule record is NOT deleted."""
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+            task_id='current-task-id',
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=UTC),
+            task_id='future-task-id',
+        )
+
+        result = _claim_digest_schedule(self.user.id, EmailCadence.DAILY)
+
+        assert result is True
+        assert not DigestSchedule.objects.filter(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
+        ).exists()
+        assert DigestSchedule.objects.filter(
+            user=self.user,
+            cadence_type=EmailCadence.DAILY,
+            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=UTC),
+        ).exists()
+
+    @freeze_time("2026-03-09 17:00:00", tz_offset=0)
+    def test_weekly_preserves_future_record(self):
+        """Test that weekly cleanup preserves next week's record."""
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.WEEKLY,
+            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=UTC),
+            task_id='current-task-id',
+        )
+        DigestSchedule.objects.create(
+            user=self.user,
+            cadence_type=EmailCadence.WEEKLY,
+            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=UTC),
+            task_id='next-week-task-id',
+        )
+
+        result = _claim_digest_schedule(self.user.id, EmailCadence.WEEKLY)
+
+        assert result is True
+        assert not DigestSchedule.objects.filter(
+            user=self.user,
+            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=UTC),
+        ).exists()
+        assert DigestSchedule.objects.filter(
+            user=self.user,
+            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=UTC),
+        ).exists()

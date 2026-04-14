@@ -199,6 +199,10 @@ filterwarnings = [
     # ABC deprecation Warning comes from libsass
     "ignore:Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated.*:DeprecationWarning:sass",
     "ignore:'etree' is deprecated. Use 'xml.etree.ElementTree' instead.:DeprecationWarning:wiki",
+    # We sometimes use DeprecationWarning to enourage `.id` instead of `.pk` since there are some cases where we cannot
+    # override the type of `.pk`, but we can always customize `.id` (e.g. using TypedBigAutoField). But we don't want to
+    # see those warnings when Django is using `.pk` internally, which is fine.
+    "ignore:Use \\.id instead:DeprecationWarning:django\\..*",
 ]
 junit_family = "xunit2"
 norecursedirs = ". .* *.egg build conf dist node_modules test_root cms/envs lms/envs openedx/envs"

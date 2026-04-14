@@ -84,16 +84,12 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
         return self.runtime.service(self, 'discussion_config_service')
 
     @property
-    def course_key(self):
-        return getattr(self.scope_ids.usage_id, 'course_key', None)
-
-    @property
     def is_visible(self):
         """
         Discussion Xblock does not support new OPEN_EDX provider
         """
         if self.discussion_config_service:
-            return self.discussion_config_service.is_discussion_visible(self.course_key)
+            return self.discussion_config_service.is_discussion_visible(self.context_key)
         return False
 
     @property
@@ -177,7 +173,7 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
         :rtype: bool
         """
         if self.discussion_config_service:
-            return self.discussion_config_service.has_permission(self.django_user, permission, self.course_key)
+            return self.discussion_config_service.has_permission(self.django_user, permission, self.context_key)
         return False
 
     def student_view(self, context=None):
@@ -194,7 +190,7 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
 
         if not self.django_user.is_authenticated:
             qs = urllib.parse.urlencode({
-                'course_id': self.course_key,
+                'course_id': self.context_key,
                 'enrollment_action': 'enroll',
                 'email_opt_in': False,
             })
@@ -214,7 +210,7 @@ class _BuiltInDiscussionXBlock(XBlock, StudioEditableXBlockMixin,
                 'discussion_id': self.discussion_id,
                 'display_name': self.display_name if self.display_name else _("Discussion"),
                 'user': self.django_user,
-                'course_id': self.course_key,
+                'course_id': self.context_key,
                 'discussion_category': self.discussion_category,
                 'discussion_target': self.discussion_target,
                 'can_create_thread': self.has_permission("create_thread"),

@@ -11,7 +11,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_DELETED,
     XBLOCK_UPDATED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from openedx_tagging.models import Tag
 from organizations.models import Organization
 from rest_framework.test import APIClient

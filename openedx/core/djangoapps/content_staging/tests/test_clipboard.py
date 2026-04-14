@@ -3,6 +3,7 @@
 Tests for the clipboard functionality
 """
 from textwrap import dedent
+from typing import cast
 from xml.etree import ElementTree
 
 from rest_framework.test import APIClient
@@ -34,7 +35,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
     Test Clipboard functionality
     """
 
-    def test_empty_clipboard(self):
+    def test_empty_clipboard(self) -> None:
         """
         When a user has no content on their clipboard, we get an empty 200 response
         """
@@ -69,7 +70,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
 
         return (course_key, client)
 
-    def test_copy_video(self):
+    def test_copy_video(self) -> None:
         """
         Test copying a video from the course, and retrieve it using the REST API
         """
@@ -102,7 +103,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # Now if we GET the clipboard again, the GET response should exactly equal the last POST response:
         assert client.get(CLIPBOARD_ENDPOINT).json() == response_data
 
-    def test_copy_video_python_get(self):
+    def test_copy_video_python_get(self) -> None:
         """
         Test copying a video from the course, and retrieve it using the python API
         """
@@ -125,9 +126,10 @@ class ClipboardTestCase(ModuleStoreTestCase):
         assert clipboard_data.content.display_name == "default"
         # Test the actual OLX in the clipboard:
         olx_data = python_api.get_staged_content_olx(clipboard_data.content.id)
+        assert olx_data is not None
         self.assertXmlEqual(olx_data, SAMPLE_VIDEO_OLX)
 
-    def test_copy_html(self):
+    def test_copy_html(self) -> None:
         """
         Test copying an HTML XBlock from the course
         """
@@ -165,7 +167,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # Now if we GET the clipboard again, the GET response should exactly equal the last POST response:
         assert client.get(CLIPBOARD_ENDPOINT).json() == response_data
 
-    def test_copy_unit(self):
+    def test_copy_unit(self) -> None:
         """
         Test copying a unit (vertical block) from the course
         """
@@ -241,7 +243,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # Now if we GET the clipboard again, the GET response should exactly equal the last POST response:
         assert client.get(CLIPBOARD_ENDPOINT).json() == response_data
 
-    def test_copy_several_things(self):
+    def test_copy_several_things(self) -> None:
         """
         Test that the clipboard only holds one thing at a time.
         """
@@ -274,7 +276,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # The OLX link from the video will no longer work:
         assert client.get(old_olx_url).status_code == 404
 
-    def test_copy_static_assets(self):
+    def test_copy_static_assets(self) -> None:
         """
         Test copying an HTML from the course that references a static asset file.
         """
@@ -294,8 +296,9 @@ class ClipboardTestCase(ModuleStoreTestCase):
         # Validate the response:
         assert response.status_code == 200
         response_data = response.json()
-        staged_content_id = response_data["content"]["id"]
+        staged_content_id = cast(python_api.StagedContentID, response_data["content"]["id"])
         olx_str = python_api.get_staged_content_olx(staged_content_id)
+        assert olx_str is not None
         assert '<img src="/static/foo_bar.jpg" />' in olx_str
         static_assets = python_api.get_staged_content_static_files(staged_content_id)
 
@@ -306,7 +309,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
             data=None,
         )]
 
-    def test_copy_static_assets_nonexistent(self):
+    def test_copy_static_assets_nonexistent(self) -> None:
         """
         Test copying a HTML block which references non-existent static assets.
         """
@@ -331,11 +334,12 @@ class ClipboardTestCase(ModuleStoreTestCase):
         response_data = response.json()
         staged_content_id = response_data["content"]["id"]
         olx_str = python_api.get_staged_content_olx(staged_content_id)
+        assert olx_str is not None
         assert '<a href="/static/nonexistent1.jpg">' in olx_str
         static_assets = python_api.get_staged_content_static_files(staged_content_id)
         assert static_assets == []
 
-    def test_no_course_permission(self):
+    def test_no_course_permission(self) -> None:
         """
         Test that a user without read access cannot copy items in a course
         """
@@ -352,7 +356,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         response = nonstaff_client.get(CLIPBOARD_ENDPOINT)
         assert response.json()["content"] is None
 
-    def test_no_stealing_clipboard_content(self):
+    def test_no_stealing_clipboard_content(self) -> None:
         """
         Test that a user cannot see another user's clipboard
         """
@@ -369,7 +373,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
         response = nonstaff_client.get(olx_url)
         assert response.status_code == 403
 
-    def assertXmlEqual(self, xml_str_a: str, xml_str_b: str):
+    def assertXmlEqual(self, xml_str_a: str, xml_str_b: str) -> None:
         """ Assert that the given XML strings are equal, ignoring attribute order and some whitespace variations. """
         a = ElementTree.canonicalize(xml_str_a, strip_text=True)
         b = ElementTree.canonicalize(xml_str_b, strip_text=True)

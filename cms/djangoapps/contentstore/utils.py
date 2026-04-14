@@ -2425,7 +2425,7 @@ def _create_or_update_container_link(created: datetime | None, xblock):
     """
     upstream_container_key = LibraryContainerLocator.from_string(xblock.upstream)
     try:
-        lib_component = get_container(upstream_container_key).container_pk
+        lib_component = get_container(upstream_container_key).container_id
     except ObjectDoesNotExist:
         log.error(f"Library component not found for {upstream_container_key}")
         lib_component = None

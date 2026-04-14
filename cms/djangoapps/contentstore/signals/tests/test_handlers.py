@@ -9,6 +9,7 @@ from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseCatalogData, CourseScheduleData
 
 import cms.djangoapps.contentstore.signals.handlers as sh
+from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.modulestore.django import SignalHandler
 from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -34,7 +35,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
             course_key=CourseLocator(org='TestU', course='sig101', run='Summer2022', branch=None, version_guid=None),
             name='Signals 101',
             schedule_data=CourseScheduleData(
-                start=datetime.fromisoformat('2030-01-01T00:00+00:00'),
+                start=DEFAULT_START_DATE,
                 pacing='instructor',
                 end=None,
                 enrollment_start=None,

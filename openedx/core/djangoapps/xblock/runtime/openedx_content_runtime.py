@@ -302,7 +302,7 @@ class OpenedXContentRuntime(XBlockRuntime):
                 created=now,
             )
             content_api.create_next_component_version(
-                component.pk,
+                component.id,
                 title=block.display_name,
                 media_to_replace={
                     "block.xml": media.id,

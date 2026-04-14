@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import BadRequest
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as django_timezone
 from django.utils.translation import gettext as _
 from pytz import utc
 
@@ -177,11 +178,11 @@ def get_start_end_date(cadence_type):
     """
     if cadence_type not in [EmailCadence.DAILY, EmailCadence.WEEKLY]:
         raise ValueError('Invalid cadence_type')
-    end_date = datetime.datetime.now()
+    end_date = django_timezone.now()
     start_date = end_date - datetime.timedelta(days=1, minutes=15)
     if cadence_type == EmailCadence.WEEKLY:
         start_date = start_date - datetime.timedelta(days=6)
-    return utc.localize(start_date), utc.localize(end_date)
+    return start_date, end_date
 
 
 def get_course_info(course_key):

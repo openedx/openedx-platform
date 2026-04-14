@@ -9,6 +9,7 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.utils import timezone as django_timezone
 from django.utils.translation import gettext as _
 from django.utils.translation import override as translation_override
 from edx_ace import ace
@@ -17,7 +18,11 @@ from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
-from openedx.core.djangoapps.notifications.models import Notification, NotificationPreference
+from openedx.core.djangoapps.notifications.models import (
+    DigestSchedule,
+    Notification,
+    NotificationPreference,
+)
 
 from ..base_notification import COURSE_NOTIFICATION_APPS
 from ..config.waffle import DISABLE_EMAIL_NOTIFICATIONS
@@ -84,8 +89,13 @@ def send_digest_email_to_user(
         logger.info(f'<Email Cadence> User is disabled {user.username} ==Temp Log==')
         return
 
-    notifications = Notification.objects.filter(user=user, email=True,
-                                                created__gte=start_date, created__lte=end_date)
+    notifications = Notification.objects.filter(
+        user=user,
+        email=True,
+        created__gte=start_date,
+        created__lte=end_date,
+        email_sent_on__isnull=True,
+    )
     if not notifications:
         logger.info(f'<Email Cadence> No notification for {user.username} ==Temp Log==')
         return
@@ -112,27 +122,340 @@ def send_digest_email_to_user(
         message = add_headers_to_email_message(message, message_context)
         message.options['skip_disable_user_policy'] = True
         ace.send(message)
-        notifications.update(email_sent_on=datetime.now())
+        notifications.update(email_sent_on=django_timezone.now())
         send_user_email_digest_sent_event(user, cadence_type, notifications_list, message_context)
         logger.info(f'<Email Cadence> Email sent to {user.username} ==Temp Log==')
 
 
-@shared_task(ignore_result=True)
+def get_next_digest_delivery_time(cadence_type):
+    """
+    Calculate the next delivery time for a digest email based on cadence type.
+
+    Uses Django settings for configurable delivery time/day:
+    - NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR (default: 17)
+    - NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE (default: 0)
+    - NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY (default: 0 = Monday)
+    - NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR (default: 17)
+    - NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE (default: 0)
+
+    Returns:
+        datetime: The next scheduled delivery time in UTC.
+    """
+    now = django_timezone.now()
+
+    if cadence_type == EmailCadence.DAILY:
+        delivery_hour = max(0, min(23, getattr(settings, 'NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR', 17)))
+        delivery_minute = max(0, min(59, getattr(settings, 'NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE', 0)))
+
+        # Calculate next delivery time
+        delivery_time = now.replace(
+            hour=delivery_hour,
+            minute=delivery_minute,
+            second=0,
+            microsecond=0
+        )
+        # If the delivery time has already passed today, schedule for tomorrow
+        if delivery_time <= now:
+            delivery_time += timedelta(days=1)
+
+        return delivery_time
+
+    elif cadence_type == EmailCadence.WEEKLY:
+        delivery_day = max(0, min(6, getattr(settings, 'NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY', 0)))  # 0=Monday
+        delivery_hour = max(0, min(23, getattr(settings, 'NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR', 17)))
+        delivery_minute = max(0, min(59, getattr(settings, 'NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE', 0)))
+
+        # Calculate next delivery day
+        days_ahead = delivery_day - now.weekday()
+        if days_ahead < 0:
+            days_ahead += 7
+
+        delivery_time = now.replace(
+            hour=delivery_hour,
+            minute=delivery_minute,
+            second=0,
+            microsecond=0
+        ) + timedelta(days=days_ahead)
+
+        # If the delivery time is today but has already passed, schedule for next week
+        if delivery_time <= now:
+            delivery_time += timedelta(days=7)
+
+        return delivery_time
+
+    raise ValueError(f"Invalid cadence_type for digest scheduling: {cadence_type}")
+
+
+def get_digest_dedupe_key(user_id, cadence_type, delivery_time):
+    """
+    Generate a deduplication key for a digest email task.
+
+    This key ensures that only one digest task is scheduled per user per cadence period.
+
+    Returns:
+        str: A unique key based on user_id, cadence_type, and delivery window.
+    """
+    window_key = delivery_time.strftime('%Y-%m-%d-%H-%M')
+    return f"digest:{user_id}:{cadence_type}:{window_key}"
+
+
+def is_digest_already_scheduled(user_id, cadence_type, delivery_time):
+    """
+    Check if a digest email is already scheduled for this user in the current cadence window.
+
+    This prevents duplicate scheduling when multiple notifications arrive
+    in the same digest window.
+
+    Uses DigestSchedule model for an exact (user, cadence_type, delivery_time) lookup —
+    one record represents one pending Celery task. This is intentionally separate from
+    Notification.email_scheduled, which tracks the immediate/buffer cadence flow and
+    operates at the notification row level rather than the task level.
+    """
+    if cadence_type not in [EmailCadence.DAILY, EmailCadence.WEEKLY]:
+        return False
+
+    return DigestSchedule.objects.filter(
+        user_id=user_id,
+        cadence_type=cadence_type,
+        delivery_time=delivery_time,
+    ).exists()
+
+
+def is_digest_already_sent_in_window(user_id, cadence_type, delivery_time):
+    """
+    Check if a digest email has already been sent for this user in the current cadence window.
+
+    This prevents duplicate emails when both cron jobs and delayed tasks co-exist.
+    """
+    if cadence_type == EmailCadence.DAILY:
+        window_start = delivery_time - timedelta(days=1, minutes=15)
+    elif cadence_type == EmailCadence.WEEKLY:
+        window_start = delivery_time - timedelta(days=7, minutes=15)
+    else:
+        return False
+
+    return Notification.objects.filter(
+        user_id=user_id,
+        email=True,
+        email_sent_on__gte=window_start,
+        email_sent_on__lte=delivery_time,
+    ).exists()
+
+
+def schedule_bulk_digest_emails(user_cadence_map):
+    """
+    Bulk-schedule delayed Celery tasks for digest emails for multiple users.
+
+    This avoids N+1 query issues when scheduling digests for many users at once
+    (e.g. during send_notifications) by batching DB operations.
+
+    Runs ~3 queries per cadence type regardless of user count:
+    1. SELECT existing DigestSchedule records (1 query)
+    2. Bulk INSERT new DigestSchedule records (1 query)
+    3. Bulk UPDATE Notification.email_scheduled (1 query)
+
+    Args:
+        user_cadence_map: dict mapping user_id -> cadence_type
+            (EmailCadence.DAILY or EmailCadence.WEEKLY)
+    """
+    if not user_cadence_map:
+        return
+
+    # Group users by cadence type
+    cadence_groups = {}
+    for uid, cadence in user_cadence_map.items():
+        if cadence not in (EmailCadence.DAILY, EmailCadence.WEEKLY):
+            logger.warning(f'<Digest Schedule Bulk> Invalid cadence_type {cadence} for user {uid}')
+            continue
+        cadence_groups.setdefault(cadence, []).append(uid)
+
+    def _enqueue_bulk_digest_tasks(uids, ctype, dtime):
+        for uid in uids:
+            task_id = get_digest_dedupe_key(uid, ctype, dtime)
+            send_user_digest_email_task.apply_async(
+                kwargs={
+                    'user_id': uid,
+                    'cadence_type': ctype,
+                },
+                eta=dtime,
+                task_id=task_id,
+            )
+        logger.info(
+            f'<Digest Schedule Bulk> Scheduled {ctype} digest for {len(uids)} users '
+            f'at {dtime}'
+        )
+
+    for cadence_type, user_ids in cadence_groups.items():
+        delivery_time = get_next_digest_delivery_time(cadence_type)
+
+        # 1. Find users who already have a DigestSchedule for this window (1 query)
+        already_scheduled_user_ids = set(
+            DigestSchedule.objects.filter(
+                user_id__in=user_ids,
+                cadence_type=cadence_type,
+                delivery_time=delivery_time,
+            ).values_list('user_id', flat=True)
+        )
+
+        new_user_ids = [uid for uid in user_ids if uid not in already_scheduled_user_ids]
+        if not new_user_ids:
+            logger.info(
+                f'<Digest Schedule Bulk> All {len(user_ids)} users already scheduled '
+                f'for cadence={cadence_type}, delivery_time={delivery_time}'
+            )
+            continue
+
+        # 2. Bulk create DigestSchedule records for new users (1 query)
+        new_schedules = [
+            DigestSchedule(
+                user_id=uid,
+                cadence_type=cadence_type,
+                delivery_time=delivery_time,
+                task_id=get_digest_dedupe_key(uid, cadence_type, delivery_time),
+            )
+            for uid in new_user_ids
+        ]
+        DigestSchedule.objects.bulk_create(new_schedules, ignore_conflicts=True)
+
+        # 3. Bulk mark unscheduled notifications as scheduled (1 query)
+        if cadence_type == EmailCadence.DAILY:
+            window_start = delivery_time - timedelta(days=1)
+        else:
+            window_start = delivery_time - timedelta(days=7)
+
+        Notification.objects.filter(
+            user_id__in=new_user_ids,
+            email=True,
+            email_scheduled=False,
+            email_sent_on__isnull=True,
+            created__gte=window_start,
+        ).update(email_scheduled=True)
+
+        # 4. Enqueue Celery tasks for each new user (no DB queries)
+        transaction.on_commit(
+            lambda uids=new_user_ids, ctype=cadence_type, dtime=delivery_time:
+            _enqueue_bulk_digest_tasks(uids, ctype, dtime)
+        )
+
+
+@shared_task(bind=True, ignore_result=True, max_retries=3, default_retry_delay=300)
 @set_code_owner_attribute
-def send_digest_email_to_all_users(cadence_type):
+def send_user_digest_email_task(self, user_id, cadence_type):
     """
-    Send email digest to all eligible users
+    Delayed Celery task to send a digest email to a single user.
+
+    This task is scheduled with apply_async(eta=...) for the configured
+    delivery time. When it fires:
+    1. Atomically claims the DigestSchedule record (prevents duplicate
+       execution from Redis visibility-timeout redeliveries)
+    2. Checks if email was already sent (by cron job) to avoid duplicates
+    3. Gathers all unsent notifications for the cadence window
+    4. Sends the digest email
+    5. Marks notifications as sent
     """
-    logger.info(f'<Email Cadence> Sending cadence email of type {cadence_type}')
-    users = get_audience_for_cadence_email(cadence_type)
-    language_prefs = get_language_preference_for_users([user.id for user in users])
-    courses_data = {}
-    start_date, end_date = get_start_end_date(cadence_type)
-    logger.info(f'<Email Cadence> Email Cadence Audience {len(users)}')
-    for user in users:
-        user_language = language_prefs.get(user.id, 'en')
-        send_digest_email_to_user(user, cadence_type, start_date, end_date, user_language=user_language,
-                                  courses_data=courses_data)
+    try:
+        claimed = _claim_digest_schedule(user_id, cadence_type)
+        if not claimed:
+            logger.info(
+                f'<Digest Task> Duplicate task for user {user_id}, '
+                f'cadence {cadence_type} — DigestSchedule already '
+                f'claimed by another task. Skipping.'
+            )
+            return
+
+        user = User.objects.get(id=user_id)
+
+        if not user.has_usable_password():
+            logger.info(f'<Digest Task> User {user.username} is disabled, skipping')
+            return
+        start_date, end_date = get_start_end_date(cadence_type)
+
+        already_sent = Notification.objects.filter(
+            user_id=user_id,
+            email=True,
+            email_sent_on__gte=start_date,
+            email_sent_on__lte=end_date,
+        ).exists()
+
+        if already_sent:
+            logger.info(
+                f'<Digest Task> Digest already sent for user {user.username} '
+                f'in window {start_date} to {end_date}. Clearing scheduled flags.'
+            )
+            # Clear scheduled flags so they're not picked up again
+            Notification.objects.filter(
+                user_id=user_id,
+                email=True,
+                email_scheduled=True,
+                created__gte=start_date,
+                created__lte=end_date,
+            ).update(email_scheduled=False)
+            return
+
+        language_prefs = get_language_preference_for_users([user_id])
+        user_language = language_prefs.get(user_id, 'en')
+        courses_data = {}
+
+        send_digest_email_to_user(
+            user, cadence_type, start_date, end_date,
+            user_language=user_language,
+            courses_data=courses_data
+        )
+
+        # Clear scheduled flags after successful send
+        Notification.objects.filter(
+            user_id=user_id,
+            email=True,
+            email_scheduled=True,
+            created__gte=start_date,
+            created__lte=end_date,
+        ).update(email_scheduled=False)
+
+        logger.info(f'<Digest Task> Successfully sent {cadence_type} digest to user {user.username}')
+
+    except User.DoesNotExist:
+        logger.error(f'<Digest Task> User {user_id} not found')
+
+    except Exception as exc:
+        current_retries = getattr(self.request, "retries", 0)
+        max_retries = getattr(self, "max_retries", None)
+        if max_retries and current_retries >= max_retries - 1:
+            logger.error(
+                f'<Digest Task> Giving up sending {cadence_type} digest to user {user_id} '
+                f'after {current_retries} retries.'
+            )
+            return
+        retry_countdown = 300 * (2 ** current_retries)
+        raise self.retry(exc=exc, countdown=retry_countdown) from exc
+
+
+def _claim_digest_schedule(user_id, cadence_type):
+    """
+    Atomically claim (delete) the DigestSchedule record for the current
+    delivery window.
+
+    Returns ``True`` if this call deleted the row (we are the rightful
+    owner). Returns ``False`` if the row was already gone (another copy
+    of the redelivered task got there first).
+    """
+    now = django_timezone.now()
+
+    if cadence_type == EmailCadence.DAILY:
+        window_cutoff = now - timedelta(days=1, hours=1)
+    elif cadence_type == EmailCadence.WEEKLY:
+        window_cutoff = now - timedelta(days=7, hours=1)
+    else:
+        return True  # non-digest cadences don't use DigestSchedule
+
+    with transaction.atomic():
+        rows_deleted, _ = DigestSchedule.objects.filter(
+            user_id=user_id,
+            cadence_type=cadence_type,
+            delivery_time__lte=now,
+            delivery_time__gte=window_cutoff,
+        ).delete()
+
+    return rows_deleted > 0
 
 
 def send_immediate_cadence_email(email_notification_mapping, course_key):

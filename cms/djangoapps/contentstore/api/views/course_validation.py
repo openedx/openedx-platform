@@ -364,7 +364,7 @@ class CourseLegacyLibraryContentSerializer(serializers.Serializer):
     usage_key = serializers.CharField()
 
 
-class CourseLegacyLibraryContentMigratorView(StatusViewSet):
+class CourseLegacyLibraryContentMigratorView(DeveloperErrorViewMixin, StatusViewSet):
     """
     This endpoint is used for migrating legacy library content to the new item bank block library v2.
     """
@@ -384,7 +384,7 @@ class CourseLegacyLibraryContentMigratorView(StatusViewSet):
             401: "The requester is not authenticated.",
         },
     )
-    @course_author_access_required
+    @authz_permission_required(COURSES_VIEW_COURSE.identifier, LegacyAuthoringPermission.WRITE)
     def list(self, _, course_key):  # pylint: disable=arguments-differ
         """
         Returns all legacy library content blocks ready to be migrated to new item bank block.

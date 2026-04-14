@@ -518,6 +518,7 @@ edx-ccx-keys==2.0.2
     # via
     #   -r requirements/edx/base.txt
     #   lti-consumer-xblock
+    #   openedx-authz
     #   openedx-events
 edx-celeryutils==1.4.0
     # via
@@ -1003,13 +1004,13 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.2.0
+openedx-authz==1.5.0
     # via -r requirements/edx/base.txt
 openedx-calc==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-openedx-core==0.38.2
+openedx-core==0.39.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1021,13 +1022,14 @@ openedx-django-require==3.0.0
     # via -r requirements/edx/base.txt
 openedx-django-wiki==3.1.1
     # via -r requirements/edx/base.txt
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
     #   edx-event-bus-kafka
     #   edx-event-bus-redis
     #   event-tracking
+    #   openedx-core
     #   ora2
 openedx-filters==3.1.0
     # via

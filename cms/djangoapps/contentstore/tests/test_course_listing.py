@@ -10,6 +10,7 @@ import ddt
 from ccx_keys.locator import CCXLocator
 from django.test import RequestFactory
 from opaque_keys.edx.locations import CourseLocator
+from openedx_authz.api.data import OrgCourseOverviewGlobData
 from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_EDITOR, COURSE_STAFF
 
@@ -715,3 +716,119 @@ class TestCourseListingAuthz(CourseAuthoringAuthzTestMixin, ModuleStoreTestCase)
             }
 
             self.assertEqual(result_ids, expected_ids)  # noqa: PT009
+
+    def test_course_listing_with_org_scope(self):
+        """
+        Verify that assigning a course role like course_staff with an org-wide scope
+        (`course-v1:Org1+*`) grants access to all courses in that org when
+        the AuthZ course authoring toggle is enabled.
+        """
+        _, _, authz_courses, legacy_courses = self._create_courses()
+        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            org_scope.external_key,
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=True,
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            result_ids = {c.id for c in courses}
+
+            expected_ids = {
+                *(c.id for c in authz_courses),
+                *(c.id for c in legacy_courses),
+            }
+
+            self.assertEqual(result_ids, expected_ids)  # noqa: PT009
+
+    def test_course_listing_with_org_scope_with_toggle(self):
+        """
+        If the authz toggle is enabled only for a subset of org courses, only
+        those course keys should appear in the resulting course list.
+        """
+        authz_keys, _, _, _ = self._create_courses()
+        # enable only the first and third course keys
+        enabled_keys = {str(authz_keys[0]), str(authz_keys[2])}
+        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            org_scope.external_key,
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            side_effect=self._mock_authz_toggle(enabled_keys),
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            result_ids = {c.id for c in courses}
+
+            expected = {authz_keys[0], authz_keys[2]}
+            self.assertEqual(result_ids, expected)  # noqa: PT009
+
+    def test_course_listing_with_org_scope_without_courses(self):
+        """
+        When the scope is an OrgCourseOverviewGlobData for an org that has no
+        courses, `get_courses_accessible_to_user` should return an empty
+        list.
+        """
+        org_scope = OrgCourseOverviewGlobData(external_key='course-v1:Org2+*')
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            org_scope.external_key,
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=True,
+        ):
+            courses, _ = get_courses_accessible_to_user(request)
+
+            self.assertEqual(courses, [])  # noqa: PT009
+
+    def test_course_listing_with_org_scope_fetched_once(self):
+        """
+        Verify that course overviews are fetched once with all authorized orgs.
+        """
+        org_scope1 = OrgCourseOverviewGlobData(external_key='course-v1:Org1+*')
+        org_scope2 = OrgCourseOverviewGlobData(external_key='course-v1:Org2+*')
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            org_scope1.external_key,
+        )
+        assign_role_to_user_in_scope(
+            self.authorized_user.username,
+            COURSE_STAFF.external_key,
+            org_scope2.external_key,
+        )
+
+        request = self._make_request(self.authorized_user)
+
+        with patch.object(
+            core_toggles.AUTHZ_COURSE_AUTHORING_FLAG,
+            "is_enabled",
+            return_value=True,
+        ), patch.object(
+            CourseOverview,
+            "get_all_courses",
+        ) as mock_get_all_courses:
+            courses, _ = get_courses_accessible_to_user(request)
+
+        mock_get_all_courses.assert_called_once_with(orgs={"Org1", "Org2"})

@@ -1,6 +1,7 @@
 """
 Models for content staging (and clipboard)
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,11 +12,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey
-from openedx_django_lib.fields import MultiCollationTextField, case_insensitive_char_field
+from openedx_django_lib.fields import MultiCollationTextField, TypedAutoField, case_insensitive_char_field
 
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 
-from .data import CLIPBOARD_PURPOSE, StagedContentStatus
+from .data import CLIPBOARD_PURPOSE, StagedContentID, StagedContentStatus
 
 log = logging.getLogger(__name__)
 
@@ -42,9 +43,14 @@ class StagedContent(models.Model):
     class Meta:
         verbose_name_plural = _("Staged Content")
 
-    id = models.AutoField(primary_key=True)  # noqa: DJ012
+    type ID = StagedContentID
+
+    class IDField(TypedAutoField[ID]):
+        pass
+
+    id = IDField(primary_key=True)
     # The user that created and owns this staged content. Only this user can read it.
-    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)  # noqa: DJ012
     created = models.DateTimeField(null=False, auto_now_add=True)
     # What this StagedContent is for (e.g. "clipboard" for clipboard)
     purpose = models.CharField(max_length=64)

@@ -21,7 +21,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from pytz import UTC
 from web_fragments.fragment import Fragment
 from webob import Response
@@ -38,6 +38,7 @@ from cms.djangoapps.contentstore.xblock_storage_handlers import view_handlers as
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
     ALWAYS,
     VisibilityState,
+    _get_metadata_with_problem_defaults,
     _get_source_index,
     _xblock_type_and_display_name,
     add_container_page_publishing_info,
@@ -593,11 +594,11 @@ class TestCreateItem(ItemTest):
         self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def test_create_with_future_date(self):
-        self.assertEqual(self.course.start, datetime(2030, 1, 1, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(self.course.start, DEFAULT_START_DATE)  # noqa: PT009
         resp = self.create_xblock(category="chapter")
         usage_key = self.response_usage_key(resp)
         obj = self.get_item_from_modulestore(usage_key)
-        self.assertEqual(obj.start, datetime(2030, 1, 1, tzinfo=UTC))  # noqa: PT009
+        self.assertEqual(obj.start, DEFAULT_START_DATE)  # noqa: PT009
 
     def test_static_tabs_initialization(self):
         """
@@ -743,7 +744,7 @@ class DuplicateHelper:
         return self.response_usage_key(resp)
 
 
-class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
+class TestDuplicateItem(OpenEdxEventsTestMixin, ItemTest, DuplicateHelper):
     """
     Test the duplicate method.
     """
@@ -751,22 +752,6 @@ class TestDuplicateItem(ItemTest, DuplicateHelper, OpenEdxEventsTestMixin):
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.content_authoring.xblock.duplicated.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):
         """Creates the test course structure and a few components to 'duplicate'."""
@@ -3395,7 +3380,7 @@ class TestXBlockInfo(ItemTest):
             xblock_info["course_graders"],
             ["Homework", "Lab", "Midterm Exam", "Final Exam"],
         )
-        self.assertEqual(xblock_info["start"], "2030-01-01T00:00:00Z")  # noqa: PT009
+        self.assertEqual(xblock_info["start"], DEFAULT_START_DATE.strftime('%Y-%m-%dT%H:%M:%SZ'))  # noqa: PT009
         self.assertEqual(xblock_info["graded"], False)  # noqa: PT009
         self.assertEqual(xblock_info["due"], None)  # noqa: PT009
         self.assertEqual(xblock_info["format"], None)  # noqa: PT009
@@ -3499,6 +3484,83 @@ class TestXBlockInfo(ItemTest):
                     )
         else:
             self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
+
+
+class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):
+    """
+    Unit tests for _get_metadata_with_problem_defaults.
+
+    The helper must inject a ``weight`` value (derived from ``max_score()``) for
+    problem xblocks that have never had ``weight`` explicitly saved, while leaving
+    every other combination untouched.
+    """
+
+    def _make_problem(self, **kwargs):
+        """Create and return a problem xblock from the modulestore."""
+        course = CourseFactory.create()
+        block = BlockFactory.create(
+            parent_location=course.location,
+            category='problem',
+            display_name='A Problem',
+            **kwargs,
+        )
+        return modulestore().get_item(block.location)
+
+    # ------------------------------------------------------------------
+    # Problem blocks – weight absent from stored metadata
+    # ------------------------------------------------------------------
+
+    def test_problem_without_weight_adds_weight_from_max_score(self):
+        """
+        When weight is absent and max_score() > 0, it is injected into metadata.
+        """
+        xblock = self._make_problem()
+        with patch.object(xblock, 'max_score', return_value=3.0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert metadata.get('weight') == 3.0
+
+    def test_problem_without_weight_max_score_zero_does_not_inject(self):
+        """
+        A zero max_score will not inject a weight.
+        """
+        xblock = self._make_problem()
+        with patch.object(xblock, 'max_score', return_value=0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert 'weight' not in metadata
+
+    # ------------------------------------------------------------------
+    # Problem blocks – weight already present in stored metadata
+    # ------------------------------------------------------------------
+
+    def test_problem_with_explicit_weight_is_preserved(self):
+        """
+        When weight is already explicitly set, it will not be overwritten.
+        """
+        xblock = self._make_problem(weight=5.0)
+        with patch.object(xblock, 'max_score', return_value=2.0):
+            metadata = _get_metadata_with_problem_defaults(xblock)
+        assert metadata.get('weight') == 5.0
+
+    # ------------------------------------------------------------------
+    # Non-problem blocks
+    # ------------------------------------------------------------------
+
+    def test_non_problem_block_is_unmodified(self):
+        """
+        Non-problem blocks must pass through untouched even if a max_score
+        method is available on them.
+        """
+        course = CourseFactory.create()
+        video = BlockFactory.create(
+            parent_location=course.location,
+            category='video',
+            display_name='A Video',
+        )
+        xblock = modulestore().get_item(video.location)
+        metadata_before = dict(get_block_info(xblock).get('metadata', {}))
+        metadata_result = _get_metadata_with_problem_defaults(xblock)
+        assert metadata_result == metadata_before
+        assert 'weight' not in metadata_result
 
 
 @patch.dict("django.conf.settings.FEATURES", {"ENABLE_SPECIAL_EXAMS": True})

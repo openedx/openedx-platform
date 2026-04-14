@@ -5,6 +5,7 @@ from django.conf import settings
 from django.test import RequestFactory
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from openedx_authz.constants.roles import COURSE_EDITOR
 from rest_framework import status
 
 from cms.djangoapps.contentstore.config.waffle import CUSTOM_RELATIVE_DATES
@@ -13,6 +14,7 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import get_lms_link_for_item, get_pages_and_resources_url
 from cms.djangoapps.contentstore.views.course import _course_outline_json
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from xmodule.modulestore.tests.factories import BlockFactory, check_mongo_calls
 
@@ -162,3 +164,63 @@ class CourseIndexViewTest(CourseTestCase, PermissionAccessMixin):
         with self.assertNumQueries(34, table_ignorelist=WAFFLE_TABLES):
             with check_mongo_calls(3):
                 self.client.get(self.url)
+
+
+class CourseIndexAuthzViewTest(CourseAuthoringAuthzTestMixin, CourseTestCase):
+    """
+    Tests for CourseIndexView using AuthZ permissions.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse(
+            "cms.djangoapps.contentstore:v1:course_index",
+            kwargs={"course_id": self.course.id},
+        )
+
+    def test_authorized_user_can_access_course_index(self):
+        """Authorized user with COURSE_EDITOR role can access course index."""
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.authorized_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "course_structure" in response.data
+
+    def test_unauthorized_user_cannot_access_course_index(self):
+        """Unauthorized user should receive 403."""
+        response = self.unauthorized_client.get(self.url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_user_without_role_then_added_can_access(self):
+        """Validate dynamic role assignment works as expected."""
+        response = self.unauthorized_client.get(self.url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            self.course.id
+        )
+
+        response = self.unauthorized_client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_staff_user_can_access_without_authz_role(self):
+        """Django staff user should access without AuthZ role."""
+        response = self.staff_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "course_structure" in response.data
+
+    def test_superuser_can_access_without_authz_role(self):
+        """Superuser should access without AuthZ role."""
+        response = self.super_client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "course_structure" in response.data

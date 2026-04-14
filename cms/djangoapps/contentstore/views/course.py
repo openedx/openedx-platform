@@ -29,7 +29,7 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator
 from openedx_authz.api import get_scopes_for_user_and_permission
-from openedx_authz.api.data import CourseOverviewData
+from openedx_authz.api.data import CourseOverviewData, OrgCourseOverviewGlobData, ScopeData
 from openedx_authz.constants.permissions import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
@@ -817,6 +817,32 @@ def _apply_course_query_filters(request, courses):
     return filter(filter_course, filtered_courses)
 
 
+def _get_course_keys_for_org_scope(org_keys: set[str]):
+    """
+    Convert a set of organization keys into specific course keys.
+    """
+
+    return CourseOverview.get_all_courses(orgs=org_keys).values_list('id', flat=True)
+
+def _get_course_keys_from_scopes(authz_scopes: list[ScopeData]):
+    """
+    Convert a set of Authz scopes into specific course keys.
+    """
+    course_keys = set()
+    org_keys = set()
+    for access in authz_scopes:
+        if isinstance(access, CourseOverviewData) and access.course_key:
+            if core_toggles.enable_authz_course_authoring(access.course_key):
+                course_keys.add(access.course_key)
+        elif isinstance(access, OrgCourseOverviewGlobData) and access.org:
+            org_keys.add(access.org)
+    if org_keys:
+        course_keys.update(
+            key for key in _get_course_keys_for_org_scope(org_keys)
+            if core_toggles.enable_authz_course_authoring(key)
+        )
+    return course_keys
+
 def _get_authz_accessible_courses_list(request):
     """
     List all courses available to the logged in user by
@@ -828,14 +854,7 @@ def _get_authz_accessible_courses_list(request):
         COURSES_VIEW_COURSE.identifier
     )
 
-    authz_keys = {
-        access.course_key
-        for access in authz_scopes
-        if isinstance(access, CourseOverviewData) and access.course_key
-        and core_toggles.enable_authz_course_authoring(access.course_key)
-    }
-    return authz_keys
-
+    return _get_course_keys_from_scopes(authz_scopes)
 
 def _get_legacy_accessible_courses_list(request):
     """
