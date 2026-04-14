@@ -13,6 +13,7 @@ from django.core.validators import ValidationError, validate_email
 from django.utils.translation import gettext as _
 from django.utils.translation import override as override_language
 from eventtracking import tracker
+from openedx_filters.learning.filters import AccountSettingsReadOnlyFieldsRequested
 
 from common.djangoapps.student import views as student_views
 from common.djangoapps.student.models import (
@@ -38,7 +39,6 @@ from openedx.core.djangoapps.user_api.preferences.api import update_user_prefere
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangoapps.user_authn.views.registration_form import validate_name, validate_username
 from openedx.core.lib.api.view_utils import add_serializer_errors
-from openedx.features.enterprise_support.utils import get_enterprise_readonly_account_fields
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 
 from .serializers import AccountLegacyProfileSerializer, AccountUserSerializer, UserReadOnlySerializer, _visible_fields
@@ -193,11 +193,17 @@ def update_account_settings(requesting_user, update, username=None):
 
 def _validate_read_only_fields(user, data, field_errors):
     # Check for fields that are not editable. Marking them read-only causes them to be ignored, but we wish to 400.
+    plugin_readonly_fields, __ = AccountSettingsReadOnlyFieldsRequested.run_filter(
+        readonly_fields=set(),
+        user=user,
+    )
+    plugin_readonly_fields = plugin_readonly_fields or set()
+
     read_only_fields = set(data.keys()).intersection(
         # Remove email since it is handled separately below when checking for changing_email.
         (set(AccountUserSerializer.get_read_only_fields()) - {"email"}) |
         set(AccountLegacyProfileSerializer.get_read_only_fields() or set()) |
-        get_enterprise_readonly_account_fields(user)
+        plugin_readonly_fields
     )
 
     for read_only_field in read_only_fields:

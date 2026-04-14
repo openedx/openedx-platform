@@ -570,7 +570,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.8.6
+edx-enterprise==7.0.1
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -892,6 +892,7 @@ lxml[html-clean]==5.3.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
+    #   edx-enterprise
     #   edx-i18n-tools
     #   edxval
     #   lti-consumer-xblock
