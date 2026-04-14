@@ -105,14 +105,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.84
+boto3==1.42.89
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.84
+botocore==1.42.89
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -164,7 +164,7 @@ cffi==2.0.0
     #   -r requirements/edx/base.txt
     #   cryptography
     #   pynacl
-chardet==7.4.0.post2
+chardet==7.4.3
     # via
     #   -r requirements/edx/base.txt
     #   pysrt
@@ -236,7 +236,7 @@ defusedxml==0.7.1
     #   python3-openid
     #   social-auth-core
     #   xblocks-contrib
-django==5.2.12
+django==5.2.13
     # via
     #   -c requirements/common_constraints.txt
     #   -c requirements/constraints.txt
@@ -510,7 +510,7 @@ edx-api-doc-tools==3.0.0
     #   openedx-authz
 edx-auth-backends==5.0.0
     # via -r requirements/edx/base.txt
-edx-bulk-grades==1.2.0
+edx-bulk-grades==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   staff-graded-xblock
@@ -520,7 +520,7 @@ edx-ccx-keys==2.0.2
     #   lti-consumer-xblock
     #   openedx-authz
     #   openedx-events
-edx-celeryutils==1.4.0
+edx-celeryutils==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   super-csv
@@ -528,7 +528,7 @@ edx-codejail==4.1.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-edx-completion==4.9
+edx-completion==5.0.0
     # via -r requirements/edx/base.txt
 edx-django-release-util==1.5.0
     # via
@@ -582,7 +582,7 @@ edx-i18n-tools==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   ora2
-edx-milestones==1.1.0
+edx-milestones==2.0.0
     # via -r requirements/edx/base.txt
 edx-opaque-keys[django]==4.0.0
     # via
@@ -615,19 +615,19 @@ edx-rbac==3.0.0
     #   -r requirements/edx/base.txt
     #   edx-enterprise
     #   enterprise-integrated-channels
-edx-rest-api-client==6.2.0
+edx-rest-api-client==7.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
     #   edx-proctoring
     #   enterprise-integrated-channels
-edx-search==4.4.0
+edx-search==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   openedx-forum
-edx-sga==0.27.0
+edx-sga==0.27.1
     # via -r requirements/edx/base.txt
-edx-submissions==3.12.2
+edx-submissions==4.0.0
     # via
     #   -r requirements/edx/base.txt
     #   ora2
@@ -636,7 +636,7 @@ edx-tincan-py35==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   enterprise-integrated-channels
-edx-toggles==5.4.1
+edx-toggles==6.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-auth-backends
@@ -649,11 +649,11 @@ edx-toggles==5.4.1
     #   event-tracking
     #   ora2
     #   xblocks-contrib
-edx-when==3.2.1
+edx-when==4.0.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-proctoring
-edxval==3.2.0
+edxval==4.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
@@ -686,7 +686,7 @@ filelock==3.25.2
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
-firebase-admin==7.3.0
+firebase-admin==7.4.0
     # via
     #   -r requirements/edx/base.txt
     #   edx-ace
@@ -714,14 +714,14 @@ gitpython==3.1.46
     # via -r requirements/edx/doc.in
 glob2==0.7
     # via -r requirements/edx/base.txt
-google-api-core[grpc]==2.30.2
+google-api-core[grpc]==2.30.3
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
     #   google-cloud-core
     #   google-cloud-firestore
     #   google-cloud-storage
-google-auth==2.49.1
+google-auth==2.49.2
     # via
     #   -r requirements/edx/base.txt
     #   google-api-core
@@ -733,7 +733,7 @@ google-cloud-core==2.5.1
     #   -r requirements/edx/base.txt
     #   google-cloud-firestore
     #   google-cloud-storage
-google-cloud-firestore==2.26.0
+google-cloud-firestore==2.27.0
     # via
     #   -r requirements/edx/base.txt
     #   firebase-admin
@@ -819,7 +819,7 @@ inflection==0.5.1
     #   -r requirements/edx/base.txt
     #   drf-spectacular
     #   drf-yasg
-invoke==3.0.2
+invoke==3.0.3
     # via
     #   -r requirements/edx/base.txt
     #   paramiko
@@ -947,7 +947,7 @@ monotonic==1.6
     # via
     #   -r requirements/edx/base.txt
     #   analytics-python
-more-itertools==11.0.1
+more-itertools==11.0.2
     # via
     #   -r requirements/edx/base.txt
     #   cssutils
@@ -1010,7 +1010,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-openedx-core==0.39.0
+openedx-core==0.39.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1022,7 +1022,7 @@ openedx-django-require==3.0.0
     # via -r requirements/edx/base.txt
 openedx-django-wiki==3.1.1
     # via -r requirements/edx/base.txt
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -1041,7 +1041,7 @@ openedx-forum==0.4.1
     # via -r requirements/edx/base.txt
 optimizely-sdk==5.4.0
     # via -r requirements/edx/base.txt
-ora2==6.17.2
+ora2==7.0.0
     # via -r requirements/edx/base.txt
 packaging==26.0
     # via
@@ -1083,7 +1083,7 @@ pillow==12.2.0
     #   edx-enterprise
     #   edx-organizations
     #   edxval
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
@@ -1144,11 +1144,11 @@ pycryptodomex==3.23.0
     #   -r requirements/edx/base.txt
     #   edx-proctoring
     #   lti-consumer-xblock
-pydantic==2.12.5
+pydantic==2.13.0
     # via
     #   -r requirements/edx/base.txt
     #   camel-converter
-pydantic-core==2.41.5
+pydantic-core==2.46.0
     # via
     #   -r requirements/edx/base.txt
     #   pydantic
@@ -1519,6 +1519,7 @@ tqdm==4.67.3
 typesense==2.0.0
     # via
     #   -r requirements/edx/base.txt
+    #   edx-search
     #   openedx-forum
 typing-extensions==4.15.0
     # via
@@ -1661,7 +1662,7 @@ yarl==1.23.0
     # via
     #   -r requirements/edx/base.txt
     #   aiohttp
-zipp==3.23.0
+zipp==3.23.1
     # via
     #   -r requirements/edx/base.txt
     #   importlib-metadata
