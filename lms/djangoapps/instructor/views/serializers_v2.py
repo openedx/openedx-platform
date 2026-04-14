@@ -585,6 +585,132 @@ class ORASummarySerializer(serializers.Serializer):
     final_grade_received = serializers.IntegerField()
 
 
+class IssuedCertificateSerializer(serializers.Serializer):
+    """
+    Serializer for issued certificates with allowlist and invalidation information.
+    Accepts GeneratedCertificate instances and pulls related data from context.
+    """
+    username = serializers.CharField(source='user.username', help_text="Username of the learner")
+    email = serializers.EmailField(source='user.email', help_text="Email address of the learner")
+    enrollment_track = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Enrollment track/mode (e.g., verified, audit)"
+    )
+    certificate_status = serializers.CharField(
+        source='status',
+        help_text="Certificate status (e.g., downloadable, notpassing)"
+    )
+    special_case = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Special case type (Exception or Invalidation)"
+    )
+    exception_granted = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Date when exception was granted in ISO 8601 format"
+    )
+    exception_notes = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Notes about the exception"
+    )
+    invalidated_by = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Email of user who invalidated the certificate"
+    )
+    invalidation_date = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Date when certificate was invalidated in ISO 8601 format"
+    )
+
+    def get_enrollment_track(self, obj):
+        """Get enrollment track from context."""
+        enrollment_dict = self.context.get('enrollment_dict', {})
+        return enrollment_dict.get(obj.user_id)
+
+    def get_special_case(self, obj):
+        """Determine special case from allowlist and invalidation data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        invalidation_dict = self.context.get('invalidation_dict', {})
+
+        if obj.user_id in allowlist_dict:
+            return "Exception"
+        elif obj.user_id in invalidation_dict:
+            return "Invalidation"
+        return None
+
+    def get_exception_granted(self, obj):
+        """Get exception granted date from allowlist data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        allowlist_info = allowlist_dict.get(obj.user_id)
+        return allowlist_info['created'] if allowlist_info else None
+
+    def get_exception_notes(self, obj):
+        """Get exception notes from allowlist data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        allowlist_info = allowlist_dict.get(obj.user_id)
+        return allowlist_info['notes'] if allowlist_info else None
+
+    def get_invalidated_by(self, obj):
+        """Get invalidated by email from invalidation data in context."""
+        invalidation_dict = self.context.get('invalidation_dict', {})
+        invalidation_info = invalidation_dict.get(obj.user_id)
+        return invalidation_info['invalidated_by'] if invalidation_info else None
+
+    def get_invalidation_date(self, obj):
+        """Get invalidation date from invalidation data in context."""
+        invalidation_dict = self.context.get('invalidation_dict', {})
+        invalidation_info = invalidation_dict.get(obj.user_id)
+        return invalidation_info['created'] if invalidation_info else None
+
+
+class CertificateGenerationHistorySerializer(serializers.Serializer):
+    """
+    Serializer for certificate generation history.
+    Accepts CertificateGenerationHistory model instances.
+    """
+    task_name = serializers.SerializerMethodField(
+        help_text="Task name (Generated or Regenerated)"
+    )
+    date = serializers.DateTimeField(
+        source='created',
+        help_text="Date when the task was created in ISO 8601 format"
+    )
+    details = serializers.SerializerMethodField(
+        help_text="Details about the certificate generation (e.g., 'audit not passing states', 'For exceptions')"
+    )
+
+    def get_task_name(self, obj):
+        """Determine task name based on whether it's a regeneration."""
+        return "Regenerated" if obj.is_regeneration else "Generated"
+
+    def get_details(self, obj):
+        """Get details about what was generated/regenerated."""
+        return str(obj.get_certificate_generation_candidates())
+
+
+class RegenerateCertificatesSerializer(serializers.Serializer):
+    """
+    Serializer for regenerating certificates request.
+    """
+    statuses = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=[
+                'deleted', 'deleting', 'downloadable', 'error', 'generating',
+                'notpassing', 'restricted', 'unavailable', 'auditing',
+                'audit_passing', 'audit_notpassing', 'honor_passing',
+                'unverified', 'invalidated', 'requesting'
+            ]
+        ),
+        required=False,
+        help_text="Certificate statuses to regenerate"
+    )
+    student_set = serializers.ChoiceField(
+        choices=['all', 'allowlisted'],
+        required=False,
+        default='all',
+        help_text="Student set filter"
+    )
+
+
 class CourseEnrollmentSerializerV2(serializers.Serializer):
     """
     Serializer for course enrollment data.

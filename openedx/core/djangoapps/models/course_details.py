@@ -195,126 +195,135 @@ class CourseDetails:
     @classmethod
     def update_from_json(cls, course_key, jsondict, user):  # pylint: disable=too-many-statements
         """
-        Decode the json into CourseDetails and save any changed attrs to the db
+        Decode the json into CourseDetails and save any changed attrs to the db.
+
+        All writes are batched inside a single ``bulk_operations`` context so that
+        only one ``course_published`` signal is emitted per call, regardless of how
+        many individual fields were updated.  Without this, every ``update_item`` /
+        ``delete_item`` call inside ``update_about_item`` (and the top-level block
+        update) each fire their own signal, causing downstream tasks to run
+        multiple times for a single user action.
         """
         module_store = modulestore()
-        block = module_store.get_course(course_key)
 
-        dirty = False
+        with module_store.bulk_operations(course_key):
+            block = module_store.get_course(course_key)
 
-        # In the block's setter, the date is converted to JSON
-        # using Date's to_json method. Calling to_json on something that
-        # is already JSON doesn't work. Since reaching directly into the
-        # model is nasty, convert the JSON Date to a Python date, which
-        # is what the setter expects as input.
-        date = Date()
+            dirty = False
 
-        if jsondict['overview'] == '':
-            jsondict['overview'] = '<p>&nbsp;</p>'
+            # In the block's setter, the date is converted to JSON
+            # using Date's to_json method. Calling to_json on something that
+            # is already JSON doesn't work. Since reaching directly into the
+            # model is nasty, convert the JSON Date to a Python date, which
+            # is what the setter expects as input.
+            date = Date()
 
-        if 'start_date' in jsondict:
-            converted = date.from_json(jsondict['start_date'])
-        else:
-            converted = None
-        if converted != block.start:
-            dirty = True
-            block.start = converted
+            if jsondict['overview'] == '':
+                jsondict['overview'] = '<p>&nbsp;</p>'
 
-        if 'end_date' in jsondict:
-            converted = date.from_json(jsondict['end_date'])
-        else:
-            converted = None
+            if 'start_date' in jsondict:
+                converted = date.from_json(jsondict['start_date'])
+            else:
+                converted = None
+            if converted != block.start:
+                dirty = True
+                block.start = converted
 
-        if converted != block.end:
-            dirty = True
-            block.end = converted
+            if 'end_date' in jsondict:
+                converted = date.from_json(jsondict['end_date'])
+            else:
+                converted = None
 
-        if 'enrollment_start' in jsondict:
-            converted = date.from_json(jsondict['enrollment_start'])
-        else:
-            converted = None
+            if converted != block.end:
+                dirty = True
+                block.end = converted
 
-        if converted != block.enrollment_start:
-            dirty = True
-            block.enrollment_start = converted
+            if 'enrollment_start' in jsondict:
+                converted = date.from_json(jsondict['enrollment_start'])
+            else:
+                converted = None
 
-        if 'enrollment_end' in jsondict:
-            converted = date.from_json(jsondict['enrollment_end'])
-        else:
-            converted = None
+            if converted != block.enrollment_start:
+                dirty = True
+                block.enrollment_start = converted
 
-        if converted != block.enrollment_end:
-            dirty = True
-            block.enrollment_end = converted
+            if 'enrollment_end' in jsondict:
+                converted = date.from_json(jsondict['enrollment_end'])
+            else:
+                converted = None
 
-        if 'certificate_available_date' in jsondict:
-            converted = date.from_json(jsondict['certificate_available_date'])
-        else:
-            converted = None
+            if converted != block.enrollment_end:
+                dirty = True
+                block.enrollment_end = converted
 
-        if converted != block.certificate_available_date:
-            dirty = True
-            block.certificate_available_date = converted
+            if 'certificate_available_date' in jsondict:
+                converted = date.from_json(jsondict['certificate_available_date'])
+            else:
+                converted = None
 
-        if (
-            'certificates_display_behavior' in jsondict
-            and jsondict['certificates_display_behavior'] != block.certificates_display_behavior
-        ):
-            block.certificates_display_behavior = jsondict['certificates_display_behavior']
-            dirty = True
+            if converted != block.certificate_available_date:
+                dirty = True
+                block.certificate_available_date = converted
 
-        if 'course_image_name' in jsondict and jsondict['course_image_name'] != block.course_image:
-            block.course_image = jsondict['course_image_name']
-            dirty = True
+            if (
+                'certificates_display_behavior' in jsondict
+                and jsondict['certificates_display_behavior'] != block.certificates_display_behavior
+            ):
+                block.certificates_display_behavior = jsondict['certificates_display_behavior']
+                dirty = True
 
-        if 'banner_image_name' in jsondict and jsondict['banner_image_name'] != block.banner_image:
-            block.banner_image = jsondict['banner_image_name']
-            dirty = True
+            if 'course_image_name' in jsondict and jsondict['course_image_name'] != block.course_image:
+                block.course_image = jsondict['course_image_name']
+                dirty = True
 
-        if 'video_thumbnail_image_name' in jsondict \
-                and jsondict['video_thumbnail_image_name'] != block.video_thumbnail_image:
-            block.video_thumbnail_image = jsondict['video_thumbnail_image_name']
-            dirty = True
+            if 'banner_image_name' in jsondict and jsondict['banner_image_name'] != block.banner_image:
+                block.banner_image = jsondict['banner_image_name']
+                dirty = True
 
-        if 'pre_requisite_courses' in jsondict \
-                and sorted(jsondict['pre_requisite_courses']) != sorted(block.pre_requisite_courses):
-            block.pre_requisite_courses = jsondict['pre_requisite_courses']
-            dirty = True
+            if 'video_thumbnail_image_name' in jsondict \
+                    and jsondict['video_thumbnail_image_name'] != block.video_thumbnail_image:
+                block.video_thumbnail_image = jsondict['video_thumbnail_image_name']
+                dirty = True
 
-        if 'license' in jsondict:
-            block.license = jsondict['license']
-            dirty = True
+            if 'pre_requisite_courses' in jsondict \
+                    and sorted(jsondict['pre_requisite_courses']) != sorted(block.pre_requisite_courses):
+                block.pre_requisite_courses = jsondict['pre_requisite_courses']
+                dirty = True
 
-        if 'learning_info' in jsondict:
-            block.learning_info = jsondict['learning_info']
-            dirty = True
+            if 'license' in jsondict:
+                block.license = jsondict['license']
+                dirty = True
 
-        if 'instructor_info' in jsondict:
-            block.instructor_info = jsondict['instructor_info']
-            dirty = True
+            if 'learning_info' in jsondict:
+                block.learning_info = jsondict['learning_info']
+                dirty = True
 
-        if 'language' in jsondict and jsondict['language'] != block.language:
-            block.language = jsondict['language']
-            dirty = True
+            if 'instructor_info' in jsondict:
+                block.instructor_info = jsondict['instructor_info']
+                dirty = True
 
-        if (block.can_toggle_course_pacing
-                and 'self_paced' in jsondict
-                and jsondict['self_paced'] != block.self_paced):
-            block.self_paced = jsondict['self_paced']
-            dirty = True
+            if 'language' in jsondict and jsondict['language'] != block.language:
+                block.language = jsondict['language']
+                dirty = True
 
-        if dirty:
-            module_store.update_item(block, user.id)
+            if (block.can_toggle_course_pacing
+                    and 'self_paced' in jsondict
+                    and jsondict['self_paced'] != block.self_paced):
+                block.self_paced = jsondict['self_paced']
+                dirty = True
 
-        # NOTE: below auto writes to the db w/o verifying that any of
-        # the fields actually changed to make faster, could compare
-        # against db or could have client send over a list of which
-        # fields changed.
-        for attribute in ABOUT_ATTRIBUTES:
-            if attribute in jsondict:
-                cls.update_about_item(block, attribute, jsondict[attribute], user.id)
+            if dirty:
+                module_store.update_item(block, user.id)
 
-        cls.update_about_video(block, jsondict['intro_video'], user.id)
+            # NOTE: below auto writes to the db w/o verifying that any of
+            # the fields actually changed to make faster, could compare
+            # against db or could have client send over a list of which
+            # fields changed.
+            for attribute in ABOUT_ATTRIBUTES:
+                if attribute in jsondict:
+                    cls.update_about_item(block, attribute, jsondict[attribute], user.id)
+
+            cls.update_about_video(block, jsondict['intro_video'], user.id)
 
         # Could just return jsondict w/o doing any db reads, but I put
         # the reads in as a means to confirm it persisted correctly

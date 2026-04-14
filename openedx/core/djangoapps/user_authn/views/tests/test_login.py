@@ -21,7 +21,7 @@ from django.test.utils import override_settings
 from django.urls import NoReverseMatch, reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from freezegun import freeze_time
-from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import LoginFailures
 from common.djangoapps.student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory
@@ -53,7 +53,7 @@ from openedx.features.enterprise_support.tests.factories import EnterpriseCustom
     ENABLE_AUTHN_LOGIN_BLOCK_HIBP_POLICY=False,
     ENABLE_AUTHN_LOGIN_NUDGE_HIBP_POLICY=False,
 )
-class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
+class LoginTest(OpenEdxEventsTestMixin, SiteMixin, CacheIsolationTestCase):
     """
     Test login_user() view
     """
@@ -66,17 +66,6 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
     username = 'test'
     user_email = 'test@edx.org'
     password = 'test_password'
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         """Setup a test user along with its registration and profile"""
@@ -1046,7 +1035,7 @@ class LoginTest(SiteMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin):
 
 @ddt.ddt
 @skip_unless_lms
-class LoginSessionViewTest(ApiTestCase, OpenEdxEventsTestMixin):
+class LoginSessionViewTest(OpenEdxEventsTestMixin, ApiTestCase):
     """Tests for the login end-points of the user API. """
 
     ENABLED_OPENEDX_EVENTS = []
@@ -1054,17 +1043,6 @@ class LoginSessionViewTest(ApiTestCase, OpenEdxEventsTestMixin):
     USERNAME = "bob"
     EMAIL = "bob@example.com"
     PASSWORD = "password"
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()

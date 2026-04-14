@@ -33,7 +33,7 @@ from openedx_events.content_authoring.signals import (
     XBLOCK_PUBLISHED,
     XBLOCK_UPDATED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
 from xblock.fields import Scope, ScopeIds, String
@@ -69,7 +69,7 @@ if not settings.configured:
 log = logging.getLogger(__name__)
 
 
-class CommonMixedModuleStoreSetup(CourseComparisonTest, OpenEdxEventsTestMixin):
+class CommonMixedModuleStoreSetup(OpenEdxEventsTestMixin, CourseComparisonTest):
     """
     Quasi-superclass which tests Location based apps against both split and mongo dbs (Locator and
     Location-based dbs)
@@ -122,16 +122,6 @@ class CommonMixedModuleStoreSetup(CourseComparisonTest, OpenEdxEventsTestMixin):
         "org.openedx.content_authoring.xblock.deleted.v1",
         "org.openedx.content_authoring.xblock.published.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         """

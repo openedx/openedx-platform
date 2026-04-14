@@ -4,6 +4,7 @@ Tests for CourseDetails
 
 
 import datetime
+from unittest.mock import MagicMock
 from zoneinfo import ZoneInfo
 
 import ddt
@@ -13,6 +14,7 @@ from django.test import override_settings
 from openedx.core.djangoapps.models.course_details import ABOUT_ATTRIBUTES, CourseDetails
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import SignalHandler
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -211,3 +213,32 @@ class CourseDetailsTestCase(ModuleStoreTestCase):
         assert CourseDetails.validate_certificate_settings(
             stored_date, stored_behavior
         ) == (expected_date, expected_behavior)
+
+    def test_update_from_json_emits_course_published_signal_once(self):
+        """
+        Verify that update_from_json emits the course_published signal exactly
+        once per call.
+
+        The bulk_operations context wrapping all writes inside update_from_json
+        coalesces every update_item / delete_item call into a single
+        course_published signal emission.
+        """
+        signal_handler = MagicMock()
+        SignalHandler.course_published.connect(signal_handler)
+        try:
+            jsondetails = CourseDetails.fetch(self.course.id)
+            jsondetails.overview = "<p>Updated overview</p>"
+            jsondetails.short_description = "Updated short description"
+            jsondetails.effort = "2 hours/week"
+            jsondetails.language = "en"
+            jsondetails.intro_video = None
+
+            # ModuleStoreTestCase disables all signals by default; re-enable
+            # course_published for this test so we can assert on its emission.
+            with SignalHandler.course_published.for_state(is_enabled=True):
+                with self.store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, self.course.id):
+                    CourseDetails.update_from_json(self.course.id, jsondetails.__dict__, self.user)
+
+            signal_handler.assert_called_once()
+        finally:
+            SignalHandler.course_published.disconnect(signal_handler)
