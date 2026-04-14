@@ -67,6 +67,26 @@ v2_api_urls = [
         name='ora_summary'
     ),
     re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/issued$',
+        api_v2.IssuedCertificatesView.as_view(),
+        name='issued_certificates'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/generation_history$',
+        api_v2.CertificateGenerationHistoryView.as_view(),
+        name='certificate_generation_history'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/regenerate$',
+        api_v2.RegenerateCertificatesView.as_view(),
+        name='regenerate_certificates'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/certificates/config$',
+        api_v2.CertificateConfigView.as_view(),
+        name='certificate_config'
+    ),
+    re_path(
         rf'^courses/{COURSE_ID_PATTERN}/enrollments$',
         api_v2.CourseEnrollmentsView.as_view(),
         name='course_enrollments'

@@ -2,7 +2,7 @@
 Unit tests for course details views.
 """
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import ddt
 from django.urls import reverse
@@ -13,6 +13,7 @@ from rest_framework.test import APIClient
 from cms.djangoapps.contentstore.rest_api.v1.views.course_details import _classify_update
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from xmodule.modulestore.django import SignalHandler
 
 from ...mixins import PermissionAccessMixin
 
@@ -121,6 +122,38 @@ class CourseDetailsViewTest(CourseTestCase, PermissionAccessMixin):
             content_type="application/json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+
+    def test_put_emits_course_published_signal_once(self):
+        """
+        Verify that a single PUT to the course details API emits the
+        course_published signal exactly once.
+
+        The bulk_operations context inside update_from_json coalesces all
+        individual update_item / delete_item calls into a single signal
+        emission.  Without it, each call would fire its own signal.
+        """
+        signal_handler = MagicMock()
+        SignalHandler.course_published.connect(signal_handler)
+        try:
+            request_data = {
+                "overview": "<p>Updated overview</p>",
+                "short_description": "Updated short description",
+                "effort": "3 hours/week",
+                "language": "en",
+                "intro_video": None,
+            }
+            # ModuleStoreTestCase disables all signals by default; re-enable
+            # course_published for this test so we can assert on its emission.
+            with SignalHandler.course_published.for_state(is_enabled=True):
+                response = self.client.put(
+                    path=self.url,
+                    data=json.dumps(request_data),
+                    content_type="application/json",
+                )
+            assert response.status_code == status.HTTP_200_OK
+            signal_handler.assert_called_once()
+        finally:
+            SignalHandler.course_published.disconnect(signal_handler)
 
 
 @ddt.ddt

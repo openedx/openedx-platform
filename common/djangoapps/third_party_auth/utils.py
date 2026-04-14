@@ -3,18 +3,14 @@ Utility functions for third_party_auth
 """
 
 import datetime
-import logging
-from uuid import UUID
 from zoneinfo import ZoneInfo
 
 import dateutil.parser
-import requests
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.utils.timezone import now
 from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
 from lxml import etree
 from onelogin.saml2.utils import OneLogin_Saml2_Utils
-from requests import exceptions
 from social_core.pipeline.social_auth import associate_by_email
 
 from common.djangoapps.student.models import email_exists_or_retired, username_exists_or_retired
@@ -25,45 +21,10 @@ from . import provider
 
 SAML_XML_NS = 'urn:oasis:names:tc:SAML:2.0:metadata'  # The SAML Metadata XML namespace
 
-log = logging.getLogger(__name__)
-
 
 class MetadataParseError(Exception):
     """ An error occurred while parsing the SAML metadata from an IdP """
     pass  # lint-amnesty, pylint: disable=unnecessary-pass
-
-
-def fetch_metadata_xml(url):
-    """
-    Fetches IDP metadata from provider url
-    Returns: xml document
-    """
-    try:
-        log.info("Fetching %s", url)
-        if not url.lower().startswith('https'):
-            log.warning("This SAML metadata URL is not secure! It should use HTTPS. (%s)", url)
-        response = requests.get(url, verify=True)  # May raise HTTPError or SSLError or ConnectionError
-        response.raise_for_status()  # May raise an HTTPError
-
-        try:
-            parser = etree.XMLParser(remove_comments=True)
-            xml = etree.fromstring(response.content, parser)
-        except etree.XMLSyntaxError:  # lint-amnesty, pylint: disable=try-except-raise
-            raise
-        # TODO: Can use OneLogin_Saml2_Utils to validate signed XML if anyone is using that
-        return xml
-    except (exceptions.SSLError, exceptions.HTTPError, exceptions.RequestException, MetadataParseError) as error:
-        # Catch and process exception in case of errors during fetching and processing saml metadata.
-        # Here is a description of each exception.
-        # SSLError is raised in case of errors caused by SSL (e.g. SSL cer verification failure etc.)
-        # HTTPError is raised in case of unexpected status code (e.g. 500 error etc.)
-        # RequestException is the base exception for any request related error that "requests" lib raises.
-        # MetadataParseError is raised if there is error in the fetched meta data (e.g. missing @entityID etc.)
-        log.exception(str(error), exc_info=error)
-        raise error
-    except etree.XMLSyntaxError as error:
-        log.exception(str(error), exc_info=error)
-        raise error
 
 
 def parse_metadata_xml(xml, entity_id):
@@ -193,35 +154,6 @@ def create_or_update_bulk_saml_provider_data(entity_id, public_keys, sso_url, ex
             new_records_created = True
 
     return new_records_created
-
-
-def convert_saml_slug_provider_id(provider):  # lint-amnesty, pylint: disable=redefined-outer-name
-    """
-    Provider id is stored with the backend type prefixed to it (ie "saml-")
-    Slug is stored without this prefix.
-    This just converts between them whenever you expect the opposite of what you currently have.
-
-    Arguments:
-        provider (string): provider_id or slug
-
-    Returns:
-        (string): Opposite of what you inputted (slug -> provider_id; provider_id -> slug)
-    """
-    if provider.startswith('saml-'):
-        return provider[5:]
-    else:
-        return 'saml-' + provider
-
-
-def validate_uuid4_string(uuid_string):
-    """
-    Returns True if valid uuid4 string, or False
-    """
-    try:
-        UUID(uuid_string, version=4)
-    except ValueError:
-        return False
-    return True
 
 
 def is_saml_provider(backend, kwargs):

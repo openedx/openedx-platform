@@ -398,6 +398,26 @@ def modify_xblock(usage_key, request):
     )
 
 
+def _get_metadata_with_problem_defaults(xblock):
+    """
+    Returns own_metadata for the xblock, injecting a ``weight`` default for
+    problem blocks whose weight has never been explicitly saved.
+
+    Without this, the frontend falls back to displaying 1 (its own default)
+    even when the problem's actual point value differs. If ``max_score()``
+    returns a positive number, we inject it so the correct value is shown.
+    """
+    metadata = own_metadata(xblock)
+    if xblock.scope_ids.block_type == 'problem' and 'weight' not in metadata:
+        try:
+            max_score_value = xblock.max_score()
+            if max_score_value and max_score_value > 0:
+                metadata['weight'] = float(max_score_value)
+        except Exception:  # pylint: disable=broad-except
+            pass
+    return metadata
+
+
 def save_xblock_with_callback(xblock, user, old_metadata=None, old_content=None):
     """
     Updates the xblock in the modulestore.
@@ -1074,7 +1094,7 @@ def get_block_info(
         xblock_info = create_xblock_info(
             xblock,
             data=data,
-            metadata=own_metadata(xblock),
+            metadata=_get_metadata_with_problem_defaults(xblock),
             include_ancestor_info=include_ancestor_info,
             include_children_predicate=include_children_predicate
         )

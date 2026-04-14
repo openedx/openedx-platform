@@ -18,6 +18,7 @@ import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
@@ -39,6 +40,14 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.models.user import get_user_by_username_or_email
 from common.djangoapps.student.roles import CourseBetaTesterRole
 from common.djangoapps.util.json_request import JsonResponseBadRequest
+from lms.djangoapps.certificates import api as certs_api
+from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.models import (
+    CertificateAllowlist,
+    CertificateGenerationHistory,
+    CertificateInvalidation,
+    GeneratedCertificate,
+)
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
@@ -64,14 +73,17 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
     BlockDueDateSerializerV2,
+    CertificateGenerationHistorySerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
     GradingConfigSerializer,
     InstructorTaskListSerializer,
+    IssuedCertificateSerializer,
     LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
     ProblemSerializer,
+    RegenerateCertificatesSerializer,
     TaskStatusSerializer,
     UnitExtensionSerializer,
 )
@@ -1108,6 +1120,420 @@ class ORASummaryView(GenericAPIView):
         return Response(serializer.data)
 
 
+class IssuedCertificatesView(ListAPIView):
+    """
+    View to retrieve issued certificates for a course with allowlist and invalidation details.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?search=username
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?filter=received
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?page=2&page_size=50
+
+    **Response Values**
+
+        {
+            "count": 100,
+            "next": "http://example.com/api/instructor/v2/courses/.../certificates/issued?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "username": "student1",
+                    "email": "student1@example.com",
+                    "enrollment_track": "verified",
+                    "certificate_status": "downloadable",
+                    "special_case": "Exception",
+                    "exception_granted": "January 15, 2024",
+                    "exception_notes": "Medical emergency",
+                    "invalidated_by": null,
+                    "invalidation_date": null
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course
+        search (optional): Filter by username or email
+        filter (optional): Filter certificates by category:
+            - "all": All Learners (default)
+            - "received": Received (downloadable certificates)
+            - "not_received": Not Received (not passing, unavailable)
+            - "audit_passing": Audit - Passing
+            - "audit_not_passing": Audit - Not Passing
+            - "error": Error State
+            - "granted_exceptions": Granted Exceptions (allowlisted)
+            - "invalidated": Invalidated
+        page (optional): Page number for pagination
+        page_size (optional): Number of results per page
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of issued certificates
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+    serializer_class = IssuedCertificateSerializer
+
+    def _apply_certificate_status_filter(self, certificates, filter_type, cert_statuses, course_key):
+        """Apply status-based filters to certificate queryset."""
+        if filter_type == "received":
+            return certificates.filter(status=cert_statuses.downloadable)
+        elif filter_type == "not_received":
+            return certificates.filter(
+                status__in=[cert_statuses.notpassing, cert_statuses.unavailable]
+            )
+        elif filter_type == "audit_passing":
+            return certificates.filter(status=cert_statuses.audit_passing)
+        elif filter_type == "audit_not_passing":
+            return certificates.filter(status=cert_statuses.audit_notpassing)
+        elif filter_type == "error":
+            return certificates.filter(status=cert_statuses.error)
+        elif filter_type == "granted_exceptions":
+            return certificates.filter(
+                user_id__in=CertificateAllowlist.objects.filter(
+                    course_id=course_key, allowlist=True
+                ).values_list('user_id', flat=True)
+            )
+        elif filter_type == "invalidated":
+            return certificates.filter(
+                user_id__in=CertificateInvalidation.objects.filter(
+                    generated_certificate__course_id=course_key, active=True
+                ).values_list('generated_certificate__user_id', flat=True)
+            )
+        return certificates
+
+    def get_serializer_context(self):
+        """
+        Provide enrollment, allowlist, and invalidation data in serializer context.
+        """
+        context = super().get_serializer_context()
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Get enrollment data
+        enrollments = CourseEnrollment.objects.filter(
+            course_id=course_key
+        ).select_related('user')
+        context['enrollment_dict'] = {e.user_id: e.mode for e in enrollments}
+
+        # Get allowlist data
+        allowlist_entries = CertificateAllowlist.objects.filter(
+            course_id=course_key,
+            allowlist=True
+        ).select_related('user')
+        context['allowlist_dict'] = {
+            entry.user_id: {
+                'created': entry.created.isoformat(),
+                'notes': entry.notes or ''
+            }
+            for entry in allowlist_entries
+        }
+
+        # Get invalidation data
+        invalidations = CertificateInvalidation.objects.filter(
+            generated_certificate__course_id=course_key,
+            active=True
+        ).select_related('generated_certificate__user', 'invalidated_by')
+        context['invalidation_dict'] = {
+            inv.generated_certificate.user_id: {
+                'invalidated_by': inv.invalidated_by.email,
+                'created': inv.created.isoformat()
+            }
+            for inv in invalidations
+        }
+
+        return context
+
+    def get_queryset(self):
+        """
+        Returns the queryset of issued certificates for the course.
+
+        This method returns a Django QuerySet that will be further processed
+        by DRF's default pagination.
+        """
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Get query parameters
+        filter_type = self.request.query_params.get("filter", "all")
+        search = self.request.query_params.get("search", "").strip()
+
+        # Get certificates for the course
+        if filter_type in ['audit_passing', 'audit_not_passing', 'all']:
+            certificates = GeneratedCertificate.objects.filter(
+                course_id=course_key
+            ).select_related('user', 'user__profile')
+        else:
+            certificates = GeneratedCertificate.eligible_certificates.filter(
+                course_id=course_key
+            ).select_related('user', 'user__profile')
+
+        # Apply search filter at database level
+        if search:
+            certificates = certificates.filter(
+                Q(user__username__icontains=search) | Q(user__email__icontains=search)
+            )
+
+        # Debug logging
+        log.debug(
+            "Certificate query for course %s: filter_type: %s",
+            course_key, filter_type
+        )
+
+        # Apply filter based on filter type (includes granted_exceptions and invalidated)
+        certificates = self._apply_certificate_status_filter(
+            certificates, filter_type, CertificateStatuses, course_key
+        )
+
+        # Order by username for consistent pagination
+        return certificates.order_by('user__username')
+
+
+class CertificateGenerationHistoryView(ListAPIView):
+    """
+    View to retrieve certificate generation history for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/generation_history
+        GET /api/instructor/v2/courses/{course_id}/certificates/generation_history?page=2
+
+    **Response Values**
+
+        {
+            "count": 25,
+            "next": "http://example.com/api/instructor/v2/courses/.../certificates/generation_history?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "task_name": "Regenerated",
+                    "date": "January 15, 2024",
+                    "details": "audit not passing states"
+                },
+                {
+                    "task_name": "Generated",
+                    "date": "January 10, 2024",
+                    "details": "For exceptions"
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course
+        page (optional): Page number for pagination
+        page_size (optional): Number of results per page
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of certificate generation history
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+    serializer_class = CertificateGenerationHistorySerializer
+
+    def get_queryset(self):
+        """
+        Returns the queryset of certificate generation history.
+
+        This method returns a Django QuerySet that will be paginated by DRF.
+        """
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Get generation history ordered by creation date
+        return CertificateGenerationHistory.objects.filter(
+            course_id=course_key
+        ).select_related('generated_by', 'instructor_task').order_by('-created')
+
+
+@method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class RegenerateCertificatesView(DeveloperErrorViewMixin, APIView):
+    """
+    View to regenerate certificates for a course.
+
+    **Use Cases**
+
+        Regenerate certificates for learners in a course, optionally filtering by certificate status
+        or student set (all learners or allowlisted learners).
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/regenerate
+
+        Request Body:
+        {
+            "statuses": ["downloadable", "notpassing"],
+            "student_set": "all"
+        }
+
+    **Request Body Parameters**
+
+        statuses (optional): List of certificate statuses to regenerate
+        student_set (optional): "all" for all learners, "allowlisted" for allowlisted learners only
+
+    **Response Values**
+
+        {
+            "task_id": "abc-123",
+            "message": "Certificate regeneration task has been started"
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate regeneration task started successfully
+        * 400: Bad Request - Invalid parameters
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.START_CERTIFICATE_REGENERATION
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        body=RegenerateCertificatesSerializer,
+        responses={
+            200: "Certificate regeneration task started successfully",
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def post(self, request, course_id):
+        """
+        Initiate certificate regeneration for a course.
+        """
+        course_key = CourseKey.from_string(course_id)
+        get_course_by_id(course_key)
+
+        serializer = RegenerateCertificatesSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {'error': serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        statuses = serializer.validated_data.get('statuses', [])
+        student_set = serializer.validated_data.get('student_set', 'all')
+
+        try:
+            # Submit certificate generation/regeneration task
+            if student_set == 'allowlisted':
+                # Generate for allowlisted students only
+                task = task_api.generate_certificates_for_students(
+                    request,
+                    course_key,
+                    student_set='all_allowlisted'
+                )
+            elif statuses:
+                # Regenerate for specified statuses
+                task = task_api.regenerate_certificates(
+                    request,
+                    course_key,
+                    statuses_to_regenerate=statuses
+                )
+            else:
+                # Generate for all students
+                task = task_api.generate_certificates_for_students(
+                    request,
+                    course_key
+                )
+
+            return Response({
+                'task_id': task.task_id,
+                'message': _('Certificate regeneration task has been started')
+            }, status=status.HTTP_200_OK)
+
+        except (AlreadyRunningError, QueueConnectionError) as exc:
+            log.error("Error starting certificate regeneration: %s", exc)
+            return Response(
+                {'error': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class CertificateConfigView(DeveloperErrorViewMixin, APIView):
+    """
+    View to retrieve certificate configuration for a course.
+
+    **Use Cases**
+
+        Check if certificate generation is enabled for the platform and validate course existence.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/config
+
+    **Response Values**
+
+        {
+            "enabled": true
+        }
+
+    **Returns**
+
+        * 200: OK - Returns certificate configuration
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: "Returns certificate configuration.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def get(self, request, course_id):
+        """
+        Retrieve certificate configuration.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Check if certificate generation is enabled (not available for CCX courses)
+        enabled = certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
+
+        return Response({'enabled': enabled}, status=status.HTTP_200_OK)
+
+
 class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
     """
     List all active enrollments for a course with optional search, filtering, and pagination.
@@ -1180,7 +1606,6 @@ class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
         response = super().list(request, *args, **kwargs)
         response.data['course_id'] = self.kwargs['course_id']
         return response
-
 
 
 class LearnerView(DeveloperErrorViewMixin, APIView):
