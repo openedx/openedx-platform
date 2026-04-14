@@ -69,7 +69,7 @@ class BaseCourseTestCase(TestCase):
         modulestore = XMLModuleStore(
             DATA_DIR,
             source_dirs=[name],
-            xblock_mixins=(InheritanceMixin,),
+            xblock_mixins=(InheritanceMixin, XModuleMixin),
         )
         courses = modulestore.get_courses()
         assert len(courses) == 1
@@ -461,7 +461,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
     def test_static_tabs_import(self):
         """Make sure that the static tabs are imported correctly"""
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         location_tab_syllabus = BlockUsageLocator(CourseLocator("edX", "toy", "2012_Fall", deprecated=True),
                                                   "static_tab", "syllabus", deprecated=True)
@@ -483,7 +483,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         happen--locations should uniquely name definitions.  But in
         our imperfect XML world, it can (and likely will) happen."""
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'two_toys'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy', 'two_toys'], xblock_mixins=(XModuleMixin,))
 
         location = BlockUsageLocator(CourseLocator("edX", "toy", "2012_Fall", deprecated=True),
                                      "video", "Welcome", deprecated=True)
@@ -499,7 +499,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
 
         print("Starting import")
         # Not using get_courses because we need the modulestore object too afterward
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
         courses = modulestore.get_courses()
         assert len(courses) == 1
         course = courses[0]
@@ -533,7 +533,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         exceptions/errors to that effect."""
 
         print("Starting import")
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['test_unicode'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['test_unicode'], xblock_mixins=(XModuleMixin,))
         courses = modulestore.get_courses()
         assert len(courses) == 1
         course = courses[0]
@@ -553,7 +553,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         Make sure that url_names are only mangled once.
         """
 
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         toy_id = CourseKey.from_string('edX/toy/2012_Fall')
 
@@ -571,7 +571,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
             assert len(video.usage_key.block_id) == (len('video_') + 12)
 
     def test_poll_and_conditional_import(self):
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'], xblock_mixins=(XModuleMixin,))
 
         course = modulestore.get_courses()[0]
         chapters = course.get_children()
@@ -624,7 +624,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         Note: The cohort config on the CourseBlock is no longer used.
         See openedx.core.djangoapps.course_groups.models.CourseCohortSettings.
         """
-        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'])
+        modulestore = XMLModuleStore(DATA_DIR, source_dirs=['toy'], xblock_mixins=(XModuleMixin,))
 
         toy_id = CourseKey.from_string('edX/toy/2012_Fall')
 

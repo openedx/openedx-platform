@@ -1621,7 +1621,7 @@ wrapt==2.1.2
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-xblock[django]==6.0.0
+xblock[django] @ git+https://github.com/openedx/xblock.git@add-required-attrs
     # via
     #   -r requirements/edx/base.txt
     #   acid-xblock
@@ -1648,7 +1648,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/base.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.15.3
+git+https://github.com/openedx/xblocks-contrib.git@remove-legacy-mixins#egg=xblocks-contrib
     # via -r requirements/edx/base.txt
 xmlsec==1.3.14
     # via
