@@ -66,7 +66,7 @@ class TestAPIUtils(VideoPipelineMixin, TestCase):
         error_response, is_updated = update_3rd_party_transcription_service_credentials(**credentials_payload)
 
         # Making sure log.exception is not called.
-        self.assertDictEqual(error_response, {})
+        self.assertDictEqual(error_response, {})  # noqa: PT009
         assert not mock_logger.exception.called
         assert is_updated
 
@@ -97,7 +97,7 @@ class TestAPIUtils(VideoPipelineMixin, TestCase):
 
         # Assert the results.
         assert not is_updated
-        self.assertDictEqual(error_response, json.loads(error_content))
+        self.assertDictEqual(error_response, json.loads(error_content))  # noqa: PT009
         mock_logger.exception.assert_called_with(
             'Unable to update transcript credentials -- org=%s, provider=%s, response=%s',
             credentials_payload['org'],

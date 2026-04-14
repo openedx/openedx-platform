@@ -11,13 +11,8 @@ from django.urls import reverse_lazy
 from enterprise.models import EnterpriseCourseEnrollment
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
-    UserFactory,
-)
-from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import (
-    ProgramCacheMixin,
-)
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from lms.djangoapps.program_enrollments.rest_api.v1.tests.test_views import ProgramCacheMixin
 from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollmentFactory
 from openedx.core.djangoapps.catalog.cache import SITE_PROGRAM_UUIDS_CACHE_KEY_TPL
 from openedx.core.djangoapps.catalog.constants import PathwayType
@@ -29,9 +24,7 @@ from openedx.core.djangoapps.catalog.tests.factories import (
 )
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from openedx.core.djangoapps.site_configuration.tests.test_util import (
-    with_site_configuration,
-)
+from openedx.core.djangoapps.site_configuration.tests.test_util import with_site_configuration
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.api import enterprise_is_enabled
 from openedx.features.enterprise_support.tests.factories import (
@@ -40,9 +33,7 @@ from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCustomerUserFactory,
 )
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import (
-    CourseFactory as ModuleStoreCourseFactory,
-)
+from xmodule.modulestore.tests.factories import CourseFactory as ModuleStoreCourseFactory
 
 PROGRAMS_UTILS_MODULE = "openedx.core.djangoapps.programs.utils"
 
@@ -114,7 +105,7 @@ class TestProgramProgressDetailView(ProgramsApiConfigMixin, SharedModuleStoreTes
             certs.return_value = [{"type": "program", "url": "/"}]
             response = self.client.get(self.url)
 
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(200, response.status_code)  # noqa: PT009
         self.assert_program_data_present(response)
         self.assert_pathway_data_present(response)
 
@@ -131,7 +122,7 @@ class TestProgramProgressDetailView(ProgramsApiConfigMixin, SharedModuleStoreTes
         response = self.client.get(self.url)
         assert response.status_code == 401
 
-    def test_404_if_no_program_data(self, mock_get_programs, _mock_get_pathways):
+    def test_404_if_no_program_data(self, mock_get_programs, _mock_get_pathways):  # noqa: PT019
         """
         Verify that the API returns 404 if program data is not available.
         """
@@ -208,7 +199,7 @@ class TestProgramsEnterpriseView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         program = response.data[0]
 
         assert len(program)
@@ -242,8 +233,8 @@ class TestProgramsEnterpriseView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, [])  # noqa: PT009
 
 
 @skip_unless_lms
@@ -300,7 +291,7 @@ class TestProgramsB2CView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         program = response.data[0]
 
         assert len(program)
@@ -331,5 +322,5 @@ class TestProgramsB2CView(SharedModuleStoreTestCase, ProgramCacheMixin):
         )
 
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.data, [])  # noqa: PT009

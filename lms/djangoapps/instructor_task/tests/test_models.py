@@ -6,6 +6,7 @@ Tests for instructor_task/models.py.
 import copy
 import time
 from io import StringIO
+
 import pytest
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase, override_settings

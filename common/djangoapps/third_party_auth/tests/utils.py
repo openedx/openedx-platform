@@ -6,15 +6,15 @@ from base64 import b64encode
 from unittest import skip
 
 import httpretty
-from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from oauth2_provider.models import Application
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
 from social_core.backends.facebook import API_VERSION as FACEBOOK_API_VERSION
 from social_core.backends.facebook import FacebookOAuth2
 from social_django.models import Partial, UserSocialAuth
 
 from common.djangoapps.student.tests.factories import UserFactory
 
-from .testutil import ThirdPartyAuthTestMixin, AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY
+from .testutil import AUTH_FEATURE_ENABLED, AUTH_FEATURES_KEY, ThirdPartyAuthTestMixin
 
 
 @httpretty.activate
@@ -140,7 +140,7 @@ def prepare_saml_response_from_xml(xml, relay_state='testshib'):
          (str): Base64 and URL encoded XML.
     """
     b64encoded_xml = b64encode(xml.encode())
-    return 'RelayState={relay_state}&SAMLResponse={saml_response}'.format(
+    return 'RelayState={relay_state}&SAMLResponse={saml_response}'.format(  # noqa: UP032
         relay_state=OneLogin_Saml2_Utils.escape_url(relay_state),
         saml_response=OneLogin_Saml2_Utils.escape_url(b64encoded_xml)
     )
@@ -152,4 +152,4 @@ def skip_unless_thirdpartyauth():
     """
     if AUTH_FEATURE_ENABLED:
         return lambda func: func
-    return skip("%s not enabled" % AUTH_FEATURES_KEY)
+    return skip("%s not enabled" % AUTH_FEATURES_KEY)  # noqa: UP031

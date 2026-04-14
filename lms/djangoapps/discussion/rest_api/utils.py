@@ -3,7 +3,7 @@ Utils for discussion API.
 """
 import logging
 from datetime import datetime
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List  # noqa: UP035
 
 import requests
 from crum import get_current_request
@@ -14,21 +14,21 @@ from django.db import transaction
 from django.db.models.functions import Length
 from pytz import UTC
 
-from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.models import CourseAccessRole
-from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
-
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from lms.djangoapps.discussion.config.settings import ENABLE_CAPTCHA_IN_DISCUSSION
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, PostingRestriction
+from openedx.core.djangoapps.django_comment_common.comment_client.thread import Thread
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
-    Role
+    Role,
 )
+
 from ..django_comment_client.utils import get_user_role_names
 
 log = logging.getLogger(__name__)
@@ -276,7 +276,7 @@ def create_topics_v3_structure(blocks, topics):
         if topic.get('usage_key', '') is None
     ]
     courseware_topics = []
-    for key, value in blocks.items():
+    for key, value in blocks.items():  # noqa: B007
         if value.get("type") == "chapter":
             value['courseware'] = True
             courseware_topics.append(value)
@@ -339,7 +339,7 @@ def remove_empty_sequentials(data):
     return new_data
 
 
-def get_topic_ids_from_topics(topics: List[Dict[str, str]]) -> List[str]:
+def get_topic_ids_from_topics(topics: List[Dict[str, str]]) -> List[str]:  # noqa: UP006
     """
     This function takes a list of topics and returns a list of the topic ids.
 
@@ -352,7 +352,7 @@ def get_topic_ids_from_topics(topics: List[Dict[str, str]]) -> List[str]:
     return [topic['id'] for topic in topics]
 
 
-def get_archived_topics(filtered_topic_ids: List[str], topics: List[Dict[str, str]]) -> List[Dict[str, str]]:
+def get_archived_topics(filtered_topic_ids: List[str], topics: List[Dict[str, str]]) -> List[Dict[str, str]]:  # noqa: UP006  # pylint: disable=line-too-long
     """
     This function takes a list of topic ids and a list of topics, and returns the list of archived topics.
 
@@ -374,7 +374,7 @@ def get_archived_topics(filtered_topic_ids: List[str], topics: List[Dict[str, st
     return archived_topics
 
 
-def is_posting_allowed(posting_restrictions: str, blackout_schedules: List):
+def is_posting_allowed(posting_restrictions: str, blackout_schedules: List):  # noqa: UP006
     """
     Check if posting is allowed based on the given posting restrictions and blackout schedules.
 

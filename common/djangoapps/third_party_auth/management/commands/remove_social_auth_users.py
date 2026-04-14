@@ -44,7 +44,7 @@ class Command(BaseCommand):
         try:
             SAMLProviderConfig.objects.current_set().get(slug=slug)
         except SAMLProviderConfig.DoesNotExist:
-            raise CommandError(f'No SAML provider found for slug {slug}')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError(f'No SAML provider found for slug {slug}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         users = User.objects.filter(social_auth__provider=slug)
         user_count = len(users)

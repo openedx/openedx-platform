@@ -3,12 +3,11 @@
 
 from unittest.mock import patch
 
+from django.conf import settings
 from django.middleware.csrf import get_token
 from django.test import TestCase
-from django.test.utils import override_settings
 from django.test.client import RequestFactory
-from django.conf import settings
-
+from django.test.utils import override_settings
 from rest_framework.exceptions import PermissionDenied
 
 from ..authentication import SessionAuthenticationCrossDomainCsrf
@@ -32,7 +31,7 @@ class CrossDomainAuthTest(TestCase):
 
     def test_perform_csrf_referer_check(self):
         request = self._fake_request()
-        with self.assertRaisesRegex(PermissionDenied, 'CSRF'):
+        with self.assertRaisesRegex(PermissionDenied, 'CSRF'):  # noqa: PT027
             self.auth.enforce_csrf(request)
 
     @patch.dict(settings.FEATURES, {

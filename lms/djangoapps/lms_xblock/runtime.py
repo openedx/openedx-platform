@@ -55,7 +55,7 @@ def handler_url(block, handler_name, suffix='', query='', thirdparty=False):
     # If third-party, return fully-qualified url
     if thirdparty:
         scheme = "https" if settings.HTTPS == "on" else "http"
-        url = '{scheme}://{host}{path}'.format(
+        url = '{scheme}://{host}{path}'.format(  # noqa: UP032
             scheme=scheme,
             host=settings.SITE_NAME,
             path=url

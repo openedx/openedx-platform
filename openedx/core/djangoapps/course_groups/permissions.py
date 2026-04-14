@@ -5,11 +5,13 @@ Permissions for cohorts API
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import permissions
 
-from openedx.core.djangoapps.django_comment_common.models import (
-    FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_MODERATOR
-)
-from common.djangoapps.student.roles import CourseStaffRole, GlobalStaff, CourseInstructorRole
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from lms.djangoapps.discussion.django_comment_client.utils import get_user_role_names
+from openedx.core.djangoapps.django_comment_common.models import (
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_MODERATOR,
+)
 
 
 class IsStaffOrAdmin(permissions.BasePermission):

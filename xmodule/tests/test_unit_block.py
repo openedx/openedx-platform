@@ -7,8 +7,8 @@ from unittest.mock import patch
 from xml.etree import ElementTree
 
 from web_fragments.fragment import Fragment
-from xblock.core import XBlock
 from xblock.completable import XBlockCompletionMode
+from xblock.core import XBlock
 from xblock.test.test_parsing import XmlTest
 
 from xmodule.unit_block import UnitBlock
@@ -75,7 +75,7 @@ class UnitBlockTests(XmlTest, unittest.TestCase):
 
     def assertXmlEqual(self, xml_str_a: str, xml_str_b: str) -> bool:
         """ Assert that the given XML strings are equal, ignoring attribute order and some whitespace variations. """
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             ElementTree.canonicalize(xml_str_a, strip_text=True),
             ElementTree.canonicalize(xml_str_b, strip_text=True),
         )

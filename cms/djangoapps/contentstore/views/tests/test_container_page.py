@@ -6,20 +6,23 @@ Unit tests for the container page.
 import datetime
 import re
 from unittest.mock import Mock, patch
+from urllib.parse import quote
 
 from django.http import Http404
 from django.test.client import RequestFactory
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from pytz import UTC
-from urllib.parse import quote
 
 import cms.djangoapps.contentstore.views.component as views
 from cms.djangoapps.contentstore import toggles
 from cms.djangoapps.contentstore.tests.test_libraries import LibraryTestCase
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 from .utils import StudioPageTestCase
 
@@ -66,7 +69,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         self._test_html_content(
             self.child_container,
             expected_section_tag=(
-                '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '
+                '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '  # noqa: UP032
                 'data-locator="{0}" data-course-key="{0.course_key}" data-course-assets="{1}">'.format(
                     self.child_container.location, assets_url
                 )
@@ -101,7 +104,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
             self._test_html_content(
                 xblock,
                 expected_section_tag=(
-                    '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '
+                    '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '  # noqa: UP032
                     'data-locator="{0}" data-course-key="{0.course_key}" data-course-assets="{1}">'.format(
                         draft_container.location, assets_url
                     )
@@ -132,8 +135,8 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         and the breadcrumbs trail is correct.
         """
         html = self.get_page_html(xblock)
-        self.assertIn(expected_section_tag, html)
-        self.assertRegex(html, re.compile(expected_breadcrumbs, re.DOTALL))
+        self.assertIn(expected_section_tag, html)  # noqa: PT009
+        self.assertRegex(html, re.compile(expected_breadcrumbs, re.DOTALL))  # noqa: PT009
 
     def test_public_container_preview_html(self):
         """
@@ -167,11 +170,11 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
 
         # Create a library content block
         lc_block = self._add_library_content_block(course, self.lib_key)
-        self.assertEqual(len(lc_block.children), 0)
+        self.assertEqual(len(lc_block.children), 0)  # noqa: PT009
 
         # Refresh children to be reflected in lc_block
         lc_block = self._upgrade_and_sync(lc_block)
-        self.assertEqual(len(lc_block.children), 1)
+        self.assertEqual(len(lc_block.children), 1)  # noqa: PT009
 
         self.validate_preview_html(
             lc_block,
@@ -234,7 +237,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
         request.LANGUAGE_CODE = 'en'
 
         # Check for invalid 'usage_key_strings'
-        self.assertRaises(
+        self.assertRaises(  # noqa: PT027
             Http404, views.container_handler,
             request,
             usage_key_string='i4x://InvalidOrg/InvalidCourse/vertical/static/InvalidContent',
@@ -245,7 +248,7 @@ class ContainerPageTestCase(StudioPageTestCase, LibraryTestCase):
             request=request,
             usage_key_string=str(self.vertical.location)
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
 
 class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint: disable=test-inherits-tests
@@ -260,7 +263,7 @@ class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint
         self._test_html_content(
             self.child_container,
             expected_section_tag=(
-                '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '
+                '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '  # noqa: UP032
                 'data-locator="{0}" data-course-key="{0.course_key}" data-course-assets="{1}">'.format(
                     self.child_container.location, assets_url
                 )
@@ -283,7 +286,7 @@ class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint
             self._test_html_content(
                 xblock,
                 expected_section_tag=(
-                    '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '
+                    '<section class="wrapper-xblock level-page is-hidden studio-xblock-wrapper" '  # noqa: UP032
                     'data-locator="{0}" data-course-key="{0.course_key}" data-course-assets="{1}">'.format(
                         draft_container.location, assets_url
                     )
@@ -304,4 +307,4 @@ class ContainerEmbedPageTestCase(ContainerPageTestCase):  # lint-amnesty, pylint
         and the breadcrumbs trail is correct.
         """
         html = self.get_page_html(xblock)
-        self.assertIn(expected_section_tag, html)
+        self.assertIn(expected_section_tag, html)  # noqa: PT009

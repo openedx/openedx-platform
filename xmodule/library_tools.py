@@ -8,8 +8,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.locator import LibraryLocator
 from user_tasks.models import UserTaskStatus
 
-from openedx.core.lib import ensure_cms
 from openedx.core.djangoapps.content_libraries import tasks as library_tasks
+from openedx.core.lib import ensure_cms
 from xmodule.library_content_block import LegacyLibraryContentBlock
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.exceptions import ItemNotFoundError
@@ -157,7 +157,7 @@ class LegacyLibraryToolsService:
 
         Returns tuples of (library key, display_name).
         """
-        user = User.objects.get(id=self.user_id)
+        user = User.objects.get(id=self.user_id)  # noqa: F841
         return [
             (lib.location.library_key.replace(version_guid=None, branch=None), lib.display_name)
             for lib in self.store.get_library_summaries()

@@ -7,6 +7,7 @@ from abc import ABCMeta
 from collections import OrderedDict
 from datetime import datetime, timezone
 from logging import getLogger
+
 from lazy import lazy
 from xblock.scorable import ShowCorrectness
 
@@ -18,7 +19,7 @@ from xmodule.graders import AggregatedScore  # lint-amnesty, pylint: disable=wro
 log = getLogger(__name__)
 
 
-class SubsectionGradeBase(metaclass=ABCMeta):
+class SubsectionGradeBase(metaclass=ABCMeta):  # noqa: B024
     """
     Abstract base class for Subsection Grades.
     """
@@ -66,7 +67,7 @@ class SubsectionGradeBase(metaclass=ABCMeta):
             # but correctness_available always returns False as we do not want to show correctness
             # of problems to the users.
             return (self.due is None or
-                    self.due < datetime.now(timezone.utc))
+                    self.due < datetime.now(timezone.utc))  # noqa: UP017
         return ShowCorrectness.correctness_available(self.show_correctness, self.due, has_staff_access)
 
     @property

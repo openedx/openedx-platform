@@ -6,14 +6,14 @@ Tests for testing the modulestore settings migration code.
 import copy
 from unittest import TestCase
 
-import pytest
 import ddt
+import pytest
 
 from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.modulestore.modulestore_settings import (
     convert_module_store_setting_if_needed,
     get_mixed_stores,
-    update_module_store_settings
+    update_module_store_settings,
 )
 
 
@@ -210,5 +210,5 @@ class ModuleStoreSettingsMigration(TestCase):
 
     def test_update_settings_error(self):
         mixed_setting = self.ALREADY_UPDATED_MIXED_CONFIG
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             update_module_store_settings(mixed_setting, default_store='non-existent store')

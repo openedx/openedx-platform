@@ -3,11 +3,11 @@ Test that we have defused XML.
 """
 
 
-from lxml import etree
-from defusedxml.common import EntitiesForbidden
-from .xmlparser import fromstring
-
 import pytest
+from defusedxml.common import EntitiesForbidden
+from lxml import etree
+
+from .xmlparser import fromstring
 
 
 def test_entities_arent_resolved_exception():

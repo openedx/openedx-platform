@@ -2,12 +2,12 @@
 Tests for the resolve_storage_backend function in common.djangoapps.util.storage.
 """
 
+from unittest.mock import MagicMock, patch
+
 from django.test import TestCase
 from django.test.utils import override_settings
-from unittest.mock import patch, MagicMock
 
 from common.djangoapps.util.storage import resolve_storage_backend
-
 
 DEFAULT_STORAGE_CLASS_NAME = "FileSystemStorage"
 

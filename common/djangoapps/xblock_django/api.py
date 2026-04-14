@@ -3,8 +3,8 @@ API methods related to xblock state.
 """
 
 
-from openedx.core.lib.cache_utils import CacheInvalidationManager
 from common.djangoapps.xblock_django.models import XBlockConfiguration, XBlockStudioConfiguration
+from openedx.core.lib.cache_utils import CacheInvalidationManager
 
 cacher = CacheInvalidationManager(model=XBlockConfiguration)
 

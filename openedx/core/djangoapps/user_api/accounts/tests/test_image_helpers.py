@@ -6,12 +6,12 @@ Tests for helpers.py
 import datetime
 import hashlib
 from unittest.mock import patch
-
-from django.test import TestCase
 from zoneinfo import ZoneInfo
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms
+from django.test import TestCase
+
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 from ..image_helpers import get_profile_image_urls_for_user
 
@@ -39,7 +39,7 @@ class ProfileImageUrlTestCase(TestCase):
         Verify correct url structure.
         """
         assert actual_url == 'http://example-storage.com/profile-images/{name}_{size}.jpg?v={version}'\
-            .format(name=expected_name, size=expected_pixels, version=expected_version)
+            .format(name=expected_name, size=expected_pixels, version=expected_version)  # noqa: UP032
 
     def verify_default_url(self, actual_url, expected_pixels):
         """

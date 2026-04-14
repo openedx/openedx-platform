@@ -12,7 +12,9 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import EVENT_NAME_ENROLLMENT_MODE_CHANGED, CourseEnrollment
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -38,7 +40,7 @@ class BulkChangeEnrollmentTests(SharedModuleStoreTestCase):
         # Verify that no users are in the `from` mode yet.
         assert len(CourseEnrollment.objects.filter(mode=to_mode, course_id=self.course.id)) == 0
 
-        args = '--course {course} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(
+        args = '--course {course} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(  # noqa: UP032
             course=str(self.course.id),
             from_mode=from_mode,
             to_mode=to_mode
@@ -73,7 +75,7 @@ class BulkChangeEnrollmentTests(SharedModuleStoreTestCase):
         assert len(CourseEnrollment.objects.filter(mode=to_mode, course_id=self.course.id)) == 0
         assert len(CourseEnrollment.objects.filter(mode=to_mode, course_id=course_2.id)) == 0
 
-        args = '--org {org} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(
+        args = '--org {org} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(  # noqa: UP032
             org=self.org,
             from_mode=from_mode,
             to_mode=to_mode
@@ -125,7 +127,7 @@ class BulkChangeEnrollmentTests(SharedModuleStoreTestCase):
         assert len(CourseEnrollment.objects.filter(mode=to_mode, course_id=self.course.id)) == 0
         assert len(CourseEnrollment.objects.filter(mode=to_mode, course_id=course_2.id)) == 0
 
-        args = '--org {org} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(
+        args = '--org {org} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(  # noqa: UP032
             org=self.org,
             from_mode=from_mode,
             to_mode=to_mode
@@ -152,7 +154,7 @@ class BulkChangeEnrollmentTests(SharedModuleStoreTestCase):
         self._enroll_users(self.course, self.users, 'audit')
         CourseModeFactory(course_id=self.course.id, mode_slug='no-id-professional')
 
-        with pytest.raises(CommandError) as err:
+        with pytest.raises(CommandError) as err:  # noqa: PT012
             args = '--org {org} --from_mode {from_mode} --to_mode {to_mode} --commit'.format(
                 org='fakeX',
                 from_mode='audit',

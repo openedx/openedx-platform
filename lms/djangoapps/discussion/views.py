@@ -24,11 +24,9 @@ from edx_django_utils.monitoring import function_trace
 from opaque_keys.edx.keys import CourseKey
 from rest_framework import status
 from web_fragments.fragment import Fragment
-from xmodule.modulestore.django import modulestore
 
 import lms.djangoapps.discussion.django_comment_client.utils as utils
 import openedx.core.djangoapps.django_comment_common.comment_client as cc
-from openedx.core.djangoapps.django_comment_common.models import has_permission
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.util.json_request import JsonResponse, expect_json
@@ -45,7 +43,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     get_group_id_for_comments_service,
     get_group_id_for_user,
     is_commentable_divided,
-    strip_none
+    strip_none,
 )
 from lms.djangoapps.discussion.exceptions import TeamDiscussionHiddenFromUserException
 from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
@@ -55,7 +53,7 @@ from openedx.core.djangoapps.discussions.utils import (
     available_division_schemes,
     get_discussion_categories_ids,
     get_divided_discussions,
-    get_group_names_by_id
+    get_group_names_by_id,
 )
 from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
@@ -63,11 +61,13 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
     CourseDiscussionSettings,
-    Role
+    Role,
+    has_permission,
 )
 from openedx.core.djangoapps.django_comment_common.utils import ThreadContext
 from openedx.core.djangoapps.plugin_api.views import EdxFragmentView
 from openedx.features.course_duration_limits.access import generate_course_expired_fragment
+from xmodule.modulestore.django import modulestore
 
 User = get_user_model()
 log = logging.getLogger("edx.discussions")
@@ -496,7 +496,7 @@ def _create_base_discussion_view_context(request, course_key):
 
 
 def _get_discussion_default_topic_id(course):
-    for topic, entry in course.discussion_topics.items():  # lint-amnesty, pylint: disable=unused-variable
+    for topic, entry in course.discussion_topics.items():  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
         if entry.get('default') is True:
             return entry['id']
 
@@ -668,7 +668,7 @@ def user_profile(request, course_key, user_id):
 
             return tab_view.get(request, str(course_key), 'discussion', profile_page_context=context)
     except User.DoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except ValueError:
         return HttpResponseServerError("Invalid group_id")
 
@@ -751,7 +751,7 @@ def followed_threads(request, course_key, user_id):
 
             return render(request, 'discussion/user_profile.html', context)
     except User.DoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def is_course_staff(course_key: CourseKey, user: User):
@@ -805,8 +805,8 @@ class DiscussionBoardFragmentView(EdxFragmentView):
         """
         course_key = CourseKey.from_string(course_id)
         # Force using the legacy view if a user profile is requested or the URL contains a specific topic or thread
-        force_legacy_view = (profile_page_context or thread_id or discussion_id)
-        is_educator_or_staff = is_course_staff(course_key, request.user) or GlobalStaff().has_user(request.user)
+        force_legacy_view = (profile_page_context or thread_id or discussion_id)  # noqa: F841
+        is_educator_or_staff = is_course_staff(course_key, request.user) or GlobalStaff().has_user(request.user)  # noqa: F841  # pylint: disable=line-too-long
         try:
             base_context = _create_base_discussion_view_context(request, course_key)
             # Note:
@@ -855,7 +855,7 @@ class DiscussionBoardFragmentView(EdxFragmentView):
             return fragment
         except TeamDiscussionHiddenFromUserException:
             log.warning(
-                'User with id={user_id} tried to view private discussion with id={discussion_id}'.format(
+                'User with id={user_id} tried to view private discussion with id={discussion_id}'.format(  # noqa: UP032
                     user_id=request.user.id,
                     discussion_id=discussion_id
                 )

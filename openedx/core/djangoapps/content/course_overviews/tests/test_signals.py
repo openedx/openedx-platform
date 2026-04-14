@@ -4,19 +4,19 @@ Tests for the course_overviews app's signal functionality.
 
 
 import datetime
-from unittest.mock import patch
 from collections import namedtuple
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-import pytest
 import ddt
+import pytest
 
 from xmodule.data import CertificatesDisplayBehaviors
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import (
     TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED,
-    ModuleStoreTestCase,
     ImmediateOnCommitMixin,
+    ModuleStoreTestCase,
 )
 from xmodule.modulestore.tests.factories import CourseFactory, check_mongo_calls
 
@@ -89,7 +89,7 @@ class CourseOverviewSignalsTestCase(ImmediateOnCommitMixin, ModuleStoreTestCase)
         assert not course_overview_2.mobile_available
 
         # Verify that when the course is deleted, the corresponding CourseOverview is deleted as well.
-        with pytest.raises(CourseOverview.DoesNotExist):
+        with pytest.raises(CourseOverview.DoesNotExist):  # noqa: PT012
             self.store.delete_course(course.id, ModuleStoreEnum.UserID.test)
             CourseOverview.get_from_id(course.id)
 

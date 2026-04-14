@@ -11,7 +11,8 @@ from edx_django_utils.cache import DEFAULT_REQUEST_CACHE
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
-from . import DEFAULT_FIELDS, api_impl as api
+from . import DEFAULT_FIELDS
+from . import api_impl as api
 
 log = logging.getLogger(__name__)
 

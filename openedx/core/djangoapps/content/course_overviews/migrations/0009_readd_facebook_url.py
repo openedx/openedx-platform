@@ -1,4 +1,5 @@
-from django.db import migrations, models, connection
+from django.db import connection, migrations, models
+
 
 def table_description():
     """Handle MySQL/Postgres vs SQLite compatibility for table introspection"""

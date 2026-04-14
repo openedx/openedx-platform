@@ -13,7 +13,7 @@ from scripts.user_retirement.retire_one_learner import (
     ERR_UNKNOWN_STATE,
     ERR_USER_AT_END_STATE,
     ERR_USER_IN_WORKING_STATE,
-    retire_learner
+    retire_learner,
 )
 from scripts.user_retirement.tests.retirement_helpers import fake_config_file, get_fake_user_retirement
 from scripts.user_retirement.utils.exception import HttpDoesNotExistException
@@ -353,7 +353,7 @@ def test_get_segment_id_not_found(*args, **kwargs):
     mock_get_retirement_state = kwargs['get_learner_retirement_state']
 
     mock_get_access_token.return_value = ('THIS_IS_A_JWT', None)
-    mock_get_tracking_key.side_effect = HttpDoesNotExistException('{} not found'.format(username))
+    mock_get_tracking_key.side_effect = HttpDoesNotExistException('{} not found'.format(username))  # noqa: UP032
 
     mock_get_retirement_state.return_value = get_fake_user_retirement(
         original_username=username,

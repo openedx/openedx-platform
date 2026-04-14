@@ -5,8 +5,8 @@ Context dictionary for templates that use the ace_common base template.
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 
-from lms.djangoapps.branding.api import get_logo_url_for_email
 from common.djangoapps.edxmako.shortcuts import marketing_link
+from lms.djangoapps.branding.api import get_logo_url_for_email
 from openedx.core.djangoapps.theming.helpers import get_config_value_from_site_or_settings
 
 

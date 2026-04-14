@@ -60,7 +60,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         try:
             course_key = CourseKey.from_string(options['course_id'])
         except InvalidKeyError:
-            raise CommandError("Invalid course_id")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError("Invalid course_id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         course = store.get_course(course_key)
         if course is None:

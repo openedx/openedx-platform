@@ -66,8 +66,8 @@ class HomePageViewTest(CourseTestCase):
         """Check successful response content"""
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(self.expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(self.expected_response, response.data)  # noqa: PT009
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_home_page_studio_with_meilisearch_enabled(self):
@@ -77,8 +77,8 @@ class HomePageViewTest(CourseTestCase):
         expected_response = self.expected_response
         expected_response["libraries_v2_enabled"] = True
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @override_settings(ORGANIZATIONS_AUTOCREATE=False)
     def test_home_page_studio_with_org_autocreate_disabled(self):
@@ -88,13 +88,13 @@ class HomePageViewTest(CourseTestCase):
         expected_response = self.expected_response
         expected_response["allow_to_create_new_org"] = False
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     def test_taxonomy_list_link(self):
         response = self.client.get(self.url)
-        self.assertTrue(response.data['taxonomies_enabled'])
-        self.assertEqual(
+        self.assertTrue(response.data['taxonomies_enabled'])  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             response.data['taxonomy_list_mfe_url'],
             f'{settings.COURSE_AUTHORING_MICROFRONTEND_URL}/taxonomies'
         )
@@ -137,8 +137,8 @@ class HomePageCoursesViewTest(CourseTestCase):
             "in_process_course_actions": [],
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     def test_home_page_response_with_api_v2(self):
         """Check successful response content with api v2 modifications.
@@ -166,8 +166,8 @@ class HomePageCoursesViewTest(CourseTestCase):
 
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true", 2, 0),
@@ -207,9 +207,9 @@ class HomePageCoursesViewTest(CourseTestCase):
 
         response = self.client.get(self.url, {filter_key: filter_value})
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data["archived_courses"]), expected_archived_length)
-        self.assertEqual(len(response.data["courses"]), expected_active_length)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(len(response.data["archived_courses"]), expected_archived_length)  # noqa: PT009
+        self.assertEqual(len(response.data["courses"]), expected_active_length)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true"),
@@ -224,8 +224,8 @@ class HomePageCoursesViewTest(CourseTestCase):
 
         response = self.client.get(self.url, {filter_key: filter_value})
 
-        self.assertEqual(len(response.data["courses"]), 0)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["courses"]), 0)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     @ddt.data(
         ("active_only", "true"),
@@ -240,8 +240,8 @@ class HomePageCoursesViewTest(CourseTestCase):
 
         response = self.non_staff_client.get(self.url, {filter_key: filter_value})
 
-        self.assertEqual(len(response.data["courses"]), 0)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["courses"]), 0)  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
 
 @ddt.ddt
@@ -347,8 +347,8 @@ class HomePageLibrariesViewTest(LibraryTestCase):
             ]
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.json())  # noqa: PT009
 
         # Fetch legacy libraries that were migrated to v2
         response = self.client.get(self.url + '?is_migrated=true')
@@ -371,8 +371,8 @@ class HomePageLibrariesViewTest(LibraryTestCase):
             ],
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.json())  # noqa: PT009
 
         # Fetch legacy libraries that were not migrated to v2
         response = self.client.get(self.url + '?is_migrated=false')
@@ -400,5 +400,5 @@ class HomePageLibrariesViewTest(LibraryTestCase):
             ],
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.json())
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.json())  # noqa: PT009

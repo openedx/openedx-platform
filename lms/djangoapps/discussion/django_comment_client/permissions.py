@@ -10,12 +10,8 @@ from opaque_keys.edx.keys import CourseKey
 
 from lms.djangoapps.teams.models import CourseTeam
 from openedx.core.djangoapps.django_comment_common.comment_client import Thread
-from openedx.core.djangoapps.django_comment_common.models import (
-    CourseDiscussionSettings,
-    has_permission
-)
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, has_permission
 from openedx.core.lib.cache_utils import request_cached
-
 
 CONDITIONS = ['is_open', 'is_author', 'is_question_author', 'is_team_member_if_applicable']
 

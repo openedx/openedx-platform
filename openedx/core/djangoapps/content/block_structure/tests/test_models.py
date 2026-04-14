@@ -4,8 +4,8 @@ Unit tests for Block Structure models.
 # pylint: disable=protected-access
 import errno
 from itertools import product
-from uuid import uuid4
 from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import ddt
 import pytest
@@ -83,7 +83,7 @@ class BlockStructureModelTestCase(TestCase):
         serialized_data = 'initial data'
 
         # shouldn't already exist
-        with pytest.raises(BlockStructureNotFound):
+        with pytest.raises(BlockStructureNotFound):  # noqa: PT012
             BlockStructureModel.get(self.usage_key)
             assert 'BlockStructure: Not found in table;' in mock_log.info.call_args[0][0]
 
@@ -154,7 +154,7 @@ class BlockStructureModelTestCase(TestCase):
     def test_error_handling(self, error_raised_in_operation, errno_raised, message_raised,
                             expected_error_raised, is_read_operation):
         bs_model, _ = BlockStructureModel.update_or_create('test data', **self.params)
-        with pytest.raises(expected_error_raised):
+        with pytest.raises(expected_error_raised):  # noqa: PT012
             with _storage_error_handling(bs_model, 'operation', is_read_operation):
                 if errno_raised is not None:  # lint-amnesty, pylint: disable=no-else-raise
                     raise error_raised_in_operation(errno_raised, message_raised)

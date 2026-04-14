@@ -1,15 +1,15 @@
 """
 Unit tests for the EnrollmentsNotificationSender class
 """
-import unittest
 import datetime
+import unittest
 from unittest.mock import MagicMock, patch
 
-from django.test.utils import override_settings
 import pytest
+from django.test.utils import override_settings
+from openedx_events.learning.data import UserNotificationData
 
 from openedx.core.djangoapps.enrollments.enrollments_notifications import EnrollmentNotificationSender
-from openedx_events.learning.data import UserNotificationData
 
 DEFAULT_MFE_URL = "https://learning.default"
 SITE_CONF_MFE_URL = "https://learning.siteconf"

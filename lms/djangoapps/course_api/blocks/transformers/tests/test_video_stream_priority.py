@@ -6,7 +6,9 @@ Tests for VideoBlockStreamPriorityTransformer.
 from unittest import mock
 
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..student_view import StudentViewTransformer
@@ -117,7 +119,7 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
         post_transform_data = self.get_post_transform_data(video_block_key)
         post_transform_data = self.change_encoded_videos_presentation(post_transform_data['encoded_videos'])
 
-        for video_format, stream_priority in post_transform_data.items():
+        for video_format, stream_priority in post_transform_data.items():  # noqa: B007
             fetched_stream_priority = VideoBlockStreamPriorityTransformer.\
                 DEPRECATE_YOUTUBE_VIDEO_STREAM_PRIORITY.get(video_format)
             if fetched_stream_priority is None:
@@ -178,7 +180,7 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
         post_transform_data = self.get_post_transform_data(video_block_key)
         post_transform_data = self.change_encoded_videos_presentation(post_transform_data['encoded_videos'])
 
-        for video_format, stream_priority in post_transform_data.items():
+        for video_format, stream_priority in post_transform_data.items():  # noqa: B007
             fetched_stream_priority = VideoBlockStreamPriorityTransformer.\
                 DEFAULT_VIDEO_STREAM_PRIORITY.get(video_format)
             if fetched_stream_priority is None:
@@ -199,4 +201,4 @@ class TestVideoBlockStreamPriorityTransformer(ModuleStoreTestCase):
         pre_transform_data = self.get_pre_transform_data(video_block_key)
         self.collect_and_transform()
         post_transform_data = self.get_post_transform_data(video_block_key)
-        self.assertDictEqual(pre_transform_data, post_transform_data)
+        self.assertDictEqual(pre_transform_data, post_transform_data)  # noqa: PT009

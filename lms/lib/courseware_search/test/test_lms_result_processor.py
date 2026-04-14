@@ -5,8 +5,13 @@ import pytest
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.lib.courseware_search.lms_result_processor import LmsSearchResultProcessor
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 
 class LmsSearchResultProcessorTestCase(ModuleStoreTestCase):
@@ -67,7 +72,7 @@ class LmsSearchResultProcessorTestCase(ModuleStoreTestCase):
     def test_url_parameter(self):
         fake_url = ""
         srp = LmsSearchResultProcessor({}, "test")
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             fake_url = srp.url
         assert fake_url == ''
 
@@ -80,7 +85,7 @@ class LmsSearchResultProcessorTestCase(ModuleStoreTestCase):
             "test"
         )
 
-        assert srp.url == '/courses/{}/jump_to/{}'.format(str(self.course.id),
+        assert srp.url == '/courses/{}/jump_to/{}'.format(str(self.course.id),  # noqa: UP032
                                                           str(self.html.scope_ids.usage_id))
 
     def test_should_remove(self):

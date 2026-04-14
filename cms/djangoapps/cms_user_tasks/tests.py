@@ -176,15 +176,15 @@ class TestUserTaskStopped(APITestCase):
 
     def assert_msg_subject(self, msg):
         """Verify that msg subject is in expected format."""
-        subject = "{platform_name} {studio_name}: Task Status Update".format(
+        subject = "{platform_name} {studio_name}: Task Status Update".format(  # noqa: UP032
             platform_name=settings.PLATFORM_NAME, studio_name=settings.STUDIO_NAME
         )
-        self.assertEqual(msg.subject, subject)
+        self.assertEqual(msg.subject, subject)  # noqa: PT009
 
     def assert_msg_body_fragments(self, msg, body_fragments):
         """Verify that email body contains expected fragments"""
         for fragment in body_fragments:
-            self.assertIn(fragment, msg.body)
+            self.assertIn(fragment, msg.body)  # noqa: PT009
 
     def test_email_sent_with_site(self):
         """
@@ -201,7 +201,7 @@ class TestUserTaskStopped(APITestCase):
             reverse('usertaskstatus-detail', args=[self.status.uuid])
         ]
 
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
 
         msg = mail.outbox[0]
 
@@ -216,7 +216,7 @@ class TestUserTaskStopped(APITestCase):
         end_of_task_status.name = "bulk_migrate_from_modulestore"
         user_task_stopped.send(sender=UserTaskStatus, status=end_of_task_status)
 
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 0)  # noqa: PT009
 
     def test_email_not_sent_with_libary_content_update(self):
         """
@@ -229,7 +229,7 @@ class TestUserTaskStopped(APITestCase):
         end_of_task_status.name = "updating block-v1:course+type@library_content+block@uuid from library"
         user_task_stopped.send(sender=UserTaskStatus, status=end_of_task_status)
 
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 0)  # noqa: PT009
 
     def test_email_not_sent_with_legacy_libary_content_ref_update(self):
         """
@@ -239,7 +239,7 @@ class TestUserTaskStopped(APITestCase):
         end_of_task_status.name = "Updating legacy library content blocks references of course-v1:UNIX+UN1+2025_T4"
         user_task_stopped.send(sender=UserTaskStatus, status=end_of_task_status)
 
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 0)  # noqa: PT009
 
     def test_email_sent_with_olx_validations_with_config_enabled(self):
         """
@@ -258,7 +258,7 @@ class TestUserTaskStopped(APITestCase):
             user_task_stopped.send(sender=UserTaskStatus, status=self.status)
             msg = mail.outbox[0]
 
-            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
             self.assert_msg_subject(msg)
             self.assert_msg_body_fragments(msg, body_fragments_with_validation)
 
@@ -277,8 +277,8 @@ class TestUserTaskStopped(APITestCase):
         msg = mail.outbox[0]
 
         # Verify olx validation is not enabled out of the box.
-        self.assertFalse(settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION'))
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertFalse(settings.FEATURES.get('ENABLE_COURSE_OLX_VALIDATION'))  # noqa: PT009
+        self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
         self.assert_msg_subject(msg)
         self.assert_msg_body_fragments(msg, body_fragments)
 
@@ -298,11 +298,11 @@ class TestUserTaskStopped(APITestCase):
 
         user_task_stopped.send(sender=UserTaskStatus, status=self.status)
 
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
         msg = mail.outbox[0]
         self.assert_msg_subject(msg)
         self.assert_msg_body_fragments(msg, body_fragments)
-        self.assertNotIn("Here are some validations we found with your course content.", msg.body)
+        self.assertNotIn("Here are some validations we found with your course content.", msg.body)  # noqa: PT009
 
     def test_email_not_sent_for_child(self):
         """
@@ -312,7 +312,7 @@ class TestUserTaskStopped(APITestCase):
             user=self.user, task_id=str(uuid4()), task_class='test_rest_api.sample_task', name='SampleTask 2',
             total_steps=5, parent=self.status)
         user_task_stopped.send(sender=UserTaskStatus, status=child_status)
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(mail.outbox), 0)  # noqa: PT009
 
     def test_email_sent_without_site(self):
         """
@@ -325,7 +325,7 @@ class TestUserTaskStopped(APITestCase):
             "Sign in to view the details of your task or download any files created."
         ]
 
-        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(len(mail.outbox), 1)  # noqa: PT009
 
         msg = mail.outbox[0]
         self.assert_msg_subject(msg)
@@ -342,7 +342,7 @@ class TestUserTaskStopped(APITestCase):
 
             with mock.patch('cms.djangoapps.cms_user_tasks.tasks.send_task_complete_email.retry') as mock_retry:
                 user_task_stopped.send(sender=UserTaskStatus, status=self.status)
-                self.assertTrue(mock_retry.called)
+                self.assertTrue(mock_retry.called)  # noqa: PT009
 
     def test_queue_email_failure(self):
         logger = logging.getLogger("cms.djangoapps.cms_user_tasks.signals")
@@ -354,5 +354,5 @@ class TestUserTaskStopped(APITestCase):
                 {'error_response': 'error occurred'}, {'operation_name': 'test'}
             )
             user_task_stopped.send(sender=UserTaskStatus, status=self.status)
-            self.assertTrue(mock_delay.called)
-            self.assertEqual(hdlr.messages['error'][0], 'Unable to queue send_task_complete_email')
+            self.assertTrue(mock_delay.called)  # noqa: PT009
+            self.assertEqual(hdlr.messages['error'][0], 'Unable to queue send_task_complete_email')  # noqa: PT009

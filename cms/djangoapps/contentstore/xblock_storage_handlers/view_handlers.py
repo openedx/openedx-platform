@@ -20,11 +20,14 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils.translation import gettext as _
 from edx_django_utils.plugins import pluggable_override
-from openedx_content import api as content_api
-from openedx_content import models_api as content_models
-from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
-from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
-from openedx.core import toggles as core_toggles
+from edx_proctoring.api import (
+    does_backend_support_onboarding,
+    get_exam_by_content_id,
+    get_exam_configuration_dashboard_url,
+)
+from edx_proctoring.exceptions import ProctoredExamNotFoundException
+from help_tokens.core import HelpUrlExpert
+from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import (
     COURSES_EDIT_COURSE_CONTENT,
@@ -34,17 +37,10 @@ from openedx_authz.constants.permissions import (
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
 )
-from edx_proctoring.api import (
-    does_backend_support_onboarding,
-    get_exam_by_content_id,
-    get_exam_configuration_dashboard_url,
-)
-from edx_proctoring.exceptions import ProctoredExamNotFoundException
-from help_tokens.core import HelpUrlExpert
-from opaque_keys.edx.locator import LibraryUsageLocator, LibraryUsageLocatorV2
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from xblock.core import XBlock
 from xblock.fields import Scope
-from .xblock_helpers import get_block_key_string
 
 from cms.djangoapps.contentstore.helpers import StaticFileNotices
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
@@ -53,19 +49,19 @@ from cms.lib.xblock.upstream_sync import BadUpstream, UpstreamLink
 from cms.lib.xblock.upstream_sync_block import sync_from_upstream_block
 from cms.lib.xblock.upstream_sync_container import sync_from_upstream_container
 from common.djangoapps.static_replace import replace_static_urls
-from common.djangoapps.student.auth import (
-    has_studio_read_access,
-    has_studio_write_access,
-)
+from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.util.date_utils import get_default_time_display
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 from common.djangoapps.util.proctoring import show_review_rules
+from openedx.core import toggles as core_toggles
 from openedx.core.djangoapps.bookmarks import api as bookmarks_api
+from openedx.core.djangoapps.content_libraries.api import ContainerMetadata, LibraryXBlockMetadata
+from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
-from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.cache_utils import request_cached
+from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.xblock_utils import get_icon
 from openedx.core.toggles import ENTRANCE_EXAMS
 from xmodule.course_block import DEFAULT_START_DATE
@@ -76,23 +72,6 @@ from xmodule.modulestore.exceptions import InvalidLocationError, ItemNotFoundErr
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.tabs import CourseTabList
 
-from ..utils import (
-    ancestor_has_staff_lock,
-    find_release_date_source,
-    find_staff_lock_source,
-    get_split_group_display_name,
-    get_user_partition_info,
-    get_visibility_partition_info,
-    has_children_visible_to_specific_partition_groups,
-    is_currently_visible_to_students,
-    is_self_paced,
-    get_taxonomy_tags_widget_url,
-    load_services_for_studio,
-    duplicate_block,
-)
-
-from .create_xblock import create_xblock
-from .xblock_helpers import usage_key_with_run
 from ..helpers import (
     concat_static_file_notices,
     get_parent_xblock,
@@ -105,6 +84,22 @@ from ..helpers import (
     xblock_studio_url,
     xblock_type_display_name,
 )
+from ..utils import (
+    ancestor_has_staff_lock,
+    duplicate_block,
+    find_release_date_source,
+    find_staff_lock_source,
+    get_split_group_display_name,
+    get_taxonomy_tags_widget_url,
+    get_user_partition_info,
+    get_visibility_partition_info,
+    has_children_visible_to_specific_partition_groups,
+    is_currently_visible_to_students,
+    is_self_paced,
+    load_services_for_studio,
+)
+from .create_xblock import create_xblock
+from .xblock_helpers import get_block_key_string, usage_key_with_run
 
 log = logging.getLogger(__name__)
 
@@ -315,7 +310,7 @@ def handle_xblock(request, usage_key_string=None):
                 request.json["duplicate_source_locator"]
             )
             source_course = duplicate_source_usage_key.course_key
-            dest_course = parent_usage_key.course_key
+            dest_course = parent_usage_key.course_key  # noqa: F841
 
             # Check authz permission for destination
             permission = _check_xblock_permission(request, parent_usage_key)
@@ -401,6 +396,26 @@ def modify_xblock(usage_key, request):
         fields=request_data.get("fields"),
         summary_configuration_enabled=request_data.get("summary_configuration_enabled"),
     )
+
+
+def _get_metadata_with_problem_defaults(xblock):
+    """
+    Returns own_metadata for the xblock, injecting a ``weight`` default for
+    problem blocks whose weight has never been explicitly saved.
+
+    Without this, the frontend falls back to displaying 1 (its own default)
+    even when the problem's actual point value differs. If ``max_score()``
+    returns a positive number, we inject it so the correct value is shown.
+    """
+    metadata = own_metadata(xblock)
+    if xblock.scope_ids.block_type == 'problem' and 'weight' not in metadata:
+        try:
+            max_score_value = xblock.max_score()
+            if max_score_value and max_score_value > 0:
+                metadata['weight'] = float(max_score_value)
+        except Exception:  # pylint: disable=broad-except
+            pass
+    return metadata
 
 
 def save_xblock_with_callback(xblock, user, old_metadata=None, old_content=None):
@@ -751,7 +766,7 @@ def _create_block(request):
             )
         except Exception:  # pylint: disable=broad-except
             log.exception(
-                "Could not paste component into location {}".format(usage_key)
+                "Could not paste component into location {}".format(usage_key)  # noqa: UP032
             )
             return JsonResponse(
                 {"error": _("There was a problem pasting your component.")}, status=400
@@ -772,7 +787,7 @@ def _create_block(request):
         # Only these categories are supported at this time.
         if category not in ["html", "problem", "video"]:
             return HttpResponseBadRequest(
-                "Category '%s' not supported for Libraries" % category,
+                "Category '%s' not supported for Libraries" % category,  # noqa: UP031
                 content_type="text/plain",
             )
 
@@ -1079,7 +1094,7 @@ def get_block_info(
         xblock_info = create_xblock_info(
             xblock,
             data=data,
-            metadata=own_metadata(xblock),
+            metadata=_get_metadata_with_problem_defaults(xblock),
             include_ancestor_info=include_ancestor_info,
             include_children_predicate=include_children_predicate
         )
@@ -1311,7 +1326,7 @@ def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
                 "studio_url": xblock_studio_url(xblock, parent_xblock),
                 "lms_url": xblock_lms_url(xblock),
                 "embed_lms_url": xblock_embed_lms_url(xblock),
-                "released_to_students": datetime.now(timezone.utc) > xblock.start,
+                "released_to_students": datetime.now(timezone.utc) > xblock.start,  # noqa: UP017
                 "release_date": release_date,
                 "visibility_state": visibility_state,
                 "has_explicit_staff_lock": xblock.fields[
@@ -1650,7 +1665,7 @@ def _compute_visibility_state(
         return VisibilityState.needs_attention
 
     is_unscheduled = xblock.start == DEFAULT_START_DATE
-    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start
+    is_live = is_course_self_paced or datetime.now(timezone.utc) > xblock.start  # noqa: UP017
     if child_info and child_info.get("children", []):  # pylint: disable=too-many-nested-blocks
         all_staff_only = True
         all_unscheduled = True

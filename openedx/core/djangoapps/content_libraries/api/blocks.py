@@ -4,6 +4,7 @@ Content libraries API methods related to XBlocks/Components.
 These methods don't enforce permissions (only the REST APIs do).
 """
 from __future__ import annotations
+
 import logging
 import mimetypes
 from datetime import datetime, timezone
@@ -20,13 +21,15 @@ from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from lxml import etree
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content import api as content_api
+from openedx_content.models_api import Collection, Component, ComponentVersion, Container, LearningPackage, MediaType
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
     LibraryCollectionData,
-    LibraryContainerData
+    LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
@@ -34,23 +37,30 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_UPDATED,
     LIBRARY_COLLECTION_UPDATED,
-    LIBRARY_CONTAINER_UPDATED
-)
-from openedx_content import api as content_api
-from openedx_content.models_api import (
-    Component, ComponentVersion, LearningPackage, MediaType,
-    Container, Collection
+    LIBRARY_CONTAINER_UPDATED,
 )
 from xblock.core import XBlock
 
+from openedx.core.djangoapps.content_staging.data import StagedContentID
 from openedx.core.djangoapps.xblock.api import (
     get_component_from_usage_key,
     get_xblock_app_config,
-    xblock_type_display_name
+    xblock_type_display_name,
 )
 from openedx.core.types import User as UserType
 
+from .. import tasks
 from ..models import ContentLibrary
+from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
+from .collections import library_collection_locator
+from .container_metadata import container_subclass_for_olx_tag
+from .containers import (
+    ContainerMetadata,
+    create_container,
+    get_container,
+    get_containers_contains_item,
+    update_container_children,
+)
 from .exceptions import (
     BlockLimitReachedError,
     ContentLibraryBlockNotFound,
@@ -58,18 +68,7 @@ from .exceptions import (
     InvalidNameError,
     LibraryBlockAlreadyExists,
 )
-from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
-from .containers import (
-    create_container,
-    get_container,
-    get_containers_contains_item,
-    update_container_children,
-    ContainerMetadata,
-)
-from .container_metadata import container_subclass_for_olx_tag
-from .collections import library_collection_locator
 from .libraries import PublishableItem
-from .. import tasks
 
 # This content_libraries API is sometimes imported in the LMS (should we prevent that?), but the content_staging app
 # cannot be. For now we only need this one type import at module scope, so only import it during type checks.
@@ -235,7 +234,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
         del node.attrib["url_name"]
         new_olx_str = etree.tostring(node, encoding='unicode')
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
         new_content = content_api.get_or_create_text_media(
@@ -245,7 +244,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
             created=now,
         )
         new_component_version = content_api.create_next_component_version(
-            component.pk,
+            component.id,
             title=new_title,
             media_to_replace={
                 'block.xml': new_content.pk,
@@ -384,7 +383,7 @@ def _import_staged_block(
     library_key: LibraryLocatorV2,
     source_context_key: LearningContextKey,
     user,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
 ) -> LibraryXBlockMetadata:
@@ -423,7 +422,7 @@ def _import_staged_block(
         component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component = content_api.create_component(
+        component = content_api.create_component(  # noqa: F841
             learning_package.id,
             component_type=component_type,
             local_key=usage_key.block_id,
@@ -519,7 +518,7 @@ def _import_staged_block_as_container(
     library_key: LibraryLocatorV2,
     source_context_key: LearningContextKey,
     user,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     staged_content_files: list[StagedContentFileData],
     now: datetime,
     *,
@@ -656,7 +655,7 @@ def import_staged_content_from_user_clipboard(library_key: LibraryLocatorV2, use
     if olx_str is None:
         raise RuntimeError("olx_str missing")  # Shouldn't happen - mostly here for type checker
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     if _is_container(user_clipboard.content.block_type):
         # This is a container and we can import it as such.
@@ -729,7 +728,7 @@ def delete_library_block(
     affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
     affected_containers = get_containers_contains_item(usage_key)
 
-    content_api.soft_delete_draft(component.pk, deleted_by=user_id)
+    content_api.soft_delete_draft(component.id, deleted_by=user_id)
 
     send_block_deleted_signal()
 
@@ -775,7 +774,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
 
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
-        component.pk,
+        component.id,
         component.versioning.latest.pk,
         set_by=user_id,
     )
@@ -911,9 +910,9 @@ def add_library_block_static_asset_file(
 
     with transaction.atomic():
         component_version = content_api.create_next_component_version(
-            component.pk,
+            component.id,
             media_to_replace={file_path: file_content},
-            created=datetime.now(tz=timezone.utc),
+            created=datetime.now(tz=timezone.utc),  # noqa: UP017
             created_by=user.id if user else None,
         )
         transaction.on_commit(
@@ -955,11 +954,11 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
         delete_library_block_static_asset_file(video_block, "subtitles-en.srt")
     """
     component = get_component_from_usage_key(usage_key)
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
-        component_version = content_api.create_next_component_version(
-            component.pk,
+        content_api.create_next_component_version(
+            component.id,
             media_to_replace={file_path: None},
             created=now,
             created_by=user.id if user else None,
@@ -1034,7 +1033,7 @@ def _create_component_for_block(
     text data like X" goes in xblock.api.
     """
     display_name = xblock_type_display_name(usage_key.block_type)
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
     xml_text = f'<{usage_key.block_type} />'
 
     learning_package = content_lib.learning_package

@@ -1,7 +1,6 @@
 """Url configuration for the auth module."""
 
-from django.urls import include
-from django.urls import path, re_path
+from django.urls import include, path, re_path
 
 from .views import (
     IdPRedirectView,
@@ -9,7 +8,7 @@ from .views import (
     inactive_user_view,
     lti_login_and_complete_view,
     post_to_custom_auth_form,
-    saml_metadata_view
+    saml_metadata_view,
 )
 
 urlpatterns = [
@@ -26,7 +25,11 @@ urlpatterns = [
         name='custom_disconnect_json_individual'
     ),
     path('auth/', include('social_django.urls', namespace='social')),
-    path('auth/saml/v0/', include('common.djangoapps.third_party_auth.samlproviderconfig.urls')),
-    path('auth/saml/v0/', include('common.djangoapps.third_party_auth.samlproviderdata.urls')),
     path('auth/saml/v0/', include('common.djangoapps.third_party_auth.saml_configuration.urls')),
+    # NOTE: The following routes under auth/saml/v0/ are registered by the
+    # edx-enterprise plugin (enterprise/api/v1/urls.py). Do not re-register
+    # routes at these paths:
+    #   auth/saml/v0/provider_config/
+    #   auth/saml/v0/provider_data/
+    # See docs/decisions/0025-saml-admin-views-in-enterprise-plugin.rst
 ]

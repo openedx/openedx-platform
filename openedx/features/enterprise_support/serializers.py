@@ -6,8 +6,9 @@ Defines serializers for enterprise_support.
 from rest_framework import serializers
 
 try:
-    from enterprise.api.v1.serializers import \
-        EnterpriseCourseEnrollmentReadOnlySerializer as BaseEnterpriseCourseEnrollmentSerializer
+    from enterprise.api.v1.serializers import (
+        EnterpriseCourseEnrollmentReadOnlySerializer as BaseEnterpriseCourseEnrollmentSerializer,
+    )
     from enterprise.models import EnterpriseCourseEnrollment
 except ImportError:  # pragma: no cover
     pass

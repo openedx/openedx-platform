@@ -6,8 +6,6 @@ Factoryboy factories.
 from uuid import UUID
 
 import factory
-from faker import Factory as FakerFactory
-
 from enterprise.models import (
     EnterpriseCourseEnrollment,
     EnterpriseCustomer,
@@ -15,6 +13,8 @@ from enterprise.models import (
     EnterpriseCustomerIdentityProvider,
     EnterpriseCustomerUser,
 )
+from faker import Factory as FakerFactory
+
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 
 FAKER = FakerFactory.create()

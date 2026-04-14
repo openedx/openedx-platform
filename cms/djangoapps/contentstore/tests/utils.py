@@ -9,17 +9,16 @@ from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test.client import Client
 from opaque_keys.edx.keys import AssetKey
+
+from cms.djangoapps.contentstore.utils import reverse_url
+from common.djangoapps.student.models import Registration
+from openedx.core.djangoapps.video_config.tests.test_transcripts_utils import YoutubeVideoHTMLResponse
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.inheritance import own_metadata
 from xmodule.modulestore.split_mongo.split import SplitMongoModuleStore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import ProceduralCourseTestMixin
-from openedx.core.djangoapps.video_config.tests.test_transcripts_utils import YoutubeVideoHTMLResponse
-
-from cms.djangoapps.contentstore.utils import reverse_url
-from common.djangoapps.student.models import Registration
-
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
@@ -131,12 +130,12 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
         """
         course1_items = self.store.get_items(course1_id)
         course2_items = self.store.get_items(course2_id)
-        self.assertGreater(len(course1_items), 0)  # ensure it found content instead of [] == []
+        self.assertGreater(len(course1_items), 0)  # ensure it found content instead of [] == []  # noqa: PT009
         if len(course1_items) != len(course2_items):
             course1_block_ids = {item.location.block_id for item in course1_items}
             course2_block_ids = {item.location.block_id for item in course2_items}
             raise AssertionError(
-                "Course1 extra blocks: {}; course2 extra blocks: {}".format(
+                "Course1 extra blocks: {}; course2 extra blocks: {}".format(  # noqa: UP032
                     course1_block_ids - course2_block_ids, course2_block_ids - course1_block_ids
                 )
             )
@@ -152,15 +151,15 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
             course2_item = self.store.get_item(course2_item_loc)
 
             # compare published state
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 self.store.has_published_version(course1_item),
                 self.store.has_published_version(course2_item)
             )
 
             # compare data
-            self.assertEqual(hasattr(course1_item, 'data'), hasattr(course2_item, 'data'))
+            self.assertEqual(hasattr(course1_item, 'data'), hasattr(course2_item, 'data'))  # noqa: PT009
             if hasattr(course1_item, 'data'):
-                self.assertEqual(course1_item.data, course2_item.data)
+                self.assertEqual(course1_item.data, course2_item.data)  # noqa: PT009
 
             # compare meta-data
             course1_metadata = own_metadata(course1_item)
@@ -168,23 +167,23 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
             # Omit edx_video_id as it can be different in case of extrnal video imports.
             course1_metadata.pop('edx_video_id', None)
             course2_metadata.pop('edx_video_id', None)
-            self.assertEqual(course1_metadata, course2_metadata)
+            self.assertEqual(course1_metadata, course2_metadata)  # noqa: PT009
 
             # compare children
-            self.assertEqual(course1_item.has_children, course2_item.has_children)
+            self.assertEqual(course1_item.has_children, course2_item.has_children)  # noqa: PT009
             if course1_item.has_children:
                 expected_children = []
                 for course1_item_child in course1_item.children:
                     expected_children.append(
                         course2_id.make_usage_key(course1_item_child.block_type, course1_item_child.block_id)
                     )
-                self.assertEqual(expected_children, course2_item.children)
+                self.assertEqual(expected_children, course2_item.children)  # noqa: PT009
 
         # compare assets
         content_store = self.store.contentstore
         course1_assets, count_course1_assets = content_store.get_all_content_for_course(course1_id)
         _, count_course2_assets = content_store.get_all_content_for_course(course2_id)
-        self.assertEqual(count_course1_assets, count_course2_assets)
+        self.assertEqual(count_course1_assets, count_course2_assets)  # noqa: PT009
         for asset in course1_assets:
             asset_son = asset.get('content_son', asset['_id'])
             self.assertAssetsEqual(asset_son, course1_id, course2_id)
@@ -192,10 +191,10 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
     def check_verticals(self, items):
         """ Test getting the editing HTML for each vertical. """
         # assert is here to make sure that the course being tested actually has verticals (units) to check.
-        self.assertGreater(len(items), 0, "Course has no verticals (units) to check")
+        self.assertGreater(len(items), 0, "Course has no verticals (units) to check")  # noqa: PT009
         for block in items:
             resp = self.client.get_html(get_url('container_handler', block.location))
-            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
     def assertAssetsEqual(self, asset_son, course1_id, course2_id):
         """Verifies the asset of the given key has the same attributes in both given courses."""
@@ -204,12 +203,12 @@ class CourseTestCase(ProceduralCourseTestMixin, ModuleStoreTestCase):
         filename = asset_son.block_id if hasattr(asset_son, 'block_id') else asset_son['name']
         course1_asset_attrs = content_store.get_attrs(course1_id.make_asset_key(category, filename))
         course2_asset_attrs = content_store.get_attrs(course2_id.make_asset_key(category, filename))
-        self.assertEqual(len(course1_asset_attrs), len(course2_asset_attrs))
+        self.assertEqual(len(course1_asset_attrs), len(course2_asset_attrs))  # noqa: PT009
         for key, value in course1_asset_attrs.items():
             if key in ['_id', 'filename', 'uploadDate', 'content_son', 'thumbnail_location']:
                 pass
             else:
-                self.assertEqual(value, course2_asset_attrs[key])
+                self.assertEqual(value, course2_asset_attrs[key])  # noqa: PT009
 
 
 class HTTPGetResponse:

@@ -32,11 +32,11 @@ from common.djangoapps.student.views.dashboard import check_for_unacknowledged_n
 from common.djangoapps.util.milestones_helpers import (
     get_course_milestones,
     remove_prerequisite_course,
-    set_prerequisite_courses
+    set_prerequisite_courses,
 )
-from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=unused-import
-from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
+from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.commerce.utils import EcommerceService
 from openedx.core.djangoapps.catalog.tests.factories import ProgramFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -46,8 +46,13 @@ from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience.tests.views.helpers import add_course_mode
 from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 TOMORROW = now() + timedelta(days=1)
 ONE_WEEK_AGO = now() - timedelta(weeks=1)
@@ -669,7 +674,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                 &nbsp;{course_run}
               </span>
             </a>
-        '''.format(course_key=course_key_string, course_run=course_run_string)
+        '''.format(course_key=course_key_string, course_run=course_run_string)  # noqa: UP032
 
     @staticmethod
     def _get_html_for_resume_course_button(course_key_string, resume_block_key_string, course_run_string):
@@ -682,7 +687,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                 &nbsp;{course_run}
               </span>
             </a>
-        '''.format(
+        '''.format(  # noqa: UP032
             course_key=course_key_string,
             url_to_block=resume_block_key_string,
             course_run=course_run_string
@@ -698,7 +703,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
             <button class="change-session btn-link ">Change or Leave Session</button>
             </span>
             </div>
-        '''.format(
+        '''.format(  # noqa: UP032
             org=course_key.org,
             course=course_key.course,
         )

@@ -5,14 +5,13 @@ Signal receivers for the "student" application.
 # pylint: disable=unused-argument
 import logging
 from asyncio.log import logger
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from lms.djangoapps.courseware.toggles import courseware_mfe_progress_milestones_are_active
-from lms.djangoapps.utils import get_email_client
 from common.djangoapps.student.helpers import EMAIL_EXISTS_MSG_FMT, USERNAME_EXISTS_MSG_FMT, AccountValidationError
 from common.djangoapps.student.models import (
     CourseAccessRole,
@@ -20,18 +19,20 @@ from common.djangoapps.student.models import (
     CourseEnrollmentCelebration,
     PendingNameChange,
     is_email_retired,
-    is_username_retired
+    is_username_retired,
 )
 from common.djangoapps.student.models_api import confirm_name_change
 from common.djangoapps.student.signals import (
+    USER_EMAIL_CHANGED,
     emit_course_access_role_added,
     emit_course_access_role_removed,
-    USER_EMAIL_CHANGED,
 )
+from lms.djangoapps.courseware.toggles import courseware_mfe_progress_milestones_are_active
+from lms.djangoapps.utils import get_email_client
 from openedx.core.djangoapps.safe_sessions.middleware import EmailChangeMiddleware
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)  # noqa: F811
 
 
 @receiver(pre_save, sender=get_user_model())
@@ -148,5 +149,5 @@ def _listen_for_user_email_changed(sender, user, request, **kwargs):
         email_client = get_email_client()
         if email_client:
             email_client.track_user(attributes=attributes)
-    except Exception as exc:   # pylint: disable=broad-except
+    except Exception as exc:   # pylint: disable=broad-except  # noqa: F841
         logger.exception(f'Unable to sync new email [{email}] with Braze for user [{user_id}]')

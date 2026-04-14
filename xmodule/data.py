@@ -6,7 +6,7 @@ See OEP-49 for details
 from enum import Enum
 
 
-class CertificatesDisplayBehaviors(str, Enum):
+class CertificatesDisplayBehaviors(str, Enum):  # noqa: UP042
     """
     Options for the certificates_display_behavior field of a course
 

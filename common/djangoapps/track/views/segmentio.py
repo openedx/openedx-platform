@@ -202,9 +202,9 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        raise EventValidationError(ERROR_USER_NOT_EXIST)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise EventValidationError(ERROR_USER_NOT_EXIST)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except ValueError:
-        raise EventValidationError(ERROR_INVALID_USER_ID)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise EventValidationError(ERROR_INVALID_USER_ID)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     context['user_id'] = user.id
     context['username'] = user.username
 
@@ -216,7 +216,7 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
             context['org_id'] = course_key.org
         except InvalidKeyError:
             log.warning(
-                'unable to parse course_id "{course_id}" from event: {event}'.format(
+                'unable to parse course_id "{course_id}" from event: {event}'.format(  # noqa: UP032
                     course_id=course_id,
                     event=json.dumps(full_segment_event),
                 ),

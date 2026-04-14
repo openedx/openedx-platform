@@ -6,15 +6,14 @@ This view is used in the MFE to preview XBlocks that are in the library.
 import re
 
 import ddt
+import pytest
 from django.core.exceptions import ValidationError
 from django.test.utils import override_settings
-import pytest
 from xblock.core import XBlock
 
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
+
 from .fields_test_block import FieldsTestBlock
 
 
@@ -169,7 +168,7 @@ class LibrariesEmbedViewTestCase(ContentLibrariesRestApiTest):
 
         # Now try changing the authored fields of a specific past version using a handler:
         html = self._embed_block(block_id, version=2)
-        with pytest.raises(ValidationError, match=expected_msg) as err:
+        with pytest.raises(ValidationError, match=expected_msg) as err:  # noqa: F841
             call_update_handler(display_name="DN-X", setting_field="SV-X", content_field="CV-X")
 
         # Make sure the fields were not updated:

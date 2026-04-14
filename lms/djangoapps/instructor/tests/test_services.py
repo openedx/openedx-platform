@@ -52,7 +52,7 @@ class InstructorServiceTests(SharedModuleStoreTestCase):
 
     @mock.patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
     @mock.patch('lms.djangoapps.instructor.tasks.update_exam_completion_task.apply_async', autospec=True)
-    def test_reset_student_attempts_delete(self, mock_completion_task, _mock_signal):
+    def test_reset_student_attempts_delete(self, mock_completion_task, _mock_signal):  # noqa: PT019
         """
         Test delete student state.
         """

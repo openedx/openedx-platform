@@ -43,29 +43,30 @@ Conventions
 import os
 
 from corsheaders.defaults import default_headers as corsheaders_default_headers
-from path import Path as path
 from django.utils.translation import gettext_lazy as _
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
 from enterprise.constants import (
+    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
     ENTERPRISE_ADMIN_ROLE,
-    ENTERPRISE_LEARNER_ROLE,
     ENTERPRISE_CATALOG_ADMIN_ROLE,
     ENTERPRISE_DASHBOARD_ADMIN_ROLE,
     ENTERPRISE_ENROLLMENT_API_ADMIN_ROLE,
     ENTERPRISE_FULFILLMENT_OPERATOR_ROLE,
+    ENTERPRISE_LEARNER_ROLE,
+    ENTERPRISE_OPERATOR_ROLE,
     ENTERPRISE_REPORTING_CONFIG_ADMIN_ROLE,
     ENTERPRISE_SSO_ORCHESTRATOR_OPERATOR_ROLE,
-    ENTERPRISE_OPERATOR_ROLE,
-    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
     PROVISIONING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
     PROVISIONING_PENDING_ENTERPRISE_CUSTOMER_ADMIN_ROLE,
-    DEFAULT_ENTERPRISE_ENROLLMENT_INTENTIONS_ROLE,
+    SYSTEM_ENTERPRISE_PROVISIONING_ADMIN_ROLE,
 )
 from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
+from path import Path as path
 
+from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 from openedx.core.lib.derived import Derived
-from openedx.envs.common import *  # pylint: disable=wildcard-import
-
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -777,14 +778,14 @@ RETRY_CALENDAR_SYNC_EMAIL_MAX_ATTEMPTS = 5
 ############################# SET PATH INFORMATION #############################
 
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/lms
-NODE_MODULES_ROOT = REPO_ROOT / "node_modules"
+NODE_MODULES_ROOT = REPO_ROOT / "node_modules"  # noqa: F405
 
 # Where to look for a status message
-STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"
+STATUS_MESSAGE_PATH = ENV_ROOT / "status_message.json"  # noqa: F405
 
 ############################ Global Database Configuration #####################
 
-DATABASE_ROUTERS.append('edx_django_utils.db.read_replica.ReadReplicaRouter')
+DATABASE_ROUTERS.append('edx_django_utils.db.read_replica.ReadReplicaRouter')  # noqa: F405
 
 ################################## DJANGO OAUTH TOOLKIT #######################################
 
@@ -841,10 +842,10 @@ TPA_AUTOMATIC_LOGOUT_ENABLED = False
 
 ################################## TEMPLATE CONFIGURATION #####################################
 
-MAKO_TEMPLATE_DIRS_BASE = lms_mako_template_dirs_base
+MAKO_TEMPLATE_DIRS_BASE = lms_mako_template_dirs_base  # noqa: F405
 
-CONTEXT_PROCESSORS.remove('django.contrib.messages.context_processors.messages')
-CONTEXT_PROCESSORS[5:5] = [
+CONTEXT_PROCESSORS.remove('django.contrib.messages.context_processors.messages')  # noqa: F405
+CONTEXT_PROCESSORS[5:5] = [  # noqa: F405
     # Added for django-wiki
     'django.template.context_processors.media',
     'django.template.context_processors.tz',
@@ -857,7 +858,7 @@ CONTEXT_PROCESSORS[5:5] = [
     # Timezone processor (sends language and time_zone preference)
     'lms.djangoapps.courseware.context_processor.user_timezone_locale_prefs',
 ]
-CONTEXT_PROCESSORS += [
+CONTEXT_PROCESSORS += [  # noqa: F405
     # Mobile App processor (Detects if request is from the mobile app)
     'lms.djangoapps.mobile_api.context_processor.is_from_mobile_app',
 
@@ -889,8 +890,8 @@ ELASTICSEARCH_INDEX_PREFIX = ""
 
 EDX_API_KEY = None
 
-LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/login'
-LOGIN_URL = EDX_ROOT_URL + '/login'
+LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/login'  # noqa: F405
+LOGIN_URL = EDX_ROOT_URL + '/login'  # noqa: F405
 
 CERT_QUEUE = 'test-pull'
 
@@ -919,7 +920,7 @@ LMS_SEGMENT_KEY = None
 
 DEBUG_TRACK_LOG = False
 
-TRACKING_IGNORE_URL_PATTERNS += [r'^/segmentio/event', r'^/performance']
+TRACKING_IGNORE_URL_PATTERNS += [r'^/segmentio/event', r'^/performance']  # noqa: F405
 
 TRACKING_SEGMENTIO_WEBHOOK_SECRET = None
 TRACKING_SEGMENTIO_ALLOWED_TYPES = ['track']
@@ -946,8 +947,8 @@ COURSE_LISTINGS = {}
 
 ############# ModuleStore Configuration ##########
 
-CONTENTSTORE['DOC_STORE_CONFIG']['password'] = 'password'
-CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'SECONDARY_PREFERRED'
+CONTENTSTORE['DOC_STORE_CONFIG']['password'] = 'password'  # noqa: F405
+CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'SECONDARY_PREFERRED'  # noqa: F405
 
 MODULESTORE_BRANCH = 'published-only'
 
@@ -1024,9 +1025,9 @@ ACTIVATION_EMAIL_FROM_ADDRESS = ''
 
 # Static content
 STATIC_URL = '/static/'
-STATIC_ROOT = os.environ.get('STATIC_ROOT_LMS', ENV_ROOT / "staticfiles")
+STATIC_ROOT = os.environ.get('STATIC_ROOT_LMS', ENV_ROOT / "staticfiles")  # noqa: F405
 
-STATICFILES_DIRS.insert(2, NODE_MODULES_ROOT / "@edx")
+STATICFILES_DIRS.insert(2, NODE_MODULES_ROOT / "@edx")  # noqa: F405
 
 # Guidelines for translators
 TRANSLATORS_GUIDE = 'https://docs.openedx.org/en/latest/translators/index.html'
@@ -1288,7 +1289,7 @@ MIDDLEWARE = [
 
 ############################### PIPELINE #######################################
 
-PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
+PIPELINE['JS_COMPRESSOR'] = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'  # noqa: F405
 
 from openedx.core.lib.rooted_paths import rooted_glob  # pylint: disable=wrong-import-position
 
@@ -1358,7 +1359,7 @@ discussion_js = (
     rooted_glob(PROJECT_ROOT / 'static', 'js/customwmd.js') +
     rooted_glob(PROJECT_ROOT / 'static', 'js/mathjax_accessible.js') +
     rooted_glob(PROJECT_ROOT / 'static', 'js/mathjax_delay_renderer.js') +
-    sorted(rooted_glob(COMMON_ROOT / 'static', 'common/js/discussion/**/*.js'))
+    sorted(rooted_glob(COMMON_ROOT / 'static', 'common/js/discussion/**/*.js'))  # noqa: F405
 )
 
 discussion_vendor_js = [
@@ -1432,7 +1433,7 @@ credit_web_view_js = [
     'js/src/logger.js',
 ]
 
-PIPELINE['STYLESHEETS'] = {
+PIPELINE['STYLESHEETS'] = {  # noqa: F405
     'style-vendor': {
         'source_filenames': [
             'css/vendor/font-awesome.css',
@@ -1570,7 +1571,7 @@ lms_application_js = [
     'js/main.js',
 ]
 
-PIPELINE['JAVASCRIPT'] = {
+PIPELINE['JAVASCRIPT'] = {  # noqa: F405
     'base_application': {
         'source_filenames': base_application_js,
         'output_filename': 'js/lms-base-application.js',
@@ -1752,7 +1753,7 @@ BULK_EMAIL_RETRY_DELAY_BETWEEN_SENDS = 0.02
 ############################# Email Opt In ####################################
 
 # Minimum age for organization-wide email opt in
-EMAIL_OPTIN_MINIMUM_AGE = PARENTAL_CONSENT_AGE_LIMIT
+EMAIL_OPTIN_MINIMUM_AGE = PARENTAL_CONSENT_AGE_LIMIT  # noqa: F405
 
 ################################### APPS ######################################
 
@@ -2102,7 +2103,7 @@ INSTALLED_APPS = [
 ]
 
 # Add LMS specific optional apps
-OPTIONAL_APPS += [
+OPTIONAL_APPS += [  # noqa: F405
     # Channel Integrations Apps
     ('channel_integrations.integrated_channel', None),
     ('channel_integrations.degreed2', None),
@@ -2117,7 +2118,7 @@ OPTIONAL_APPS += [
     ('django_object_actions', None),  # https://github.com/crccheck/django-object-actions
 ]
 
-add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)
+add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ######################### Django Rest Framework ########################
 
@@ -2128,7 +2129,7 @@ SWAGGER_SETTINGS = {
 
 ######################### MARKETING SITE ###############################
 
-MKTG_URL_LINK_MAP.update({
+MKTG_URL_LINK_MAP.update({  # noqa: F405
     'ABOUT': 'about',
     'CONTACT': 'contact',
     'FAQ': 'help',
@@ -2163,7 +2164,7 @@ ENTITLEMENT_EXPIRED_ALERT_PERIOD = 90
 
 ############################# SOCIAL MEDIA SHARING #############################
 # Social Media Sharing on Student Dashboard
-SOCIAL_SHARING_SETTINGS.update({
+SOCIAL_SHARING_SETTINGS.update({  # noqa: F405
     'FACEBOOK_BRAND': None,
     'CERTIFICATE_FACEBOOK_TEXT': None,
     'TWITTER_BRAND': None,
@@ -2600,7 +2601,7 @@ NOTIFICATION_EMAIL_EDX_LOGO = "templates/credit_notifications/edx-logo-header.pn
 ################################ Settings for JWTs ################################
 
 # Allows JWT authentication to find the LMS user id for verification
-EDX_DRF_EXTENSIONS['VERIFY_LMS_USER_ID_PROPERTY_NAME'] = 'id'
+EDX_DRF_EXTENSIONS['VERIFY_LMS_USER_ID_PROPERTY_NAME'] = 'id'  # noqa: F405
 
 ################################ Settings for rss_proxy ################################
 
@@ -2940,6 +2941,7 @@ ENFORCE_SESSION_EMAIL_MATCH = False
 # Note that all settings are actually defined by the plugin
 # pylint: disable=wrong-import-position
 from openedx.core.djangoapps.ace_common.settings import common as ace_common_settings
+
 ACE_ROUTING_KEY = ace_common_settings.ACE_ROUTING_KEY
 
 ############### Settings for facebook ##############################
@@ -2953,8 +2955,6 @@ USER_STATE_BATCH_SIZE = 5000
 
 ############## Plugin Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins  # pylint: disable=wrong-import-position,wrong-import-order
-from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType  # pylint: disable=wrong-import-position
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.LMS))
 add_plugins(__name__, ProjectType.LMS, SettingsType.COMMON)
 
@@ -3074,6 +3074,25 @@ MFE_CONFIG = {}
 # .. setting_creation_date: 2022-08-05
 MFE_CONFIG_OVERRIDES = {}
 
+# .. setting_name: FRONTEND_SITE_CONFIG
+# .. setting_implementation: DjangoSetting
+# .. setting_default: {}
+# .. setting_description: Frontend site configuration in frontend-base's native camelCase
+#   format.  Unlike MFE_CONFIG, values here require no translation and are passed through
+#   to the /api/frontend_site_config/v1/ endpoint as-is, at the highest precedence (overriding any
+#   values translated from MFE_CONFIG).
+#   See https://github.com/openedx/frontend-base/blob/main/types.ts for the expected
+#   SiteConfig schema.
+#   Example: {
+#     "externalRoutes": [
+#       {"role": "learnerDashboard", "url": "https://courses.example.com/dashboard"}
+#     ],
+#     "logoutUrl": "https://courses.example.com/logout"
+#   }
+# .. setting_use_cases: open_edx
+# .. setting_creation_date: 2026-04-04
+FRONTEND_SITE_CONFIG = {}
+
 # .. setting_name: MFE_CONFIG_API_CACHE_TIMEOUT
 # .. setting_default: 60*5
 # .. setting_description: The MFE Config API response will be cached during the
@@ -3119,7 +3138,7 @@ DISABLED_ORGS_FOR_PROGRAM_NUDGE = []
 def _should_send_certificate_events(settings):
     return settings.SEND_LEARNING_CERTIFICATE_LIFECYCLE_EVENTS_TO_BUS
 
-EVENT_BUS_PRODUCER_CONFIG.update({
+EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
     'org.openedx.learning.certificate.created.v1': {
         'learning-certificate-lifecycle':
             {'event_key_field': 'certificate.course.course_key', 'enabled': Derived(_should_send_certificate_events)},
@@ -3238,6 +3257,18 @@ RECAPTCHA_SITE_KEYS = {
 #     and is required for the reCAPTCHA service to function correctly.
 #     The project ID should be obtained from the Google Cloud Console when creating a reCAPTCHA
 RECAPTCHA_PROJECT_ID = None
+
+# .. setting_name: OPEN_EDX_FILTERS_CONFIG
+# .. setting_default: {}
+# .. setting_description: Configuration dict for openedx-filters pipeline steps.
+#    Keys are filter type strings; values are dicts with 'fail_silently' (bool) and
+#    'pipeline' (list of dotted-path strings to PipelineStep subclasses).
+OPEN_EDX_FILTERS_CONFIG = {
+    "org.openedx.learning.account.settings.read_only_fields.requested.v1": {
+        "fail_silently": True,
+        "pipeline": ["enterprise.filters.accounts.AccountSettingsReadOnlyFieldsStep"],
+    },
+}
 
 ############################## Miscellaneous ###############################
 

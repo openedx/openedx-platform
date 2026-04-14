@@ -7,9 +7,9 @@ from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.cache import cache
-from django.conf import settings
 from django.db.models.functions import Lower
 from django.test import TestCase, override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -29,7 +29,7 @@ from common.djangoapps.student.models import (
     PendingNameChange,
     UserAttribute,
     UserCelebration,
-    UserProfile
+    UserProfile,
 )
 from common.djangoapps.student.models_api import confirm_name_change, do_name_change_request, get_name
 from common.djangoapps.student.tests.factories import AccountRecoveryFactory, CourseEnrollmentFactory, UserFactory
@@ -44,7 +44,10 @@ from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -90,7 +93,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
         # One active enrollment
         enrollment.is_active = True
         enrollment.save()
-        expected = '{username}&{course_id}={mode}'.format(
+        expected = '{username}&{course_id}={mode}'.format(  # noqa: UP032
             username=self.user.username, course_id=str(course_id).lower(), mode=enrollment_mode.lower()
         )
         expected = hashlib.md5(expected.encode('utf-8')).hexdigest()
@@ -139,7 +142,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
         all_enrolled_users = list(
             CourseEnrollment.objects.users_enrolled_in(self.course.id, include_inactive=True)  # lint-amnesty, pylint: disable=no-member
         )
-        self.assertListEqual([self.user, self.user_2], all_enrolled_users)
+        self.assertListEqual([self.user, self.user_2], all_enrolled_users)  # noqa: PT009
 
     @skip_unless_lms
     def test_upgrade_deadline(self):
@@ -525,7 +528,7 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         Test basic name change request functionality.
         """
         do_name_change_request(self.user, self.new_name, self.rationale)
-        self.assertEqual(PendingNameChange.objects.count(), 1)
+        self.assertEqual(PendingNameChange.objects.count(), 1)  # noqa: PT009
 
     def test_same_name(self):
         """
@@ -533,7 +536,7 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         name will not result in a new pending name change request.
         """
         pending_name_change = do_name_change_request(self.user, self.name, self.rationale)[0]
-        self.assertIsNone(pending_name_change)
+        self.assertIsNone(pending_name_change)  # noqa: PT009
 
     def test_update_name_change(self):
         """
@@ -542,9 +545,9 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         """
         do_name_change_request(self.user, self.new_name, self.rationale)
         do_name_change_request(self.user, self.updated_name, self.rationale)
-        self.assertEqual(PendingNameChange.objects.count(), 1)
+        self.assertEqual(PendingNameChange.objects.count(), 1)  # noqa: PT009
         pending_name_change = PendingNameChange.objects.get(user=self.user)
-        self.assertEqual(pending_name_change.new_name, self.updated_name)
+        self.assertEqual(pending_name_change.new_name, self.updated_name)  # noqa: PT009
 
     def test_confirm_name_change(self):
         """
@@ -554,8 +557,8 @@ class PendingNameChangeTests(SharedModuleStoreTestCase):
         pending_name_change = do_name_change_request(self.user, self.new_name, self.rationale)[0]
         confirm_name_change(self.user, pending_name_change)
         user_profile = UserProfile.objects.get(user=self.user)
-        self.assertEqual(user_profile.name, self.new_name)
-        self.assertEqual(PendingNameChange.objects.count(), 0)
+        self.assertEqual(user_profile.name, self.new_name)  # noqa: PT009
+        self.assertEqual(PendingNameChange.objects.count(), 0)  # noqa: PT009
 
     def test_delete_by_user_removes_pending_name_change(self):
         do_name_change_request(self.user, self.new_name, self.rationale)

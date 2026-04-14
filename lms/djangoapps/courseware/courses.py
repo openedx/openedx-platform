@@ -8,8 +8,8 @@ import pickle
 from collections import defaultdict, namedtuple
 from datetime import datetime
 
-import six
 import pytz
+import six
 from crum import get_current_request
 from dateutil.parser import parse as parse_date
 from django.conf import settings
@@ -30,13 +30,20 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.access_response import (
     AuthenticationRequiredAccessError,
+    CatalogVisibilityError,
     EnrollmentRequiredAccessError,
     MilestoneAccessError,
     OldMongoAccessError,
-    StartDateError
+    StartDateError,
 )
-from lms.djangoapps.courseware.access_utils import check_authentication, check_data_sharing_consent, check_enrollment, \
-    check_correct_active_enterprise_customer, is_priority_access_error
+from lms.djangoapps.courseware.access_utils import (
+    check_authentication,
+    check_correct_active_enterprise_customer,
+    check_data_sharing_consent,
+    check_enrollment,
+    is_priority_access_error,
+)
+from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from lms.djangoapps.courseware.courseware_access_exception import CoursewareAccessException
 from lms.djangoapps.courseware.date_summary import (
@@ -47,12 +54,11 @@ from lms.djangoapps.courseware.date_summary import (
     CourseStartDate,
     TodaysDate,
     VerificationDeadlineDate,
-    VerifiedUpgradeDeadlineDate
+    VerifiedUpgradeDeadlineDate,
 )
 from lms.djangoapps.courseware.exceptions import CourseAccessRedirect, CourseRunNotFound
 from lms.djangoapps.courseware.masquerade import check_content_start_date_for_masquerade_user
 from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block
 from lms.djangoapps.courseware.utils import is_empty_html
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.survey.utils import SurveyRequiredAccessError, check_survey_required_and_unanswered
@@ -150,7 +156,7 @@ def get_course_overview_with_access(user, action, course_key, check_if_enrolled=
     try:
         course_overview = CourseOverview.get_from_id(course_key)
     except CourseOverview.DoesNotExist:
-        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Course not found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     check_course_access_with_redirect(course_overview, user, action, check_if_enrolled)
     return course_overview
 
@@ -287,6 +293,12 @@ def check_course_access_with_redirect(
         # Redirect if user must be authenticated to view the content
         if isinstance(access_response, AuthenticationRequiredAccessError):
             raise CourseAccessRedirect(reverse('about_course', args=[str(course.id)]))
+
+        # Redirect if the course catalog visibility prevents access
+        if isinstance(access_response, CatalogVisibilityError):
+            raise CourseAccessRedirect('{dashboard_url}'.format(
+                dashboard_url=reverse('dashboard'),
+            ), access_response)
 
         # Redirect if the user must answer a survey before entering the course.
         if isinstance(access_response, SurveyRequiredAccessError):

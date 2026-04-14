@@ -81,20 +81,21 @@ UpstreamLink response schema:
 """
 
 import logging
+from itertools import chain
 
 from attrs import asdict as attrs_asdict
-from django.db.models import QuerySet
 from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+from django.db.models import QuerySet
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from opaque_keys.edx.locator import LibraryUsageLocatorV2, LibraryContainerLocator, LibraryLocatorV2
-from rest_framework.exceptions import NotFound, ValidationError, PermissionDenied
+from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.fields import BooleanField
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from itertools import chain
 from xblock.core import XBlock
 
 from cms.djangoapps.contentstore.models import ComponentLink, ContainerLink, EntityLinkBase
@@ -115,14 +116,12 @@ from cms.lib.xblock.upstream_sync import (
 from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block
 from cms.lib.xblock.upstream_sync_container import fetch_customizable_fields_from_container
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
-from openedx.core.lib.api.view_utils import (
-    DeveloperErrorViewMixin,
-    view_auth_classes,
-)
+from openedx.core.djangoapps.authz.decorators import LegacyAuthoringPermission, user_has_course_permission
 from openedx.core.djangoapps.content_libraries import api as lib_api
+from openedx.core.djangoapps.video_config.transcripts_utils import clear_transcripts
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
-from openedx.core.djangoapps.video_config.transcripts_utils import clear_transcripts
 
 logger = logging.getLogger(__name__)
 
@@ -305,7 +304,12 @@ class DownstreamSummaryView(DeveloperErrorViewMixin, APIView):
         except InvalidKeyError as exc:
             raise ValidationError(detail=f"Malformed course key: {course_key_string}") from exc
 
-        if not has_studio_read_access(request.user, course_key):
+        if not user_has_course_permission(
+            request.user,
+            COURSES_VIEW_COURSE.identifier,
+            course_key,
+            LegacyAuthoringPermission.READ
+        ):
             raise PermissionDenied
 
         # Gets all links of the Course, using the

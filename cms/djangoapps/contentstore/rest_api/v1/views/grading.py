@@ -3,7 +3,7 @@
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
-from openedx_authz.constants.permissions import COURSES_VIEW_GRADING_SETTINGS, COURSES_EDIT_GRADING_SETTINGS
+from openedx_authz.constants.permissions import COURSES_EDIT_GRADING_SETTINGS, COURSES_VIEW_GRADING_SETTINGS
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -16,8 +16,8 @@ from openedx.core.djangoapps.credit.tasks import update_credit_course_requiremen
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
 from xmodule.modulestore.django import modulestore
 
-from ..serializers import CourseGradingModelSerializer, CourseGradingSerializer
 from ....utils import get_course_grading
+from ..serializers import CourseGradingModelSerializer, CourseGradingSerializer
 
 
 @view_auth_classes(is_authenticated=True)

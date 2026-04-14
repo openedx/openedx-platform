@@ -14,8 +14,8 @@ from organizations.api import get_organizations
 
 from lms.djangoapps.certificates.models import (
     CertificateDateOverride,
-    CertificateGenerationConfiguration,
     CertificateGenerationCommandConfiguration,
+    CertificateGenerationConfiguration,
     CertificateGenerationCourseSetting,
     CertificateHtmlViewConfiguration,
     CertificateTemplate,
@@ -47,7 +47,7 @@ class CertificateTemplateForm(forms.ModelForm):
 
     class Meta:
         model = CertificateTemplate
-        fields = '__all__'
+        fields = '__all__'  # noqa: DJ007
 
 
 class CertificateTemplateAdmin(admin.ModelAdmin):

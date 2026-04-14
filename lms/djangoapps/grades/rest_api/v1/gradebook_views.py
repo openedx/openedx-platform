@@ -27,28 +27,33 @@ from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
     get_event_transaction_type,
-    set_event_transaction_type
+    set_event_transaction_type,
 )
 from common.djangoapps.util.date_utils import to_timestamp
 from lms.djangoapps.course_blocks.api import get_course_blocks
-from lms.djangoapps.grades.api import CourseGradeFactory, clear_prefetched_course_and_subsection_grades
+from lms.djangoapps.grades.api import (
+    CourseGradeFactory,
+    clear_prefetched_course_and_subsection_grades,
+    gradebook_bulk_management_enabled,
+    is_writable_gradebook_enabled,
+    prefetch_course_and_subsection_grades,
+)
 from lms.djangoapps.grades.api import constants as grades_constants
 from lms.djangoapps.grades.api import context as grades_context
 from lms.djangoapps.grades.api import events as grades_events
-from lms.djangoapps.grades.api import gradebook_bulk_management_enabled
-from lms.djangoapps.grades.api import is_writable_gradebook_enabled, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.course_data import CourseData
 from lms.djangoapps.grades.grade_utils import are_grades_frozen
+
 # TODO these imports break abstraction of the core Grades layer. This code needs
 # to be refactored so Gradebook views only access public Grades APIs.
 from lms.djangoapps.grades.models import (
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.rest_api.serializers import (
     StudentGradebookEntrySerializer,
-    SubsectionGradeResponseSerializer
+    SubsectionGradeResponseSerializer,
 )
 from lms.djangoapps.grades.rest_api.v1.utils import USER_MODEL, CourseEnrollmentPagination, GradeViewMixin
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
@@ -63,7 +68,7 @@ from openedx.core.lib.api.view_utils import (
     PaginatedAPIView,
     get_course_key,
     verify_course_exists,
-    view_auth_classes
+    view_auth_classes,
 )
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
@@ -292,7 +297,7 @@ class CourseGradingView(BaseCourseView):
         master's track or is enabled with the grades.bulk_management course waffle flag.
         """
         course_modes = get_course_enrollment_details(str(course_key), include_expired=True).get('course_modes', [])
-        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))
+        course_has_masters_track = any((course_mode['slug'] == CourseMode.MASTERS for course_mode in course_modes))  # noqa: UP034  # pylint: disable=line-too-long
         return course_has_masters_track or gradebook_bulk_management_enabled(course_key)
 
     def _get_assignment_types(self, course):
@@ -681,7 +686,7 @@ class GradebookView(GradeViewMixin, PaginatedAPIView):
             queryset = queryset.annotate(**annotations)
         queryset = queryset.filter(*query_args)
 
-        cache_key = 'usercount.%s' % queryset.query
+        cache_key = 'usercount.%s' % queryset.query  # noqa: UP031
         user_count = cache.get(cache_key, None)
         if user_count is None:
             user_count = queryset.count()
@@ -1058,7 +1063,7 @@ class SubsectionGradeView(GradeViewMixin, APIView):
         try:
             usage_key = UsageKey.from_string(subsection_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='Invalid UsageKey',
                 error_code='invalid_usage_key'
@@ -1074,7 +1079,7 @@ class SubsectionGradeView(GradeViewMixin, APIView):
         try:
             user_id = int(request.GET.get('user_id'))
         except ValueError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_404_NOT_FOUND,
                 developer_message='Invalid UserID',
                 error_code='invalid_user_id'

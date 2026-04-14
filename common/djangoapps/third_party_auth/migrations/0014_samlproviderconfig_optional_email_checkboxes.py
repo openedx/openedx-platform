@@ -1,7 +1,7 @@
 # Generated migration for adding optional checkbox skip configuration field
 
-from django.db import migrations, models
 import django.utils.translation
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):

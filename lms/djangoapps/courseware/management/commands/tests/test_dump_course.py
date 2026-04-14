@@ -13,11 +13,8 @@ from django.core.management import call_command
 
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    SharedModuleStoreTestCase
-)
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.modulestore.xml_importer import import_course_from_xml
 
 DATA_DIR = settings.COMMON_TEST_DATA_ROOT
@@ -51,7 +48,7 @@ class CommandsTestBase(SharedModuleStoreTestCase):
         """
         store = modulestore()
 
-        unique_org = factory.Sequence(lambda n: 'edX.%d' % n)
+        unique_org = factory.Sequence(lambda n: 'edX.%d' % n)  # noqa: UP031
         cls.course = CourseFactory.create(
             emit_signals=True,
             org=unique_org,
@@ -153,7 +150,7 @@ class CommandsTestBase(SharedModuleStoreTestCase):
         assert dump[video_id]['category'] == 'video'
         video_metadata = dump[video_id]['metadata']
         video_metadata.pop('edx_video_id', None)
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             list(video_metadata.keys()),
             ['youtube_id_0_75', 'youtube_id_1_0', 'youtube_id_1_25', 'youtube_id_1_5']
         )

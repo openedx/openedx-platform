@@ -11,14 +11,14 @@ from unittest.mock import patch
 import ddt
 from django.conf import settings
 from django.utils import timezone
-from pytest import mark
+from pytest import mark  # noqa: PT013
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification, SSOVerification
 from lms.djangoapps.verify_student.utils import (
     most_recent_verification,
     submit_request_to_ss,
-    verification_for_datetime
+    verification_for_datetime,
 )
 
 FAKE_SETTINGS = {

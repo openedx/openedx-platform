@@ -2,6 +2,7 @@
 Tests for `field_overrides` module.
 """
 import unittest
+
 import pytest
 from django.test.utils import override_settings
 from xblock.field_data import DictFieldData
@@ -14,7 +15,7 @@ from ..field_overrides import (
     OverrideFieldData,
     OverrideModulestoreFieldData,
     disable_overrides,
-    resolve_dotted
+    resolve_dotted,
 )
 from ..testutils import FieldOverrideTestMixin
 

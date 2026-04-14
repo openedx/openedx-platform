@@ -9,7 +9,9 @@ from django.core.management import call_command
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -62,7 +64,7 @@ class ChangeEnrollmentTests(SharedModuleStoreTestCase):
 
         # Hack around call_command bugs dealing with required options see:
         # https://stackoverflow.com/questions/32036562/call-command-argument-is-required
-        command_args = '--course {course} --to honor --from audit --{method} {user_str}{noop}'.format(
+        command_args = '--course {course} --to honor --from audit --{method} {user_str}{noop}'.format(  # noqa: UP032
             course=str(self.course.id),
             noop=noop,
             method=method,
@@ -95,7 +97,7 @@ class ChangeEnrollmentTests(SharedModuleStoreTestCase):
         # Verify users are not in honor mode yet
         assert len(CourseEnrollment.objects.filter(mode='honor', user_id__in=real_user_ids)) == 0
 
-        command_args = '--course {course} --to honor --from audit --{method} {user_str}'.format(
+        command_args = '--course {course} --to honor --from audit --{method} {user_str}'.format(  # noqa: UP032
             course=str(self.course.id),
             method=method,
             user_str=user_str

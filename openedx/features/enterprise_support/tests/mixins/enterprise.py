@@ -4,7 +4,6 @@ Mixins for the EnterpriseApiClient.
 
 
 import json
-
 from unittest import mock
 
 import httpretty
@@ -12,6 +11,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.test import SimpleTestCase
 from django.urls import reverse
+
 from openedx.features.enterprise_support.tests import FAKE_ENTERPRISE_CUSTOMER
 
 

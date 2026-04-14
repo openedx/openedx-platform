@@ -4,20 +4,21 @@ Content libraries data classes related to Containers.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field as dataclass_field
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from enum import Enum
-from django.db.models import QuerySet
 
+from django.db.models import QuerySet
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import (
     Component,
     Container,
-    Unit,
-    Subsection,
-    Section,
     PublishableEntity,
     PublishableEntityMixin,
+    Section,
+    Subsection,
+    Unit,
 )
 
 from openedx.core.djangoapps.content_tagging.api import get_object_tag_counts
@@ -70,7 +71,7 @@ class ContainerMetadata(PublishableItem):
 
     container_key: LibraryContainerLocator
     container_type_code: str
-    container_pk: int
+    container_id: Container.ID
 
     @classmethod
     def from_container(cls, library_key, container: Container, associated_collections=None):
@@ -98,7 +99,7 @@ class ContainerMetadata(PublishableItem):
         return cls(
             container_key=container_key,
             container_type_code=container_key.container_type,
-            container_pk=container.pk,
+            container_id=container.id,
             display_name=draft.title,
             created=container.created,
             modified=draft.created,
@@ -109,7 +110,7 @@ class ContainerMetadata(PublishableItem):
             published_by=published_by,
             last_draft_created=last_draft_created,
             last_draft_created_by=last_draft_created_by,
-            has_unpublished_changes=content_api.contains_unpublished_changes(container.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(container.id),
             tags_count=tags.get(str(container_key), 0),
             collections=associated_collections or [],
         )
@@ -259,7 +260,7 @@ def _get_containers_with_entities(
     for member in members:
         qs = qs.union(
             content_api.get_containers_with_entity(
-                member.entity.pk,
+                member.entity.id,
                 ignore_pinned=ignore_pinned,
             )
         )
@@ -337,7 +338,7 @@ class ContainerHierarchyMember:
                 container=entity,
             ),
             display_name=entity.versioning.draft.title,
-            has_unpublished_changes=content_api.contains_unpublished_changes(entity.pk),
+            has_unpublished_changes=content_api.contains_unpublished_changes(entity.id),
             container=entity,
             component=None,
         )

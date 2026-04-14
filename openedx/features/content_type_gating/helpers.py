@@ -7,9 +7,9 @@ import logging
 from django.utils import timezone
 
 from common.djangoapps.course_modes.models import CourseMode
-from openedx.core.djangoapps.config_model_utils.utils import is_in_holdback
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.role_helpers import has_staff_roles
+from openedx.core.djangoapps.config_model_utils.utils import is_in_holdback
 from xmodule.partitions.partitions import Group  # lint-amnesty, pylint: disable=wrong-import-order
 
 # Studio generates partition IDs starting at 100. There is already a manually generated
@@ -80,8 +80,11 @@ def has_full_access_role_in_masquerade(user, course_key):
     """
     # The masquerade module imports from us, so avoid a circular dependency here
     from lms.djangoapps.courseware.masquerade import (
-        get_course_masquerade, is_masquerading_as_full_access, is_masquerading_as_non_audit_enrollment,
-        is_masquerading_as_specific_student, is_masquerading_as_staff,
+        get_course_masquerade,
+        is_masquerading_as_full_access,
+        is_masquerading_as_non_audit_enrollment,
+        is_masquerading_as_specific_student,
+        is_masquerading_as_staff,
     )
 
     course_masquerade = get_course_masquerade(user, course_key)

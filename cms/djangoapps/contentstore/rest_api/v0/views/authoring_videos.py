@@ -2,32 +2,24 @@
 Public rest API endpoints for the Authoring API video assets.
 """
 import logging
-from rest_framework.generics import (
-    CreateAPIView,
-    RetrieveAPIView,
-    DestroyAPIView
-)
-from rest_framework.parsers import (MultiPartParser, FormParser)
+
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.generics import CreateAPIView, DestroyAPIView, RetrieveAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
-from openedx.core.lib.api.parsers import TypedFileUploadParser
-from common.djangoapps.util.json_request import expect_json_in_class_view
-
-from ....api import course_author_access_required
-
+from cms.djangoapps.contentstore.rest_api.v1.serializers import VideoImageSerializer, VideoUploadSerializer
 from cms.djangoapps.contentstore.video_storage_handlers import (
-    handle_videos,
+    enabled_video_features,
     get_video_encodings_download,
     handle_video_images,
-    enabled_video_features
+    handle_videos,
 )
-from cms.djangoapps.contentstore.rest_api.v1.serializers import (
-    VideoUploadSerializer,
-    VideoImageSerializer,
-)
-from .utils import validate_request_with_serializer
+from common.djangoapps.util.json_request import expect_json_in_class_view
+from openedx.core.lib.api.parsers import TypedFileUploadParser
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
+from ....api import course_author_access_required
+from .utils import validate_request_with_serializer
 
 log = logging.getLogger(__name__)
 

@@ -4,14 +4,13 @@ Specialized models for oauth_dispatch djangoapp
 
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from django.db import models
-
 from django.utils.translation import gettext_lazy as _
 from django_mysql.models import ListCharField
 from oauth2_provider.settings import oauth2_settings
 from organizations.models import Organization
-from zoneinfo import ZoneInfo
 
 from openedx.core.djangolib.markup import HTML
 from openedx.core.lib.request_utils import get_request_or_stub
@@ -110,18 +109,18 @@ class ApplicationAccess(models.Model):
                 if name == filter_name:
                     yield filter_value
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         """
         Return a unicode representation of this object.
         """
-        return "{application_name}:{scopes}:{filters}".format(
+        return "{application_name}:{scopes}:{filters}".format(  # noqa: UP032
             application_name=self.application.name,
             scopes=self.scopes,
             filters=self.filters,
         )
 
 
-class ApplicationOrganization(models.Model):
+class ApplicationOrganization(models.Model):  # noqa: DJ008
     """
     DEPRECATED: Associates a DOT Application to an Organization.
 

@@ -6,7 +6,7 @@ import pytest
 from django.conf import settings
 from edx_rest_framework_extensions.auth.jwt.decoder import (
     get_verification_jwk_key_set,
-    verify_jwk_signature_using_keyset
+    verify_jwk_signature_using_keyset,
 )
 from jwt.exceptions import ExpiredSignatureError
 

@@ -8,7 +8,6 @@ from urllib.parse import urljoin  # pylint: disable=import-error
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.db import models
-
 from django.utils.translation import gettext_lazy as _
 
 from openedx.core.djangoapps.site_configuration import helpers

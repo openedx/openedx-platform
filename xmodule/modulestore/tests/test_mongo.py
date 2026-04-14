@@ -10,6 +10,7 @@ import pytest
 
 # pylint: disable=protected-access
 from django.test import TestCase
+
 # pylint: enable=E0611
 from opaque_keys.edx.keys import CourseKey
 from xblock.exceptions import InvalidScopeError

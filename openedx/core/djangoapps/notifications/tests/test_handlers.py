@@ -1,10 +1,11 @@
 """
 Tests for the notifications handlers.
 """
-from django.test import TestCase
 from unittest.mock import patch
-from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
+
+from django.test import TestCase
 from openedx_events.learning.data import CourseNotificationData
+from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED
 
 
 class CourseNotificationsTest(TestCase):
@@ -35,4 +36,4 @@ class CourseNotificationsTest(TestCase):
         # Check if the sender_id was removed from the user_ids
         expected_user_ids = [1, 2, 4]  # 3 should be removed
         notification_data = mock_send_notifications.delay.call_args[1]
-        self.assertEqual(notification_data['user_ids'], expected_user_ids)
+        self.assertEqual(notification_data['user_ids'], expected_user_ids)  # noqa: PT009

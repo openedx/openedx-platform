@@ -1,14 +1,14 @@
 """
 Tests the ``create_dot_application`` management command.
 """
-import pytest
 import ddt
+import pytest
 from django.core.management import call_command
 from django.test import TestCase
 from oauth2_provider.models import get_application_model
 
-from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 
 from ..create_dot_application import Command
 

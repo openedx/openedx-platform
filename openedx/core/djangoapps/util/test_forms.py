@@ -28,7 +28,7 @@ class FormTestMixin:
         Check that the form returns the expected data
         """
         form = self.get_form(expected_valid=True)
-        self.assertDictEqual(form.cleaned_data, expected_cleaned_data)
+        self.assertDictEqual(form.cleaned_data, expected_cleaned_data)  # noqa: PT009
 
     def assert_field_value(self, field, expected_value):
         """

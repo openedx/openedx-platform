@@ -109,7 +109,7 @@ class TestSendProgramCourseNudgeEmailCommand(SharedModuleStoreTestCase):
     @patch('lms.djangoapps.program_enrollments.management.commands.send_program_course_nudge_email.get_programs')
     @patch('lms.djangoapps.certificates.api.certificates_viewable_for_course', return_value=True)
     @override_settings(FEATURES=dict(ENABLE_ENTERPRISE_INTEGRATION=True))
-    def test_email_send(self, add_no_commit, __, get_programs_mock, mock_track):
+    def test_email_send(self, add_no_commit, __, get_programs_mock, mock_track):  # noqa: PT019
         """
         Test Segment fired as expected.
         """

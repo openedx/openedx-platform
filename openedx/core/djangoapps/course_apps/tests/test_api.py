@@ -7,10 +7,11 @@ from unittest.mock import Mock
 import ddt
 from django.test import TestCase
 from opaque_keys.edx.locator import CourseLocator
+
 from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 
-from .utils import make_test_course_app
 from ..api import is_course_app_enabled, set_course_app_enabled
+from .utils import make_test_course_app
 
 
 @ddt.ddt

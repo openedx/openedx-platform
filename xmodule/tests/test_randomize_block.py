@@ -50,7 +50,7 @@ class RandomizeBlockTest(MixedSplitTestCase):
         """
         randomize_block = self.store.get_item(self.randomize_block.location)
 
-        expected_olx = (
+        expected_olx = (  # noqa: UP032
             '<randomize display_name="{block.display_name}">\n'
             '  <html url_name="{block.children[0].block_id}"/>\n'
             '  <html url_name="{block.children[1].block_id}"/>\n'
@@ -69,7 +69,7 @@ class RandomizeBlockTest(MixedSplitTestCase):
         randomize_block.add_xml_to_node(node)
 
         # Read it back
-        with export_fs.open('{dir}/{file_name}.xml'.format(
+        with export_fs.open('{dir}/{file_name}.xml'.format(  # noqa: UP032
             dir=randomize_block.scope_ids.usage_id.block_type,
             file_name=randomize_block.scope_ids.usage_id.block_id
         )) as f:

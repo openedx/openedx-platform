@@ -107,7 +107,7 @@ class TestXMLModuleStore(TestCase):
             store.get_item(course.location)
 
         # XML store does NOT allow draft_preferred branch setting
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             with store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, course.id):
                 # verify that the above context manager raises a ValueError
                 pass  # pragma: no cover
@@ -151,7 +151,7 @@ class TestModuleStoreIgnore(TestXMLModuleStore):  # lint-amnesty, pylint: disabl
         add_temp_files_from_dict(TILDA_FILES_DICT, self.course_dir / "static")
 
     @patch("xmodule.modulestore.xml.glob.glob", side_effect=glob_tildes_at_end)
-    def test_tilde_files_ignored(self, _fake_glob):
+    def test_tilde_files_ignored(self, _fake_glob):  # noqa: PT019
         modulestore = XMLModuleStore(DATA_DIR, source_dirs=['course_ignore'], load_error_blocks=False)
         about_location = CourseKey.from_string('edX/course_ignore/2014_Fall').make_usage_key(
             'about', 'index',

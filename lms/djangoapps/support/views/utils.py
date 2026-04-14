@@ -8,12 +8,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
+from lms.djangoapps.program_enrollments.api import link_program_enrollments
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
-from lms.djangoapps.program_enrollments.api import (
-    link_program_enrollments
-)
 
 
 def get_course_duration_info(course_key):

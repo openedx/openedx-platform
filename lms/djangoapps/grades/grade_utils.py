@@ -6,8 +6,8 @@ This module contains utility functions for grading.
 import logging
 from datetime import timedelta
 
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 

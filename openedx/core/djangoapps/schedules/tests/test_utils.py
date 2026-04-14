@@ -3,18 +3,18 @@ Tests for schedules utils
 """
 
 import datetime
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.schedules.tests.factories import ScheduleConfigFactory
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @ddt.ddt

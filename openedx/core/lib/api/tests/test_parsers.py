@@ -84,7 +84,7 @@ class TestTypedFileUploadParser(APITestCase):
             HTTP_CONTENT_DISPOSITION='attachment; filename="file.jpg"',
         )
         context = {'view': self.view, 'request': request}
-        with pytest.raises(exceptions.ParseError) as err:
+        with pytest.raises(exceptions.ParseError) as err:  # noqa: PT012
             self.parser.parse(stream=BytesIO(b'abcdefgh'), media_type='image/png', parser_context=context)
             assert 'developer_message' in err.detail
             # lint-amnesty, pylint: disable=no-member
@@ -105,7 +105,7 @@ class TestTypedFileUploadParser(APITestCase):
             HTTP_CONTENT_DISPOSITION='attachment; filename="file.png"',
         )
         context = {'view': view, 'request': request}
-        with pytest.raises(exceptions.UnsupportedMediaType) as err:
+        with pytest.raises(exceptions.UnsupportedMediaType) as err:  # noqa: PT012
             self.parser.parse(stream=BytesIO(b'abcdefgh'), media_type='image/png', parser_context=context)
             assert 'developer_message' in err.detail
             # lint-amnesty, pylint: disable=no-member

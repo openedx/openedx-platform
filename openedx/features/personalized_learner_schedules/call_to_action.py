@@ -5,17 +5,17 @@ Creates Call to Actions for resetting a Personalized Learner Schedule for use in
 import logging
 
 from crum import get_current_request
-
 from django.conf import settings
 from django.urls import reverse
-from django.utils.translation import gettext as _, ngettext
+from django.utils.translation import gettext as _
+from django.utils.translation import ngettext
 
-from xmodule.util.misc import is_xblock_an_assignment
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.mobile_utils import is_request_from_mobile_app
 from openedx.features.course_experience import RELATIVE_DATES_DISABLE_RESET_FLAG
 from openedx.features.course_experience.url_helpers import is_request_from_learning_mfe
 from openedx.features.course_experience.utils import dates_banner_should_display
+from xmodule.util.misc import is_xblock_an_assignment
 
 log = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import dateutil.parser
 from lxml import etree
-from opaque_keys.edx.keys import AssetKey, CourseKey
+from opaque_keys.edx.keys import AssetKey, CourseKey  # noqa: F401
 
 
 class AssetMetadata:

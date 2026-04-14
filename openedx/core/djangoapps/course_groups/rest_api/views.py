@@ -15,7 +15,7 @@ from openedx.core.djangoapps.course_groups.constants import COHORT_SCHEME
 from openedx.core.djangoapps.course_groups.partition_scheme import get_cohorted_user_partition
 from openedx.core.djangoapps.course_groups.rest_api.serializers import (
     ContentGroupConfigurationSerializer,
-    ContentGroupsListResponseSerializer
+    ContentGroupsListResponseSerializer,
 )
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin

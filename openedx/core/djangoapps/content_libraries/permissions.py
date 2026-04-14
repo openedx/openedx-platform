@@ -5,10 +5,9 @@ Deprecated: The legacy permission rules and constants that rely on ContentLibrar
 are deprecated in favor of openedx-authz. See https://github.com/openedx/openedx-platform/issues/37409.
 """
 from bridgekeeper import perms, rules
-from bridgekeeper.rules import Attribute, ManyRelation, Relation, blanket_rule, in_current_groups, Rule
+from bridgekeeper.rules import Attribute, ManyRelation, Relation, Rule, blanket_rule, in_current_groups
 from django.conf import settings
 from django.db.models import Q
-
 from openedx_authz import api as authz_api
 from openedx_authz.constants.permissions import VIEW_LIBRARY
 

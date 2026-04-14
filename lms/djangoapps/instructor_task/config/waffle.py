@@ -5,7 +5,6 @@ waffle switches for the instructor_task app.
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
-
 WAFFLE_NAMESPACE = 'instructor_task'
 
 # Course override flags

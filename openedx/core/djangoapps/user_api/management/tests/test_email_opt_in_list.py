@@ -12,13 +12,15 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.user_api.management.commands import email_opt_in_list
 from openedx.core.djangoapps.user_api.models import UserOrgTag
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -185,7 +187,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         self._set_opt_in_pref(self.user, self.TEST_ORG, True)
 
         # No course available for this particular org
-        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):
+        with self.assertRaisesRegex(CommandError, "^No courses found for orgs:"):  # noqa: PT027
             self._run_command("other_org")
 
     def test_specify_subset_of_courses(self):
@@ -270,7 +272,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
             expected_msg_regex = (
                 "^Error: the following arguments are required: OUTPUT_FILENAME, ORG_ALIASES$"
             )
-        with self.assertRaisesRegex(CommandError, expected_msg_regex):
+        with self.assertRaisesRegex(CommandError, expected_msg_regex):  # noqa: PT027
             call_command('email_opt_in_list', *args)
 
     def test_file_already_exists(self):
@@ -279,7 +281,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
         def _cleanup():
             temp_file.close()
 
-        with self.assertRaisesRegex(CommandError, "^File already exists"):
+        with self.assertRaisesRegex(CommandError, "^File already exists"):  # noqa: PT027
             call_command('email_opt_in_list', temp_file.name, self.TEST_ORG)
 
     def test_no_user_profile(self):

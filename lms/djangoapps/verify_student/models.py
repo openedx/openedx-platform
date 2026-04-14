@@ -15,10 +15,8 @@ import json
 import logging
 import os.path
 import uuid
-
 from datetime import timedelta
 from email.utils import formatdate
-
 
 import requests
 from config_models.models import ConfigurationModel
@@ -27,24 +25,23 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.core.files.base import ContentFile
 from django.db import models, transaction
 from django.urls import reverse
-
 from django.utils.functional import cached_property
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy
 from model_utils import Choices
 from model_utils.models import StatusModel, TimeStampedModel
-from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from opaque_keys.edx.django.models import CourseKeyField
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from lms.djangoapps.verify_student.ssencrypt import (
     decode_and_decrypt,
     encrypt_and_encode,
     generate_signed_message,
     random_aes_key,
     rsa_decrypt,
-    rsa_encrypt
+    rsa_encrypt,
 )
-from common.djangoapps.util.storage import resolve_storage_backend
+from lms.djangoapps.verify_student.statuses import VerificationAttemptStatus
 from openedx.core.djangoapps.signals.signals import LEARNER_SSO_VERIFIED, PHOTO_VERIFICATION_APPROVED
 
 from .utils import auto_verify_for_testing_enabled, earliest_allowed_verification_date, submit_request_to_ss
@@ -83,7 +80,7 @@ def status_before_must_be(*valid_start_statuses):
         @functools.wraps(func)
         def with_status_check(obj, *args, **kwargs):
             if obj.status not in valid_start_statuses:
-                exception_msg = (
+                exception_msg = (  # noqa: UP032
                     "Error calling {} {}: status is '{}', must be one of: {}"
                 ).format(func, obj, obj.status, valid_start_statuses)
                 raise VerificationException(exception_msg)
@@ -183,7 +180,7 @@ class ManualVerification(IDVerificationAttempt):
         app_label = 'verify_student'
 
     def __str__(self):
-        return 'ManualIDVerification for {name}, status: {status}'.format(
+        return 'ManualIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -233,7 +230,7 @@ class SSOVerification(IDVerificationAttempt):
         app_label = "verify_student"
 
     def __str__(self):
-        return 'SSOIDVerification for {name}, status: {status}'.format(
+        return 'SSOIDVerification for {name}, status: {status}'.format(  # noqa: UP032
             name=self.name,
             status=self.status,
         )
@@ -246,7 +243,7 @@ class SSOVerification(IDVerificationAttempt):
         """
         Send a signal indicating that this verification was approved.
         """
-        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}' SSO.".format(  # noqa: UP032
             user_id=self.user, reviewer=approved_by
         ))
 
@@ -441,7 +438,7 @@ class PhotoVerification(IDVerificationAttempt):
         if self.status == self.STATUS.approved:
             return
 
-        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' approved by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=user_id
         ))
         self.error_msg = ""  # reset, in case this attempt was denied before
@@ -544,7 +541,7 @@ class PhotoVerification(IDVerificationAttempt):
             lets you amend the error message in case there were additional
             details to be made.
         """
-        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(
+        log.info("Verification for user '{user_id}' denied by '{reviewer}'.".format(  # noqa: UP032
             user_id=self.user, reviewer=reviewing_user
         ))
         self.error_msg = error_msg

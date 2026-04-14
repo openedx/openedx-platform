@@ -5,7 +5,6 @@ import datetime
 import json
 import unittest
 from unittest import mock
-from unittest.mock import Mock, patch
 
 import ddt
 import pytest
@@ -19,8 +18,12 @@ import lms.djangoapps.discussion.django_comment_client.utils as utils
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.roles import CourseStaffRole
-from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
+from common.djangoapps.student.tests.factories import (
+    AdminFactory,
+    CourseEnrollmentFactory,
+    InstructorFactory,
+    UserFactory,
+)
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
@@ -37,19 +40,16 @@ from openedx.core.djangoapps.discussions.utils import (
     get_group_names_by_id,
     has_required_keys,
 )
-from openedx.core.djangoapps.django_comment_common.comment_client.utils import (
-    CommentClientMaintenanceError,
-)
 from openedx.core.djangoapps.django_comment_common.models import (
     CourseDiscussionSettings,
     DiscussionsIdMapping,
-    assign_role
+    assign_role,
 )
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, ToyCourseFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, ToyCourseFactory
 
 
 class DictionaryTestCase(TestCase):
@@ -1160,7 +1160,7 @@ class DiscussionTabTestCase(ModuleStoreTestCase):
 
     def discussion_tab_present(self, user):
         """ Returns true if the user has access to the discussion tab. """
-        request = RequestFactory().request()
+        request = RequestFactory().request()  # noqa: F841
         all_tabs = get_course_tab_list(user, self.course)
         return any(tab.type == 'discussion' for tab in all_tabs)
 
@@ -1650,7 +1650,7 @@ class GroupModeratorPermissionsTestCase(ModuleStoreTestCase):
 
 def set_discussion_division_settings(
     course_key, enable_cohorts=False, always_divide_inline_discussions=False,
-    divided_discussions=[], division_scheme=CourseDiscussionSettings.COHORT
+    divided_discussions=[], division_scheme=CourseDiscussionSettings.COHORT  # noqa: B006
 ):
     """
     Convenience method for setting cohort enablement and discussion settings.
@@ -1755,7 +1755,7 @@ class TestConvertHtmlToMarkdown(unittest.TestCase):
         """
         input_text = '<a href="https://example.com">Example</a>'
         expected_output = '[Example](https://example.com)'
-        self.assertEqual(utils.convert_a_to_markdown(input_text), expected_output)
+        self.assertEqual(utils.convert_a_to_markdown(input_text), expected_output)  # noqa: PT009
 
     def test_convert_img_to_markdown(self):
         """
@@ -1763,7 +1763,7 @@ class TestConvertHtmlToMarkdown(unittest.TestCase):
         """
         input_text = '<img src="https://example.com/Full-form-of-URL-1-1024x824.jpg" width="1024" height="824" />'
         expected_output = '![](https://example.com/Full-form-of-URL-1-1024x824.jpg "")'
-        self.assertEqual(utils.convert_img_to_markdown(input_text), expected_output)
+        self.assertEqual(utils.convert_img_to_markdown(input_text), expected_output)  # noqa: PT009
 
     def test_convert_p_to_markdown(self):
         """
@@ -1771,7 +1771,7 @@ class TestConvertHtmlToMarkdown(unittest.TestCase):
         """
         input_text = '<p>Paragraph text</p>'
         expected_output = '\n\nParagraph text\n\n'
-        self.assertEqual(utils.convert_p_to_markdown(input_text), expected_output)
+        self.assertEqual(utils.convert_p_to_markdown(input_text), expected_output)  # noqa: PT009
 
     def test_convert_html_to_markdown(self):
         """
@@ -1781,4 +1781,4 @@ class TestConvertHtmlToMarkdown(unittest.TestCase):
                      '<img src="https://example.com/Full-form-of-URL-1-1024x824.jpg" width="1024" height="824" />'
         # pylint: disable=line-too-long
         expected_output = '[Example](https://example.com)\n\nParagraph text\n\n ![](https://example.com/Full-form-of-URL-1-1024x824.jpg "")'
-        self.assertEqual(utils.convert_html_to_markdown(input_text), expected_output)
+        self.assertEqual(utils.convert_html_to_markdown(input_text), expected_output)  # noqa: PT009

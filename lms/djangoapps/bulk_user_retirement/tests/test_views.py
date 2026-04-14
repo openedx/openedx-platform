@@ -3,8 +3,9 @@ Test cases for GDPR User Retirement Views
 """
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
-from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
+
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.user_api.models import RetirementState, UserRetirementStatus
 
 
 class BulkUserRetirementViewTests(APITestCase):
@@ -105,7 +106,7 @@ class BulkUserRetirementViewTests(APITestCase):
 
         with self.settings(RETIREMENT_SERVICE_WORKER_USERNAME=self.user1.username):
             response = self.client.post(user_retirement_url, {
-                "usernames": '{user1},{user2}, non_existing_user'.format(
+                "usernames": '{user1},{user2}, non_existing_user'.format(  # noqa: UP032
                     user1=self.user3.username,
                     user2=self.user4.username
                 )

@@ -10,20 +10,21 @@ import ddt
 from django.conf import settings
 from django.urls import reverse
 from django.utils.timezone import now
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, FBEEnrollmentExclusion
 from common.djangoapps.student.roles import CourseInstructorRole
-from common.djangoapps.student.tests.factories import BetaTesterFactory
-from common.djangoapps.student.tests.factories import TEST_PASSWORD, CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import OrgInstructorFactory
-from common.djangoapps.student.tests.factories import OrgStaffFactory
-from common.djangoapps.student.tests.factories import StaffFactory
+from common.djangoapps.student.tests.factories import (
+    TEST_PASSWORD,
+    BetaTesterFactory,
+    CourseEnrollmentFactory,
+    GlobalStaffFactory,
+    InstructorFactory,
+    OrgInstructorFactory,
+    OrgStaffFactory,
+    StaffFactory,
+    UserFactory,
+)
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin
 from lms.djangoapps.discussion.django_comment_client.tests.factories import RoleFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -32,13 +33,16 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
-    FORUM_ROLE_MODERATOR
+    FORUM_ROLE_MODERATOR,
 )
 from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.features.content_type_gating.helpers import CONTENT_GATING_PARTITION_ID, CONTENT_TYPE_GATE_GROUP_IDS
 from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience.tests.views.helpers import add_course_mode
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
+from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID
 
 
 # pylint: disable=no-member
@@ -262,7 +266,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'You lose all access to this course, including your progress,'
         if show_expiration_banner:
             self.assertContains(response, banner_text)
@@ -298,7 +302,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'You lose all access to this course, including your progress,'
         self.assertNotContains(response, banner_text)
 
@@ -333,7 +337,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertContains(response, banner_text)
 
@@ -383,7 +387,7 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertNotContains(response, banner_text)
 
@@ -431,6 +435,6 @@ class CourseExpirationTestCase(ModuleStoreTestCase, MasqueradeMixin):
 
         response = self.get_courseware()
         assert response.status_code == 200
-        self.assertCountEqual(response.redirect_chain, [])
+        self.assertCountEqual(response.redirect_chain, [])  # noqa: PT009
         banner_text = 'This learner does not have access to this course. Their access expired on'
         self.assertNotContains(response, banner_text)

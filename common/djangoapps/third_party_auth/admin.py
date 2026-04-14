@@ -21,7 +21,7 @@ from .models import (
     OAuth2ProviderConfig,
     SAMLConfiguration,
     SAMLProviderConfig,
-    SAMLProviderData
+    SAMLProviderData,
 )
 from .tasks import fetch_saml_metadata, update_saml_users_social_auth_uid
 

@@ -11,6 +11,7 @@ from cms.djangoapps.contentstore.api.tests.base import BaseCourseViewTest
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
 
+
 class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     """
     Tests Authoring Grading configuration API authorization using openedx-authz.
@@ -51,7 +52,7 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access_post(self):
         """User without role cannot access."""
@@ -60,7 +61,7 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course_post(self):
         """Authorization should only apply to the assigned course."""
@@ -71,7 +72,7 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy_post(self):
         """
@@ -84,7 +85,7 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed_post(self):
         """Superusers should always be allowed."""
@@ -98,7 +99,7 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access_post(self):
         """
@@ -115,4 +116,4 @@ class AuthoringGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

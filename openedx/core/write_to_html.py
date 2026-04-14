@@ -2,7 +2,8 @@
 Class used to write pytest warning data  into html format
 """
 import textwrap
-import six  # lint-amnesty, pylint: disable=unused-import
+
+import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 
 
 class HtmlOutlineWriter:

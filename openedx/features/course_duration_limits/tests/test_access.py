@@ -3,13 +3,12 @@
 
 import itertools
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import ddt
 from crum import set_current_request
 from django.test import RequestFactory
 from django.utils import timezone
-from zoneinfo import ZoneInfo
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -23,9 +22,10 @@ from openedx.features.course_duration_limits.access import (
     generate_course_expired_message,
     get_access_expiration_data,
     get_user_course_duration,
-    get_user_course_expiration_date
+    get_user_course_expiration_date,
 )
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
 
 @ddt.ddt
@@ -46,7 +46,7 @@ class TestAccess(ModuleStoreTestCase):
         assert strftime_localized(date, 'SHORT_DATE') in message
 
         # But also that the machine-readable version is in there
-        assert 'data-datetime="%s"' % date.isoformat() in message
+        assert 'data-datetime="%s"' % date.isoformat() in message  # noqa: UP031
 
     def test_get_access_expiration_data(self):
         enrollment = CourseEnrollmentFactory()

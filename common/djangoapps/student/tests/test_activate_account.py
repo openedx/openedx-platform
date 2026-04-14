@@ -114,7 +114,7 @@ class TestActivateAccount(TestCase):
             email_start="<strong>",
             email_end="</strong>",
             email=self.user.email,
-            link_start="<a target='_blank' href='{activation_email_support_link}'>".format(
+            link_start="<a target='_blank' href='{activation_email_support_link}'>".format(  # noqa: UP032
                 activation_email_support_link=self.activation_email_support_link,
             ),
             link_end="</a>",
@@ -240,7 +240,7 @@ class TestActivateAccount(TestCase):
         Verify that if Authn MFE is enabled then authenticated user redirects to
         login page with correct query param.
         """
-        login_page_url = "{authn_mfe}/login?account_activation_status=".format(
+        login_page_url = "{authn_mfe}/login?account_activation_status=".format(  # noqa: UP032
             authn_mfe=settings.AUTHN_MICROFRONTEND_URL
         )
 
@@ -267,7 +267,7 @@ class TestActivateAccount(TestCase):
         `next` redirect URL is provided to the activation URL, it should be included
         as a parameter in the login page the requesting user is redirected to.
         """
-        login_page_url = "{authn_mfe}/login?account_activation_status=".format(
+        login_page_url = "{authn_mfe}/login?account_activation_status=".format(  # noqa: UP032
             authn_mfe=settings.AUTHN_MICROFRONTEND_URL
         )
 

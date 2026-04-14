@@ -1,14 +1,15 @@
 """
 Test some of the functions in url_helpers
 """
+from unittest.mock import patch
+
 import ddt
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
-from unittest.mock import patch
 
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 from .. import url_helpers
 
@@ -167,4 +168,4 @@ class GetCoursewareUrlTests(SharedModuleStoreTestCase):
             url = url_helpers.get_courseware_url(block.location)
         path = url.split('?')[0]
         assert path == expected_path
-        course_run = self.items['course_run']
+        course_run = self.items['course_run']  # noqa: F841

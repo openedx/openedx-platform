@@ -2,10 +2,9 @@
 This module contains the view for registering a device for push notifications.
 """
 from django.conf import settings
+from edx_ace.push_notifications.views import GCMDeviceViewSet as GCMDeviceViewSetBase
 from rest_framework import status
 from rest_framework.response import Response
-
-from edx_ace.push_notifications.views import GCMDeviceViewSet as GCMDeviceViewSetBase
 
 from ..decorators import mobile_view
 

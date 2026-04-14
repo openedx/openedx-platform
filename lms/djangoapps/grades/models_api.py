@@ -3,7 +3,6 @@ Provides Python APIs exposed from Grades models.
 """
 
 from django.db import transaction
-
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from lms.djangoapps.grades.models import PersistentCourseGrade as _PersistentCourseGrade

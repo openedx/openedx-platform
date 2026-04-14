@@ -9,10 +9,8 @@ from unittest import TestCase
 from zoneinfo import ZoneInfo
 
 import pytest
-from xmodule.block_metadata_utils import (
-    display_name_with_default,
-    display_name_with_default_escaped,
-)
+
+from xmodule.block_metadata_utils import display_name_with_default, display_name_with_default_escaped
 from xmodule.course_metadata_utils import (
     DEFAULT_START_DATE,
     clean_course_key,
@@ -20,12 +18,12 @@ from xmodule.course_metadata_utils import (
     has_course_ended,
     has_course_started,
     is_enrollment_open,
-    number_for_course_location
+    number_for_course_location,
 )
 from xmodule.modulestore.tests.utils import (
     MixedModulestoreBuilder,
     MongoModulestoreBuilder,
-    VersioningModulestoreBuilder
+    VersioningModulestoreBuilder,
 )
 
 _TODAY = datetime.now(ZoneInfo("UTC"))
@@ -164,5 +162,5 @@ class CourseMetadataUtilsTestCase(TestCase):
         # Even though we don't care about testing mock_strftime_localized,
         # we still need to test it with a bad format string in order to
         # satisfy the coverage checker.
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             mock_strftime_localized(test_datetime, 'BAD_FORMAT_SPECIFIER')

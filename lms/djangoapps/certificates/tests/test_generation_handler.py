@@ -20,16 +20,18 @@ from lms.djangoapps.certificates.generation_handler import (
     _set_regular_cert_status,
     generate_allowlist_certificate_task,
     generate_certificate_task,
-    is_on_certificate_allowlist
+    is_on_certificate_allowlist,
 )
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
 from lms.djangoapps.grades.api import CourseGradeFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
@@ -208,10 +210,10 @@ class AllowlistTests(ModuleStoreTestCase):
         """
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_allowlist_certificate(self.user, self.course_run_key, self.enrollment_mode))
-            self.assertIs(
+            self.assertIs(  # noqa: PT009
                 enable_idv_requirement,
                 _set_allowlist_cert_status(
                     self.user, self.course_run_key,
@@ -536,12 +538,12 @@ class CertificateTests(ModuleStoreTestCase):
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             )
             regular_cert_status = _set_regular_cert_status(u, self.course_run_key, self.enrollment_mode, self.grade)
-            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)
+            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)  # noqa: PT009
 
     @ddt.data(False, True)
     def test_can_generate_not_verified_no_cert(self, enable_idv_requirement):
@@ -558,12 +560,12 @@ class CertificateTests(ModuleStoreTestCase):
 
         with mock.patch(ID_VERIFIED_METHOD, return_value=False), \
                 mock.patch.dict(settings.FEATURES, ENABLE_CERTIFICATES_IDV_REQUIREMENT=enable_idv_requirement):
-            self.assertNotEqual(
+            self.assertNotEqual(  # noqa: PT009
                 enable_idv_requirement,
                 _can_generate_regular_certificate(u, self.course_run_key, self.enrollment_mode, self.grade)
             )
             regular_cert_status = _set_regular_cert_status(u, self.course_run_key, self.enrollment_mode, self.grade)
-            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)
+            self.assertIs(enable_idv_requirement, regular_cert_status == CertificateStatuses.unverified)  # noqa: PT009
 
     @ddt.data(False, True)
     def test_can_generate_not_verified_not_passing(self, enable_idv_requirement):

@@ -8,7 +8,6 @@ from collections import OrderedDict, namedtuple
 from contextlib import contextmanager
 from datetime import datetime
 from unittest.mock import MagicMock, patch
-from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 
 import ddt
 import pytest
@@ -19,26 +18,25 @@ from opaque_keys.edx.locator import BlockUsageLocator
 from pytz import UTC
 from rest_framework import status
 from rest_framework.test import APITestCase
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 import openedx.core.djangoapps.content.block_structure.api as bs_api
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseCcxCoachRole,
     CourseDataResearcherRole,
     CourseInstructorRole,
-    CourseStaffRole
+    CourseStaffRole,
 )
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
+from common.djangoapps.student.tests.factories import (
+    CourseEnrollmentFactory,
+    InstructorFactory,
+    StaffFactory,
+    UserFactory,
+)
+from lms.djangoapps.certificates.api import create_or_update_eligible_certificate_for_user, get_certificate_for_user_id
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.api import (
-    get_certificate_for_user_id,
-    create_or_update_eligible_certificate_for_user
-)
 from lms.djangoapps.grades.config.waffle import BULK_MANAGEMENT, WRITABLE_GRADEBOOK
 from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.course_data import CourseData
@@ -48,13 +46,15 @@ from lms.djangoapps.grades.models import (
     BlockRecordList,
     PersistentCourseGrade,
     PersistentSubsectionGrade,
-    PersistentSubsectionGradeOverride
+    PersistentSubsectionGradeOverride,
 )
 from lms.djangoapps.grades.rest_api.v1.tests.mixins import GradeViewTestMixin
 from lms.djangoapps.grades.rest_api.v1.views import CourseEnrollmentPagination
 from lms.djangoapps.grades.subsection_grade import ReadSubsectionGrade
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 # pylint: disable=unused-variable
@@ -110,7 +110,7 @@ class CourseGradingViewTest(SharedModuleStoreTestCase, APITestCase):
             parent_location=cls.section.location,
             category="sequential",
         )
-        unit2 = BlockFactory.create(
+        unit2 = BlockFactory.create(  # noqa: F841
             parent_location=cls.subsection2.location,
             category="vertical",
         )
@@ -1721,7 +1721,7 @@ class GradebookBulkUpdateViewTest(GradebookViewTestBase):
         the score from the most recent request is recorded.
         """
         with override_waffle_flag(self.waffle_flag, active=True):
-            request_user = getattr(self, login_method)()
+            request_user = getattr(self, login_method)()  # noqa: F841
             post_data = [
                 {
                     'user_id': self.student.id,
@@ -1997,7 +1997,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_override_no_modification(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.objects.create(
+        override = PersistentSubsectionGradeOverride.objects.create(  # noqa: F841
             grade=self.grade,
             earned_all_override=0.0,
             possible_all_override=12.0,
@@ -2054,7 +2054,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
         self.login_staff()
 
         for i in range(6):
-            override = PersistentSubsectionGradeOverride.update_or_create_override(
+            override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
                 requesting_user=self.global_staff,
                 subsection_grade_model=self.grade,
                 earned_all_override=i,
@@ -2081,7 +2081,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_override_with_history(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,
@@ -2136,7 +2136,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
         """
         proctoring_failure_fake_comment = "Failed Test Proctoring"
         self.login_course_staff()
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,
@@ -2183,7 +2183,7 @@ class SubsectionGradeViewTest(GradebookViewTestBase):
     def test_with_valid_subsection_id_and_valid_user_id_but_no_record(self, login_method):
         getattr(self, login_method)()
 
-        override = PersistentSubsectionGradeOverride.update_or_create_override(
+        override = PersistentSubsectionGradeOverride.update_or_create_override(  # noqa: F841
             requesting_user=self.global_staff,
             subsection_grade_model=self.grade,
             earned_all_override=0.0,

@@ -7,9 +7,7 @@ from django.http.response import Http404
 
 from openedx.core.djangoapps.catalog.api import get_course_run_details
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.content.course_overviews.serializers import (
-    CourseOverviewBaseSerializer,
-)
+from openedx.core.djangoapps.content.course_overviews.serializers import CourseOverviewBaseSerializer
 
 log = logging.getLogger(__name__)
 

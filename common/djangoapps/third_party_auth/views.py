@@ -6,10 +6,15 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError
 from django.http import (
-    Http404, HttpResponse, HttpResponseNotAllowed, HttpResponseNotFound, HttpResponseServerError, JsonResponse
+    Http404,
+    HttpResponse,
+    HttpResponseNotAllowed,
+    HttpResponseNotFound,
+    HttpResponseServerError,
+    JsonResponse,
 )
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -189,7 +194,7 @@ def disconnect_json_view(request, backend, association_id=None):
         strategy = load_strategy(request)
         backend_instance = load_backend(strategy, backend, redirect_uri=request.build_absolute_uri())
         # Use backend.disconnect method - simplified approach without partial pipeline
-        response = backend_instance.disconnect(user=user, association_id=association_id)
+        response = backend_instance.disconnect(user=user, association_id=association_id)  # noqa: F841
         # Always return JSON response regardless of what backend.disconnect returns
         return JsonResponse({
             'success': True,

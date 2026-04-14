@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from edx_ace.channel import ChannelType
 from edx_ace.policy import Policy, PolicyResult
 
-
 User = get_user_model()
 log = logging.getLogger(__name__)
 

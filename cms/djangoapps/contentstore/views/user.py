@@ -21,7 +21,7 @@ from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRol
 from common.djangoapps.util.json_request import JsonResponse, expect_json
 
 from ..toggles import use_new_course_team_page
-from ..utils import get_course_team_url, get_course_team
+from ..utils import get_course_team, get_course_team_url
 
 __all__ = ['request_course_creator', 'course_team_handler']
 

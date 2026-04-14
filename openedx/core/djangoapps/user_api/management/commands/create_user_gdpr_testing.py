@@ -8,6 +8,7 @@ Optionally takes in username, email, and course UUID arguments.
 from datetime import datetime
 from textwrap import dedent
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from consent.models import DataSharingConsent
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -16,18 +17,17 @@ from enterprise.models import (
     EnterpriseCourseEnrollment,
     EnterpriseCustomer,
     EnterpriseCustomerUser,
-    PendingEnterpriseCustomerUser
+    PendingEnterpriseCustomerUser,
 )
 from integrated_channels.sap_success_factors.models import SapSuccessFactorsLearnerDataTransmissionAudit
 from opaque_keys.edx.keys import CourseKey
-from zoneinfo import ZoneInfo
 
 from common.djangoapps.entitlements.models import CourseEntitlement, CourseEntitlementSupportDetail
+from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed, PendingEmailChange, UserProfile
 from lms.djangoapps.verify_student.models import SoftwareSecurePhotoVerification
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup, UnregisteredLearnerCohortAssignments
 from openedx.core.djangoapps.profile_images.images import create_profile_images
 from openedx.core.djangoapps.profile_images.tests.helpers import make_image_file
-from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed, PendingEmailChange, UserProfile
 
 from ...models import UserOrgTag
 

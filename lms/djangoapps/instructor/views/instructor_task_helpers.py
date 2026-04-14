@@ -11,8 +11,8 @@ from django.utils.translation import gettext as _
 from django.utils.translation import ngettext
 
 from lms.djangoapps.bulk_email.models import CourseEmail
-from lms.djangoapps.instructor_task.views import get_task_completion_info
 from lms.djangoapps.instructor_task.models import InstructorTaskSchedule
+from lms.djangoapps.instructor_task.views import get_task_completion_info
 
 log = logging.getLogger(__name__)
 

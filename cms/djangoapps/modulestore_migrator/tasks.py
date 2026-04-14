@@ -51,10 +51,10 @@ from openedx.core.djangoapps.content_staging import api as staging_api
 from xmodule.modulestore import exceptions as modulestore_exceptions
 from xmodule.modulestore.django import modulestore
 
-from . import models, data
+from . import data, models
+from .api.read_api import get_migration_blocks, get_migrations
 from .constants import CONTENT_STAGING_PURPOSE_TEMPLATE
 from .data import CompositionLevel, RepeatHandlingStrategy, SourceContextKey
-from .api.read_api import get_migrations, get_migration_blocks
 
 log = get_task_logger(__name__)
 
@@ -120,7 +120,7 @@ class _MigrationContext:
 
     # Fields that remain constant
     previous_block_migrations: dict[UsageKey, data.ModulestoreBlockMigrationResult]
-    target_package_id: int
+    target_package_id: LearningPackage.ID
     target_library_key: LibraryLocatorV2
     source_context_key: SourceContextKey
     content_by_filename: dict[str, int]
@@ -283,7 +283,7 @@ def _import_assets(migration: models.ModulestoreMigration) -> dict[str, int]:
         return {}
 
     content_by_filename: dict[str, int] = {}
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=timezone.utc)  # noqa: UP017
     for staged_content_file_data in staging_api.get_staged_content_static_files(migration.staged_content.id):
         old_path = staged_content_file_data.filename
         file_data = staging_api.get_staged_content_static_file_data(migration.staged_content.id, old_path)
@@ -345,13 +345,13 @@ def _import_structure(
         used_component_keys=set(
             LibraryUsageLocatorV2(target_library.key, block_type, block_id)  # type: ignore[abstract]
             for block_type, block_id
-            in content_api.get_components(migration.target.pk).values_list(
+            in content_api.get_components(migration.target.id).values_list(
                 "component_type__name", "local_key"
             )
         ),
         used_container_slugs=set(
             content_api.get_containers(
-                migration.target.pk
+                migration.target.id
             ).values_list("publishable_entity__key", flat=True)
         ),
         previous_block_migrations=(
@@ -359,7 +359,7 @@ def _import_structure(
             if source_data.previous_migration
             else {}
         ),
-        target_package_id=migration.target.pk,
+        target_package_id=migration.target.id,
         target_library_key=target_library.key,
         source_context_key=source_data.source_root_usage_key.course_key,
         content_by_filename=content_by_filename,
@@ -367,7 +367,7 @@ def _import_structure(
         repeat_handling_strategy=RepeatHandlingStrategy(migration.repeat_handling_strategy),
         preserve_url_slugs=migration.preserve_url_slugs,
         created_by=status.user_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),  # noqa: UP017
     )
     with content_api.bulk_draft_changes_for(migration.target.id) as change_log:
         root_migrated_node = _migrate_node(
@@ -431,7 +431,7 @@ def _create_collection(
     key = slugify(title)
     collection: Collection | None = None
     attempt = 0
-    created_at = strftime_localized(datetime.now(timezone.utc), DEFAULT_DATE_TIME_FORMAT)
+    created_at = strftime_localized(datetime.now(timezone.utc), DEFAULT_DATE_TIME_FORMAT)  # noqa: UP017
     if course_name:
         description = f"{_('This collection contains content imported from the course')} {course_name} on: {created_at}"
     else:
@@ -882,12 +882,12 @@ def _migrate_container(
             )
     if container_exists and context.should_skip_strategy:
         return PublishableEntityVersion.objects.get(
-            entity_id=container.container_pk,
+            entity_id=container.container_id,
             version_num=container.draft_version_num,
         ), None
 
     container_publishable_entity_version = content_api.create_next_container_version(
-        container.container_pk,
+        container.container_id,
         title=title,
         entities=[child.entity for child in children],
         created=context.created_at,

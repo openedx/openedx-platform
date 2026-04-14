@@ -9,7 +9,6 @@ from common.djangoapps.util.json_request import JsonResponse
 
 from .runchecks import runchecks
 
-
 log = logging.getLogger(__name__)
 
 

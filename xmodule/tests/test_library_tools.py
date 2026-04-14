@@ -12,8 +12,8 @@ import ddt
 from opaque_keys.edx.locator import LibraryLocator
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangolib.testing.utils import skip_unless_cms
 from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore.tests.factories import CourseFactory, LibraryFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase

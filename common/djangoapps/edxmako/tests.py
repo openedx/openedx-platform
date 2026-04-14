@@ -18,7 +18,7 @@ from common.djangoapps.edxmako.shortcuts import (
     is_any_marketing_link_set,
     is_marketing_link_set,
     marketing_link,
-    render_to_string
+    render_to_string,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.testing import UrlResetMixin

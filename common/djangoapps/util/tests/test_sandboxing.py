@@ -11,7 +11,7 @@ from opaque_keys.edx.locator import CourseLocator, LibraryLocator, LibraryLocato
 
 from xmodule.contentstore.django import contentstore
 from xmodule.modulestore.tests.django_utils import upload_file_to_course
-from xmodule.util.sandboxing import can_execute_unsafe_code, SandboxService
+from xmodule.util.sandboxing import SandboxService, can_execute_unsafe_code
 
 
 class SandboxingTest(TestCase):

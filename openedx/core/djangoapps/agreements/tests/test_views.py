@@ -102,7 +102,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.other_user.username)
+            + '?username={}'.format(self.other_user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_403_FORBIDDEN)
 
@@ -120,7 +120,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
 
@@ -140,7 +140,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_403_FORBIDDEN)
 
@@ -157,7 +157,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.user.username)
+            + '?username={}'.format(self.user.username)  # noqa: UP032
         )
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
 
@@ -180,8 +180,8 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
 
         # Check that the course has a signature created
         signatures = get_integrity_signatures_for_course(self.course_id)
-        self.assertEqual(len(signatures), 1)
-        self.assertEqual(signatures[0].user.username, self.USERNAME)
+        self.assertEqual(len(signatures), 1)  # noqa: PT009
+        self.assertEqual(signatures[0].user.username, self.USERNAME)  # noqa: PT009
 
     def test_post_duplicate_integrity_signature(self):
         # Create a signature
@@ -190,7 +190,7 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
                 'integrity_signature',
                 kwargs={'course_id': self.course_id},
             )
-            + '?username={}'.format(self.other_user.username)
+            + '?username={}'.format(self.other_user.username)  # noqa: UP032
         )
 
         # Attempt to create a new signature in the future
@@ -203,15 +203,15 @@ class IntegritySignatureViewTests(APITestCase, ModuleStoreTestCase):
             )
 
             # The created_at field in the response should equal the original time created
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 original_response.data['created_at'],
                 new_response.data['created_at'],
             )
 
             # The course should not have a second signature
             signatures = get_integrity_signatures_for_course(self.course_id)
-            self.assertEqual(len(signatures), 1)
-            self.assertEqual(signatures[0].user.username, self.USERNAME)
+            self.assertEqual(len(signatures), 1)  # noqa: PT009
+            self.assertEqual(signatures[0].user.username, self.USERNAME)  # noqa: PT009
 
     @patch.dict(settings.FEATURES, {'ENABLE_INTEGRITY_SIGNATURE': False})
     def test_post_integrity_signature_no_waffle_flag(self):
@@ -289,8 +289,8 @@ class LTIPIISignatureSignatureViewTests(APITestCase, ModuleStoreTestCase):
                                      "lti_tools": self.lti_tools, "created_at": self.time_created})
         self._assert_response(response, status.HTTP_200_OK, self.user, self.course_id)
         signature = get_lti_pii_signature(self.user.username, self.course_id)
-        self.assertEqual(signature.user.username, self.user.username)
-        self.assertEqual(signature.lti_tools, self.lti_tools)
+        self.assertEqual(signature.user.username, self.user.username)  # noqa: PT009
+        self.assertEqual(signature.lti_tools, self.lti_tools)  # noqa: PT009
 
 
 @skip_unless_lms

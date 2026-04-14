@@ -5,6 +5,7 @@ Base test classes for LMS instructor-initiated background tasks
 
 
 import json
+
 # pylint: disable=attribute-defined-outside-init
 import os
 import shutil
@@ -18,12 +19,8 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locations import Location
-
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 from xblocks_contrib.problem.capa.tests.response_xml_factory import OptionResponseXMLFactory
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.courseware.model_data import StudentModule
 from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
@@ -33,6 +30,10 @@ from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from lms.djangoapps.instructor_task.views import instructor_task_status
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from openedx.core.lib.url_utils import quote_slashes
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 TEST_COURSE_ORG = 'edx'
 TEST_COURSE_NAME = 'test_course'
@@ -273,7 +274,7 @@ class InstructorTaskModuleTestCase(InstructorTaskCourseTestCase):
             # Note that this is a capa-specific convention.  The form is a version of the problem's
             # URL, modified so that it can be easily stored in html, prepended with "input-" and
             # appended with a sequence identifier for the particular response the input goes to.
-            return 'input_{}_{}'.format(
+            return 'input_{}_{}'.format(  # noqa: UP032
                 problem_url_name,
                 response_id
             )
@@ -366,8 +367,8 @@ class TestReportMixin:
                 assert csv_rows == expected_rows
                 assert numeric_csv_rows == numeric_expected_rows
             else:
-                self.assertCountEqual(csv_rows, expected_rows)
-                self.assertCountEqual(numeric_csv_rows, numeric_expected_rows)
+                self.assertCountEqual(csv_rows, expected_rows)  # noqa: PT009
+                self.assertCountEqual(numeric_csv_rows, numeric_expected_rows)  # noqa: PT009
 
     @staticmethod
     def _extract_and_round_numeric_items(dictionary):

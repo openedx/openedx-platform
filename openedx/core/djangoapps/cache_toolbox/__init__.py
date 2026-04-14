@@ -25,4 +25,4 @@ File a bug
   https://github.com/playfire/django-cache-toolbox/issues
 """
 
-from .model import cache_model
+from .model import cache_model  # noqa: F401

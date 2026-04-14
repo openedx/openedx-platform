@@ -77,7 +77,7 @@ class TestVerifyStudentCommand(TestCase):
             created_at__gte=earliest_allowed_verification_date()
         )
 
-        self.assertEqual(list(map(repr, verification1)), list(map(repr, verification2)))
+        self.assertEqual(list(map(repr, verification1)), list(map(repr, verification2)))  # noqa: PT009
 
     def test_user_doesnot_exist_log(self):
         """

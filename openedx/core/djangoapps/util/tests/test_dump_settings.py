@@ -10,7 +10,7 @@ import json
 
 from django.core.management import call_command
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms, skip_unless_cms
+from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
 
 
 @skip_unless_lms

@@ -14,7 +14,7 @@ router.register(r'key-value', views.ExperimentKeyValueViewSet, basename='key_val
 urlpatterns = [
     path('v0/custom/REV-934/', views_custom.Rev934.as_view(), name='rev_934'),
     path('v0/', include((router.urls, "api"), namespace='v0')),
-    re_path(r'^v0/custom/userMetadata/{username},{course_key}$'.format(
+    re_path(r'^v0/custom/userMetadata/{username},{course_key}$'.format(  # noqa: UP032
         username=settings.USERNAME_PATTERN,
         course_key=settings.COURSE_ID_PATTERN), views.UserMetaDataView.as_view(), name='user_metadata'),
 ]

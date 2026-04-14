@@ -1,11 +1,11 @@
 """
 Simple OutlineProcessor that removes items based on Enrollment and course visibility setting.
 """
-from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 from common.djangoapps.student.models import CourseEnrollment
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG
 
-from .base import OutlineProcessor
 from ...data import CourseVisibility
+from .base import OutlineProcessor
 
 
 class EnrollmentOutlineProcessor(OutlineProcessor):

@@ -2,15 +2,15 @@
 
 
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import factory
-from zoneinfo import ZoneInfo
 from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyText
 from oauth2_provider.models import AccessToken, Application, RefreshToken
 
-from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.oauth_dispatch.models import ApplicationAccess
 
 
 class ApplicationFactory(DjangoModelFactory):

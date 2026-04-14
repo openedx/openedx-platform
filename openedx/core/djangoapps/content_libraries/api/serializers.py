@@ -2,12 +2,11 @@
 Serializer classes for containers
 """
 from lxml import etree
-
 from openedx_content import api as content_api
 
+from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict, get_all_object_tags
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.xblock_serializer.api import StaticFile, XBlockSerializer
-from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict, get_all_object_tags
 
 from . import containers as container_api
 

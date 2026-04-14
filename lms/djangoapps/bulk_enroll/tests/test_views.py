@@ -18,7 +18,7 @@ from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=
     ENROLLED_TO_UNENROLLED,
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
-    ManualEnrollmentAudit
+    ManualEnrollmentAudit,
 )
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.bulk_enroll.serializers import BulkEnrollmentSerializer
@@ -27,7 +27,9 @@ from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort_id
 from openedx.core.djangoapps.course_groups.tests.helpers import config_course_cohorts
 from openedx.core.djangoapps.site_configuration.helpers import get_value as get_site_value
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

@@ -7,15 +7,15 @@ perform some LMS-specific tab display gymnastics for the Entrance Exams feature
 from django.conf import settings
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_noop
-from xmodule.tabs import CourseTab, CourseTabList, key_checker
 
+from common.djangoapps.student.models import CourseEnrollment
+from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.entrance_exams import user_can_skip_entrance_exam
-from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from openedx.core.lib.course_tabs import CourseTabPluginManager
 from openedx.features.course_experience import default_course_url
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
-from common.djangoapps.student.models import CourseEnrollment
+from xmodule.tabs import CourseTab, CourseTabList, key_checker
 
 
 class EnrolledTab(CourseTab):

@@ -349,7 +349,7 @@ def get_team_for_user_course_topic(user, course_id, topic_id):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise ValueError("The supplied course id {course_id} is not valid.".format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError("The supplied course id {course_id} is not valid.".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP032
             course_id=course_id
         ))
     try:
@@ -382,7 +382,7 @@ def get_teams_in_teamset(course_id, topic_id):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError as exc:
-        raise ValueError("The supplied course id {course_id} is not valid.".format(
+        raise ValueError("The supplied course id {course_id} is not valid.".format(  # noqa: UP032
             course_id=course_id
         )) from exc
     return CourseTeam.objects.filter(
@@ -402,7 +402,7 @@ def anonymous_user_ids_for_team(user, team):
         raise Exception("User and team must be provided for ID lookup")
 
     if not has_course_staff_privileges(user, team.course_id) and not user_is_a_team_member(user, team):
-        raise Exception("User {user} is not permitted to access team info for {team}".format(
+        raise Exception("User {user} is not permitted to access team info for {team}".format(  # noqa: UP032
             user=user.username,
             team=team.team_id
         ))
@@ -417,7 +417,7 @@ def get_assignments_for_team(user, team):
     """ Get openassessment XBlocks configured for the current teamset """
     # Confirm access
     if not has_specific_team_access(user, team):
-        raise Exception("User {user} is not permitted to access team info for {team}".format(
+        raise Exception("User {user} is not permitted to access team info for {team}".format(  # noqa: UP032
             user=user.username,
             team=team.team_id
         ))

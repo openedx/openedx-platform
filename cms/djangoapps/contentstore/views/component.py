@@ -21,24 +21,16 @@ from xblock.exceptions import NoSuchHandlerError
 from xblock.plugin import PluginMissingError
 from xblock.runtime import Mixologist
 
+from cms.djangoapps.contentstore.helpers import get_parent_if_split_test, is_library_content, is_unit
+from cms.djangoapps.contentstore.toggles import libraries_v1_enabled, libraries_v2_enabled, use_new_unit_page
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.xblock_django.api import authorable_xblocks, disabled_xblocks
 from common.djangoapps.xblock_django.models import XBlockStudioConfigurationFlag
-from cms.djangoapps.contentstore.helpers import (
-    get_parent_if_split_test,
-    is_unit,
-    is_library_content,
-)
-from cms.djangoapps.contentstore.toggles import (
-    libraries_v1_enabled,
-    libraries_v2_enabled,
-    use_new_unit_page,
-)
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import load_services_for_studio
-from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
-from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.content_tagging.api import get_object_tags
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
+from openedx.core.lib.xblock_utils import get_aside_from_xblock, is_xblock_aside
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -154,7 +146,7 @@ def container_handler(request, usage_key_string):  # pylint: disable=too-many-st
         try:
             usage_key = UsageKey.from_string(usage_key_string)
         except InvalidKeyError:  # Raise Http404 on invalid 'usage_key_string'
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         with modulestore().bulk_operations(usage_key.course_key):
             try:
                 course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
@@ -202,7 +194,7 @@ def container_embed_handler(request, usage_key_string):  # pylint: disable=too-m
         try:
             course, xblock, lms_link, preview_lms_link = _get_item_in_course(request, usage_key)
         except ItemNotFoundError:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         container_handler_context = get_container_handler_context(request, usage_key, course, xblock)
         return render_to_response('container_chromeless.html', container_handler_context)
@@ -588,7 +580,7 @@ def component_handler(request, usage_key_string, handler, suffix=''):
         resp = handler_block.handle(handler, req, suffix)
     except NoSuchHandlerError:
         log.info("XBlock %s attempted to access missing handler %r", handler_block, handler, exc_info=True)
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # unintentional update to handle any side effects of handle call
     # could potentially be updating actual course data or simply caching its values

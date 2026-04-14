@@ -15,6 +15,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
+from cms.djangoapps.contentstore.xblock_storage_handlers.create_xblock import create_xblock
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import delete_item
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.util import milestones_helpers
@@ -24,8 +26,6 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
 
 from ..helpers import remove_entrance_exam_graders
-from cms.djangoapps.contentstore.xblock_storage_handlers.create_xblock import create_xblock
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import delete_item
 
 __all__ = ['entrance_exam', ]
 

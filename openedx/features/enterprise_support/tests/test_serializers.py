@@ -9,7 +9,7 @@ from enterprise.models import LicensedEnterpriseCourseEnrollment
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 
@@ -49,7 +49,7 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
                 'is_revoked': licensed_ece.is_revoked,
             }
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009
 
     def test_data_without_license(self):
         """ Verify the correct fields are serialized when the enrollment is not licensed. """
@@ -63,4 +63,4 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
             'saved_for_later': self.enterprise_course_enrollment.saved_for_later,
             'license': None
         }
-        self.assertDictEqual(serializer.data, expected)
+        self.assertDictEqual(serializer.data, expected)  # noqa: PT009

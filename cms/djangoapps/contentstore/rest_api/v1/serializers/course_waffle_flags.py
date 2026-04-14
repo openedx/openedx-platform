@@ -21,6 +21,7 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
     use_new_import_page = serializers.SerializerMethodField()
     use_new_export_page = serializers.SerializerMethodField()
     use_new_files_uploads_page = serializers.SerializerMethodField()
+    use_new_pdf_editor = serializers.SerializerMethodField()
     use_new_video_uploads_page = serializers.SerializerMethodField()
     use_new_course_outline_page = serializers.SerializerMethodField()
     use_new_unit_page = serializers.SerializerMethodField()
@@ -119,6 +120,12 @@ class CourseWaffleFlagsSerializer(serializers.Serializer):
         should alawys be on.
         """
         return True
+
+    def get_use_new_pdf_editor(self, obj):
+        """
+        Method to get the use_new_pdf_editor switch
+        """
+        return toggles.use_new_pdf_editor()
 
     def get_use_new_video_uploads_page(self, obj):
         """

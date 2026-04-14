@@ -4,7 +4,6 @@ Toggles for bulk_email app
 
 from edx_toggles.toggles import SettingToggle
 
-
 # .. toggle_name: bulk_email.EMAIL_USE_COURSE_ID_FROM_FOR_BULK
 # .. toggle_implementation: DjangoSetting
 # .. toggle_default: False

@@ -5,10 +5,10 @@ Common utility functions related to courses.
 from django import forms
 from django.conf import settings
 from django.http import Http404
-
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import CourseKey
 from organizations.models import Organization
+
 from xmodule.assetstore.assetmgr import AssetManager
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
@@ -83,7 +83,7 @@ def clean_course_id(model_form, is_required=True):
         course_key = CourseKey.from_string(cleaned_id)
     except InvalidKeyError:
         msg = f'Course id invalid. Entered course id was: "{cleaned_id}".'
-        raise forms.ValidationError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise forms.ValidationError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     if not modulestore().has_course(course_key):
         msg = f'Course not found. Entered course id was: "{str(course_key)}".'

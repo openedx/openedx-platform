@@ -4,10 +4,8 @@ Enrollment track related signals.
 
 
 from django.dispatch import Signal
-
 from openedx_events.learning.data import CourseAccessRoleData, UserData, UserPersonalData
 from openedx_events.learning.signals import COURSE_ACCESS_ROLE_ADDED, COURSE_ACCESS_ROLE_REMOVED
-
 
 # The purely documentational providing_args argument for Signal is deprecated.
 # So we are moving the args to a comment.

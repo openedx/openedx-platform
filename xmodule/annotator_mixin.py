@@ -50,7 +50,7 @@ class MLStripper(HTMLParser):  # lint-amnesty, pylint: disable=abstract-method
 
     def handle_entityref(self, name):
         """appends the reference to the body"""
-        self.fed.append('&%s;' % name)
+        self.fed.append('&%s;' % name)  # noqa: UP031
 
     def get_data(self):
         """joins together the seperate chunks into one cohesive string"""

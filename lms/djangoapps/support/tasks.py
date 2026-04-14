@@ -1,27 +1,27 @@
 """ Celery Tasks for the Instructor App. """
 
-from datetime import datetime
 import logging
+from datetime import datetime
+
 from celery import shared_task
 from completion.models import BlockCompletion
+from django.contrib.sites.models import Site
+from edx_ace import ace
+from edx_ace.recipient import Recipient
 from edx_django_utils.monitoring import set_code_owner_attribute
 
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment
 from common.djangoapps.student.models.user import get_user_by_username_or_email
 from lms.djangoapps.courseware.courses import get_course
 from lms.djangoapps.courseware.models import StudentModule
-from lms.djangoapps.instructor.enrollment import reset_student_attempts
-from lms.djangoapps.support.models import CourseResetAudit
 from lms.djangoapps.grades.api import clear_user_course_grades
+from lms.djangoapps.instructor.enrollment import reset_student_attempts
+from lms.djangoapps.support.message_types import WholeCourseReset
+from lms.djangoapps.support.models import CourseResetAudit
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
-
-from edx_ace import ace
-from django.contrib.sites.models import Site
-from edx_ace.recipient import Recipient
-from openedx.core.lib.celery.task_utils import emulate_http_request
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
-from lms.djangoapps.support.message_types import WholeCourseReset
+from openedx.core.lib.celery.task_utils import emulate_http_request
 
 log = logging.getLogger(__name__)
 

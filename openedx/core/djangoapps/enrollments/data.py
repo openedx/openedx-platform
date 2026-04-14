@@ -10,25 +10,25 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.db import transaction
 from opaque_keys.edx.keys import CourseKey
 
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.enrollments.errors import (
-    CourseEnrollmentClosedError,
-    CourseEnrollmentExistsError,
-    CourseEnrollmentFullError,
-    InvalidEnrollmentAttribute,
-    UserNotFoundError
-)
-from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer, CourseSerializer
-from openedx.core.lib.exceptions import CourseNotFoundError
 from common.djangoapps.student.models import (
     AlreadyEnrolledError,
     CourseEnrollment,
     CourseEnrollmentAttribute,
     CourseFullError,
     EnrollmentClosedError,
-    NonExistentCourseError
+    NonExistentCourseError,
 )
 from common.djangoapps.student.role_helpers import get_course_roles
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.enrollments.errors import (
+    CourseEnrollmentClosedError,
+    CourseEnrollmentExistsError,
+    CourseEnrollmentFullError,
+    InvalidEnrollmentAttribute,
+    UserNotFoundError,
+)
+from openedx.core.djangoapps.enrollments.serializers import CourseEnrollmentSerializer, CourseSerializer
+from openedx.core.lib.exceptions import CourseNotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def create_course_enrollment(username, course_id, mode, is_active, enterprise_uu
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     try:
         enrollment = CourseEnrollment.enroll(
@@ -153,14 +153,14 @@ def create_course_enrollment(username, course_id, mode, is_active, enterprise_uu
         )
         return _update_enrollment(enrollment, is_active=is_active, mode=mode)
     except NonExistentCourseError as err:
-        raise CourseNotFoundError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CourseNotFoundError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except EnrollmentClosedError as err:
-        raise CourseEnrollmentClosedError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CourseEnrollmentClosedError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except CourseFullError as err:
-        raise CourseEnrollmentFullError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CourseEnrollmentFullError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except AlreadyEnrolledError as err:
         enrollment = get_course_enrollment(username, course_id)
-        raise CourseEnrollmentExistsError(str(err), enrollment)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CourseEnrollmentExistsError(str(err), enrollment)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def update_course_enrollment(username, course_id, mode=None, is_active=None):
@@ -185,7 +185,7 @@ def update_course_enrollment(username, course_id, mode=None, is_active=None):
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     try:
         enrollment = CourseEnrollment.objects.get(user=user, course_id=course_key)
@@ -276,7 +276,7 @@ def _get_user(username):
     except User.DoesNotExist:
         msg = f"Not user with username '{username}' found."
         log.warning(msg)
-        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UserNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def _update_enrollment(enrollment, is_active=None, mode=None):
@@ -340,7 +340,7 @@ def get_course_enrollment_info(course_id, include_expired=False):
     except CourseOverview.DoesNotExist:
         msg = f"Requested enrollment information for unknown course {course_id}"
         log.warning(msg)
-        raise CourseNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise CourseNotFoundError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return CourseSerializer(course, include_expired=include_expired).data
 
 

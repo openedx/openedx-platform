@@ -42,18 +42,18 @@ def export_learner_job_properties(learners, directory):
 
     for learner in learners:
         learner_name = learner['original_username'].lower()
-        filename = os.path.join(directory, 'learner_retire_{}'.format(learner_name))
+        filename = os.path.join(directory, 'learner_retire_{}'.format(learner_name))  # noqa: UP032
         with open(filename, 'w') as learner_prop_file:
             learner_prop_file.write('RETIREMENT_USERNAME={}\n'.format(learner['original_username']))
 
 
 def _poll_giveup(data):
-    u""" Raise an error when the polling tries are exceeded."""
-    orig_args = data.get(u'args')
+    u""" Raise an error when the polling tries are exceeded."""  # noqa: UP025
+    orig_args = data.get(u'args')  # noqa: UP025
     # The Build object was the only parameter to the original method call,
     # and so it's the first and only item in the args.
     build = orig_args[0]
-    msg = u'Timed out waiting for build {} to finish.'.format(build.name)
+    msg = u'Timed out waiting for build {} to finish.'.format(build.name)  # noqa: UP025, UP032
     raise BackendError(msg)
 
 
@@ -76,7 +76,7 @@ def _backoff_timeout(timeout, base=2, factor=1):
     |           |            |128, 256, 512, 1024,  |
     |           |            |1553                  |
 
-    """
+    """  # noqa: UP025
     # Total duration of sum(factor * base ** n for n in range(K)) = factor*(base**K - 1)/(base - 1),
     # where K is the number of retries, or max_tries - 1 (since the first try doesn't require a wait)
     #
@@ -89,7 +89,7 @@ def _backoff_timeout(timeout, base=2, factor=1):
     remainder = timeout - (factor * (base ** tries - 1)) / (base - 1)
 
     def expo():
-        u"""Compute an exponential backoff wait period, but capped to an expected max timeout"""
+        u"""Compute an exponential backoff wait period, but capped to an expected max timeout"""  # noqa: UP025
         # pylint: disable=invalid-name
         n = 0
         while True:
@@ -133,7 +133,7 @@ def trigger_build(base_url, user_name, user_token, job_name, job_token,
 
     Raises:
         BackendError: if the Jenkins job could not be triggered successfully
-    """
+    """  # noqa: UP025
 
     @backoff.on_predicate(
         backoff.constant,
@@ -148,7 +148,7 @@ def trigger_build(base_url, user_name, user_token, job_name, job_token,
         Poll for the build running, with exponential backoff, capped to ``timeout`` seconds.
         The on_predicate decorator is used to retry when the return value
         of the target function is True.
-        """
+        """  # noqa: UP025
         return not build.is_running()
 
     # Create a dict with key/value pairs from the job_params
@@ -170,25 +170,25 @@ def trigger_build(base_url, user_name, user_token, job_name, job_token,
             requester=crumb_requester
         )
     except (JenkinsAPIException, HTTPError) as err:
-        raise BackendError(str(err))
+        raise BackendError(str(err))  # noqa: B904
 
     if not jenkins.has_job(job_name):
-        msg = u'Job not found: {}.'.format(job_name)
-        msg += u' Verify that you have permissions for the job and double check the spelling of its name.'
+        msg = u'Job not found: {}.'.format(job_name)  # noqa: UP025, UP032
+        msg += u' Verify that you have permissions for the job and double check the spelling of its name.'  # noqa: UP025
         raise BackendError(msg)
 
     # This will start the job and will return a QueueItem object which can be used to get build results
     job = jenkins[job_name]
     queue_item = job.invoke(securitytoken=job_token, build_params=request_params, cause=job_cause)
-    LOG.info(u'Added item to jenkins. Server: {} Job: {} '.format(
+    LOG.info(u'Added item to jenkins. Server: {} Job: {} '.format(  # noqa: UP025, UP032
         jenkins.base_server_url(), queue_item
     ))
 
     # Block this script until we are through the queue and the job has begun to build.
     queue_item.block_until_building()
     build = queue_item.get_build()
-    LOG.info(u'Created build {}'.format(build))
-    LOG.info(u'See {}'.format(build.baseurl))
+    LOG.info(u'Created build {}'.format(build))  # noqa: UP025, UP032
+    LOG.info(u'See {}'.format(build.baseurl))  # noqa: UP025, UP032
 
     # Now block until you get a result back from the build.
     poll_build_for_result(build)
@@ -197,5 +197,5 @@ def trigger_build(base_url, user_name, user_token, job_name, job_token,
     build.poll()
 
     status = build.get_status()
-    LOG.info(u'Build status: {status}'.format(status=status))
+    LOG.info(u'Build status: {status}'.format(status=status))  # noqa: UP025, UP032
     return status

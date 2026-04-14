@@ -5,8 +5,8 @@ Views for the credit Django app.
 
 import datetime
 import logging
-
 from zoneinfo import ZoneInfo
+
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -23,20 +23,20 @@ from openedx.core.djangoapps.credit.exceptions import (
     CreditApiBadRequest,
     InvalidCourseKey,
     InvalidCreditRequest,
-    UserNotEligibleException
+    UserNotEligibleException,
 )
 from openedx.core.djangoapps.credit.models import (
     CREDIT_PROVIDER_ID_REGEX,
     CreditCourse,
     CreditEligibility,
     CreditProvider,
-    CreditRequest
+    CreditRequest,
 )
 from openedx.core.djangoapps.credit.serializers import (
     CreditCourseSerializer,
     CreditEligibilitySerializer,
     CreditProviderCallbackSerializer,
-    CreditProviderSerializer
+    CreditProviderSerializer,
 )
 from openedx.core.lib.api.authentication import BearerAuthentication
 from openedx.core.lib.api.mixins import PutAsCreateMixin
@@ -86,7 +86,7 @@ class CreditProviderRequestCreateView(views.APIView):
         try:
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise InvalidCourseKey(course_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise InvalidCourseKey(course_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # Validate the username
         username = request.data.get('username')
@@ -101,7 +101,7 @@ class CreditProviderRequestCreateView(views.APIView):
             credit_request = create_credit_request(course_key, provider.provider_id, username)
             return Response(credit_request)
         except CreditApiBadRequest as ex:
-            raise InvalidCreditRequest(str(ex))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise InvalidCreditRequest(str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 class CreditProviderCallbackView(views.APIView):
@@ -162,7 +162,7 @@ class CreditEligibilityView(generics.ListAPIView):
         try:
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         return queryset.filter(
             username=username,
             course__course_key=course_key,

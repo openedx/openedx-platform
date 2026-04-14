@@ -13,7 +13,10 @@ from xblock.validation import ValidationMessage
 
 from lms.lib.utils import is_unit
 from xmodule.modulestore.inheritance import UserPartitionList  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import NoSuchUserPartitionError, NoSuchUserPartitionGroupError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    NoSuchUserPartitionError,
+    NoSuchUserPartitionGroupError,
+)
 
 # Please do not remove, this is a workaround for Django 1.8.
 # more information can be found here: https://openedx.atlassian.net/browse/PLAT-902

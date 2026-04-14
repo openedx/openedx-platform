@@ -9,9 +9,9 @@ functionalities.
 
 import json
 import uuid
-
 from unittest import mock
 from unittest.mock import patch
+
 import ddt
 from django.conf import settings
 from django.test.utils import override_settings
@@ -19,17 +19,17 @@ from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 from xblock.field_data import DictFieldData
-from xmodule.discussion_block import DiscussionXBlock
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
-from xmodule.tests.helpers import mock_render_template
 
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.course_api.blocks.tests.helpers import deserialize_usage_key
 from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.tests.helpers import XModuleRenderingTestBase
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.discussions.services import DiscussionConfigService
-from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
+from xmodule.discussion_block import DiscussionXBlock
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, ToyCourseFactory
+from xmodule.tests.helpers import mock_render_template
 
 
 @ddt.ddt
@@ -54,7 +54,7 @@ class TestDiscussionXBlock(XModuleRenderingTestBase):
             'discussion_id': self.discussion_id
         })
         scope_ids = mock.Mock()
-        scope_ids.usage_id.course_key = self.course_id
+        scope_ids.usage_id.context_key = self.course_id
         self.block = DiscussionXBlock(
             self.runtime,
             field_data=self.data,
@@ -290,8 +290,8 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
         super().setUpClass()
         cls.user = UserFactory()
         cls.course = ToyCourseFactory.create()
-        cls.course_key = cls.course.id
-        cls.course_usage_key = cls.store.make_course_usage_key(cls.course_key)
+        cls.context_key = cls.course.id
+        cls.course_usage_key = cls.store.make_course_usage_key(cls.context_key)
         cls.discussion_id = "test_discussion_xblock_id"
         cls.discussion = BlockFactory.create(
             parent_location=cls.course_usage_key,
@@ -300,7 +300,7 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
             discussion_category='Category discussion',
             discussion_target='Target Discussion',
         )
-        CourseEnrollmentFactory.create(user=cls.user, course_id=cls.course_key)
+        CourseEnrollmentFactory.create(user=cls.user, course_id=cls.context_key)
 
     def get_root(self, block):
         """
@@ -395,7 +395,7 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
         assert response.status_code == 200
         assert response.data['root'] == str(self.course_usage_key)
         for block_key_string, block_data in response.data['blocks'].items():
-            block_key = deserialize_usage_key(block_key_string, self.course_key)
+            block_key = deserialize_usage_key(block_key_string, self.context_key)
             assert block_data['id'] == block_key_string
             assert block_data['type'] == block_key.block_type
             assert block_data['display_name'] == (self.store.get_item(block_key).display_name or '')
@@ -406,9 +406,9 @@ class TestXBlockInCourse(SharedModuleStoreTestCase):
         Tests that the discussion xblock is hidden when discussion provider is openedx
         """
         # Enable new OPEN_EDX provider for this course
-        course_key = self.course.location.course_key
+        context_key = self.course.location.course_key
         DiscussionsConfiguration.objects.create(
-            context_key=course_key,
+            context_key=context_key,
             enabled=True,
             provider_type=Provider.OPEN_EDX,
         )
@@ -442,8 +442,8 @@ class TestXBlockQueryLoad(SharedModuleStoreTestCase):
         """
         user = UserFactory()
         course = ToyCourseFactory()
-        course_key = course.id
-        course_usage_key = self.store.make_course_usage_key(course_key)
+        context_key = course.id
+        course_usage_key = self.store.make_course_usage_key(context_key)
         discussions = []
 
         for counter in range(5):

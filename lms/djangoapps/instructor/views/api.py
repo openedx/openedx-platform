@@ -10,19 +10,20 @@ import csv
 import datetime
 import json
 import logging
-import string
 import random
 import re
+import string
 
 import dateutil
-import pytz
 import edx_api_doc_tools as apidocs
+import pytz
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
-from django.http import QueryDict, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, QueryDict
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
@@ -36,15 +37,18 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_when.api import get_date_for_block
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx.core.djangoapps.course_groups.cohorts import get_cohort_by_name
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework import serializers, status  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.permissions import IsAdminUser, IsAuthenticated, BasePermission  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.permissions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BasePermission,
+    IsAdminUser,
+    IsAuthenticated,
+)
 from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
 from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
-from submissions import api as sub_api  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from submissions import (
+    api as sub_api,  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student import auth
@@ -52,17 +56,17 @@ from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import (
     ALLOWEDTOENROLL_TO_ENROLLED,
     ALLOWEDTOENROLL_TO_UNENROLLED,
-    CourseEnrollment,
-    CourseEnrollmentAllowed,
     DEFAULT_TRANSITION_STATE,
     ENROLLED_TO_ENROLLED,
     ENROLLED_TO_UNENROLLED,
-    EntranceExamConfiguration,
-    ManualEnrollmentAudit,
-    Registration,
     UNENROLLED_TO_ALLOWEDTOENROLL,
     UNENROLLED_TO_ENROLLED,
     UNENROLLED_TO_UNENROLLED,
+    CourseEnrollment,
+    CourseEnrollmentAllowed,
+    EntranceExamConfiguration,
+    ManualEnrollmentAudit,
+    Registration,
     UserProfile,
     get_user_by_username_or_email,
     is_email_retired,
@@ -74,8 +78,8 @@ from common.djangoapps.util.file import (
     store_uploaded_file,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest
-from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import
-from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled, create_course_email
+from common.djangoapps.util.views import require_global_staff  # pylint: disable=unused-import  # noqa: F401
+from lms.djangoapps.bulk_email.api import create_course_email, is_bulk_email_feature_enabled
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
 from lms.djangoapps.courseware.access import has_access
@@ -93,48 +97,51 @@ from lms.djangoapps.instructor.enrollment import (
     unenroll_email,
 )
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_email_features, extract_task_features
-from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic, csvs as instructor_analytics_csvs
-from lms.djangoapps.instructor_task import api as task_api
-from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
-from lms.djangoapps.instructor_task.data import InstructorTaskTypes
-from lms.djangoapps.instructor_task.models import ReportStore
 from lms.djangoapps.instructor.views.serializer import (
     AccessSerializer,
     BlockDueDateSerializer,
     CertificateSerializer,
     CertificateStatusesSerializer,
+    EnrollmentListSerializer,
     ForumRoleNameSerializer,
     ListInstructorTaskInputSerializer,
     ModifyAccessSerializer,
+    OverrideProblemScoreSerializer,
+    ProblemResetSerializer,
+    RescoreEntranceExamSerializer,
+    ResetEntranceExamAttemptsSerializer,
     RoleNameSerializer,
     SendEmailSerializer,
-    ShowUnitExtensionsSerializer,
     ShowStudentExtensionSerializer,
+    ShowUnitExtensionsSerializer,
     StudentAttemptsSerializer,
-    UserSerializer,
-    UniqueStudentIdentifierSerializer,
-    ProblemResetSerializer,
-    UpdateForumRoleMembershipSerializer,
-    RescoreEntranceExamSerializer,
-    OverrideProblemScoreSerializer,
     StudentsUpdateEnrollmentSerializer,
-    ResetEntranceExamAttemptsSerializer
+    UniqueStudentIdentifierSerializer,
+    UpdateForumRoleMembershipSerializer,
+    UserSerializer,
 )
+from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
+from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
+from lms.djangoapps.instructor_task import api as task_api
+from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
+from lms.djangoapps.instructor_task.data import InstructorTaskTypes
+from lms.djangoapps.instructor_task.models import ReportStore
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort, is_course_cohorted
+from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort, get_cohort_by_name, is_course_cohorted
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
-from openedx.core.djangoapps.django_comment_common.models import (
-    CourseDiscussionSettings,
-    Role,
-)
+from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, Role
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.courses import get_course_by_id
-from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+
+from .. import permissions
 from .tools import (
     DashboardError,
     dump_block_extensions,
@@ -146,7 +153,6 @@ from .tools import (
     set_due_date_extension,
     strip_if_string,
 )
-from .. import permissions
 
 log = logging.getLogger(__name__)
 
@@ -1050,6 +1056,11 @@ class ListCourseRoleMembersView(APIView):
 
     rolename is one of ['instructor', 'staff', 'beta', 'ccx_coach']
 
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
     Returns JSON of the form {
         "course_id": "some/course/id",
         "staff": [
@@ -1059,7 +1070,10 @@ class ListCourseRoleMembersView(APIView):
                 "first_name": "Joe",
                 "last_name": "Shmoe",
             }
-        ]
+        ],
+        "count": 10,
+        "num_pages": 1,
+        "current_page": 1
     }
     """
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
@@ -1087,13 +1101,130 @@ class ListCourseRoleMembersView(APIView):
         role_serializer = RoleNameSerializer(data=request.data)
         role_serializer.is_valid(raise_exception=True)
         rolename = role_serializer.data['rolename']
+        search = role_serializer.data.get('search', '').strip()
+        page = role_serializer.data.get('page', 1)
+        page_size = role_serializer.data.get('page_size', 20)
 
         users = list_with_level(course.id, rolename)
-        serializer = UserSerializer(users, many=True)
+
+        # Apply search filter
+        if search:
+            search_lower = search.lower()
+            users = [
+                user for user in users
+                if search_lower in user.username.lower()
+                or search_lower in user.email.lower()
+                or search_lower in (user.first_name or '').lower()
+                or search_lower in (user.last_name or '').lower()
+            ]
+
+        # Calculate pagination
+        total_count = len(users)
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_users = users[start_idx:end_idx]
+
+        serializer = UserSerializer(paginated_users, many=True)
 
         response_payload = {
             'course_id': str(course_id),
             rolename: serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
+        }
+
+        return Response(response_payload, status=status.HTTP_200_OK)
+
+
+class ListCourseEnrollmentsView(APIView):
+    """
+    View to list all enrollments (learners/students) for a specific course.
+    Requires the user to have instructor access.
+
+    Supports optional search and pagination parameters:
+    - search: Filter users by username, email, first_name, or last_name
+    - page: Page number (default: 1)
+    - page_size: Number of results per page (default: 20, max: 100)
+
+    Returns JSON of the form {
+        "course_id": "some/course/id",
+        "enrollments": [
+            {
+                "username": "student1",
+                "email": "student1@example.org",
+                "first_name": "Jane",
+                "last_name": "Doe",
+            }
+        ],
+        "count": 100,
+        "num_pages": 5,
+        "current_page": 1
+    }
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+
+    @method_decorator(ensure_csrf_cookie)
+    def post(self, request, course_id):
+        """
+        Handles POST request to list course enrollments.
+
+        Args:
+            request (HttpRequest): The request object containing user data.
+            course_id (str): The ID of the course to list enrollments for.
+
+        Returns:
+            Response: A Response object containing the list of enrollments or an error message.
+
+        Raises:
+            Http404: If the course does not exist.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Verify the user has staff-level access to the course; raises Http404 if not.
+        get_course_with_access(
+            request.user, 'staff', course_key, depth=None
+        )
+
+        enrollment_serializer = EnrollmentListSerializer(data=request.data)
+        enrollment_serializer.is_valid(raise_exception=True)
+        search = enrollment_serializer.data.get('search', '').strip()
+        page = enrollment_serializer.data.get('page', 1)
+        page_size = enrollment_serializer.data.get('page_size', 20)
+
+        # Get all active enrollments for the course
+        enrollments = CourseEnrollment.objects.filter(
+            course_id=course_key,
+            is_active=True
+        ).select_related('user').order_by('user__username')
+
+        # Apply search filter
+        if search:
+            enrollments = enrollments.filter(
+                Q(user__username__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search)
+            )
+
+        # Calculate pagination
+        total_count = enrollments.count()
+        num_pages = max(1, (total_count + page_size - 1) // page_size) if page_size > 0 else 1
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_enrollments = enrollments[start_idx:end_idx]
+
+        # Extract user data from enrollments
+        users = [enr.user for enr in paginated_enrollments]
+        serializer = UserSerializer(users, many=True)
+
+        response_payload = {
+            'course_id': str(course_key),
+            'enrollments': serializer.data,
+            'count': total_count,
+            'num_pages': num_pages,
+            'current_page': page,
         }
 
         return Response(response_payload, status=status.HTTP_200_OK)
@@ -1558,7 +1689,7 @@ class GetStudentsFeatures(DeveloperErrorViewMixin, APIView):
                 )
                 success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
             except Exception as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904  # pylint: disable=line-too-long
 
             return JsonResponse({"status": success_status})
 
@@ -1589,7 +1720,7 @@ class GetStudentsWhoMayEnroll(DeveloperErrorViewMixin, APIView):
             task_api.submit_calculate_may_enroll_csv(request, course_key, query_features)
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
 
         return JsonResponse({"status": success_status})
 
@@ -1627,7 +1758,7 @@ class GetInactiveEnrolledStudents(DeveloperErrorViewMixin, APIView):
             )
             success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
         except Exception as e:
-            raise self.api_error(
+            raise self.api_error(  # noqa: B904
                 status.HTTP_400_BAD_REQUEST, str(e), "Requested task is already running"
             )
 
@@ -1734,7 +1865,7 @@ class CohortCSV(DeveloperErrorViewMixin, APIView):
             )
             task_api.submit_cohort_students(request, course_key, file_name)
         except (FileValidationException, ValueError) as e:
-            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')
+            raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'failed-validation')  # noqa: B904
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1887,7 +2018,7 @@ class StudentProgressUrlSerializer(serializers.Serializer):
         if course_home_mfe_progress_tab_is_active(course_id):
             progress_url = get_learning_mfe_home_url(course_id, url_fragment='progress')
             if user is not None:
-                progress_url += '/{}/'.format(user.id)
+                progress_url += '/{}/'.format(user.id)  # noqa: UP032
         else:
             progress_url = reverse('student_progress', kwargs={'course_id': str(course_id), 'student_id': user.id})
 
@@ -2176,7 +2307,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
 
         elif all_students:
@@ -2188,7 +2319,7 @@ class RescoreProblem(DeveloperErrorViewMixin, APIView):
                 )
             except NotImplementedError as exc:
                 return HttpResponseBadRequest(str(exc))
-            except ItemNotFoundError as exc:
+            except ItemNotFoundError:
                 return HttpResponseBadRequest(f"{module_state_key} not found")
         else:
             return HttpResponseBadRequest()
@@ -3897,7 +4028,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return data
 
@@ -3914,7 +4045,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             user=username_or_email
         ))
 

@@ -30,10 +30,6 @@ from organizations.tests.factories import OrganizationFactory
 from pytz import UTC
 from rest_framework import status
 from social_django.models import UserSocialAuth
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase, SharedModuleStoreTestCase,
-)
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -43,20 +39,20 @@ from common.djangoapps.student.models import (
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
     CourseEnrollmentAttribute,
-    ManualEnrollmentAudit
+    ManualEnrollmentAudit,
 )
 from common.djangoapps.student.roles import GlobalStaff, SupportStaffRole
 from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
     CourseEnrollmentAttributeFactory,
+    CourseEnrollmentFactory,
     UserFactory,
 )
 from common.djangoapps.third_party_auth.tests.factories import SAMLProviderConfigFactory
-from common.test.utils import disable_signal, assert_dict_contains_subset
+from common.test.utils import assert_dict_contains_subset, disable_signal
 from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnrollmentFactory, ProgramEnrollmentFactory
 from lms.djangoapps.support.models import CourseResetAudit
 from lms.djangoapps.support.serializers import ProgramEnrollmentSerializer
-from lms.djangoapps.support.tests.factories import CourseResetCourseOptInFactory, CourseResetAuditFactory
+from lms.djangoapps.support.tests.factories import CourseResetAuditFactory, CourseResetCourseOptInFactory
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService
 from lms.djangoapps.verify_student.tests.factories import SSOVerificationFactory
@@ -67,8 +63,14 @@ from openedx.features.course_duration_limits.models import CourseDurationLimitCo
 from openedx.features.enterprise_support.api import enterprise_is_enabled
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
+from xmodule.modulestore.tests.django_utils import (
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+    SharedModuleStoreTestCase,
+)
+from xmodule.modulestore.tests.factories import CourseFactory
 
 try:
     from consent.models import DataSharingConsent
@@ -369,7 +371,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
                 enrollment=self.enrollment,
                 namespace='order',
                 name='order_number',
-                value='ORD-00{}'.format(count + 1)
+                value='ORD-00{}'.format(count + 1)  # noqa: UP032
             )
         url = reverse(
             'support:enrollment_list',
@@ -463,7 +465,7 @@ class SupportViewEnrollmentsTests(SharedModuleStoreTestCase, SupportViewTestCase
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         assert len(data) == 1
-        self.assertEqual(data[0]['pacing_type'], pacing_type)
+        self.assertEqual(data[0]['pacing_type'], pacing_type)  # noqa: PT009
 
     def test_get_manual_enrollment_history(self):
         ManualEnrollmentAudit.create_manual_enrollment_audit(
@@ -966,7 +968,7 @@ class ProgramEnrollmentsInspectorViewTests(SupportViewTestCase):
     def test_initial_rendering(self):
         response = self.client.get(self.url)
         content = str(response.content, encoding='utf-8')
-        expected_organization_serialized = '"orgKeys": {}'.format(
+        expected_organization_serialized = '"orgKeys": {}'.format(  # noqa: UP032
             json.dumps(sorted(self.org_key_list))
         )
         assert response.status_code == 200
@@ -1019,7 +1021,7 @@ class ProgramEnrollmentsInspectorViewTests(SupportViewTestCase):
                         is_active=True
                     )
 
-                program_course_enrollment = ProgramCourseEnrollmentFactory.create(
+                program_course_enrollment = ProgramCourseEnrollmentFactory.create(  # noqa: F841
                     # lint-amnesty, pylint: disable=unused-variable
                     program_enrollment=program_enrollment,
                     course_key=course_id,
@@ -1250,7 +1252,7 @@ class ProgramEnrollmentsInspectorViewTests(SupportViewTestCase):
             'org_key': self.org_key_list[0],
         })
 
-        expected_error = 'No user found for external key {} for institution {}'.format(
+        expected_error = 'No user found for external key {} for institution {}'.format(  # noqa: UP032
             external_user_key, self.org_key_list[0]
         )
         render_call_dict = mocked_render.call_args[0][1]
@@ -1372,7 +1374,7 @@ class ProgramEnrollmentsInspectorAPIViewTests(SupportViewTestCase):
                         is_active=True
                     )
 
-                program_course_enrollment = ProgramCourseEnrollmentFactory.create(
+                program_course_enrollment = ProgramCourseEnrollmentFactory.create(  # noqa: F841
                     # lint-amnesty, pylint: disable=unused-variable
                     program_enrollment=program_enrollment,
                     course_key=course_id,
@@ -1537,7 +1539,7 @@ class ProgramEnrollmentsInspectorAPIViewTests(SupportViewTestCase):
             self._url + f'?external_user_key={external_user_key}&org_key={self.org_key_list[0]}'
         )
         response = json.loads(response.content.decode('utf-8'))
-        expected_error = 'No user found for external key {} for institution {}'.format(
+        expected_error = 'No user found for external key {} for institution {}'.format(  # noqa: UP032
             external_user_key, self.org_key_list[0]
         )
         assert expected_error == response['error']
@@ -1601,7 +1603,7 @@ class SsoRecordsTests(SupportViewTestCase):  # lint-amnesty, pylint: disable=mis
         assert len(data) == 0
 
     def test_response(self):
-        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable
+        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             user=self.student,
             uid=self.student.email,
             provider='tpa-saml'
@@ -1614,7 +1616,7 @@ class SsoRecordsTests(SupportViewTestCase):  # lint-amnesty, pylint: disable=mis
 
     def test_history_response(self):
         '''Tests changes in SSO history for a user'''
-        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable
+        user_social_auth = UserSocialAuth.objects.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             user=self.student,
             uid=self.student.email,
             provider='tpa-saml'
@@ -1840,7 +1842,7 @@ class LinkProgramEnrollmentSupportAPIViewTests(SupportViewTestCase):
         Tests if enrollment linkages are refused for invalid usernames
         """
         external_user_key = '0001'
-        linked_user = self._setup_user_from_username(username)
+        linked_user = self._setup_user_from_username(username)  # noqa: F841
         original_user = self._setup_user_from_username(original_username)
         program_enrollment, program_course_enrollment = self._setup_enrollments(
             external_user_key,
@@ -1957,24 +1959,24 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         Test that a request with a username which does not exits returns 404
         """
         response = self.client.get(self._url(username='does_not_exist'))
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 404)  # noqa: PT009
 
         response_data = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response_data['verified_in'], None)
-        self.assertEqual(response_data['current_status'], None)
+        self.assertEqual(response_data['verified_in'], None)  # noqa: PT009
+        self.assertEqual(response_data['current_status'], None)  # noqa: PT009
 
     def test_no_record(self):
         """
         Test that a request with a username which do not have any onboarding exam returns empty data
         """
         response = self.client.get(self._url(username=self.other_user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         response_data = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response_data['verified_in'], None)
-        self.assertEqual(response_data['current_status'], None)
+        self.assertEqual(response_data['verified_in'], None)  # noqa: PT009
+        self.assertEqual(response_data['current_status'], None)  # noqa: PT009
 
     def test_no_verified_attempts(self):
         """
@@ -1988,10 +1990,10 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         update_attempt_status(attempt_id, ProctoredExamStudentAttemptStatus.submitted)
 
         response = self.client.get(self._url(username=self.user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response_data['verified_in'], None)
-        self.assertEqual(
+        self.assertEqual(response_data['verified_in'], None)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             response_data['current_status']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.submitted
         )
@@ -1999,11 +2001,11 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         # Create second attempt and assert that most recent attempt is returned
         create_exam_attempt(self.onboarding_exam_id, self.user.id, True)
         response = self.client.get(self._url(username=self.user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response_data['verified_in'], None)
-        self.assertEqual(
+        self.assertEqual(response_data['verified_in'], None)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             response_data['current_status']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.created
         )
@@ -2019,14 +2021,14 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         attempt_id = create_exam_attempt(self.onboarding_exam_id, self.user.id, True)
         update_attempt_status(attempt_id, ProctoredExamStudentAttemptStatus.verified)
         response = self.client.get(self._url(username=self.user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response_data['verified_in']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.verified
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response_data['current_status']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.verified
         )
@@ -2034,14 +2036,14 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         # Create second attempt and assert that verified attempt is still returned
         create_exam_attempt(self.onboarding_exam_id, self.user.id, True)
         response = self.client.get(self._url(username=self.user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response_data['verified_in']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.verified
         )
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             response_data['current_status']['onboarding_status'],
             ProctoredExamStudentAttemptStatus.verified
         )
@@ -2085,16 +2087,16 @@ class TestOnboardingView(SupportViewTestCase, ProctoredExamTestCase):
         self._create_enrollment()
 
         response = self.client.get(self._url(username=self.user.username))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         response_data = json.loads(response.content.decode('utf-8'))
 
         # assert that originally verified enrollment is reflected correctly
-        self.assertEqual(response_data['verified_in']['onboarding_status'], 'verified')
-        self.assertEqual(response_data['verified_in']['course_id'], other_course_id)
+        self.assertEqual(response_data['verified_in']['onboarding_status'], 'verified')  # noqa: PT009
+        self.assertEqual(response_data['verified_in']['course_id'], other_course_id)  # noqa: PT009
 
         # assert that most recent enrollment (current status) has other_course_approved status
-        self.assertEqual(response_data['current_status']['onboarding_status'], 'other_course_approved')
-        self.assertEqual(response_data['current_status']['course_id'], self.course_id)
+        self.assertEqual(response_data['current_status']['onboarding_status'], 'other_course_approved')  # noqa: PT009
+        self.assertEqual(response_data['current_status']['course_id'], self.course_id)  # noqa: PT009
 
 
 class ResetCourseViewTestBase(SupportViewTestCase):
@@ -2131,10 +2133,10 @@ class TestResetCourseListView(ResetCourseViewTestBase):
         """ Helper that asserts the course ids that will be returned from the listing endpoint """
         learner = learner or self.learner
         response = self.client.get(self._url(learner))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         actual_course_ids = [course['course_id'] for course in response.json()]
-        self.assertEqual(expected_course_ids, actual_course_ids)
+        self.assertEqual(expected_course_ids, actual_course_ids)  # noqa: PT009
 
     def test_no_enrollments(self):
         """ When a learner has no enrollments, the endpoint should return an empty list """
@@ -2177,10 +2179,10 @@ class TestResetCourseListView(ResetCourseViewTestBase):
     def assertResponse(self, expected_response):
         """ Helper to assert the contents of the response from the listing endpoint """
         response = self.client.get(self._url(self.learner))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         actual_response = response.json()
-        self.assertEqual(expected_response, actual_response)
+        self.assertEqual(expected_response, actual_response)  # noqa: PT009
         return actual_response
 
     def test_course_not_started(self):
@@ -2212,7 +2214,7 @@ class TestResetCourseListView(ResetCourseViewTestBase):
         ])
 
     @patch('lms.djangoapps.support.views.course_reset.user_has_passing_grade_in_course', return_value=True)
-    def test_user_has_passing_grade(self, _):
+    def test_user_has_passing_grade(self, _):  # noqa: PT019
         """ If a course is opted in but the learner has a passing grade, it should not be resettable """
         self.assertResponse([{
             'course_id': self.course_id,
@@ -2223,7 +2225,7 @@ class TestResetCourseListView(ResetCourseViewTestBase):
         }])
 
     @patch('lms.djangoapps.support.views.course_reset.user_has_passing_grade_in_course', return_value=True)
-    def test_ended_with_passing_grade(self, _):
+    def test_ended_with_passing_grade(self, _):  # noqa: PT019
         """
         If a course has ended and the learner has a passing grade,
         the passing grade message should override the ended message
@@ -2395,8 +2397,8 @@ class TestResetCourseCreateView(ResetCourseViewTestBase):
 
     def assert_error_response(self, response, expected_status_code, expected_error_message):
         """ Helper to assert status code and error message """
-        self.assertEqual(response.status_code, expected_status_code)
-        self.assertEqual(response.data['error'], expected_error_message)
+        self.assertEqual(response.status_code, expected_status_code)  # noqa: PT009
+        self.assertEqual(response.data['error'], expected_error_message)  # noqa: PT009
 
     def test_wrong_username(self):
         """ A request with a username which does not exits returns 404 """
@@ -2445,8 +2447,8 @@ class TestResetCourseCreateView(ResetCourseViewTestBase):
 
         # A request for a given learner and course with a comment should return a 201
         response = self.request(comment=comment)
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data, {
+        self.assertEqual(response.status_code, 201)  # noqa: PT009
+        self.assertEqual(response.data, {  # noqa: PT009
             'course_id': self.course_id,
             'status': response.data['status'],
             'can_reset': False,
@@ -2456,7 +2458,7 @@ class TestResetCourseCreateView(ResetCourseViewTestBase):
         # The reset task should be queued
         mock_reset_student_course.delay.assert_called_once_with(self.course_id, self.learner.email, self.user.email)
         # And an audit should be created as ENQUEUED
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             self.enrollment.courseresetaudit_set.first().status,
             CourseResetAudit.CourseResetStatus.ENQUEUED
         )
@@ -2471,8 +2473,8 @@ class TestResetCourseCreateView(ResetCourseViewTestBase):
             status=CourseResetAudit.CourseResetStatus.FAILED
         )
         response = self.request()
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data, {
+        self.assertEqual(response.status_code, 201)  # noqa: PT009
+        self.assertEqual(response.data, {  # noqa: PT009
             'course_id': self.course_id,
             'status': response.data['status'],
             'can_reset': False,

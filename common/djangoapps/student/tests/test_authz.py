@@ -11,21 +11,21 @@ from django.core.exceptions import PermissionDenied
 from django.test import TestCase, override_settings
 from opaque_keys.edx.locator import CourseLocator
 
-from common.djangoapps.student.models.user import CourseAccessRole
 from common.djangoapps.student.auth import (
     add_users,
     has_studio_read_access,
     has_studio_write_access,
     remove_users,
     update_org_role,
-    user_has_role
+    user_has_role,
 )
+from common.djangoapps.student.models.user import CourseAccessRole
 from common.djangoapps.student.roles import (
     CourseCreatorRole,
     CourseInstructorRole,
     CourseLimitedStaffRole,
     CourseStaffRole,
-    OrgContentCreatorRole
+    OrgContentCreatorRole,
 )
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
 
@@ -120,7 +120,7 @@ class CreatorGroupTest(TestCase):
             assert not user_has_role(self.user, CourseCreatorRole())
 
     def test_add_user_to_group_requires_staff_access(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             self.admin.is_staff = False
             add_users(self.admin, CourseCreatorRole(), self.user)
 
@@ -128,12 +128,12 @@ class CreatorGroupTest(TestCase):
             add_users(self.user, CourseCreatorRole(), self.user)
 
     def test_add_user_to_group_requires_active(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             self.admin.is_active = False
             add_users(self.admin, CourseCreatorRole(), self.user)
 
     def test_add_user_to_group_requires_authenticated(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             with mock.patch(
                 'django.contrib.auth.models.User.is_authenticated',
                 new_callable=mock.PropertyMock
@@ -142,17 +142,17 @@ class CreatorGroupTest(TestCase):
                 add_users(self.admin, CourseCreatorRole(), self.user)
 
     def test_remove_user_from_group_requires_staff_access(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             self.admin.is_staff = False
             remove_users(self.admin, CourseCreatorRole(), self.user)
 
     def test_remove_user_from_group_requires_active(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             self.admin.is_active = False
             remove_users(self.admin, CourseCreatorRole(), self.user)
 
     def test_remove_user_from_group_requires_authenticated(self):
-        with pytest.raises(PermissionDenied):
+        with pytest.raises(PermissionDenied):  # noqa: PT012
             with mock.patch(
                 'django.contrib.auth.models.User.is_authenticated',
                 new_callable=mock.PropertyMock

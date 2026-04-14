@@ -29,7 +29,7 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
     set_custom_attribute,
-    set_custom_attributes_for_course_key
+    set_custom_attributes_for_course_key,
 )
 from olxcleaner.exceptions import ErrorLevel
 from olxcleaner.reporting import report_error_summary, report_errors
@@ -50,7 +50,7 @@ import cms.djangoapps.contentstore.errors as UserErrors
 from cms.djangoapps.contentstore.courseware_index import (
     CoursewareSearchIndexer,
     LibrarySearchIndexer,
-    SearchIndexingError
+    SearchIndexingError,
 )
 from cms.djangoapps.contentstore.storage import course_import_export_storage
 from cms.djangoapps.contentstore.toggles import enable_course_optimizer_check_prev_run_links
@@ -63,7 +63,7 @@ from cms.djangoapps.contentstore.utils import (
     get_previous_run_course_key,
     initialize_permissions,
     reverse_usage_url,
-    translation_language
+    translation_language,
 )
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import get_block_info
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
@@ -94,12 +94,12 @@ from xmodule.modulestore.xml_importer import CourseImportException, import_cours
 from xmodule.tabs import StaticTab
 from xmodule.util.keys import BlockKey
 
+from .api import get_ready_to_migrate_legacy_library_content_blocks
 from .models import ComponentLink, ContainerLink, LearningContextLinksStatus, LearningContextLinksStatusChoices
 from .outlines import update_outline_from_modulestore
 from .outlines_regenerate import CourseOutlineRegenerate
 from .toggles import bypass_olx_failure_enabled
 from .utils import course_import_olx_validation_is_enabled
-from .api import get_ready_to_migrate_legacy_library_content_blocks
 
 User = get_user_model()
 
@@ -194,7 +194,7 @@ def rerun_course(source_course_key_string, destination_course_key_string, user_i
         CourseRerunState.objects.succeeded(course_key=destination_course_key)
 
         COURSE_RERUN_COMPLETED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             course=CourseData(
                 course_key=destination_course_key
             )
@@ -523,8 +523,14 @@ def sync_discussion_settings(course_key, user):
 
             discussion_config.provider_type = Provider.OPEN_EDX
 
-        discussion_config.enable_graded_units = discussion_settings['enable_graded_units']
-        discussion_config.unit_level_visibility = discussion_settings['unit_level_visibility']
+        fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
+        # Plugin configuration is stored in the course settings under the provider name.
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905  # pylint: disable=line-too-long
+
+        for attr_name, settings_key in field_mappings.items():
+            if settings_key in discussion_settings:
+                setattr(discussion_config, attr_name, discussion_settings[settings_key])
+
         discussion_config.save()
         LOGGER.info(f'Course import {course.id}: DiscussionsConfiguration synced as per course')
     except Exception as exc:  # pylint: disable=broad-except
@@ -1165,7 +1171,7 @@ def _check_broken_links(task_instance, user_id, course_key_string, language):
     Checks for broken links in a course and stores the results in a file.
     Also checks for previous run links if the feature is enabled.
     """
-    user = _validate_user(task_instance, user_id, language)
+    user = _validate_user(task_instance, user_id, language)  # noqa: F841
 
     task_instance.status.set_state(UserTaskStatus.IN_PROGRESS)
     course_key = CourseKey.from_string(course_key_string)
@@ -1220,7 +1226,7 @@ def _validate_user(task, user_id, language):
     """Validate if the user exists. Otherwise log an unknown user id error."""
     try:
         return User.objects.get(pk=user_id)
-    except User.DoesNotExist as exc:
+    except User.DoesNotExist as exc:  # noqa: F841
         with translation_language(language):
             task.status.fail(UserErrors.UNKNOWN_USER_ID.format(user_id))
         return
@@ -1682,7 +1688,7 @@ def create_or_update_upstream_links(
     ensure_cms("create_or_update_upstream_links may only be executed in a CMS context")
 
     if not created:
-        created = datetime.now(timezone.utc)
+        created = datetime.now(timezone.utc)  # noqa: UP017
     course_status = LearningContextLinksStatus.get_or_create(course_key_str, created)
     if course_status.status in [
         LearningContextLinksStatusChoices.COMPLETED,
@@ -2161,7 +2167,7 @@ def _update_broken_links_file_with_updated_links(course_key, updated_links):
         try:
             with latest_artifact.file.open("r") as file:
                 existing_broken_links = json.load(file)
-        except (json.JSONDecodeError, IOError) as e:
+        except (json.JSONDecodeError, IOError) as e:  # noqa: UP024
             LOGGER.error(
                 f"Failed to read broken links file for course {course_key}: {e}"
             )

@@ -7,9 +7,7 @@ from factory import SubFactory
 from factory.django import DjangoModelFactory
 from faker import Factory as FakerFactory
 
-from common.djangoapps.third_party_auth.models import (
-    OAuth2ProviderConfig, SAMLConfiguration, SAMLProviderConfig
-)
+from common.djangoapps.third_party_auth.models import OAuth2ProviderConfig, SAMLConfiguration, SAMLProviderConfig
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 
 FAKER = FakerFactory.create()

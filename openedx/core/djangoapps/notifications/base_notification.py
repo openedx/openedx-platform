@@ -1,17 +1,16 @@
 """
 Base setup for Notification Apps and Types.
 """
-from typing import Any, Literal, TypedDict, NotRequired
+from typing import Any, Literal, NotRequired, TypedDict
 
 from django.utils.translation import gettext_lazy as _
 
-from .email_notifications import EmailCadence
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 
-from .settings_override import get_notification_types_config, get_notification_apps_config
-
-from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_COMMUNITY_TA
+from ..django_comment_common.models import FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_COMMUNITY_TA, FORUM_ROLE_MODERATOR
+from .email_notifications import EmailCadence
 from .notification_content import get_notification_type_context_function
+from .settings_override import get_notification_apps_config, get_notification_types_config
 
 FILTER_AUDIT_EXPIRED_USERS_WITH_NO_ROLE = 'filter_audit_expired_users_with_no_role'
 

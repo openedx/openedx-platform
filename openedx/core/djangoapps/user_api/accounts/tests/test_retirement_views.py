@@ -5,9 +5,9 @@ Test cases to cover account retirement views
 import datetime
 import json
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core import mail
@@ -33,7 +33,7 @@ from common.djangoapps.student.models import (
     SocialLink,
     UserProfile,
     get_retired_email_by_email,
-    get_retired_username_by_username
+    get_retired_username_by_username,
 )
 from common.djangoapps.student.tests.factories import (
     AccountRecoveryFactory,
@@ -42,7 +42,7 @@ from common.djangoapps.student.tests.factories import (
     PendingEmailChangeFactory,
     PermissionFactory,
     SuperuserFactory,
-    UserFactory
+    UserFactory,
 )
 from lms.djangoapps.certificates.api import get_certificate_for_user_id
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
@@ -53,19 +53,19 @@ from openedx.core.djangoapps.credit.models import (
     CreditProvider,
     CreditRequest,
     CreditRequirement,
-    CreditRequirementStatus
+    CreditRequirementStatus,
 )
 from openedx.core.djangoapps.external_user_ids.models import ExternalIdType
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
+from openedx.core.djangoapps.oauth_dispatch.tests.factories import AccessTokenFactory, ApplicationFactory
 from openedx.core.djangoapps.user_api.accounts.views import AccountRetirementPartnerReportView
 from openedx.core.djangoapps.user_api.models import (
     RetirementState,
     UserOrgTag,
     UserRetirementPartnerReportingStatus,
-    UserRetirementStatus
+    UserRetirementStatus,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.core.djangoapps.oauth_dispatch.tests.factories import ApplicationFactory, AccessTokenFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
 
@@ -75,7 +75,7 @@ from .retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     create_retirement_status,
     fake_completed_retirement,
-    setup_retirement_states
+    setup_retirement_states,  # noqa: F401
 )
 
 
@@ -593,7 +593,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
                 for config in orgs_config:
                     config[AccountRetirementPartnerReportView.ORGS_CONFIG_FIELD_HEADINGS_KEY].sort()
 
-        self.assertCountEqual(returned_users, expected_users)
+        self.assertCountEqual(returned_users, expected_users)  # noqa: PT009
 
     def test_success(self):
         """
@@ -690,7 +690,7 @@ class TestAccountRetirementList(RetirementTestCase):
                     del retirement['created']
                     del retirement['modified']
 
-            self.assertCountEqual(response_data, expected_data)
+            self.assertCountEqual(response_data, expected_data)  # noqa: PT009
 
     def test_empty(self):
         """
@@ -875,7 +875,7 @@ class TestAccountRetirementsByStatusAndDate(RetirementTestCase):
                     except KeyError:
                         pass
 
-            self.assertCountEqual(response_data, expected_data)
+            self.assertCountEqual(response_data, expected_data)  # noqa: PT009
 
     def test_empty(self):
         """
@@ -996,7 +996,7 @@ class TestAccountRetirementRetrieve(RetirementTestCase):
                 del data['created']
                 del data['modified']
 
-            self.assertDictEqual(response_data, expected_data)
+            self.assertDictEqual(response_data, expected_data)  # noqa: PT009
             return response_data
 
     def test_no_retirement(self):

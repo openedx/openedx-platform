@@ -11,21 +11,30 @@ from django.core.exceptions import ObjectDoesNotExist
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
 from common.djangoapps.track.event_transaction_utils import create_new_event_transaction_id, set_event_transaction_type
+
 # Public Grades Modules
-from lms.djangoapps.grades import constants, context, course_data, events
+from lms.djangoapps.grades import constants, context, course_data, events  # noqa: F401
+
 # Grades APIs that should NOT belong within the Grades subsystem
 # TODO move Gradebook to be an external feature outside of core Grades
-from lms.djangoapps.grades.config.waffle import gradebook_bulk_management_enabled, is_writable_gradebook_enabled
+from lms.djangoapps.grades.config.waffle import (  # noqa: F401
+    gradebook_bulk_management_enabled,
+    is_writable_gradebook_enabled,
+)
+
 # Public Grades Factories
-from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
-from lms.djangoapps.grades.models_api import *
+from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory  # noqa: F401
+from lms.djangoapps.grades.models_api import *  # noqa: F403
 from lms.djangoapps.grades.signals import signals
+
 # TODO exposing functionality from Grades handlers seems fishy.
-from lms.djangoapps.grades.signals.handlers import disconnect_submissions_signal_receiver
+from lms.djangoapps.grades.signals.handlers import disconnect_submissions_signal_receiver  # noqa: F401
 from lms.djangoapps.grades.subsection_grade import CreateSubsectionGrade
-from lms.djangoapps.grades.subsection_grade_factory import SubsectionGradeFactory
-from lms.djangoapps.grades.tasks import compute_all_grades_for_course as task_compute_all_grades_for_course
-from lms.djangoapps.grades.util_services import GradesUtilService
+from lms.djangoapps.grades.subsection_grade_factory import SubsectionGradeFactory  # noqa: F401
+from lms.djangoapps.grades.tasks import (
+    compute_all_grades_for_course as task_compute_all_grades_for_course,  # noqa: F401
+)
+from lms.djangoapps.grades.util_services import GradesUtilService  # noqa: F401
 from lms.djangoapps.utils import _get_key
 
 
@@ -55,11 +64,11 @@ def override_subsection_grade(
     usage_key = _get_key(usage_key_or_id, UsageKey)
 
     try:
-        grade = get_subsection_grade(user_id, usage_key.course_key, usage_key)
+        grade = get_subsection_grade(user_id, usage_key.course_key, usage_key)  # noqa: F405
     except ObjectDoesNotExist:
         grade = _create_subsection_grade(user_id, course_key, usage_key)
 
-    override = update_or_create_override(
+    override = update_or_create_override(  # noqa: F405
         grade,
         requesting_user=overrider,
         subsection_grade_model=grade,
@@ -103,7 +112,7 @@ def undo_override_subsection_grade(user_id, course_key_or_id, usage_key_or_id, f
     usage_key = _get_key(usage_key_or_id, UsageKey)
 
     try:
-        override = get_subsection_grade_override(user_id, course_key, usage_key)
+        override = get_subsection_grade_override(user_id, course_key, usage_key)  # noqa: F405
     except ObjectDoesNotExist:
         return
 
@@ -146,8 +155,9 @@ def _create_subsection_grade(user_id, course_key, usage_key):
     Given a user_id, course_key, and subsection usage_key,
     creates a new ``PersistentSubsectionGrade``.
     """
-    from lms.djangoapps.courseware.courses import get_course
     from django.contrib.auth import get_user_model
+
+    from lms.djangoapps.courseware.courses import get_course
     course = get_course(course_key, depth=None)
     subsection = course.get_child(usage_key)
     if not subsection:

@@ -14,7 +14,6 @@ from subprocess import check_call
 import django
 import git
 from django.db.models.query import QuerySet
-
 from path import Path
 
 root = Path('..').abspath()

@@ -6,10 +6,13 @@ from contextlib import contextmanager
 from logging import getLogger
 
 from django.dispatch import receiver
-from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
 from opaque_keys import InvalidKeyError
-from openedx_events.learning.signals import EXTERNAL_GRADER_SCORE_SUBMITTED
-from openedx_events.learning.signals import EXAM_ATTEMPT_REJECTED, EXAM_ATTEMPT_VERIFIED
+from opaque_keys.edx.keys import CourseKey, LearningContextKey, UsageKey
+from openedx_events.learning.signals import (
+    EXAM_ATTEMPT_REJECTED,
+    EXAM_ATTEMPT_VERIFIED,
+    EXTERNAL_GRADER_SCORE_SUBMITTED,
+)
 from submissions.models import score_reset, score_set
 from xblock.scorable import ScorableXBlockMixin, Score
 
@@ -21,12 +24,12 @@ from lms.djangoapps.courseware.model_data import get_score, set_score
 from lms.djangoapps.grades.tasks import (
     RECALCULATE_GRADE_DELAY_SECONDS,
     recalculate_course_and_subsection_grades_for_user,
-    recalculate_subsection_grade_v3
+    recalculate_subsection_grade_v3,
 )
 from openedx.core.djangoapps.course_groups.signals.signals import COHORT_MEMBERSHIP_UPDATED
 from openedx.core.djangoapps.signals.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
     COURSE_GRADE_NOW_FAILED,
-    COURSE_GRADE_NOW_PASSED
+    COURSE_GRADE_NOW_PASSED,
 )
 from openedx.core.lib.grade_utils import is_score_higher_or_equal
 from xmodule.modulestore.django import modulestore
@@ -41,7 +44,7 @@ from .signals import (
     PROBLEM_WEIGHTED_SCORE_CHANGED,
     SCORE_PUBLISHED,
     SUBSECTION_OVERRIDE_CHANGED,
-    SUBSECTION_SCORE_CHANGED
+    SUBSECTION_SCORE_CHANGED,
 )
 
 log = getLogger(__name__)
@@ -162,7 +165,7 @@ def score_published_handler(sender, block, user, raw_earned, raw_possible, only_
             if not is_score_higher_or_equal(prev_raw_earned, prev_raw_possible, raw_earned, raw_possible):
                 update_score = False
                 log.warning(
-                    "Grades: Rescore is not higher than previous: "
+                    "Grades: Rescore is not higher than previous: "  # noqa: UP032
                     "user: {}, block: {}, previous: {}/{}, new: {}/{} ".format(
                         user, block.location, prev_raw_earned, prev_raw_possible, raw_earned, raw_possible,
                     )

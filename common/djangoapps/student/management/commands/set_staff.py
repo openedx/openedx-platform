@@ -41,7 +41,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
                 print(f'Modified {user} sucessfully.')
 
             except Exception as err:  # pylint: disable=broad-except
-                print("Error modifying user with identifier {}: {}: {}".format(user, type(err).__name__,
+                print("Error modifying user with identifier {}: {}: {}".format(user, type(err).__name__,  # noqa: UP032
                                                                                str(err)))
 
         print('Complete!')

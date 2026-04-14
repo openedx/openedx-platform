@@ -16,27 +16,28 @@ from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wron
     CourseData,
     CourseEnrollmentData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
     COURSE_ACCESS_ROLE_ADDED,
     COURSE_ACCESS_ROLE_REMOVED,
     COURSE_ENROLLMENT_CHANGED,
     COURSE_ENROLLMENT_CREATED,
-    COURSE_UNENROLLMENT_COMPLETED
+    COURSE_UNENROLLMENT_COMPLETED,
 )
-from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import CourseEnrollmentAllowedFactory, UserFactory, UserProfileFactory
 from common.djangoapps.student.tests.tests import UserSettingsEventTestMixin
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from common.test.utils import assert_dict_contains_subset
 
 
 class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
@@ -62,7 +63,7 @@ class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
         # Verify that we remove the temporary `_changed_fields` property from
         # the model after we're done emitting events.
         with pytest.raises(AttributeError):
-            self.profile._changed_fields    # pylint: disable=pointless-statement, protected-access
+            self.profile._changed_fields    # pylint: disable=pointless-statement, protected-access  # noqa: B018
 
     def test_change_many_fields(self):
         """
@@ -101,7 +102,7 @@ class TestUserProfileEvents(UserSettingsEventTestMixin, TestCase):
         self.assert_no_events_were_emitted()
 
     @mock.patch('common.djangoapps.student.models.user.UserProfile.save', side_effect=IntegrityError)
-    def test_no_event_if_save_failed(self, _save_mock):
+    def test_no_event_if_save_failed(self, _save_mock):  # noqa: PT019
         """
         Verify no event is triggered if the save does not complete. Note that the pre_save
         signal is not called in this case either, but the intent is to make it clear that this model
@@ -162,7 +163,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
         self.assert_no_events_were_emitted()
 
     @mock.patch('django.contrib.auth.models.User.save', side_effect=IntegrityError)
-    def test_no_event_if_save_failed(self, _save_mock):
+    def test_no_event_if_save_failed(self, _save_mock):  # noqa: PT019
         """
         Verify no event is triggered if the save does not complete. Note that the pre_save
         signal is not called in this case either, but the intent is to make it clear that this model
@@ -210,7 +211,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
 
 
 @skip_unless_lms
-class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class EnrollmentEventsTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the Open edX Events associated with the enrollment process through the enroll method.
 
@@ -227,17 +228,6 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
         "org.openedx.learning.course.enrollment.changed.v1",
         "org.openedx.learning.course.unenrollment.completed.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -271,7 +261,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         enrollment = CourseEnrollment.enroll(self.user, self.course.id)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -315,7 +305,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         enrollment.update_enrollment(mode="verified")
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -359,7 +349,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
         CourseEnrollment.unenroll(self.user, self.course.id)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -390,7 +380,7 @@ class EnrollmentEventsTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
 
 @skip_unless_lms
 @ddt.ddt
-class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
+class TestCourseAccessRoleEvents(OpenEdxEventsTestMixin, TestCase):
     """
     Tests for the events associated with the CourseAccessRole model.
     """
@@ -398,11 +388,6 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         'org.openedx.learning.user.course_access_role.added.v1',
         'org.openedx.learning.user.course_access_role.removed.v1',
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         self.course_key = CourseKey.from_string("course-v1:test+blah+blah")
@@ -433,7 +418,7 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         role = AccessRole(self.course_key)
         role.add_users(self.user)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {
@@ -472,7 +457,7 @@ class TestCourseAccessRoleEvents(TestCase, OpenEdxEventsTestMixin):
         COURSE_ACCESS_ROLE_REMOVED.connect(event_receiver)
         role.remove_users(self.user)
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

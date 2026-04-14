@@ -12,7 +12,7 @@ from openedx_events.learning.data import (
     CourseData,
     CoursePassingStatusData,
     UserData,
-    UserPersonalData
+    UserPersonalData,
 )
 from openedx_events.learning.signals import CCX_COURSE_PASSING_STATUS_UPDATED, COURSE_PASSING_STATUS_UPDATED
 
@@ -23,7 +23,7 @@ from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
     get_event_transaction_type,
-    set_event_transaction_type
+    set_event_transaction_type,
 )
 from lms.djangoapps.grades.signals.signals import SCHEDULE_FOLLOW_UP_SEGMENT_EVENT_FOR_COURSE_PASSED_FIRST_TIME
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
@@ -270,7 +270,7 @@ def fire_segment_event_on_course_grade_passed_first_time(user_id, course_locator
             event_properties=event_properties
         )
 
-    log.info("Segment event fired for passed learners. Event: [{}], Data: [{}]".format(event_name, event_properties))
+    log.info("Segment event fired for passed learners. Event: [{}], Data: [{}]".format(event_name, event_properties))  # noqa: UP032  # pylint: disable=line-too-long
 
 
 def _emit_course_passing_status_update(user, course_id, is_passing):

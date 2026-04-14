@@ -3,17 +3,17 @@ Tests for the CORS CSRF middleware
 """
 
 
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
+
 import ddt
 import pytest
-from django.test import TestCase
-from django.test.utils import override_settings
-from django.core.exceptions import MiddlewareNotUsed, ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, MiddlewareNotUsed
 from django.http import HttpResponse
 from django.middleware.csrf import CsrfViewMiddleware
+from django.test import TestCase
+from django.test.utils import override_settings
 
 from ..middleware import CorsCSRFMiddleware, CsrfCrossDomainCookieMiddleware
-
 
 SENTINEL = object()
 
@@ -271,7 +271,7 @@ class TestCsrfCrossDomainCookieMiddleware(TestCase):
             assert self.COOKIE_NAME in response.cookies
             cookie_header = str(response.cookies[self.COOKIE_NAME])
 
-            expected = 'Set-Cookie: {name}={value}; Domain={domain};'.format(
+            expected = 'Set-Cookie: {name}={value}; Domain={domain};'.format(  # noqa: UP032
                 name=self.COOKIE_NAME,
                 value=self.COOKIE_VALUE,
                 domain=self.COOKIE_DOMAIN

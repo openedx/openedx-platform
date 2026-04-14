@@ -4,14 +4,14 @@ Management command for expiring entitlements older than 1 year / 18 months.
 """
 import logging
 from datetime import date
-from dateutil.relativedelta import relativedelta
 from math import ceil
 from textwrap import dedent
 
+from dateutil.relativedelta import relativedelta
 from django.core.management import BaseCommand
 
-from common.djangoapps.entitlements.tasks import expire_and_create_entitlements
 from common.djangoapps.entitlements.models import CourseEntitlement
+from common.djangoapps.entitlements.tasks import expire_and_create_entitlements
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 

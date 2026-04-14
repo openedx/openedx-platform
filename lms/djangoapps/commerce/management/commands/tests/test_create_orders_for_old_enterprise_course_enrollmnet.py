@@ -15,7 +15,7 @@ from openedx.core.djangoapps.credit.tests.test_api import TEST_ECOMMERCE_WORKER
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory
+    EnterpriseCustomerUserFactory,
 )
 
 

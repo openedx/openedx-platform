@@ -8,8 +8,13 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url
 from cms.djangoapps.contentstore.views import tabs
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 from xmodule.tabs import CourseTabList  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -45,11 +50,11 @@ class TabsPageTests(CourseTestCase):
         """Verify not implemented errors"""
 
         # JSON GET request not supported
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(NotImplementedError):  # noqa: PT027
             self.client.get(self.url)
 
         # JSON POST request not supported
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(NotImplementedError):  # noqa: PT027
             self.client.ajax_post(
                 self.url,
                 data=json.dumps({
@@ -59,7 +64,7 @@ class TabsPageTests(CourseTestCase):
             )
 
         # invalid JSON POST request
-        with self.assertRaises(NotImplementedError):
+        with self.assertRaises(NotImplementedError):  # noqa: PT027
             self.client.ajax_post(
                 self.url,
                 data={'invalid_request': None},
@@ -184,9 +189,9 @@ class PrimitiveTabEdit(ModuleStoreTestCase):
     def test_delete(self):
         """Test primitive tab deletion."""
         course = CourseFactory.create()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             tabs.primitive_delete(course, 0)
-        with self.assertRaises(IndexError):
+        with self.assertRaises(IndexError):  # noqa: PT027
             tabs.primitive_delete(course, 6)
 
         assert course.tabs[1] != {'type': 'dates', 'name': 'Dates'}
@@ -200,9 +205,9 @@ class PrimitiveTabEdit(ModuleStoreTestCase):
         course = CourseFactory.create()
         tabs.primitive_insert(course, 2, 'pdf_textbooks', 'aname')
         assert course.tabs[2] == {'type': 'pdf_textbooks', 'name': 'aname'}
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             tabs.primitive_insert(course, 0, 'pdf_textbooks', 'aname')
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # noqa: PT027
             tabs.primitive_insert(course, 3, 'static_tab', 'aname')
 
     def test_save(self):

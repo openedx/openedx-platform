@@ -14,9 +14,8 @@ from copy import deepcopy
 from functools import partial
 from logging import getLogger
 
-from xmodule.block_metadata_utils import get_datetime_field
-
 from openedx.core.lib.graph_traversals import traverse_post_order, traverse_topologically
+from xmodule.block_metadata_utils import get_datetime_field
 
 from .exceptions import TransformerException
 
@@ -303,7 +302,7 @@ class FieldData:
         try:
             return self.fields[field_name]
         except KeyError:
-            raise AttributeError(f"Field {field_name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AttributeError(f"Field {field_name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def __setattr__(self, field_name, field_value):
         if self._is_own_field(field_name):

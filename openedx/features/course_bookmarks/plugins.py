@@ -6,9 +6,9 @@ Platform plugins to support course bookmarks.
 from django.urls import reverse
 from django.utils.translation import gettext as _
 
+from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.courseware.permissions import EDIT_BOOKMARK
 from openedx.features.course_experience.course_tools import CourseTool
-from common.djangoapps.student.models import CourseEnrollment
 
 
 class CourseBookmarksTool(CourseTool):

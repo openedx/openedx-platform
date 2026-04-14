@@ -12,7 +12,7 @@ from openedx.core.djangoapps.content.course_overviews.tasks import (
     DEFAULT_ALL_COURSES,
     DEFAULT_CHUNK_SIZE,
     DEFAULT_FORCE_UPDATE,
-    enqueue_async_course_overview_update_tasks
+    enqueue_async_course_overview_update_tasks,
 )
 
 log = logging.getLogger(__name__)
@@ -72,4 +72,4 @@ class Command(BaseCommand):
                 **kwargs
             )
         except InvalidKeyError as exc:
-            raise CommandError('Invalid Course Key: ' + str(exc))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise CommandError('Invalid Course Key: ' + str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

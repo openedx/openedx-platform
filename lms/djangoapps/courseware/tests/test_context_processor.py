@@ -2,18 +2,21 @@
 Unit tests for courseware context_processor
 """
 
-from pytz import timezone
 from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
+
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from pytz import timezone
 
+from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.context_processor import (
     get_user_timezone_or_last_seen_timezone_or_utc,
     user_timezone_locale_prefs,
 )
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
-from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 

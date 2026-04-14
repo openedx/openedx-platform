@@ -5,7 +5,7 @@ import json
 import logging
 from collections import defaultdict
 from contextlib import contextmanager
-from typing import List
+from typing import List  # noqa: UP035
 
 from django.core.exceptions import ValidationError  # lint-amnesty, pylint: disable=wrong-import-order
 from django.db.models import Q
@@ -196,7 +196,7 @@ class CourseGradingPolicy(GradeViewMixin, ListAPIView):
         try:
             course_key = get_course_key(request, course_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_400_BAD_REQUEST,
                 developer_message='The provided course key cannot be parsed.',
                 error_code='invalid_course_key'
@@ -420,7 +420,7 @@ class SubmissionHistoryView(GradeViewMixin, PaginatedAPIView):
         try:
             course_id = get_course_key(request, course_id)
         except InvalidKeyError:
-            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status_code=status.HTTP_400_BAD_REQUEST,
                 developer_message='The provided course key cannot be parsed.',
                 error_code='invalid_course_key'
@@ -476,7 +476,7 @@ class SubmissionHistoryView(GradeViewMixin, PaginatedAPIView):
         return blocks
 
     @staticmethod
-    def _get_course_data(course_key: str, course_enrollments: List[CourseEnrollment], course, blocks):
+    def _get_course_data(course_key: str, course_enrollments: List[CourseEnrollment], course, blocks):  # noqa: UP006
         """
         Extracts the fields needed from course enrollments and course block.
         This function maps the ProblemBlock data of the course to it's enrollment.

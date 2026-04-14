@@ -6,6 +6,7 @@ import logging
 from datetime import datetime
 
 from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=unused-import
+
 from openedx.core import types
 
 from ...data import CourseOutlineData

@@ -14,20 +14,22 @@ from django.test import override_settings
 from django.test.client import RequestFactory
 from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.roles import COURSE_EDITOR
 from organizations.api import add_organization, get_course_organizations, get_organization_by_short_name
 from organizations.exceptions import InvalidOrganizationException
 from organizations.models import Organization
-from xmodule.course_block import CourseFields
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, parse_json
+from cms.djangoapps.contentstore.views.course import get_allowed_organizations, user_can_create_organizations
 from cms.djangoapps.course_creators.admin import CourseCreatorAdmin
 from cms.djangoapps.course_creators.models import CourseCreator
-from cms.djangoapps.contentstore.views.course import get_allowed_organizations, user_can_create_organizations
 from common.djangoapps.student.auth import update_org_role
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, OrgContentCreatorRole
 from common.djangoapps.student.tests.factories import AdminFactory, UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
+from xmodule.course_block import CourseFields
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 def mock_render_to_string(template_name, context):
@@ -99,19 +101,19 @@ class TestCourseListing(ModuleStoreTestCase):
             'org': self.source_course_key.org, 'course': self.source_course_key.course, 'run': 'copy',
             'display_name': 'not the same old name',
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = parse_json(response)
         dest_course_key = CourseKey.from_string(data['destination_course_key'])
 
-        self.assertEqual(dest_course_key.run, 'copy')
+        self.assertEqual(dest_course_key.run, 'copy')  # noqa: PT009
         dest_course = self.store.get_course(dest_course_key)
-        self.assertEqual(dest_course.start, CourseFields.start.default)
-        self.assertEqual(dest_course.end, None)
-        self.assertEqual(dest_course.enrollment_start, None)
-        self.assertEqual(dest_course.enrollment_end, None)
+        self.assertEqual(dest_course.start, CourseFields.start.default)  # noqa: PT009
+        self.assertEqual(dest_course.end, None)  # noqa: PT009
+        self.assertEqual(dest_course.enrollment_start, None)  # noqa: PT009
+        self.assertEqual(dest_course.enrollment_end, None)  # noqa: PT009
         course_orgs = get_course_organizations(dest_course_key)
-        self.assertEqual(len(course_orgs), 1)
-        self.assertEqual(course_orgs[0]['short_name'], self.source_course_key.org)
+        self.assertEqual(len(course_orgs), 1)  # noqa: PT009
+        self.assertEqual(course_orgs[0]['short_name'], self.source_course_key.org)  # noqa: PT009
 
     def test_newly_created_course_has_web_certs_enabled(self):
         """
@@ -123,11 +125,11 @@ class TestCourseListing(ModuleStoreTestCase):
             'display_name': 'Course with web certs enabled',
             'run': '2015_T2'
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         data = parse_json(response)
         new_course_key = CourseKey.from_string(data['course_key'])
         course = self.store.get_course(new_course_key)
-        self.assertTrue(course.cert_html_view_enabled)
+        self.assertTrue(course.cert_html_view_enabled)  # noqa: PT009
 
     def test_course_creation_for_unknown_organization_relaxed(self):
         """
@@ -135,7 +137,7 @@ class TestCourseListing(ModuleStoreTestCase):
         creating a course-run with an unknown org slug will create an organization
         and organization-course linkage in the system.
         """
-        with self.assertRaises(InvalidOrganizationException):
+        with self.assertRaises(InvalidOrganizationException):  # noqa: PT027
             get_organization_by_short_name("orgX")
         response = self.client.ajax_post(self.course_create_rerun_url, {
             'org': 'orgX',
@@ -143,13 +145,13 @@ class TestCourseListing(ModuleStoreTestCase):
             'display_name': 'Course with web certs enabled',
             'run': '2015_T2'
         })
-        self.assertEqual(response.status_code, 200)
-        self.assertIsNotNone(get_organization_by_short_name("orgX"))
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertIsNotNone(get_organization_by_short_name("orgX"))  # noqa: PT009
         data = parse_json(response)
         new_course_key = CourseKey.from_string(data['course_key'])
         course_orgs = get_course_organizations(new_course_key)
-        self.assertEqual(len(course_orgs), 1)
-        self.assertEqual(course_orgs[0]['short_name'], 'orgX')
+        self.assertEqual(len(course_orgs), 1)  # noqa: PT009
+        self.assertEqual(course_orgs[0]['short_name'], 'orgX')  # noqa: PT009
 
     @override_settings(ORGANIZATIONS_AUTOCREATE=False)
     def test_course_creation_for_unknown_organization_strict(self):
@@ -163,11 +165,11 @@ class TestCourseListing(ModuleStoreTestCase):
             'display_name': 'Course with web certs enabled',
             'run': '2015_T2'
         })
-        self.assertEqual(response.status_code, 400)
-        with self.assertRaises(InvalidOrganizationException):
+        self.assertEqual(response.status_code, 400)  # noqa: PT009
+        with self.assertRaises(InvalidOrganizationException):  # noqa: PT027
             get_organization_by_short_name("orgX")
         data = parse_json(response)
-        self.assertIn('Organization you selected does not exist in the system', data['error'])
+        self.assertIn('Organization you selected does not exist in the system', data['error'])  # noqa: PT009
 
     @ddt.data(True, False)
     def test_course_creation_for_known_organization(self, organizations_autocreate):
@@ -186,12 +188,12 @@ class TestCourseListing(ModuleStoreTestCase):
                 'display_name': 'Course with web certs enabled',
                 'run': '2015_T2'
             })
-            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 200)  # noqa: PT009
             data = parse_json(response)
             new_course_key = CourseKey.from_string(data['course_key'])
             course_orgs = get_course_organizations(new_course_key)
-            self.assertEqual(len(course_orgs), 1)
-            self.assertEqual(course_orgs[0]['short_name'], 'orgX')
+            self.assertEqual(len(course_orgs), 1)  # noqa: PT009
+            self.assertEqual(course_orgs[0]['short_name'], 'orgX')  # noqa: PT009
 
     @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
     def test_course_creation_when_user_not_in_org(self):
@@ -204,7 +206,7 @@ class TestCourseListing(ModuleStoreTestCase):
             'display_name': 'Course with web certs enabled',
             'run': '2021_T1'
         })
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
     @mock.patch(
@@ -224,14 +226,14 @@ class TestCourseListing(ModuleStoreTestCase):
         self.course_creator_entry.all_organizations = True
         self.course_creator_entry.state = CourseCreator.GRANTED
         self.creator_admin.save_model(self.request, self.course_creator_entry, None, True)
-        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))
+        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))  # noqa: PT009
         response = self.client.ajax_post(self.course_create_rerun_url, {
             'org': self.source_course_key.org,
             'number': 'CS101',
             'display_name': 'Course with web certs enabled',
             'run': '2021_T1'
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
     @mock.patch(
@@ -250,15 +252,15 @@ class TestCourseListing(ModuleStoreTestCase):
         self.course_creator_entry.all_organizations = True
         self.course_creator_entry.state = CourseCreator.GRANTED
         self.creator_admin.save_model(self.request, self.course_creator_entry, None, True)
-        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))
-        self.assertFalse(user_can_create_organizations(self.user))
+        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))  # noqa: PT009
+        self.assertFalse(user_can_create_organizations(self.user))  # noqa: PT009
         response = self.client.ajax_post(self.course_create_rerun_url, {
             'org': self.source_course_key.org,
             'number': 'CS101',
             'display_name': 'Course with web certs enabled',
             'run': '2021_T1'
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
     @mock.patch(
@@ -279,15 +281,15 @@ class TestCourseListing(ModuleStoreTestCase):
         self.creator_admin.save_model(self.request, self.course_creator_entry, None, True)
         dc_org_object = Organization.objects.get(name='Test Organization')
         self.course_creator_entry.organizations.add(dc_org_object)
-        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))
-        self.assertFalse(user_can_create_organizations(self.user))
+        self.assertIn(self.source_course_key.org, get_allowed_organizations(self.user))  # noqa: PT009
+        self.assertFalse(user_can_create_organizations(self.user))  # noqa: PT009
         response = self.client.ajax_post(self.course_create_rerun_url, {
             'org': self.source_course_key.org,
             'number': 'CS101',
             'display_name': 'Course with web certs enabled',
             'run': '2021_T1'
         })
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     @override_settings(FEATURES={'ENABLE_CREATOR_GROUP': True})
     @mock.patch(
@@ -315,15 +317,15 @@ class TestCourseListing(ModuleStoreTestCase):
         # When the user tries to create course under `Test Organization` it throws a 403.
         dc_org_object = Organization.objects.get(name='DC')
         self.course_creator_entry.organizations.add(dc_org_object)
-        self.assertNotIn(self.source_course_key.org, get_allowed_organizations(self.user))
-        self.assertFalse(user_can_create_organizations(self.user))
+        self.assertNotIn(self.source_course_key.org, get_allowed_organizations(self.user))  # noqa: PT009
+        self.assertFalse(user_can_create_organizations(self.user))  # noqa: PT009
         response = self.client.ajax_post(self.course_create_rerun_url, {
             'org': self.source_course_key.org,
             'number': 'CS101',
             'display_name': 'Course with web certs enabled',
             'run': '2021_T1'
         })
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     @ddt.data(*product([True, False], [True, False]))
     @ddt.unpack
@@ -360,7 +362,7 @@ class TestCourseListing(ModuleStoreTestCase):
         })
 
         # Then the process completes successfully
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
         data = parse_json(response)
         dest_course_key = CourseKey.from_string(data['destination_course_key'])
@@ -368,10 +370,124 @@ class TestCourseListing(ModuleStoreTestCase):
 
         # ... and our setting got enabled appropriately on our new course
         if mock_toggle_state:
-            self.assertTrue(dest_course.force_on_flexible_peer_openassessments)
+            self.assertTrue(dest_course.force_on_flexible_peer_openassessments)  # noqa: PT009
         # ... or preserved if the default enable setting is not on
         else:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 source_course.force_on_flexible_peer_openassessments,
                 dest_course.force_on_flexible_peer_openassessments
             )
+
+
+class TestCourseHandlerAuthz(
+    CourseAuthoringAuthzTestMixin,
+    ModuleStoreTestCase,
+):
+    """
+    AuthZ integration tests for course_handler using real RBAC (no mocks).
+    """
+
+    def setUp(self):
+        super().setUp()
+
+        self.url = reverse("course_handler")
+
+        # Create a base course to extract org
+        self.course = CourseFactory.create()
+        self.course_key = self.course.id
+        self.org = self.course_key.org
+
+        # If your policy expects this format, keep it
+        self.org_key = f"course-v1:{self.org}+*"
+
+        self.authorized_client = AjaxEnabledTestClient()
+        self.authorized_client.login(
+            username=self.authorized_user.username,
+            password=self.password,
+        )
+
+        self.unauthorized_client = AjaxEnabledTestClient()
+        self.unauthorized_client.login(
+            username=self.unauthorized_user.username,
+            password=self.password,
+        )
+        self.authorized_staff_client = AjaxEnabledTestClient()
+        self.authorized_staff_client.login(
+            username=self.staff_user.username,
+            password=self.password,
+        )
+
+    # ------------------------------------------------------------
+    # CREATE COURSE -- Non-staff users and existing Organization
+    # ------------------------------------------------------------
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    def test_create_course_unauthorized(self):
+        """
+        User without role cannot create course.
+        """
+
+        response = self.unauthorized_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403
+
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": False})
+    def test_create_course_unauthorized_with_role(self):
+        """
+        User with role but without required permission cannot create course.
+        """
+
+        self.add_user_to_role_in_course(
+            self.unauthorized_user,
+            COURSE_EDITOR.external_key,
+            "course-v1:someotherorg+*",
+        )
+
+        response = self.unauthorized_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403
+
+    # ------------------------------------------------------------
+    # CREATE COURSE -- Staff users
+    # Only staff users can create course, and they can do it
+    # without an org role.
+    # ------------------------------------------------------------
+    def test_create_course_staff(self):
+        """
+        Staff user can create course.
+        """
+        response = self.authorized_staff_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 200
+
+    # ------------------------------------------------------------
+    # FEATURE FLAG
+    # ------------------------------------------------------------
+    @override_settings(FEATURES={"DISABLE_COURSE_CREATION": True})
+    def test_create_course_disabled_by_flag(self):
+        """
+        Even authorized users cannot create course if feature flag is off.
+        """
+
+        response = self.authorized_staff_client.ajax_post(self.url, {
+            "org": self.org,
+            "number": "CS101",
+            "display_name": "Authz Course",
+            "run": "2026_T1",
+        })
+
+        assert response.status_code == 403

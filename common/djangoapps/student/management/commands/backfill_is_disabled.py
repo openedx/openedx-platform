@@ -9,12 +9,14 @@ batches to minimize memory usage and supports a dry-run mode for testing.
 
 import logging
 import time
-from django.core.management.base import BaseCommand
+
+import requests
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
+from django.core.management.base import BaseCommand
 from django.db import DatabaseError
+
 from common.djangoapps.track import segment
-import requests
 
 LOGGER = logging.getLogger(__name__)
 User = get_user_model()

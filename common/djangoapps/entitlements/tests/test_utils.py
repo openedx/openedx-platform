@@ -15,10 +15,12 @@ from common.djangoapps.student.tests.factories import (  # lint-amnesty, pylint:
     TEST_PASSWORD,
     CourseEnrollmentFactory,
     CourseOverviewFactory,
-    UserFactory
+    UserFactory,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':

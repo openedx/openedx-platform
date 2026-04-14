@@ -30,10 +30,21 @@ from xblock.completable import XBlockCompletionMode
 from xblock.core import XBlock
 from xblock.fields import ScopeIds
 from xblock.runtime import KvsFieldData
-from xblocks_contrib.video import VideoBlock as _ExtractedVideoBlock
 from xblock.utils.resources import ResourceLoader
+from xblocks_contrib.video import VideoBlock as _ExtractedVideoBlock
+from xblocks_contrib.video.bumper_utils import bumperize
+from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
 
 from common.djangoapps.xblock_django.constants import ATTR_KEY_REQUEST_COUNTRY_CODE, ATTR_KEY_USER_ID
+from openedx.core.djangoapps.video_config.transcripts_utils import (
+    Transcript,
+    VideoTranscriptsMixin,
+    clean_video_id,
+    get_endonym_or_label,
+    get_html5_ids,
+    subs_filename,
+)
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.license import LicenseMixin
 from xmodule.contentstore.content import StaticContent
@@ -43,26 +54,11 @@ from xmodule.modulestore.inheritance import InheritanceKeyValueStore
 from xmodule.raw_block import EmptyDataRawMixin
 from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
 from xmodule.validation import StudioValidation, StudioValidationMessage
-from xmodule.x_module import (
-    PUBLIC_VIEW, STUDENT_VIEW,
-    ResourceTemplates,
-    XModuleMixin, XModuleToXBlockMixin,
-)
+from xmodule.x_module import PUBLIC_VIEW, STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin
 from xmodule.xml_block import XmlMixin, deserialize_field, is_pointer_tag, name_to_pathname
-from xblocks_contrib.video.bumper_utils import bumperize
-from openedx.core.djangoapps.video_config.transcripts_utils import (
-    Transcript,
-    VideoTranscriptsMixin,
-    clean_video_id,
-    get_endonym_or_label,
-    get_html5_ids,
-    subs_filename
-)
-from xblocks_contrib.video.video_handlers import VideoStudentViewHandlers, VideoStudioViewHandlers
+
 from .video_utils import create_youtube_string, format_xml_exception_message, get_poster, rewrite_video_url
 from .video_xfields import VideoFields
-
-from xblocks_contrib.video.exceptions import TranscriptNotFoundError
 
 # The following import/except block for edxval is temporary measure until
 # edxval is a proper XBlock Runtime Service.
@@ -375,7 +371,7 @@ class _BuiltInVideoBlock(
         else:
             self.youtube_streams = youtube_streams or create_youtube_string(self)  # pylint: disable=W0201
 
-        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable
+        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         poster = self._poster()
         completion_service = self.runtime.service(self, 'completion')
@@ -504,7 +500,7 @@ class _BuiltInVideoBlock(
             video_config_service = self.runtime.service(self, 'video_config')
             feature_enabled = video_config_service.is_transcript_feedback_enabled(
                 self.context_key) if video_config_service else False
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except  # noqa: F841
             log.exception(f"Error retrieving course for course ID: {self.context_key}")
             return False
         return feature_enabled
@@ -901,7 +897,7 @@ class _BuiltInVideoBlock(
         for video in videos:
             pieces = video.split(':')
             try:
-                speed = '%.2f' % float(pieces[0])  # normalize speed
+                speed = '%.2f' % float(pieces[0])  # normalize speed  # noqa: UP031
 
                 # Handle the fact that youtube IDs got double-quoted for a period of time.
                 # Note: we pass in "VideoFields.youtube_id_1_0" so we deserialize as a String--

@@ -2,6 +2,7 @@
 
 from types import SimpleNamespace
 from urllib.parse import quote
+
 import ddt
 from django.conf import settings
 from django.test import TestCase
@@ -68,7 +69,7 @@ class LinkedInAddToProfileUrlTests(TestCase):
             course_mock_object, cert_mode, self.CERT_URL
         )
 
-        self.assertEqual(actual_url, expected_url)
+        self.assertEqual(actual_url, expected_url)  # noqa: PT009
 
     @ddt.data(
         ('honor', 'Honor+Code+Credential+for+Test+Course+%E2%98%83'),
@@ -99,7 +100,7 @@ class LinkedInAddToProfileUrlTests(TestCase):
             actual_url = config.add_to_profile_url(
                 course_mock_object, cert_mode, self.CERT_URL
             )
-        self.assertEqual(actual_url, expected_url)
+        self.assertEqual(actual_url, expected_url)  # noqa: PT009
 
     @ddt.data(
         ('honor', 'Honor+Code+Credential+for+Test+Course+%E2%98%83'),
@@ -136,4 +137,4 @@ class LinkedInAddToProfileUrlTests(TestCase):
                 course_mock_object, cert_mode, self.CERT_URL
             )
 
-        self.assertEqual(actual_url, expected_url)
+        self.assertEqual(actual_url, expected_url)  # noqa: PT009

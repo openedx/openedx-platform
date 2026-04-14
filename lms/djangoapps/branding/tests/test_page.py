@@ -20,9 +20,11 @@ from common.djangoapps.util.milestones_helpers import set_prerequisite_courses
 from lms.djangoapps.branding.views import index
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.course_block import CATALOG_VISIBILITY_ABOUT, CATALOG_VISIBILITY_NONE
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 FEATURES_WITH_STARTDATE = settings.FEATURES.copy()
 FEATURES_WITH_STARTDATE['DISABLE_START_DATES'] = False
@@ -317,7 +319,7 @@ class IndexPageCourseCardsSortingTests(ModuleStoreTestCase):
 
     @patch('lms.djangoapps.courseware.views.views.render_to_response', RENDER_MOCK)
     def test_invisible_courses_are_not_displayed(self):
-        response = self.client.get(reverse('courses'))
+        response = self.client.get(reverse('courses'))  # noqa: F841
         ((_template, context), _) = RENDER_MOCK.call_args  # pylint: disable=unpacking-non-sequence
 
         rendered_ids = [course.id for course in context["courses"]]

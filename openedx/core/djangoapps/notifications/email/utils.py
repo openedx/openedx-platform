@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import BadRequest
 from django.shortcuts import get_object_or_404
+from django.utils import timezone as django_timezone
 from django.utils.translation import gettext as _
 from pytz import utc
 
@@ -16,18 +17,18 @@ from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher, U
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.notifications.base_notification import (
     COURSE_NOTIFICATION_TYPES,
-    get_default_values_of_preferences
+    get_default_values_of_preferences,
 )
 from openedx.core.djangoapps.notifications.email import ONE_CLICK_EMAIL_UNSUB_KEY
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 from openedx.core.djangoapps.notifications.events import notification_preference_unsubscribe_event
 from openedx.core.djangoapps.notifications.models import NotificationPreference
-from openedx.core.djangoapps.user_api.models import UserPreference
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.models import UserPreference
 from xmodule.modulestore.django import modulestore
 
-from .notification_icons import NotificationTypeIcons
 from ..utils import create_account_notification_pref_if_not_exists
+from .notification_icons import NotificationTypeIcons
 
 User = get_user_model()
 
@@ -73,7 +74,7 @@ def create_email_template_context(username):
         for social_platform in social_media_urls.keys()
         if social_media_icons.get(social_platform)
     }
-    patch = {
+    patch = {  # noqa: F841
         'channel': 'email',
         'value': False
     }
@@ -177,11 +178,11 @@ def get_start_end_date(cadence_type):
     """
     if cadence_type not in [EmailCadence.DAILY, EmailCadence.WEEKLY]:
         raise ValueError('Invalid cadence_type')
-    end_date = datetime.datetime.now()
+    end_date = django_timezone.now()
     start_date = end_date - datetime.timedelta(days=1, minutes=15)
     if cadence_type == EmailCadence.WEEKLY:
         start_date = start_date - datetime.timedelta(days=6)
-    return utc.localize(start_date), utc.localize(end_date)
+    return start_date, end_date
 
 
 def get_course_info(course_key):

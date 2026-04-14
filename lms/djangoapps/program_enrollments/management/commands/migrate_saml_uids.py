@@ -70,7 +70,7 @@ class Command(BaseCommand):
         Performs the re-writing
         """
         User = get_user_model()
-        with py3_open(options['uid_mapping'], 'r', encoding='utf-8') as f:
+        with py3_open(options['uid_mapping'], 'r', encoding='utf-8') as f:  # noqa: UP020
             uid_mappings = json.load(f)
         slug = options['saml_provider_slug']
 
@@ -90,7 +90,7 @@ class Command(BaseCommand):
             auths = user.social_auth.filter(uid__startswith=slug + ':')
             auth = auths[0]
             if auths.count() > 1:
-                log.info('User {email} has multiple {slug} UserSocialAuth entries, '
+                log.info('User {email} has multiple {slug} UserSocialAuth entries, '  # noqa: UP032
                          'updating only one of them'.format(
                              email=email,
                              slug=slug
@@ -102,27 +102,27 @@ class Command(BaseCommand):
             self._count_results(email_map, uid_mappings)
 
         log.info(
-            'Number of users with {slug} UserSocialAuth records for which there was '
+            'Number of users with {slug} UserSocialAuth records for which there was '  # noqa: UP032
             'no mapping in the provided file: {missed}'.format(
                 slug=slug,
                 missed=missed
             )
         )
         log.info(
-            'Number of users identified in the mapping file without {slug}'
+            'Number of users identified in the mapping file without {slug}'  # noqa: UP032
             ' UserSocialAuth records: {not_previously_linked}'.format(
                 slug=slug,
                 not_previously_linked=not_previously_linked
             )
         )
         log.info(
-            'Number of mappings in the mapping file where the identified'
+            'Number of mappings in the mapping file where the identified'  # noqa: UP032
             ' user has already been processed: {duplicated_in_mapping}'.format(
                 duplicated_in_mapping=duplicated_in_mapping
             )
         )
         log.info(
-            'Number of mappings in the mapping file updated: '
+            'Number of mappings in the mapping file updated: '  # noqa: UP032
             '{updated}'.format(
                 updated=updated
             )

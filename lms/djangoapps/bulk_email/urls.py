@@ -9,7 +9,7 @@ from . import views
 
 urlpatterns = [
     re_path(
-        r'^email/optout/(?P<token>[a-zA-Z0-9-_=]+)/{}/$'.format(
+        r'^email/optout/(?P<token>[a-zA-Z0-9-_=]+)/{}/$'.format(  # noqa: UP032
             settings.COURSE_ID_PATTERN,
         ),
         views.opt_out_email_updates,

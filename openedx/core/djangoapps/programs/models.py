@@ -2,9 +2,9 @@
 from config_models.models import ConfigurationModel
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from simple_history.models import HistoricalRecords
 from lti_consumer.models import LtiConfiguration
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 
 class ProgramsApiConfig(ConfigurationModel):

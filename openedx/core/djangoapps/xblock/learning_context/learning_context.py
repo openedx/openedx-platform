@@ -2,8 +2,9 @@
 A "Learning Context" is a course, a library, a program, or some other collection
 of content where learning happens.
 """
-from openedx.core.types import User as UserType
 from opaque_keys.edx.keys import UsageKeyV2
+
+from openedx.core.types import User as UserType
 
 
 class LearningContext:

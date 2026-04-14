@@ -10,18 +10,19 @@ from unittest.mock import patch
 import ddt
 from django.core.management import call_command
 from django.utils import timezone
-from xmodule.modulestore.tests.django_utils import \
-    SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.grades.management.commands import send_segment_events_for_failed_learners
 from lms.djangoapps.grades.management.commands.send_segment_events_for_failed_learners import (
     EVENT_NAME,
-    PAID_ENROLLMENT_MODES
+    PAID_ENROLLMENT_MODES,
 )
 from lms.djangoapps.grades.models import PersistentCourseGrade
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @ddt.ddt

@@ -8,7 +8,10 @@ from django.conf import settings
 
 from lms.djangoapps.courseware.plugins import ProctoringCourseApp
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, CourseUserType  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CourseUserType,
+    ModuleStoreTestCase,
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -56,7 +59,7 @@ class ProctoringCourseAppTestCase(ModuleStoreTestCase):
         """
         Test that setting enable status on proctoring app should raise exception.
         """
-        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):
+        with self.assertRaisesRegex(ValueError, "Proctoring cannot be enabled/disabled via this API."):  # noqa: PT027
             ProctoringCourseApp().set_enabled(
                 course_key=self.course.id,
                 enabled=True,

@@ -10,7 +10,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.http import HttpRequest
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import AssetKey, UsageKey, ContainerKey
+from opaque_keys.edx.keys import AssetKey, ContainerKey, UsageKey
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict
@@ -23,17 +23,14 @@ from .data import (
     CLIPBOARD_PURPOSE,
     StagedContentData,
     StagedContentFileData,
+    StagedContentID,
     StagedContentStatus,
     UserClipboardData,
 )
-from .models import (
-    UserClipboard as _UserClipboard,
-    StagedContent as _StagedContent,
-    StagedContentFile as _StagedContentFile,
-)
-from .serializers import (
-    UserClipboardSerializer as _UserClipboardSerializer,
-)
+from .models import StagedContent as _StagedContent
+from .models import StagedContentFile as _StagedContentFile
+from .models import UserClipboard as _UserClipboard
+from .serializers import UserClipboardSerializer as _UserClipboardSerializer
 from .tasks import delete_expired_clipboards
 
 log = logging.getLogger(__name__)
@@ -325,26 +322,26 @@ def _user_clipboard_model_to_data(clipboard: _UserClipboard) -> UserClipboardDat
     )
 
 
-def get_staged_content_olx(staged_content_id: int) -> str | None:
+def get_staged_content_olx(staged_content_id: StagedContentID) -> str | None:
     """
     Get the OLX (as a string) for the given StagedContent.
 
     Does not check permissions!
     """
     try:
-        sc = _StagedContent.objects.get(pk=staged_content_id)
+        sc = _StagedContent.objects.get(id=staged_content_id)
         return sc.olx
     except _StagedContent.DoesNotExist:
         return None
 
 
-def get_staged_content_static_files(staged_content_id: int) -> list[StagedContentFileData]:
+def get_staged_content_static_files(staged_content_id: StagedContentID) -> list[StagedContentFileData]:
     """
     Get the filenames and metadata for any static files used by the given staged content.
 
     Does not check permissions!
     """
-    sc = _StagedContent.objects.get(pk=staged_content_id)
+    sc = _StagedContent.objects.get(id=staged_content_id)
 
     def str_to_key(source_key_str: str):
         if not source_key_str:
@@ -370,13 +367,13 @@ def get_staged_content_static_files(staged_content_id: int) -> list[StagedConten
     ]
 
 
-def get_staged_content_static_file_data(staged_content_id: int, filename: str) -> bytes | None:
+def get_staged_content_static_file_data(staged_content_id: StagedContentID, filename: str) -> bytes | None:
     """
     Get the data for the static asset associated with the given staged content.
 
     Does not check permissions!
     """
-    sc = _StagedContent.objects.get(pk=staged_content_id)
+    sc = _StagedContent.objects.get(id=staged_content_id)
     file_data_obj = sc.files.filter(filename=filename).first()
     if file_data_obj:
         return file_data_obj.data_file.open().read()

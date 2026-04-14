@@ -13,7 +13,9 @@ from opaque_keys import InvalidKeyError
 from common.djangoapps.student.helpers import AccountValidationError
 from common.djangoapps.student.models import CourseAccessRole, CourseEnrollment
 from common.djangoapps.student.roles import CourseStaffRole
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -226,7 +228,7 @@ class CreateTestUsersTestCase(SharedModuleStoreTestCase):
         self.call_command([test_username])
         assert self.user_model.objects.filter(username=test_username).exists()
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError):  # noqa: PT027
             self.call_command([test_username], ignore_user_already_exists=False)
 
         self.call_command([test_username], ignore_user_already_exists=True)

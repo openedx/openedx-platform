@@ -1,5 +1,5 @@
 """Course app config for courseware apps."""
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from django import urls
 from django.conf import settings
@@ -7,13 +7,11 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_noop as _
 from opaque_keys.edx.keys import CourseKey
 
-from xmodule.modulestore.django import modulestore
-from xmodule.tabs import CourseTabList
-
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseTab
-
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
+from xmodule.modulestore.django import modulestore
+from xmodule.tabs import CourseTabList
 
 User = get_user_model()
 
@@ -57,7 +55,7 @@ class ProgressCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -109,7 +107,7 @@ class DatesCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # pylint: disable=unused-argument,line-too-long  # noqa: UP006, UP045
         """
         Returns the allowed operations for the app.
         """
@@ -155,7 +153,7 @@ class TextbooksCourseApp(CourseApp):
         raise ValueError("The textbook app can not be enabled/disabled for a single course.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -207,7 +205,7 @@ class CalculatorCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for calculator app.
         """
@@ -254,7 +252,7 @@ class ProctoringCourseApp(CourseApp):
         raise ValueError("Proctoring cannot be enabled/disabled via this API.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for proctoring app.
         """
@@ -301,7 +299,7 @@ class CustomPagesCourseApp(CourseApp):
         raise ValueError("The custom pages app can not be enabled/disabled for a single course.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the allowed operations for the app.
         """
@@ -352,7 +350,7 @@ class ORASettingsApp(CourseApp):
         raise ValueError("Flexible Peer Grading cannot be enabled/disabled via this API.")
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Get allowed operations for open response app.
         """

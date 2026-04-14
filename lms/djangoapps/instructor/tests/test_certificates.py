@@ -16,17 +16,17 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
 from lms.djangoapps.certificates import api as certs_api
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -1341,7 +1341,7 @@ class CertificateInvalidationViewTests(SharedModuleStoreTestCase):
 
         # Verify that certificate invalidation successfully removed from database
 
-        with pytest.raises(ObjectDoesNotExist):
+        with pytest.raises(ObjectDoesNotExist):  # noqa: PT012
             certs_filter_args = {
                 "generated_certificate": self.generated_certificate,
                 "invalidated_by": self.global_staff,

@@ -15,12 +15,11 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.milestones_helpers import milestones_achieved_by_user, set_prerequisite_courses
 from lms.djangoapps.certificates.api import certificate_info_for_user, certificate_status_for_student
-from lms.djangoapps.certificates.models import (
-    CertificateStatuses,
-    GeneratedCertificate,
-)
+from lms.djangoapps.certificates.models import CertificateStatuses, GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -172,12 +171,12 @@ class CertificatesModelTest(ModuleStoreTestCase, MilestonesTestCaseMixin):
         )
 
         # User with no certs should return an empty set.
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             GeneratedCertificate.course_ids_with_certs_for_user(student_no_certs),
             set()
         )
         # User with certs should return a set with the two course_ids
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             GeneratedCertificate.course_ids_with_certs_for_user(student_with_certs),
             {course_1.id, course_2.id}
         )

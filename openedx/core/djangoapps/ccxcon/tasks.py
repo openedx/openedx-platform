@@ -7,7 +7,12 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
-from requests.exceptions import ConnectionError, HTTPError, RequestException, TooManyRedirects  # lint-amnesty, pylint: disable=redefined-builtin
+from requests.exceptions import (  # lint-amnesty, pylint: disable=redefined-builtin
+    ConnectionError,
+    HTTPError,
+    RequestException,
+    TooManyRedirects,
+)
 
 from openedx.core.djangoapps.ccxcon import api
 

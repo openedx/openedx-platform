@@ -6,7 +6,7 @@
 #
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.1
+anyio==4.13.0
     # via
     #   httpx
     #   mcp
@@ -32,7 +32,7 @@ certifi==2026.2.25
     #   requests
 cffi==2.0.0
     # via cryptography
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
 click==8.1.8
     # via
@@ -53,7 +53,7 @@ face==26.0.0
     # via glom
 glom==25.12.0
     # via semgrep
-googleapis-common-protos==1.73.0
+googleapis-common-protos==1.74.0
     # via opentelemetry-exporter-otlp-proto-http
 h11==0.16.0
     # via
@@ -140,7 +140,7 @@ pydantic-core==2.41.5
     # via pydantic
 pydantic-settings==2.13.1
     # via mcp
-pygments==2.19.2
+pygments==2.20.0
     # via rich
 pyjwt[crypto]==2.12.1
     # via
@@ -148,13 +148,13 @@ pyjwt[crypto]==2.12.1
     #   semgrep
 python-dotenv==1.2.2
     # via pydantic-settings
-python-multipart==0.0.22
+python-multipart==0.0.24
     # via mcp
 referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-requests==2.32.5
+requests==2.33.1
     # via
     #   opentelemetry-exporter-otlp-proto-http
     #   semgrep
@@ -170,9 +170,9 @@ ruamel-yaml-clib==0.2.14
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.156.0
+semgrep==1.157.0
     # via -r requirements/edx/semgrep.in
-sse-starlette==3.3.3
+sse-starlette==3.3.4
     # via mcp
 starlette==1.0.0
     # via
@@ -203,7 +203,7 @@ urllib3==2.6.3
     # via
     #   requests
     #   semgrep
-uvicorn==0.42.0
+uvicorn==0.44.0
     # via mcp
 wcmatch==8.5.2
     # via semgrep

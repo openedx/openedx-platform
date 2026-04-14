@@ -1,8 +1,10 @@
 """ Views related to auth. """
 
 import json
-from common.djangoapps.util.json_request import JsonResponse
+
 from django.conf import settings
+
+from common.djangoapps.util.json_request import JsonResponse
 
 
 def get_public_signing_jwks(request):

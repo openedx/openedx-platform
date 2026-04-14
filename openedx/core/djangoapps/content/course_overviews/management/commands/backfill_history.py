@@ -6,9 +6,9 @@ import csv
 import logging
 import os
 import time
+
 from django.core.management.base import BaseCommand
 from django.db import connection, transaction
-
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                     FROM information_schema.columns
                     WHERE table_name='{}'
                     ORDER BY ordinal_position
-                    """.format(table)
+                    """.format(table)  # noqa: UP032
                 cursor.execute(query)
                 columns = [column[0] for column in cursor.fetchall()]
             if exclude_column in columns:
@@ -114,7 +114,7 @@ class Command(BaseCommand):
                             FROM {historical_table}
                             WHERE ID in ({ids})
                             AND history_type='+'
-                            """.format(
+                            """.format(  # noqa: UP032
                                 historical_table=historical_table,
                                 ids=ids
                             )  # noqa

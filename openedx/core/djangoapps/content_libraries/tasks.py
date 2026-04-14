@@ -16,35 +16,37 @@ Architecture note:
 """
 from __future__ import annotations
 
-from io import StringIO
+import json
 import logging
 import os
-from datetime import datetime
-from tempfile import mkdtemp, NamedTemporaryFile
-import json
 import shutil
+from datetime import datetime
+from io import StringIO
+from tempfile import NamedTemporaryFile, mkdtemp
 
-from django.core.files.base import ContentFile
-from django.contrib.auth import get_user_model
-from django.core.serializers.json import DjangoJSONEncoder
-from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.files import File
+from django.core.files.base import ContentFile
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.text import slugify
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_code_owner_attribute_from_module,
-    set_custom_attribute
+    set_custom_attribute,
 )
-from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import (
     BlockUsageLocator,
     LibraryCollectionLocator,
     LibraryContainerLocator,
-    LibraryLocatorV2
+    LibraryLocatorV2,
 )
+from openedx_content import api as content_api
+from openedx_content.api import create_zip_file as create_lib_zip_file
+from openedx_content.models_api import DraftChangeLog, PublishLog
 from openedx_events.content_authoring.data import LibraryBlockData, LibraryCollectionData, LibraryContainerData
 from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_CREATED,
@@ -55,16 +57,14 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
-    LIBRARY_CONTAINER_UPDATED
+    LIBRARY_CONTAINER_UPDATED,
 )
-from openedx_content import api as content_api
-from openedx_content.api import create_zip_file as create_lib_zip_file
-from openedx_content.models_api import DraftChangeLog, PublishLog
 from path import Path
 from user_tasks.models import UserTaskArtifact
 from user_tasks.tasks import UserTask, UserTaskStatus
 from xblock.fields import Scope
 
+from cms.djangoapps.contentstore.storage import course_import_export_storage
 from openedx.core.lib import ensure_cms
 from xmodule.capa_block import ProblemBlock
 from xmodule.library_content_block import ANY_CAPA_TYPE_VALUE, LegacyLibraryContentBlock
@@ -73,10 +73,7 @@ from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.mixed import MixedModuleStore
 
-from cms.djangoapps.contentstore.storage import course_import_export_storage
-
 from . import api
-from .models import ContentLibraryBlockImportTask
 
 log = logging.getLogger(__name__)
 TASK_LOGGER = get_task_logger(__name__)
@@ -314,33 +311,6 @@ def wait_for_post_revert_events(draft_change_log: DraftChangeLog, library_key: L
         # the background by the celery worker until everything is updated.
 
 
-@shared_task(base=LoggedTask)
-@set_code_owner_attribute
-def import_blocks_from_course(import_task_id, course_key_str, use_course_key_as_block_id_suffix=True):
-    """
-    A Celery task to import blocks from a course through modulestore.
-    """
-    ensure_cms("import_blocks_from_course may only be executed in a CMS context")
-
-    course_key = CourseKey.from_string(course_key_str)
-
-    with ContentLibraryBlockImportTask.execute(import_task_id) as import_task:
-
-        def on_progress(block_key, block_num, block_count, exception=None):
-            if exception:
-                log.exception('Import block failed: %s', block_key)
-            else:
-                log.info('Import block succesful: %s', block_key)
-            import_task.save_progress(block_num / block_count)
-
-        edx_client = api.EdxModulestoreImportClient(
-            library=import_task.library,
-            use_course_key_as_block_id_suffix=use_course_key_as_block_id_suffix
-        )
-        edx_client.import_blocks_from_course(
-            course_key, on_progress
-        )
-
 
 def _filter_child(store, usage_key, capa_type):
     """
@@ -508,7 +478,7 @@ def _copy_overrides(
         if field.scope == Scope.settings and field.is_set_on(source_block):
             setattr(dest_block, field.name, field.read_from(source_block))
     if source_block.has_children:
-        for source_child_key, dest_child_key in zip(source_block.children, dest_block.children):
+        for source_child_key, dest_child_key in zip(source_block.children, dest_block.children):  # noqa: B905
             _copy_overrides(
                 store=store,
                 user_id=user_id,

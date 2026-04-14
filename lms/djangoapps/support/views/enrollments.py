@@ -24,23 +24,22 @@ from common.djangoapps.student.models import (
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,
     CourseEnrollmentAttribute,
-    ManualEnrollmentAudit
+    ManualEnrollmentAudit,
 )
 from common.djangoapps.util.json_request import JsonResponse
 from lms.djangoapps.support.decorators import require_support_permission
 from lms.djangoapps.support.serializers import ManualEnrollmentSerializer
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from openedx.core.djangoapps.credit.email_utils import get_credit_provider_attribute_values
-from openedx.core.djangoapps.enrollments.api import get_enrollments, get_enrollment_attributes, update_enrollment
+from openedx.core.djangoapps.enrollments.api import get_enrollment_attributes, get_enrollments, update_enrollment
 from openedx.core.djangoapps.enrollments.errors import CourseModeNotFoundError
 from openedx.core.djangoapps.enrollments.serializers import ModeSerializer
 from openedx.features.enterprise_support.api import (
     enterprise_enabled,
     get_data_sharing_consents,
-    get_enterprise_course_enrollments
+    get_enterprise_course_enrollments,
 )
 from openedx.features.enterprise_support.serializers import EnterpriseCourseEnrollmentSerializer
-
 
 logger = logging.getLogger(__name__)
 
@@ -152,7 +151,7 @@ class EnrollmentSupportListView(GenericAPIView):
             return HttpResponseBadRequest('Could not parse course key.')
         except User.DoesNotExist:
             return HttpResponseBadRequest(
-                'Could not find user {username}.'.format(
+                'Could not find user {username}.'.format(  # noqa: UP032
                     username=username_or_email
                 )
             )
@@ -208,7 +207,7 @@ class EnrollmentSupportListView(GenericAPIView):
             return HttpResponseBadRequest('Could not parse course key.')
         except (CourseEnrollment.DoesNotExist, User.DoesNotExist):
             return HttpResponseBadRequest(
-                'Could not find enrollment for user {username} in course {course}.'.format(
+                'Could not find enrollment for user {username} in course {course}.'.format(  # noqa: UP032
                     username=username_or_email,
                     course=str(course_key)
                 )

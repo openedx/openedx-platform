@@ -5,10 +5,7 @@ API Serializers for unit page
 from django.urls import reverse
 from rest_framework import serializers
 
-from cms.djangoapps.contentstore.helpers import (
-    xblock_studio_url,
-    xblock_type_display_name,
-)
+from cms.djangoapps.contentstore.helpers import xblock_studio_url, xblock_type_display_name
 from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 
 

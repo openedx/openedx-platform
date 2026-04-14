@@ -9,14 +9,16 @@ from common.djangoapps.student.roles import CourseBetaTesterRole, CourseCcxCoach
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.instructor.access import (
     allow_access,
-    list_with_level,
     is_beta_tester,
+    list_with_level,
     revoke_access,
-    update_forum_role
+    update_forum_role,
 )
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_MODERATOR, Role
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -91,12 +93,12 @@ class TestInstructorAccessAllow(EmailTemplateTagMixin, SharedModuleStoreTestCase
 
     def test_allow_badlevel(self):
         user = UserFactory()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             allow_access(self.course, user, 'robot-not-a-level')
 
     def test_allow_noneuser(self):
         user = None
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             allow_access(self.course, user, 'staff')
 
 
@@ -133,7 +135,7 @@ class TestInstructorAccessRevoke(SharedModuleStoreTestCase):
 
     def test_revoke_badrolename(self):
         user = UserFactory()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             revoke_access(self.course, user, 'robot-not-a-level')
 
 
@@ -197,5 +199,5 @@ class TestInstructorAccessForum(SharedModuleStoreTestCase):
 
     def test_bad_mode(self):
         user = UserFactory()
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             update_forum_role(self.course.id, user, FORUM_ROLE_MODERATOR, 'robot-not-a-mode')

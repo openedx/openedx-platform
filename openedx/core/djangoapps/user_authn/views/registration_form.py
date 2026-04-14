@@ -19,13 +19,13 @@ from django_countries import countries
 from eventtracking import tracker
 
 from common.djangoapps import third_party_auth
-from common.djangoapps.third_party_auth.models import SAMLProviderConfig
 from common.djangoapps.edxmako.shortcuts import marketing_link
 from common.djangoapps.student.models import CourseEnrollmentAllowed, UserProfile, email_exists_or_retired
+from common.djangoapps.third_party_auth.models import SAMLProviderConfig
 from common.djangoapps.util.password_policy_validators import (
     password_validators_instruction_texts,
     password_validators_restrictions,
-    validate_password
+    validate_password,
 )
 from openedx.core.djangoapps.embargo.models import GlobalRestrictedCountry
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -36,7 +36,6 @@ from openedx.core.djangoapps.user_authn.utils import is_registration_api_v1 as i
 from openedx.core.djangoapps.user_authn.views.utils import remove_disabled_country_from_list
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
-
 
 log = logging.getLogger(__name__)
 
@@ -536,7 +535,7 @@ class RegistrationFormFactory:
                             FormDescription.FIELD_TYPE_MAP.get(field.__class__))
                         if not field_type:
                             raise ImproperlyConfigured(
-                                "Field type '{}' not recognized for registration extension field '{}'.".format(
+                                "Field type '{}' not recognized for registration extension field '{}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
                                     field_type,
                                     field_name
                                 )

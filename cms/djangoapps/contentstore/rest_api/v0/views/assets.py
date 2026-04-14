@@ -2,20 +2,19 @@
 Public rest API endpoints for the CMS API Assets.
 """
 import logging
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, UpdateAPIView, DestroyAPIView
-from django.views.decorators.csrf import csrf_exempt
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
-from common.djangoapps.util.json_request import expect_json_in_class_view
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.generics import CreateAPIView, DestroyAPIView, RetrieveAPIView, UpdateAPIView
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
 from cms.djangoapps.contentstore.api import course_author_access_required
-
 from cms.djangoapps.contentstore.asset_storage_handlers import handle_assets
+from common.djangoapps.util.json_request import expect_json_in_class_view
+from openedx.core.lib.api.parsers import TypedFileUploadParser
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
 from ..serializers.assets import AssetSerializer
 from .utils import validate_request_with_serializer
-from rest_framework.parsers import (MultiPartParser, FormParser, JSONParser)
-from openedx.core.lib.api.parsers import TypedFileUploadParser
 
 log = logging.getLogger(__name__)
 

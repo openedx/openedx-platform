@@ -8,24 +8,24 @@ from opaque_keys.edx.locator import (
     LibraryUsageLocatorV2,
 )
 from openedx_events.content_authoring.signals import (
-    ContentLibraryData,
-    LibraryBlockData,
-    LibraryCollectionData,
-    LibraryContainerData,
     CONTENT_LIBRARY_CREATED,
     CONTENT_LIBRARY_DELETED,
     CONTENT_LIBRARY_UPDATED,
     LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
-    LIBRARY_BLOCK_UPDATED,
     LIBRARY_BLOCK_PUBLISHED,
+    LIBRARY_BLOCK_UPDATED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
     LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
-    LIBRARY_CONTAINER_UPDATED,
     LIBRARY_CONTAINER_PUBLISHED,
+    LIBRARY_CONTAINER_UPDATED,
+    ContentLibraryData,
+    LibraryBlockData,
+    LibraryCollectionData,
+    LibraryContainerData,
 )
 
 from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest

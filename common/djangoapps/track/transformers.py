@@ -9,7 +9,7 @@ apply them to the appropriate events.
 import json
 import logging
 
-import six  # lint-amnesty, pylint: disable=unused-import
+import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 

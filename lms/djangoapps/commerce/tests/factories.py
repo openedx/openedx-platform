@@ -10,7 +10,7 @@ class OrderFactory(factory.Factory):
     class Meta:
         model = dict
 
-    number = factory.Sequence(lambda n: 'edx-%d' % n)
+    number = factory.Sequence(lambda n: 'edx-%d' % n)  # noqa: UP031
     date_placed = '2016-01-01T10:00:00Z'
     status = 'Complete'
     currency = 'USD'

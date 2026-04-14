@@ -79,7 +79,7 @@ class Command(BaseCommand):
         application = Application.objects.create(
             user=user, name=app_name, **application_kwargs
         )
-        logger.info('Created {} application with id: {}, client_id: {}, and client_secret: {}'.format(
+        logger.info('Created {} application with id: {}, client_id: {}, and client_secret: {}'.format(  # noqa: UP032
             app_name,
             application.id,
             application.client_id,
@@ -94,7 +94,7 @@ class Command(BaseCommand):
         for key, value in application_kwargs.items():
             setattr(application, key, value)
         application.save()
-        logger.info('Updated {} application with id: {}, client_id: {}, and client_secret: {}'.format(
+        logger.info('Updated {} application with id: {}, client_id: {}, and client_secret: {}'.format(  # noqa: UP032
             application.name,
             application.id,
             application.client_id,
@@ -114,12 +114,12 @@ class Command(BaseCommand):
         if access and update:
             access.scopes = scopes
             access.save()
-            logger.info('Updated application access for {} with scopes: {}'.format(
+            logger.info('Updated application access for {} with scopes: {}'.format(  # noqa: UP032
                 application.name,
                 scopes,
             ))
         elif access:
-            logger.info('Application access for application {} already exists.'.format(
+            logger.info('Application access for application {} already exists.'.format(  # noqa: UP032
                 application.name,
             ))
         else:
@@ -127,7 +127,7 @@ class Command(BaseCommand):
                 application_id=application.id,
                 scopes=scopes,
             )
-            logger.info('Created application access for {} with scopes: {}'.format(
+            logger.info('Created application access for {} with scopes: {}'.format(  # noqa: UP032
                 application.name,
                 application_access.scopes,
             ))
@@ -160,7 +160,7 @@ class Command(BaseCommand):
         if application and update:
             self._update_application(application, application_kwargs)
         elif application:
-            logger.info('Application with name {} and user {} already exists.'.format(
+            logger.info('Application with name {} and user {} already exists.'.format(  # noqa: UP032
                 app_name,
                 username
             ))

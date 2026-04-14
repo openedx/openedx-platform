@@ -1,17 +1,17 @@
 """ Mixins for testing course-scoped AuthZ endpoints. """
 
+from unittest.mock import patch
+
 import casbin
 import pkg_resources
-
-from unittest.mock import patch
-from rest_framework.test import APIClient
 from openedx_authz.api.users import assign_role_to_user_in_scope
 from openedx_authz.constants.roles import COURSE_STAFF
 from openedx_authz.engine.enforcer import AuthzEnforcer
 from openedx_authz.engine.utils import migrate_policy_between_enforcers
+from rest_framework.test import APIClient
 
-from openedx.core import toggles as core_toggles
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core import toggles as core_toggles
 
 
 class CourseAuthoringAuthzTestMixin:
@@ -54,6 +54,14 @@ class CourseAuthoringAuthzTestMixin:
 
         self.unauthorized_client = APIClient()
         self.unauthorized_client.force_authenticate(user=self.unauthorized_user)
+
+        self.super_user = UserFactory(is_superuser=True, password=self.password)
+        self.super_client = APIClient()
+        self.super_client.force_authenticate(user=self.super_user)
+
+        self.staff_user = UserFactory(is_staff=True, password=self.password)
+        self.staff_client = APIClient()
+        self.staff_client.force_authenticate(user=self.staff_user)
 
     def tearDown(self):
         super().tearDown()

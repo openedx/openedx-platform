@@ -7,8 +7,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from opaque_keys.edx.keys import CourseKey
+
 from xmodule.modulestore.tests.django_utils import ModuleStoreIsolationMixin
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class ProviderState(ModuleStoreIsolationMixin):
@@ -64,7 +65,7 @@ def provider_state(request):
     state = request_body.get('state')
 
     if state in state_setup_mapping:
-        print('Setting up provider state for state value: {}'.format(state))
+        print('Setting up provider state for state value: {}'.format(state))  # noqa: UP032
         state_setup_mapping[state](request)
 
     return JsonResponse({'result': state})

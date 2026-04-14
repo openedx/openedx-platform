@@ -6,6 +6,7 @@ Module for the Storage of BlockStructure objects.
 
 from logging import getLogger
 
+from edx_django_utils import monitoring
 
 from openedx.core.lib.cache_utils import zpickle, zunpickle
 
@@ -15,8 +16,6 @@ from .exceptions import BlockStructureNotFound
 from .factory import BlockStructureFactory
 from .models import BlockStructureModel
 from .transformer_registry import TransformerRegistry
-
-from edx_django_utils import monitoring
 
 logger = getLogger(__name__)  # pylint: disable=C0103
 
@@ -194,7 +193,7 @@ class BlockStructureStore:
             # Somehow failed to de-serialized the data, assume it's corrupt.
             bs_model = self._get_model(root_block_usage_key)
             logger.exception("BlockStructure: Failed to load data from cache for %s", bs_model)
-            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return BlockStructureFactory.create_new(
             root_block_usage_key,

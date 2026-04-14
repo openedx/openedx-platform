@@ -3,9 +3,9 @@
 Tests for js_utils.py
 """
 
+import html
 import json
 import re
-import html
 from unittest import TestCase
 
 from mako.template import Template
@@ -72,7 +72,7 @@ class TestJSUtils(TestCase):
         """
         malicious_js_string = "</script><script>alert('hello, ');</script>"
 
-        expected_escaped_string_for_js = str(
+        expected_escaped_string_for_js = str(  # noqa: UP018
             r"\u003C/script\u003E\u003Cscript\u003Ealert(\u0027hello, \u0027)\u003B\u003C/script\u003E"
         )
         escaped_string_for_js = js_escaped_string(malicious_js_string)

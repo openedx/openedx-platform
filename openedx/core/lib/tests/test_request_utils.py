@@ -16,8 +16,8 @@ from openedx.core.lib.request_utils import (
     _get_ignored_error_settings_dict,
     clear_cached_ignored_error_settings,
     course_id_from_url,
-    ignored_error_exception_handler,
     get_request_or_stub,
+    ignored_error_exception_handler,
     safe_get_host,
 )
 

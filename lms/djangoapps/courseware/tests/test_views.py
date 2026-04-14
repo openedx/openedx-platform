@@ -2,11 +2,11 @@
 Tests courseware views.py
 """
 
-from contextlib import contextmanager
 import html
 import itertools
 import json
 import re
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, PropertyMock, create_autospec, patch
 from urllib.parse import quote, urlencode
@@ -14,20 +14,21 @@ from uuid import uuid4
 
 import ddt
 from completion.test_utils import CompletionWaffleTestMixin
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from crum import set_current_request
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.http.request import QueryDict
-from django.test import override_settings, RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse, reverse_lazy
 from edx_django_utils.cache.utils import RequestCache
 from edx_toggles.toggles.testutils import override_waffle_flag, override_waffle_switch
+from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
 from freezegun import freeze_time
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from pytz import UTC
-from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
 from rest_framework import status
 from rest_framework.test import APIClient
 from web_fragments.fragment import Fragment
@@ -35,11 +36,6 @@ from xblock.core import XBlock
 from xblock.fields import Scope, String
 from xblock.scorable import ShowCorrectness
 from xblocks_contrib.problem.capa.tests.response_xml_factory import MultipleChoiceResponseXMLFactory
-from xmodule.data import CertificatesDisplayBehaviors
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import CourseUserType, ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
 
 import lms.djangoapps.courseware.views.views as views
 from common.djangoapps.course_modes.models import CourseMode
@@ -51,7 +47,7 @@ from common.djangoapps.student.tests.factories import (
     CourseEnrollmentFactory,
     GlobalStaffFactory,
     RequestFactoryNoCsrf,
-    UserFactory
+    UserFactory,
 )
 from common.djangoapps.util.tests.test_date_utils import fake_pgettext, fake_ugettext
 from common.djangoapps.util.url import reload_django_url_config
@@ -61,25 +57,24 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.tests.factories import (
     CertificateAllowlistFactory,
     CertificateInvalidationFactory,
-    GeneratedCertificateFactory
+    GeneratedCertificateFactory,
 )
 from lms.djangoapps.commerce.models import CommerceConfiguration
 from lms.djangoapps.commerce.utils import EcommerceService
 from lms.djangoapps.courseware.access_utils import check_course_open_for_learner
-from lms.djangoapps.courseware.model_data import FieldDataCache, set_score
 from lms.djangoapps.courseware.block_render import get_block, handle_xblock_callback
+from lms.djangoapps.courseware.model_data import FieldDataCache, set_score
 from lms.djangoapps.courseware.tests.helpers import MasqueradeMixin, get_expiration_banner_text
 from lms.djangoapps.courseware.testutils import RenderXBlockTestMixin
 from lms.djangoapps.courseware.toggles import (
     COURSEWARE_MICROFRONTEND_SEARCH_ENABLED,
     COURSEWARE_OPTIMIZED_RENDER_XBLOCK,
 )
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
 from lms.djangoapps.courseware.views.views import (
     BasePublicVideoXBlockView,
-    PublicVideoXBlockView,
     PublicVideoXBlockEmbedView,
+    PublicVideoXBlockView,
 )
 from lms.djangoapps.instructor.access import allow_access
 from lms.djangoapps.verify_student.services import IDVerificationService
@@ -88,25 +83,27 @@ from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory, Pr
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.credit.api import set_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse, CreditProvider
+from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
+from openedx.core.djangoapps.waffle_utils.models import WaffleFlagCourseOverrideModel
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.djangolib.testing.utils import AUTHZ_TABLES, get_mock_request
-from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
 from openedx.core.lib.url_utils import quote_slashes
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience.tests.views.helpers import add_course_mode
-from openedx.features.course_experience.url_helpers import (
-    get_learning_mfe_home_url,
-    make_learning_mfe_courseware_url
-)
+from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url, make_learning_mfe_courseware_url
+from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
 from openedx.features.enterprise_support.tests.factories import (
     EnterpriseCourseEnrollmentFactory,
+    EnterpriseCustomerFactory,
     EnterpriseCustomerUserFactory,
-    EnterpriseCustomerFactory
 )
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
-from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
-from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
+from xmodule.data import CertificatesDisplayBehaviors
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import CourseUserType, ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
@@ -447,7 +444,7 @@ class ViewsTestCase(BaseViewsTestCase):
         # Construct the link according the following scenarios and verify its presence in the response:
         #      (1) shopping cart is enabled and the user is not logged in
         #      (2) shopping cart is enabled and the user is logged in
-        href = '<a href="{uri_stem}?sku={sku}" class="add-to-cart">'.format(
+        href = '<a href="{uri_stem}?sku={sku}" class="add-to-cart">'.format(  # noqa: UP032
             uri_stem=configuration.basket_checkout_page,
             sku=sku,
         )
@@ -752,12 +749,12 @@ class ViewsTestCase(BaseViewsTestCase):
         assert additional_info['Certify abide by the honor code'] == 'No'
 
         assert ticket_subject == f'Financial assistance request for learner {username} in course {self.course.display_name}'  # pylint: disable=line-too-long
-        self.assertEqual([{'id': 'custom_123', 'value': course}], custom_fields)
+        self.assertEqual([{'id': 'custom_123', 'value': course}], custom_fields)  # noqa: PT009
         assert 'Client IP' in additional_info
         assert group_name == 'Financial Assistance'
 
     @patch.object(views, 'create_zendesk_ticket', return_value=500)
-    def test_zendesk_submission_failed(self, _mock_create_zendesk_ticket):
+    def test_zendesk_submission_failed(self, _mock_create_zendesk_ticket):  # noqa: PT019
         response = self._submit_financial_assistance_form({
             'username': self.user.username,
             'course': str(self.course.id),
@@ -1504,7 +1501,7 @@ class ProgressPageTests(ProgressPageBaseTests):
 
             response = self._get_progress_page()
 
-            expected_message = ('You are enrolled in the {mode} track for this course. '
+            expected_message = ('You are enrolled in the {mode} track for this course. '  # noqa: UP032
                                 'The {mode} track does not include a certificate.').format(mode=course_mode)
             self.assertContains(response, expected_message)
 
@@ -1988,7 +1985,7 @@ class VerifyCourseKeyDecoratorTests(TestCase):
     def test_decorator_with_invalid_course_id(self):
         mocked_view = create_autospec(views.course_about)
         view_function = ensure_valid_course_key(mocked_view)
-        self.assertRaises(Http404, view_function, self.request, course_id=self.invalid_course_id)
+        self.assertRaises(Http404, view_function, self.request, course_id=self.invalid_course_id)  # noqa: PT027
         assert not mocked_view.called
 
 
@@ -2091,7 +2088,7 @@ class GenerateUserCertTests(ModuleStoreTestCase):
         resp = self.client.post(self.url)
         self.assertContains(
             resp,
-            "You must be signed in to {platform_name} to create a certificate.".format(
+            "You must be signed in to {platform_name} to create a certificate.".format(  # noqa: UP032
                 platform_name=settings.PLATFORM_NAME
             ),
             status_code=HttpResponseBadRequest.status_code,
@@ -2505,7 +2502,7 @@ class TestRenderXBlock(RenderXBlockTestMixin, ModuleStoreTestCase, CompletionWaf
     @patch.dict('django.conf.settings.FEATURES', {'ENABLE_PROCTORED_EXAMS': True})
     @patch('lms.djangoapps.courseware.views.views.unpack_jwt')
     def test_render_descendant_of_exam_gated_by_access_token(self, exam_access_token,
-                                                             expected_response, _mock_unpack_jwt):
+                                                             expected_response, _mock_unpack_jwt):  # noqa: PT019
         """
         Verify blocks inside an exam that requires token access are gated by
         a valid exam access JWT issued for that exam sequence.
@@ -2651,8 +2648,8 @@ class TestRenderPublicVideoXBlock(TestBasePublicVideoXBlock):
         response = self.get_response(usage_key=target_video.location, is_embed=False)
         embed_response = self.get_response(usage_key=target_video.location, is_embed=True)
 
-        self.assertEqual(expected_status_code, response.status_code)
-        self.assertEqual(expected_status_code, embed_response.status_code)
+        self.assertEqual(expected_status_code, response.status_code)  # noqa: PT009
+        self.assertEqual(expected_status_code, embed_response.status_code)  # noqa: PT009
 
 
 class TestRenderXBlockSelfPaced(TestRenderXBlock):  # lint-amnesty, pylint: disable=test-inherits-tests
@@ -2756,7 +2753,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         request.user = staff_user
         request.session = {}
         if setup_enterprise_enrollment:
-            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)
+            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841  # pylint: disable=line-too-long
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(
@@ -3006,7 +3003,7 @@ class TestBasePublicVideoXBlockView(TestBasePublicVideoXBlock):
             assert course.id == self.course.id
             assert video_block.location == target_video.location
         else:
-            with self.assertRaisesRegex(Http404, "Video not found"):
+            with self.assertRaisesRegex(Http404, "Video not found"):  # noqa: PT027
                 course, video_block = self.base_block.get_course_and_video_block(str(target_video.location))
 
 
@@ -3233,8 +3230,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': expected_enabled})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
     @patch.dict('django.conf.settings.FEATURES', {'ENABLE_COURSEWARE_SEARCH_VERIFIED_ENROLLMENT_REQUIRED': True})
     def test_courseware_mfe_search_staff_access(self):
@@ -3247,8 +3244,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': True})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': True})  # noqa: PT009
 
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
     def test_is_mfe_search_waffle_disabled(self):
@@ -3261,8 +3258,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': False})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': False})  # noqa: PT009
 
     @patch.dict('django.conf.settings.FEATURES', {'COURSEWARE_SEARCH_INCLUSION_DATE': '2020'})
     @override_waffle_flag(COURSEWARE_MICROFRONTEND_SEARCH_ENABLED, active=False)
@@ -3282,8 +3279,8 @@ class TestCoursewareMFESearchAPI(SharedModuleStoreTestCase):
         response = self.client.get(api_url, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(body, {'enabled': expected_enabled})
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(body, {'enabled': expected_enabled})  # noqa: PT009
 
 
 class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
@@ -3307,8 +3304,8 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             body,
             {
                 "enable_completion_tracking": False,
@@ -3323,8 +3320,8 @@ class TestCoursewareMFENavigationSidebarTogglesAPI(SharedModuleStoreTestCase):
         response = self.client.get(self.apiUrl, content_type='application/json')
         body = json.loads(response.content.decode('utf-8'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(  # noqa: PT009
             body,
             {
                 "enable_completion_tracking": True,
@@ -3359,6 +3356,6 @@ class CourseAboutViewTests(ModuleStoreTestCase):
             response = self.client.get(reverse('about_course', args=[str(self.course.id)]))
             if expected_redirect:
                 assert response.status_code == 301
-                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)
+                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032  # pylint: disable=line-too-long
             else:
                 assert response.status_code == 200

@@ -39,7 +39,7 @@ def _set_experience(db_name, human_name, modeladmin, request, queryset):  # lint
     )
     modeladmin.message_user(
         request,
-        "{} schedule(s) were changed to use the {} experience".format(
+        "{} schedule(s) were changed to use the {} experience".format(  # noqa: UP032
             rows_updated,
             human_name,
         )

@@ -38,4 +38,4 @@ class TestCourseInfoUtils(MobileAPITestCase):
         certificate_info = get_user_certificate_download_url(
             request, self.user, 'course-v1:Test+T101+2021_T1'
         )
-        self.assertEqual(certificate_info, expected_output)
+        self.assertEqual(certificate_info, expected_output)  # noqa: PT009

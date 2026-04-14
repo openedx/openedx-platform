@@ -20,7 +20,7 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.api.permissions import (
     JwtHasScope,
     JwtHasTpaProviderFilterForRequestedProvider,
-    JwtRestrictedApplication
+    JwtRestrictedApplication,
 )
 from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin
 from openedx.core.djangolib.testing.utils import skip_unless_lms
@@ -138,7 +138,7 @@ class UserViewsMixin:
         assert response.status_code == expect_result
         if expect_result == 200:
             assert 'active' in response.data
-            self.assertCountEqual(response.data["active"], self.expected_active(target_user))
+            self.assertCountEqual(response.data["active"], self.expected_active(target_user))  # noqa: PT009
 
     @ddt.data(
         # A server with a valid API key can query any user's list of providers
@@ -154,7 +154,7 @@ class UserViewsMixin:
         assert response.status_code == expect_result
         if expect_result == 200:
             assert 'active' in response.data
-            self.assertCountEqual(response.data["active"], self.expected_active(target_user))
+            self.assertCountEqual(response.data["active"], self.expected_active(target_user))  # noqa: PT009
 
     @ddt.data(
         (True, ALICE_USERNAME, 200, True),
@@ -418,7 +418,7 @@ class UserMappingViewAPITests(TpaAPITestCase):
         if expect_code == 200:
             for item in ['results', 'count', 'num_pages']:
                 assert item in response.data
-            self.assertCountEqual(response.data['results'], expect_result)
+            self.assertCountEqual(response.data['results'], expect_result)  # noqa: PT009
 
 
 @skip_unless_lms

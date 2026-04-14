@@ -8,7 +8,6 @@ from config_models.models import ConfigurationModel
 from django.contrib import admin
 from django.core.cache import cache
 from django.db import models
-
 from opaque_keys.edx.django.models import CourseKeyField
 
 from openedx.core.djangolib.markup import HTML
@@ -20,7 +19,7 @@ class GlobalStatusMessage(ConfigurationModel):
 
     .. no_pii:
     """
-    message = models.TextField(
+    message = models.TextField(  # noqa: DJ001
         blank=True,
         null=True,
         help_text='<p>The contents of this field will be displayed as HTML in a warning banner on all views.</p>'
@@ -65,7 +64,7 @@ class CourseMessage(models.Model):
     """
     global_message = models.ForeignKey(GlobalStatusMessage, on_delete=models.CASCADE)
     course_key = CourseKeyField(blank=True, db_index=True)
-    message = models.TextField(blank=True, null=True)
+    message = models.TextField(blank=True, null=True)  # noqa: DJ001
 
     def __str__(self):
         return str(self.course_key)

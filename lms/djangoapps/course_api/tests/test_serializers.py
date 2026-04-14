@@ -10,13 +10,13 @@ from opaque_keys.edx.locator import CourseLocator
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 from xblock.core import XBlock
-from xmodule.course_block import DEFAULT_START_DATE
-from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import check_mongo_calls
 
 from lms.djangoapps.certificates.api import can_show_certificate_available_date_field
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.models.course_details import CourseDetails
+from xmodule.course_block import DEFAULT_START_DATE
+from xmodule.modulestore.tests.django_utils import TEST_DATA_ONLY_SPLIT_MODULESTORE_DRAFT_PREFERRED, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import check_mongo_calls
 
 from ..serializers import CourseDetailSerializer, CourseKeySerializer, CourseSerializer
 from .mixins import CourseApiFactoryMixin
@@ -103,7 +103,7 @@ class TestCourseSerializer(CourseApiFactoryMixin, ModuleStoreTestCase):
         CourseDetails.update_about_video(course, 'test_youtube_id', self.staff_user.id)
         with check_mongo_calls(self.expected_mongo_calls):
             result = self._get_result(course)
-        self.assertDictEqual(result, self.expected_data)
+        self.assertDictEqual(result, self.expected_data)  # noqa: PT009
 
     def test_hidden(self):
         course = self.create_course(
@@ -186,7 +186,7 @@ class TestCourseDetailSerializer(TestCourseSerializer):  # lint-amnesty, pylint:
                 if isinstance(result['certificate_available_date'], datetime)
                 else None
             )
-        self.assertDictEqual(result, self.expected_data)
+        self.assertDictEqual(result, self.expected_data)  # noqa: PT009
 
     @mock.patch('lms.djangoapps.course_api.serializers.CourseEnrollment.is_enrolled', return_value=True)
     def test_is_enrolled_field_true(self, mock_is_enrolled):
@@ -205,7 +205,7 @@ class TestCourseDetailSerializer(TestCourseSerializer):  # lint-amnesty, pylint:
     def test_is_enrolled_field_anonymous_user(self):
         course = self.create_course()
         result = self._get_anonymous_result(course)
-        self.assertNotIn('is_enrolled', result)
+        self.assertNotIn('is_enrolled', result)  # noqa: PT009
 
     def _get_anonymous_request(self):
         return Request(self.request_factory.get('/'))

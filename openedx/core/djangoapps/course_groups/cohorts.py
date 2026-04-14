@@ -18,10 +18,10 @@ from django.utils.translation import gettext as _
 from edx_django_utils.cache import RequestCache
 from eventtracking import tracker
 
+from common.djangoapps.student.models import get_user_by_username_or_email
 from lms.djangoapps.courseware import courses
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
-from common.djangoapps.student.models import get_user_by_username_or_email
 
 from .models import (
     CohortMembership,
@@ -29,7 +29,7 @@ from .models import (
     CourseCohortsSettings,
     CourseUserGroup,
     CourseUserGroupPartitionGroup,
-    UnregisteredLearnerCohortAssignments
+    UnregisteredLearnerCohortAssignments,
 )
 from .signals.signals import COHORT_MEMBERSHIP_UPDATED
 
@@ -397,7 +397,7 @@ def add_cohort(course_key, name, assignment_type):
     try:
         course = get_course_by_id(course_key)
     except Http404:
-        raise ValueError("Invalid course_key")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError("Invalid course_key")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     cohort = CourseCohort.create(
         cohort_name=name,
@@ -439,7 +439,7 @@ def remove_user_from_cohort(cohort, username_or_email):
         membership.delete()
         COHORT_MEMBERSHIP_UPDATED.send(sender=None, user=user, course_key=course_key)
     except CohortMembership.DoesNotExist:
-        raise ValueError(f"User {username_or_email} was not present in cohort {cohort}")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(f"User {username_or_email} was not present in cohort {cohort}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def add_user_to_cohort(cohort, username_or_email_or_user):
@@ -514,7 +514,7 @@ def add_user_to_cohort(cohort, username_or_email_or_user):
             if "@" in username_or_email_or_user:  # lint-amnesty, pylint: disable=no-else-raise
                 raise invalid
             else:
-                raise ex  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ex  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def get_group_info_for_cohort(cohort, use_cached=False):

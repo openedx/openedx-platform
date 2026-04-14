@@ -12,7 +12,7 @@ from django.db.utils import DatabaseError
 from edx_django_utils.monitoring import (
     set_code_owner_attribute,
     set_custom_attribute,
-    set_custom_attributes_for_course_key
+    set_custom_attributes_for_course_key,
 )
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import CourseLocator
@@ -26,8 +26,9 @@ from lms.djangoapps.courseware.model_data import get_score
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyNotInBlockStructure
-from openedx.core.djangoapps.content.course_overviews.models import \
-    CourseOverview  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+    CourseOverview,  # noqa: F401
+)
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE
@@ -108,7 +109,7 @@ def compute_grades_for_course_v2(self, **kwargs):
     try:
         return compute_grades_for_course(kwargs['course_key'], kwargs['offset'], kwargs['batch_size'])
     except Exception as exc:
-        raise self.retry(kwargs=kwargs, exc=exc)
+        raise self.retry(kwargs=kwargs, exc=exc)  # noqa: B904
 
 
 @shared_task(base=LoggedPersistOnFailureTask)
@@ -251,12 +252,12 @@ def _recalculate_subsection_grade(self, **kwargs):
         )
     except Exception as exc:
         if not isinstance(exc, KNOWN_RETRY_ERRORS):
-            log.info("tnl-6244 grades unexpected failure: {}. task id: {}. kwargs={}".format(
+            log.info("tnl-6244 grades unexpected failure: {}. task id: {}. kwargs={}".format(  # noqa: UP032
                 repr(exc),
                 self.request.id,
                 kwargs,
             ))
-        raise self.retry(kwargs=kwargs, exc=exc)
+        raise self.retry(kwargs=kwargs, exc=exc)  # noqa: B904
 
 
 def _has_db_updated_with_new_score(self, scored_block_usage_key, **kwargs):
@@ -296,7 +297,7 @@ def _has_db_updated_with_new_score(self, scored_block_usage_key, **kwargs):
 
     if not db_is_updated:
         log.info(
-            "Grades: tasks._has_database_updated_with_new_score is False. Task ID: {}. Kwargs: {}. Found "
+            "Grades: tasks._has_database_updated_with_new_score is False. Task ID: {}. Kwargs: {}. Found "  # noqa: UP032  # pylint: disable=line-too-long
             "modified time: {}".format(
                 self.request.id,
                 kwargs,
@@ -332,7 +333,7 @@ def _update_subsection_grades(
         if not subsections_to_update:
             clear_course_from_cache(course_usage_key.course_key)
             raise UsageKeyNotInBlockStructure(
-                "Scored block usage_key '{0}' is not found in the block_structure with root '{1}'".format(
+                "Scored block usage_key '{0}' is not found in the block_structure with root '{1}'".format(  # noqa: UP030, UP032  # pylint: disable=line-too-long
                     str(scored_block_usage_key),
                     str(course_usage_key)
                 )

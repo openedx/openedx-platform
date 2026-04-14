@@ -1,7 +1,7 @@
 """ Contenstore API v0 URLs. """
 
 from django.conf import settings
-from django.urls import re_path, path
+from django.urls import path, re_path
 
 from openedx.core.constants import COURSE_ID_PATTERN
 
@@ -19,10 +19,10 @@ from .views import (
     TranscriptView,
     YoutubeTranscriptCheckView,
     YoutubeTranscriptUploadView,
+    assets,
+    authoring_videos,
+    xblock,
 )
-from .views import assets
-from .views import authoring_videos
-from .views import xblock
 
 app_name = "v0"
 

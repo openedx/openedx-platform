@@ -14,16 +14,17 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from pyquery import PyQuery as pq
 from pytz import UTC
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, check_mongo_calls
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import AdminFactory, CourseAccessRoleFactory, CourseEnrollmentFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.student.tests.factories import (
+    AdminFactory,
+    CourseAccessRoleFactory,
+    CourseEnrollmentFactory,
+    StaffFactory,
+    UserFactory,
+)
 from common.test.utils import XssTestMixin
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.courseware.masquerade import CourseMasquerade
@@ -36,9 +37,12 @@ from lms.djangoapps.instructor.views.gradebook_api import calculate_page_info
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle import (
     ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND,
-    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG
+    OVERRIDE_DISCUSSION_LEGACY_SETTINGS_FLAG,
 )
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, check_mongo_calls
 
 
 def intercept_renderer(path, context):
@@ -96,7 +100,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         Returns expected dashboard enrollment message with link to Insights.
         """
         return 'Enrollment data is now available in <a href="http://example.com/courses/{}" ' \
-               'rel="noopener" target="_blank">Example</a>.'.format(str(self.course.id))
+               'rel="noopener" target="_blank">Example</a>.'.format(str(self.course.id))  # noqa: UP032
 
     def get_dashboard_analytics_message(self):
         """
@@ -104,7 +108,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         """
         return 'For analytics about your course, go to <a href="http://example.com/courses/{}" ' \
                'rel="noopener" target="_blank">Example<span class="sr-only">Opens in a new tab</span>' \
-               '</a>.'.format(str(self.course.id))
+               '</a>.'.format(str(self.course.id))  # noqa: UP032
 
     def test_instructor_tab(self):
         """
@@ -178,7 +182,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
                 set_course_cohorted(self.course.id, True)
                 self.client.login(username=self.user.username, password=self.TEST_PASSWORD)
                 response = self.client.get(self.url).content.decode('utf-8')
-                self.assertEqual(discussion_section in response, is_discussion_tab_available)
+                self.assertEqual(discussion_section in response, is_discussion_tab_available)  # noqa: PT009
 
     @ddt.data(
         (False, False, True),
@@ -201,7 +205,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
                 set_course_cohorted(self.course.id, True)
                 self.client.login(username=user.username, password=self.TEST_PASSWORD)
                 response = self.client.get(self.url).content.decode('utf-8')
-                self.assertEqual(discussion_section in response, is_discussion_tab_available)
+                self.assertEqual(discussion_section in response, is_discussion_tab_available)  # noqa: PT009
 
     @ddt.data(
         ('staff', False, False),
@@ -537,7 +541,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
     @patch('lms.djangoapps.instructor.views.gradebook_api.MAX_STUDENTS_PER_PAGE_GRADE_BOOK', 1)
     def test_spoc_gradebook_pages(self):
         for i in range(2):
-            username = "user_%d" % i
+            username = "user_%d" % i  # noqa: UP031
             student = UserFactory.create(username=username)
             CourseEnrollmentFactory.create(user=student, course_id=self.course.id)
         url = reverse(
@@ -642,7 +646,7 @@ class TestInstructorDashboardPerformance(ModuleStoreTestCase, LoginEnrollmentTes
 
         students = []
         for i in range(20):
-            username = "user_%d" % i
+            username = "user_%d" % i  # noqa: UP031
             student = UserFactory.create(username=username)
             CourseEnrollmentFactory.create(user=student, course_id=self.course.id)
             students.append(student)
@@ -673,7 +677,7 @@ class TestInstructorDashboardPerformance(ModuleStoreTestCase, LoginEnrollmentTes
             problem = BlockFactory.create(
                 category="problem",
                 parent=vertical,
-                display_name="A Problem Block %d" % i,
+                display_name="A Problem Block %d" % i,  # noqa: UP031
                 weight=1,
                 publish_item=False,
                 metadata={'rerandomize': 'always'},

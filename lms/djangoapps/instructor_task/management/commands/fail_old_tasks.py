@@ -96,7 +96,7 @@ class Command(BaseCommand):
 
         for task in tasks:
             print(
-                "{task_state} task '{task_id}', of type '{task_type}', created on '{created}', will be marked as 'FAILURE'".format(  # lint-amnesty, pylint: disable=line-too-long
+                "{task_state} task '{task_id}', of type '{task_type}', created on '{created}', will be marked as 'FAILURE'".format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
                     task_state=task.task_state,
                     task_id=task.task_id,
                     task_type=task.task_type,
@@ -108,12 +108,12 @@ class Command(BaseCommand):
             tasks_updated = tasks.update(
                 task_state=FAILURE,
             )
-            print("{tasks_updated} records updated.".format(
+            print("{tasks_updated} records updated.".format(  # noqa: UP032
                 tasks_updated=tasks_updated
             ))
         else:
             print(
-                "This was a dry run, so no records were updated. "
+                "This was a dry run, so no records were updated. "  # noqa: UP032
                 "If this command were run for real, {number} records would have been updated.".format(
                     number=tasks.count()
                 )

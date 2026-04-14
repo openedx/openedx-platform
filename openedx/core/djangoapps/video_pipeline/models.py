@@ -5,7 +5,6 @@ Model to hold edx-video-pipeline configurations.
 from config_models.models import ConfigurationModel
 from django.contrib.auth import get_user_model
 from django.db import models
-
 from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.django.models import CourseKeyField
 
@@ -96,7 +95,7 @@ class VideoUploadsEnabledByDefault(ConfigurationModel):
 
     def __str__(self):
         current_model = VideoUploadsEnabledByDefault.current()
-        return "VideoUploadsEnabledByDefault: enabled {is_enabled}".format(
+        return "VideoUploadsEnabledByDefault: enabled {is_enabled}".format(  # noqa: UP032
             is_enabled=current_model.is_enabled()
         )
 
@@ -125,7 +124,7 @@ class CourseVideoUploadsEnabledByDefault(ConfigurationModel):
         if self.enabled:
             not_en = ""
 
-        return "Course '{course_key}': Video Uploads {not_enabled}Enabled by default.".format(
+        return "Course '{course_key}': Video Uploads {not_enabled}Enabled by default.".format(  # noqa: UP032
             course_key=str(self.course_id),
             not_enabled=not_en
         )

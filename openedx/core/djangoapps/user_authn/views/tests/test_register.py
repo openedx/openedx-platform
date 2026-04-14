@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from unittest import mock, skipIf, skipUnless
 from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
@@ -15,8 +16,7 @@ from django.test import TransactionTestCase
 from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
-from zoneinfo import ZoneInfo
+from openedx_events.testing import OpenEdxEventsTestMixin
 from social_django.models import Partial, UserSocialAuth
 from testfixtures import LogCapture
 
@@ -26,13 +26,13 @@ from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTest
 from common.djangoapps.third_party_auth.tests.utils import (
     ThirdPartyOAuthTestMixin,
     ThirdPartyOAuthTestMixinFacebook,
-    ThirdPartyOAuthTestMixinGoogle
+    ThirdPartyOAuthTestMixinGoogle,
 )
 from common.djangoapps.util.password_policy_validators import (
     DEFAULT_MAX_PASSWORD_LENGTH,
     create_validator_config,
     password_validators_instruction_texts,
-    password_validators_restrictions
+    password_validators_restrictions,
 )
 from openedx.core.djangoapps.embargo.models import Country, GlobalRestrictedCountry
 from openedx.core.djangoapps.site_configuration.helpers import get_value
@@ -52,14 +52,14 @@ from openedx.core.djangoapps.user_api.accounts import (
     USERNAME_INVALID_CHARS_ASCII,
     USERNAME_INVALID_CHARS_UNICODE,
     USERNAME_MAX_LENGTH,
-    USERNAME_MIN_LENGTH
+    USERNAME_MIN_LENGTH,
 )
 from openedx.core.djangoapps.user_api.accounts.api import get_account_settings
 from openedx.core.djangoapps.user_api.accounts.tests import testutils
 from openedx.core.djangoapps.user_api.accounts.tests.retirement_helpers import (  # pylint: disable=unused-import
     RetirementTestCase,
     fake_requested_retirement,
-    setup_retirement_states
+    setup_retirement_states,  # noqa: F401
 )
 from openedx.core.djangoapps.user_api.tests.test_constants import SORTED_COUNTRIES
 from openedx.core.djangoapps.user_api.tests.test_helpers import TestCaseForm
@@ -74,7 +74,7 @@ ENABLE_AUTO_GENERATED_USERNAME['ENABLE_AUTO_GENERATED_USERNAME'] = True
 @ddt.ddt
 @skip_unless_lms
 class RegistrationViewValidationErrorTest(
-    ThirdPartyAuthTestMixin, UserAPITestCase, RetirementTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyAuthTestMixin, UserAPITestCase, RetirementTestCase
 ):
     """
     Tests for catching duplicate email and username validation errors within
@@ -95,17 +95,6 @@ class RegistrationViewValidationErrorTest(
     CITY = "Springfield"
     COUNTRY = "US"
     GOALS = "Learn all the things!"
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -156,7 +145,7 @@ class RegistrationViewValidationErrorTest(
         assert response.status_code == 409
 
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "email": [{
@@ -198,7 +187,7 @@ class RegistrationViewValidationErrorTest(
         response_json = json.loads(response.content.decode('utf-8'))
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -231,7 +220,7 @@ class RegistrationViewValidationErrorTest(
         assert response.status_code == 409
 
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "email": [{
@@ -268,7 +257,7 @@ class RegistrationViewValidationErrorTest(
         assert response.status_code == 409
 
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "email": [{
@@ -291,7 +280,7 @@ class RegistrationViewValidationErrorTest(
         })
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "name": [{"user_message": 'Enter a valid name'}],
@@ -309,7 +298,7 @@ class RegistrationViewValidationErrorTest(
         })
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "name": [{"user_message": 'Enter a valid name'}],
@@ -333,7 +322,7 @@ class RegistrationViewValidationErrorTest(
         assert response.status_code == 400
 
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "name": [{"user_message": expected_error_message}],
@@ -354,7 +343,7 @@ class RegistrationViewValidationErrorTest(
         })
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 'name': [{'user_message': 'Full Name cannot contain the following characters: < >'}],
@@ -386,7 +375,7 @@ class RegistrationViewValidationErrorTest(
         response_json = json.loads(response.content.decode('utf-8'))
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -420,7 +409,7 @@ class RegistrationViewValidationErrorTest(
         response_json = json.loads(response.content.decode('utf-8'))
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -458,7 +447,7 @@ class RegistrationViewValidationErrorTest(
         assert response.status_code == 409
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -483,7 +472,7 @@ class RegistrationViewValidationErrorTest(
 
         response_json = json.loads(response.content.decode('utf-8'))
         self.assertHttpBadRequest(response)
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "country": [{
@@ -497,7 +486,7 @@ class RegistrationViewValidationErrorTest(
 @ddt.ddt
 @skip_unless_lms
 class RegistrationViewTestV1(
-    ThirdPartyAuthTestMixin, UserAPITestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyAuthTestMixin, UserAPITestCase
 ):
     """Tests for the registration end-points of the User API. """
 
@@ -562,17 +551,6 @@ class RegistrationViewTestV1(
         }
     ]
     link_template = "<a href='/honor' rel='noopener' target='_blank'>{link_label}</a>"
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -984,7 +962,7 @@ class RegistrationViewTestV1(
                 "name": "marketing_emails_opt_in",
                 "type": "checkbox",
                 "required": False,
-                "label": 'I agree that {platform_name} may send me marketing messages.'.format(
+                "label": 'I agree that {platform_name} may send me marketing messages.'.format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME,
                 ),
                 "exposed": True,
@@ -1081,7 +1059,7 @@ class RegistrationViewTestV1(
                 "name": "goals",
                 "type": "textarea",
                 "required": False,
-                "label": "Tell us why you're interested in {platform_name}".format(
+                "label": "Tell us why you're interested in {platform_name}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME
                 ),
                 "errorMessages": {
@@ -1177,7 +1155,7 @@ class RegistrationViewTestV1(
                 "type": "plaintext",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(
+                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
                     )
@@ -1209,7 +1187,7 @@ class RegistrationViewTestV1(
                 "type": "plaintext",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(
+                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
                     )
@@ -1231,7 +1209,7 @@ class RegistrationViewTestV1(
         self._assert_reg_field(
             {"honor_code": "required", "terms_of_service": "required"},
             {
-                "label": "I agree to the {platform_name} {link_label}".format(
+                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME,
                     link_label=link_template.format(link_label=link_label)
                 ),
@@ -1240,7 +1218,7 @@ class RegistrationViewTestV1(
                 "type": "checkbox",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(
+                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
                     )
@@ -1254,7 +1232,7 @@ class RegistrationViewTestV1(
         self._assert_reg_field(
             {"honor_code": "required", "terms_of_service": "required"},
             {
-                "label": "I agree to the {platform_name} {link_label}".format(
+                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME,
                     link_label=link_template.format(link_label=link_label)
                 ),
@@ -1263,7 +1241,7 @@ class RegistrationViewTestV1(
                 "type": "checkbox",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} {link_label}".format(
+                    "required": "You must agree to the {platform_name} {link_label}".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME,
                         link_label=link_label
                     )
@@ -1280,7 +1258,7 @@ class RegistrationViewTestV1(
         self._assert_reg_field(
             {"honor_code": "required", "terms_of_service": "required"},
             {
-                "label": "I agree to the {platform_name} {link_label}".format(
+                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME,
                     link_label=self.link_template.format(link_label=link_label)
                 ),
@@ -1289,7 +1267,7 @@ class RegistrationViewTestV1(
                 "type": "checkbox",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} Honor Code".format(
+                    "required": "You must agree to the {platform_name} Honor Code".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME
                     )
                 }
@@ -1302,7 +1280,7 @@ class RegistrationViewTestV1(
         self._assert_reg_field(
             {"honor_code": "required", "terms_of_service": "required"},
             {
-                "label": "I agree to the {platform_name} {link_label}".format(
+                "label": "I agree to the {platform_name} {link_label}".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME,
                     link_label=link_template.format(link_label=link_label)
                 ),
@@ -1311,7 +1289,7 @@ class RegistrationViewTestV1(
                 "type": "checkbox",
                 "required": True,
                 "errorMessages": {
-                    "required": "You must agree to the {platform_name} Terms of Service".format(
+                    "required": "You must agree to the {platform_name} Terms of Service".format(  # noqa: UP032
                         platform_name=settings.PLATFORM_NAME
                     )
                 }
@@ -1641,7 +1619,7 @@ class RegistrationViewTestV1(
         response_json = json.loads(response.content.decode('utf-8'))
 
         self.assertHttpBadRequest(response)
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "country": [{
@@ -1665,7 +1643,7 @@ class RegistrationViewTestV1(
         response_json = json.loads(response.content.decode('utf-8'))
 
         self.assertHttpBadRequest(response)
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "country": [{
@@ -1697,7 +1675,7 @@ class RegistrationViewTestV1(
 
         assert response.status_code == 409
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "email": [{
@@ -1731,7 +1709,7 @@ class RegistrationViewTestV1(
         response_json = json.loads(response.content.decode('utf-8'))
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -1765,7 +1743,7 @@ class RegistrationViewTestV1(
         response_json = json.loads(response.content.decode('utf-8'))
         username_suggestions = response_json.pop('username_suggestions')
         assert len(username_suggestions) == 3
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -1799,7 +1777,7 @@ class RegistrationViewTestV1(
         )
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{"user_message": USERNAME_BAD_LENGTH_MSG}],
@@ -1905,7 +1883,7 @@ class RegistrationViewTestV1(
         })
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "name": [{"user_message": 'Your legal name must be a minimum of one character long'}],
@@ -1958,7 +1936,7 @@ class RegistrationViewTestV1(
         assert response.status_code == 409
         response_json = json.loads(response.content.decode('utf-8'))
         response_json.pop('username_suggestions')
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "username": [{
@@ -1976,7 +1954,7 @@ class RegistrationViewTestV1(
 
         for key in expected_field:
             assert actual_field[key] == expected_field[key], \
-                "Expected {expected} for {key} but got {actual} instead".format(
+                "Expected {expected} for {key} but got {actual} instead".format(  # noqa: UP032
                     key=key, actual=actual_field[key], expected=expected_field[key])
 
     def _populate_always_present_fields(self, field):
@@ -2051,7 +2029,7 @@ class RegistrationViewTestV1(
 
         current_present_field_names = [field["name"] for field in form_desc["fields"]]
         assert expected_absent_field not in current_present_field_names, \
-            "Expected absent field {expected}".format(expected=expected_absent_field)
+            "Expected absent field {expected}".format(expected=expected_absent_field)  # noqa: UP032
 
     def _assert_password_field_hidden(self, field_settings):
         self._assert_reg_field(field_settings, {
@@ -2076,17 +2054,6 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
     """
 
     # pylint: disable=test-inherits-tests
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):  # pylint: disable=arguments-differ
         super(RegistrationViewTestV1, self).setUp()  # lint-amnesty, pylint: disable=bad-super-call
@@ -2308,7 +2275,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
         """
         response_dict = json.loads(response.content.decode('utf-8'))
         assert 'redirect_url' in response_dict, (
-            "Response JSON unexpectedly does not have redirect_url: {!r}".format(
+            "Response JSON unexpectedly does not have redirect_url: {!r}".format(  # noqa: UP032
                 response_dict
             )
         )
@@ -2479,7 +2446,7 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
         })
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {'country':
                 [
@@ -2507,13 +2474,13 @@ class RegistrationViewTestV2(RegistrationViewTestV1):
             "country": "KP",
         })
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
 
 @httpretty.activate
 @ddt.ddt
 class ThirdPartyRegistrationTestMixin(
-    ThirdPartyOAuthTestMixin, CacheIsolationTestCase, OpenEdxEventsTestMixin
+    OpenEdxEventsTestMixin, ThirdPartyOAuthTestMixin, CacheIsolationTestCase
 ):
     """
     Tests for the User API registration endpoint with 3rd party authentication.
@@ -2525,17 +2492,6 @@ class ThirdPartyRegistrationTestMixin(
     ENABLED_CACHES = ['default']
 
     __test__ = False
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -2574,7 +2530,7 @@ class ThirdPartyRegistrationTestMixin(
         """Assert that the given response was an error for the access_token field with the given error message."""
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "access_token": [{"user_message": expected_error_message}],
@@ -2586,7 +2542,7 @@ class ThirdPartyRegistrationTestMixin(
         """Assert that given response is an error due to third party session expiry"""
         assert response.status_code == 400
         response_json = json.loads(response.content.decode('utf-8'))
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_json,
             {
                 "session_expired": [{"user_message": expected_error_message}],
@@ -2600,7 +2556,7 @@ class ThirdPartyRegistrationTestMixin(
         assert users.exists() == user_exists
         if user_exists:
             assert users[0].is_active == user_is_active
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 UserSocialAuth.objects.filter(user=users[0], provider=self.BACKEND).exists(),
                 social_link_exists
             )
@@ -2731,24 +2687,13 @@ class ThirdPartyRegistrationTestMixin(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestFacebookRegistrationView(
-    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase, OpenEdxEventsTestMixin
+    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinFacebook, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Facebook authentication."""
 
     ENABLED_OPENEDX_EVENTS = []
 
     __test__ = True
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def test_social_auth_exception(self):
         """
@@ -2763,7 +2708,7 @@ class TestFacebookRegistrationView(
 
 @skipUnless(settings.FEATURES.get("ENABLE_THIRD_PARTY_AUTH"), "third party auth not enabled")
 class TestGoogleRegistrationView(
-    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase, OpenEdxEventsTestMixin
+    ThirdPartyRegistrationTestMixin, ThirdPartyOAuthTestMixinGoogle, TransactionTestCase
 ):
     """Tests the User API registration endpoint with Google authentication."""
 
@@ -2771,20 +2716,9 @@ class TestGoogleRegistrationView(
 
     __test__ = True
 
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
 
 @ddt.ddt
-class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestMixin):
+class RegistrationValidationViewTests(OpenEdxEventsTestMixin, test_utils.ApiTestCase):
     """
     Tests for validity of user data in registration forms.
     """
@@ -2793,17 +2727,6 @@ class RegistrationValidationViewTests(test_utils.ApiTestCase, OpenEdxEventsTestM
 
     endpoint_name = 'registration_validation'
     path = reverse(endpoint_name)
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()

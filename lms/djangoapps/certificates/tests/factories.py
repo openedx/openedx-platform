@@ -119,7 +119,7 @@ class CertificateDateOverrideFactory(DjangoModelFactory):
     class Meta:
         model = CertificateDateOverride
 
-    date = datetime.datetime(2021, 5, 11, 0, 0, tzinfo=datetime.timezone.utc)
+    date = datetime.datetime(2021, 5, 11, 0, 0, tzinfo=datetime.timezone.utc)  # noqa: UP017
     reason = "Learner really wanted this on their birthday"
 
 

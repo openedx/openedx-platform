@@ -8,22 +8,22 @@ you need models here, please import them inside the function which uses them.
 
 import os
 import re
+from functools import lru_cache
 from logging import getLogger
 
 import crum
 from django.conf import settings
-
 from edx_toggles.toggles import SettingToggle
+
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming.helpers_dirs import (
     Theme,
     get_project_root_name_from_settings,
     get_theme_base_dirs_from_settings,
     get_theme_dirs,
-    get_themes_unchecked
+    get_themes_unchecked,
 )
 from openedx.core.lib.cache_utils import request_cached
-from functools import lru_cache
 
 logger = getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -240,7 +240,7 @@ def get_theme_base_dir(theme_dir_name, suppress_error=False):
         return None
 
     raise ValueError(
-        "Theme '{theme}' not found in any of the following themes dirs, \nTheme dirs: \n{dir}".format(
+        "Theme '{theme}' not found in any of the following themes dirs, \nTheme dirs: \n{dir}".format(  # noqa: UP032
             theme=theme_dir_name,
             dir=get_theme_base_dirs(),
         ))

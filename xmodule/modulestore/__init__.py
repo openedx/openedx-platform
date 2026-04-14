@@ -15,21 +15,21 @@ from operator import itemgetter
 from zoneinfo import ZoneInfo
 
 from django.db import transaction
-from opaque_keys.edx.keys import AssetKey, CourseKey
-from opaque_keys.edx.locations import Location  # For import backwards compatibility
+from opaque_keys.edx.keys import AssetKey, CourseKey  # noqa: F401
+from opaque_keys.edx.locations import Location  # For import backwards compatibility  # noqa: F401
 from sortedcontainers import SortedKeyList
 from xblock.core import XBlock
-from xblock.plugin import default_select
+from xblock.plugin import default_select  # noqa: F401
 from xblock.runtime import Mixologist
 
 # The below import is not used within this module, but ir is still needed becuase
 # other modules are imorting EdxJSONEncoder from here
-from openedx.core.lib.json_utils import EdxJSONEncoder
+from openedx.core.lib.json_utils import EdxJSONEncoder  # noqa: F401
 from xmodule.assetstore import AssetMetadata
 from xmodule.errortracker import make_error_tracker
 from xmodule.util.misc import get_library_or_course_attribute
 
-from .exceptions import InsufficientSpecificationError, InvalidLocationError
+from .exceptions import InsufficientSpecificationError, InvalidLocationError  # noqa: F401
 
 log = logging.getLogger('edx.modulestore')
 
@@ -507,7 +507,7 @@ class BlockData:
         return self.asides
 
     def __repr__(self):
-        return ("{classname}(fields={self.fields}, "
+        return ("{classname}(fields={self.fields}, "  # noqa: UP032
                 "block_type={self.block_type}, "
                 "definition={self.definition}, "
                 "definition_loaded={self.definition_loaded}, "
@@ -658,7 +658,7 @@ class ModuleStoreAssetBase:
         if asset_type is None:
             # Add assets of all types to the sorted list.
             all_assets = SortedAssetList(iterable=[], key=key_func)
-            for asset_type, val in course_assets.items():  # lint-amnesty, pylint: disable=redefined-argument-from-local
+            for asset_type, val in course_assets.items():  # lint-amnesty, pylint: disable=redefined-argument-from-local  # noqa: B007
                 all_assets.update(val)
         else:
             # Add assets of a single type to the sorted list.
@@ -714,7 +714,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         for asset_md in asset_metadata_list:
             if asset_md.asset_id.course_key != course_key:
                 # pylint: disable=logging-format-interpolation
-                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(
+                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(  # noqa: UP032  # pylint: disable=line-too-long
                     asset_md.asset_id.course_key, course_key
                 ))
                 continue

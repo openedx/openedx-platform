@@ -2,18 +2,17 @@
 Public rest API endpoints for the CMS API.
 """
 import logging
-from rest_framework.generics import RetrieveUpdateDestroyAPIView, CreateAPIView
-from django.views.decorators.csrf import csrf_exempt
 
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
-from common.djangoapps.util.json_request import expect_json_in_class_view
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.generics import CreateAPIView, RetrieveUpdateDestroyAPIView
 
 from cms.djangoapps.contentstore.api import course_author_access_required
 from cms.djangoapps.contentstore.xblock_storage_handlers import view_handlers
+from common.djangoapps.util.json_request import expect_json_in_class_view
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 
 from ..serializers import XblockSerializer
 from .utils import validate_request_with_serializer
-
 
 log = logging.getLogger(__name__)
 handle_xblock = view_handlers.handle_xblock

@@ -19,8 +19,6 @@ from opaque_keys.edx.locator import LibraryLocator
 from search.tests.test_course_discovery import DemoCourse
 from search.tests.tests import TEST_INDEX_NAME
 from search.tests.utils import SearcherMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
@@ -32,6 +30,8 @@ from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from openedx.core.lib.api.view_utils import LazySequence
 from openedx.features.content_type_gating.models import ContentTypeGatingConfig
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 from ..views import CourseDetailView, CourseListUserThrottle, LazyPageNumberPagination
 from .mixins import TEST_PASSWORD, CourseApiFactoryMixin
@@ -246,16 +246,16 @@ class CourseListViewTestCaseMultipleCourses(CourseApiTestViewMixin, ModuleStoreT
                   'username': instructor_user.username}
         response = self.verify_response(params=params)
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         ids = {c['course_id'] for c in response.json()['results']}
-        self.assertEqual(ids, {str(self.course.id)})
+        self.assertEqual(ids, {str(self.course.id)})  # noqa: PT009
 
     def test_filter_post(self):
         """Verify that CourseOverviews are filtered by the provided org key in a POST request."""
         self.setup_user(self.staff_user)
 
         # Create a second course to be filtered out of queries.
-        alternate_course = self.create_course(
+        alternate_course = self.create_course(  # noqa: F841
             org=md5(self.course.org.encode('utf-8')).hexdigest()
         )
 
@@ -468,10 +468,10 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         # Create 15 new courses, courses have the word "new" in the title
         [self.create_and_index_course(f"numb_{number}", f"new_{number}") for number in range(15)]  # pylint: disable=expression-not-assigned
         response = self.verify_response(params={"search_term": "new"})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         # We don't have 'count' 15 because 'mobile_search' param is None
         # And LazySequence contains all courses
-        self.assertEqual(response.json()["pagination"]["count"], 18)
+        self.assertEqual(response.json()["pagination"]["count"], 18)  # noqa: PT009
 
     def test_count_item_pagination_with_search_term_and_filter(self):
         """
@@ -483,8 +483,8 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         [self.create_and_index_course("Org_N", f"new_{number}") for number in range(10)]  # pylint: disable=expression-not-assigned
         [self.create_and_index_course("Org_X", f"new_{number}") for number in range(15)]  # pylint: disable=expression-not-assigned
         response = self.verify_response(params={"org": "Org_X", "search_term": "new"})
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["pagination"]["count"], 15)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
+        self.assertEqual(response.json()["pagination"]["count"], 15)  # noqa: PT009
 
     def test_count_item_pagination_with_search_term_and_mobile_search(self):
         """
@@ -497,9 +497,9 @@ class CourseListSearchViewTest(CourseApiTestViewMixin, ModuleStoreTestCase, Sear
         response = self.verify_response(
             params={"search_term": "new", "mobile_search": True}
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         # We have 'count' 15 because 'mobile_search' param is true
-        self.assertEqual(response.json()["pagination"]["count"], 15)
+        self.assertEqual(response.json()["pagination"]["count"], 15)  # noqa: PT009
 
 
 class CourseIdListViewTestCase(CourseApiTestViewMixin, ModuleStoreTestCase):
@@ -651,7 +651,7 @@ class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disab
         pagination.page_size = 5
         paginated_queryset = pagination.paginate_queryset(even_numbers_lazy_sequence, request)
         paginated_response = pagination.get_paginated_response(paginated_queryset)
-        self.assertDictEqual(expected_response, paginated_response.data)
+        self.assertDictEqual(expected_response, paginated_response.data)  # noqa: PT009
 
     def test_not_found_error_for_invalid_page(self):
         number_sequence = range(20)
@@ -666,7 +666,7 @@ class LazyPageNumberPaginationTestCase(TestCase):  # lint-amnesty, pylint: disab
         request = RequestFactory().get('/endpoint', data={'page': 3, 'page_size': 5})
         request.query_params = {'page': 3, 'page_size': 5}
 
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(Exception) as exc:  # noqa: PT011, PT012
             pagination = LazyPageNumberPagination()
             pagination.max_page_size = 5
             pagination.page_size = 5

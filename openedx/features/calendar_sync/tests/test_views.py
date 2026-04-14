@@ -8,7 +8,9 @@ from django.test import TestCase
 from django.urls import reverse
 
 from openedx.features.calendar_sync.api import SUBSCRIBE, UNSUBSCRIBE
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 TEST_PASSWORD = 'test'

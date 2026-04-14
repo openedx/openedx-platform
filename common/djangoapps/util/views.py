@@ -9,19 +9,19 @@ import crum
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseServerError
+from django.shortcuts import redirect
 from django.views.decorators.csrf import ensure_csrf_cookie, requires_csrf_token
 from django.views.defaults import server_error
-from django.shortcuts import redirect
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
+from common.djangoapps.edxmako.shortcuts import render_to_response
+from common.djangoapps.student.roles import GlobalStaff
+from common.djangoapps.track import views as track_views
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
 from openedx.features.course_experience.utils import dates_banner_should_display
-from common.djangoapps.track import views as track_views
-from common.djangoapps.edxmako.shortcuts import render_to_response
-from common.djangoapps.student.roles import GlobalStaff
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def ensure_valid_course_key(view_func):
             try:
                 CourseKey.from_string(course_key)
             except InvalidKeyError:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         response = view_func(request, *args, **kwargs)
         return response
@@ -58,7 +58,7 @@ def ensure_valid_usage_key(view_func):
             try:
                 UsageKey.from_string(usage_key)
             except InvalidKeyError:
-                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+                raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         response = view_func(request, *args, **kwargs)
         return response
@@ -74,7 +74,7 @@ def require_global_staff(func):
             return func(request, *args, **kwargs)
         else:
             return HttpResponseForbidden(
-                "Must be {platform_name} staff to perform this action.".format(
+                "Must be {platform_name} staff to perform this action.".format(  # noqa: UP032
                     platform_name=settings.PLATFORM_NAME
                 )
             )

@@ -19,8 +19,8 @@ from django.core.cache import cache
 from django.core.mail import EmailMessage, SafeMIMEText
 from django.urls import reverse
 from django.utils.translation import gettext as _
+from edx_django_utils.plugins import pluggable_override
 from eventtracking import tracker
-from xmodule.modulestore.django import modulestore
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
 from common.djangoapps.edxmako.template import Template
@@ -28,7 +28,7 @@ from openedx.core.djangoapps.commerce.utils import get_ecommerce_api_base_url, g
 from openedx.core.djangoapps.credit.models import CreditConfig, CreditProvider
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangolib.markup import HTML
-from edx_django_utils.plugins import pluggable_override
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ def get_credit_provider_attribute_values(course_key, attribute_name):
     attribute_values = None
 
     if credit_config.is_cache_enabled:
-        cache_key = '{key_prefix}.{course_key}.{attribute_name}'.format(
+        cache_key = '{key_prefix}.{course_key}.{attribute_name}'.format(  # noqa: UP032
             key_prefix=credit_config.CACHE_KEY,
             course_key=course_id,
             attribute_name=attribute_name

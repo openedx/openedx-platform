@@ -6,11 +6,8 @@ import logging
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from openedx.core.djangoapps.notifications.base_notification import COURSE_NOTIFICATION_APPS, COURSE_NOTIFICATION_TYPES
 from openedx.core.djangoapps.notifications.models import NotificationPreference
-from openedx.core.djangoapps.notifications.base_notification import (
-    COURSE_NOTIFICATION_APPS,
-    COURSE_NOTIFICATION_TYPES
-)
 
 logger = logging.getLogger(__name__)
 

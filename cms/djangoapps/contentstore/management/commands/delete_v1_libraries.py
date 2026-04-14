@@ -3,16 +3,13 @@
 import logging
 from textwrap import dedent
 
+from celery import group
 from django.core.management import BaseCommand, CommandError
-
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator
 
-from xmodule.modulestore.django import modulestore
-
-from celery import group
-
 from cms.djangoapps.contentstore.tasks import delete_v1_library
+from xmodule.modulestore.django import modulestore
 
 from .prompt import query_yes_no
 

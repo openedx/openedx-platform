@@ -17,5 +17,5 @@ class NotificationsConfig(AppConfig):
         Import signals
         """
         # pylint: disable=unused-import
-        from . import handlers
-        from .email import tasks
+        from . import handlers  # noqa: F401
+        from .email import tasks  # noqa: F401

@@ -32,7 +32,7 @@ from .. import views
 log = logging.getLogger(__name__)
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
 FAKE_MD5_HASH = 'ffffffffffffffffffffffffffffffff'
@@ -300,7 +300,7 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
         assert resp.status_code == 206
         # HTTP_206_PARTIAL_CONTENT
         assert resp['Content-Range'] ==\
-               'bytes {first}-{last}/{length}'.format(first=0, last=(self.length_unlocked - 1),
+               'bytes {first}-{last}/{length}'.format(first=0, last=(self.length_unlocked - 1),  # noqa: UP032
                                                       length=self.length_unlocked)
         assert resp['Content-Length'] == str(self.length_unlocked)
 
@@ -312,12 +312,12 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
         """
         first_byte = self.length_unlocked // 4
         last_byte = self.length_unlocked // 2
-        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(
+        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(  # noqa: UP032
             first=first_byte, last=last_byte))
 
         assert resp.status_code == 206
         # HTTP_206_PARTIAL_CONTENT
-        assert resp['Content-Range'] == 'bytes {first}-{last}/{length}'.format(first=first_byte,
+        assert resp['Content-Range'] == 'bytes {first}-{last}/{length}'.format(first=first_byte,  # noqa: UP032
                                                                                last=last_byte,
                                                                                length=self.length_unlocked)
         assert resp['Content-Length'] == str((last_byte - first_byte) + 1)
@@ -328,7 +328,7 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
         """
         first_byte = self.length_unlocked / 4
         last_byte = self.length_unlocked / 2
-        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}, -100'.format(
+        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}, -100'.format(  # noqa: UP032
             first=first_byte, last=last_byte))
 
         assert resp.status_code == 200
@@ -354,7 +354,7 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
         Test that a range request with malformed Range (first_byte > last_byte) outputs
         416 Requested Range Not Satisfiable.
         """
-        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(
+        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(  # noqa: UP032
             first=(self.length_unlocked // 2), last=(self.length_unlocked // 4)))
         assert resp.status_code == 416
 
@@ -363,7 +363,7 @@ class ContentStoreToyCourseTest(SharedModuleStoreTestCase):
         Test that a range request with malformed Range (first_byte, last_byte == totalLength, offset by 1 error)
         outputs 416 Requested Range Not Satisfiable.
         """
-        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(
+        resp = self.client.get(self.url_unlocked, HTTP_RANGE='bytes={first}-{last}'.format(  # noqa: UP032
             first=(self.length_unlocked), last=(self.length_unlocked)))
         assert resp.status_code == 416
 
@@ -526,6 +526,6 @@ class ParseRangeHeaderTestCase(unittest.TestCase):
     )
     @ddt.unpack
     def test_invalid_syntax(self, header_value, exception_class, exception_message_regex):
-        self.assertRaisesRegex(
+        self.assertRaisesRegex(  # noqa: PT027
             exception_class, exception_message_regex, views.parse_range_header, header_value, self.content_length
         )

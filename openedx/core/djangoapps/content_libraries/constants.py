@@ -1,7 +1,6 @@
 """ Constants used for the content libraries. """
 from django.utils.translation import gettext_lazy as _
 
-
 # These are all the licenses we support so far.
 ALL_RIGHTS_RESERVED = ''
 CC_4_BY = 'CC:4.0:BY'

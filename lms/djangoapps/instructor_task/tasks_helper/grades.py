@@ -9,7 +9,6 @@ from collections import OrderedDict, defaultdict
 from datetime import datetime
 from itertools import chain
 from tempfile import TemporaryFile
-
 from time import time
 
 from django.conf import settings
@@ -27,9 +26,8 @@ from lms.djangoapps.certificates.api import get_certificates_for_course_and_user
 from lms.djangoapps.course_blocks.api import get_course_block_access_transformers, get_course_blocks
 from lms.djangoapps.course_blocks.transformers import library_content
 from lms.djangoapps.courseware.user_state_client import DjangoXBlockUserStateClient
-from lms.djangoapps.grades.api import CourseGradeFactory
+from lms.djangoapps.grades.api import CourseGradeFactory, prefetch_course_and_subsection_grades
 from lms.djangoapps.grades.api import context as grades_context
-from lms.djangoapps.grades.api import prefetch_course_and_subsection_grades
 from lms.djangoapps.instructor_analytics.basic import list_problem_responses
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 from lms.djangoapps.instructor_task.config.waffle import (
@@ -51,7 +49,7 @@ from xmodule.partitions.partitions_service import PartitionService  # lint-amnes
 from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .runner import TaskProgress
-from .utils import upload_csv_to_report_store, upload_csv_file_to_report_store
+from .utils import upload_csv_file_to_report_store, upload_csv_to_report_store
 
 TASK_LOG = logging.getLogger('edx.celery.task')
 
@@ -134,7 +132,7 @@ class _CourseGradeReportContext:
             graded_subsections_map = OrderedDict()
             for subsection_index, subsection_info in enumerate(subsection_infos, start=1):
                 subsection = subsection_info['subsection_block']
-                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(
+                header_name = "{assignment_type} {subsection_index}: {subsection_name}".format(  # noqa: UP032
                     assignment_type=assignment_type_name,
                     subsection_index=subsection_index,
                     subsection_name=subsection.display_name,
@@ -176,7 +174,7 @@ class _ProblemGradeReportContext:
 
     def __init__(self, _xblock_instance_args, _entry_id, course_id, _task_input, action_name):
         task_id = _xblock_instance_args.get('task_id') if _xblock_instance_args is not None else None
-        self.task_info_string = (
+        self.task_info_string = (  # noqa: UP032
             'Task: {task_id}, '
             'InstructorTask ID: {entry_id}, '
             'Course: {course_id}, '
@@ -329,7 +327,7 @@ class InMemoryReportMixin:
         the given batched_rows.
         """
         # partition and chain successes and errors
-        success_rows, error_rows = zip(*batched_rows)
+        success_rows, error_rows = zip(*batched_rows)  # noqa: B905
         success_rows = list(chain(*success_rows))
         error_rows = list(chain(*error_rows))
 

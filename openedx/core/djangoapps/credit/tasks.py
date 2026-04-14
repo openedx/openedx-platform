@@ -40,7 +40,7 @@ def update_credit_course_requirements(course_id):
             set_credit_requirements(course_key, requirements)
     except (InvalidKeyError, ItemNotFoundError, InvalidCreditRequirements) as exc:
         LOGGER.error('Error on adding the requirements for course %s - %s', course_id, str(exc))
-        raise update_credit_course_requirements.retry(args=[course_id], exc=exc)
+        raise update_credit_course_requirements.retry(args=[course_id], exc=exc)  # noqa: B904
     LOGGER.info('Requirements added for course %s', course_id)
 
 
@@ -144,7 +144,7 @@ def _get_proctoring_requirements(course_key):
 
     if requirements:
         log_msg = (
-            'Registering the following as \'proctored_exam\' credit requirements: {log_msg}'.format(
+            'Registering the following as \'proctored_exam\' credit requirements: {log_msg}'.format(  # noqa: UP032
                 log_msg=requirements
             )
         )

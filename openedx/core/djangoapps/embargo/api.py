@@ -7,7 +7,7 @@ This API is exposed via the middleware(emabargo/middileware.py) layer but may be
 """
 
 import logging
-from typing import List, Optional
+from typing import List, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.core.cache import cache
@@ -30,8 +30,8 @@ def redirect_if_blocked(
     request: Request,
     course_key: CourseKey,
     access_point: str = 'enrollment',
-    user: Optional[types.User] = None,
-) -> Optional[str]:
+    user: Optional[types.User] = None,  # noqa: UP045
+) -> Optional[str]:  # noqa: UP045
     """
     Redirect if the user does not have access to the course.
 
@@ -61,9 +61,9 @@ def redirect_if_blocked(
 
 def check_course_access(
         course_key: CourseKey,
-        user: Optional[types.User] = None,
-        ip_addresses: Optional[List[str]] = None,
-        url: Optional[str] = None,
+        user: Optional[types.User] = None,  # noqa: UP045
+        ip_addresses: Optional[List[str]] = None,  # noqa: UP006, UP045
+        url: Optional[str] = None,  # noqa: UP045
 ) -> bool:
     """
     Check is the user with this ip_addresses chain has access to the given course
@@ -178,7 +178,7 @@ def _get_user_country_from_profile(user: types.User) -> str:
     return profile_country
 
 
-def get_embargo_response(request: Request, course_key: CourseKey, user: types.User) -> Optional[Response]:
+def get_embargo_response(request: Request, course_key: CourseKey, user: types.User) -> Optional[Response]:  # noqa: UP045  # pylint: disable=line-too-long
     """
     Check whether any country access rules block the user from enrollment.
 
@@ -196,7 +196,7 @@ def get_embargo_response(request: Request, course_key: CourseKey, user: types.Us
         return Response(
             status=status.HTTP_403_FORBIDDEN,
             data={
-                "message": (
+                "message": (  # noqa: UP032
                     "Users from this location cannot access the course '{course_id}'."
                 ).format(course_id=str(course_key)),
                 "user_message_url": request.build_absolute_uri(redirect_url)

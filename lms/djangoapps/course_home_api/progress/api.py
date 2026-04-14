@@ -4,14 +4,15 @@ Python APIs exposed for the progress tracking functionality of the course home A
 
 from __future__ import annotations
 
-from django.contrib.auth import get_user_model
-from opaque_keys.edx.keys import CourseKey
-from openedx.core.lib.grade_utils import round_away_from_zero
-from xblock.scorable import ShowCorrectness
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from django.contrib.auth import get_user_model
+from opaque_keys.edx.keys import CourseKey
+from xblock.scorable import ShowCorrectness
+
 from lms.djangoapps.courseware.courses import get_course_blocks_completion_summary
-from dataclasses import dataclass, field
+from openedx.core.lib.grade_utils import round_away_from_zero
 
 User = get_user_model()
 
@@ -120,7 +121,7 @@ class _AssignmentTypeGradeAggregator:
         self.course_grade = course_grade
         self.grading_policy = grading_policy
         self.has_staff_access = has_staff_access
-        self.now = datetime.now(timezone.utc)
+        self.now = datetime.now(timezone.utc)  # noqa: UP017
         self.policy_map = self._build_policy_map()
         self.buckets: dict[str, _AssignmentBucket] = {}
 

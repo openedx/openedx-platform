@@ -20,8 +20,8 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseInstructorRole
 from common.djangoapps.student.tests.factories import UserFactory
-from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
 from lms.djangoapps.course_home_api.tests.utils import BaseCourseHomeTests
+from lms.djangoapps.course_home_api.toggles import COURSE_HOME_SEND_COURSE_PROGRESS_ANALYTICS_FOR_STUDENT
 from lms.djangoapps.grades.course_grade_factory import CourseGradeFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.learning_sequences.api import replace_course_outline
@@ -30,19 +30,10 @@ from openedx.core.djangoapps.course_date_signals.utils import MIN_DURATION
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
-from openedx.features.course_experience import (
-    COURSE_ENABLE_UNENROLLED_ACCESS_FLAG,
-    ENABLE_COURSE_GOALS
-)
+from openedx.features.course_experience import COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, ENABLE_COURSE_GOALS
 from openedx.features.discounts.applicability import DISCOUNT_APPLICABILITY_FLAG, FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
-from xmodule.course_block import (
-    COURSE_VISIBILITY_PUBLIC,
-    COURSE_VISIBILITY_PUBLIC_OUTLINE
-)
-from xmodule.modulestore.tests.factories import (
-    BlockFactory,
-    CourseFactory
-)
+from xmodule.course_block import COURSE_VISIBILITY_PUBLIC, COURSE_VISIBILITY_PUBLIC_OUTLINE
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
@@ -399,7 +390,7 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title="Test Course Outline!",
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version="5ebece4b69dd593d82fe2022",
             entrance_exam_id=None,
             days_early_for_beta=None,
@@ -450,12 +441,12 @@ class OutlineTabTestViews(BaseCourseHomeTests):
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_before_enrollment(self):
-        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)
+        self.course.enrollment_start = datetime.now(timezone.utc) + timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
     def test_cannot_enroll_after_enrollment(self):
-        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)
+        self.course.enrollment_end = datetime.now(timezone.utc) - timedelta(days=1)  # noqa: UP017
         self.update_course_and_overview()
         self.assert_can_enroll(False)
 
@@ -732,7 +723,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
         new_learning_seq_outline = CourseOutlineData(
             course_key=self.course.id,
             title='Test Course Outline!',
-            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),
+            published_at=datetime(2021, 6, 14, tzinfo=timezone.utc),  # noqa: UP017
             published_version='5ebece4b69dd593d82fe2022',
             entrance_exam_id=None,
             days_early_for_beta=None,

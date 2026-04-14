@@ -4,8 +4,8 @@ Transformers.
 """
 
 
-from abc import abstractmethod
 import functools
+from abc import abstractmethod
 
 
 class BlockStructureTransformer:

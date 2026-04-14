@@ -3,9 +3,9 @@ Forms to support third-party to first-party OAuth 2.0 access token exchange
 """
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.forms import CharField
-from django.conf import settings
 from django.utils.encoding import smart_str
 from django.utils.translation import gettext as _
 from oauth2_provider.models import Application
@@ -164,7 +164,7 @@ class AccessTokenExchangeForm(forms.Form):
         try:
             client = self.oauth2_adapter.get_client(client_id=client_id)
         except Application.DoesNotExist:
-            raise OAuthValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise OAuthValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 {
                     "error": "invalid_client",
                     "error_description": f"{client_id} is not a valid client_id",

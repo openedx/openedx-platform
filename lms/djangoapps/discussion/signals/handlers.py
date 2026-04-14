@@ -15,7 +15,7 @@ from lms.djangoapps.discussion.rest_api.discussions_notifications import Discuss
 from lms.djangoapps.discussion.rest_api.tasks import (
     send_response_endorsed_notifications,
     send_response_notifications,
-    send_thread_created_notification
+    send_thread_created_notification,
 )
 from openedx.core.djangoapps.django_comment_common import signals
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration

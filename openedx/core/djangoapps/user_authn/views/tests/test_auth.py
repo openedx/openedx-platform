@@ -2,11 +2,13 @@
 
 
 import json
-from django.test import TestCase
-from django.conf import settings
-from django.urls import reverse
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from unittest import mock
+
+from django.conf import settings
+from django.test import TestCase
+from django.urls import reverse
+
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 @skip_unless_lms

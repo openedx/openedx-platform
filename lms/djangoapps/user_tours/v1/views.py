@@ -1,17 +1,16 @@
 """ API for User Tours. """
 from django.conf import settings
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
+from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
-
-from lms.djangoapps.user_tours.models import UserTour, UserDiscussionsTours
-from lms.djangoapps.user_tours.toggles import USER_TOURS_DISABLED
-from lms.djangoapps.user_tours.v1.serializers import UserTourSerializer, UserDiscussionsToursSerializer
-
 from rest_framework.views import APIView
+
+from lms.djangoapps.user_tours.models import UserDiscussionsTours, UserTour
+from lms.djangoapps.user_tours.toggles import USER_TOURS_DISABLED
+from lms.djangoapps.user_tours.v1.serializers import UserDiscussionsToursSerializer, UserTourSerializer
 
 
 class UserTourView(RetrieveUpdateAPIView):
@@ -51,7 +50,7 @@ class UserTourView(RetrieveUpdateAPIView):
         try:
             user_tour = UserTour.objects.get(user__username=username)
         # Should never really happen, but better safe than sorry.
-        except UserTour.DoesNotExist as e:
+        except UserTour.DoesNotExist as e:  # noqa: F841
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         return Response(self.get_serializer_class()(user_tour).data, status=status.HTTP_200_OK)

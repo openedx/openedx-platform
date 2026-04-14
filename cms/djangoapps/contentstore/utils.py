@@ -27,7 +27,6 @@ from milestones import api as milestones_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey, UsageKeyV2
 from opaque_keys.edx.locator import BlockUsageLocator, LibraryContainerLocator, LibraryLocator
-from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx_events.content_authoring.data import DuplicatedXBlockData
 from openedx_events.content_authoring.signals import XBLOCK_DUPLICATED
 from openedx_events.learning.data import CourseNotificationData
@@ -63,11 +62,7 @@ from common.djangoapps.edxmako.services import MakoService
 from common.djangoapps.student import auth
 from common.djangoapps.student.auth import STUDIO_EDIT_ROLES, has_studio_read_access, has_studio_write_access
 from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.roles import (
-    CourseInstructorRole,
-    CourseStaffRole,
-    GlobalStaff,
-)
+from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole, GlobalStaff
 from common.djangoapps.track import contexts
 from common.djangoapps.util.course import get_link_for_about_page
 from common.djangoapps.util.date_utils import get_default_time_display
@@ -93,6 +88,7 @@ from openedx.core.djangoapps.django_comment_common.utils import seed_permissions
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.site_configuration.models import SiteConfiguration
+from openedx.core.djangoapps.video_config.services import VideoConfigService
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from openedx.core.lib.courses import course_image_url
 from openedx.core.lib.html_to_text import html_to_text
@@ -213,7 +209,7 @@ def get_lms_link_for_item(location, preview=False):
         query_string = urlencode(params)
 
     url_parts = list(urlparse(lms_base))
-    url_parts[2] = '/courses/{course_key}/jump_to/{location}'.format(
+    url_parts[2] = '/courses/{course_key}/jump_to/{location}'.format(  # noqa: UP032
         course_key=str(location.course_key),
         location=str(location),
     )
@@ -234,7 +230,7 @@ def get_lms_link_for_certificate_web_view(course_key, mode):
     if lms_base is None:
         return None
 
-    return "//{certificate_web_base}/certificates/course/{course_id}?preview={mode}".format(
+    return "//{certificate_web_base}/certificates/course/{course_id}?preview={mode}".format(  # noqa: UP032
         certificate_web_base=lms_base,
         course_id=str(course_key),
         mode=mode
@@ -545,6 +541,17 @@ def get_taxonomy_list_url() -> str | None:
         return None
 
     return f'{mfe_base_url}/taxonomies'
+
+
+def get_libraries_list_url() -> str | None:
+    """
+    Gets course authoring microfrontend URL for libraries list view.
+    """
+    mfe_base_url = settings.COURSE_AUTHORING_MICROFRONTEND_URL
+    if not mfe_base_url:
+        return None
+
+    return f'{mfe_base_url}/libraries'
 
 
 def get_taxonomy_tags_widget_url(course_locator=None) -> str | None:
@@ -989,7 +996,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(
+            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032  # pylint: disable=line-too-long
                 section=section.location,
                 subsection=subsection.location
             ))
@@ -1003,7 +1010,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_parent().get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: In section {section} in course".format(
+            log.error("URL Retrieval Error: In section {section} in course".format(  # noqa: UP032
                 section=section.location,
             ))
             return None
@@ -1214,7 +1221,7 @@ def duplicate_block(
         # .. event_implemented_name: XBLOCK_DUPLICATED
         # .. event_type: org.openedx.content_authoring.xblock.duplicated.v1
         XBLOCK_DUPLICATED.send_event(
-            time=datetime.now(timezone.utc),
+            time=datetime.now(timezone.utc),  # noqa: UP017
             xblock_info=DuplicatedXBlockData(
                 usage_key=dest_block.location,
                 block_type=dest_block.location.block_type,
@@ -1407,7 +1414,7 @@ def get_course_settings(request, course_key, course_block):
     It is used for both DRF and django views.
     """
 
-    from .views.course import get_courses_accessible_to_user, _process_courses_list
+    from .views.course import _process_courses_list, get_courses_accessible_to_user
 
     credit_eligibility_enabled = settings.FEATURES.get('ENABLE_CREDIT_ELIGIBILITY', False)
     upload_asset_url = reverse_course_url('assets_handler', course_key)
@@ -1583,12 +1590,8 @@ def get_library_context(request, request_is_json=False):
         get_allowed_organizations_for_libraries,
         user_can_create_organizations,
     )
-    from cms.djangoapps.contentstore.views.library import (
-        user_can_view_create_library_button,
-    )
-    from openedx.core.djangoapps.content_libraries.api import (
-        user_can_create_library,
-    )
+    from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
+    from openedx.core.djangoapps.content_libraries.api import user_can_create_library
 
     is_migrated: bool | None  # None means: do not filter on is_migrated
     if (is_migrated_param := request.GET.get('is_migrated')) is not None:
@@ -1643,10 +1646,7 @@ def get_course_context(request):
     It is used for both DRF and django views.
     """
 
-    from cms.djangoapps.contentstore.views.course import (
-        get_courses_accessible_to_user,
-        _process_courses_list,
-    )
+    from cms.djangoapps.contentstore.views.course import _process_courses_list, get_courses_accessible_to_user
 
     def format_in_process_course_view(uca):
         """
@@ -1682,9 +1682,7 @@ def get_course_context_v2(request):
     # Importing here to avoid circular imports:
     # ImportError: cannot import name 'reverse_course_url' from partially initialized module
     # 'cms.djangoapps.contentstore.utils' (most likely due to a circular import)
-    from cms.djangoapps.contentstore.views.course import (
-        get_courses_accessible_to_user,
-    )
+    from cms.djangoapps.contentstore.views.course import get_courses_accessible_to_user
 
     def format_in_process_course_view(uca):
         """
@@ -1721,17 +1719,13 @@ def get_home_context(request, no_course=False):
     """
 
     from cms.djangoapps.contentstore.views.course import (
+        _get_course_creator_status,
         get_allowed_organizations,
         get_allowed_organizations_for_libraries,
         user_can_create_organizations,
-        _get_course_creator_status,
     )
-    from cms.djangoapps.contentstore.views.library import (
-        user_can_view_create_library_button,
-    )
-    from openedx.core.djangoapps.content_libraries.api import (
-        user_can_create_library,
-    )
+    from cms.djangoapps.contentstore.views.library import user_can_view_create_library_button
+    from openedx.core.djangoapps.content_libraries.api import user_can_create_library
 
     active_courses = []
     archived_courses = []
@@ -1806,15 +1800,14 @@ def get_course_videos_context(course_block, pagination_conf, course_key=None):
         get_transcript_credentials_state_for_org,
         get_transcript_preferences,
     )
+
     from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
     from openedx.core.djangoapps.video_config.toggles import use_xpert_translations_component
-    from openedx.core.djangoapps.video_config.transcripts_utils import Transcript  # lint-amnesty, pylint: disable=wrong-import-order
-
-    from .video_storage_handlers import (
-        get_all_transcript_languages,
-        _get_index_videos,
-        _get_default_video_image_url
+    from openedx.core.djangoapps.video_config.transcripts_utils import (
+        Transcript,  # lint-amnesty, pylint: disable=wrong-import-order
     )
+
+    from .video_storage_handlers import _get_default_video_image_url, _get_index_videos, get_all_transcript_languages
 
     VIDEO_SUPPORTED_FILE_FORMATS = {
         '.mp4': 'video/mp4',
@@ -1902,9 +1895,9 @@ def _get_course_index_context(request, course_key, course_block):
     """
 
     from cms.djangoapps.contentstore.views.course import (
-        course_outline_initial_state,
         _course_outline_json,
         _deprecated_blocks_info,
+        course_outline_initial_state,
     )
     from openedx.core.djangoapps.content_staging import api as content_staging_api
 
@@ -1987,13 +1980,13 @@ def get_container_handler_context(request, usage_key, course, xblock):  # pylint
     It is used for both DRF and django views.
     """
 
+    from cms.djangoapps.contentstore.helpers import get_parent_xblock, is_unit
     from cms.djangoapps.contentstore.views.component import (
-        get_component_templates,
-        get_unit_tags,
         CONTAINER_TEMPLATES,
         LIBRARY_BLOCK_TYPES,
+        get_component_templates,
+        get_unit_tags,
     )
-    from cms.djangoapps.contentstore.helpers import get_parent_xblock, is_unit
     from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import (
         add_container_page_publishing_info,
         create_xblock_info,
@@ -2177,11 +2170,12 @@ def get_group_configurations_context(course, store):
     """
 
     from cms.djangoapps.contentstore.course_group_config import (
-        COHORT_SCHEME, ENROLLMENT_SCHEME, GroupConfiguration, RANDOM_SCHEME
+        COHORT_SCHEME,
+        ENROLLMENT_SCHEME,
+        RANDOM_SCHEME,
+        GroupConfiguration,
     )
-    from cms.djangoapps.contentstore.views.course import (
-        are_content_experiments_enabled
-    )
+    from cms.djangoapps.contentstore.views.course import are_content_experiments_enabled
     from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
 
     course_key = course.id
@@ -2431,7 +2425,7 @@ def _create_or_update_container_link(created: datetime | None, xblock):
     """
     upstream_container_key = LibraryContainerLocator.from_string(xblock.upstream)
     try:
-        lib_component = get_container(upstream_container_key).container_pk
+        lib_component = get_container(upstream_container_key).container_id
     except ObjectDoesNotExist:
         log.error(f"Library component not found for {upstream_container_key}")
         lib_component = None

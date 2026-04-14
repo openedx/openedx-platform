@@ -3,19 +3,20 @@ REST API views for content staging
 """
 from __future__ import annotations
 
+import edx_api_doc_tools as apidocs
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
-import edx_api_doc_tools as apidocs
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator, LibraryLocatorV2
+from openedx_authz.constants import permissions as authz_permissions
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from common.djangoapps.student.auth import has_studio_read_access
 
+from common.djangoapps.student.auth import has_studio_read_access
 from openedx.core.djangoapps.xblock import api as xblock_api
 from openedx.core.lib.api.view_utils import view_auth_classes
 from xmodule.modulestore.django import modulestore
@@ -24,7 +25,7 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 from . import api
 from .data import StagedContentStatus
 from .models import StagedContent
-from .serializers import UserClipboardSerializer, PostToClipboardSerializer
+from .serializers import PostToClipboardSerializer, UserClipboardSerializer
 
 
 @view_auth_classes(is_authenticated=True)
@@ -92,7 +93,7 @@ class ClipboardEndpoint(APIView):
         try:
             usage_key = UsageKey.from_string(request.data["usage_key"])
         except (ValueError, InvalidKeyError):
-            raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValidationError('Invalid usage key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         if usage_key.block_type in ('course', 'chapter', 'sequential'):
             raise ValidationError('Requested XBlock tree is too large')
         course_key = usage_key.context_key
@@ -114,7 +115,7 @@ class ClipboardEndpoint(APIView):
                 lib_api.require_permission_for_library_key(
                     course_key,
                     request.user,
-                    lib_api.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY
+                    authz_permissions.REUSE_LIBRARY_CONTENT
                 )
                 block = xblock_api.load_block(usage_key, user=None)
                 version_num = lib_api.get_library_block(usage_key).draft_version_num

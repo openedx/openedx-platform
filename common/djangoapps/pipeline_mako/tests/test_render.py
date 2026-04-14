@@ -36,7 +36,7 @@ class RequireJSPathOverridesTest(TestCase):
     def test_requirejs_path_overrides(self):
         result = render_require_js_path_overrides(self.OVERRIDES)
         # To make the string comparision easy remove the whitespaces
-        self.assertCountEqual(list(map(str.strip, result.splitlines())), self.OVERRIDES_JS)
+        self.assertCountEqual(list(map(str.strip, result.splitlines())), self.OVERRIDES_JS)  # noqa: PT009
 
 
 @skip_unless_lms

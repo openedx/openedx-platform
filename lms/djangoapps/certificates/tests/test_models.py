@@ -2,8 +2,8 @@
 
 
 import json
-from unittest.mock import patch
 from unittest import mock, skipUnless
+from unittest.mock import patch
 
 import ddt
 import pytest
@@ -13,7 +13,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
 from opaque_keys.edx.locator import CourseKey, CourseLocator
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 from path import Path as path
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -28,17 +28,19 @@ from lms.djangoapps.certificates.models import (
     CertificateTemplateAsset,
     ExampleCertificate,
     ExampleCertificateSet,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.tests.factories import (
+    CertificateAllowlistFactory,
     CertificateInvalidationFactory,
     GeneratedCertificateFactory,
-    CertificateAllowlistFactory,
 )
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.features.name_affirmation_api.utils import get_name_affirmation_service
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 ENROLLMENT_METHOD = 'common.djangoapps.student.models.course_enrollment.CourseEnrollment.enrollment_mode_for_user'
@@ -55,7 +57,7 @@ TEST_DATA_ROOT = PLATFORM_ROOT / TEST_DATA_DIR
 name_affirmation_service = get_name_affirmation_service()
 
 
-class ExampleCertificateTest(TestCase, OpenEdxEventsTestMixin):
+class ExampleCertificateTest(OpenEdxEventsTestMixin, TestCase):
     """Tests for the ExampleCertificate model. """
 
     COURSE_KEY = CourseLocator(org='test', course='test', run='test')
@@ -66,17 +68,6 @@ class ExampleCertificateTest(TestCase, OpenEdxEventsTestMixin):
     ERROR_REASON = 'Kaboom!'
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -108,7 +99,7 @@ class ExampleCertificateTest(TestCase, OpenEdxEventsTestMixin):
                 'error_reason': self.ERROR_REASON}
 
     def test_update_status_invalid(self):
-        with self.assertRaisesRegex(ValueError, 'status'):
+        with self.assertRaisesRegex(ValueError, 'status'):  # noqa: PT027
             self.cert.update_status('invalid')
 
     def test_latest_status_unavailable(self):
@@ -125,23 +116,12 @@ class ExampleCertificateTest(TestCase, OpenEdxEventsTestMixin):
         assert result is None
 
 
-class CertificateHtmlViewConfigurationTest(TestCase, OpenEdxEventsTestMixin):
+class CertificateHtmlViewConfigurationTest(OpenEdxEventsTestMixin, TestCase):
     """
     Test the CertificateHtmlViewConfiguration model.
     """
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -232,24 +212,13 @@ class CertificateTemplateAssetTest(TestCase):
         assert certificate_template_asset.asset == 'certificate_template_assets/1/picture2.jpg'
 
 
-class EligibleCertificateManagerTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class EligibleCertificateManagerTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Test the GeneratedCertificate model's object manager for filtering
     out ineligible certs.
     """
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -290,23 +259,12 @@ class EligibleCertificateManagerTest(SharedModuleStoreTestCase, OpenEdxEventsTes
 
 
 @ddt.ddt
-class TestCertificateGenerationHistory(TestCase, OpenEdxEventsTestMixin):
+class TestCertificateGenerationHistory(OpenEdxEventsTestMixin, TestCase):
     """
     Test the CertificateGenerationHistory model's methods
     """
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     @ddt.data(
         ({"student_set": "allowlisted_not_generated"}, "For exceptions", True),
@@ -362,7 +320,7 @@ class TestCertificateGenerationHistory(TestCase, OpenEdxEventsTestMixin):
         assert certificate_generation_history.get_task_name() == expected
 
 
-class CertificateInvalidationTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CertificateInvalidationTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Test for the Certificate Invalidation model.
     """
@@ -371,18 +329,11 @@ class CertificateInvalidationTest(SharedModuleStoreTestCase, OpenEdxEventsTestMi
 
     @classmethod
     def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
         super().setUpClass()
-        cls.start_events_isolation()
+        cls.course = CourseFactory()
 
     def setUp(self):
         super().setUp()
-        self.course = CourseFactory()
         self.course_overview = CourseOverviewFactory.create(
             id=self.course.id
         )
@@ -432,23 +383,12 @@ class CertificateInvalidationTest(SharedModuleStoreTestCase, OpenEdxEventsTestMi
 
 
 @ddt.ddt
-class GeneratedCertificateTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class GeneratedCertificateTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Test GeneratedCertificates
     """
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -689,7 +629,7 @@ class GeneratedCertificateTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin
         self._assert_event_data(mock_emit_certificate_event, expected_event_data)
 
 
-class CertificateAllowlistTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CertificateAllowlistTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the CertificateAllowlist model.
     """
@@ -698,14 +638,8 @@ class CertificateAllowlistTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin
 
     @classmethod
     def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
         super().setUpClass()
-        cls.start_events_isolation()
+        cls.course_run = CourseFactory()
 
     def setUp(self):
         super().setUp()
@@ -714,7 +648,6 @@ class CertificateAllowlistTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin
         self.user = UserFactory(username=self.username, email=self.user_email)
         self.second_user = UserFactory()
 
-        self.course_run = CourseFactory()
         self.course_run_key = self.course_run.id  # pylint: disable=no-member
 
     def test_get_allowlist_empty(self):

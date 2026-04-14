@@ -13,7 +13,7 @@ class ExpandableField(Field):  # lint-amnesty, pylint: disable=abstract-method
 
     def __init__(self, **kwargs):
         """Sets up the ExpandableField with the collapsed and expanded versions of the serializer."""
-        assert 'collapsed_serializer' in kwargs and 'expanded_serializer' in kwargs
+        assert 'collapsed_serializer' in kwargs and 'expanded_serializer' in kwargs  # noqa: PT018
         self.collapsed = kwargs.pop('collapsed_serializer')
         self.expanded = kwargs.pop('expanded_serializer')
         super().__init__(**kwargs)
@@ -47,7 +47,7 @@ class AbsoluteURLField(URLField):
         request = self.context.get('request', None)
 
         assert request is not None, (
-            "`%s` requires the request in the serializer  context. "
+            "`%s` requires the request in the serializer  context. "  # noqa: UP031
             "Add `context={'request': request}` when instantiating the serializer." % self.__class__.__name__
         )
 

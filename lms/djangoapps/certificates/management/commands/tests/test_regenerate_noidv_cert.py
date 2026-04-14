@@ -13,7 +13,9 @@ from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, U
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 ID_VERIFIED_METHOD = 'lms.djangoapps.verify_student.services.IDVerificationService.user_is_verified'
@@ -75,7 +77,7 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
         )
 
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key)
-        self.assertEqual('1', regenerated)
+        self.assertEqual('1', regenerated)  # noqa: PT009
 
     def test_regeneration_verified(self):
         """
@@ -99,7 +101,7 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
         )
 
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key)
-        self.assertEqual('0', regenerated)
+        self.assertEqual('0', regenerated)  # noqa: PT009
 
     def _multisetup(self):
         """
@@ -189,11 +191,11 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
 
         #3/5 in unverified status
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key, course_run_key2)
-        self.assertEqual('3', regenerated)
+        self.assertEqual('3', regenerated)  # noqa: PT009
 
         #nothing left unverified for another run
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key, course_run_key2)
-        self.assertEqual('0', regenerated)
+        self.assertEqual('0', regenerated)  # noqa: PT009
 
     def test_course_at_a_time(self):
         """
@@ -202,10 +204,10 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
         course_run_key, course_run_key2 = self._multisetup()
 
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key)
-        self.assertEqual('2', regenerated)
+        self.assertEqual('2', regenerated)  # noqa: PT009
 
         regenerated = call_command("regenerate_noidv_cert", "-c", course_run_key2)
-        self.assertEqual('1', regenerated)
+        self.assertEqual('1', regenerated)  # noqa: PT009
 
     def test_regenerate_all(self):
         """
@@ -213,7 +215,7 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
         """
         self._multisetup()
         regenerated = call_command("regenerate_noidv_cert")
-        self.assertEqual('3', regenerated)
+        self.assertEqual('3', regenerated)  # noqa: PT009
 
     def test_regenerate_all_with_excluded_keys(self):
         """
@@ -222,4 +224,4 @@ class RegenerateNoIDVCertTests(ModuleStoreTestCase):
         course_run_key, course_run_key2 = self._multisetup()
 
         regenerated = call_command("regenerate_noidv_cert", "--excluded-keys", course_run_key)
-        self.assertEqual('1', regenerated)
+        self.assertEqual('1', regenerated)  # noqa: PT009

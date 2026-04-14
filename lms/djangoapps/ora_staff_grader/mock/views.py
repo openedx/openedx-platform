@@ -2,17 +2,18 @@
 Mock views for ESG
 """
 
+from rest_framework.generics import RetrieveAPIView
+
 # pylint: disable=arguments-differ
 from rest_framework.response import Response
-from rest_framework.generics import RetrieveAPIView
 from rest_framework.views import APIView
 
 from lms.djangoapps.ora_staff_grader.mock.utils import (
+    fetch_response,
+    fetch_submission,
     get_course_metadata,
     get_ora_metadata,
     get_submissions,
-    fetch_submission,
-    fetch_response,
     save_submission_update,
 )
 

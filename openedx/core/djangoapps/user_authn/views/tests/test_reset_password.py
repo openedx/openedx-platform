@@ -7,6 +7,7 @@ import re
 import unicodedata
 from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
 from django.conf import settings
@@ -24,25 +25,27 @@ from django.urls import reverse
 from django.utils.http import int_to_base36
 from freezegun import freeze_time
 from oauth2_provider import models as dot_models
-from zoneinfo import ZoneInfo
 
-from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from openedx.core.djangoapps.user_api.models import UserRetirementRequest
-from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
-from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
-from openedx.core.djangoapps.user_authn.views.password_reset import (
-    SETTING_CHANGE_INITIATED, PASSWORD_RESET_INITIATED, password_reset, LogistrationPasswordResetView,
-    PasswordResetConfirmWrapper, password_change_request_handler)
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
+from common.djangoapps.student.models import AccountRecovery, LoginFailures
 from common.djangoapps.student.tests.factories import TEST_PASSWORD, UserFactory
 from common.djangoapps.student.tests.test_configuration_overrides import fake_get_value
 from common.djangoapps.student.tests.test_email import mock_render_to_string
-from common.djangoapps.student.models import AccountRecovery, LoginFailures
-
 from common.djangoapps.util.password_policy_validators import create_validator_config
 from common.djangoapps.util.testing import EventTestMixin
+from openedx.core.djangoapps.oauth_dispatch.tests import factories as dot_factories
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.user_api.accounts import EMAIL_MAX_LENGTH, EMAIL_MIN_LENGTH
+from openedx.core.djangoapps.user_api.models import UserRetirementRequest
+from openedx.core.djangoapps.user_api.tests.test_views import UserAPITestCase
+from openedx.core.djangoapps.user_authn.views.password_reset import (
+    PASSWORD_RESET_INITIATED,
+    SETTING_CHANGE_INITIATED,
+    LogistrationPasswordResetView,
+    PasswordResetConfirmWrapper,
+    password_change_request_handler,
+    password_reset,
+)
+from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms
 
 ENABLE_AUTHN_MICROFRONTEND = settings.FEATURES.copy()
 ENABLE_AUTHN_MICROFRONTEND['ENABLE_AUTHN_MICROFRONTEND'] = True
@@ -650,7 +653,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
         reset_request = self.request_factory.get(self.password_reset_confirm_url)
         reset_request.user = UserFactory.create()
 
-        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,
+        self.assertRaises(Http404, PasswordResetConfirmWrapper.as_view(), reset_request, uidb36=self.uidb36,  # noqa: PT027  # pylint: disable=line-too-long
                           token=self.token)
 
     @override_settings(FEATURES={'ENABLE_MAX_FAILED_LOGIN_ATTEMPTS': True}, MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED=1)
@@ -754,7 +757,7 @@ class PasswordResetViewTest(UserAPITestCase):
         assert form_desc['fields'] ==\
                [{'name': 'email', 'defaultValue': '', 'type': 'email', 'exposed': True,
                  'required': True, 'label': 'Email', 'placeholder': 'username@domain.com',
-                 'instructions': 'The email address you used to register with {platform_name}'
+                 'instructions': 'The email address you used to register with {platform_name}'  # noqa: UP032
                 .format(platform_name=settings.PLATFORM_NAME),
                  'restrictions': {'min_length': EMAIL_MIN_LENGTH,
                                   'max_length': EMAIL_MAX_LENGTH},
@@ -772,7 +775,7 @@ class PasswordResetTokenValidateViewTest(UserAPITestCase):
         self.user = UserFactory.create()
         self.user.is_active = False
         self.user.save()
-        self.token = '{uidb36}-{token}'.format(
+        self.token = '{uidb36}-{token}'.format(  # noqa: UP032
             uidb36=int_to_base36(self.user.id),
             token=default_token_generator.make_token(self.user)
         )

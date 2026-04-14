@@ -10,10 +10,11 @@ import json
 import logging
 from datetime import datetime
 from functools import reduce
-from django.conf import settings
 from zoneinfo import ZoneInfo
 
+from django.conf import settings
 from edx_django_utils.monitoring import set_custom_attribute
+from edx_toggles.toggles import SettingToggle, WaffleFlag
 from lxml import etree
 from opaque_keys.edx.keys import UsageKey
 from web_fragments.fragment import Fragment
@@ -23,17 +24,9 @@ from xblock.exceptions import NoSuchServiceError
 from xblock.fields import Boolean, Date, Integer, List, Scope, String
 from xblock.progress import Progress
 
-from edx_toggles.toggles import WaffleFlag, SettingToggle
-from xmodule.util.builtin_assets import add_webpack_js_to_fragment, add_css_to_fragment
-from xmodule.x_module import (
-    ResourceTemplates,
-    shim_xmodule_js,
-    STUDENT_VIEW,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
-
 from common.djangoapps.xblock_django.constants import ATTR_KEY_USER_ID, ATTR_KEY_USER_IS_STAFF
+from xmodule.util.builtin_assets import add_css_to_fragment, add_webpack_js_to_fragment
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin, shim_xmodule_js
 
 from .exceptions import NotFoundError
 from .mako_block import MakoTemplateBlockBase

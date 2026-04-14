@@ -10,12 +10,15 @@ from zoneinfo import ZoneInfo
 import crum
 import ddt
 import pytest
+from django.test.client import RequestFactory
 from markupsafe import Markup
 
-from django.test.client import RequestFactory
-
 from common.djangoapps.util.date_utils import (
-    almost_same_datetime, get_default_time_display, get_time_display, strftime_localized, strftime_localized_html
+    almost_same_datetime,
+    get_default_time_display,
+    get_time_display,
+    strftime_localized,
+    strftime_localized_html,
 )
 
 
@@ -211,7 +214,7 @@ class StrftimeLocalizedTest(unittest.TestCase):
     )
     def test_invalid_format_strings(self, fmt):
         dtime = datetime(2013, 2, 14, 16, 41, 17)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             strftime_localized(dtime, fmt)
 
 
@@ -236,11 +239,11 @@ class StrftimeLocalizedHtmlTest(unittest.TestCase):
                    return_value={'user_timezone': timezone}):
             html = strftime_localized_html(dtime, 'SHORT_DATE')
         assert isinstance(html, Markup)
-        self.assertRegex(html,
-                         '<span class="localized-datetime" data-format="shortDate" data-timezone="%s" ' % timezone +
+        self.assertRegex(html,  # noqa: PT009
+                         '<span class="localized-datetime" data-format="shortDate" data-timezone="%s" ' % timezone +  # noqa: UP031  # pylint: disable=line-too-long
                          '\\s*data-datetime="2013-02-14T16:41:17" data-language="en">Feb 14, 2013</span>')
 
     def test_invalid_format_string(self):
         dtime = datetime(2013, 2, 14, 16, 41, 17)
-        with self.assertRaisesRegex(AssertionError, 'format "NOPE" not yet supported in strftime_localized_html'):
+        with self.assertRaisesRegex(AssertionError, 'format "NOPE" not yet supported in strftime_localized_html'):  # noqa: PT027  # pylint: disable=line-too-long
             strftime_localized_html(dtime, 'NOPE')

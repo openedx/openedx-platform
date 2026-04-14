@@ -8,8 +8,8 @@ from urllib.parse import parse_qs, urlparse
 from django.http import HttpRequest
 from edx_ace import Message, Recipient
 
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 
 
 class QueryStringAssertionMixin:
@@ -25,7 +25,7 @@ class QueryStringAssertionMixin:
         Raises:
             AssertionError: If the two query strings are not equal.
         """
-        self.assertDictEqual(parse_qs(expected_qs), parse_qs(actual_qs))
+        self.assertDictEqual(parse_qs(expected_qs), parse_qs(actual_qs))  # noqa: PT009
 
     def assert_url_components_equal(self, url, **kwargs):
         """

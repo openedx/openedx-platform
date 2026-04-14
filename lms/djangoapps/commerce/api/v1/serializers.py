@@ -46,7 +46,7 @@ def validate_course_id(course_id):
     try:
         course_key = CourseKey.from_string(str(course_id))
     except InvalidKeyError:
-        raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             _("{course_id} is not a valid course key.").format(
                 course_id=course_id
             )

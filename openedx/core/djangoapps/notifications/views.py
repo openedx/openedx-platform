@@ -2,13 +2,13 @@
 Views for the notifications API.
 """
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.db.models import Count
-from django_ratelimit.core import is_ratelimited
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext as _
-from zoneinfo import ZoneInfo
+from django_ratelimit.core import is_ratelimited
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.generics import UpdateAPIView
@@ -24,17 +24,18 @@ from .events import (
     notification_preference_update_event,
     notification_read_event,
     notification_tray_opened_event,
-    notifications_app_all_read_event
+    notifications_app_all_read_event,
 )
 from .models import Notification
 from .serializers import (
     NotificationSerializer,
     UserNotificationPreferenceUpdateAllSerializer,
-    add_non_editable_in_preference
+    add_non_editable_in_preference,
 )
 from .utils import (
+    create_account_notification_pref_if_not_exists,
+    exclude_inaccessible_preferences,
     get_show_notifications_tray,
-    exclude_inaccessible_preferences, create_account_notification_pref_if_not_exists
 )
 
 

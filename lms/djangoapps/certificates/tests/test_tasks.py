@@ -14,10 +14,7 @@ from opaque_keys.edx.keys import CourseKey
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.certificates.data import CertificateStatuses
-from lms.djangoapps.certificates.tasks import (
-    generate_certificate,
-    get_changed_cert_templates,
-)
+from lms.djangoapps.certificates.tasks import generate_certificate, get_changed_cert_templates
 from lms.djangoapps.certificates.tests.factories import CertificateTemplateFactory
 
 
@@ -44,7 +41,7 @@ class GenerateUserCertificateTest(TestCase):
         del kwargs[missing_arg]
 
         with patch("lms.djangoapps.certificates.tasks.User.objects.get"):
-            with self.assertRaisesRegex(KeyError, missing_arg):
+            with self.assertRaisesRegex(KeyError, missing_arg):  # noqa: PT027
                 generate_certificate.apply_async(kwargs=kwargs).get()
 
     def test_generation(self):

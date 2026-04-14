@@ -5,26 +5,25 @@ Centralized in openedx/features/course_experience instead of lms/djangoapps/cour
 because the Studio course outline may need these utilities.
 """
 from typing import Optional
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpRequest
 from django.http.request import QueryDict
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from urllib.parse import urlparse
 
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.search import path_to_location  # lint-amnesty, pylint: disable=wrong-import-order
-
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 User = get_user_model()
 
 
 def get_courseware_url(
         usage_key: UsageKey,
-        request: Optional[HttpRequest] = None,
+        request: Optional[HttpRequest] = None,  # noqa: UP045
         is_staff: bool = False,
 ) -> str:
     """
@@ -47,7 +46,7 @@ def get_courseware_url(
 
 def _get_new_courseware_url(
         usage_key: UsageKey,
-        request: Optional[HttpRequest] = None,
+        request: Optional[HttpRequest] = None,  # noqa: UP045
         is_staff: bool = None,
 ) -> str:
     """
@@ -92,9 +91,9 @@ def _get_new_courseware_url(
 
 def make_learning_mfe_courseware_url(
         course_key: CourseKey,
-        sequence_key: Optional[UsageKey] = None,
-        unit_key: Optional[UsageKey] = None,
-        params: Optional[QueryDict] = None,
+        sequence_key: Optional[UsageKey] = None,  # noqa: UP045
+        unit_key: Optional[UsageKey] = None,  # noqa: UP045
+        params: Optional[QueryDict] = None,  # noqa: UP045
         preview: bool = None,
 ) -> str:
     """
@@ -156,8 +155,8 @@ def make_learning_mfe_courseware_url(
 
 def get_learning_mfe_home_url(
         course_key: CourseKey,
-        url_fragment: Optional[str] = None,
-        params: Optional[QueryDict] = None,
+        url_fragment: Optional[str] = None,  # noqa: UP045
+        params: Optional[QueryDict] = None,  # noqa: UP045
 ) -> str:
     """
     Given a course run key and view name, return the appropriate course home (MFE) URL.

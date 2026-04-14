@@ -17,7 +17,7 @@ from xmodule.modulestore.tests.utils import (
     TEST_DATA_DIR,
     MemoryCache,
     MixedModulestoreBuilder,
-    VersioningModulestoreBuilder
+    VersioningModulestoreBuilder,
 )
 from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import import_course_from_xml

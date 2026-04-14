@@ -8,15 +8,19 @@ from django.contrib import admin
 
 from openedx.core.djangoapps.video_config.forms import (
     CourseHLSPlaybackFlagAdminForm,
-    CourseYoutubeBlockedFlagAdminForm,
     CourseVideoTranscriptFlagAdminForm,
+    CourseYoutubeBlockedFlagAdminForm,
 )
 from openedx.core.djangoapps.video_config.models import (
-    CourseHLSPlaybackEnabledFlag, HLSPlaybackEnabledFlag,
+    CourseHLSPlaybackEnabledFlag,
+    CourseVideoTranscriptEnabledFlag,
     CourseYoutubeBlockedFlag,
-    CourseVideoTranscriptEnabledFlag, VideoTranscriptEnabledFlag,
-    TranscriptMigrationSetting, MigrationEnqueuedCourse,
-    VideoThumbnailSetting, UpdatedCourseVideos,
+    HLSPlaybackEnabledFlag,
+    MigrationEnqueuedCourse,
+    TranscriptMigrationSetting,
+    UpdatedCourseVideos,
+    VideoThumbnailSetting,
+    VideoTranscriptEnabledFlag,
 )
 
 

@@ -13,7 +13,7 @@ from openedx.core.djangoapps.api_admin.views import (
     CatalogEditView,
     CatalogListView,
     CatalogPreviewView,
-    CatalogSearchView
+    CatalogSearchView,
 )
 
 app_name = 'api_admin'

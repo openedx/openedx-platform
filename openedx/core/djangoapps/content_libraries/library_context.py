@@ -4,13 +4,12 @@ Definition of "Library" as a learning context.
 import logging
 
 from django.core.exceptions import PermissionDenied
-from rest_framework.exceptions import NotFound
-
+from opaque_keys.edx.keys import UsageKeyV2
+from opaque_keys.edx.locator import LibraryLocatorV2, LibraryUsageLocatorV2
+from openedx_content import api as content_api
 from openedx_events.content_authoring.data import LibraryBlockData, LibraryContainerData
 from openedx_events.content_authoring.signals import LIBRARY_BLOCK_UPDATED, LIBRARY_CONTAINER_UPDATED
-from opaque_keys.edx.keys import UsageKeyV2
-from opaque_keys.edx.locator import LibraryUsageLocatorV2, LibraryLocatorV2
-from openedx_content import api as content_api
+from rest_framework.exceptions import NotFound
 
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.djangoapps.content_libraries.models import ContentLibrary

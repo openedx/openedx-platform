@@ -4,14 +4,12 @@ Tests for the modulestore and XBlock python APIs.
 from unittest.mock import Mock
 
 from django.conf import settings
-
-from lti_consumer.lti_xblock import LtiConsumerXBlock
 from done import DoneXBlock
+from lti_consumer.lti_xblock import LtiConsumerXBlock
 from xblock.field_data import DictFieldData
-
-from xblock.test.tools import TestRuntime
 from xblock.test.test_runtime import TestSimpleMixin
-from xmodule.video_block import VideoBlock
+from xblock.test.tools import TestRuntime
+
 from xmodule.modulestore.api import (
     get_javascript_i18n_file_name,
     get_javascript_i18n_file_path,
@@ -19,6 +17,7 @@ from xmodule.modulestore.api import (
     get_root_module_name,
     get_xblock_root_module_name,
 )
+from xmodule.video_block import VideoBlock
 
 
 def test_get_root_module_name():

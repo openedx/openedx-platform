@@ -14,7 +14,9 @@ from lms.djangoapps.bulk_email.models import Optout
 from lms.djangoapps.bulk_email.views import opt_out_email_updates
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher
 from openedx.core.lib.tests import attr
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -76,6 +78,6 @@ class OptOutEmailUpdatesViewTest(ModuleStoreTestCase):
         Make sure that view returns 404 in case token is not valid
         """
         request = self.request_factory.get("dummy")
-        with pytest.raises(Http404) as err:
+        with pytest.raises(Http404) as err:  # noqa: PT012
             opt_out_email_updates(request, token, course)
             assert message in err
