@@ -426,7 +426,7 @@ def send_user_digest_email_task(self, user_id, cadence_type):
             )
             return
         retry_countdown = 300 * (2 ** current_retries)
-        raise self.retry(exc=exc, countdown=retry_countdown)
+        raise self.retry(exc=exc, countdown=retry_countdown) from exc
 
 
 def _claim_digest_schedule(user_id, cadence_type):

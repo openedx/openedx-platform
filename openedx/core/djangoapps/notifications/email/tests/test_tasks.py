@@ -1,13 +1,12 @@
 """
 Test cases for notifications/email/tasks.py
 """
-import datetime
 
-from datetime import datetime, timedelta, timezone as dt_timezone
-
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import ddt
+import pytest
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.utils import timezone
@@ -1170,7 +1169,7 @@ class TestGetNextDigestDeliveryTime(ModuleStoreTestCase):
 
     def test_invalid_cadence_raises_error(self):
         """Test that invalid cadence type raises ValueError."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError, match="Invalid cadence_type for digest scheduling"):
             get_next_digest_delivery_time(EmailCadence.IMMEDIATELY)
 
     @freeze_time("2026-03-06 10:00:00", tz_offset=0)
@@ -1199,13 +1198,13 @@ class TestIsDigestAlreadyScheduled(ModuleStoreTestCase):
     @freeze_time("2026-03-06 10:00:00", tz_offset=0)
     def test_no_scheduled_notifications(self):
         """Test returns False when no DigestSchedule record exists."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         assert is_digest_already_scheduled(self.user.id, EmailCadence.DAILY, delivery_time) is False
 
     @freeze_time("2026-03-06 10:00:00", tz_offset=0)
     def test_has_scheduled_notification(self):
         """Test returns True when a DigestSchedule record exists for the exact delivery_time."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
@@ -1217,8 +1216,8 @@ class TestIsDigestAlreadyScheduled(ModuleStoreTestCase):
     @freeze_time("2026-03-06 10:00:00", tz_offset=0)
     def test_scheduled_notification_outside_window(self):
         """Test returns False when DigestSchedule record has a different delivery_time."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
-        different_delivery_time = datetime(2026, 3, 5, 17, 0, tzinfo=dt_timezone.utc)  # Yesterday
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
+        different_delivery_time = datetime(2026, 3, 5, 17, 0, tzinfo=UTC)  # Yesterday
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
@@ -1239,12 +1238,12 @@ class TestIsDigestAlreadySentInWindow(ModuleStoreTestCase):
 
     def test_no_sent_notifications(self):
         """Test returns False when no digest has been sent."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         assert is_digest_already_sent_in_window(self.user.id, EmailCadence.DAILY, delivery_time) is False
 
     def test_has_sent_notification_in_window(self):
         """Test returns True when digest was already sent in window."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1252,7 +1251,7 @@ class TestIsDigestAlreadySentInWindow(ModuleStoreTestCase):
             notification_type='new_discussion_post',
             content_url='http://example.com',
             email=True,
-            email_sent_on=datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc),
+            email_sent_on=datetime(2026, 3, 6, 10, 0, tzinfo=UTC),
         )
         assert is_digest_already_sent_in_window(self.user.id, EmailCadence.DAILY, delivery_time) is True
 
@@ -1304,7 +1303,7 @@ class TestScheduleBulkDigestEmails(ModuleStoreTestCase):
     @patch('openedx.core.djangoapps.notifications.email.tasks.send_user_digest_email_task.apply_async')
     def test_does_not_schedule_if_already_scheduled(self, mock_apply_async):
         """Test that no duplicate task is scheduled when a DigestSchedule record already exists."""
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
@@ -1391,7 +1390,7 @@ class TestScheduleBulkDigestEmails(ModuleStoreTestCase):
 
         schedule_bulk_digest_emails({self.user.id: EmailCadence.DAILY})
 
-        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc)
+        delivery_time = datetime(2026, 3, 6, 17, 0, tzinfo=UTC)
         assert DigestSchedule.objects.filter(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
@@ -1455,7 +1454,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     def test_sends_digest_email(self, mock_ace_send):
         """Test that digest email is sent successfully."""
-        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc)
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
         Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1470,7 +1469,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='test-task-id',
         )
 
@@ -1485,7 +1484,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     def test_skips_if_already_sent_by_cron(self, mock_ace_send):
         """Test that digest is skipped if cron already sent it."""
-        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc)
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
         Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1495,13 +1494,13 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
             content_context=get_new_post_notification_content_context(),
             email=True,
             email_scheduled=True,
-            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=dt_timezone.utc),  # Already sent by cron
+            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=UTC),  # Already sent by cron
             created=created_time,
         )
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='test-task-id',
         )
 
@@ -1516,7 +1515,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     def test_clears_scheduled_flags_after_send(self, mock_ace_send):
         """Test that email_scheduled flags are cleared after successful send."""
-        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc)
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
         notif = Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1531,7 +1530,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='test-task-id',
         )
 
@@ -1551,7 +1550,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         self.user.set_unusable_password()
         self.user.save()
 
-        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc)
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
         Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1566,7 +1565,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='test-task-id',
         )
         send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
@@ -1579,7 +1578,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         assert not DigestSchedule.objects.filter(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
         ).exists()
 
     @freeze_time("2026-03-06 17:00:00", tz_offset=0)
@@ -1589,7 +1588,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user_id=99999,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='orphan-task-id',
         )
         # Should not raise
@@ -1605,7 +1604,7 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
     @patch('openedx.core.djangoapps.notifications.email.tasks.ace.send')
     def test_clears_scheduled_flags_even_when_cron_sent(self, mock_ace_send):
         """Test that scheduled flags and DigestSchedule record are cleared even when cron already sent."""
-        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=dt_timezone.utc)
+        created_time = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
         notif = Notification.objects.create(
             user=self.user,
             course_id=str(self.course.id),
@@ -1615,13 +1614,13 @@ class TestSendUserDigestEmailTask(ModuleStoreTestCase):
             content_context=get_new_post_notification_content_context(),
             email=True,
             email_scheduled=True,
-            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=dt_timezone.utc),  # Sent by cron
+            email_sent_on=datetime(2026, 3, 6, 15, 0, tzinfo=UTC),  # Sent by cron
             created=created_time,
         )
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='test-task-id',
         )
         send_user_digest_email_task(  # pylint: disable=no-value-for-parameter
@@ -1785,7 +1784,7 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='current-task-id',
         )
 
@@ -1795,7 +1794,7 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         assert not DigestSchedule.objects.filter(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
         ).exists()
 
     @freeze_time("2026-03-06 17:00:00", tz_offset=0)
@@ -1804,7 +1803,7 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='current-task-id',
         )
 
@@ -1820,13 +1819,13 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
             task_id='current-task-id',
         )
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=UTC),
             task_id='future-task-id',
         )
 
@@ -1836,12 +1835,12 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         assert not DigestSchedule.objects.filter(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 6, 17, 0, tzinfo=UTC),
         ).exists()
         assert DigestSchedule.objects.filter(
             user=self.user,
             cadence_type=EmailCadence.DAILY,
-            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 7, 17, 0, tzinfo=UTC),
         ).exists()
 
     @freeze_time("2026-03-09 17:00:00", tz_offset=0)
@@ -1850,13 +1849,13 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.WEEKLY,
-            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=UTC),
             task_id='current-task-id',
         )
         DigestSchedule.objects.create(
             user=self.user,
             cadence_type=EmailCadence.WEEKLY,
-            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=UTC),
             task_id='next-week-task-id',
         )
 
@@ -1865,9 +1864,9 @@ class TestClaimDigestSchedule(ModuleStoreTestCase):
         assert result is True
         assert not DigestSchedule.objects.filter(
             user=self.user,
-            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 9, 17, 0, tzinfo=UTC),
         ).exists()
         assert DigestSchedule.objects.filter(
             user=self.user,
-            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=dt_timezone.utc),
+            delivery_time=datetime(2026, 3, 16, 17, 0, tzinfo=UTC),
         ).exists()
