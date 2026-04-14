@@ -3,9 +3,9 @@ Typing utilities for the User models.
 """
 from __future__ import annotations
 
-import typing as t
-
 import django.contrib.auth.models
 
-AuthUser: t.TypeAlias = django.contrib.auth.models.User  # noqa: UP040
-User: t.TypeAlias = django.contrib.auth.models.User | django.contrib.auth.models.AnonymousUser  # noqa: UP040
+# base type for an authenticated user
+type AuthUser = django.contrib.auth.models.User
+# base type for a generic user making an HTTP request, which may or may not be authenticated:
+type User = AuthUser | django.contrib.auth.models.AnonymousUser

@@ -9,6 +9,7 @@ from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from openedx_events.learning.data import CourseDiscussionConfigurationData, DiscussionTopicContext
 
+from openedx.core.djangoapps.course_apps.models import CourseAppStatus
 from openedx.core.djangoapps.discussions.handlers import update_course_discussion_config
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, DiscussionTopicLink
 
@@ -222,3 +223,39 @@ class UpdateCourseDiscussionsConfigTestCase(TestCase):
         update_course_discussion_config(config_data)
         db_config = DiscussionsConfiguration.objects.get(context_key=self.course_key)
         assert db_config.enabled is False
+
+    def test_course_app_status_created_for_new_course(self):
+        """
+        When no CourseAppStatus row exists yet (new course), the handler should
+        create one with the correct enabled value.
+        """
+        new_key = CourseKey.from_string("course-v1:test+test+new_app_status")
+        assert not CourseAppStatus.objects.filter(course_key=new_key, app_id="discussion").exists()
+        config_data = CourseDiscussionConfigurationData(
+            course_key=new_key,
+            provider_type="openedx",
+            enabled=False,
+            plugin_configuration={},
+        )
+        update_course_discussion_config(config_data)
+        app_status = CourseAppStatus.objects.get(course_key=new_key, app_id="discussion")
+        assert app_status.enabled is False
+
+    def test_course_app_status_updated_for_existing_course(self):
+        """
+        When a CourseAppStatus row already exists (old course), the handler
+        should update it with the correct enabled value.
+        """
+        CourseAppStatus.objects.create(
+            course_key=self.course_key,
+            app_id="discussion",
+            enabled=True,
+        )
+        config_data = CourseDiscussionConfigurationData(
+            course_key=self.course_key,
+            provider_type="openedx",
+            enabled=False,
+        )
+        update_course_discussion_config(config_data)
+        app_status = CourseAppStatus.objects.get(course_key=self.course_key, app_id="discussion")
+        assert app_status.enabled is False

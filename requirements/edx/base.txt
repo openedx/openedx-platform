@@ -833,7 +833,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-openedx-core==0.38.2
+openedx-core==0.39.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
@@ -850,6 +850,7 @@ openedx-events==11.1.0
     #   edx-event-bus-kafka
     #   edx-event-bus-redis
     #   event-tracking
+    #   openedx-core
     #   ora2
 openedx-filters==3.1.0
     # via

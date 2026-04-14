@@ -6,6 +6,7 @@ from __future__ import annotations
 from celery.result import AsyncResult
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_content.api import get_collection
+from openedx_content.models_api import LearningPackage
 
 from openedx.core.djangoapps.content_libraries.api import get_library
 from openedx.core.types.user import AuthUser
@@ -64,7 +65,8 @@ def start_bulk_migration_to_library(
     """
     target_library = get_library(target_library_key)
     # get_library ensures that the library is connected to a learning package.
-    target_package_id: int = target_library.learning_package_id  # type: ignore[assignment]
+    assert target_library.learning_package_id is not None
+    target_package_id: LearningPackage.ID = target_library.learning_package_id
 
     sources_pks: list[int] = []
     for source_key in source_key_list:

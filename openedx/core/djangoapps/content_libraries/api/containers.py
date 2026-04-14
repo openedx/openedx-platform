@@ -234,7 +234,7 @@ def delete_container(
         container_key,
         published=False,
     )
-    content_api.soft_delete_draft(container.pk)
+    content_api.soft_delete_draft(container.id)
 
     send_container_deleted_signal()
 
@@ -294,7 +294,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
         container.key,
     )
 
-    content_api.set_draft_version(container.pk, container.versioning.latest.pk)
+    content_api.set_draft_version(container.id, container.versioning.latest.pk)
     # Fetch related containers after restore
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
@@ -441,7 +441,7 @@ def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLo
     [ 🛑 UNSTABLE ] Get containers that contains the item, that can be a component or another container.
     """
     entity = get_entity_from_key(key)
-    containers = content_api.get_containers_with_entity(entity.pk).select_related("container_type")
+    containers = content_api.get_containers_with_entity(entity.id).select_related("container_type")
     return [ContainerMetadata.from_container(key.lib_key, container) for container in containers]
 
 
@@ -460,7 +460,7 @@ def publish_container_changes(
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this container:
-    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.pk)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.id)
     # Publish the container, which will also auto-publish any unpublished child components:
     publish_log = content_api.publish_from_drafts(
         learning_package.id,
