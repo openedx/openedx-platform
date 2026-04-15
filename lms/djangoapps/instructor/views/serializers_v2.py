@@ -861,3 +861,89 @@ class TaskStatusSerializer(serializers.Serializer):
     updated_at = serializers.DateTimeField(
         help_text="Last update timestamp"
     )
+
+
+class EnrollmentModifyRequestSerializerV2(serializers.Serializer):
+    """Validates request body for enrolling/unenrolling one or more learners."""
+    identifier = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of email addresses or usernames of learners to enroll/unenroll.",
+    )
+    action = serializers.ChoiceField(
+        choices=('enroll', 'unenroll'),
+        help_text="The enrollment action to perform: 'enroll' or 'unenroll'.",
+    )
+    auto_enroll = serializers.BooleanField(
+        default=False,
+        help_text="Whether to auto-enroll in the verified track (enroll action only).",
+    )
+    email_students = serializers.BooleanField(
+        default=False,
+        help_text="Whether to send an email notification.",
+    )
+    reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Reason for the change (for audit trail).",
+    )
+
+
+class EnrollmentStateSerializerV2(serializers.Serializer):
+    """Documents the before/after enrollment state shape (mirrors EmailEnrollmentState.to_dict)."""
+    user = serializers.BooleanField()
+    enrollment = serializers.BooleanField()
+    allowed = serializers.BooleanField()
+    auto_enroll = serializers.BooleanField()
+
+
+class EnrollmentModifyResultSerializerV2(serializers.Serializer):
+    """Documents the per-identifier result shape for enrollment modifications (mirrors v1)."""
+    identifier = serializers.CharField()
+    before = EnrollmentStateSerializerV2(required=False)
+    after = EnrollmentStateSerializerV2(required=False)
+    invalidIdentifier = serializers.BooleanField(required=False)
+    error = serializers.BooleanField(required=False)
+
+
+class EnrollmentModifyResponseSerializerV2(serializers.Serializer):
+    """Documents the response shape for the bulk enroll/unenroll endpoint (mirrors v1)."""
+    action = serializers.CharField()
+    auto_enroll = serializers.BooleanField()
+    results = EnrollmentModifyResultSerializerV2(many=True)
+
+
+class BetaTesterModifyRequestSerializerV2(serializers.Serializer):
+    """Validates request body for adding/removing one or more beta testers."""
+    identifier = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of email addresses or usernames of learners to add/remove as beta testers.",
+    )
+    action = serializers.ChoiceField(
+        choices=('add', 'remove'),
+        help_text="The beta tester action to perform: 'add' or 'remove'.",
+    )
+    email_students = serializers.BooleanField(
+        default=False,
+        help_text="Whether to send an email notification.",
+    )
+    auto_enroll = serializers.BooleanField(
+        default=False,
+        help_text="Whether to auto-enroll the user in the course (add action only).",
+    )
+
+
+class BetaTesterModifyResultSerializerV2(serializers.Serializer):
+    """Documents the per-identifier result shape for beta tester modifications (mirrors v1)."""
+    identifier = serializers.CharField()
+    error = serializers.BooleanField()
+    userDoesNotExist = serializers.BooleanField()
+    is_active = serializers.BooleanField(allow_null=True)
+
+
+class BetaTesterModifyResponseSerializerV2(serializers.Serializer):
+    """Documents the response shape for the bulk beta tester add/remove endpoint (mirrors v1)."""
+    action = serializers.CharField()
+    results = BetaTesterModifyResultSerializerV2(many=True)

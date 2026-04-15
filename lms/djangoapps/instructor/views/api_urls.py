@@ -111,6 +111,16 @@ v2_api_urls = [
         api_v2.GradingConfigView.as_view(),
         name='grading_config'
     ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/enrollments/modify$',
+        api_v2.EnrollmentModifyView.as_view(),
+        name='enrollment_modify'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/beta_testers/modify$',
+        api_v2.BetaTesterModifyView.as_view(),
+        name='beta_tester_modify'
+    ),
 ]
 
 urlpatterns = [
