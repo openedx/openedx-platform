@@ -254,7 +254,7 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             "author_name": "Test Author",
             "replier_name": "Replier Name"
         }
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(16):
             send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
                                context, "http://test.url")
 

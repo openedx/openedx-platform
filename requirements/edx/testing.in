@@ -38,6 +38,7 @@ pytest-django             # Django support for pytest
 pytest-json-report        # Output json formatted warnings after running pytest
 pytest-metadata           # To prevent 'make upgrade' failure, dependency of pytest-json-report
 pytest-randomly           # pytest plugin to randomly order tests
+pytest-reportlog          # Per-test timing data including setup/teardown (used for shard rebalancing)
 pytest-xdist[psutil]      # Parallel execution of tests on multiple CPU cores or hosts
 singledispatch            # Backport of functools.singledispatch from Python 3.4+, used in tests of XBlock rendering
 testfixtures              # Provides a LogCapture utility used by several tests
