@@ -8,7 +8,7 @@ from .views import (
     CombinedDiscussionsConfigurationView,
     DiscussionsConfigurationSettingsView,
     DiscussionsProvidersView,
-    SyncDiscussionTopicsView
+    SyncDiscussionTopicsView,
 )
 
 urlpatterns = [

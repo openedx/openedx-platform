@@ -5,14 +5,14 @@ Xblock services for creating xblocks.
 from uuid import uuid4
 
 from django.utils.translation import gettext as _
-from xmodule.modulestore.django import modulestore
-from xmodule.tabs import StaticTab
 
 from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from openedx.core.toggles import ENTRANCE_EXAMS
+from xmodule.modulestore.django import modulestore
+from xmodule.tabs import StaticTab
 
-from .xblock_helpers import usage_key_with_run
 from ..helpers import GRADER_TYPES, remove_entrance_exam_graders
+from .xblock_helpers import usage_key_with_run
 
 
 def create_xblock(parent_locator, user, category, display_name, boilerplate=None, is_entrance_exam=False):

@@ -3,6 +3,7 @@ Test cases for tabs.
 """
 
 from unittest.mock import MagicMock, Mock, patch
+
 import ddt
 import pytest
 from crum import set_current_request
@@ -13,13 +14,21 @@ from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
 from milestones.tests.utils import MilestonesTestCaseMixin
 
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.tests.factories import InstructorFactory, StaffFactory, UserFactory
+from common.djangoapps.util.milestones_helpers import (
+    add_course_content_milestone,
+    add_course_milestone,
+    add_milestone,
+    get_milestone_relationship_types,
+)
 from lms.djangoapps.courseware.tabs import (
     CoursewareTab,
     DatesTab,
     ExternalDiscussionCourseTab,
     ExternalLinkCourseTab,
     ProgressTab,
-    get_course_tab_list
+    get_course_tab_list,
 )
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.courseware.views.views import StaticCourseTabView, get_static_tab_fragment
@@ -27,23 +36,16 @@ from lms.djangoapps.discussion.toggles import ENABLE_DISCUSSIONS_MFE
 from openedx.core.djangoapps.discussions.url_helpers import get_discussions_mfe_url
 from openedx.core.djangolib.testing.utils import get_mock_request
 from openedx.core.lib.courses import get_course_by_id
-from common.djangoapps.student.models import CourseEnrollment
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
-from common.djangoapps.util.milestones_helpers import (
-    add_course_content_milestone,
-    add_course_milestone,
-    add_milestone,
-    get_milestone_relationship_types
-)
 from xmodule import tabs as xmodule_tabs  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 from xmodule.modulestore.tests.utils import TEST_DATA_DIR  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.xml_importer import import_course_from_xml  # lint-amnesty, pylint: disable=wrong-import-order
 

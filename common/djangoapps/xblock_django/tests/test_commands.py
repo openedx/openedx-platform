@@ -2,18 +2,14 @@
 Tests for the pull_xblock_translations management command.
 """
 
-from path import Path
 from unittest.mock import patch
 
 from django.core.management import call_command
-
 from done import DoneXBlock
+from path import Path
 
-from xmodule.modulestore.api import (
-    get_python_locale_root,
-    get_javascript_i18n_file_path,
-)
-from xmodule.modulestore.tests.conftest import tmp_translations_dir
+from xmodule.modulestore.api import get_javascript_i18n_file_path, get_python_locale_root
+from xmodule.modulestore.tests.conftest import tmp_translations_dir  # noqa: F401
 
 
 def test_pull_xblock_translations(tmp_path):
@@ -47,7 +43,7 @@ def test_pull_xblock_translations(tmp_path):
                 ]
 
 
-def test_compile_xblock_translations(tmp_translations_dir):
+def test_compile_xblock_translations(tmp_translations_dir):  # noqa: F811
     """
     Test the compile_xblock_translations management command.
     """

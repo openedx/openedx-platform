@@ -65,7 +65,7 @@ class PlainTextMath:
             raise EqnPatternNotFound()
         open_count = 0
         inner_start = start + len(opening_pattern)
-        for i, char in enumerate(equation[inner_start:]):
+        for i, char in enumerate(equation[inner_start:]):  # noqa: B007
             if char == "{":
                 open_count += 1
             if char == "}":

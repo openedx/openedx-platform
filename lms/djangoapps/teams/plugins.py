@@ -1,7 +1,7 @@
 """
 Definition of the course team feature.
 """
-from typing import Dict, Optional
+from typing import Dict, Optional  # noqa: UP035
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -14,8 +14,8 @@ from openedx.core.djangoapps.content.course_overviews.models import CourseOvervi
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from . import is_feature_enabled
 
+from . import is_feature_enabled
 
 User = get_user_model()
 
@@ -93,7 +93,7 @@ class TeamsCourseApp(CourseApp):
         return enabled
 
     @classmethod
-    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:
+    def get_allowed_operations(cls, course_key: CourseKey, user: Optional[User] = None) -> Dict[str, bool]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Return allowed operations for teams app.
         """

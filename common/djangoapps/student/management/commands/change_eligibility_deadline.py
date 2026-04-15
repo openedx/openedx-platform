@@ -9,8 +9,8 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.course_modes.models import CourseMode
-from openedx.core.djangoapps.credit.models import CreditEligibility
 from common.djangoapps.student.models import CourseEnrollment, User
+from openedx.core.djangoapps.credit.models import CreditEligibility
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -75,7 +75,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
             logger.exception(f'Invalid or non-existent course id {course_id}')
             raise
         except CourseEnrollment.DoesNotExist:
-            logger.exception('No enrollment found in database for {username} in course {course_id}'
+            logger.exception('No enrollment found in database for {username} in course {course_id}'  # noqa: UP032
                              .format(username=username, course_id=course_id))
             raise
 

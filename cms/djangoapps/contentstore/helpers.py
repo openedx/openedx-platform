@@ -6,44 +6,45 @@ https://github.com/openedx/edx-platform/issues/37637
 Only Studio-specfic helper functions should be added here.
 Platform-wide Python APIs should be added to an appropriate api.py file instead.
 """
+
 from __future__ import annotations
+
 import json
 import logging
 import pathlib
-import urllib
-from lxml import etree
-from mimetypes import guess_type
 import re
+import urllib
+from mimetypes import guess_type
 
-from attrs import frozen, Factory
-from django.core.files.base import ContentFile
+from attrs import Factory, frozen
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.utils.translation import gettext as _
+from edxval.api import create_external_video, create_or_update_video_transcript
+from lxml import etree
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import DefinitionLocator, LocalId
-from openedx.core.djangoapps.content_tagging.types import TagValuesByObjectIdDict
 from xblock.core import XBlock
 from xblock.fields import ScopeIds
 from xblock.runtime import IdGenerator
+
+import openedx.core.djangoapps.content_staging.api as content_staging_api
+import openedx.core.djangoapps.content_tagging.api as content_tagging_api
+from cms.djangoapps.models.settings.course_grading import CourseGradingModel
+from cms.lib.xblock.upstream_sync import UpstreamLink, UpstreamLinkException
+from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block
+from openedx.core.djangoapps.content_staging.api import StagedContentID
+from openedx.core.djangoapps.content_staging.data import LIBRARY_SYNC_PURPOSE
+from openedx.core.djangoapps.content_tagging.types import TagValuesByObjectIdDict
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, build_components_import_path
+from openedx.core.types import AuthUser as UserType
 from xmodule.contentstore.content import StaticContent
 from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError
 from xmodule.modulestore.django import modulestore
 from xmodule.xml_block import XmlMixin
-from openedx.core.djangoapps.video_config.transcripts_utils import Transcript, build_components_import_path
-from edxval.api import (
-    create_external_video,
-    create_or_update_video_transcript,
-)
-
-from cms.djangoapps.models.settings.course_grading import CourseGradingModel
-from cms.lib.xblock.upstream_sync import UpstreamLink, UpstreamLinkException
-from cms.lib.xblock.upstream_sync_block import fetch_customizable_fields_from_block
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-import openedx.core.djangoapps.content_staging.api as content_staging_api
-import openedx.core.djangoapps.content_tagging.api as content_tagging_api
-from openedx.core.djangoapps.content_staging.data import LIBRARY_SYNC_PURPOSE
 
 from .utils import reverse_course_url, reverse_library_url, reverse_usage_url
 
@@ -282,7 +283,10 @@ class ImportIdGenerator(IdGenerator):
     def create_definition(self, block_type, slug=None) -> DefinitionLocator:
         """ Generate a new definition_id for an XBlock """
         # Note: Split modulestore will detect this temporary ID and create a new definition ID when the XBlock is saved.
-        return DefinitionLocator(block_type, LocalId(block_type))
+        # FIXME: The DefinitionLocator technically only accepts an ObjectId (or a str representing an ObjectId), but
+        # this code relies on passing a LocalId and having it save the LocalId object as its `definition_id`. We should
+        # either change this in the future or update DefinitionLocator to support LocalId-typed definition IDs.
+        return DefinitionLocator(block_type, LocalId(block_type))  # type: ignore[arg-type]
 
 
 @frozen
@@ -314,7 +318,7 @@ def _rewrite_static_asset_references(downstream_xblock: XBlock, substitutions: d
 
 
 def _insert_static_files_into_downstream_xblock(
-    downstream_xblock: XBlock, staged_content_id: int, request
+    downstream_xblock: XBlock, staged_content_id: StagedContentID, request
 ) -> StaticFileNotices:
     """
     Gets static files from staged content, and inserts them into the downstream XBlock.
@@ -454,7 +458,7 @@ def _fetch_and_set_upstream_link(
     copied_from_block: str,
     copied_from_version_num: int,
     temp_xblock: XBlock,
-    user: User
+    user: UserType,
 ):
     """
     Fetch and set upstream link for the given xblock which is being pasted. This function handles following cases:
@@ -515,7 +519,7 @@ def _import_xml_node_to_parent(
     # The modulestore we're using
     store,
     # The user who is performing this operation
-    user: User,
+    user: UserType,
     # Hint to use as usage ID (block_id) for the new XBlock
     slug_hint: str | None = None,
     # Content tags applied to the source XBlock(s)
@@ -637,7 +641,7 @@ def _import_xml_node_to_parent(
 
 def _import_files_into_course(
     course_key: CourseKey,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     static_files: list[content_staging_api.StagedContentFileData],
     usage_key: UsageKey,
 ) -> tuple[StaticFileNotices, dict[str, str]]:
@@ -702,7 +706,7 @@ def _import_files_into_course(
 
 def _import_file_into_course(
     course_key: CourseKey,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     file_data_obj: content_staging_api.StagedContentFileData,
     usage_key: UsageKey,
 ) -> tuple[bool | None, dict]:
@@ -762,7 +766,7 @@ def _import_file_into_course(
 
 def _import_transcripts(
     block: XBlock,
-    staged_content_id: int,
+    staged_content_id: StagedContentID,
     static_files: list[content_staging_api.StagedContentFileData],
 ):
     """

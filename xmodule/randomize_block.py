@@ -7,15 +7,11 @@ from django.utils.functional import cached_property
 from lxml import etree
 from web_fragments.fragment import Fragment
 from xblock.fields import Integer, Scope
+
 from xmodule.mako_block import MakoTemplateBlockBase
 from xmodule.seq_block import SequenceMixin
+from xmodule.x_module import STUDENT_VIEW, ResourceTemplates, XModuleMixin, XModuleToXBlockMixin
 from xmodule.xml_block import XmlMixin
-from xmodule.x_module import (
-    ResourceTemplates,
-    STUDENT_VIEW,
-    XModuleMixin,
-    XModuleToXBlockMixin,
-)
 
 log = logging.getLogger('edx.' + __name__)
 

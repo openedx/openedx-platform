@@ -10,7 +10,6 @@ for these signals, since these are busy signals.)
 
 import logging
 import shlex
-
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -20,12 +19,12 @@ from django.core.management.base import BaseCommand, CommandError
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 
+from openedx.core.djangoapps.catalog.api import (
+    get_course_run_key_for_program_from_cache,
+    get_programs_from_cache_by_uuid,
+)
 from openedx.core.djangoapps.credentials.models import NotifyCredentialsConfig
 from openedx.core.djangoapps.credentials.tasks.v1.tasks import handle_notify_credentials
-from openedx.core.djangoapps.catalog.api import (
-    get_programs_from_cache_by_uuid,
-    get_course_run_key_for_program_from_cache,
-)
 
 log = logging.getLogger(__name__)
 
@@ -226,5 +225,5 @@ class Command(BaseCommand):
                 # keep the string; the celery task needs JSON serializable data.
                 validated_course_run_keys.append(str(CourseKey.from_string(course_run_key)))
             except InvalidKeyError as exc:
-                raise CommandError("{} is not a parsable CourseKey".format(course_run_key)) from exc
+                raise CommandError("{} is not a parsable CourseKey".format(course_run_key)) from exc  # noqa: UP032
         return validated_course_run_keys

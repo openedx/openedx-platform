@@ -35,6 +35,7 @@ class CourseWaffleFlagsViewTest(CourseTestCase):
         "use_new_unit_page": True,
         "use_new_updates_page": True,
         "use_new_video_uploads_page": False,
+        "use_new_pdf_editor": True,
         "use_react_markdown_editor": False,
         "use_video_gallery_flow": False,
         "enable_course_optimizer_check_prev_run_links": False,

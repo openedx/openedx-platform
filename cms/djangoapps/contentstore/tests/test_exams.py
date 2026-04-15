@@ -3,7 +3,7 @@ Test the exams service integration into Studio
 """
 import itertools
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
@@ -14,7 +14,7 @@ from pytz import utc
 from cms.djangoapps.contentstore.signals.handlers import listen_for_course_publish
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt.ddt
@@ -182,7 +182,7 @@ class TestExamService(ModuleStoreTestCase):
     @ddt.data(
         *itertools.product(
             (True, False),
-            (datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc), None),
+            (datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc), None),  # noqa: UP017
             ('null', 'lti_external'),
         )
     )
@@ -236,7 +236,7 @@ class TestExamService(ModuleStoreTestCase):
         Test that exam due date is computed correctly.
         """
         self.course.self_paced = is_self_paced
-        self.course.end = datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc)
+        self.course.end = datetime(2035, 1, 1, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         self.course.proctoring_provider = proctoring_provider
         self.course = self.update_course(self.course, 1)
 

@@ -28,7 +28,7 @@ class DefaultSessionAuthentication(SessionAuthentication):
             else:
                 set_custom_attribute('session_auth_result', 'n/a')
             return user_and_auth
-        except Exception as exception:
+        except Exception as exception:  # noqa: F841
             set_custom_attribute('session_auth_result', 'failure')
             raise
 

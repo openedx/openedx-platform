@@ -13,7 +13,7 @@ from lms.djangoapps.instructor_task.models import PROGRESS
 from lms.djangoapps.instructor_task.tests.test_base import (
     TEST_FAILURE_EXCEPTION,
     TEST_FAILURE_MESSAGE,
-    InstructorTaskTestCase
+    InstructorTaskTestCase,
 )
 from lms.djangoapps.instructor_task.views import get_task_completion_info, instructor_task_status
 

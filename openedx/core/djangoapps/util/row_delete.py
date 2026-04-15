@@ -81,7 +81,7 @@ def delete_rows(model_mgr,
         log.info("Deleting around %s rows between ids %s and %s...", deletions_now, lower_id, upper_id)
         with transaction.atomic():
             # xss-lint: disable=python-wrap-html
-            delete_sql = 'DELETE FROM {} WHERE {} >= {} AND {} < {}'.format(  # lint-amnesty, pylint: disable=duplicate-string-formatting-argument
+            delete_sql = 'DELETE FROM {} WHERE {} >= {} AND {} < {}'.format(  # lint-amnesty, pylint: disable=duplicate-string-formatting-argument  # noqa: UP032
                 table_name, primary_id_name, lower_id, primary_id_name, upper_id
             )
             log.info(delete_sql)

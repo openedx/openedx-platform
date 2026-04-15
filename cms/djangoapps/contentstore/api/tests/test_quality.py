@@ -2,12 +2,13 @@
 Tests for the course import API views
 """
 
-from rest_framework.test import APIClient
+from openedx_authz.constants.roles import COURSE_DATA_RESEARCHER, COURSE_STAFF
 from rest_framework import status
-from openedx_authz.constants.roles import COURSE_STAFF, COURSE_DATA_RESEARCHER
+from rest_framework.test import APIClient
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
+
 from .base import BaseCourseViewTest
 
 
@@ -20,7 +21,7 @@ class CourseQualityViewTest(BaseCourseViewTest):
     def test_staff_succeeds(self):
         self.client.login(username=self.staff.username, password=self.password)
         resp = self.client.get(self.get_url(self.course_key), {'all': 'true'})
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
         expected_data = {
             'units': {
                 'num_blocks': {
@@ -64,12 +65,12 @@ class CourseQualityViewTest(BaseCourseViewTest):
             },
             'is_self_paced': True,
         }
-        self.assertDictEqual(resp.data, expected_data)
+        self.assertDictEqual(resp.data, expected_data)  # noqa: PT009
 
     def test_student_fails(self):
         self.client.login(username=self.student.username, password=self.password)
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
 
 class CourseQualityAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
@@ -84,19 +85,19 @@ class CourseQualityAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     def test_authorized_user_can_access(self):
         """User with COURSE_STAFF role can access."""
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access(self):
         """User without role cannot access."""
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
 
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy(self):
         """
@@ -105,7 +106,7 @@ class CourseQualityAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed(self):
         """Superusers should always be allowed."""
@@ -115,7 +116,7 @@ class CourseQualityAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.force_authenticate(user=superuser)
 
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access(self):
         """
@@ -129,4 +130,4 @@ class CourseQualityAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.force_authenticate(user=non_staff_user)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

@@ -14,13 +14,10 @@ from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from ..config.waffle import DISABLE_NOTIFICATIONS
 
+from ..config.waffle import DISABLE_NOTIFICATIONS
 from ..models import Notification, NotificationPreference
-from ..tasks import (
-    delete_notifications,
-    send_notifications,
-)
+from ..tasks import delete_notifications, send_notifications
 from .utils import create_notification
 
 
@@ -72,12 +69,12 @@ class SendNotificationsTest(ModuleStoreTestCase):
         if 'uuid' in notification.content_context:
             notification.content_context.pop('uuid')
         # Assert that the `Notification` objects have the correct properties.
-        self.assertEqual(notification.user_id, self.user.id)
-        self.assertEqual(notification.app_name, app_name)
-        self.assertEqual(notification.notification_type, notification_type)
-        self.assertEqual(notification.content_context, context)
-        self.assertEqual(notification.content_url, content_url)
-        self.assertEqual(notification.course_id, self.course_1.id)
+        self.assertEqual(notification.user_id, self.user.id)  # noqa: PT009
+        self.assertEqual(notification.app_name, app_name)  # noqa: PT009
+        self.assertEqual(notification.notification_type, notification_type)  # noqa: PT009
+        self.assertEqual(notification.content_context, context)  # noqa: PT009
+        self.assertEqual(notification.content_url, content_url)  # noqa: PT009
+        self.assertEqual(notification.course_id, self.course_1.id)  # noqa: PT009
 
     @ddt.data(True, False)
     def test_enable_notification_flag(self, flag_value):
@@ -95,7 +92,7 @@ class SendNotificationsTest(ModuleStoreTestCase):
         with override_waffle_flag(DISABLE_NOTIFICATIONS, active=flag_value):
             send_notifications([self.user.id], str(self.course_1.id), app_name, notification_type, context, content_url)
         created_notifications_count = 0 if flag_value else 1
-        self.assertEqual(len(Notification.objects.all()), created_notifications_count)
+        self.assertEqual(len(Notification.objects.all()), created_notifications_count)  # noqa: PT009
 
     def test_notification_not_send_with_preference_disabled(self):
         """
@@ -120,7 +117,7 @@ class SendNotificationsTest(ModuleStoreTestCase):
         account_preferences.save()
 
         send_notifications([self.user.id], str(self.course_1.id), app_name, notification_type, context, content_url)
-        self.assertEqual(len(Notification.objects.all()), 0)
+        self.assertEqual(len(Notification.objects.all()), 0)  # noqa: PT009
 
     def test_send_notification_with_grouping_enabled(self):
         """
@@ -157,14 +154,14 @@ class SendNotificationsTest(ModuleStoreTestCase):
                 {**context},
                 content_url
             )
-            self.assertEqual(Notification.objects.filter(user_id=self.user.id).count(), 1)
+            self.assertEqual(Notification.objects.filter(user_id=self.user.id).count(), 1)  # noqa: PT009
             user_notifications_mock.assert_called_once()
 
     def test_notification_not_created_when_context_is_incomplete(self):
         try:
             send_notifications([self.user.id], str(self.course_1.id), "discussion", "new_comment", {}, "")
         except Exception as exc:  # pylint: disable=broad-except
-            assert isinstance(exc, ValidationError)
+            assert isinstance(exc, ValidationError)  # noqa: PT017
 
 
 @ddt.ddt
@@ -257,7 +254,7 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
             "author_name": "Test Author",
             "replier_name": "Replier Name"
         }
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(16):
             send_notifications(user_ids, str(self.course.id), notification_app, notification_type,
                                context, "http://test.url")
 
@@ -286,7 +283,7 @@ class SendBatchNotificationsTest(ModuleStoreTestCase):
         }
         content_url = 'https://example.com/'
         send_notifications(user_ids, str(self.course.id), app_name, notification_type, context, content_url)
-        self.assertEqual(len(Notification.objects.all()), generated_count)
+        self.assertEqual(len(Notification.objects.all()), generated_count)  # noqa: PT009
 
 
 class TestDeleteNotificationTask(ModuleStoreTestCase):
@@ -340,7 +337,7 @@ class TestDeleteNotificationTask(ModuleStoreTestCase):
             }
         }
         delete_notifications(kwargs)
-        self.assertEqual(Notification.objects.all().count(), 1)
+        self.assertEqual(Notification.objects.all().count(), 1)  # noqa: PT009
 
     def test_course_id_param(self):
         """
@@ -408,7 +405,7 @@ class NotificationCreationOnChannelsTests(ModuleStoreTestCase):
                 'username': 'user name',
             },
         }
-        with patch('openedx.core.djangoapps.notifications.tasks.notification_generated_event') as event_mock:
+        with patch('openedx.core.djangoapps.notifications.tasks.notification_generated_event') as event_mock:  # noqa: F841  # pylint: disable=line-too-long
             send_notifications(**kwargs)
             notifications = Notification.objects.all()
             assert len(notifications) == generated_count

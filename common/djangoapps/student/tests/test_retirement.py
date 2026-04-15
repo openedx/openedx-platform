@@ -13,7 +13,6 @@ from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imp
 from django.test import TestCase
 from django.urls import reverse
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from common.djangoapps.student.models import (
     get_all_retired_usernames_by_username,
     get_potentially_retired_user_by_username,
@@ -21,9 +20,10 @@ from common.djangoapps.student.models import (
     get_retired_email_by_email,
     get_retired_username_by_username,
     is_email_retired,
-    is_username_retired
+    is_username_retired,
 )
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 # Tell pytest it's ok to user the Django db
 pytestmark = pytest.mark.django_db
@@ -238,7 +238,7 @@ def test_get_potentially_retired_user_bad_hash():
     """
     fake_username = "fake username"
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017, PT011
         get_potentially_retired_user_by_username_and_hash(fake_username, "bad hash")
 
 

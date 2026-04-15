@@ -5,7 +5,6 @@ Content Type Gating Configuration Models
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-
 from django.utils.translation import gettext_lazy as _
 
 from openedx.core.djangoapps.config_model_utils.models import StackedConfigurationModel
@@ -102,7 +101,7 @@ class ContentTypeGatingConfig(StackedConfigurationModel):
         return bool(self.enabled and self.enabled_as_of <= target_datetime)
 
     def __str__(self):
-        return "ContentTypeGatingConfig(enabled={!r}, enabled_as_of={!r}, studio_override_enabled={!r})".format(
+        return "ContentTypeGatingConfig(enabled={!r}, enabled_as_of={!r}, studio_override_enabled={!r})".format(  # noqa: UP032  # pylint: disable=line-too-long
             self.enabled,
             self.enabled_as_of,
             self.studio_override_enabled,

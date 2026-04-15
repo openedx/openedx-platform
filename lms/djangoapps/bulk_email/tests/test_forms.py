@@ -8,7 +8,9 @@ from opaque_keys.edx.locator import CourseLocator
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
 from lms.djangoapps.bulk_email.forms import CourseAuthorizationAdminForm, CourseEmailTemplateForm
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, CourseEmailTemplate
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -56,7 +58,7 @@ class CourseAuthorizationFormTest(ModuleStoreTestCase):
         assert not form.is_valid()
         assert 'Course authorization with this Course id already exists.' == form._errors['course_id'][0]  # pylint: disable=protected-access, line-too-long
 
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             ValueError,
             "The CourseAuthorization could not be created because the data didn't validate."
         ):
@@ -78,7 +80,7 @@ class CourseAuthorizationFormTest(ModuleStoreTestCase):
         msg += f' Entered course id was: "{str(bad_id)}".'
         assert msg == form._errors['course_id'][0]  # pylint: disable=protected-access
 
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             ValueError,
             "The CourseAuthorization could not be created because the data didn't validate."
         ):
@@ -94,7 +96,7 @@ class CourseAuthorizationFormTest(ModuleStoreTestCase):
         msg += ' Entered course id was: "asd::**!@#$%^&*())//foobar!!".'
         assert msg == form._errors['course_id'][0]  # pylint: disable=protected-access
 
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             ValueError,
             "The CourseAuthorization could not be created because the data didn't validate."
         ):
@@ -110,7 +112,7 @@ class CourseAuthorizationFormTest(ModuleStoreTestCase):
         error_msg = form._errors['course_id'][0]  # pylint: disable=protected-access
         assert f'Entered course id was: "{self.course.id.run}".' in error_msg
 
-        with self.assertRaisesRegex(
+        with self.assertRaisesRegex(  # noqa: PT027
             ValueError,
             "The CourseAuthorization could not be created because the data didn't validate."
         ):

@@ -6,9 +6,9 @@ from factory.django import DjangoModelFactory
 from factory.fuzzy import FuzzyInteger, FuzzyText
 from oauth2_provider.models import get_application_model
 
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from openedx.core.djangoapps.api_admin.models import ApiAccessRequest, Catalog
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.api_admin.models import ApiAccessRequest, Catalog
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 
 Application = get_application_model()  # pylint: disable=invalid-name
 

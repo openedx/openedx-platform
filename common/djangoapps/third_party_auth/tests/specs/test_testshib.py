@@ -8,6 +8,7 @@ import logging
 import os
 from unittest import skip
 from unittest.mock import MagicMock, patch
+from urllib.parse import parse_qs, quote, urlparse
 
 import ddt
 import httpretty
@@ -26,12 +27,11 @@ from common.djangoapps.third_party_auth.saml import SapSuccessFactorsIdentityPro
 from common.djangoapps.third_party_auth.saml import log as saml_log
 from common.djangoapps.third_party_auth.tasks import fetch_saml_metadata
 from common.djangoapps.third_party_auth.tests import testutil, utils
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.features.enterprise_support.tests.factories import EnterpriseCustomerFactory
 
 from .base import IntegrationTestMixin
-from common.test.utils import assert_dict_contains_subset
-from urllib.parse import urlparse, parse_qs, quote
 
 TESTSHIB_ENTITY_ID = "https://idp.testshib.org/idp/shibboleth"
 TESTSHIB_METADATA_URL = "https://mock.testshib.org/metadata/testshib-providers.xml"
@@ -190,7 +190,7 @@ class TestIndexExceptionTest(SamlIntegrationTestUtilities, IntegrationTestMixin,
         request, strategy = self.get_request_and_strategy(
             auth_entry=pipeline.AUTH_ENTRY_LOGIN, redirect_uri="social:complete"
         )
-        with self.assertRaises(IncorrectConfigurationException):
+        with self.assertRaises(IncorrectConfigurationException):  # noqa: PT027
             request.backend.auth_complete = MagicMock(return_value=self.fake_auth_complete(strategy))
 
     def get_response_data(self):
@@ -538,7 +538,7 @@ class SuccessFactorsIntegrationTest(SamlIntegrationTestUtilities, IntegrationTes
             return 500, headers, "Failure!"
 
         fields = ",".join(SapSuccessFactorsIdentityProvider.default_field_mapping.copy())
-        url = "{root_url}User(userId='{user_id}')?$select={fields}".format(
+        url = "{root_url}User(userId='{user_id}')?$select={fields}".format(  # noqa: UP032
             root_url=odata_api_root_url,
             user_id=username,
             fields=fields,

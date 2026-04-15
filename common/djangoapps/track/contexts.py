@@ -25,7 +25,7 @@ def course_context_from_url(url, course_id_string=None):
             course_id_string = match.group('course_id')
     if not course_id_string:
         log.debug(
-            'no course_id found in "{url}"'.format(
+            'no course_id found in "{url}"'.format(  # noqa: UP032
                 url=str(url)[0:256]
             ),
             exc_info=True
@@ -35,7 +35,7 @@ def course_context_from_url(url, course_id_string=None):
             course_id = CourseKey.from_string(course_id_string)
         except InvalidKeyError:
             log.warning(
-                'unable to parse course_id "{course_id}"'.format(
+                'unable to parse course_id "{course_id}"'.format(  # noqa: UP032
                     course_id=str(course_id_string)[0:256]
                 ),
                 exc_info=True

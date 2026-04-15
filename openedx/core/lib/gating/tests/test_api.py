@@ -9,18 +9,18 @@ from completion.models import BlockCompletion
 from ddt import data, ddt, unpack
 from milestones import api as milestones_api
 from milestones.tests.utils import MilestonesTestCaseMixin
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from lms.djangoapps.gating import api as lms_gating_api
 from lms.djangoapps.grades.constants import GradeOverrideFeatureEnum
 from lms.djangoapps.grades.models import PersistentSubsectionGrade, PersistentSubsectionGradeOverride
 from lms.djangoapps.grades.tests.base import GradeTestBase
 from lms.djangoapps.grades.tests.utils import mock_get_score
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.core.lib.gating import api as gating_api
 from openedx.core.lib.gating.exceptions import GatingValidationError
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 @ddt

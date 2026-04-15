@@ -11,45 +11,43 @@ from collections import namedtuple
 from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
-from uuid import uuid4
 from unittest.mock import Mock, call, patch
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import ddt
-from openedx_events.content_authoring.data import CourseData, XBlockData
-from openedx_events.content_authoring.signals import (
-    COURSE_CREATED,
-    XBLOCK_CREATED,
-    XBLOCK_DELETED,
-    XBLOCK_PUBLISHED,
-    XBLOCK_UPDATED
-)
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
 import pymongo
 import pytest
+
 # Mixed modulestore depends on django, so we'll manually configure some django settings
 # before importing the module
 # TODO remove this import and the configuration -- xmodule should not depend on django!
 from django.conf import settings
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryLocator  # pylint: disable=unused-import
+from openedx_events.content_authoring.data import CourseData, XBlockData
+from openedx_events.content_authoring.signals import (
+    COURSE_CREATED,
+    XBLOCK_CREATED,
+    XBLOCK_DELETED,
+    XBLOCK_PUBLISHED,
+    XBLOCK_UPDATED,
+)
+from openedx_events.testing import OpenEdxEventsTestMixin
 from web_fragments.fragment import Fragment
 from xblock.core import XBlockAside
 from xblock.fields import Scope, ScopeIds, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 from xblock.test.tools import TestRuntime
 
+from common.test.utils import assert_dict_contains_subset
 from openedx.core.lib.tests import attr
 from xmodule.contentstore.content import StaticContent
 from xmodule.exceptions import InvalidVersionError
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES, UnsupportedRevisionError
 from xmodule.modulestore.edit_info import EditInfoMixin
-from xmodule.modulestore.exceptions import (
-    DuplicateCourseError,
-    ItemNotFoundError,
-    NoPathToItem,
-)
+from xmodule.modulestore.exceptions import DuplicateCourseError, ItemNotFoundError, NoPathToItem
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.modulestore.mixed import MixedModuleStore
 from xmodule.modulestore.search import navigation_index, path_to_location
@@ -63,7 +61,6 @@ from xmodule.modulestore.xml_exporter import export_course_to_xml
 from xmodule.modulestore.xml_importer import LocationMixin, import_course_from_xml
 from xmodule.tests import DATA_DIR, CourseComparisonTest
 from xmodule.x_module import XModuleMixin
-from common.test.utils import assert_dict_contains_subset
 
 if not settings.configured:
     settings.configure()
@@ -72,14 +69,14 @@ if not settings.configured:
 log = logging.getLogger(__name__)
 
 
-class CommonMixedModuleStoreSetup(CourseComparisonTest, OpenEdxEventsTestMixin):
+class CommonMixedModuleStoreSetup(OpenEdxEventsTestMixin, CourseComparisonTest):
     """
     Quasi-superclass which tests Location based apps against both split and mongo dbs (Locator and
     Location-based dbs)
     """
     HOST = MONGO_HOST
     PORT = MONGO_PORT_NUM
-    DB = 'test_mongo_%s' % uuid4().hex[:5]
+    DB = 'test_mongo_%s' % uuid4().hex[:5]  # noqa: UP031
     COLLECTION = 'modulestore'
     ASSET_COLLECTION = 'assetstore'
     FS_ROOT = DATA_DIR
@@ -125,16 +122,6 @@ class CommonMixedModuleStoreSetup(CourseComparisonTest, OpenEdxEventsTestMixin):
         "org.openedx.content_authoring.xblock.deleted.v1",
         "org.openedx.content_authoring.xblock.published.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         """
@@ -1333,7 +1320,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
             assert parent_location.for_branch(None) if parent_location else parent_location == \
                 self.store.get_parent_location(child_location, revision=revision)
 
-    def verify_item_parent(self, item_location, expected_parent_location, old_parent_location, is_reverted=False):
+    def verify_item_parent(self, item_location: BlockUsageLocator, expected_parent_location, old_parent_location, is_reverted=False):  # pylint: disable=line-too-long
         """
         Verifies that item is placed under expected parent.
 
@@ -1672,7 +1659,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
         # Create some children in vertical_x1a
         problem_item2 = self.store.create_child(self.user_id, self.vertical_x1a, 'problem', 'Problem_Item2')  # lint-amnesty, pylint: disable=no-member
-        orig_display_name = problem_item2.display_name  # lint-amnesty, pylint: disable=unused-variable
+        orig_display_name = problem_item2.display_name  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         # Publish the course.
         self.course = self.store.publish(self.course.location, self.user_id)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
@@ -1993,7 +1980,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         for store in self.store.modulestores:
             if isinstance(store, SplitMongoModuleStore):
                 return store
-        assert False, "SplitMongoModuleStore was not found in MixedModuleStore"
+        assert False, "SplitMongoModuleStore was not found in MixedModuleStore"  # noqa: B011, PT015
 
     # Split: active_versions (mysql), structure (mongo)
     @ddt.data((ModuleStoreEnum.Type.split, 1, 1, 0))
@@ -2032,7 +2019,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
 
         with check_mongo_calls(max_find, max_send), self.assertNumQueries(num_mysql):
             found_orphans = self.store.get_orphans(self.course_locations[self.MONGO_COURSEID].course_key)
-        self.assertCountEqual(found_orphans, orphan_locations)
+        self.assertCountEqual(found_orphans, orphan_locations)  # noqa: PT009
 
     @ddt.data(ModuleStoreEnum.Type.split)
     def test_create_item_populates_edited_info(self, default_ms):
@@ -2496,7 +2483,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         assert store.get_modulestore_type() == store_type
 
         # verify store used for creating a course
-        course = self.store.create_course("org", "course{}".format(uuid4().hex[:5]), "run", self.user_id)
+        course = self.store.create_course("org", "course{}".format(uuid4().hex[:5]), "run", self.user_id)  # noqa: UP032
         assert course.runtime.modulestore.get_modulestore_type() == store_type
 
     @ddt.data(ModuleStoreEnum.Type.split)
@@ -2518,7 +2505,7 @@ class TestMixedModuleStore(CommonMixedModuleStoreSetup):
         self._initialize_mixed(mappings={})
 
         fake_store = "fake"
-        with self.assertRaisesRegex(Exception, f"Cannot find store of type {fake_store}"):
+        with self.assertRaisesRegex(Exception, f"Cannot find store of type {fake_store}"):  # noqa: PT027
             with self.store.default_store(fake_store):
                 pass  # pragma: no cover
 

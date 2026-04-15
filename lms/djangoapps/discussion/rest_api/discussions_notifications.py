@@ -1,21 +1,19 @@
 """
 Discussion notifications sender util.
 """
-import re
 import html
+import re
 
 from bs4 import BeautifulSoup, Tag
 from django.conf import settings
 from django.utils.text import Truncator
+from django.utils.translation import gettext_lazy as _
+from openedx_events.learning.data import CourseNotificationData, UserNotificationData
+from openedx_events.learning.signals import COURSE_NOTIFICATION_REQUESTED, USER_NOTIFICATION_REQUESTED
 
 from lms.djangoapps.discussion.django_comment_client.permissions import get_team
-from openedx_events.learning.data import UserNotificationData, CourseNotificationData
-from openedx_events.learning.signals import USER_NOTIFICATION_REQUESTED, COURSE_NOTIFICATION_REQUESTED
-
 from openedx.core.djangoapps.course_groups.models import CourseCohortsSettings
 from openedx.core.djangoapps.discussions.utils import get_divided_discussions
-from django.utils.translation import gettext_lazy as _
-
 from openedx.core.djangoapps.django_comment_common.comment_client.comment import Comment
 from openedx.core.djangoapps.django_comment_common.comment_client.subscriptions import Subscription
 from openedx.core.djangoapps.django_comment_common.models import (

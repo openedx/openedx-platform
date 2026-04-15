@@ -5,13 +5,13 @@ Test the access control framework
 
 import datetime
 import itertools
-
 from unittest.mock import Mock, patch
-from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
-import pytest
+
 import ddt
+import pytest
 import pytz
 from ccx_keys.locator import CCXLocator
+from crum import set_current_request
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.test import TestCase
@@ -19,57 +19,63 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
 from edx_toggles.toggles.testutils import override_waffle_flag
+from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
 from milestones.tests.utils import MilestonesTestCaseMixin
 from opaque_keys.edx.locator import CourseLocator
 
 import lms.djangoapps.courseware.access as access
 import lms.djangoapps.courseware.access_response as access_response
-from lms.djangoapps.courseware.masquerade import CourseMasquerade
-from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, masquerade_as_group_member
-from lms.djangoapps.courseware.toggles import course_is_invitation_only
-from lms.djangoapps.ccx.models import CustomCourseForEdX
-from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
-from openedx.features.content_type_gating.models import ContentTypeGatingConfig
-from openedx.features.course_experience import ENFORCE_MASQUERADE_START_DATES
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
     AnonymousUserFactory,
+    BetaTesterFactory,
     CourseEnrollmentAllowedFactory,
-    CourseEnrollmentFactory
+    CourseEnrollmentFactory,
+    GlobalStaffFactory,
+    InstructorFactory,
+    StaffFactory,
+    UserFactory,
 )
-from common.djangoapps.student.tests.factories import BetaTesterFactory
-from common.djangoapps.student.tests.factories import GlobalStaffFactory
-from common.djangoapps.student.tests.factories import InstructorFactory
-from common.djangoapps.student.tests.factories import StaffFactory
-from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util.milestones_helpers import fulfill_course_milestone, set_prerequisite_courses
+from lms.djangoapps.ccx.models import CustomCourseForEdX
+from lms.djangoapps.courseware.masquerade import CourseMasquerade
+from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, masquerade_as_group_member
+from lms.djangoapps.courseware.toggles import course_is_invitation_only
+from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
+from openedx.core.djangolib.testing.utils import AUTHZ_TABLES
+from openedx.features.content_type_gating.models import ContentTypeGatingConfig
+from openedx.features.course_experience import ENFORCE_MASQUERADE_START_DATES
+from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
+from openedx.features.enterprise_support.tests.factories import (
+    EnterpriseCourseEnrollmentFactory,
+    EnterpriseCustomerFactory,
+    EnterpriseCustomerUserFactory,
+)
 from xmodule.course_block import (  # lint-amnesty, pylint: disable=wrong-import-order
     CATALOG_VISIBILITY_ABOUT,
     CATALOG_VISIBILITY_CATALOG_AND_ABOUT,
-    CATALOG_VISIBILITY_NONE
+    CATALOG_VISIBILITY_NONE,
 )
-
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     ModuleStoreTestCase,
-    SharedModuleStoreTestCase
+    SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID, Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.features.enterprise_support.api import add_enterprise_customer_to_session
-from enterprise.api.v1.serializers import EnterpriseCustomerSerializer
-from openedx.features.enterprise_support.tests.factories import (
-    EnterpriseCourseEnrollmentFactory,
-    EnterpriseCustomerUserFactory,
-    EnterpriseCustomerFactory
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
 )
-from crum import set_current_request
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    MINIMUM_UNUSED_PARTITION_ID,
+    Group,
+    UserPartition,
+)
 
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES + AUTHZ_TABLES
 
@@ -379,7 +385,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         user._has_global_staff_access.return_value = True
         assert access._has_access_string(user, 'staff', 'global')
 
-        self.assertRaises(ValueError, access._has_access_string, user, 'not_staff', 'global')
+        self.assertRaises(ValueError, access._has_access_string, user, 'not_staff', 'global')  # noqa: PT027
 
     @ddt.data(
         ('load', False, True, True),
@@ -397,7 +403,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         ):
             assert bool(access._has_access_error_block(user, action, block, self.course.id)) == expected_response
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access._has_access_error_block(self.course_instructor, 'not_load_or_staff', block, self.course.id)
 
     def test__has_access_to_block(self):
@@ -410,7 +416,7 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         # Always returns true because DISABLE_START_DATES is set in test.py
         assert access._has_access_to_block(user, 'load', block)
         assert access._has_access_to_block(user, 'instructor', block)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access._has_access_to_block(user, 'not_load_or_staff', block)
 
     @ddt.data(
@@ -600,11 +606,11 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
 
         # User cannot enroll in the course if it is just invitation only.
         course = self._mock_course_with_invitation(invitation=True)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
         # User can enroll in the course if it is not just invitation only.
         course = self._mock_course_with_invitation(invitation=False)
-        self.assertTrue(access._has_access_course(user, 'enroll', course))
+        self.assertTrue(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
     @override_settings(COURSES_INVITE_ONLY=True)
     def test__course_default_invite_only_flag_true(self):
@@ -616,11 +622,11 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
 
         # User cannot enroll in the course if it is just invitation only and COURSES_INVITE_ONLY is also set.
         course = self._mock_course_with_invitation(invitation=True)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
         # User cannot enroll in the course if COURSES_INVITE_ONLY is set despite of the course invitation_only value.
         course = self._mock_course_with_invitation(invitation=False)
-        self.assertFalse(access._has_access_course(user, 'enroll', course))
+        self.assertFalse(access._has_access_course(user, 'enroll', course))  # noqa: PT009
 
     @ddt.data(True, False)
     def test_old_mongo_is_invite_only(self, old_mongo):
@@ -629,8 +635,8 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         """
         user = UserFactory.create()
         course = self._mock_course_with_invitation(invitation=False, deprecated=old_mongo)
-        self.assertEqual(course_is_invitation_only(course), old_mongo)
-        self.assertEqual(access._has_access_course(user, 'enroll', course).has_access, not old_mongo)
+        self.assertEqual(course_is_invitation_only(course), old_mongo)  # noqa: PT009
+        self.assertEqual(access._has_access_course(user, 'enroll', course).has_access, not old_mongo)  # noqa: PT009
 
     def _mock_course_with_invitation(self, invitation, deprecated=False):
         yesterday = datetime.datetime.now(pytz.utc) - datetime.timedelta(days=1)
@@ -681,6 +687,47 @@ class AccessTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, MilestonesTes
         assert not access._has_access_course(user, 'see_about_page', course)
         assert access._has_access_course(staff, 'see_in_catalog', course)
         assert access._has_access_course(staff, 'see_about_page', course)
+
+    def test__catalog_visibility_returns_typed_error(self):
+        """
+        Tests that when catalog_visibility is 'none', the access response
+        for non-staff users is a CatalogVisibilityError (not a bare ACCESS_DENIED),
+        so downstream handlers can provide a meaningful error message.
+        """
+        user = UserFactory.create()
+        course_id = CourseLocator('edX', 'test', '2012_Fall')
+        staff = StaffFactory.create(course_key=course_id)
+
+        course = Mock(
+            id=course_id,
+            catalog_visibility=CATALOG_VISIBILITY_NONE
+        )
+
+        # Non-staff user should get CatalogVisibilityError
+        see_in_catalog_response = access._has_access_course(user, 'see_in_catalog', course)
+        assert not see_in_catalog_response
+        assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
+        assert see_in_catalog_response.error_code == 'not_visible_in_catalog'
+
+        see_about_page_response = access._has_access_course(user, 'see_about_page', course)
+        assert not see_about_page_response
+        assert isinstance(see_about_page_response, access_response.CatalogVisibilityError)
+        assert see_about_page_response.error_code == 'not_visible_in_catalog'
+
+        # Staff user should still get access
+        assert access._has_access_course(staff, 'see_in_catalog', course)
+        assert access._has_access_course(staff, 'see_about_page', course)
+
+        # When visibility is 'about', see_in_catalog should return CatalogVisibilityError
+        # but see_about_page should grant access
+        course_about = Mock(
+            id=course_id,
+            catalog_visibility=CATALOG_VISIBILITY_ABOUT
+        )
+        see_in_catalog_response = access._has_access_course(user, 'see_in_catalog', course_about)
+        assert not see_in_catalog_response
+        assert isinstance(see_in_catalog_response, access_response.CatalogVisibilityError)
+        assert access._has_access_course(user, 'see_about_page', course_about)
 
     @patch.dict("django.conf.settings.FEATURES", {'ENABLE_PREREQUISITE_COURSES': True})
     @override_settings(MILESTONES_APP=True)
@@ -853,7 +900,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
         ValueError.
         """
         overview = CourseOverview.get_from_id(self.course_default.id)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             access.has_access(self.user, '_non_existent_action', overview)
 
     @ddt.data(
@@ -938,7 +985,7 @@ class CourseOverviewAccessTestCase(ModuleStoreTestCase):
             user = getattr(self, user_attr_name)
             user = User.objects.get(id=user.id)
             request.user = user
-            course_enrollment = CourseEnrollmentFactory(user=user, course_id=course.id)
+            course_enrollment = CourseEnrollmentFactory(user=user, course_id=course.id)  # noqa: F841
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(

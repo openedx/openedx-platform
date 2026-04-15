@@ -7,15 +7,15 @@ import datetime
 
 import pytz
 from django.conf import settings
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
 
 from common.djangoapps.student.roles import CourseCcxCoachRole, CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.ccx.overrides import override_field_for_ccx
 from lms.djangoapps.ccx.tests.factories import CcxFactory
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class CcxTestCase(EmailTemplateTagMixin, SharedModuleStoreTestCase):
@@ -56,7 +56,7 @@ class CcxTestCase(EmailTemplateTagMixin, SharedModuleStoreTestCase):
         # Trying to wrap the whole thing in a bulk operation fails because it
         # doesn't find the parents. But we can at least wrap this part...
         with cls.store.bulk_operations(course.id, emit_signals=False):
-            blocks = flatten([  # pylint: disable=unused-variable
+            blocks = flatten([  # pylint: disable=unused-variable  # noqa: F841
                 [
                     BlockFactory.create(parent=vertical) for _ in range(2)
                 ] for vertical in cls.verticals

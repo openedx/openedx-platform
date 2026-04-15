@@ -16,7 +16,7 @@ from openedx.core.djangoapps.enrollments.errors import (
 from openedx.core.lib.log_utils import audit_log
 from openedx.features.enterprise_support.enrollments.exceptions import (
     CourseIdMissingException,
-    UserDoesNotExistException
+    UserDoesNotExistException,
 )
 
 log = logging.getLogger(__name__)

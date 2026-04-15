@@ -50,8 +50,8 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
             "default_grade_designations": ['A', 'B', 'C', 'D'],
         }
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertDictEqual(expected_response, response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertDictEqual(expected_response, response.data)  # noqa: PT009
 
     @patch("django.conf.settings.DEFAULT_GRADE_DESIGNATIONS", ['A', 'B'])
     def test_default_grade_designations_setting(self):
@@ -60,8 +60,8 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
         """
         response = self.client.get(self.url)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(['A', 'B'], response.data["default_grade_designations"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(['A', 'B'], response.data["default_grade_designations"])  # noqa: PT009
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_CREDIT_ELIGIBILITY": True})
     def test_credit_eligibility_setting(self):
@@ -70,9 +70,9 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
         """
         _ = CreditCourseFactory(course_key=self.course.id, enabled=True)
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(response.data["show_credit_eligibility"])
-        self.assertTrue(response.data["is_credit_course"])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertTrue(response.data["show_credit_eligibility"])  # noqa: PT009
+        self.assertTrue(response.data["is_credit_course"])  # noqa: PT009
 
     def test_post_permissions_unauthenticated(self):
         """
@@ -81,8 +81,8 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
         self.client.logout()
         response = self.client.post(self.url)
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "Authentication credentials were not provided.")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(error, "Authentication credentials were not provided.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)  # noqa: PT009
 
     def test_post_permissions_unauthorized(self):
         """
@@ -91,8 +91,8 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
         client, _ = self.create_non_staff_authed_user_client()
         response = client.post(self.url)
         error = self.get_and_check_developer_response(response)
-        self.assertEqual(error, "You do not have permission to perform this action.")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(error, "You do not have permission to perform this action.")  # noqa: PT009
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     @patch(
         "openedx.core.djangoapps.credit.tasks.update_credit_course_requirements.delay"
@@ -120,7 +120,7 @@ class CourseGradingViewTest(CourseTestCase, PermissionAccessMixin):
             data=json.dumps(request_data),
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         mock_update_credit_course_requirements.assert_called_once()
 
 
@@ -150,19 +150,19 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
     def test_authorized_user_can_access_get(self):
         """User with COURSE_STAFF role can access."""
         resp = self.authorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access_get(self):
         """User without role cannot access."""
         resp = self.unauthorized_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course_get(self):
         """Authorization should only apply to the assigned course."""
         other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.staff.id)
 
         resp = self.authorized_client.get(self.get_url(other_course.id))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy_get(self):
         """
@@ -171,7 +171,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         self.client.login(username=self.staff.username, password=self.password)
 
         resp = self.client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed_get(self):
         """Superusers should always be allowed."""
@@ -181,7 +181,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         client.force_authenticate(user=superuser)
 
         resp = client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access_get(self):
         """
@@ -194,7 +194,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
         non_staff_client.force_authenticate(user=non_staff_user)
 
         resp = non_staff_client.get(self.get_url(self.course_key))
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_authorized_user_can_access_post(self):
         """User with COURSE_STAFF role can access."""
@@ -203,7 +203,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthorized_user_cannot_access_post(self):
         """User without role cannot access."""
@@ -212,7 +212,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_role_scoped_to_course_post(self):
         """Authorization should only apply to the assigned course."""
@@ -223,7 +223,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009
 
     def test_staff_user_allowed_via_legacy_post(self):
         """
@@ -236,7 +236,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_superuser_allowed_post(self):
         """Superusers should always be allowed."""
@@ -250,7 +250,7 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_non_staff_user_cannot_access_post(self):
         """
@@ -267,4 +267,4 @@ class CourseGradingViewAuthzTest(CourseAuthzTestMixin, BaseCourseViewTest):
             data=self.post_data,
             content_type="application/json"
         )
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)  # noqa: PT009

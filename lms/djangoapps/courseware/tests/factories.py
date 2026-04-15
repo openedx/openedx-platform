@@ -14,11 +14,11 @@ from opaque_keys.edx.locator import CourseLocator
 
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.models import (
+    FinancialAssistanceConfiguration,
     StudentModule,
     XModuleStudentInfoField,
     XModuleStudentPrefsField,
     XModuleUserStateSummaryField,
-    FinancialAssistanceConfiguration
 )
 
 COURSE_KEY = CourseKey.from_string('edX/test_course/test')

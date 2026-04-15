@@ -10,7 +10,6 @@ from django.contrib.sites.models import Site
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
 from jsonfield.fields import JSONField
 from model_utils.models import TimeStampedModel
 
@@ -182,7 +181,7 @@ class SiteConfigurationHistory(TimeStampedModel):
 
     def __str__(self):
         # pylint: disable=line-too-long
-        return "<SiteConfigurationHistory: {site}, Last Modified: {modified} >".format(  # xss-lint: disable=python-wrap-html
+        return "<SiteConfigurationHistory: {site}, Last Modified: {modified} >".format(  # xss-lint: disable=python-wrap-html  # noqa: UP032
             modified=self.modified,
             site=self.site,
         )

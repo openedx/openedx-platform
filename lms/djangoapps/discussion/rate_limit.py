@@ -2,10 +2,11 @@
 Contains all code related to rate limit
 """
 from datetime import timedelta
+
 from django.conf import settings
+from django.utils import timezone
 from django_ratelimit import ALL
 from django_ratelimit.core import is_ratelimited as _ratelimit
-from django.utils import timezone
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseAccessRole
@@ -15,9 +16,8 @@ from openedx.core.djangoapps.django_comment_common.models import (
     FORUM_ROLE_COMMUNITY_TA,
     FORUM_ROLE_GROUP_MODERATOR,
     FORUM_ROLE_MODERATOR,
-    Role
+    Role,
 )
-
 
 CONTENT_CREATION_GROUP = "content_creation"
 

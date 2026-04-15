@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from lms.djangoapps.user_tours.models import UserTour, UserDiscussionsTours
+from lms.djangoapps.user_tours.models import UserDiscussionsTours, UserTour
 
 
 class UserTourSerializer(serializers.ModelSerializer):

@@ -8,9 +8,9 @@ BlockStructure.
 
 from datetime import datetime
 from logging import getLogger
-from markupsafe import Markup
 
 from dateutil.tz import tzlocal
+from markupsafe import Markup
 
 logger = getLogger(__name__)  # pylint: disable=invalid-name
 

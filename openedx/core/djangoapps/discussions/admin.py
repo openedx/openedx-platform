@@ -8,8 +8,7 @@ from simple_history.admin import SimpleHistoryAdmin
 
 from openedx.core.djangoapps.config_model_utils.admin import StackedConfigModelAdmin
 
-from .models import DiscussionsConfiguration
-from .models import ProviderFilter
+from .models import DiscussionsConfiguration, ProviderFilter
 
 
 class DiscussionsConfigurationAdmin(SimpleHistoryAdmin):

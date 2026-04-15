@@ -11,8 +11,13 @@ import ddt
 from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.courseware.services import UserStateService
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 
 @ddt.ddt
@@ -92,7 +97,7 @@ class TestUserStateService(ModuleStoreTestCase):
         state = UserStateService().get_state_as_dict(
             self._get_email_or_username(should_use_email), self.problem.location
         )
-        self.assertDictEqual(state, expected_state)
+        self.assertDictEqual(state, expected_state)  # noqa: PT009
 
     @ddt.data(
         *itertools.product(

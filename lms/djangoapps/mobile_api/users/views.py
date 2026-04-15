@@ -6,7 +6,7 @@ Views for user API
 import datetime
 import logging
 from functools import cached_property
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set  # noqa: UP035
 
 import pytz
 from completion.exceptions import UnavailableCompletionData
@@ -18,6 +18,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import dateparse
 from django.utils.decorators import method_decorator
+from edx_rest_framework_extensions.paginators import DefaultPagination
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import CourseLocator
@@ -27,19 +28,21 @@ from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from xblock.fields import Scope
 from xblock.runtime import KeyValueStore
-from edx_rest_framework_extensions.paginators import DefaultPagination
 
-from common.djangoapps.student.models import CourseEnrollment, User  # lint-amnesty, pylint: disable=reimported
+from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=reimported  # noqa: F811
+    CourseEnrollment,
+    User,
+)
 from lms.djangoapps.courseware.access import is_mobile_available_for_user
 from lms.djangoapps.courseware.access_utils import ACCESS_GRANTED
+from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.context_processor import get_user_timezone_or_last_seen_timezone_or_utc
 from lms.djangoapps.courseware.courses import get_current_child
 from lms.djangoapps.courseware.model_data import FieldDataCache
-from lms.djangoapps.courseware.block_render import get_block_for_descriptor
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.views.index import save_positions_recursively_up
 from lms.djangoapps.mobile_api.models import MobileConfig
-from lms.djangoapps.mobile_api.utils import API_V1, API_V05, API_V2, API_V3, API_V4
+from lms.djangoapps.mobile_api.utils import API_V05, API_V1, API_V2, API_V3, API_V4
 from openedx.core.djangoapps.site_configuration.helpers import get_current_site_orgs
 from openedx.features.course_duration_limits.access import check_course_expired
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -473,7 +476,7 @@ class UserCourseEnrollmentsList(generics.ListAPIView):
         """
         return get_object_or_404(User, username=self.kwargs['username'])
 
-    def get_primary_enrollment_by_latest_enrollment_or_progress(self) -> Optional[CourseEnrollment]:
+    def get_primary_enrollment_by_latest_enrollment_or_progress(self) -> Optional[CourseEnrollment]:  # noqa: UP045
         """
         Gets primary enrollment obj by latest enrollment or latest progress on the course.
         """
@@ -517,7 +520,7 @@ class UserCourseEnrollmentsList(generics.ListAPIView):
         Implements solutions from the discussion at
         https://www.github.com/encode/django-rest-framework/issues/6397.
         """
-        super().paginator  # pylint: disable=expression-not-assigned
+        super().paginator  # pylint: disable=expression-not-assigned  # noqa: B018
         api_version = self.kwargs.get('api_version')
 
         if self._paginator is None and api_version == API_V3:
@@ -620,8 +623,8 @@ class UserEnrollmentsStatus(views.APIView):
         self,
         username: str,
         active_status_date: datetime,
-        course_ids: Set[CourseLocator],
-    ) -> List[Dict[str, bool]]:
+        course_ids: Set[CourseLocator],  # noqa: UP006
+    ) -> List[Dict[str, bool]]:  # noqa: UP006
         """
         Builds list with dictionaries with user's enrolments statuses.
         """
@@ -655,7 +658,7 @@ class UserEnrollmentsStatus(views.APIView):
     def _get_course_ids_where_user_has_completions(
         username: str,
         active_status_date: datetime,
-    ) -> Set[CourseLocator]:
+    ) -> Set[CourseLocator]:  # noqa: UP006
         """
         Gets course keys where user has completions.
         """

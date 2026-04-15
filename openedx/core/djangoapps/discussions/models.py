@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import logging
 from collections import namedtuple
-from typing import List, Type, TypeVar
+from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
+from typing import List, Type, TypeVar  # noqa: UP035
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_mysql.models import ListCharField
-from enum import Enum  # lint-amnesty, pylint: disable=wrong-import-order
 from jsonfield import JSONField
 from lti_consumer.models import LtiConfiguration
 from model_utils.models import TimeStampedModel
@@ -20,10 +20,10 @@ from opaque_keys.edx.django.models import LearningContextKeyField, UsageKeyField
 from opaque_keys.edx.keys import CourseKey
 from simple_history.models import HistoricalRecords
 
-from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.config_model_utils.models import StackedConfigurationModel
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 log = logging.getLogger(__name__)
@@ -305,7 +305,7 @@ AVAILABLE_PROVIDER_MAP = {
 }
 
 
-def get_supported_providers() -> List[str]:
+def get_supported_providers() -> List[str]:  # noqa: UP006
     """
     Return the list of supported discussion providers
 
@@ -376,7 +376,7 @@ class ProviderFilter(StackedConfigurationModel):
         )
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> List[str]:  # noqa: UP006
         """
         Return a filtered list of available providers
         """
@@ -396,7 +396,7 @@ class ProviderFilter(StackedConfigurationModel):
         return _providers
 
     @classmethod
-    def get_available_providers(cls, course_key: CourseKey) -> List[str]:
+    def get_available_providers(cls, course_key: CourseKey) -> List[str]:  # noqa: UP006
         _filter = cls.current(course_key=course_key)
         providers = _filter.available_providers
         return providers
@@ -480,7 +480,7 @@ class DiscussionsConfiguration(TimeStampedModel):
             raise ValidationError('Context Key should be an existing learning context.')
 
     def __str__(self):
-        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(
+        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(  # noqa: UP032  # pylint: disable=line-too-long
             context_key=self.context_key,
             provider=self.provider_type,
             enabled=self.enabled,
@@ -515,7 +515,7 @@ class DiscussionsConfiguration(TimeStampedModel):
         return configuration.enabled
 
     @classmethod
-    def get(cls: Type[T], context_key: CourseKey) -> T:
+    def get(cls: Type[T], context_key: CourseKey) -> T:  # noqa: UP006
         """
         Lookup a model by context_key
         """
@@ -530,11 +530,11 @@ class DiscussionsConfiguration(TimeStampedModel):
         return configuration
 
     @property
-    def available_providers(self) -> List[str]:
+    def available_providers(self) -> List[str]:  # noqa: UP006
         return ProviderFilter.current(course_key=self.context_key).available_providers
 
     @classmethod
-    def get_available_providers(cls, context_key: CourseKey) -> List[str]:
+    def get_available_providers(cls, context_key: CourseKey) -> List[str]:  # noqa: UP006
         return ProviderFilter.current(course_key=context_key).available_providers
 
     @classmethod

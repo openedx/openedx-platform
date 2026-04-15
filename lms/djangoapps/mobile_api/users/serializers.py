@@ -2,7 +2,7 @@
 Serializer for user API
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional  # noqa: UP035
 
 from completion.exceptions import UnavailableCompletionData
 from completion.utilities import get_key_to_last_completed_block
@@ -14,9 +14,9 @@ from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment, User
 from common.djangoapps.util.course import get_encoded_course_sharing_utm_params, get_link_for_about_page
 from lms.djangoapps.certificates.api import certificate_downloadable_status
+from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_assignments_completions, get_past_and_future_course_assignments
-from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from lms.djangoapps.mobile_api.utils import API_V4, get_course_organization_logo
 from openedx.features.course_duration_limits.access import get_user_course_expiration_date
 from xmodule.modulestore.django import modulestore
@@ -135,7 +135,7 @@ class CourseEnrollmentSerializer(serializers.ModelSerializer):
             for mode in course_modes
         ]
 
-    def to_representation(self, instance: CourseEnrollment) -> 'OrderedDict':  # lint-amnesty, pylint: disable=unused-variable, line-too-long
+    def to_representation(self, instance: CourseEnrollment) -> 'OrderedDict':  # lint-amnesty, pylint: disable=unused-variable, line-too-long  # noqa: F821
         """
         Override the to_representation method to add the course_status field to the serialized data.
         """
@@ -178,7 +178,7 @@ class CourseEnrollmentSerializerModifiedForPrimary(CourseEnrollmentSerializer):
         super().__init__(*args, **kwargs)
         self.course = modulestore().get_course(self.instance.course.id)
 
-    def get_course_status(self, model: CourseEnrollment) -> Optional[Dict[str, List[str]]]:
+    def get_course_status(self, model: CourseEnrollment) -> Optional[Dict[str, List[str]]]:  # noqa: UP006, UP045
         """
         Gets course status for the given user's enrollments.
         """
@@ -198,13 +198,13 @@ class CourseEnrollmentSerializerModifiedForPrimary(CourseEnrollmentSerializer):
             'last_visited_unit_display_name': unit.display_name,
         }
 
-    def get_course_progress(self, model: CourseEnrollment) -> Dict[str, int]:
+    def get_course_progress(self, model: CourseEnrollment) -> Dict[str, int]:  # noqa: UP006
         """
         Returns the progress of the user in the course.
         """
         return get_assignments_completions(model.course_id, model.user)
 
-    def get_course_assignments(self, model: CourseEnrollment) -> Dict[str, Optional[List[Dict[str, str]]]]:
+    def get_course_assignments(self, model: CourseEnrollment) -> Dict[str, Optional[List[Dict[str, str]]]]:  # noqa: UP006, UP045  # pylint: disable=line-too-long
         """
         Returns the future assignment data and past assignments data for the user in the course.
         """

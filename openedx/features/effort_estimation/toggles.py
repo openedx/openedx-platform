@@ -4,7 +4,6 @@ Feature toggles used for effort estimation.
 
 from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
-
 WAFFLE_FLAG_NAMESPACE = 'effort_estimation'
 
 # .. toggle_name: effort_estimation.disabled

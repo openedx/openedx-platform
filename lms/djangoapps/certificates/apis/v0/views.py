@@ -17,13 +17,13 @@ from rest_framework.views import APIView
 from lms.djangoapps.certificates.api import (
     certificates_viewable_for_course,
     get_certificate_for_user,
-    get_certificates_for_user
+    get_certificates_for_user,
 )
 from lms.djangoapps.certificates.apis.v0.permissions import IsOwnerOrPublicCertificates
 from openedx.core.djangoapps.content.course_overviews.api import (
     get_course_overview_or_none,
     get_course_overviews_from_ids,
-    get_pseudo_course_overview
+    get_pseudo_course_overview,
 )
 from openedx.core.djangoapps.user_api.accounts.api import visible_fields
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser

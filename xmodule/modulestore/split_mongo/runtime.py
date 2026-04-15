@@ -23,7 +23,7 @@ from xmodule.modulestore.split_mongo.definition_lazy_loader import DefinitionLaz
 from xmodule.modulestore.split_mongo.id_manager import SplitMongoIdManager
 from xmodule.modulestore.split_mongo.split_mongo_kvs import SplitMongoKVS
 from xmodule.util.misc import get_library_or_course_attribute
-from xmodule.x_module import XModuleMixin, ModuleStoreRuntime
+from xmodule.x_module import ModuleStoreRuntime, XModuleMixin
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class SplitModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pyli
                 try:
                     return self.local_modules[usage_key]
                 except KeyError:
-                    raise ItemNotFoundError  # lint-amnesty, pylint: disable=raise-missing-from
+                    raise ItemNotFoundError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             else:
                 block_key = BlockKey.from_usage_key(usage_key)
                 version_guid = self.course_entry.course_key.version_guid

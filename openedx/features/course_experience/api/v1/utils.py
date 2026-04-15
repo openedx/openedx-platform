@@ -3,14 +3,14 @@
 Course Experience API utilities.
 """
 import logging
+
 from eventtracking import tracker
 
+from lms.djangoapps.course_api.api import course_detail
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import is_masquerading, setup_masquerade
-from lms.djangoapps.course_api.api import course_detail
 from openedx.core.djangoapps.schedules.utils import reset_self_paced_schedule
 from openedx.features.course_experience.utils import dates_banner_should_display
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def reset_course_deadlines_for_user(user, course_key):
     return False
 
 
-def reset_bulk_course_deadlines(request, course_keys, research_event_data={}):  # lint-amnesty, pylint: disable=dangerous-default-value
+def reset_bulk_course_deadlines(request, course_keys, research_event_data={}):  # lint-amnesty, pylint: disable=dangerous-default-value  # noqa: B006
     """
     Reset deadlines for multiple courses for the requesting user.
 
@@ -82,7 +82,7 @@ def reset_bulk_course_deadlines(request, course_keys, research_event_data={}):  
     return success_course_keys, failed_course_keys
 
 
-def reset_deadlines_for_course(request, course_key, research_event_data={}):  # lint-amnesty, pylint: disable=dangerous-default-value
+def reset_deadlines_for_course(request, course_key, research_event_data={}):  # lint-amnesty, pylint: disable=dangerous-default-value  # noqa: B006
     """
     Set the start_date of a schedule to today, which in turn will adjust due dates for
     sequentials belonging to a self paced course

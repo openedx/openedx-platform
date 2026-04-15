@@ -7,11 +7,11 @@ import datetime
 import itertools
 import logging
 from contextlib import closing
+from zoneinfo import ZoneInfo
 
 from django.utils.translation import gettext as _
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from zoneinfo import ZoneInfo
 from rest_framework import permissions, status
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response

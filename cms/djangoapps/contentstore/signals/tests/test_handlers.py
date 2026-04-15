@@ -9,8 +9,9 @@ from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from openedx_events.content_authoring.data import CourseCatalogData, CourseScheduleData
 
 import cms.djangoapps.contentstore.signals.handlers as sh
-from xmodule.modulestore.edit_info import EditInfoMixin
+from xmodule.course_metadata_utils import DEFAULT_START_DATE
 from xmodule.modulestore.django import SignalHandler
+from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import SampleCourseFactory
 
@@ -34,7 +35,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
             course_key=CourseLocator(org='TestU', course='sig101', run='Summer2022', branch=None, version_guid=None),
             name='Signals 101',
             schedule_data=CourseScheduleData(
-                start=datetime.fromisoformat('2030-01-01T00:00+00:00'),
+                start=DEFAULT_START_DATE,
                 pacing='instructor',
                 end=None,
                 enrollment_start=None,
@@ -48,7 +49,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
         autospec=True, side_effect=lambda func: func(),  # run right away
     )
     @patch('cms.djangoapps.contentstore.signals.handlers.emit_catalog_info_changed_signal', autospec=True)
-    def test_signal_chain(self, mock_emit, _mock_on_commit):
+    def test_signal_chain(self, mock_emit, _mock_on_commit):  # noqa: PT019
         """
         Test that the course_published signal handler invokes the catalog info signal emitter.
 
@@ -66,7 +67,7 @@ class TestCatalogInfoSignal(ModuleStoreTestCase):
         with patch.object(EditInfoMixin, 'subtree_edited_on', now):
             sh.emit_catalog_info_changed_signal(self.course_key)
         mock_signal.send_event.assert_called_once_with(
-            time=now.replace(tzinfo=timezone.utc),
+            time=now.replace(tzinfo=timezone.utc),  # noqa: UP017
             catalog_info=self.expected_data)
 
     @patch('cms.djangoapps.contentstore.signals.handlers.COURSE_CATALOG_INFO_CHANGED', autospec=True)

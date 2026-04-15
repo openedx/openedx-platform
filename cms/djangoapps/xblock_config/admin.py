@@ -8,5 +8,4 @@ from django.contrib import admin
 
 from cms.djangoapps.xblock_config.models import StudioConfig
 
-
 admin.site.register(StudioConfig, ConfigurationModelAdmin)

@@ -3,16 +3,16 @@ Tests Library Collections REST API views
 """
 
 from __future__ import annotations
+
 import ddt
-
-from openedx_content.models_api import Collection
 from opaque_keys.edx.locator import LibraryLocatorV2
+from openedx_content.models_api import Collection
 
-from openedx.core.djangolib.testing.utils import skip_unless_cms
-from openedx.core.djangoapps.content_libraries import api
-from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
-from openedx.core.djangoapps.content_libraries.models import ContentLibrary
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.content_libraries import api
+from openedx.core.djangoapps.content_libraries.models import ContentLibrary
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
+from openedx.core.djangolib.testing.utils import skip_unless_cms
 
 URL_PREFIX = '/api/libraries/v2/{lib_key}/'
 URL_LIB_COLLECTIONS = URL_PREFIX + 'collections/'
@@ -144,7 +144,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
             {"key": "COL1", "title": "Collection 1", "description": "Description for Collection 1"},
             {"key": "COL2", "title": "Collection 2", "description": "Description for Collection 2"},
         ]
-        for collection, expected in zip(resp.data["results"], expected_collections):
+        for collection, expected in zip(resp.data["results"], expected_collections):  # noqa: B905
             self.assertDictContainsEntries(collection, expected)
 
         # Check that a random user without permissions cannot access Content Library Collections
@@ -183,7 +183,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(resp.data, post_data)
 
         created_collection = Collection.objects.get(id=resp.data["id"])
-        self.assertIsNotNone(created_collection)
+        self.assertIsNotNone(created_collection)  # noqa: PT009
 
         # Check that user with read only access cannot create new Content Library Collection
         reader = UserFactory.create(username="Reader", email="reader@example.com")
@@ -285,8 +285,8 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         self.assertDictContainsEntries(resp.data, patch_data)
 
         created_collection = Collection.objects.get(id=resp.data["id"])
-        self.assertIsNotNone(created_collection)
-        self.assertEqual(created_collection.title, patch_data["title"])
+        self.assertIsNotNone(created_collection)  # noqa: PT009
+        self.assertEqual(created_collection.title, patch_data["title"])  # noqa: PT009
 
         # Check that user with read only access cannot update a Content Library Collection
         reader = UserFactory.create(username="Reader", email="reader@example.com")

@@ -2,61 +2,46 @@
 Test for Learner Home views and related functions
 """
 
-from contextlib import contextmanager
 import json
+from contextlib import contextmanager
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
 from django.conf import settings
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
-from django.test import TestCase, override_settings
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.test import APITestCase
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.entitlements.tests.factories import CourseEntitlementFactory
-from common.djangoapps.student.tests.factories import (
-    CourseEnrollmentFactory,
-    UserFactory,
-)
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.course import get_encoded_course_sharing_utm_params
 from lms.djangoapps.bulk_email.models import Optout
-from lms.djangoapps.learner_home.test_utils import (
-    create_test_enrollment,
-    random_string,
-    random_url,
-)
+from lms.djangoapps.learner_home.test_utils import create_test_enrollment, random_string, random_url
 from lms.djangoapps.learner_home.views import (
     get_course_overviews_for_pseudo_sessions,
     get_course_programs,
+    get_course_share_urls,
     get_email_settings_info,
     get_enrollments,
     get_enterprise_customer,
+    get_entitlements,
     get_platform_settings,
+    get_social_share_settings,
     get_suggested_courses,
     get_user_account_confirmation_info,
-    get_entitlements,
-    get_social_share_settings,
-    get_course_share_urls,
 )
-from openedx.core.djangoapps.catalog.tests.factories import (
-    CourseFactory as CatalogCourseFactory,
-    CourseRunFactory as CatalogCourseRunFactory,
-    ProgramFactory,
-)
-from openedx.core.djangoapps.content.course_overviews.tests.factories import (
-    CourseOverviewFactory,
-)
+from openedx.core.djangoapps.catalog.tests.factories import CourseFactory as CatalogCourseFactory
+from openedx.core.djangoapps.catalog.tests.factories import CourseRunFactory as CatalogCourseRunFactory
+from openedx.core.djangoapps.catalog.tests.factories import ProgramFactory
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from xmodule.modulestore.tests.django_utils import (
-    TEST_DATA_SPLIT_MODULESTORE,
-    SharedModuleStoreTestCase,
-)
+from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
 
 ENTERPRISE_ENABLED = "ENABLE_ENTERPRISE_INTEGRATION"
 
@@ -80,7 +65,7 @@ class TestGetPlatformSettings(TestCase):
         return_data = get_platform_settings()
 
         # Then I return them in the appropriate format
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             return_data,
             {
                 "supportEmail": self.MOCK_SETTINGS["DEFAULT_FEEDBACK_EMAIL"],
@@ -142,7 +127,7 @@ class TestGetUserAccountConfirmationInfo(SharedModuleStoreTestCase):
         user_account_confirmation_info = get_user_account_confirmation_info(self.user)
 
         # Then that link should be returned as the sendEmailUrl
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             user_account_confirmation_info["sendEmailUrl"],
             self.MOCK_SETTINGS["SEND_ACTIVATION_EMAIL_URL"],
         )
@@ -157,7 +142,7 @@ class TestGetUserAccountConfirmationInfo(SharedModuleStoreTestCase):
         user_account_confirmation_info = get_user_account_confirmation_info(self.user)
 
         # Then sendEmailUrl falls back to SUPPORT_SITE_LINK
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             user_account_confirmation_info["sendEmailUrl"],
             self.MOCK_SETTINGS["SUPPORT_SITE_LINK"],
         )
@@ -192,8 +177,8 @@ class TestGetEnrollments(SharedModuleStoreTestCase):
         returned_enrollments, course_mode_info = get_enrollments(self.user, None, None)
 
         # Then I return an empty list and dict
-        self.assertEqual(returned_enrollments, [])
-        self.assertEqual(course_mode_info, {})
+        self.assertEqual(returned_enrollments, [])  # noqa: PT009
+        self.assertEqual(course_mode_info, {})  # noqa: PT009
 
 
 class TestGetEntitlements(SharedModuleStoreTestCase):
@@ -323,7 +308,7 @@ class TestGetCourseOverviewsForPseudoSessions(SharedModuleStoreTestCase):
         course_overviews = get_course_overviews_for_pseudo_sessions(pseudo_sessions)
 
         # Then they map to the correct courses
-        self.assertDictEqual(course_overviews, expected_course_overviews)
+        self.assertDictEqual(course_overviews, expected_course_overviews)  # noqa: PT009
 
     def test_no_pseudo_sessions(self):
         # Given no pseudo sessions
@@ -333,7 +318,7 @@ class TestGetCourseOverviewsForPseudoSessions(SharedModuleStoreTestCase):
         course_overviews = get_course_overviews_for_pseudo_sessions(pseudo_sessions)
 
         # Then I should get an empty dict
-        self.assertDictEqual(course_overviews, {})
+        self.assertDictEqual(course_overviews, {})  # noqa: PT009
 
     def test_entitlement_without_pseudo_session(self):
         # Given an unfulfilled entitlement which does not have a psuedo session
@@ -345,7 +330,7 @@ class TestGetCourseOverviewsForPseudoSessions(SharedModuleStoreTestCase):
         course_overviews = get_course_overviews_for_pseudo_sessions(pseudo_sessions)
 
         # Then I should gracefully return none for that entitlement
-        self.assertDictEqual(course_overviews, {})
+        self.assertDictEqual(course_overviews, {})  # noqa: PT009
 
 
 class TestGetEmailSettingsInfo(SharedModuleStoreTestCase):
@@ -372,12 +357,12 @@ class TestGetEmailSettingsInfo(SharedModuleStoreTestCase):
         )
 
         # Then the email settings show for courses where bulk email is enabled
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             {course.id for course in courses[0:2]}, show_email_settings_for
         )
 
         # ... and course optouts are returned
-        self.assertSetEqual(
+        self.assertSetEqual(  # noqa: PT009
             {optout.course_id for optout in optouts},
             set(course_optouts),
         )
@@ -416,7 +401,7 @@ class TestGetSuggestedCourses(SharedModuleStoreTestCase):
         return_data = get_suggested_courses()
 
         # Then I return them in the appropriate response
-        self.assertDictEqual(return_data, self.MOCK_SUGGESTED_COURSES)
+        self.assertDictEqual(return_data, self.MOCK_SUGGESTED_COURSES)  # noqa: PT009
 
     def test_no_suggested_courses(self):
         # Given suggested courses are not found/configured
@@ -424,7 +409,7 @@ class TestGetSuggestedCourses(SharedModuleStoreTestCase):
         return_data = get_suggested_courses()
 
         # Then I return them in the appropriate response
-        self.assertDictEqual(return_data, self.EMPTY_SUGGESTED_COURSES)
+        self.assertDictEqual(return_data, self.EMPTY_SUGGESTED_COURSES)  # noqa: PT009
 
 
 @ddt.ddt
@@ -639,7 +624,7 @@ class TestDashboardView(BaseTestDashboardView):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_data["emailConfirmation"],
             {
                 "isNeeded": mock_user_conf_info_response["isNeeded"],
@@ -677,7 +662,7 @@ class TestDashboardView(BaseTestDashboardView):
         assert response.status_code == 200
         response_data = json.loads(response.content)
 
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_data["courses"][0]["certificate"],
             {
                 "availableDate": mock_enrollment.course.certificate_available_date,
@@ -697,7 +682,7 @@ class TestDashboardView(BaseTestDashboardView):
         self.log_in()
 
         # (and we have tons of mocks to avoid integration tests)
-        mock_enrollment = create_test_enrollment(
+        mock_enrollment = create_test_enrollment(  # noqa: F841
             self.user, course_mode=CourseMode.VERIFIED
         )
 
@@ -720,7 +705,7 @@ class TestDashboardView(BaseTestDashboardView):
         }
 
         # with empty cert data instead of a break
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             response_data["courses"][0]["certificate"], empty_cert_data
         )
 

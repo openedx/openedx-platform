@@ -11,7 +11,7 @@ from lxml import etree
 from opaque_keys.edx.keys import CourseKey
 from xblock.runtime import DictKeyValueStore, KvsFieldData
 
-from xmodule.modulestore.xml import XMLParsingModuleStoreRuntime, CourseLocationManager
+from xmodule.modulestore.xml import CourseLocationManager, XMLParsingModuleStoreRuntime
 from xmodule.x_module import policy_key
 
 

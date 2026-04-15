@@ -3,12 +3,11 @@ Tests for static asset files in openedx_content-based Content Libraries
 """
 from uuid import UUID
 
+from django.test.utils import override_settings
 from opaque_keys.edx.keys import UsageKey
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.content_libraries.tests.base import (
-    ContentLibrariesRestApiTest,
-)
+from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangoapps.xblock.api import get_component_from_usage_key
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 
@@ -117,6 +116,7 @@ class ContentLibrariesStaticAssetsTest(ContentLibrariesRestApiTest):
         check_download()
 
 
+@override_settings(CORS_ORIGIN_WHITELIST=["https://example.com/", "https://example2.com/"])
 @skip_unless_cms
 class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
     """
@@ -146,6 +146,11 @@ class ContentLibrariesComponentVersionAssetTest(ContentLibrariesRestApiTest):
             f"/library_assets/component_versions/{self.draft_component_version.uuid}/static/test.svg"
         )
         assert good_head_response.headers == get_response.headers
+        assert "Content-Security-Policy" in get_response.headers
+        assert get_response.headers["Content-Security-Policy"] == (
+            "frame-ancestors 'self' https://example.com/ https://example2.com/;"
+        )
+
 
     def test_missing(self):
         """Test asset requests that should 404."""

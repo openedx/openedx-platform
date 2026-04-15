@@ -4,19 +4,17 @@ API for containers (Sections, Subsections, Units) in Content Libraries
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import logging
-from uuid import uuid4
 import typing
+from datetime import datetime, timezone
+from uuid import uuid4
 
 from django.db import transaction
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
-from openedx_events.content_authoring.data import (
-    ContentObjectChangedData,
-    LibraryCollectionData,
-    LibraryContainerData,
-)
+from openedx_content import api as content_api
+from openedx_content.models_api import Container, Unit
+from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData, LibraryContainerData
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_COLLECTION_UPDATED,
@@ -24,23 +22,21 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
-from openedx_content import api as content_api
-from openedx_content.models_api import Container, Unit
+
 from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
 
 from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata
 from .container_metadata import (
+    LIBRARY_ALLOWED_CONTAINER_TYPES,
     ContainerHierarchy,
     ContainerMetadata,
-    library_container_locator,
     get_container_from_key,
     get_entity_from_key,
-    LIBRARY_ALLOWED_CONTAINER_TYPES,
+    library_container_locator,
 )
 from .serializers import ContainerSerializer
-
 
 if typing.TYPE_CHECKING:
     from openedx.core.djangoapps.content_staging.api import UserClipboardData
@@ -120,7 +116,7 @@ def create_container(
     )
 
     if not created:
-        created = datetime.now(tz=timezone.utc)
+        created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     # Then try creating the actual container:
     container, _initial_version = content_api.create_container_and_version(
@@ -154,7 +150,7 @@ def update_container(
     """
     container = get_container_from_key(container_key)
     library_key = container_key.lib_key
-    created = datetime.now(tz=timezone.utc)
+    created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     # Get children containers or components to update their index data
     children = get_container_children(container_key, published=False)
@@ -238,7 +234,7 @@ def delete_container(
         container_key,
         published=False,
     )
-    content_api.soft_delete_draft(container.pk)
+    content_api.soft_delete_draft(container.id)
 
     send_container_deleted_signal()
 
@@ -298,7 +294,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
         container.key,
     )
 
-    content_api.set_draft_version(container.pk, container.versioning.latest.pk)
+    content_api.set_draft_version(container.id, container.versioning.latest.pk)
     # Fetch related containers after restore
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
@@ -410,7 +406,7 @@ def update_container_children(
     [ 🛑 UNSTABLE ] Adds children components or containers to given container.
     """
     container = get_container_from_key(container_key)
-    created = datetime.now(tz=timezone.utc)
+    created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     new_version = content_api.create_next_container_version(
         container,
@@ -445,7 +441,7 @@ def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLo
     [ 🛑 UNSTABLE ] Get containers that contains the item, that can be a component or another container.
     """
     entity = get_entity_from_key(key)
-    containers = content_api.get_containers_with_entity(entity.pk).select_related("container_type")
+    containers = content_api.get_containers_with_entity(entity.id).select_related("container_type")
     return [ContainerMetadata.from_container(key.lib_key, container) for container in containers]
 
 
@@ -464,7 +460,7 @@ def publish_container_changes(
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this container:
-    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.pk)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.id)
     # Publish the container, which will also auto-publish any unpublished child components:
     publish_log = content_api.publish_from_drafts(
         learning_package.id,

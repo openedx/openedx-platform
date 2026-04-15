@@ -80,7 +80,7 @@ class TestExpireOldEntitlementsTask(TestCase):
         ) as mock_datetime:
             task = tasks.expire_old_entitlements.delay(1, 2)
 
-        pytest.raises(Exception, task.get)
+        pytest.raises(Exception, task.get)  # noqa: B017
         assert mock_datetime.call_count == (tasks.MAX_RETRIES + 1)
 
 

@@ -2,23 +2,23 @@
 Tests for the course advanced settings API.
 """
 import json
-import pkg_resources
 from unittest.mock import patch
 
 import casbin
 import ddt
+import pkg_resources
 from django.test import override_settings
 from django.urls import reverse
 from milestones.tests.utils import MilestonesTestCaseMixin
+from openedx_authz.api.users import assign_role_to_user_in_scope
+from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_authz.engine.enforcer import AuthzEnforcer
+from openedx_authz.engine.utils import migrate_policy_between_enforcers
 from rest_framework.test import APIClient
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core import toggles as core_toggles
-from openedx_authz.api.users import assign_role_to_user_in_scope
-from openedx_authz.constants.roles import COURSE_STAFF
-from openedx_authz.engine.enforcer import AuthzEnforcer
-from openedx_authz.engine.utils import migrate_policy_between_enforcers
 
 
 @ddt.ddt
@@ -156,12 +156,12 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
     def test_authorized_for_specific_course(self, mock_flag):
         """User authorized for specific course can access."""
         response = self.authorized_client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     def test_unauthorized_for_specific_course(self, mock_flag):
         """User without authorization for specific course cannot access."""
         response = self.unauthorized_client.get(self.url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_unauthorized_for_different_course(self, mock_flag):
         """User authorized for one course cannot access another course."""
@@ -171,12 +171,12 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
             kwargs={"course_id": other_course.id},
         )
         response = self.authorized_client.get(other_url)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009
 
     def test_staff_authorized_by_default(self, mock_flag):
         """Staff users are authorized by default."""
         response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     def test_superuser_authorized_by_default(self, mock_flag):
         """Superusers are authorized by default."""
@@ -184,7 +184,7 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
         superuser_client = APIClient()
         superuser_client.force_authenticate(user=superuser)
         response = superuser_client.get(self.url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     def test_patch_authorized_for_specific_course(self, mock_flag):
         """User authorized for specific course can PATCH."""
@@ -193,7 +193,7 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
             {"display_name": {"value": "Test"}},
             content_type="application/json"
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
 
     def test_patch_unauthorized_for_specific_course(self, mock_flag):
         """User without authorization for specific course cannot PATCH."""
@@ -202,4 +202,4 @@ class AdvancedSettingsAuthzTest(CourseTestCase):
             {"display_name": {"value": "Test"}},
             content_type="application/json"
         )
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 403)  # noqa: PT009

@@ -3,6 +3,7 @@ Configuration for password_policy Django app
 """
 
 import logging
+
 from dateutil.parser import parse as parse_date
 from django.apps import AppConfig
 from django.conf import settings

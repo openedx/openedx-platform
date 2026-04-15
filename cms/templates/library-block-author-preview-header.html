@@ -1,6 +1,34 @@
 <%page expression_filter="h"/>
-<%! from django.utils.translation import ngettext %>
+<%!
+from django.utils.translation import ngettext, gettext as _
+from cms.djangoapps.contentstore.utils import get_libraries_list_url
+
+libraries_list_url = get_libraries_list_url()
+%>
 <div class="wrapper-xblock-message">
+       <div class="wrapper wrapper-alert wrapper-alert-warning is-shown" role="alert">
+        <div class="alert announcement">
+            <span class="feedback-symbol fa fa-warning" aria-hidden="true"></span>
+            <span class="sr">${_("Warning")}</span>
+            <div class="copy">
+                <h2 class="title title-3 warning-heading-text">
+                    ${_("You are creating content in a deprecated format.")}
+                </h2>
+                <p>
+                    ${_(
+                        "Legacy libraries will be unsupported in Willow. Any content you create in a"
+                        " legacy library will soon need to be migrated. Consider using the "
+                    )}
+                    % if libraries_list_url:
+                      <a href="${get_libraries_list_url()}" target="_blank">${_("Libraries feature")}</a>
+                    % else:
+                      ${_("Libraries feature")}
+                    % endif
+                    ${_(" instead.")}
+              </p>
+            </div>
+        </div>
+    </div>
     <div class="xblock-message information">
         <p>
             <span class="message-text">

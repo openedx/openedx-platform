@@ -3,12 +3,12 @@ Test the test_bulk_user_org_email_optout management command
 """
 
 
-import io  # lint-amnesty, pylint: disable=unused-import
+import io  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
 import os
 import tempfile
 from contextlib import contextmanager
-
 from unittest import mock
+
 import pytest
 from django.core.management import call_command
 

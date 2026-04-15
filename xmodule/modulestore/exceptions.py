@@ -64,7 +64,7 @@ class DuplicateItemError(Exception):
         """
         Print info about what's duplicated
         """
-        return "{store}[{collection}] already has {element_id} ({exception})".format(
+        return "{store}[{collection}] already has {element_id} ({exception})".format(  # noqa: UP032
             store=self.store,
             collection=self.collection,
             element_id=self.element_id,
@@ -77,7 +77,7 @@ class VersionConflictError(Exception):
     The caller asked for either draft or published head and gave a version which conflicted with it.
     """
     def __init__(self, requestedLocation, currentHeadVersionGuid):
-        super().__init__('Requested {}, but current head is {}'.format(
+        super().__init__('Requested {}, but current head is {}'.format(  # noqa: UP032
             requestedLocation,
             currentHeadVersionGuid
         ))

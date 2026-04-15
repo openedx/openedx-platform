@@ -8,9 +8,9 @@ import itertools
 from time import time
 from unittest.mock import patch
 
-import pytest
 import ddt
 import django
+import pytest
 from django.test import TestCase
 
 from ..middleware import SafeCookieData, SafeCookieError
@@ -34,7 +34,7 @@ class TestSafeCookieData(TestSafeSessionsLogMixin, TestCase):
         Asserts equivalency of the given cookie datas by comparing
         their member variables.
         """
-        self.assertDictEqual(cookie_data1.__dict__, cookie_data2.__dict__)
+        self.assertDictEqual(cookie_data1.__dict__, cookie_data2.__dict__)  # noqa: PT009
 
     #---- Test Success ----#
 

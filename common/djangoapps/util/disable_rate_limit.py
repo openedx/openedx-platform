@@ -72,7 +72,7 @@ def can_disable_rate_limit(clz):
     """
     # No-op if the class isn't a Django Rest Framework view.
     if not issubclass(clz, APIView):
-        msg = (
+        msg = (  # noqa: UP032
             "{clz} is not a Django Rest Framework APIView subclass."
         ).format(clz=clz)
         LOGGER.warning(msg)

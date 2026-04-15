@@ -4,8 +4,8 @@ Django model to store the "course index" data
 from bson.objectid import ObjectId
 from django.contrib.auth import get_user_model
 from django.db import models
-from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from opaque_keys.edx.django.models import LearningContextKeyField
+from opaque_keys.edx.locator import CourseLocator, LibraryLocator
 from simple_history.models import HistoricalRecords
 
 from xmodule.modulestore import ModuleStoreEnum
@@ -83,7 +83,7 @@ class SplitModulestoreCourseIndex(models.Model):
     def __str__(self):
         return f"Course Index ({self.course_id})"
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         ordering = ["course_id"]
         verbose_name_plural = "Split modulestore course indexes"
         constraints = [
@@ -169,7 +169,7 @@ class SplitModulestoreCourseIndex(models.Model):
         # Set the "org" field automatically - ensure it always matches the "org" in the course_id
         self.org = self.course_id.org
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         """ Save this model """
         # Override to ensure that full_clean()/clean() is always called, so that the checks in clean() above are run.
         # But don't run validations; they just run extra queries and the database enforces them anyways.

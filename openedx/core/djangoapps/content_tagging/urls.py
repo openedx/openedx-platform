@@ -1,7 +1,7 @@
 """
 Content Tagging URLs
 """
-from django.urls import path, include
+from django.urls import include, path
 
 from .rest_api import urls
 

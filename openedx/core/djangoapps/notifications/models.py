@@ -9,8 +9,9 @@ from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
 
 from openedx.core.djangoapps.notifications.base_notification import (
+    COURSE_NOTIFICATION_TYPES,
+    get_default_values_of_preferences,
     get_notification_content,
-    COURSE_NOTIFICATION_TYPES, get_default_values_of_preferences
 )
 
 User = get_user_model()
@@ -46,7 +47,7 @@ class Notification(TimeStampedModel):
     app_name = models.CharField(max_length=64, db_index=True)
     notification_type = models.CharField(max_length=64)
     content_context = models.JSONField(default=dict)
-    content_url = models.URLField(null=True, blank=True)
+    content_url = models.URLField(null=True, blank=True)  # noqa: DJ001
     web = models.BooleanField(default=True, null=False, blank=False)
     email = models.BooleanField(default=False, null=False, blank=False)
     push = models.BooleanField(default=False, null=False, blank=False)
@@ -174,6 +175,34 @@ class NotificationPreference(TimeStampedModel):
         Returns the email cadence for the notification type.
         """
         return self.email_cadence
+
+
+class DigestSchedule(TimeStampedModel):
+    """
+    Tracks scheduled Celery digest tasks for daily/weekly email digests.
+
+    One record exists per (user, cadence_type, delivery_time) combination,
+    representing a single pending Celery task. This is the source of truth for
+    deduplication of digest scheduling.
+
+    NOTE: This is intentionally separate from Notification.email_scheduled.
+    Notification.email_scheduled serves the immediate/buffer cadence flow
+    (decide_email_action → schedule_digest_buffer → send_buffered_digest) and
+    operates at the notification row level. DigestSchedule operates at the
+    task level — one record per scheduled Celery job — for daily/weekly digests only.
+
+    .. no_pii:
+    """
+    user = models.ForeignKey(User, related_name="digest_schedules", on_delete=models.CASCADE)
+    cadence_type = models.CharField(max_length=20)
+    delivery_time = models.DateTimeField()
+    task_id = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = ('user', 'cadence_type', 'delivery_time')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.cadence_type} - {self.delivery_time} (task={self.task_id})'
 
 
 def create_notification_preference(user_id: int, notification_type: str) -> NotificationPreference:

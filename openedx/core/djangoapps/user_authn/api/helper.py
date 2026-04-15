@@ -6,10 +6,10 @@ import copy
 from django.conf import settings
 from rest_framework.views import APIView
 
+from common.djangoapps.student.models import UserProfile
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.user_authn.api import form_fields
 from openedx.core.djangoapps.user_authn.views.registration_form import get_registration_extension_form
-from common.djangoapps.student.models import UserProfile
 
 
 class RegistrationFieldsContext(APIView):

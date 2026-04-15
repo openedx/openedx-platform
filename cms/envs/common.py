@@ -38,24 +38,21 @@ When refering to XBlocks, we use the entry-point name. For example,
 # want to import all variables from base settings files
 # pylint: disable=unused-import, useless-suppression, wrong-import-order, wrong-import-position
 
-import importlib.util
+import importlib.util  # noqa: F401
 import os
-
-from corsheaders.defaults import default_headers as corsheaders_default_headers
 from datetime import timedelta
 
+from corsheaders.defaults import default_headers as corsheaders_default_headers
 from django.utils.translation import gettext_lazy as _
 from openedx_content.settings_api import openedx_content_backcompat_apps_to_install
-
-from openedx.envs.common import *  # pylint: disable=wildcard-import
-
 from path import Path as path
 
 from cms.lib.xblock.authoring_mixin import AuthoringMixin
 from cms.lib.xblock.upstream_sync import UpstreamSyncMixin
-from xmodule.x_module import ResourceTemplates
 from openedx.core.lib.derived import Derived
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
+from openedx.envs.common import *  # pylint: disable=wildcard-import  # noqa: F403
+from xmodule.x_module import ResourceTemplates
 
 # A proxy for feature flags stored in the settings namespace
 FEATURES = FeaturesProxy(globals())
@@ -123,16 +120,6 @@ ENABLE_OTHER_COURSE_SETTINGS = False
 # Enable support for content libraries. Note that content libraries are
 # only supported in courses using split mongo.
 ENABLE_CONTENT_LIBRARIES = True
-
-# .. toggle_name: settings.ENABLE_CONTENT_LIBRARIES_LTI_TOOL
-# .. toggle_implementation: DjangoSetting
-# .. toggle_default: False
-# .. toggle_description: When set to True, Content Libraries in
-#    Studio can be used as an LTI 1.3 tool by external LTI platforms.
-# .. toggle_use_cases: open_edx
-# .. toggle_creation_date: 2021-08-17
-# .. toggle_tickets: https://github.com/openedx/edx-platform/pull/27411
-ENABLE_CONTENT_LIBRARIES_LTI_TOOL = False
 
 # Toggle course entrance exams feature
 ENTRANCE_EXAMS = False
@@ -274,10 +261,10 @@ COURSE_AUTHORING_MICROFRONTEND_URL = None
 
 ############################# SET PATH INFORMATION #############################
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/cms
-CMS_ROOT = REPO_ROOT / "cms"
-LMS_ROOT = REPO_ROOT / "lms"
+CMS_ROOT = REPO_ROOT / "cms"  # noqa: F405
+LMS_ROOT = REPO_ROOT / "lms"  # noqa: F405
 
-GITHUB_REPO_ROOT = ENV_ROOT / "data"
+GITHUB_REPO_ROOT = ENV_ROOT / "data"  # noqa: F405
 
 ######################## BRANCH.IO ###########################
 BRANCH_IO_KEY = ''
@@ -287,8 +274,8 @@ HOTJAR_ID = 00000
 
 ############################# TEMPLATE CONFIGURATION #############################
 
-MAKO_TEMPLATE_DIRS_BASE.insert(3, COMMON_ROOT / 'static')
-MAKO_TEMPLATE_DIRS_BASE.append(CMS_ROOT / 'djangoapps' / 'pipeline_js' / 'templates')
+MAKO_TEMPLATE_DIRS_BASE.insert(3, COMMON_ROOT / 'static')  # noqa: F405
+MAKO_TEMPLATE_DIRS_BASE.append(CMS_ROOT / 'djangoapps' / 'pipeline_js' / 'templates')  # noqa: F405
 
 
 def make_lms_template_path(settings):
@@ -298,18 +285,18 @@ def make_lms_template_path(settings):
     templates_path = settings.PROJECT_ROOT / 'templates'
     return templates_path.replace('cms', 'lms')
 
-lms_mako_template_dirs_base[0] = Derived(make_lms_template_path)
+lms_mako_template_dirs_base[0] = Derived(make_lms_template_path)  # noqa: F405
 
-TEMPLATES[0]['DIRS'] = Derived(make_mako_template_dirs)
-TEMPLATES.append(
+TEMPLATES[0]['DIRS'] = Derived(make_mako_template_dirs)  # noqa: F405
+TEMPLATES.append(  # noqa: F405
     {
         # This separate copy of the Mako backend is used to render previews using the LMS templates
         'NAME': 'preview',
         'BACKEND': 'common.djangoapps.edxmako.backend.Mako',
         'APP_DIRS': False,
-        'DIRS': lms_mako_template_dirs_base,
+        'DIRS': lms_mako_template_dirs_base,  # noqa: F405
         'OPTIONS': {
-            'context_processors': CONTEXT_PROCESSORS,
+            'context_processors': CONTEXT_PROCESSORS,  # noqa: F405
             'debug': False,
             'namespace': 'lms.main',
         }
@@ -322,14 +309,13 @@ AWS_SECURITY_TOKEN = None
 ##############################################################################
 
 # use the ratelimit backend to prevent brute force attacks
-AUTHENTICATION_BACKENDS.insert(0, 'auth_backends.backends.EdXOAuth2')
-AUTHENTICATION_BACKENDS.insert(2, 'openedx.core.djangoapps.content_libraries.auth.LtiAuthenticationBackend')
+AUTHENTICATION_BACKENDS.insert(0, 'auth_backends.backends.EdXOAuth2')  # noqa: F405
 
 LMS_BASE = None
 
 # Use LMS SSO for login, once enabled by setting LOGIN_URL (see docs/guides/studio_oauth.rst)
 SOCIAL_AUTH_STRATEGY = 'auth_backends.strategies.EdxDjangoStrategy'
-LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/home/'
+LOGIN_REDIRECT_URL = EDX_ROOT_URL + '/home/'  # noqa: F405
 LOGIN_URL = '/login/'
 FRONTEND_LOGIN_URL = LOGIN_URL
 # Warning: Must have trailing slash to activate correct logout view
@@ -439,7 +425,7 @@ EXTRA_MIDDLEWARE_CLASSES = []
 ############# XBlock Configuration ##########
 
 # DO NOT EXPAND THIS LIST!! See declaration in openedx/envs/common.py for more information
-mixins = list(XBLOCK_MIXINS)
+mixins = list(XBLOCK_MIXINS)  # noqa: F405
 mixins.insert(2, ResourceTemplates)
 mixins += [
     UpstreamSyncMixin,  # Should be above AuthoringMixin for UpstreamSyncMixin.editor_saved to take effect
@@ -454,7 +440,7 @@ ORA2_FILE_PREFIX = 'default_env-default_deployment/ora2'
 
 ############################ Modulestore Configuration ################################
 
-CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'PRIMARY'
+CONTENTSTORE['DOC_STORE_CONFIG']['read_preference'] = 'PRIMARY'  # noqa: F405
 
 MODULESTORE_BRANCH = 'draft-preferred'
 
@@ -463,7 +449,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 #################### Python sandbox ############################################
 
 # Needs to be non-zero so that jailed code can use it as their temp directory.(1MiB in bytes)
-CODE_JAIL['limits']['FSIZE'] = 1048576
+CODE_JAIL['limits']['FSIZE'] = 1048576  # noqa: F405
 
 ############################ DJANGO_BUILTINS ################################
 
@@ -500,7 +486,7 @@ PRESS_EMAIL = 'press@example.com'
 
 # Static content
 STATIC_URL = '/static/studio/'
-STATIC_ROOT = os.environ.get('STATIC_ROOT_CMS', ENV_ROOT / 'staticfiles' / 'studio')
+STATIC_ROOT = os.environ.get('STATIC_ROOT_CMS', ENV_ROOT / 'staticfiles' / 'studio')  # noqa: F405
 
 # Storage
 COURSE_IMPORT_EXPORT_STORAGE = 'django.core.files.storage.FileSystemStorage'
@@ -510,13 +496,13 @@ COURSE_METADATA_EXPORT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 ############################### PIPELINE #######################################
 
-PIPELINE.update({
+PIPELINE.update({  # noqa: F405
     'JS_COMPRESSOR': None,
     'COMPILERS': (),
     'YUI_BINARY': 'yui-compressor',
 })
 
-PIPELINE['STYLESHEETS'] = {
+PIPELINE['STYLESHEETS'] = {  # noqa: F405
     'style-vendor': {
         'source_filenames': [
             'css/vendor/normalize.css',
@@ -607,14 +593,14 @@ base_vendor_js = [
 
 # test_order: Determines the position of this chunk of javascript on
 # the jasmine test page
-PIPELINE['JAVASCRIPT'] = {
+PIPELINE['JAVASCRIPT'] = {  # noqa: F405
     'base_vendor': {
         'source_filenames': base_vendor_js,
         'output_filename': 'js/cms-base-vendor.js',
     },
 }
 
-STATICFILES_IGNORE_PATTERNS.append("common_static")
+STATICFILES_IGNORE_PATTERNS.append("common_static")  # noqa: F405
 
 ################################# DJANGO-REQUIRE ###############################
 
@@ -651,7 +637,7 @@ EXTENDED_VIDEO_TRANSCRIPT_LANGUAGES = []
 
 ############################# SETTINGS FOR VIDEO UPLOAD PIPELINE #############################
 
-VIDEO_UPLOAD_PIPELINE['CONCURRENT_UPLOAD_LIMIT'] = 4
+VIDEO_UPLOAD_PIPELINE['CONCURRENT_UPLOAD_LIMIT'] = 4  # noqa: F405
 
 ############################ APPS #####################################
 
@@ -921,7 +907,7 @@ INSTALLED_APPS = [
 ]
 
 ### Apps only installed in some instances
-add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)
+add_optional_apps(OPTIONAL_APPS, INSTALLED_APPS)  # noqa: F405
 
 ##### ACCOUNT LOCKOUT DEFAULT PARAMETERS #####
 MAX_FAILED_LOGIN_ATTEMPTS_ALLOWED = 6
@@ -1080,7 +1066,8 @@ ZENDESK_API_KEY = ''
 
 ############## Installed Django Apps #########################
 
-from edx_django_utils.plugins import get_plugin_apps, add_plugins
+from edx_django_utils.plugins import add_plugins, get_plugin_apps
+
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
 
 INSTALLED_APPS.extend(get_plugin_apps(ProjectType.CMS))
@@ -1117,10 +1104,10 @@ VIDEO_IMAGE_SETTINGS = dict(
     # STORAGE_CLASS='storages.backends.s3boto3.S3Boto3Storage',
     # STORAGE_KWARGS=dict(bucket='video-image-bucket'),
     STORAGE_KWARGS=dict(
-        location=MEDIA_ROOT,
+        location=MEDIA_ROOT,  # noqa: F405
     ),
     DIRECTORY_PREFIX='video-images/',
-    BASE_URL=MEDIA_URL,
+    BASE_URL=MEDIA_URL,  # noqa: F405
 )
 
 VIDEO_IMAGE_MAX_AGE = 31536000
@@ -1169,7 +1156,7 @@ LEARNER_PORTAL_URL_ROOT = 'https://learner-portal-localhost:18000'
 
 ############################ JWT #################################
 
-REGISTRATION_EXTRA_FIELDS['marketing_emails_opt_in'] = 'hidden'
+REGISTRATION_EXTRA_FIELDS['marketing_emails_opt_in'] = 'hidden'  # noqa: F405
 EDXAPP_PARSE_KEYS = {}
 PARSE_KEYS = {}
 
@@ -1250,7 +1237,7 @@ DISCUSSIONS_INCONTEXT_LEARNMORE_URL = "https://docs.openedx.org/en/latest/educat
 def _should_send_xblock_events(settings):
     return settings.ENABLE_SEND_XBLOCK_LIFECYCLE_EVENTS_OVER_BUS
 
-EVENT_BUS_PRODUCER_CONFIG.update({
+EVENT_BUS_PRODUCER_CONFIG.update({  # noqa: F405
     'org.openedx.content_authoring.course.catalog_info.changed.v1': {
         'course-catalog-info-changed':
             {'event_key_field': 'catalog_info.course_key',
@@ -1283,7 +1270,7 @@ EVENT_BUS_PRODUCER_CONFIG.update({
 ################### Authoring API ######################
 
 # This affects the Authoring API swagger docs but not the legacy swagger docs under /api-docs/.
-REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'
+REST_FRAMEWORK['DEFAULT_SCHEMA_CLASS'] = 'drf_spectacular.openapi.AutoSchema'  # noqa: F405
 
 ################### Studio Search (beta), using Meilisearch ###################
 

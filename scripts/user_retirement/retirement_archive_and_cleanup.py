@@ -51,10 +51,10 @@ def _fetch_learners_to_archive_or_exit(config, start_date, end_date, initial_sta
     """
     Makes the call to fetch learners to be cleaned up, returns the list of learners or exits.
     """
-    LOG('Fetching users in state {} created from {} to {}'.format(initial_state, start_date, end_date))
+    LOG('Fetching users in state {} created from {} to {}'.format(initial_state, start_date, end_date))  # noqa: UP032
     try:
         learners = config['LMS'].get_learners_by_date_and_status(initial_state, start_date, end_date)
-        LOG('Successfully fetched {} learners'.format(str(len(learners))))
+        LOG('Successfully fetched {} learners'.format(str(len(learners))))  # noqa: UP032
         return learners
     except Exception as exc:  # pylint: disable=broad-except
         FAIL_EXCEPTION(ERR_FETCHING, 'Unexpected error occurred fetching users to update!', exc)
@@ -109,11 +109,11 @@ def _upload_to_s3(config, filename, dry_run=False):
         bucket = s3.Bucket(bucket_name)
         key = 'raw/' + datestr + filename
         if dry_run:
-            LOG('Dry run. Skipping the step to upload data to {}'.format(key))
+            LOG('Dry run. Skipping the step to upload data to {}'.format(key))  # noqa: UP032
             return
         else:
             bucket.upload_file(filename, key)
-            LOG('Successfully uploaded retirement data to {}'.format(key))
+            LOG('Successfully uploaded retirement data to {}'.format(key))  # noqa: UP032
     except Exception as exc:
         LOG(text_type(exc))
         raise
@@ -168,7 +168,7 @@ def _archive_retirements_or_exit(config, learners, dry_run=False):
     try:
         now = _get_utc_now()
         filename = 'retirement_archive_{}.json.gz'.format(now.strftime('%Y_%d_%m_%H_%M_%S'))
-        LOG('Creating retirement archive file {}'.format(filename))
+        LOG('Creating retirement archive file {}'.format(filename))  # noqa: UP032
 
         # The file format is one JSON object per line with the newline as a separator. This allows for
         # easy queries via AWS Athena if we need to confirm learner deletion.
@@ -187,7 +187,7 @@ def _archive_retirements_or_exit(config, learners, dry_run=False):
                 json.dump(user, out)
                 out.write("\n")
         if dry_run:
-            LOG('Dry run. Logging the contents of {} for debugging'.format(filename))
+            LOG('Dry run. Logging the contents of {} for debugging'.format(filename))  # noqa: UP032
             with gzip.open(filename, 'r') as archive_file:
                 for line in archive_file.readlines():
                     LOG(line)
@@ -200,7 +200,7 @@ def _cleanup_retirements_or_exit(config, learners):
     """
     Bulk deletes the retirements for this run
     """
-    LOG('Cleaning up retirements for {} learners'.format(len(learners)))
+    LOG('Cleaning up retirements for {} learners'.format(len(learners)))  # noqa: UP032
     try:
         usernames = [l['original_username'] for l in learners]
         config['LMS'].bulk_cleanup_retirements(usernames)
@@ -268,7 +268,7 @@ def archive_and_cleanup(config_file, cool_off_days, dry_run, start_date, end_dat
     3- Deleting them from LMS (by username)
     """
     try:
-        LOG('Starting bulk update script: Config: {}'.format(config_file))
+        LOG('Starting bulk update script: Config: {}'.format(config_file))  # noqa: UP032
 
         if not config_file:
             FAIL(ERR_NO_CONFIG, 'No config file passed in.')
@@ -290,7 +290,7 @@ def archive_and_cleanup(config_file, cool_off_days, dry_run, start_date, end_dat
             FAIL(ERR_BAD_CLI_PARAM, 'Conflicting start and end dates passed on CLI')
 
         LOG(
-            'Fetching retirements for learners that have a COMPLETE status and were created '
+            'Fetching retirements for learners that have a COMPLETE status and were created '  # noqa: UP032
             'between {} and {}.'.format(
                 start_date, end_date
             )
@@ -305,7 +305,7 @@ def archive_and_cleanup(config_file, cool_off_days, dry_run, start_date, end_dat
         if learners_to_process:
             for index, batch in enumerate(learners_to_process):
                 LOG(
-                    'Processing batch {} out of {} of user retirement requests'.format(
+                    'Processing batch {} out of {} of user retirement requests'.format(  # noqa: UP032
                         str(index + 1), str(num_batches)
                     )
                 )
@@ -315,7 +315,7 @@ def archive_and_cleanup(config_file, cool_off_days, dry_run, start_date, end_dat
                     LOG('This is a dry-run. Exiting before any retirements are cleaned up')
                 else:
                     _cleanup_retirements_or_exit(config, batch)
-                    LOG('Archive and cleanup complete for batch #{}'.format(str(index + 1)))
+                    LOG('Archive and cleanup complete for batch #{}'.format(str(index + 1)))  # noqa: UP032
                     time.sleep(DELAY)
         else:
             LOG('No learners found!')

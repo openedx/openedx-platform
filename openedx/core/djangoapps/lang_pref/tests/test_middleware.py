@@ -11,10 +11,10 @@ from django.conf import settings
 from django.contrib.sessions.middleware import SessionMiddleware
 from django.http import HttpResponse
 from django.test.client import Client, RequestFactory
-from openedx.core.lib.api.test_utils import override_settings
 from django.urls import reverse
 from django.utils.translation.trans_real import parse_accept_lang_header
 
+from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
 from openedx.core.djangoapps.lang_pref import COOKIE_DURATION, LANGUAGE_KEY
 from openedx.core.djangoapps.lang_pref.middleware import LanguagePreferenceMiddleware
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
@@ -24,10 +24,10 @@ from openedx.core.djangoapps.site_configuration.tests.test_util import (
 from openedx.core.djangoapps.user_api.preferences.api import (
     delete_user_preference,
     get_user_preference,
-    set_user_preference
+    set_user_preference,
 )
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
-from common.djangoapps.student.tests.factories import AnonymousUserFactory, UserFactory
+from openedx.core.lib.api.test_utils import override_settings
 
 
 @ddt.ddt
@@ -155,7 +155,7 @@ class TestUserPreferenceMiddleware(CacheIsolationTestCase):
             accept_lang_out = parse_accept_lang_header(accept_lang_out)
 
         if accept_lang_out and accept_lang_result:
-            self.assertCountEqual(accept_lang_result, accept_lang_out)
+            self.assertCountEqual(accept_lang_result, accept_lang_out)  # noqa: PT009
         else:
             assert accept_lang_result == accept_lang_out
 

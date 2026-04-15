@@ -7,10 +7,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from model_utils.models import TimeStampedModel
-from opaque_keys.edx.django.models import (
-    LearningContextKeyField,
-    UsageKeyField,
-)
+from opaque_keys.edx.django.models import LearningContextKeyField, UsageKeyField
 from openedx_content.models_api import (
     Collection,
     DraftChangeLog,
@@ -85,7 +82,7 @@ class ModulestoreMigration(models.Model):
         on_delete=models.CASCADE,
         related_name="migrations",
     )
-    source_version = models.CharField(
+    source_version = models.CharField(  # noqa: DJ001
         max_length=255,
         blank=True,
         null=True,
@@ -243,7 +240,7 @@ class ModulestoreBlockMigration(TimeStampedModel):
         null=True,
         on_delete=models.SET_NULL,
     )
-    unsupported_reason = models.TextField(
+    unsupported_reason = models.TextField(  # noqa: DJ001
         null=True,
         blank=True,
         help_text=_('Reason if the block is unsupported and target is set to null'),

@@ -7,15 +7,14 @@ classes, which both need these type of functions.
 """
 
 
-import dateutil.parser
-
 from base64 import b32encode
 from datetime import datetime, timedelta
 from math import exp
 from zoneinfo import ZoneInfo
 
+import dateutil.parser
 
-DEFAULT_START_DATE = datetime(2030, 1, 1, tzinfo=ZoneInfo("UTC"))
+DEFAULT_START_DATE = datetime(2040, 1, 1, tzinfo=ZoneInfo("UTC"))
 
 """
 Default grading policy for a course run.

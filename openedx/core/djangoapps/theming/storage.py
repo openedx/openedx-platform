@@ -7,8 +7,8 @@ See https://docs.djangoproject.com/en/1.8/ref/contrib/staticfiles/
 import os.path
 import posixpath
 import re
-
 from urllib.parse import unquote, urldefrag, urlsplit  # pylint: disable=import-error
+
 from django.conf import settings
 from django.contrib.staticfiles.finders import find
 from django.contrib.staticfiles.storage import ManifestFilesMixin, StaticFilesStorage
@@ -20,7 +20,7 @@ from openedx.core.djangoapps.theming.helpers import (
     get_project_root_name,
     get_theme_base_dir,
     get_themes,
-    is_comprehensive_theming_enabled
+    is_comprehensive_theming_enabled,
 )
 
 

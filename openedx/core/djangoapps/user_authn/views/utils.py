@@ -2,8 +2,11 @@
 User Auth Views Utils
 """
 import logging
+import random
 import re
-from typing import Dict
+import string
+from datetime import datetime
+from typing import Dict  # noqa: UP035
 
 from django.conf import settings
 from django.contrib import messages
@@ -15,11 +18,8 @@ from common.djangoapps import third_party_auth
 from common.djangoapps.third_party_auth import pipeline
 from common.djangoapps.third_party_auth.models import clean_username
 from openedx.core.djangoapps.embargo.models import GlobalRestrictedCountry
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.geoinfo.api import country_code_from_ip
-import random
-import string
-from datetime import datetime
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 
 log = logging.getLogger(__name__)
 API_V1 = 'v1'
@@ -189,7 +189,7 @@ def get_auto_generated_username(data):
     return f"{username_prefix}_{username_suffix}" if username_prefix else username_suffix
 
 
-def remove_disabled_country_from_list(countries: Dict) -> Dict:
+def remove_disabled_country_from_list(countries: Dict) -> Dict:  # noqa: UP006
     """
     Remove disabled countries from the list of countries.
 

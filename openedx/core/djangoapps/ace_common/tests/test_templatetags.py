@@ -9,7 +9,7 @@ from openedx.core.djangoapps.ace_common.templatetags.ace import (
     _get_google_analytics_tracking_url,
     ensure_url_is_absolute,
     google_analytics_tracking_pixel,
-    with_link_tracking
+    with_link_tracking,
 )
 from openedx.core.djangoapps.ace_common.tests.mixins import EmailTemplateTagMixin, QueryStringAssertionMixin
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
@@ -47,7 +47,7 @@ class TestLinkTrackingTag(QueryStringAssertionMixin, EmailTemplateTagMixin, Cach
             scheme='http',
             netloc='example.com',
             path='/foo',
-            query='utm_source=test_app_label&utm_campaign=test_name&utm_medium=email&utm_content={uuid}'.format(
+            query='utm_source=test_app_label&utm_campaign=test_name&utm_medium=email&utm_content={uuid}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                 uuid=self.message.uuid
             )
         )
@@ -102,7 +102,7 @@ class TestGoogleAnalyticsPixelTag(QueryStringAssertionMixin, EmailTemplateTagMix
             cs=self.message.app_label,
             cn=self.message.name,
             cc=self.message.uuid,
-            dp='/email/test_app_label/test_name/{send_uuid}/{uuid}'.format(
+            dp='/email/test_app_label/test_name/{send_uuid}/{uuid}'.format(  # noqa: UP032
                 send_uuid=self.message.send_uuid,
                 uuid=self.message.uuid,
             ),

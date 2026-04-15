@@ -3,8 +3,8 @@ Tests for the expire_waiting_enrollments management command.
 """
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from django.core.management import call_command
 from django.test import TestCase
 
@@ -37,5 +37,5 @@ class TestExpireWaitingEnrollments(TestCase):
     @patch('lms.djangoapps.program_enrollments.tasks.expire_waiting_enrollments', autospec=True)
     def test_task_failure_fails_command(self, mock_task):
         mock_task.side_effect = Exception('BOOM!')
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # noqa: B017, PT011
             call_command('expire_waiting_enrollments')

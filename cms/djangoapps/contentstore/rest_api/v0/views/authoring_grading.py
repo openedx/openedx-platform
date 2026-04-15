@@ -12,6 +12,7 @@ from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
 from openedx.core.djangoapps.authz.decorators import authz_permission_required
 from openedx.core.djangoapps.credit.tasks import update_credit_course_requirements
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
+
 from ..serializers import CourseGradingModelSerializer
 
 

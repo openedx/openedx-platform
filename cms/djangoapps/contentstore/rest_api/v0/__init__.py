@@ -2,11 +2,8 @@
 Views for v0 contentstore API.
 """
 
-from cms.djangoapps.contentstore.rest_api.v0.views.assets import (
+from cms.djangoapps.contentstore.rest_api.v0.views.assets import (  # noqa: F401
     AssetsCreateRetrieveView,
-    AssetsUpdateDestroyView
+    AssetsUpdateDestroyView,
 )
-from cms.djangoapps.contentstore.rest_api.v0.views.xblock import (
-    XblockView,
-    XblockCreateView
-)
+from cms.djangoapps.contentstore.rest_api.v0.views.xblock import XblockCreateView, XblockView  # noqa: F401

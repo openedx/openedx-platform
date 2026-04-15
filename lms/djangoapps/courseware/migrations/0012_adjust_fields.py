@@ -5,9 +5,9 @@
 #    ./manage.py lms sqlmigrate courseware 0012_adjust_fields
 
 
+import opaque_keys.edx.django.models
 from django.conf import settings
 from django.db import migrations, models
-import opaque_keys.edx.django.models
 
 
 class Migration(migrations.Migration):

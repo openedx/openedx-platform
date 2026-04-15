@@ -5,6 +5,7 @@ import pathlib
 import unittest
 
 from django.test import override_settings
+
 from xmodule.x_module import ResourceTemplates
 
 CUSTOM_RESOURCE_TEMPLATES_DIRECTORY = pathlib.Path(__file__).parent.parent / "templates/"

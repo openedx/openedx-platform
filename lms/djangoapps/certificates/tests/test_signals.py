@@ -13,7 +13,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from openedx_events.data import EventsMetadata
 from openedx_events.learning.data import ExamAttemptData, UserData, UserPersonalData
 from openedx_events.learning.signals import EXAM_ATTEMPT_REJECTED
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.certificates.api import has_self_generated_certificates_enabled
@@ -300,16 +300,11 @@ class FailingGradeCertsTest(ModuleStoreTestCase):
         assert cert.status == CertificateStatuses.downloadable
 
 
-class LearnerIdVerificationTest(ModuleStoreTestCase, OpenEdxEventsTestMixin):
+class LearnerIdVerificationTest(OpenEdxEventsTestMixin, ModuleStoreTestCase):
     """
     Tests for certificate generation task firing on learner id verification
     """
     ENABLED_OPENEDX_EVENTS = ['org.openedx.learning.idv_attempt.approved.v1']
-
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.start_events_isolation()
 
     def setUp(self):
         super().setUp()
@@ -497,7 +492,7 @@ class ExamCompletionEventBusTests(TestCase):
             minorversion=0,
             source='openedx/lms/web',
             sourcehost='lms.test',
-            time=datetime.now(timezone.utc)
+            time=datetime.now(timezone.utc)  # noqa: UP017
         )
 
     @mock.patch('lms.djangoapps.certificates.signals.invalidate_certificate')

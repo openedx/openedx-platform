@@ -7,10 +7,10 @@ from django.urls import reverse
 from openedx_filters import PipelineStep
 from openedx_filters.learning.filters import CourseAboutRenderStarted
 from rest_framework import status
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class TestRenderInvalidCourseAbout(PipelineStep):
@@ -63,7 +63,7 @@ class TestRedirectToDefaultPage(PipelineStep):
         When raising RedirectToPage, this filter uses a redirect_to field handled by
         the course about view that redirects to that URL.
         """
-        course_key = str(context.get("course").id)
+        course_key = str(context.get("course").id)  # noqa: F841
         raise CourseAboutRenderStarted.RedirectToPage(
             "You can't access this courses about page, redirecting to the correct location.",
         )
@@ -189,8 +189,8 @@ class CourseAboutFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.course_about_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual(f"courses/{self.course.id}/survey", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual(f"courses/{self.course.id}/survey", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={
@@ -212,8 +212,8 @@ class CourseAboutFiltersTest(ModuleStoreTestCase):
         """
         response = self.client.get(self.course_about_url)
 
-        self.assertEqual(status.HTTP_302_FOUND, response.status_code)
-        self.assertEqual(f"{reverse('dashboard')}", response.url)
+        self.assertEqual(status.HTTP_302_FOUND, response.status_code)  # noqa: PT009
+        self.assertEqual(f"{reverse('dashboard')}", response.url)  # noqa: PT009
 
     @override_settings(
         OPEN_EDX_FILTERS_CONFIG={

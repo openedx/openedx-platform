@@ -4,15 +4,22 @@ Tests for verified_track_content/partition_scheme.py.
 
 
 from datetime import datetime, timedelta
-
 from zoneinfo import ZoneInfo
+
 import pytest
+
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.partitions.partitions import MINIMUM_UNUSED_PARTITION_ID, UserPartition, ReadOnlyUserPartitionError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+    MINIMUM_UNUSED_PARTITION_ID,
+    ReadOnlyUserPartitionError,
+    UserPartition,
+)
 
 from ..partition_scheme import ENROLLMENT_GROUP_IDS, EnrollmentTrackPartitionScheme, EnrollmentTrackUserPartition
 

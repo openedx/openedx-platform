@@ -1,8 +1,8 @@
-from openedx.core.lib.hash_utils import create_hash256, short_token
-
 from django.conf import settings
 from django.db import migrations, models
 from opaque_keys.edx.django.models import CourseKeyField, UsageKeyField
+
+from openedx.core.lib.hash_utils import create_hash256, short_token
 
 
 class Migration(migrations.Migration):

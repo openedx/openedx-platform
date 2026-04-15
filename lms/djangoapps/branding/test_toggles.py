@@ -3,7 +3,7 @@ Tests for toggles, where there is logic beyond enable/disable.
 """
 
 import ddt
-from django.test import override_settings, TestCase
+from django.test import TestCase, override_settings
 
 from lms.djangoapps.branding.toggles import use_catalog_mfe
 

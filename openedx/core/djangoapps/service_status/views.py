@@ -6,9 +6,10 @@ Django Views for service status app
 import json
 import time
 
+from celery import current_app as celery
 from celery.exceptions import TimeoutError  # lint-amnesty, pylint: disable=redefined-builtin
 from django.http import HttpResponse
-from celery import current_app as celery
+
 from openedx.core.djangoapps.service_status.tasks import delayed_ping
 
 

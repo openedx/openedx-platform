@@ -1,8 +1,8 @@
 """Signal handlers for writing course dates into edx_when."""
 
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 from django.dispatch import receiver
 from edx_when.api import FIELDS_TO_EXTRACT, set_dates_for_course
@@ -33,12 +33,12 @@ def _field_values(fields, xblock):
             try:
                 result[field.name] = field.read_from(xblock)
             except TypeError as exception:
-                exception_message = "{message}, Block-location:{location}, Field-name:{field_name}".format(
+                exception_message = "{message}, Block-location:{location}, Field-name:{field_name}".format(  # noqa: UP032  # pylint: disable=line-too-long
                     message=str(exception),
                     location=str(xblock.location),
                     field_name=field.name
                 )
-                raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise TypeError(exception_message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return result
 
 

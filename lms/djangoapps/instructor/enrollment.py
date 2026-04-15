@@ -19,19 +19,19 @@ from edx_ace import ace
 from edx_ace.recipient import Recipient
 from eventtracking import tracker
 from submissions import api as sub_api  # installed from the edx-submissions repository
-from submissions.models import score_set, score_reset
+from submissions.models import score_reset, score_set
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
     CourseEnrollment,
     CourseEnrollmentAllowed,
     anonymous_id_for_user,
-    is_email_retired
+    is_email_retired,
 )
 from common.djangoapps.track.event_transaction_utils import (
     create_new_event_transaction_id,
     get_event_transaction_id,
-    set_event_transaction_type
+    set_event_transaction_type,
 )
 from lms.djangoapps.branding.api import get_logo_url_for_email
 from lms.djangoapps.courseware.models import StudentModule
@@ -46,7 +46,7 @@ from lms.djangoapps.instructor.message_types import (
     AllowedUnenroll,
     EnrolledUnenroll,
     EnrollEnrolled,
-    RemoveBetaTester
+    RemoveBetaTester,
 )
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -90,7 +90,7 @@ class EmailEnrollmentState:
         self.mode = mode
 
     def __repr__(self):
-        return "{}(user={}, enrollment={}, allowed={}, auto_enroll={})".format(
+        return "{}(user={}, enrollment={}, allowed={}, auto_enroll={})".format(  # noqa: UP032
             self.__class__.__name__,
             bool(self.user),
             self.enrollment,
@@ -255,7 +255,7 @@ def send_beta_role_email(action, user, message_params):
     `message_params` parameters used while parsing email templates (a `dict`).
     """
     if action in ('add', 'remove'):
-        message_params['message_type'] = '%s_beta_tester' % action
+        message_params['message_type'] = '%s_beta_tester' % action  # noqa: UP031
         message_params['email_address'] = user.email
         message_params['user_id'] = user.id
         message_params['full_name'] = user.profile.name

@@ -62,26 +62,26 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
 
         response = self.api_client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        self.assertEqual(response['Content-Type'], 'application/json')  # noqa: PT009
 
         data = response.json()
-        self.assertIn('id', data)
-        self.assertIn('groups', data)
-        self.assertIn('studio_content_groups_link', data)
+        self.assertIn('id', data)  # noqa: PT009
+        self.assertIn('groups', data)  # noqa: PT009
+        self.assertIn('studio_content_groups_link', data)  # noqa: PT009
 
         # Verify partition ID is returned
-        self.assertEqual(data['id'], 50)
+        self.assertEqual(data['id'], 50)  # noqa: PT009
 
         # Verify groups
         groups = data['groups']
-        self.assertEqual(len(groups), 2)
-        self.assertEqual(groups[0]['name'], 'Content Group A')
-        self.assertEqual(groups[1]['name'], 'Content Group B')
+        self.assertEqual(len(groups), 2)  # noqa: PT009
+        self.assertEqual(groups[0]['name'], 'Content Group A')  # noqa: PT009
+        self.assertEqual(groups[1]['name'], 'Content Group B')  # noqa: PT009
 
         # Verify full Studio URL
         expected_studio_url = self._get_expected_studio_url()
-        self.assertEqual(data['studio_content_groups_link'], expected_studio_url)
+        self.assertEqual(data['studio_content_groups_link'], expected_studio_url)  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
     def test_list_content_groups_filters_non_cohort_partitions(self, mock_perm):
@@ -111,12 +111,12 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         data = response.json()
 
         # Verify cohort partition ID is returned
-        self.assertEqual(data['id'], 50)
+        self.assertEqual(data['id'], 50)  # noqa: PT009
 
         # Only groups from cohort partition should be returned
         groups = data['groups']
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(groups[0]['name'], 'Group A')
+        self.assertEqual(len(groups), 1)  # noqa: PT009
+        self.assertEqual(groups[0]['name'], 'Group A')  # noqa: PT009
 
     @override_settings(MFE_CONFIG={"STUDIO_BASE_URL": TEST_STUDIO_BASE_URL})
     @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
@@ -129,18 +129,18 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         data = response.json()
 
         # ID should be null when no partition exists
-        self.assertIsNone(data['id'])
-        self.assertEqual(len(data['groups']), 0)
+        self.assertIsNone(data['id'])  # noqa: PT009
+        self.assertEqual(len(data['groups']), 0)  # noqa: PT009
 
         # Verify full Studio URL
         expected_studio_url = self._get_expected_studio_url()
-        self.assertEqual(data['studio_content_groups_link'], expected_studio_url)
+        self.assertEqual(data['studio_content_groups_link'], expected_studio_url)  # noqa: PT009
 
     def test_list_requires_authentication(self):
         """Verify endpoint requires authentication"""
         client = APIClient()
         response = client.get(self._get_url())
-        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])  # noqa: PT009
 
     @patch('lms.djangoapps.instructor.permissions.InstructorPermission.has_permission')
     def test_list_invalid_course_key_returns_400(self, mock_perm):
@@ -148,7 +148,7 @@ class GroupConfigurationsListViewTestCase(ModuleStoreTestCase):
         mock_perm.return_value = True
 
         response = self.api_client.get('/api/cohorts/v2/courses/course-v1:invalid+course+key/group_configurations')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -189,13 +189,13 @@ class GroupConfigurationDetailViewTestCase(ModuleStoreTestCase):
 
         response = self.api_client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
 
-        self.assertEqual(data['id'], 50)
-        self.assertEqual(data['name'], 'Test Content Groups')
-        self.assertEqual(data['scheme'], COHORT_SCHEME)
-        self.assertEqual(len(data['groups']), 2)
+        self.assertEqual(data['id'], 50)  # noqa: PT009
+        self.assertEqual(data['name'], 'Test Content Groups')  # noqa: PT009
+        self.assertEqual(data['scheme'], COHORT_SCHEME)  # noqa: PT009
+        self.assertEqual(len(data['groups']), 2)  # noqa: PT009
 
 
 @skip_unless_lms
@@ -223,10 +223,10 @@ class ContentGroupsPermissionsTestCase(ModuleStoreTestCase):
         client.force_authenticate(user=self.staff_user)
 
         response = client.get(self._get_url())
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_unauthenticated_user_denied(self):
         """Verify unauthenticated users are denied"""
         client = APIClient()
         response = client.get(self._get_url())
-        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
+        self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])  # noqa: PT009

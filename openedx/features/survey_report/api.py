@@ -2,23 +2,22 @@
 Contains the logic to manage survey report model.
 """
 import requests
-
 from django.conf import settings
 from django.forms.models import model_to_dict
 
 from openedx.features.survey_report.models import (
-    SurveyReport,
-    SurveyReportUpload,
-    SurveyReportAnonymousSiteID,
     SURVEY_REPORT_ERROR,
-    SURVEY_REPORT_GENERATED
+    SURVEY_REPORT_GENERATED,
+    SurveyReport,
+    SurveyReportAnonymousSiteID,
+    SurveyReportUpload,
 )
 from openedx.features.survey_report.queries import (
     get_course_enrollments,
-    get_recently_active_users,
     get_generated_certificates,
+    get_recently_active_users,
     get_registered_learners,
-    get_unique_courses_offered
+    get_unique_courses_offered,
 )
 
 MAX_WEEKS_SINCE_LAST_LOGIN: int = 4
@@ -56,7 +55,7 @@ def generate_report() -> None:
         data["state"] = SURVEY_REPORT_GENERATED
         update_report(survey_report.id, data)
         send_report_to_external_api(survey_report.id)
-    except (Exception, ) as update_report_error:
+    except (Exception, ) as update_report_error:  # noqa: B013
         update_report(survey_report.id, {"state": SURVEY_REPORT_ERROR})
         raise Exception(update_report_error) from update_report_error
     return survey_report.id

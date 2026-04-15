@@ -1,7 +1,7 @@
 """
 Test utilities for course apps.
 """
-from typing import Type
+from typing import Type  # noqa: UP035
 
 from opaque_keys.edx.keys import CourseKey
 
@@ -17,7 +17,7 @@ def make_test_course_app(
     name: str = "Test Course App",
     description: str = "Test Course App Description",
     is_available: bool = True,
-) -> Type[CourseApp]:
+) -> Type[CourseApp]:  # noqa: UP006
     """
     Creates a test plugin entrypoint based on provided parameters."""
 
@@ -47,7 +47,7 @@ def make_test_course_app(
             }
 
         @classmethod
-        def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:
+        def set_enabled(cls, course_key: CourseKey, enabled: bool, user: 'User') -> bool:  # noqa: F821
             cls._enabled[course_key] = enabled
             return enabled
 

@@ -1,14 +1,17 @@
 """ Tests for the functionality in csv """
 from csv import DictReader, DictWriter
 from io import BytesIO, StringIO, TextIOWrapper
+
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.testing import EventTestMixin
-from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollmentFactory, ProgramCourseEnrollmentFactory
+from lms.djangoapps.program_enrollments.tests.factories import ProgramCourseEnrollmentFactory, ProgramEnrollmentFactory
 from lms.djangoapps.teams import csv
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.lib.teams_config import TeamsConfig
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -202,7 +205,7 @@ class TeamMembershipCsvTests(SharedModuleStoreTestCase):
         reader = csv_export(self.course)
         assert expected_csv_headers == reader.fieldnames
         actual_data = _user_keyed_dict(reader)
-        self.assertDictEqual(expected_data, actual_data)
+        self.assertDictEqual(expected_data, actual_data)  # noqa: PT009
 
     def _add_blanks_to_expected_data(self, expected_data, headers):
         """ Helper method to fill in the "blanks" in test data """
@@ -388,7 +391,7 @@ class TeamMembershipImportManagerTests(TeamMembershipEventTestMixin, SharedModul
         assert self.import_manager.validation_errors[0] == 'New membership for team team_1 would exceed max size of 3.'
 
         # Confirm that memberships were not altered
-        for i in range(2):
+        for i in range(2):  # noqa: B007
             assert CourseTeamMembership.is_user_on_team(user, team)
 
     def test_remove_from_team(self):
@@ -405,7 +408,7 @@ class TeamMembershipImportManagerTests(TeamMembershipEventTestMixin, SharedModul
             ['username', 'mode', 'teamset_1'],
             [user.username, mode, ''],
         ])
-        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable
+        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         # Then they are removed from the team and the correct events are issued
         assert not CourseTeamMembership.is_user_on_team(user, team)
@@ -458,7 +461,7 @@ class TeamMembershipImportManagerTests(TeamMembershipEventTestMixin, SharedModul
             ['username', 'mode', 'teamset_1'],
             [user.username, mode, 'new_exciting_team'],
         ])
-        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable
+        result = self.import_manager.set_team_memberships(csv_data)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
 
         # Then a new team is created
         assert CourseTeam.objects.all().count() == 1
@@ -669,4 +672,4 @@ class ExternalKeyCsvTests(TeamMembershipEventTestMixin, SharedModuleStoreTestCas
                 (self.user_in_program.username, self.external_user_key)
             ]
         }
-        self.assertDictEqual(expected_data, data)
+        self.assertDictEqual(expected_data, data)  # noqa: PT009

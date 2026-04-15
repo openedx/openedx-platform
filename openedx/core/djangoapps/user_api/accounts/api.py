@@ -5,6 +5,7 @@ Programmatic integration point for User API Accounts sub-application
 
 import datetime
 import re
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -12,7 +13,7 @@ from django.core.validators import ValidationError, validate_email
 from django.utils.translation import gettext as _
 from django.utils.translation import override as override_language
 from eventtracking import tracker
-from zoneinfo import ZoneInfo
+from openedx_filters.learning.filters import AccountSettingsReadOnlyFieldsRequested
 
 from common.djangoapps.student import views as student_views
 from common.djangoapps.student.models import (
@@ -20,7 +21,7 @@ from common.djangoapps.student.models import (
     User,
     UserProfile,
     email_exists_or_retired,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.model_utils import emit_settings_changed_event
 from common.djangoapps.util.password_policy_validators import validate_password
@@ -32,13 +33,12 @@ from openedx.core.djangoapps.user_api import accounts, errors, helpers
 from openedx.core.djangoapps.user_api.errors import (
     AccountUpdateError,
     AccountValidationError,
-    PreferenceValidationError
+    PreferenceValidationError,
 )
 from openedx.core.djangoapps.user_api.preferences.api import update_user_preferences
 from openedx.core.djangoapps.user_authn.utils import check_pwned_password
 from openedx.core.djangoapps.user_authn.views.registration_form import validate_name, validate_username
 from openedx.core.lib.api.view_utils import add_serializer_errors
-from openedx.features.enterprise_support.utils import get_enterprise_readonly_account_fields
 from openedx.features.name_affirmation_api.utils import is_name_affirmation_installed
 
 from .serializers import AccountLegacyProfileSerializer, AccountUserSerializer, UserReadOnlySerializer, _visible_fields
@@ -180,11 +180,11 @@ def update_account_settings(requesting_user, update, username=None):
         _update_state_if_needed(update, user_profile)
 
     except PreferenceValidationError as err:
-        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except (AccountUpdateError, AccountValidationError) as err:
         raise err
     except Exception as err:
-        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             f"Error thrown when saving account updates: '{str(err)}'"
         )
 
@@ -193,11 +193,17 @@ def update_account_settings(requesting_user, update, username=None):
 
 def _validate_read_only_fields(user, data, field_errors):
     # Check for fields that are not editable. Marking them read-only causes them to be ignored, but we wish to 400.
+    plugin_readonly_fields, __ = AccountSettingsReadOnlyFieldsRequested.run_filter(
+        readonly_fields=set(),
+        user=user,
+    )
+    plugin_readonly_fields = plugin_readonly_fields or set()
+
     read_only_fields = set(data.keys()).intersection(
         # Remove email since it is handled separately below when checking for changing_email.
         (set(AccountUserSerializer.get_read_only_fields()) - {"email"}) |
         set(AccountLegacyProfileSerializer.get_read_only_fields() or set()) |
-        get_enterprise_readonly_account_fields(user)
+        plugin_readonly_fields
     )
 
     for read_only_field in read_only_fields:
@@ -387,7 +393,7 @@ def _send_email_change_requests_if_needed(data, user):
         try:
             student_views.do_email_change_request(user, new_email)
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -401,7 +407,7 @@ def _send_email_change_requests_if_needed(data, user):
                 secondary_email_change_request=True,
             )
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -563,7 +569,7 @@ def _get_user_and_profile(username):
     try:
         existing_user = User.objects.get(username=username)
     except ObjectDoesNotExist:
-        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from
+        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
 
@@ -615,9 +621,9 @@ def _validate_username(username):
             # message by convention.
             validate_username(username)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as username_err:
-        raise errors.AccountUsernameInvalid(str(username_err))
+        raise errors.AccountUsernameInvalid(str(username_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountUsernameInvalid(validation_err.message)
+        raise errors.AccountUsernameInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_email(email):
@@ -640,9 +646,9 @@ def _validate_email(email):
         validate_email.message = accounts.AUTHN_EMAIL_INVALID_MSG
         validate_email(email)
     except (UnicodeError, errors.AccountDataBadType, errors.AccountDataBadLength) as invalid_email_err:
-        raise errors.AccountEmailInvalid(str(invalid_email_err))
+        raise errors.AccountEmailInvalid(str(invalid_email_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountEmailInvalid(validation_err.message)
+        raise errors.AccountEmailInvalid(validation_err.message)  # noqa: B904
 
 
 def _validate_confirm_email(confirm_email, email):
@@ -682,9 +688,9 @@ def _validate_password(password, username=None, email=None, reset_password_page=
         temp_user = User(username=username, email=email) if username else None
         validate_password(password, user=temp_user)
     except errors.AccountDataBadType as invalid_password_err:
-        raise errors.AccountPasswordInvalid(str(invalid_password_err))
+        raise errors.AccountPasswordInvalid(str(invalid_password_err))  # noqa: B904
     except ValidationError as validation_err:
-        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))
+        raise errors.AccountPasswordInvalid(' '.join(validation_err.messages))  # noqa: B904
 
     if (
         (settings.ENABLE_AUTHN_RESET_PASSWORD_HIBP_POLICY and reset_password_page) or
@@ -818,4 +824,4 @@ def _validate_unicode(data, err="Input not valid unicode"):
         # In some cases we pass the above, but it's still inappropriate utf-8.
         str(data)
     except UnicodeError:
-        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

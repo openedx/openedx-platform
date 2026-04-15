@@ -46,7 +46,7 @@ def do_include(parser, token):
     """
     bits = token.split_contents()
     if len(bits) < 2:
-        msg = (
+        msg = (  # noqa: UP031
             "%r tag takes at least one argument: the name of the template "
             "to be optionally included."
         ) % bits[0]
@@ -56,17 +56,17 @@ def do_include(parser, token):
     while remaining_bits:
         option = remaining_bits.pop(0)
         if option in options:
-            raise TemplateSyntaxError('The %r option was specified more '
+            raise TemplateSyntaxError('The %r option was specified more '  # noqa: UP031
                                       'than once.' % option)
         if option == 'with':
             value = token_kwargs(remaining_bits, parser, support_legacy=False)
             if not value:
-                raise TemplateSyntaxError('"with" in %r tag needs at least '
+                raise TemplateSyntaxError('"with" in %r tag needs at least '  # noqa: UP031
                                           'one keyword argument.' % bits[0])
         elif option == 'only':
             value = True
         else:
-            raise TemplateSyntaxError('Unknown argument for %r tag: %r.' %
+            raise TemplateSyntaxError('Unknown argument for %r tag: %r.' %  # noqa: UP031
                                       (bits[0], option))
         options[option] = value
     isolated_context = options.get('only', False)

@@ -31,7 +31,7 @@ class TestThemingViews(TestCase):
         expected_target_status_code = 200 if settings.ROOT_URLCONF == 'lms.urls' else 302
         self.assertRedirects(
             response,
-            '{login_url}?next={url}'.format(
+            '{login_url}?next={url}'.format(  # noqa: UP032
                 login_url=settings.LOGIN_URL,
                 url=THEMING_ADMIN_URL,
             ),

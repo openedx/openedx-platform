@@ -1,12 +1,10 @@
 """
 General testing utilities.
 """
-from unittest.mock import Mock, patch
-
-
 import functools
 import sys
 from contextlib import contextmanager
+from unittest.mock import Mock, patch
 
 from django.dispatch import Signal
 from markupsafe import escape
@@ -16,7 +14,7 @@ def assert_dict_contains_subset(test_case, subset, superset):
     """
     Assert that `superset` includes all key/value pairs from `subset`.
     """
-    test_case.assertTrue(
+    test_case.assertTrue(  # noqa: PT009
         all(item in superset.items() for item in subset.items())
     )
 

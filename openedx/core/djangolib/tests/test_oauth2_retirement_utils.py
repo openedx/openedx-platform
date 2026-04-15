@@ -11,8 +11,8 @@ from oauth2_provider.models import Application as DOTApplication
 from oauth2_provider.models import Grant as DOTGrant
 from oauth2_provider.models import RefreshToken as DOTRefreshToken
 
-from openedx.core.djangoapps.oauth_dispatch.tests import factories
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.oauth_dispatch.tests import factories
 
 from ..oauth2_retirement_utils import retire_dot_oauth2_models
 

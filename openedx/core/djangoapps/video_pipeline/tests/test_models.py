@@ -2,13 +2,15 @@
 Tests for the models that configures 'VideoUploadsEnabledByDefault' feature.
 """
 
-import ddt
 import itertools  # lint-amnesty, pylint: disable=wrong-import-order
 
+import ddt
 from django.test import TestCase
+
 from openedx.core.djangoapps.video_config.tests.test_models import FeatureFlagTestMixin
 from openedx.core.djangoapps.video_pipeline.models import (
-    CourseVideoUploadsEnabledByDefault, VideoUploadsEnabledByDefault,
+    CourseVideoUploadsEnabledByDefault,
+    VideoUploadsEnabledByDefault,
 )
 
 

@@ -28,5 +28,5 @@ class DiscussionsConfigurationAdminTest(TestCase):
         )
         url = reverse('admin:discussions_discussionsconfiguration_change', args=[discussion_config.context_key])
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)  # noqa: PT009
         self.assertContains(response, 'course-v1:test+test+06_25_2024')

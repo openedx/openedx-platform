@@ -288,13 +288,13 @@ class LTI20BlockMixin:
         if verify_content_type and content_type != LTI_2_0_JSON_CONTENT_TYPE:
             log.info(f"[LTI]: v2.0 result service -- bad Content-Type: {content_type}")
             raise LTIError(
-                "For LTI 2.0 result service, Content-Type must be {}.  Got {}".format(LTI_2_0_JSON_CONTENT_TYPE,
+                "For LTI 2.0 result service, Content-Type must be {}.  Got {}".format(LTI_2_0_JSON_CONTENT_TYPE,  # noqa: UP032  # pylint: disable=line-too-long
                                                                                       content_type))
         try:
             self.verify_oauth_body_sign(request, content_type=LTI_2_0_JSON_CONTENT_TYPE)
         except (ValueError, LTIError) as err:
             log.info(f"[LTI]: v2.0 result service -- OAuth body verification failed:  {str(err)}")
-            raise LTIError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from
+            raise LTIError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def parse_lti_2_0_result_json(self, json_str):
         """
@@ -321,7 +321,7 @@ class LTI20BlockMixin:
         except (ValueError, TypeError):
             msg = f"Supplied JSON string in request body could not be decoded: {json_str}"
             log.info(f"[LTI] {msg}")
-            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # the standard supports a list of objects, who knows why. It must contain at least 1 element, and the
         # first element must be a dict
@@ -329,7 +329,7 @@ class LTI20BlockMixin:
             if isinstance(json_obj, list) and len(json_obj) >= 1 and isinstance(json_obj[0], dict):
                 json_obj = json_obj[0]
             else:
-                msg = ("Supplied JSON string is a list that does not contain an object as the first element. {}"
+                msg = ("Supplied JSON string is a list that does not contain an object as the first element. {}"  # noqa: UP032  # pylint: disable=line-too-long
                        .format(json_str))
                 log.info(f"[LTI] {msg}")
                 raise LTIError(msg)
@@ -365,6 +365,6 @@ class LTI20BlockMixin:
         except (TypeError, ValueError) as err:
             msg = f"Could not convert resultScore to float: {str(err)}"
             log.info(f"[LTI] {msg}")
-            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise LTIError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return score, json_obj.get('comment', "")

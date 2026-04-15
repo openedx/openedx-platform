@@ -2,10 +2,10 @@
 Python APIs exposed by the catalog app to other in-process apps.
 """
 
-from .utils import get_programs_by_type_slug as _get_programs_by_type_slug
-from .utils import get_programs as _get_programs
 from .utils import course_run_keys_for_program as _course_run_keys_for_program
 from .utils import get_course_run_details as _get_course_run_details
+from .utils import get_programs as _get_programs
+from .utils import get_programs_by_type_slug as _get_programs_by_type_slug
 
 
 def get_programs_by_type(site, program_type_slug):

@@ -3,7 +3,7 @@
 
 import datetime
 from unittest import skipUnless
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -27,20 +27,20 @@ from lms.djangoapps.certificates.models import (
     CertificateStatuses,
     CertificateTemplate,
     CertificateTemplateAsset,
-    GeneratedCertificate
+    GeneratedCertificate,
 )
 from lms.djangoapps.certificates.tests.factories import (
     CertificateDateOverrideFactory,
     CertificateHtmlViewConfigurationFactory,
     GeneratedCertificateFactory,
-    LinkedInAddToProfileConfigurationFactory
+    LinkedInAddToProfileConfigurationFactory,
 )
-from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from lms.djangoapps.certificates.utils import get_certificate_url
+from lms.djangoapps.certificates.views.webview import _get_user_certificate
 from openedx.core.djangoapps.dark_lang.models import DarkLangConfig
 from openedx.core.djangoapps.site_configuration.tests.test_util import (
     with_site_configuration,
-    with_site_configuration_context
+    with_site_configuration_context,
 )
 from openedx.core.djangolib.js_utils import js_escaped_string
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
@@ -299,7 +299,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         response = self.client.get(test_url)
         assert response.status_code == 200
         params = {
-            'name': '{platform_name} Honor Code Certificate for {course_name}'.format(
+            'name': '{platform_name} Honor Code Certificate for {course_name}'.format(  # noqa: UP032
                 platform_name=settings.PLATFORM_NAME, course_name=self.course.display_name,
             ).encode('utf-8'),
             'certUrl': self.request.build_absolute_uri(test_url),
@@ -330,7 +330,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         assert response.status_code == 200
         # the linkedIn share URL with appropriate parameters should be present
         params = {
-            'name': 'My Platform Site Honor Code Certificate for {course_name}'.format(
+            'name': 'My Platform Site Honor Code Certificate for {course_name}'.format(  # noqa: UP032
                 course_name=self.course.display_name,
             ).encode('utf-8'),
             'certUrl': 'http://test.localhost' + test_url,
@@ -585,7 +585,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
         # Test an item from certificate/org info
         self.assertContains(
             response,
-            "a course of study offered by {partner_short_name}, "
+            "a course of study offered by {partner_short_name}, "  # noqa: UP032
             "an online learning initiative of "
             "{partner_long_name}.".format(
                 partner_short_name=short_org_name,
@@ -914,7 +914,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             uuid=self.cert.verify_uuid
         )
         self.cert.delete()
-        self.assertListEqual(list(GeneratedCertificate.eligible_certificates.all()), [])
+        self.assertListEqual(list(GeneratedCertificate.eligible_certificates.all()), [])  # noqa: PT009
 
         response = self.client.get(test_url)
         assert response.status_code == 404
@@ -1636,7 +1636,7 @@ class CertificatesViewsTests(CommonCertificatesTestCase, CacheIsolationTestCase)
             mock_get_org_id.return_value = None
             response = self.client.get(test_url)
             self.assertContains(
-                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(
+                response, '<img class="custom-logo" src="{}certificate_template_assets/32/test_logo.png" />'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     settings.MEDIA_URL
                 )
             )

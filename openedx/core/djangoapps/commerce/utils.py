@@ -1,21 +1,22 @@
 """ Commerce API Service. """
 
 
-import requests
-import slumber
 import datetime
 import json
 import os
 import socket
+
+import requests
+import slumber
 from django.conf import settings
-from edx_rest_api_client.auth import SuppliedJwtAuth, JwtAuth
 from edx_django_utils.cache import TieredCache
+from edx_django_utils.monitoring import set_custom_attribute
+from edx_rest_api_client.auth import JwtAuth, SuppliedJwtAuth
 from eventtracking import tracker
+from requests.auth import AuthBase
 
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
-from requests.auth import AuthBase
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from edx_django_utils.monitoring import set_custom_attribute
 
 # When caching tokens, use this value to err on expiring tokens a little early so they are
 # sure to be valid at the time they are used.
@@ -65,7 +66,7 @@ def user_agent():
         client_name = os.environ.get("EDX_REST_API_CLIENT_NAME") or socket.gethostbyname(socket.gethostname())
     except:  # pylint: disable=bare-except
         pass  # using 'unknown_client_name' is good enough.  no need to log.
-    return "{} edx-rest-api-client/{} {}".format(
+    return "{} edx-rest-api-client/{} {}".format(  # noqa: UP032
         requests.utils.default_user_agent(),  # e.g. "python-requests/2.9.1"
         __version__,  # version of this client
         client_name
@@ -172,7 +173,7 @@ def get_and_cache_oauth_access_token(url, client_id, client_secret, token_type='
 
     """
     oauth_url = _get_oauth_url(url)
-    cache_key = 'edx_rest_api_client.access_token.{}.{}.{}.{}'.format(
+    cache_key = 'edx_rest_api_client.access_token.{}.{}.{}.{}'.format(  # noqa: UP032
         token_type,
         grant_type,
         client_id,

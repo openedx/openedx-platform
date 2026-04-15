@@ -1,5 +1,6 @@
 """Tests for the certificates Python Data Class. """
 from django.test import TestCase
+
 from lms.djangoapps.certificates.data import CertificateStatuses
 
 

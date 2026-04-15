@@ -23,10 +23,11 @@ The command will always use the read replica database if one is configured.
 
 import contextlib
 import csv
-from datetime import datetime, timezone as dt_timezone
 import logging
 import os.path
 import time
+from datetime import datetime
+from datetime import timezone as dt_timezone
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -240,7 +241,7 @@ class Command(BaseCommand):
             user_id, username, email, full_name, course_id, is_opted_in, pref_set_datetime = row
 
             if pref_set_datetime:
-                pref_set_datetime = timezone.make_aware(pref_set_datetime, dt_timezone.utc)
+                pref_set_datetime = timezone.make_aware(pref_set_datetime, dt_timezone.utc)  # noqa: UP017
             else:
                 pref_set_datetime = self.DEFAULT_DATETIME_STR
 

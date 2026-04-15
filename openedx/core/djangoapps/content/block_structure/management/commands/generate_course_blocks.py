@@ -13,7 +13,7 @@ import openedx.core.djangoapps.content.block_structure.tasks as tasks
 from openedx.core.lib.command_utils import (
     get_mutually_exclusive_required_option,
     parse_course_keys,
-    validate_dependent_option
+    validate_dependent_option,
 )
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 

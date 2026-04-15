@@ -10,9 +10,9 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.42.74
+boto3==1.42.84
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.42.74
+botocore==1.42.84
     # via
     #   boto3
     #   s3transfer
@@ -22,9 +22,9 @@ cffi==2.0.0
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.6
+charset-normalizer==3.4.7
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   -r scripts/user_retirement/requirements/base.in
     #   edx-django-utils
@@ -48,7 +48,7 @@ edx-django-utils==8.0.1
     # via edx-rest-api-client
 edx-rest-api-client==6.2.0
     # via -r scripts/user_retirement/requirements/base.in
-google-api-core==2.30.0
+google-api-core==2.30.2
     # via google-api-python-client
 google-api-python-client==2.193.0
     # via -r scripts/user_retirement/requirements/base.in
@@ -57,9 +57,9 @@ google-auth==2.49.1
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
-google-auth-httplib2==0.3.0
+google-auth-httplib2==0.3.1
     # via google-api-python-client
-googleapis-common-protos==1.73.0
+googleapis-common-protos==1.74.0
     # via google-api-core
 httplib2==0.31.2
     # via
@@ -69,7 +69,7 @@ idna==3.11
     # via requests
 isodate==0.7.2
     # via zeep
-jenkinsapi==0.3.21
+jenkinsapi==0.3.22
     # via -r scripts/user_retirement/requirements/base.in
 jmespath==1.1.0
     # via
@@ -79,13 +79,13 @@ lxml==5.3.2
     # via
     #   -c requirements/constraints.txt
     #   zeep
-more-itertools==10.8.0
+more-itertools==11.0.1
     # via simple-salesforce
 platformdirs==4.9.4
     # via zeep
-proto-plus==1.27.1
+proto-plus==1.27.2
     # via google-api-core
-protobuf==6.33.6
+protobuf==7.34.1
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -114,7 +114,7 @@ pytz==2026.1.post1
     #   zeep
 pyyaml==6.0.3
     # via -r scripts/user_retirement/requirements/base.in
-requests==2.32.5
+requests==2.33.1
     # via
     #   -r scripts/user_retirement/requirements/base.in
     #   edx-rest-api-client

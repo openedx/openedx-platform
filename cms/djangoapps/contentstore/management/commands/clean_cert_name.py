@@ -158,14 +158,14 @@ class Command(BaseCommand):
         col_format = "| {{:>{}}} |"
 
         self.stdout.write(id_format.format(""), ending='')
-        for header, width in zip(headers, col_widths):
+        for header, width in zip(headers, col_widths):  # noqa: B905
             self.stdout.write(col_format.format(width).format(header), ending='')
 
         self.stdout.write('')
 
         for idx, result in enumerate(results):
             self.stdout.write(id_format.format(idx), ending='')
-            for col, width in zip(result, col_widths):
+            for col, width in zip(result, col_widths):  # noqa: B905
                 self.stdout.write(col_format.format(width).format(str(col)), ending='')
             self.stdout.write("")
 

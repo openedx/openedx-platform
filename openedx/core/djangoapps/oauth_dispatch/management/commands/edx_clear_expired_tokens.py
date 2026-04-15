@@ -77,7 +77,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
                 refresh_token_expire_seconds = timedelta(seconds=refresh_token_expire_seconds)
             except TypeError:
                 e = "REFRESH_TOKEN_EXPIRE_SECONDS must be either a timedelta or seconds"
-                raise ImproperlyConfigured(e)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ImproperlyConfigured(e)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             return now - refresh_token_expire_seconds
 
     def handle(self, *args, **options):

@@ -22,18 +22,17 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
 )
 from lms.djangoapps.bulk_email.api import is_bulk_email_feature_enabled
-from lms.djangoapps.certificates.models import (
-    CertificateGenerationConfiguration
-)
+from lms.djangoapps.certificates.models import CertificateGenerationConfiguration
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
+from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from xmodule.modulestore.django import modulestore
 
-from .tools import get_student_from_identifier, parse_datetime, DashboardError
+from .tools import DashboardError, get_student_from_identifier, parse_datetime
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +66,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
     grade_cutoffs = serializers.SerializerMethodField(help_text="Formatted string of grade cutoffs")
     course_errors = serializers.SerializerMethodField(help_text="List of course validation errors from modulestore")
     studio_url = serializers.SerializerMethodField(help_text="URL to view/edit course in Studio")
+    gradebook_url = serializers.SerializerMethodField(
+        help_text="URL to the MFE gradebook for the course (null if not configured)"
+    )
+    studio_grading_url = serializers.SerializerMethodField(
+        help_text="URL to the Studio grading settings page for the course (null if not configured)"
+    )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
     disable_buttons = serializers.SerializerMethodField(
@@ -435,6 +440,21 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get Studio URL for the course."""
         return get_studio_url(data['course'], 'course')
 
+    def get_gradebook_url(self, data):
+        """Get MFE gradebook URL for the course."""
+        course_key = data['course'].id
+        if is_writable_gradebook_enabled(course_key) and settings.WRITABLE_GRADEBOOK_URL:
+            return f'{settings.WRITABLE_GRADEBOOK_URL}/gradebook/{course_key}'
+        return None
+
+    def get_studio_grading_url(self, data):
+        """Get Studio MFE grading settings URL for the course."""
+        course_key = data['course'].id
+        mfe_base_url = getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
+        if mfe_base_url:
+            return f'{mfe_base_url}/course/{course_key}/settings/grading'
+        return None
+
     def get_disable_buttons(self, data):
         """Check if buttons should be disabled for large courses."""
         return not CourseEnrollment.objects.is_small_course(data['course'].id)
@@ -563,3 +583,281 @@ class ORASummarySerializer(serializers.Serializer):
     waiting = serializers.IntegerField()
     staff = serializers.IntegerField()
     final_grade_received = serializers.IntegerField()
+
+
+class IssuedCertificateSerializer(serializers.Serializer):
+    """
+    Serializer for issued certificates with allowlist and invalidation information.
+    Accepts GeneratedCertificate instances and pulls related data from context.
+    """
+    username = serializers.CharField(source='user.username', help_text="Username of the learner")
+    email = serializers.EmailField(source='user.email', help_text="Email address of the learner")
+    enrollment_track = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Enrollment track/mode (e.g., verified, audit)"
+    )
+    certificate_status = serializers.CharField(
+        source='status',
+        help_text="Certificate status (e.g., downloadable, notpassing)"
+    )
+    special_case = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Special case type (Exception or Invalidation)"
+    )
+    exception_granted = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Date when exception was granted in ISO 8601 format"
+    )
+    exception_notes = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Notes about the exception"
+    )
+    invalidated_by = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Email of user who invalidated the certificate"
+    )
+    invalidation_date = serializers.SerializerMethodField(
+        allow_null=True,
+        help_text="Date when certificate was invalidated in ISO 8601 format"
+    )
+
+    def get_enrollment_track(self, obj):
+        """Get enrollment track from context."""
+        enrollment_dict = self.context.get('enrollment_dict', {})
+        return enrollment_dict.get(obj.user_id)
+
+    def get_special_case(self, obj):
+        """Determine special case from allowlist and invalidation data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        invalidation_dict = self.context.get('invalidation_dict', {})
+
+        if obj.user_id in allowlist_dict:
+            return "Exception"
+        elif obj.user_id in invalidation_dict:
+            return "Invalidation"
+        return None
+
+    def get_exception_granted(self, obj):
+        """Get exception granted date from allowlist data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        allowlist_info = allowlist_dict.get(obj.user_id)
+        return allowlist_info['created'] if allowlist_info else None
+
+    def get_exception_notes(self, obj):
+        """Get exception notes from allowlist data in context."""
+        allowlist_dict = self.context.get('allowlist_dict', {})
+        allowlist_info = allowlist_dict.get(obj.user_id)
+        return allowlist_info['notes'] if allowlist_info else None
+
+    def get_invalidated_by(self, obj):
+        """Get invalidated by email from invalidation data in context."""
+        invalidation_dict = self.context.get('invalidation_dict', {})
+        invalidation_info = invalidation_dict.get(obj.user_id)
+        return invalidation_info['invalidated_by'] if invalidation_info else None
+
+    def get_invalidation_date(self, obj):
+        """Get invalidation date from invalidation data in context."""
+        invalidation_dict = self.context.get('invalidation_dict', {})
+        invalidation_info = invalidation_dict.get(obj.user_id)
+        return invalidation_info['created'] if invalidation_info else None
+
+
+class CertificateGenerationHistorySerializer(serializers.Serializer):
+    """
+    Serializer for certificate generation history.
+    Accepts CertificateGenerationHistory model instances.
+    """
+    task_name = serializers.SerializerMethodField(
+        help_text="Task name (Generated or Regenerated)"
+    )
+    date = serializers.DateTimeField(
+        source='created',
+        help_text="Date when the task was created in ISO 8601 format"
+    )
+    details = serializers.SerializerMethodField(
+        help_text="Details about the certificate generation (e.g., 'audit not passing states', 'For exceptions')"
+    )
+
+    def get_task_name(self, obj):
+        """Determine task name based on whether it's a regeneration."""
+        return "Regenerated" if obj.is_regeneration else "Generated"
+
+    def get_details(self, obj):
+        """Get details about what was generated/regenerated."""
+        return str(obj.get_certificate_generation_candidates())
+
+
+class RegenerateCertificatesSerializer(serializers.Serializer):
+    """
+    Serializer for regenerating certificates request.
+    """
+    statuses = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=[
+                'deleted', 'deleting', 'downloadable', 'error', 'generating',
+                'notpassing', 'restricted', 'unavailable', 'auditing',
+                'audit_passing', 'audit_notpassing', 'honor_passing',
+                'unverified', 'invalidated', 'requesting'
+            ]
+        ),
+        required=False,
+        help_text="Certificate statuses to regenerate"
+    )
+    student_set = serializers.ChoiceField(
+        choices=['all', 'allowlisted'],
+        required=False,
+        default='all',
+        help_text="Student set filter"
+    )
+
+
+class CourseEnrollmentSerializerV2(serializers.Serializer):
+    """
+    Serializer for course enrollment data.
+
+    Serializes CourseEnrollment instances with derived fields for
+    the user's full name and beta tester status.
+    """
+    username = serializers.CharField(source='user.username')
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    mode = serializers.CharField()
+    is_beta_tester = serializers.SerializerMethodField()
+
+    def get_full_name(self, enrollment):
+        """Get the user's full name from their profile."""
+        user = enrollment.user
+        profile = getattr(user, 'profile', None)
+        return profile.name if profile else ''
+
+    def get_is_beta_tester(self, enrollment):
+        """Check if the user is a beta tester for this course."""
+        beta_tester_ids = self.context.get('beta_tester_ids', set())
+        return enrollment.user_id in beta_tester_ids
+
+
+class LearnerSerializer(serializers.Serializer):
+    """
+    Serializer for learner information.
+
+    Provides comprehensive learner data including profile, enrollment status,
+    and current progress in a course.
+    """
+    username = serializers.CharField(
+        help_text="Learner's username"
+    )
+    email = serializers.EmailField(
+        help_text="Learner's email address"
+    )
+    full_name = serializers.CharField(
+        help_text="Learner's full name from their Open edX profile"
+    )
+    progress_url = serializers.CharField(
+        allow_null=True,
+        required=False,
+        help_text="URL to learner's progress page"
+    )
+
+
+class GraderSerializer(serializers.Serializer):
+    """Serializer for a single grader configuration entry."""
+    type = serializers.CharField(
+        help_text="Assignment type (e.g. Homework, Lab, Midterm Exam)"
+    )
+    short_label = serializers.CharField(
+        required=False,
+        allow_null=True,
+        help_text="Short label used when displaying assignment names"
+    )
+    min_count = serializers.IntegerField(
+        help_text="Minimum number of assignments counted in this category"
+    )
+    drop_count = serializers.IntegerField(
+        help_text="Number of lowest scores dropped from this category"
+    )
+    weight = serializers.FloatField(
+        help_text="Weight of this assignment type in the final grade (0.0 to 1.0)"
+    )
+
+
+class GradingConfigSerializer(serializers.Serializer):
+    """
+    Serializer for course grading configuration.
+
+    Returns structured grading policy data including assignment type weights
+    and grade cutoff thresholds.
+    """
+    graders = GraderSerializer(
+        many=True,
+        help_text="List of grader configurations by assignment type"
+    )
+    grade_cutoffs = serializers.DictField(
+        child=serializers.FloatField(),
+        help_text="Grade cutoffs mapping letter grades to minimum score thresholds (0.0 to 1.0)"
+    )
+
+
+class ProblemSerializer(serializers.Serializer):
+    """
+    Serializer for problem metadata and location.
+
+    Provides problem information including display name and course hierarchy.
+    Optionally includes learner-specific score and attempt data when a learner
+    query parameter is provided.
+    """
+    id = serializers.CharField(
+        help_text="Problem usage key"
+    )
+    name = serializers.CharField(
+        help_text="Problem display name"
+    )
+    breadcrumbs = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="Course hierarchy breadcrumbs showing problem location"
+    )
+    current_score = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Learner's current score with 'score' and 'total' fields. Null if no learner specified."
+    )
+    attempts = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Learner's attempt data with 'current' and 'total' (max) fields. Null if no learner specified."
+    )
+
+
+class TaskStatusSerializer(serializers.Serializer):
+    """
+    Serializer for background task status.
+
+    Provides status and progress information for asynchronous operations.
+    """
+    task_id = serializers.CharField(
+        help_text="Task identifier"
+    )
+    state = serializers.ChoiceField(
+        choices=['pending', 'running', 'completed', 'failed'],
+        help_text="Current state of the task"
+    )
+    progress = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Progress information with 'current' and 'total' fields"
+    )
+    result = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Task result (present when state is 'completed')"
+    )
+    error = serializers.DictField(
+        allow_null=True,
+        required=False,
+        help_text="Error information (present when state is 'failed')"
+    )
+    created_at = serializers.DateTimeField(
+        help_text="Task creation timestamp"
+    )
+    updated_at = serializers.DateTimeField(
+        help_text="Last update timestamp"
+    )

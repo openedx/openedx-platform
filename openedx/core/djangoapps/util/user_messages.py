@@ -52,7 +52,7 @@ ICON_CLASSES = {
 }
 
 
-class UserMessage():
+class UserMessage():  # noqa: UP039
     """
     Representation of a message to be shown to a user.
     """
@@ -76,7 +76,7 @@ class UserMessage():
         return ICON_CLASSES[self.type]
 
 
-class UserMessageCollection():
+class UserMessageCollection():  # noqa: UP039
     """
     A collection of messages to be shown to a user.
     """
@@ -228,7 +228,7 @@ class PageLevelMessages(UserMessageCollection):
                     message_html=str(cls.get_message_html(Text(notice_message))),
                 ))
         except BaseException as e:
-            warnings.warn(f"Could not register global notice: {e!r}", UserWarning)
+            warnings.warn(f"Could not register global notice: {e!r}", UserWarning)  # noqa: B028
 
         return msgs
 

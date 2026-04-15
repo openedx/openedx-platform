@@ -19,10 +19,8 @@ from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocator, LibraryUsageLocator
 from organizations.api import ensure_organization
 from organizations.exceptions import InvalidOrganizationException
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.exceptions import DuplicateCourseError
 
+from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from cms.djangoapps.course_creators.views import get_course_creator_status
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import (
@@ -40,11 +38,13 @@ from common.djangoapps.student.roles import (
     UserBasedRole,
 )
 from common.djangoapps.util.json_request import JsonResponse, JsonResponseBadRequest, expect_json
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.exceptions import DuplicateCourseError
 
-from ..utils import add_instructor, reverse_library_url
 from ..toggles import libraries_v1_enabled
+from ..utils import add_instructor, reverse_library_url
 from .component import CONTAINER_TEMPLATES, get_component_templates
-from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import create_xblock_info
 from .user import user_with_role
 
 __all__ = ['library_handler', 'manage_library_users']
@@ -227,7 +227,7 @@ def _create_library(request):
             )
         # Give the user admin ("Instructor") role for this library:
         add_instructor(new_lib.location.library_key, request.user, request.user)
-    except PermissionDenied as error:  # pylint: disable=unused-variable
+    except PermissionDenied as error:  # pylint: disable=unused-variable  # noqa: F841
         log.info(
             "User does not have the permission to create LIBRARY in this organization."
             "User: '%s' Org: '%s' LIBRARY #: '%s'.",

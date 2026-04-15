@@ -4,7 +4,7 @@
 #
 #    make upgrade
 #
-click==8.3.1
+click==8.3.2
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   click-log
@@ -16,7 +16,7 @@ dnspython==2.8.0
     # via
     #   -r scripts/structures_pruning/requirements/base.txt
     #   pymongo
-edx-opaque-keys==3.1.0
+edx-opaque-keys==4.0.0
     # via -r scripts/structures_pruning/requirements/base.txt
 iniconfig==2.3.0
     # via pytest
@@ -24,7 +24,7 @@ packaging==26.0
     # via pytest
 pluggy==1.6.0
     # via pytest
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pymongo==4.4.0
     # via

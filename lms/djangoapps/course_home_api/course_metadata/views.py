@@ -4,28 +4,29 @@ General view for the Course Home that contains metadata every page needs.
 
 from django.db import transaction
 from django.utils.decorators import method_decorator
-from opaque_keys.edx.keys import CourseKey
-from rest_framework.generics import RetrieveAPIView
-from rest_framework.response import Response
-
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
-from lms.djangoapps.certificates.api import certificates_viewable_for_course
-from lms.djangoapps.course_home_api.toggles import new_discussion_sidebar_view_is_enabled
-from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-from openedx.core.djangoapps.courseware_api.utils import get_celebrations_dict
+from opaque_keys.edx.keys import CourseKey
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import RetrieveAPIView
+from rest_framework.response import Response
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.auth import has_course_author_access
 from common.djangoapps.student.models import CourseEnrollment
+from lms.djangoapps.certificates.api import certificates_viewable_for_course
 from lms.djangoapps.course_api.api import course_detail
 from lms.djangoapps.course_goals.models import UserActivity
 from lms.djangoapps.course_home_api.course_metadata.serializers import CourseHomeMetadataSerializer
+from lms.djangoapps.course_home_api.toggles import new_discussion_sidebar_view_is_enabled
 from lms.djangoapps.courseware.access import has_access, has_cms_access
 from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
 from lms.djangoapps.courseware.courses import check_course_access
+from lms.djangoapps.courseware.exceptions import CourseAccessRedirect
 from lms.djangoapps.courseware.masquerade import setup_masquerade
 from lms.djangoapps.courseware.tabs import get_course_tab_list
+from openedx.core.djangoapps.courseware_api.utils import get_celebrations_dict
+from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 
 
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
@@ -80,10 +81,17 @@ class CourseHomeMetadataView(RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         course_key_string = kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
-        original_user_is_global_staff = self.request.user.is_staff
+        original_user_is_global_staff = self.request.user.is_staff  # noqa: F841
         original_user_is_staff = has_access(request.user, 'staff', course_key).has_access
 
-        course = course_detail(request, request.user.username, course_key)
+        try:
+            course = course_detail(request, request.user.username, course_key)
+        except CourseAccessRedirect as e:
+            error = e.access_error
+            raise PermissionDenied(
+                detail=error.user_message if error is not None else 'You do not have access to this course.',
+                code=error.error_code if error is not None else None,
+            ) from e
 
         # We must compute course load access *before* setting up masquerading,
         # else course staff (who are not enrolled) will not be able view

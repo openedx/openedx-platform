@@ -6,7 +6,7 @@ Signal handlers for program enrollments
 import logging
 from datetime import datetime
 
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from social_django.models import UserSocialAuth
 

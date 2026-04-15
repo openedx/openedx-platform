@@ -2,15 +2,14 @@
 Test the logic behind the Generate External IDs tools in Admin
 """
 from unittest import mock
+
 from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
-from common.djangoapps.student.tests.factories import UserFactory
 
-from openedx.core.djangoapps.external_user_ids.models import (
-    ExternalId,
-)
-from openedx.core.djangoapps.external_user_ids.tests.factories import ExternalIDTypeFactory
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.external_user_ids.admin import ExternalIdAdmin
+from openedx.core.djangoapps.external_user_ids.models import ExternalId
+from openedx.core.djangoapps.external_user_ids.tests.factories import ExternalIDTypeFactory
 
 
 class TestGenerateExternalIds(TestCase):

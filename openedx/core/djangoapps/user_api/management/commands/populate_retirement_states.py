@@ -50,7 +50,7 @@ class Command(BaseCommand):
             raise CommandError('settings.RETIREMENT_STATES does not exist or is empty.')
 
         if not set(REQUIRED_STATES).issubset(set(new_states)):
-            raise CommandError('settings.RETIREMENT_STATES ({}) does not contain all required states '
+            raise CommandError('settings.RETIREMENT_STATES ({}) does not contain all required states '  # noqa: UP032
                                '({})'.format(new_states, REQ_STR))
 
         # Confirm that the start and end states are in the right places
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         num_end_states = len(END_STATES)
 
         if new_states[-num_end_states:] != END_STATES:
-            raise CommandError('The last {} states must be these (in this order): '
+            raise CommandError('The last {} states must be these (in this order): '  # noqa: UP032
                                '{}'.format(num_end_states, END_STATES))
 
     def _check_current_users(self):
@@ -69,13 +69,13 @@ class Command(BaseCommand):
         """
         if UserRetirementStatus.objects.exclude(current_state__state_name__in=REQUIRED_STATES).exists():
             raise CommandError(
-                'Users are currently being processed. All users must be in one of these states to run this command: '
+                'Users are currently being processed. All users must be in one of these states to run this command: '  # noqa: UP032  # pylint: disable=line-too-long
                 '{}'.format(REQ_STR)
             )
 
     def _check_users_in_states_to_delete(self, states_to_delete):
         if UserRetirementStatus.objects.filter(current_state__state_name__in=states_to_delete).exists():
-            raise CommandError('Users exist in a state that is marked for deletion! States to delete'
+            raise CommandError('Users exist in a state that is marked for deletion! States to delete'  # noqa: UP032
                                'are: {}'.format(states_to_delete))
 
     def _delete_old_states_and_create_new(self, new_states, dry_run=False):

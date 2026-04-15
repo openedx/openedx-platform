@@ -43,7 +43,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
 
             result = decorated(self.view_instance, request, str(self.course_key))
 
-        self.assertEqual(result, "success")
+        self.assertEqual(result, "success")  # noqa: PT009
         mock_view.assert_called_once_with(
             self.view_instance,
             request,
@@ -73,7 +73,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
 
             result = decorated(self.view_instance, request, str(self.course_key))
 
-        self.assertEqual(result, "success")
+        self.assertEqual(result, "success")  # noqa: PT009
         mock_view.assert_called_once()
 
     def test_view_executes_when_legacy_fallback_write(self):
@@ -99,7 +99,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
 
             result = decorated(self.view_instance, request, str(self.course_key))
 
-        self.assertEqual(result, "success")
+        self.assertEqual(result, "success")  # noqa: PT009
         mock_view.assert_called_once()
 
     def test_access_denied_when_permission_fails(self):
@@ -114,10 +114,10 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
         ):
             decorated = authz_permission_required("courses.view")(mock_view)
 
-            with self.assertRaises(DeveloperErrorResponseException) as context:
+            with self.assertRaises(DeveloperErrorResponseException) as context:  # noqa: PT027
                 decorated(self.view_instance, request, str(self.course_key))
 
-        self.assertEqual(context.exception.response.status_code, 403)
+        self.assertEqual(context.exception.response.status_code, 403)  # noqa: PT009
         mock_view.assert_not_called()
 
     def test_decorator_preserves_function_name(self):
@@ -128,7 +128,7 @@ class AuthzPermissionRequiredDecoratorTests(TestCase):
 
         decorated = authz_permission_required("courses.view")(sample_view)
 
-        self.assertEqual(decorated.__name__, "sample_view")
+        self.assertEqual(decorated.__name__, "sample_view")  # noqa: PT009
 
 
 class GetCourseKeyTests(TestCase):
@@ -141,7 +141,7 @@ class GetCourseKeyTests(TestCase):
         """Valid course key string returns CourseKey."""
         result = get_course_key(str(self.course_key))
 
-        self.assertEqual(result, self.course_key)
+        self.assertEqual(result, self.course_key)  # noqa: PT009
 
     def test_usage_key_string(self):
         """UsageKey string resolves to course key."""
@@ -153,4 +153,4 @@ class GetCourseKeyTests(TestCase):
 
         result = get_course_key(str(usage_key))
 
-        self.assertEqual(result, self.course_key)
+        self.assertEqual(result, self.course_key)  # noqa: PT009

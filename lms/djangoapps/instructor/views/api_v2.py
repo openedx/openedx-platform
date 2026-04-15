@@ -7,20 +7,24 @@ These APIs are designed to be consumed by MFEs and other API clients.
 
 import csv
 import io
+import json
 import logging
 import re
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Tuple
-
+from typing import Optional, Tuple  # noqa: UP035
 
 import edx_api_doc_tools as apidocs
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Q
+from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
+from django_filters.rest_framework import DjangoFilterBackend
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -31,42 +35,59 @@ from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models.user import get_user_by_username_or_email
+from common.djangoapps.student.roles import CourseBetaTesterRole
+from common.djangoapps.util.json_request import JsonResponseBadRequest
+from lms.djangoapps.certificates import api as certs_api
+from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.models import (
+    CertificateAllowlist,
+    CertificateGenerationHistory,
+    CertificateInvalidation,
+    GeneratedCertificate,
+)
+from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
+from lms.djangoapps.courseware.models import StudentModule
+from lms.djangoapps.courseware.tabs import get_course_tab_list
+from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.constants import ReportType
+from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
+from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
+from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
+from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
+from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
+from lms.djangoapps.instructor_task import api as task_api
+from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
+from lms.djangoapps.instructor_task.models import InstructorTask, ReportStore
+from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
+from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
+from openedx.core.lib.courses import get_course_by_id
+from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 
-from common.djangoapps.util.json_request import JsonResponseBadRequest
-from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-
-from lms.djangoapps.courseware.tabs import get_course_tab_list
-from lms.djangoapps.instructor import permissions
-from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
-from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
-from lms.djangoapps.instructor_task import api as task_api
-from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, QueueConnectionError
-from lms.djangoapps.instructor.constants import ReportType
-from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
-from lms.djangoapps.instructor_analytics import basic as instructor_analytics_basic
-from lms.djangoapps.instructor_analytics import csvs as instructor_analytics_csvs
-from lms.djangoapps.instructor_task.models import ReportStore
-from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
-from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
-from openedx.core.lib.courses import get_course_by_id
+from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
-    InstructorTaskListSerializer,
-    CourseInformationSerializerV2,
     BlockDueDateSerializerV2,
-    UnitExtensionSerializer,
+    CertificateGenerationHistorySerializer,
+    CourseEnrollmentSerializerV2,
+    CourseInformationSerializerV2,
+    GradingConfigSerializer,
+    InstructorTaskListSerializer,
+    IssuedCertificateSerializer,
+    LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
+    ProblemSerializer,
+    RegenerateCertificatesSerializer,
+    TaskStatusSerializer,
+    UnitExtensionSerializer,
 )
-from .tools import (
-    find_unit,
-    get_units_with_due_date,
-    keep_field_private,
-    set_due_date_extension,
-    title_or_url,
-)
+from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
 log = logging.getLogger(__name__)
 
@@ -389,10 +410,10 @@ class UnitDueDateExtension:
     email: str
     unit_title: str
     unit_location: str
-    extended_due_date: Optional[str]
+    extended_due_date: Optional[str]  # noqa: UP045
 
     @classmethod
-    def from_block_tuple(cls, row: Tuple, unit):
+    def from_block_tuple(cls, row: Tuple, unit):  # noqa: UP006
         username, full_name, due_date, email, location = row
         unit_title = title_or_url(unit)
         return cls(
@@ -405,7 +426,7 @@ class UnitDueDateExtension:
         )
 
     @classmethod
-    def from_course_tuple(cls, row: Tuple, units_dict: dict):
+    def from_course_tuple(cls, row: Tuple, units_dict: dict):  # noqa: UP006
         username, full_name, email, location, due_date = row
         unit_title = title_or_url(units_dict[str(location)])
         return cls(
@@ -1099,3 +1120,915 @@ class ORASummaryView(GenericAPIView):
 
         serializer = self.get_serializer(items)
         return Response(serializer.data)
+
+
+class IssuedCertificatesView(ListAPIView):
+    """
+    View to retrieve issued certificates for a course with allowlist and invalidation details.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?search=username
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?filter=received
+        GET /api/instructor/v2/courses/{course_id}/certificates/issued?page=2&page_size=50
+
+    **Response Values**
+
+        {
+            "count": 100,
+            "next": "http://example.com/api/instructor/v2/courses/.../certificates/issued?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "username": "student1",
+                    "email": "student1@example.com",
+                    "enrollment_track": "verified",
+                    "certificate_status": "downloadable",
+                    "special_case": "Exception",
+                    "exception_granted": "January 15, 2024",
+                    "exception_notes": "Medical emergency",
+                    "invalidated_by": null,
+                    "invalidation_date": null
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course
+        search (optional): Filter by username or email
+        filter (optional): Filter certificates by category:
+            - "all": All Learners (default)
+            - "received": Received (downloadable certificates)
+            - "not_received": Not Received (not passing, unavailable)
+            - "audit_passing": Audit - Passing
+            - "audit_not_passing": Audit - Not Passing
+            - "error": Error State
+            - "granted_exceptions": Granted Exceptions (allowlisted)
+            - "invalidated": Invalidated
+        page (optional): Page number for pagination
+        page_size (optional): Number of results per page
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of issued certificates
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+    serializer_class = IssuedCertificateSerializer
+
+    def _apply_certificate_status_filter(self, certificates, filter_type, cert_statuses, course_key):
+        """Apply status-based filters to certificate queryset."""
+        if filter_type == "received":
+            return certificates.filter(status=cert_statuses.downloadable)
+        elif filter_type == "not_received":
+            return certificates.filter(
+                status__in=[cert_statuses.notpassing, cert_statuses.unavailable]
+            )
+        elif filter_type == "audit_passing":
+            return certificates.filter(status=cert_statuses.audit_passing)
+        elif filter_type == "audit_not_passing":
+            return certificates.filter(status=cert_statuses.audit_notpassing)
+        elif filter_type == "error":
+            return certificates.filter(status=cert_statuses.error)
+        elif filter_type == "granted_exceptions":
+            return certificates.filter(
+                user_id__in=CertificateAllowlist.objects.filter(
+                    course_id=course_key, allowlist=True
+                ).values_list('user_id', flat=True)
+            )
+        elif filter_type == "invalidated":
+            return certificates.filter(
+                user_id__in=CertificateInvalidation.objects.filter(
+                    generated_certificate__course_id=course_key, active=True
+                ).values_list('generated_certificate__user_id', flat=True)
+            )
+        return certificates
+
+    def get_serializer_context(self):
+        """
+        Provide enrollment, allowlist, and invalidation data in serializer context.
+        """
+        context = super().get_serializer_context()
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Get enrollment data
+        enrollments = CourseEnrollment.objects.filter(
+            course_id=course_key
+        ).select_related('user')
+        context['enrollment_dict'] = {e.user_id: e.mode for e in enrollments}
+
+        # Get allowlist data
+        allowlist_entries = CertificateAllowlist.objects.filter(
+            course_id=course_key,
+            allowlist=True
+        ).select_related('user')
+        context['allowlist_dict'] = {
+            entry.user_id: {
+                'created': entry.created.isoformat(),
+                'notes': entry.notes or ''
+            }
+            for entry in allowlist_entries
+        }
+
+        # Get invalidation data
+        invalidations = CertificateInvalidation.objects.filter(
+            generated_certificate__course_id=course_key,
+            active=True
+        ).select_related('generated_certificate__user', 'invalidated_by')
+        context['invalidation_dict'] = {
+            inv.generated_certificate.user_id: {
+                'invalidated_by': inv.invalidated_by.email,
+                'created': inv.created.isoformat()
+            }
+            for inv in invalidations
+        }
+
+        return context
+
+    def get_queryset(self):
+        """
+        Returns the queryset of issued certificates for the course.
+
+        This method returns a Django QuerySet that will be further processed
+        by DRF's default pagination.
+        """
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Get query parameters
+        filter_type = self.request.query_params.get("filter", "all")
+        search = self.request.query_params.get("search", "").strip()
+
+        # Get certificates for the course
+        if filter_type in ['audit_passing', 'audit_not_passing', 'all']:
+            certificates = GeneratedCertificate.objects.filter(
+                course_id=course_key
+            ).select_related('user', 'user__profile')
+        else:
+            certificates = GeneratedCertificate.eligible_certificates.filter(
+                course_id=course_key
+            ).select_related('user', 'user__profile')
+
+        # Apply search filter at database level
+        if search:
+            certificates = certificates.filter(
+                Q(user__username__icontains=search) | Q(user__email__icontains=search)
+            )
+
+        # Debug logging
+        log.debug(
+            "Certificate query for course %s: filter_type: %s",
+            course_key, filter_type
+        )
+
+        # Apply filter based on filter type (includes granted_exceptions and invalidated)
+        certificates = self._apply_certificate_status_filter(
+            certificates, filter_type, CertificateStatuses, course_key
+        )
+
+        # Order by username for consistent pagination
+        return certificates.order_by('user__username')
+
+
+class CertificateGenerationHistoryView(ListAPIView):
+    """
+    View to retrieve certificate generation history for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/generation_history
+        GET /api/instructor/v2/courses/{course_id}/certificates/generation_history?page=2
+
+    **Response Values**
+
+        {
+            "count": 25,
+            "next": "http://example.com/api/instructor/v2/courses/.../certificates/generation_history?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "task_name": "Regenerated",
+                    "date": "January 15, 2024",
+                    "details": "audit not passing states"
+                },
+                {
+                    "task_name": "Generated",
+                    "date": "January 10, 2024",
+                    "details": "For exceptions"
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course
+        page (optional): Page number for pagination
+        page_size (optional): Number of results per page
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of certificate generation history
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+    serializer_class = CertificateGenerationHistorySerializer
+
+    def get_queryset(self):
+        """
+        Returns the queryset of certificate generation history.
+
+        This method returns a Django QuerySet that will be paginated by DRF.
+        """
+        course_id = self.kwargs["course_id"]
+        course_key = CourseKey.from_string(course_id)
+
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Get generation history ordered by creation date
+        return CertificateGenerationHistory.objects.filter(
+            course_id=course_key
+        ).select_related('generated_by', 'instructor_task').order_by('-created')
+
+
+@method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class RegenerateCertificatesView(DeveloperErrorViewMixin, APIView):
+    """
+    View to regenerate certificates for a course.
+
+    **Use Cases**
+
+        Regenerate certificates for learners in a course, optionally filtering by certificate status
+        or student set (all learners or allowlisted learners).
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/regenerate
+
+        Request Body:
+        {
+            "statuses": ["downloadable", "notpassing"],
+            "student_set": "all"
+        }
+
+    **Request Body Parameters**
+
+        statuses (optional): List of certificate statuses to regenerate
+        student_set (optional): "all" for all learners, "allowlisted" for allowlisted learners only
+
+    **Response Values**
+
+        {
+            "task_id": "abc-123",
+            "message": "Certificate regeneration task has been started"
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate regeneration task started successfully
+        * 400: Bad Request - Invalid parameters
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.START_CERTIFICATE_REGENERATION
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        body=RegenerateCertificatesSerializer,
+        responses={
+            200: "Certificate regeneration task started successfully",
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def post(self, request, course_id):
+        """
+        Initiate certificate regeneration for a course.
+        """
+        course_key = CourseKey.from_string(course_id)
+        get_course_by_id(course_key)
+
+        serializer = RegenerateCertificatesSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {'error': serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        statuses = serializer.validated_data.get('statuses', [])
+        student_set = serializer.validated_data.get('student_set', 'all')
+
+        try:
+            # Submit certificate generation/regeneration task
+            if student_set == 'allowlisted':
+                # Generate for allowlisted students only
+                task = task_api.generate_certificates_for_students(
+                    request,
+                    course_key,
+                    student_set='all_allowlisted'
+                )
+            elif statuses:
+                # Regenerate for specified statuses
+                task = task_api.regenerate_certificates(
+                    request,
+                    course_key,
+                    statuses_to_regenerate=statuses
+                )
+            else:
+                # Generate for all students
+                task = task_api.generate_certificates_for_students(
+                    request,
+                    course_key
+                )
+
+            return Response({
+                'task_id': task.task_id,
+                'message': _('Certificate regeneration task has been started')
+            }, status=status.HTTP_200_OK)
+
+        except (AlreadyRunningError, QueueConnectionError) as exc:
+            log.error("Error starting certificate regeneration: %s", exc)
+            return Response(
+                {'error': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class CertificateConfigView(DeveloperErrorViewMixin, APIView):
+    """
+    View to retrieve certificate configuration for a course.
+
+    **Use Cases**
+
+        Check if certificate generation is enabled for the platform and validate course existence.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/certificates/config
+
+    **Response Values**
+
+        {
+            "enabled": true
+        }
+
+    **Returns**
+
+        * 200: OK - Returns certificate configuration
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+        * 404: Not Found - Course does not exist
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ISSUED_CERTIFICATES
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: "Returns certificate configuration.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "The requested course does not exist.",
+        },
+    )
+    def get(self, request, course_id):
+        """
+        Retrieve certificate configuration.
+        """
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Check if certificate generation is enabled (not available for CCX courses)
+        enabled = certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
+
+        return Response({'enabled': enabled}, status=status.HTTP_200_OK)
+
+
+class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List all active enrollments for a course with optional search, filtering, and pagination.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/enrollments
+        GET /api/instructor/v2/courses/{course_id}/enrollments?search=john
+        GET /api/instructor/v2/courses/{course_id}/enrollments?is_beta_tester=true
+        GET /api/instructor/v2/courses/{course_id}/enrollments?page=2&page_size=50
+
+    **Response Values**
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "count": 150,
+            "num_pages": 15,
+            "current_page": 1,
+            "start": 0,
+            "next": "http://example.com/api/instructor/v2/courses/.../enrollments?page=2",
+            "previous": null,
+            "results": [
+                {
+                    "username": "learner1",
+                    "full_name": "Jane Doe",
+                    "email": "jane@example.com",
+                    "mode": "audit",
+                    "is_beta_tester": false
+                },
+                ...
+            ]
+        }
+
+    **Parameters**
+
+        course_id: Course key for the course.
+        search (optional): Filter by username, email, first name, or last name.
+        is_beta_tester (optional): Filter by beta tester status (true/false).
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page (default: 10, max: 100).
+
+    **Returns**
+
+        * 200: OK - Returns paginated list of active enrollments
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_ENROLLMENTS
+    serializer_class = CourseEnrollmentSerializerV2
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CourseEnrollmentFilter
+
+    def get_queryset(self):
+        course_key = CourseKey.from_string(self.kwargs['course_id'])
+        return CourseEnrollment.objects.filter(
+            course_id=course_key,
+            is_active=True
+        ).select_related('user', 'user__profile').order_by('user__username')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        course_key = CourseKey.from_string(self.kwargs['course_id'])
+        context['beta_tester_ids'] = set(
+            CourseBetaTesterRole(course_key).users_with_role().values_list('id', flat=True)
+        )
+        return context
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data['course_id'] = self.kwargs['course_id']
+        return response
+
+
+class LearnerView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving learner information.
+
+    **GET Example Response:**
+    ```json
+    {
+        "username": "john_harvard",
+        "email": "john@example.com",
+        "full_name": "John Harvard",
+        "progress_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/progress/john_harvard/"
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'email_or_username',
+                apidocs.ParameterLocation.PATH,
+                description="Learner's username or email address",
+            ),
+        ],
+        responses={
+            200: 'Learner information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Learner not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, email_or_username):
+        """
+        Retrieve comprehensive learner information including profile, enrollment status,
+        progress URLs, and current grading data.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        UserModel = get_user_model()
+        try:
+            student = get_user_by_username_or_email(email_or_username)
+        except UserModel.DoesNotExist:
+            return Response(
+                {'error': 'Learner not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except UserModel.MultipleObjectsReturned:
+            return Response(
+                {'error': 'Multiple learners found for the given identifier'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Build progress URL (MFE or legacy depending on feature flag)
+        if course_home_mfe_progress_tab_is_active(course_key):
+            progress_url = get_learning_mfe_home_url(course_key, url_fragment='progress')
+            progress_url += f'/{student.id}/'
+        else:
+            progress_url = reverse(
+                'student_progress',
+                kwargs={'course_id': str(course_key), 'student_id': student.id}
+            )
+
+        learner_data = {
+            'username': student.username,
+            'email': student.email,
+            'full_name': student.profile.name,
+            'progress_url': progress_url,
+        }
+
+        serializer = LearnerSerializer(learner_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProblemView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving problem metadata.
+
+    **GET Example Response:**
+    ```json
+    {
+        "id": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem",
+        "name": "Sample Problem",
+        "breadcrumbs": [
+            {"display_name": "Demonstration Course"},
+            {
+                "display_name": "Week 1",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@chapter+block@week1"
+            },
+            {
+                "display_name": "Homework",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@sequential+block@hw1"
+            },
+            {
+                "display_name": "Sample Problem",
+                "usage_key": "block-v1:edX+DemoX+Demo_Course+type@problem+block@sample_problem"
+            }
+        ],
+        "current_score": {
+            "score": 7.0,
+            "total": 10.0
+        },
+        "attempts": {
+            "current": 3,
+            "total": null
+        }
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'location',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key",
+            ),
+        ],
+        responses={
+            200: 'Problem information retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Problem not found or course does not exist.",
+        },
+    )
+    def get(self, request, course_id, location):
+        """
+        Retrieve problem metadata including display name, location in course hierarchy,
+        and usage key.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            problem_key = UsageKey.from_string(location)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid problem location'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        store = modulestore()
+
+        try:
+            problem = store.get_item(problem_key)
+        except ItemNotFoundError:
+            return Response(
+                {'error': 'Problem not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Build breadcrumbs by walking up the parent chain
+        breadcrumbs = []
+        current = problem
+        while current:
+            breadcrumbs.insert(0, {
+                'display_name': current.display_name,
+                'usage_key': str(current.location) if current.location.block_type != 'course' else None
+            })
+            parent = current.get_parent() if hasattr(current, 'get_parent') else None
+            if not parent:
+                break
+            current = parent
+
+        problem_data = {
+            'id': str(problem.location),
+            'name': problem.display_name,
+            'breadcrumbs': breadcrumbs,
+            'current_score': None,
+            'attempts': None,
+        }
+
+        learner_identifier = request.query_params.get('email_or_username')
+        if learner_identifier:
+            UserModel = get_user_model()
+            try:
+                student = get_user_by_username_or_email(learner_identifier)
+            except UserModel.DoesNotExist:
+                return Response(
+                    {'error': 'Learner not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            except UserModel.MultipleObjectsReturned:
+                return Response(
+                    {'error': 'Multiple learners found for the given identifier'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                student_module = StudentModule.objects.get(
+                    course_id=course_key,
+                    module_state_key=problem_key,
+                    student=student,
+                )
+                problem_data['current_score'] = {
+                    'score': student_module.grade,
+                    'total': student_module.max_grade,
+                }
+                state = json.loads(student_module.state) if student_module.state else {}
+                problem_data['attempts'] = {
+                    'current': state.get('attempts', 0),
+                    'total': problem.max_attempts,
+                }
+            except StudentModule.DoesNotExist:
+                pass  # Leave current_score and attempts as None
+
+        serializer = ProblemSerializer(problem_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TaskStatusView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for checking background task status.
+
+    **GET Example Response:**
+    ```json
+    {
+        "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "state": "completed",
+        "progress": {
+            "current": 150,
+            "total": 150
+        },
+        "result": {
+            "success": true,
+            "message": "Reset attempts for 150 learners"
+        },
+        "created_at": "2024-01-15T10:30:00Z",
+        "updated_at": "2024-01-15T10:35:23Z"
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.SHOW_TASKS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'task_id',
+                apidocs.ParameterLocation.PATH,
+                description="Task identifier returned from async operation",
+            ),
+        ],
+        responses={
+            200: 'Task status retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Task not found.",
+        },
+    )
+    def get(self, request, course_id, task_id):
+        """
+        Check the status of a background task.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get task from InstructorTask model
+        try:
+            task = InstructorTask.objects.get(task_id=task_id, course_id=course_key)
+        except InstructorTask.DoesNotExist:
+            return Response(
+                {'error': 'Task not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Map task state
+        state_map = {
+            'PENDING': 'pending',
+            'QUEUING': 'pending',
+            'SCHEDULED': 'pending',
+            'RECEIVED': 'pending',
+            'STARTED': 'running',
+            'PROGRESS': 'running',
+            'RETRY': 'running',
+            'SUCCESS': 'completed',
+            'FAILURE': 'failed',
+            'REVOKED': 'failed',
+        }
+
+        task_data = {
+            'task_id': str(task.task_id),
+            'state': state_map.get(task.task_state, 'pending'),
+            'created_at': task.created,
+            'updated_at': task.updated,
+        }
+
+        # Add progress if available
+        if hasattr(task, 'task_output') and task.task_output:
+            try:
+                output = json.loads(task.task_output)
+                if 'current' in output and 'total' in output:
+                    task_data['progress'] = {
+                        'current': output['current'],
+                        'total': output['total']
+                    }
+                if task.task_state == 'SUCCESS' and 'message' in output:
+                    task_data['result'] = {
+                        'success': True,
+                        'message': output['message']
+                    }
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+        # Add error if failed
+        if task.task_state in ['FAILURE', 'REVOKED']:
+            task_data['error'] = {
+                'code': 'TASK_FAILED',
+                'message': str(task.task_output) if task.task_output else 'Task failed'
+            }
+
+        serializer = TaskStatusSerializer(task_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GradingConfigView(DeveloperErrorViewMixin, APIView):
+    """
+    API view for retrieving course grading configuration.
+
+    **GET Example Response:**
+    ```json
+    {
+        "graders": [
+            {
+                "type": "Homework",
+                "short_label": "HW",
+                "min_count": 12,
+                "drop_count": 2,
+                "weight": 0.15
+            },
+            {
+                "type": "Final Exam",
+                "short_label": "Final",
+                "min_count": 1,
+                "drop_count": 0,
+                "weight": 0.40
+            }
+        ],
+        "grade_cutoffs": {
+            "A": 0.9,
+            "B": 0.8,
+            "C": 0.7
+        }
+    }
+    ```
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: 'Grading configuration retrieved successfully',
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks instructor access to the course.",
+            404: "Course does not exist.",
+        },
+    )
+    def get(self, request, course_id):
+        """
+        Retrieve the grading configuration for a course, including assignment type
+        weights and grade cutoff thresholds.
+        """
+        try:
+            course_key = CourseKey.from_string(course_id)
+        except InvalidKeyError:
+            return Response(
+                {'error': 'Invalid course key'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = get_course_by_id(course_key)
+        grading_policy = course.grading_policy
+        config_data = {
+            'graders': grading_policy.get('GRADER', []),
+            'grade_cutoffs': grading_policy.get('GRADE_CUTOFFS', {}),
+        }
+        serializer = GradingConfigSerializer(config_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)

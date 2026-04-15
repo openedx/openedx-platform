@@ -3,6 +3,7 @@ Tests for `update_new_apple_ids_in_social_auth` management command
 """
 
 from unittest import mock
+
 from django.core.management import call_command
 from django.test import TestCase
 from social_django.models import UserSocialAuth
@@ -50,11 +51,11 @@ class TestGenerateAndStoreAppleIds(TestCase):
         )
 
     def test_new_apple_id_updated_in_social_auth(self):
-        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())
-        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())
+        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())  # noqa: PT009  # pylint: disable=line-too-long
 
         with mock.patch.object(AppleIdAuth, 'name', self.slug):
             call_command(self.command)
 
-        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())
-        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())
+        self.assertTrue(UserSocialAuth.objects.filter(uid='sample_new_apple_id', provider=self.slug).exists())  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertFalse(UserSocialAuth.objects.filter(uid='sample_old_apple_id', provider=self.slug).exists())  # noqa: PT009  # pylint: disable=line-too-long

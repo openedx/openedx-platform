@@ -11,7 +11,7 @@ from scripts.user_retirement.retirement_bulk_status_update import (
     ERR_NO_CONFIG,
     ERR_SETUP_FAILED,
     ERR_UPDATING,
-    update_statuses
+    update_statuses,
 )
 from scripts.user_retirement.tests.retirement_helpers import fake_config_file, get_fake_user_retirement
 

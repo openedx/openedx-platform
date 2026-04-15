@@ -8,10 +8,10 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from xmodule.partitions.partitions import (
-    get_partition_from_id,
     ENROLLMENT_TRACK_PARTITION_ID,
     UserPartition,
-    UserPartitionError
+    UserPartitionError,
+    get_partition_from_id,
 )
 
 log = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def create_enrollment_track_partition(course):
     used_ids = {p.id for p in course.user_partitions}
     if ENROLLMENT_TRACK_PARTITION_ID in used_ids:
         log.warning(
-            "Can't add 'enrollment_track' partition, as ID {id} is assigned to {partition} in course {course}.".format(
+            "Can't add 'enrollment_track' partition, as ID {id} is assigned to {partition} in course {course}.".format(  # noqa: UP032  # pylint: disable=line-too-long
                 id=ENROLLMENT_TRACK_PARTITION_ID,
                 partition=get_partition_from_id(course.user_partitions, ENROLLMENT_TRACK_PARTITION_ID).name,
                 course=str(course.id)

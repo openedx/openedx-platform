@@ -1,14 +1,12 @@
 # pylint: skip-file
 import json
 import logging
-
 import re
-from typing import Set
-
-import regex
 from collections import defaultdict
 from datetime import datetime
+from typing import Set  # noqa: UP035
 
+import regex
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import connection
@@ -18,16 +16,13 @@ from django.utils.deprecation import MiddlewareMixin
 from opaque_keys.edx.keys import CourseKey, UsageKey, i4xEncoder
 from pytz import UTC
 
+import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from common.djangoapps.student.models import get_user_by_username_or_email
 from common.djangoapps.student.roles import GlobalStaff
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY, TYPE_SUBCATEGORY
-from lms.djangoapps.discussion.django_comment_client.permissions import (
-    check_permissions_by_view,
-    get_team
-)
+from lms.djangoapps.discussion.django_comment_client.permissions import check_permissions_by_view, get_team
 from lms.djangoapps.discussion.django_comment_client.settings import MAX_COMMENT_DEPTH
-from openedx.core.djangoapps.django_comment_common.models import has_permission
 from openedx.core.djangoapps.course_groups.cohorts import get_cohort_id
 from openedx.core.djangoapps.discussions.utils import (
     get_accessible_discussion_xblocks,
@@ -37,14 +32,17 @@ from openedx.core.djangoapps.discussions.utils import (
     get_group_names_by_id,
     has_required_keys,
 )
-import openedx.core.djangoapps.django_comment_common.comment_client as cc
 from openedx.core.djangoapps.django_comment_common.models import (
+    FORUM_ROLE_ADMINISTRATOR,
     FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_MODERATOR,
     FORUM_ROLE_STUDENT,
     CourseDiscussionSettings,
     DiscussionsIdMapping,
     Role,
-    FORUM_ROLE_ADMINISTRATOR, FORUM_ROLE_MODERATOR, FORUM_ROLE_GROUP_MODERATOR)
+    has_permission,
+)
 from openedx.core.lib.cache_utils import request_cached
 from openedx.core.lib.courses import get_course_by_id
 from xmodule.modulestore.django import modulestore
@@ -93,7 +91,7 @@ def get_role_ids(course_id):
     return {role.name: list(role.users.values_list('id', flat=True)) for role in roles}
 
 
-def get_user_role_names(user: User, course_key: CourseKey) -> Set[str]:
+def get_user_role_names(user: User, course_key: CourseKey) -> Set[str]:  # noqa: UP006
     """
     Get a set of discussion roles a user has for the specified course.
 
@@ -222,7 +220,7 @@ def get_cached_discussion_key(course_id, discussion_id):
         else:
             return None
     except DiscussionsIdMapping.DoesNotExist:
-        raise DiscussionIdMapIsNotCached()
+        raise DiscussionIdMapIsNotCached()  # noqa: B904
 
 
 def get_cached_discussion_id_map(course, discussion_ids, user):
@@ -512,7 +510,7 @@ class JsonError(HttpResponse):
     """
     Django response object delivering JSON exceptions
     """
-    def __init__(self, error_messages=[], status=400):
+    def __init__(self, error_messages=[], status=400):  # noqa: B006
         """
         Object constructor, returns an error response containing the provided exception messages
         """
@@ -709,7 +707,7 @@ def extend_content(content):
     if content.get('user_id'):
         try:
             user = User.objects.get(pk=content['user_id'])
-            roles = {'name': role.name.lower() for role in user.roles.filter(course_id=content['course_id'])}
+            roles = {'name': role.name.lower() for role in user.roles.filter(course_id=content['course_id'])}  # noqa: B035
         except User.DoesNotExist:
             log.error(
                 'User ID %s in comment content %s but not in our DB.',

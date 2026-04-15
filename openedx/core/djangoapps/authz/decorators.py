@@ -1,16 +1,16 @@
 """Decorators for AuthZ-based permissions enforcement."""
 import logging
-from functools import wraps
 from collections.abc import Callable
+from functools import wraps
 
 from django.contrib.auth.models import AbstractUser
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx_authz import api as authz_api
 from rest_framework import status
 
 from openedx.core import toggles as core_toggles
+from openedx.core.djangoapps.authz.constants import LEGACY_PERMISSION_HANDLER_MAP, LegacyAuthoringPermission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 
 log = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ def user_has_course_permission(
         # If AuthZ is enabled for this course, check the permission via AuthZ only.
         is_user_allowed = authz_api.is_user_allowed(user.username, authz_permission, str(course_key))
         log.info(
-            "AuthZ permission granted = {}".format(is_user_allowed),
+            "AuthZ permission granted = {}".format(is_user_allowed),  # noqa: UP032
             extra={
                 "user_id": user.id,
                 "authz_permission": authz_permission,

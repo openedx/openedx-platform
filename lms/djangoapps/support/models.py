@@ -2,9 +2,8 @@
 Models used to implement support related models in such as SSO History model
 """
 from django.contrib.auth import get_user_model
-from django.db.models import ForeignKey, DO_NOTHING, CASCADE, TextChoices
+from django.db.models import CASCADE, DO_NOTHING, ForeignKey, TextChoices
 from django.db.models.fields import BooleanField, CharField, DateTimeField
-
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
 from simple_history import register

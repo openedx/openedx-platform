@@ -1,24 +1,33 @@
 """Tests for embargo app views. """
 
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import ddt
-import maxminddb
 import geoip2.database
-
-from django.urls import reverse
+import maxminddb
 from django.conf import settings
+from django.urls import reverse
 
-from .factories import CountryAccessRuleFactory, RestrictedCourseFactory
-from .. import messages
-from lms.djangoapps.course_api.tests.mixins import CourseApiFactoryMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_unless_lms  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme  # lint-amnesty, pylint: disable=wrong-import-order
 from common.djangoapps.student.tests.factories import UserFactory  # lint-amnesty, pylint: disable=wrong-import-order
 from common.djangoapps.util.testing import UrlResetMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from lms.djangoapps.course_api.tests.mixins import (
+    CourseApiFactoryMixin,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from openedx.core.djangoapps.theming.tests.test_util import (
+    with_comprehensive_theme,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from openedx.core.djangolib.testing.utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CacheIsolationTestCase,
+    skip_unless_lms,
+)
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+
+from .. import messages
+from .factories import CountryAccessRuleFactory, RestrictedCourseFactory
 
 
 @skip_unless_lms

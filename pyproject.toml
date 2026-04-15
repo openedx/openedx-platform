@@ -199,6 +199,10 @@ filterwarnings = [
     # ABC deprecation Warning comes from libsass
     "ignore:Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated.*:DeprecationWarning:sass",
     "ignore:'etree' is deprecated. Use 'xml.etree.ElementTree' instead.:DeprecationWarning:wiki",
+    # We sometimes use DeprecationWarning to enourage `.id` instead of `.pk` since there are some cases where we cannot
+    # override the type of `.pk`, but we can always customize `.id` (e.g. using TypedBigAutoField). But we don't want to
+    # see those warnings when Django is using `.pk` internally, which is fine.
+    "ignore:Use \\.id instead:DeprecationWarning:django\\..*",
 ]
 junit_family = "xunit2"
 norecursedirs = ". .* *.egg build conf dist node_modules test_root cms/envs lms/envs openedx/envs"
@@ -213,7 +217,7 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "W"]
+select = ["E", "W", "I", "F", "PT", "DJ", "UP", "B"]
 ignore = [
     "E402",  # module level import not at top of file
     "E501",  # line too long (pylint enforces this at 120 chars while ignoring trailing comments)
@@ -225,12 +229,6 @@ ignore = [
     # equivalent swap; they can be cleaned up in a follow-up.
     "E721",  # use `isinstance()` for type comparisons
 ]
-
-[tool.isort]
-indent = "    "
-line_length = 120
-multi_line_output = 3
-skip = ["envs", "migrations"]
 
 [tool.importlinter]
 root_packages = ["lms", "cms", "openedx", "openedx_content", "openedx_catalog"]
@@ -282,9 +280,6 @@ ignore_imports = [
     # cms.djangoapps.export_course_metadata.tasks
     #  -> openedx.core.djangoapps.schedules.content_highlights
     #  -> lms.djangoapps.courseware.block_render & lms.djangoapps.courseware.model_data
-    "openedx.core.djangoapps.content_libraries.* -> lms.djangoapps.*.*",
-    # cms.djangoapps.contentstore.tasks -> openedx.core.djangoapps.content_libraries.[various]
-    # -> lms.djangoapps.grades.api
     "openedx.core.djangoapps.xblock.*.* -> lms.djangoapps.*.*",
     # cms.djangoapps.contentstore.tasks -> openedx.core.djangoapps.content_libraries.[various] -> openedx.core.djangoapps.xblock.[various]
     # -> lms.djangoapps.courseware & lms.djangoapps.courseware.grades

@@ -19,7 +19,7 @@ import re
 from django.http import HttpResponseBadRequest
 from django.utils.translation import gettext as _
 
-from cms.djangoapps.contentstore.utils import track_course_update_event, send_course_update_notification
+from cms.djangoapps.contentstore.utils import send_course_update_notification, track_course_update_event
 from openedx.core.lib.xblock_utils import get_course_update_items
 from xmodule.html_block import CourseInfoBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order

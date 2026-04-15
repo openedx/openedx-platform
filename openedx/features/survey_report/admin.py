@@ -3,10 +3,11 @@ Django Admin page for SurveyReport.
 """
 
 
-from django.contrib import admin
 from django.conf import settings
-from .models import SurveyReport
+from django.contrib import admin
+
 from .api import send_report_to_external_api
+from .models import SurveyReport
 
 
 class SurveyReportAdmin(admin.ModelAdmin):

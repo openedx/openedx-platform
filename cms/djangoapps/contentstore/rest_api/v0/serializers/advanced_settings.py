@@ -1,23 +1,15 @@
 """ Serializers for course advanced settings"""
-from typing import Type, Dict as DictType
+from typing import Dict as DictType  # noqa: UP035
+from typing import Type  # noqa: UP035
 
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework.fields import Field as SerializerField
-from xblock.fields import (
-    Boolean,
-    Date,
-    DateTime,
-    Dict,
-    Field as XBlockField,
-    Float,
-    Integer,
-    List,
-    String,
-)
-from xmodule.course_block import CourseFields, EmailString
+from xblock.fields import Boolean, Date, DateTime, Dict, Float, Integer, List, String
+from xblock.fields import Field as XBlockField
 
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
+from xmodule.course_block import CourseFields, EmailString
 
 # Maps xblock fields to their corresponding Django Rest Framework serializer field
 XBLOCK_DRF_FIELD_MAP = [
@@ -59,7 +51,7 @@ class CourseAdvancedSettingsSerializer(serializers.Serializer):  # pylint: disab
     """
 
     @staticmethod
-    def _get_drf_field_type_from_xblock_field(xblock_field: XBlockField) -> Type[SerializerField]:
+    def _get_drf_field_type_from_xblock_field(xblock_field: XBlockField) -> Type[SerializerField]:  # noqa: UP006
         """
         Return the corresponding DRF Serializer field for an XBlock field.
 
@@ -75,7 +67,7 @@ class CourseAdvancedSettingsSerializer(serializers.Serializer):  # pylint: disab
                 return drf_type
         return serializers.JSONField
 
-    def get_fields(self) -> DictType[str, SerializerField]:
+    def get_fields(self) -> DictType[str, SerializerField]:  # noqa: UP006
         """
         Return the fields for this serializer.
 

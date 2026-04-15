@@ -4,25 +4,32 @@ Test classes for the events sent in the cohort assignment process.
 Classes:
     CohortEventTest: Test event sent after cohort membership changes.
 """
-from openedx.core.djangoapps.course_groups.models import CohortMembership
 from unittest.mock import Mock  # lint-amnesty, pylint: disable=wrong-import-order
 
-from openedx_events.learning.data import CohortData, CourseData, UserData, UserPersonalData  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx_events.learning.signals import COHORT_MEMBERSHIP_CHANGED  # lint-amnesty, pylint: disable=wrong-import-order
-from openedx_events.tests.utils import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+    CohortData,
+    CourseData,
+    UserData,
+    UserPersonalData,
+)
+from openedx_events.learning.signals import (
+    COHORT_MEMBERSHIP_CHANGED,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
 
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-
-from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
-
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
 from common.test.utils import assert_dict_contains_subset
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
+from openedx.core.djangoapps.course_groups.models import CohortMembership
+from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_lms
-class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
+class CohortEventTest(OpenEdxEventsTestMixin, SharedModuleStoreTestCase):
     """
     Tests for the Open edX Events associated with the cohort update process.
 
@@ -35,23 +42,6 @@ class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
     ENABLED_OPENEDX_EVENTS = [
         "org.openedx.learning.cohort_membership.changed.v1",
     ]
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
@@ -90,7 +80,7 @@ class CohortEventTest(SharedModuleStoreTestCase, OpenEdxEventsTestMixin):
             user=self.user,
         )
 
-        self.assertTrue(self.receiver_called)
+        self.assertTrue(self.receiver_called)  # noqa: PT009
         assert_dict_contains_subset(
             self,
             {

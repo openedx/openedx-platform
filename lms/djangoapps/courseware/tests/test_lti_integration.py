@@ -4,11 +4,11 @@
 import importlib
 import json
 import re
+import urllib
 from collections import OrderedDict
-
 from unittest import mock
 from unittest.mock import patch
-import urllib
+
 import oauthlib
 from django.conf import settings
 from django.test import override_settings
@@ -19,10 +19,15 @@ from common.djangoapps.xblock_django.constants import ATTR_KEY_ANONYMOUS_USER_ID
 from lms.djangoapps.courseware.tests.helpers import BaseTestXmodule
 from lms.djangoapps.courseware.views.views import get_course_lti_endpoints
 from openedx.core.lib.url_utils import quote_slashes
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tests.helpers import mock_render_template
 from xmodule import lti_block
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+from xmodule.tests.helpers import mock_render_template
 
 
 class _TestLTIBase(BaseTestXmodule):
@@ -59,7 +64,7 @@ class _TestLTIBase(BaseTestXmodule):
         hostname = settings.LMS_BASE
         resource_link_id = str(urllib.parse.quote(f'{hostname}-{self.block.location.html_id()}'))
 
-        sourcedId = "{context}:{resource_link}:{user_id}".format(
+        sourcedId = "{context}:{resource_link}:{user_id}".format(  # noqa: UP032
             context=urllib.parse.quote(context_id),
             resource_link=resource_link_id,
             user_id=user_id

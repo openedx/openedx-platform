@@ -1,7 +1,7 @@
 """
 Code related to LTI course tab functionality.
 """
-from typing import Dict
+from typing import Dict  # noqa: UP035
 from urllib.parse import quote
 
 from django.contrib.auth.models import AbstractBaseUser
@@ -14,11 +14,11 @@ from lti_consumer.models import LtiConfiguration
 from opaque_keys.edx.keys import CourseKey
 from web_fragments.fragment import Fragment
 
+from common.djangoapps.student.models import anonymous_id_for_user
 from lms.djangoapps.courseware.access import get_user_role
 from lms.djangoapps.courseware.tabs import EnrolledTab
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangolib.markup import HTML
-from common.djangoapps.student.models import anonymous_id_for_user
 from xmodule.course_block import CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.tabs import TabFragmentViewMixin, key_checker  # lint-amnesty, pylint: disable=wrong-import-order
 
@@ -35,7 +35,7 @@ class LtiCourseLaunchMixin:
     }
     DEFAULT_ROLE = 'Student,Learner'
 
-    def _get_pii_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:
+    def _get_pii_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:  # noqa: UP006
         """
         Get LTI parameters that contain PII.
 
@@ -62,7 +62,7 @@ class LtiCourseLaunchMixin:
             pii_config['person_contact_email_primary'] = request.user.email
         return pii_config
 
-    def _get_additional_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:
+    def _get_additional_lti_parameters(self, course: CourseBlock, request: HttpRequest) -> Dict[str, str]:  # noqa: UP006  # pylint: disable=line-too-long
         """
         Get additional misc LTI parameters.
 
@@ -101,7 +101,7 @@ class LtiCourseLaunchMixin:
 
     @staticmethod
     def _get_result_sourcedid(context_id: str, resource_link_id: str, user_id: str) -> str:
-        return "{context}:{resource_link}:{user_id}".format(
+        return "{context}:{resource_link}:{user_id}".format(  # noqa: UP032
             context=context_id,
             resource_link=resource_link_id,
             user_id=user_id,
@@ -109,7 +109,7 @@ class LtiCourseLaunchMixin:
 
     @staticmethod
     def _get_context_title(course: CourseBlock) -> str:
-        return "{} - {}".format(
+        return "{} - {}".format(  # noqa: UP032
             course.display_name_with_default,
             course.display_org_with_default,
         )

@@ -7,8 +7,8 @@ import itertools
 from collections import namedtuple
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from xblock.core import XBlock, XBlockAside
 from xblock.fields import Scope, String
 from xblock.runtime import DictKeyValueStore, KvsFieldData
@@ -18,8 +18,8 @@ from xmodule.course_block import CourseSummary
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.draft_and_published import DIRECT_ONLY_CATEGORIES
 from xmodule.modulestore.exceptions import ItemNotFoundError
-from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 DETACHED_BLOCK_TYPES = dict(XBlock.load_tagged_classes('detached'))
 

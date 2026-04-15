@@ -11,9 +11,9 @@ from textwrap import dedent
 from unittest import mock
 from zoneinfo import ZoneInfo
 
-import pytest
 import ddt
 import lxml.etree
+import pytest
 from django.utils.translation import gettext_lazy
 from fs.osfs import OSFS
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -136,7 +136,7 @@ class RoundTripTestCase(unittest.TestCase):
         course_id = initial_course.id
 
         print("Checking key equality")
-        self.assertCountEqual(
+        self.assertCountEqual(  # noqa: PT009
             list(initial_import.modules[course_id].keys()),
             list(second_import.modules[course_id].keys())
         )

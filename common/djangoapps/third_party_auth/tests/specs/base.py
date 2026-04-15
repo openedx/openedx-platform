@@ -9,29 +9,28 @@ from unittest import mock
 
 import pytest
 from django import test
-from django.conf import settings
+from django.conf import settings  # lint-amnesty, pylint: disable=reimported
+from django.conf import settings as django_settings  # pylint: disable=reimported
 from django.contrib import auth, messages
 from django.contrib.auth import models as auth_models
 from django.contrib.messages.storage import fallback
 from django.contrib.sessions.backends import cache
-from django.urls import reverse
 from django.test import utils as django_utils
-from django.conf import settings as django_settings  # lint-amnesty, pylint: disable=reimported
+from django.urls import reverse
 from social_core import actions, exceptions
 from social_django import utils as social_utils
 from social_django import views as social_views
 
+from common.djangoapps.student import models as student_models
+from common.djangoapps.student.tests.factories import UserFactory
+from common.djangoapps.third_party_auth import middleware, pipeline
+from common.djangoapps.third_party_auth.tests import testutil
 from lms.djangoapps.commerce.tests import TEST_API_URL
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
 from openedx.core.djangoapps.user_authn.views.login import login_user
 from openedx.core.djangoapps.user_authn.views.login_form import login_and_registration_form
 from openedx.core.djangoapps.user_authn.views.register import RegistrationView
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
-from common.djangoapps.student import models as student_models
-from common.djangoapps.student.tests.factories import UserFactory
-
-from common.djangoapps.third_party_auth import middleware, pipeline
-from common.djangoapps.third_party_auth.tests import testutil
 
 
 def create_account(request):
@@ -604,7 +603,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_exception_redirect_looks_correct("/")
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_linking_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(
@@ -772,7 +771,7 @@ class IntegrationTest(testutil.TestCase, test.TestCase, HelperMixin):
         self.assert_third_party_accounts_state(post_request, duplicate=True, linked=True)
 
     @mock.patch("common.djangoapps.third_party_auth.pipeline.segment.track")
-    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):
+    def test_full_pipeline_succeeds_for_signing_in_to_existing_active_account(self, _mock_segment_track):  # noqa: PT019
         # First, create, the GET request and strategy that store pipeline state,
         # configure the backend, and mock out wire traffic.
         get_request, strategy = self.get_request_and_strategy(

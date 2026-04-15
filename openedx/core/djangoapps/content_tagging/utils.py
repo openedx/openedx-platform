@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from edx_django_utils.cache import RequestCache
 from opaque_keys import InvalidKeyError
-from opaque_keys.edx.keys import CourseKey, CollectionKey, ContainerKey, UsageKey
+from opaque_keys.edx.keys import CollectionKey, ContainerKey, CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_tagging.models import Taxonomy
 from organizations.models import Organization

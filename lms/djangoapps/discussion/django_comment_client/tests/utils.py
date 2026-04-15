@@ -5,17 +5,16 @@ Utilities for tests within the django_comment_client module.
 
 from unittest.mock import patch
 
-from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory
-
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, UserFactory
 from common.djangoapps.util.testing import UrlResetMixin
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings, Role
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from openedx.core.lib.teams_config import TeamsConfig
+from xmodule.modulestore import ModuleStoreEnum
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
+from xmodule.modulestore.tests.factories import CourseFactory
 
 
 class CohortedTestCase(UrlResetMixin, SharedModuleStoreTestCase):
@@ -69,8 +68,8 @@ class CohortedTestCase(UrlResetMixin, SharedModuleStoreTestCase):
 # pylint: disable=dangerous-default-value
 def config_course_discussions(
         course,
-        discussion_topics={},
-        divided_discussions=[],
+        discussion_topics={},  # noqa: B006
+        divided_discussions=[],  # noqa: B006
         always_divide_inline_discussions=False,
         reported_content_email_notifications=False,
 ):
@@ -121,7 +120,7 @@ def topic_name_to_id(course, name):
     Given a discussion topic name, return an id for that name (includes
     course and url_name).
     """
-    return "{course}_{run}_{name}".format(
+    return "{course}_{run}_{name}".format(  # noqa: UP032
         course=course.location.course,
         run=course.url_name,
         name=name

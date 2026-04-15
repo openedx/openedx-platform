@@ -1,9 +1,8 @@
 """
 Serializer for Course Deadlines (Mobile)
 """
-from rest_framework import serializers
-
 from opaque_keys.edx.keys import CourseKey
+from rest_framework import serializers
 
 from lms.djangoapps.course_home_api.serializers import DatesBannerSerializer
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview

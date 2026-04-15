@@ -7,9 +7,10 @@ from enum import Enum
 
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from xmodule.partitions.partitions import UserPartition, UserPartitionError
+
 log = logging.getLogger(__name__)
 
 # "Arbitrarily large" but still limited
@@ -177,7 +178,7 @@ class TeamsConfig:
         try:
             teamset = self.teamsets_by_id[teamset_id]
         except KeyError:
-            raise ValueError(f"Team-set {teamset_id!r} does not exist.")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise ValueError(f"Team-set {teamset_id!r} does not exist.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         if teamset.teamset_type != TeamsetType.open:
             return MANAGED_TEAM_MAX_TEAM_SIZE
         if teamset.max_team_size:

@@ -7,6 +7,7 @@ try:
 except ImportError:
     BrazeClient = None
 from django.conf import settings
+
 try:
     from optimizely import optimizely
     from optimizely.config_manager import PollingConfigManager

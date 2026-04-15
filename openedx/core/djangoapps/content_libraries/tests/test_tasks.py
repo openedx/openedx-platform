@@ -4,11 +4,12 @@ Unit tests for content libraries Celery tasks
 from unittest import mock
 
 from django.test import override_settings
-from ..models import ContentLibrary
-from .base import ContentLibrariesRestApiTest
+from user_tasks.models import UserTaskArtifact
 
 from openedx.core.djangoapps.content_libraries.tasks import backup_library
-from user_tasks.models import UserTaskArtifact
+
+from ..models import ContentLibrary
+from .base import ContentLibrariesRestApiTest
 
 
 class ContentLibraryBackupTaskTest(ContentLibrariesRestApiTest):

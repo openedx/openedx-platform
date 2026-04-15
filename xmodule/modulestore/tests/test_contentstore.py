@@ -10,9 +10,9 @@ import unittest
 from tempfile import mkdtemp
 from uuid import uuid4
 
-import pytest
 import ddt
 import path
+import pytest
 from opaque_keys.edx.keys import AssetKey
 from opaque_keys.edx.locator import AssetLocator, CourseLocator
 
@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 HOST = MONGO_HOST
 PORT = MONGO_PORT_NUM
-DB = 'test_mongo_%s' % uuid4().hex[:5]
+DB = 'test_mongo_%s' % uuid4().hex[:5]  # noqa: UP031
 
 
 @ddt.ddt

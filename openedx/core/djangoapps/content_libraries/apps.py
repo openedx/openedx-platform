@@ -5,7 +5,7 @@ Django AppConfig for Content Libraries Implementation
 
 
 from django.apps import AppConfig
-from edx_django_utils.plugins import PluginURLs, PluginSettings
+from edx_django_utils.plugins import PluginSettings, PluginURLs
 
 from openedx.core.djangoapps.plugins.constants import ProjectType
 
@@ -36,4 +36,4 @@ class ContentLibrariesConfig(AppConfig):
         """
         Import signal handler's module to ensure they are registered.
         """
-        from . import signal_handlers  # pylint: disable=unused-import
+        from . import signal_handlers  # pylint: disable=unused-import  # noqa: F401

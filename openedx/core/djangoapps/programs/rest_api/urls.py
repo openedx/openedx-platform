@@ -10,9 +10,7 @@ compatibility, the API will now be part of `/learner_dashboard/v1/programs`.
 
 from django.urls import include, path
 
-from openedx.core.djangoapps.programs.rest_api.v1 import (
-    urls as v1_programs_rest_api_urls,
-)
+from openedx.core.djangoapps.programs.rest_api.v1 import urls as v1_programs_rest_api_urls
 
 app_name = "openedx.core.djangoapps.programs"
 

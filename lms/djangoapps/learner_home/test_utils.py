@@ -10,9 +10,7 @@ from uuid import uuid4
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory
-from openedx.core.djangoapps.content.course_overviews.tests.factories import (
-    CourseOverviewFactory,
-)
+from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
@@ -34,7 +32,7 @@ def random_date(allow_null=False):
         return None
 
     d = randint(1, int(time()))
-    return datetime.datetime.fromtimestamp(d, tz=datetime.timezone.utc)
+    return datetime.datetime.fromtimestamp(d, tz=datetime.timezone.utc)  # noqa: UP017
 
 
 def random_url(allow_null=False):
@@ -55,7 +53,7 @@ def random_grade():
 
 def decimal_to_grade_format(decimal):
     """Util for matching serialized grade format, pads a decimal to 2 places"""
-    return "{:.2f}".format(decimal)
+    return "{:.2f}".format(decimal)  # noqa: UP032
 
 
 def datetime_to_django_format(datetime_obj):

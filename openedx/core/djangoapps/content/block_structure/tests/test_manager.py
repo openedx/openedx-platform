@@ -2,9 +2,10 @@
 Tests for manager.py
 """
 
-import pytest
-import ddt
 from unittest.mock import MagicMock
+
+import ddt
+import pytest
 from django.test import TestCase
 
 from xmodule.modulestore import ModuleStoreEnum
@@ -19,7 +20,7 @@ from .helpers import (
     MockModulestoreFactory,
     MockTransformer,
     UsageKeyFactoryMixin,
-    mock_registered_transformers
+    mock_registered_transformers,
 )
 
 
@@ -242,10 +243,10 @@ class TestBlockStructureManager(UsageKeyFactoryMixin, ChildrenMapTestMixin, Test
                 self.bs_manager.get_collected()
 
             # Verify branch_setting was called with the correct parameters
-            self.assertEqual(len(branch_setting_calls), 1)
+            self.assertEqual(len(branch_setting_calls), 1)  # noqa: PT009
             branch, course_key = branch_setting_calls[0]
-            self.assertEqual(branch, ModuleStoreEnum.Branch.published_only)
-            self.assertEqual(course_key, self.block_key_factory(0).course_key)
+            self.assertEqual(branch, ModuleStoreEnum.Branch.published_only)  # noqa: PT009
+            self.assertEqual(course_key, self.block_key_factory(0).course_key)  # noqa: PT009
 
         finally:
             # Restore original method if it existed

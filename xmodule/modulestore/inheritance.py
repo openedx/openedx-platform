@@ -4,6 +4,7 @@ Support for inheritance of fields down an XBlock hierarchy.
 
 
 import warnings
+
 from django.utils import timezone
 from xblock.core import XBlockMixin
 from xblock.fields import Boolean, Date, Dict, Float, Integer, List, Scope, String, Timedelta

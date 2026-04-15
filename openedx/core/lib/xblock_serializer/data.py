@@ -2,6 +2,7 @@
 Simple data structures used for XBlock serialization
 """
 from __future__ import annotations
+
 from typing import NamedTuple
 
 

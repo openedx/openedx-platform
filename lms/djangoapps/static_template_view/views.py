@@ -72,9 +72,9 @@ def render(request, template):
         result = render_to_response('static_templates/' + template, context, content_type=content_type)
         return result
     except TopLevelLookupException:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except TemplateDoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 @ensure_csrf_cookie
@@ -91,7 +91,7 @@ def render_press_release(request, slug):
     try:
         resp = render_to_response('static_templates/press_releases/' + template, {})
     except TemplateDoesNotExist:
-        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     return resp
 
 
@@ -128,7 +128,7 @@ def render_500(request):
     """
     try:
         return HttpResponseServerError(render_to_string('static_templates/server-error.html', {}, request=request))
-    except BaseException as e:
+    except BaseException as e:  # noqa: F841
         # If we can't render the error page, ensure we don't raise another
         # exception -- because if we do, we'll probably just end up back
         # at the same rendering error.

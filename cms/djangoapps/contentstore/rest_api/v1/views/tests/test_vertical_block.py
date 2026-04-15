@@ -5,27 +5,17 @@ Unit tests for the vertical block.
 from urllib.parse import quote
 
 from django.urls import reverse
-from rest_framework import status
 from edx_toggles.toggles.testutils import override_waffle_flag
+from rest_framework import status
 from xblock.validation import ValidationMessage
 
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
-from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
 from openedx.core.djangoapps.content_libraries.tests import ContentLibrariesRestApiTest
-from xmodule.partitions.partitions import (
-    ENROLLMENT_TRACK_PARTITION_ID,
-    Group,
-    UserPartition,
-)
-from xmodule.modulestore.django import (
-    modulestore,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import (
-    BlockFactory,
-)  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import (
-    ModuleStoreEnum,
-)  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.content_tagging.toggles import DISABLE_TAGGING_FEATURE
+from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import ENROLLMENT_TRACK_PARTITION_ID, Group, UserPartition
 
 
 class BaseXBlockContainer(CourseTestCase, ContentLibrariesRestApiTest):
@@ -148,7 +138,7 @@ class ContainerHandlerViewTest(BaseXBlockContainer):
         """
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
 
     def test_ancestor_xblocks_response(self):
         """
@@ -194,7 +184,7 @@ class ContainerHandlerViewTest(BaseXBlockContainer):
         def sort_key(block):
             return block.get("title", "")
 
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             sorted(response_ancestor_xblocks, key=sort_key),
             sorted(expected_ancestor_xblocks, key=sort_key)
         )
@@ -208,7 +198,7 @@ class ContainerHandlerViewTest(BaseXBlockContainer):
         )
         url = self.get_reverse_url(usage_key_string)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
 
 class ContainerVerticalViewTest(BaseXBlockContainer):
@@ -224,13 +214,13 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         """
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
-        self.assertEqual(len(data["children"]), 2)
-        self.assertFalse(data["is_published"])
-        self.assertTrue(data["can_paste_component"])
-        self.assertEqual(data["display_name"], "Unit")
-        self.assertEqual(data["upstream_ready_to_sync_children_info"], [])
+        self.assertEqual(len(data["children"]), 2)  # noqa: PT009
+        self.assertFalse(data["is_published"])  # noqa: PT009
+        self.assertTrue(data["can_paste_component"])  # noqa: PT009
+        self.assertEqual(data["display_name"], "Unit")  # noqa: PT009
+        self.assertEqual(data["upstream_ready_to_sync_children_info"], [])  # noqa: PT009
 
     def test_success_response_with_upstream_info(self):
         """
@@ -238,13 +228,13 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         """
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(f"{url}?get_upstream_info=true")
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         data = response.json()
-        self.assertEqual(len(data["children"]), 2)
-        self.assertFalse(data["is_published"])
-        self.assertTrue(data["can_paste_component"])
-        self.assertEqual(data["display_name"], "Unit")
-        self.assertEqual(data["upstream_ready_to_sync_children_info"], [{
+        self.assertEqual(len(data["children"]), 2)  # noqa: PT009
+        self.assertFalse(data["is_published"])  # noqa: PT009
+        self.assertTrue(data["can_paste_component"])  # noqa: PT009
+        self.assertEqual(data["display_name"], "Unit")  # noqa: PT009
+        self.assertEqual(data["upstream_ready_to_sync_children_info"], [{  # noqa: PT009
             "id": str(self.html_unit_second.usage_key),
             "upstream": self.html_block["id"],
             "block_type": "html",
@@ -259,7 +249,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         self.publish_item(self.store, self.vertical.location)
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(url)
-        self.assertTrue(response.data["is_published"])
+        self.assertTrue(response.data["is_published"])  # noqa: PT009
 
     def test_children_content(self):
         """
@@ -334,7 +324,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         ]
         self.maxDiff = None
         # Using json() shows meaningful diff in case of error
-        self.assertEqual(response.json()["children"], expected_response)
+        self.assertEqual(response.json()["children"], expected_response)  # noqa: PT009
 
     def test_not_valid_usage_key_string(self):
         """
@@ -345,7 +335,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         )
         url = self.get_reverse_url(usage_key_string)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # noqa: PT009
 
     @override_waffle_flag(DISABLE_TAGGING_FEATURE, True)
     def test_actions_with_turned_off_taxonomy_flag(self):
@@ -355,7 +345,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         url = self.get_reverse_url(self.vertical.location)
         response = self.client.get(url)
         for children in response.data["children"]:
-            self.assertFalse(children["actions"]["can_manage_tags"])
+            self.assertFalse(children["actions"]["can_manage_tags"])  # noqa: PT009
 
     def test_validation_errors(self):
         """
@@ -391,7 +381,7 @@ class ContainerVerticalViewTest(BaseXBlockContainer):
         children_response = response.data["children"]
 
         # Verify that html_unit_first access settings contradict its parent's access settings.
-        self.assertEqual(children_response[0]["validation_messages"][0]["type"], ValidationMessage.ERROR)
+        self.assertEqual(children_response[0]["validation_messages"][0]["type"], ValidationMessage.ERROR)  # noqa: PT009
 
         # Verify that html_unit_second has no validation messages.
-        self.assertFalse(children_response[1]["validation_messages"])
+        self.assertFalse(children_response[1]["validation_messages"])  # noqa: PT009

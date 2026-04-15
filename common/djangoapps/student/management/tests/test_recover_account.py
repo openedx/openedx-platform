@@ -3,20 +3,18 @@ Test cases for recover account management command
 """
 import re
 from tempfile import NamedTemporaryFile
-import pytest
 
-from django.core import mail
+import pytest
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.management import call_command, CommandError
+from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, RequestFactory, override_settings
-
-
+from django.core.management import CommandError, call_command
+from django.test import RequestFactory, TestCase, override_settings
 from testfixtures import LogCapture
-from common.djangoapps.student.tests.factories import UserFactory
-from common.djangoapps.student.models import AccountRecoveryConfiguration
 
+from common.djangoapps.student.models import AccountRecoveryConfiguration
+from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.recover_account'
@@ -84,7 +82,7 @@ class RecoverAccountTests(TestCase):
             assert len(mail.outbox) == 1
 
         authn_mfe_url = re.findall(settings.AUTHN_MICROFRONTEND_URL, mail.outbox[0].body)[0]
-        self.assertEqual(authn_mfe_url, settings.AUTHN_MICROFRONTEND_URL)
+        self.assertEqual(authn_mfe_url, settings.AUTHN_MICROFRONTEND_URL)  # noqa: PT009
 
     def test_file_not_found_error(self):
         """

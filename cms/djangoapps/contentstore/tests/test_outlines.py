@@ -9,8 +9,13 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.content.learning_sequences.api import get_course_outline
 from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData, ExamData, VisibilityData
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 from ..outlines import get_outline_from_modulestore
 
@@ -66,7 +71,7 @@ class OutlineFromModuleStoreTestCase(ModuleStoreTestCase):
         # published_at
         assert isinstance(outline.published_at, datetime)
         assert outline.published_at == published_course.subtree_edited_on
-        assert outline.published_at.tzinfo == timezone.utc
+        assert outline.published_at.tzinfo == timezone.utc  # noqa: UP017
 
         # published_version
         assert isinstance(outline.published_version, str)
@@ -517,7 +522,7 @@ class OutlineFromModuleStoreTaskTestCase(ModuleStoreTestCase):
     def test_task_invocation(self):
         """Test outline auto-creation after course publish"""
         course_key = CourseKey.from_string("course-v1:TNL+7733+2021-01-21")
-        with self.assertRaises(CourseOutlineData.DoesNotExist):
+        with self.assertRaises(CourseOutlineData.DoesNotExist):  # noqa: PT027
             get_course_outline(course_key)
 
         course = CourseFactory.create(

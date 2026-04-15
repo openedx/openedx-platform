@@ -14,7 +14,9 @@ from openedx.core.djangoapps.content.block_structure.block_structure import Bloc
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
 from openedx.core.djangoapps.content.block_structure.tests.helpers import ChildrenMapTestMixin
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import SampleCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -55,7 +57,7 @@ class BlockNavigationTransformerTestCase(TestCase, ChildrenMapTestMixin):
         block_structure._prune_unreachable()
 
         for block_key, expected_nav in enumerate(expected_nav_map):
-            self.assertSetEqual(
+            self.assertSetEqual(  # noqa: PT009
                 {str(block) for block in expected_nav},
                 set(
                     block_structure.get_transformer_block_field(

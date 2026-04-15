@@ -2,8 +2,8 @@
 
 import datetime
 import logging
-
 from zoneinfo import ZoneInfo
+
 from django.db import transaction
 
 from openedx.core.djangoapps.schedules.models import Schedule

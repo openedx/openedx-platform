@@ -228,7 +228,7 @@ class DjangoOrmFieldCache(metaclass=ABCMeta):
 
             except DatabaseError:
                 log.exception("Saving field %r failed", kvs_key.field_name)
-                raise KeyValueMultiSaveError(saved_fields)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise KeyValueMultiSaveError(saved_fields)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
             finally:
                 saved_fields.append(kvs_key.field_name)
@@ -406,7 +406,7 @@ class UserStateCache:
             )
         except DatabaseError:
             log.exception("Saving user state failed for %s", self.user.username)
-            raise KeyValueMultiSaveError([])  # lint-amnesty, pylint: disable=raise-missing-from
+            raise KeyValueMultiSaveError([])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         finally:
             self._cache.update(pending_updates)
 
@@ -841,7 +841,7 @@ class FieldDataCache:
                 saved_fields.extend(key.field_name for key in set_many_data)
             except KeyValueMultiSaveError as exc:
                 log.exception('Error saving fields %r', [key.field_name for key in set_many_data])
-                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def delete(self, key):
         """
@@ -954,7 +954,7 @@ class ScoresClient:
         """
         if not self._has_fetched:
             raise ValueError(
-                "Tried to fetch location {} from ScoresClient before fetch_scores() has run."
+                "Tried to fetch location {} from ScoresClient before fetch_scores() has run."  # noqa: UP032
                 .format(location)
             )
         return self._locations_to_scores.get(location.replace(version=None, branch=None))

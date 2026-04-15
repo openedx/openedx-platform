@@ -16,7 +16,9 @@ from lms.djangoapps.teams import api as teams_api
 from lms.djangoapps.teams.models import CourseTeam
 from lms.djangoapps.teams.tests.factories import CourseTeamFactory
 from openedx.core.lib.teams_config import TeamsConfig, TeamsetType
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 COURSE_KEY1 = CourseKey.from_string('course-v1:edx+history+1')
@@ -212,13 +214,13 @@ class PythonAPITests(SharedModuleStoreTestCase):
         """
         A learner should not be able to get IDs from members of a team they are not a member of
         """
-        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, self.user1, self.team2)
+        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, self.user1, self.team2)  # noqa: B017, PT027
 
     def test_anonymous_user_ids_for_team_bad_user_or_team(self):
         """
         An exception should be thrown when a bad user or team are passed to the endpoint
         """
-        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, None, self.team1)
+        self.assertRaises(Exception, teams_api.anonymous_user_ids_for_team, None, self.team1)  # noqa: B017, PT027
 
     def test_anonymous_user_ids_for_team_staff(self):
         """

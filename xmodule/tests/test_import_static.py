@@ -12,7 +12,7 @@ from xmodule.modulestore.tests.utils import (
     DOT_FILES_DICT,
     TILDA_FILES_DICT,
     add_temp_files_from_dict,
-    remove_temp_files_from_list
+    remove_temp_files_from_list,
 )
 from xmodule.modulestore.xml_importer import StaticContentImporter
 from xmodule.tests import DATA_DIR

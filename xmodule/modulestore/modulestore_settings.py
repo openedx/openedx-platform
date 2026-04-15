@@ -27,7 +27,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
             # migrate request for the old 'direct' Mongo store to the Draft store
             if store_settings['ENGINE'] == 'xmodule.modulestore.mongo.MongoModuleStore':
-                warnings.warn("MongoModuleStore is deprecated! Please use DraftModuleStore.", DeprecationWarning)
+                warnings.warn("MongoModuleStore is deprecated! Please use DraftModuleStore.", DeprecationWarning)  # noqa: B028  # pylint: disable=line-too-long
                 store_settings['ENGINE'] = 'xmodule.modulestore.mongo.draft.DraftModuleStore'
 
         return new_store_list
@@ -37,7 +37,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
     # Convert to Mixed, if needed
     if module_store_setting['default']['ENGINE'] != 'xmodule.modulestore.mixed.MixedModuleStore':
-        warnings.warn("Direct access to a modulestore is deprecated. Please use MixedModuleStore.", DeprecationWarning)
+        warnings.warn("Direct access to a modulestore is deprecated. Please use MixedModuleStore.", DeprecationWarning)  # noqa: B028  # pylint: disable=line-too-long
 
         # convert to using mixed module_store
         new_module_store_setting = {
@@ -58,7 +58,7 @@ def convert_module_store_setting_if_needed(module_store_setting):
 
     # Convert from dict, if needed
     elif isinstance(get_mixed_stores(module_store_setting), dict):
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "Using a dict for the Stores option in the MixedModuleStore is deprecated.  Please use a list instead.",
             DeprecationWarning
         )

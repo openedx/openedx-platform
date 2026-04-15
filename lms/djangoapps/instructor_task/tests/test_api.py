@@ -7,19 +7,18 @@ import json
 from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
+import ddt
 import pytest
 import pytz
-import ddt
-from testfixtures import LogCapture
 from celery.states import FAILURE, SUCCESS
-from xmodule.modulestore.exceptions import ItemNotFoundError
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from lms.djangoapps.bulk_email.api import create_course_email
 from lms.djangoapps.bulk_email.data import BulkEmailTargetChoices
-from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.api import get_certificate_generation_history
+from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.instructor_task.api import (
     SpecificStudentIdMissingError,
     generate_anonymous_ids,
@@ -59,8 +58,9 @@ from lms.djangoapps.instructor_task.tests.test_base import (
     InstructorTaskCourseTestCase,
     InstructorTaskModuleTestCase,
     InstructorTaskTestCase,
-    TestReportMixin
+    TestReportMixin,
 )
+from xmodule.modulestore.exceptions import ItemNotFoundError
 
 LOG_PATH = 'lms.djangoapps.instructor_task.api'
 
@@ -486,7 +486,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         This test generates three scheduled tasks; one that has been processed, one that is due for processing, and one
         that is due in the future. In this test, one only of these tasks should be eligible for processing.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         executed_instructor_task = self._generate_scheduled_task(task_state=SUCCESS)
         executed_instructor_task_due_date = base_date - datetime.timedelta(days=5)
         self._generate_scheduled_task_schedule(executed_instructor_task, executed_instructor_task_due_date)
@@ -518,7 +518,7 @@ class InstructorTaskCourseSubmitTest(TestReportMixin, InstructorTaskCourseTestCa
         A test that verifies the behavior of the `process_scheduled_tasks` function when there is an error processing
         the request.
         """
-        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+        base_date = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)  # noqa: UP017
         due_instructor_task = self._generate_scheduled_task()
         due_instructor_task_due_date = base_date - datetime.timedelta(days=1)
         self._generate_scheduled_task_schedule(due_instructor_task, due_instructor_task_due_date)

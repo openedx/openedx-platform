@@ -5,11 +5,11 @@ from unittest import mock
 
 import ddt
 from django.core.management import call_command
+
+from cms.djangoapps.contentstore.models import BackfillCourseTabsConfig
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-
-from cms.djangoapps.contentstore.models import BackfillCourseTabsConfig
 
 
 @ddt.ddt
@@ -140,7 +140,7 @@ class BackfillCourseTabsTest(ModuleStoreTestCase):
         updated_course = CourseFactory()
         updated_course.tabs = [tab for tab in updated_course.tabs if tab.type != 'dates']
         self.update_course(updated_course, ModuleStoreEnum.UserID.test)
-        updated_course_tabs_before = updated_course.tabs
+        updated_course_tabs_before = updated_course.tabs  # noqa: F841
 
         with mock.patch(
             'lms.djangoapps.ccx.modulestore.CCXModulestoreWrapper.update_item', side_effect=[ValueError, None]

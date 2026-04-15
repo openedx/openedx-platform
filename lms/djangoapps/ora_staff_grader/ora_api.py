@@ -16,11 +16,7 @@ from http import HTTPStatus
 
 from rest_framework.request import Request
 
-from lms.djangoapps.ora_staff_grader.errors import (
-    LockContestedError,
-    XBlockInternalError,
-)
-
+from lms.djangoapps.ora_staff_grader.errors import LockContestedError, XBlockInternalError
 from lms.djangoapps.ora_staff_grader.utils import call_xblock_json_handler, is_json
 
 
@@ -87,7 +83,7 @@ def get_submission_info(request, usage_id, submission_uuid):
     response = call_xblock_json_handler(request, usage_id, handler_name, data)
 
     if response.status_code != 200:
-        details = (
+        details = (  # noqa: F841
             json.loads(response.content).get("error", "")
             if is_json(response.content)
             else ""

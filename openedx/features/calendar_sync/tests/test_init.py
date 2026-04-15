@@ -20,7 +20,7 @@ class TestCalendarSyncInit(TestCase):
         date_type = 'due'
         hostname = 'example.com'
         event_id = get_calendar_event_id(self.user, block_key, date_type, hostname)
-        expected = '{user_id}.{block_key}.{date_type}@{hostname}'.format(
+        expected = '{user_id}.{block_key}.{date_type}@{hostname}'.format(  # noqa: UP032
             user_id=self.user.id, block_key=block_key, date_type=date_type, hostname=hostname
         )
         assert event_id == expected

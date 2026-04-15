@@ -12,11 +12,13 @@ from organizations.api import (
     add_organization_course,
     get_organization_by_short_name,
     get_organization_courses,
-    get_organizations
+    get_organizations,
 )
 
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import LibraryFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import backfill_orgs_and_org_courses
@@ -239,5 +241,5 @@ class BackfillOrgsAndOrgCoursesTest(SharedModuleStoreTestCase):
         """
         Test that calling the command with both "--dry" and "--apply" raises an exception.
         """
-        with self.assertRaises(CommandError):
+        with self.assertRaises(CommandError):  # noqa: PT027
             call_command("backfill_orgs_and_org_courses", "--dry", "--apply")

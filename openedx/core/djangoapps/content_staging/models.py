@@ -1,6 +1,7 @@
 """
 Models for content staging (and clipboard)
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,11 +12,11 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, UsageKey
-from openedx_django_lib.fields import MultiCollationTextField, case_insensitive_char_field
+from openedx_django_lib.fields import MultiCollationTextField, TypedAutoField, case_insensitive_char_field
 
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 
-from .data import CLIPBOARD_PURPOSE, StagedContentStatus
+from .data import CLIPBOARD_PURPOSE, StagedContentID, StagedContentStatus
 
 log = logging.getLogger(__name__)
 
@@ -42,9 +43,14 @@ class StagedContent(models.Model):
     class Meta:
         verbose_name_plural = _("Staged Content")
 
-    id = models.AutoField(primary_key=True)
+    type ID = StagedContentID
+
+    class IDField(TypedAutoField[ID]):
+        pass
+
+    id = IDField(primary_key=True)
     # The user that created and owns this staged content. Only this user can read it.
-    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, null=False, on_delete=models.CASCADE)  # noqa: DJ012
     created = models.DateTimeField(null=False, auto_now_add=True)
     # What this StagedContent is for (e.g. "clipboard" for clipboard)
     purpose = models.CharField(max_length=64)
@@ -77,12 +83,12 @@ class StagedContent(models.Model):
         """ Get a filename that can be used for the OLX content of this staged content """
         return f"{self.suggested_url_name}.xml"
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         """ String representation of this instance """
         return f'Staged {self.block_type} block "{self.display_name}" ({self.status})'
 
 
-class StagedContentFile(models.Model):
+class StagedContentFile(models.Model):  # noqa: DJ008
     """
     A data file ("Static Asset") associated with some StagedContent.
 
@@ -101,7 +107,7 @@ class StagedContentFile(models.Model):
     md5_hash = models.CharField(max_length=32, blank=True)
 
 
-class UserClipboard(models.Model):
+class UserClipboard(models.Model):  # noqa: DJ008
     """
     Each user has a clipboard that can hold one item at a time, where an item
     is some OLX content that can be used in a course, such as an XBlock, a Unit,
@@ -157,7 +163,7 @@ class UserClipboard(models.Model):
                 f"StagedContent.purpose must be '{CLIPBOARD_PURPOSE}' to use it as clipboard content."
             )
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # noqa: DJ012
         """ Save this model instance """
         # Enforce checks on save:
         self.full_clean()

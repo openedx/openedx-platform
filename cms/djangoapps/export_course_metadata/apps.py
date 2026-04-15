@@ -15,4 +15,4 @@ class ExportCourseMetadataConfig(AppConfig):
         """
         Connect signal handler that exports course metadata
         """
-        from . import signals  # pylint: disable=unused-import
+        from . import signals  # pylint: disable=unused-import  # noqa: F401

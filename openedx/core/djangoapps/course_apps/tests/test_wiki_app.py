@@ -5,7 +5,9 @@ Tests for wiki course app.
 from lms.djangoapps.course_wiki.plugins.course_app import WikiCourseApp
 from openedx.core.djangoapps.course_apps.tests.utils import TabBasedCourseAppTestMixin
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_cms

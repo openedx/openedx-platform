@@ -7,7 +7,6 @@ from oauth2_provider.models import AccessToken
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import assert_dict_contains_subset
-
 from openedx.core.djangoapps.oauth_dispatch import api
 from openedx.core.djangoapps.oauth_dispatch.adapters import DOTAdapter
 from openedx.core.djangoapps.oauth_dispatch.tests.constants import DUMMY_REDIRECT_URL

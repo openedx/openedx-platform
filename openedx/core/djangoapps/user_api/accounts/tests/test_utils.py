@@ -7,12 +7,17 @@ from completion.test_utils import CompletionWaffleTestMixin
 from django.test import TestCase
 from django.test.utils import override_settings
 
-from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
+from openedx.core.djangolib.testing.utils import skip_unless_lms
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
 
 from ..utils import format_social_link, validate_social_link
 
@@ -120,7 +125,7 @@ class CompletionUtilsTestCase(SharedModuleStoreTestCase, CompletionWaffleTestMix
         )
         assert block_url ==\
                'test_url:9999/courses/course-v1:{org}+{course}+{run}/jump_to/'\
-               'block-v1:{org}+{course}+{run}+type@vertical+block@{vertical_id}'.format(
+               'block-v1:{org}+{course}+{run}+type@vertical+block@{vertical_id}'.format(  # noqa: UP032
                    org=self.course.location.course_key.org,
                    course=self.course.location.course_key.course,
                    run=self.course.location.course_key.run,

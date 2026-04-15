@@ -92,7 +92,7 @@ class DiscussionXBlockImportExportTests(TestCase):
             {category_attr}="{category_value}"
             {target_attr}="{target_value}"
         />
-        """.format(
+        """.format(  # noqa: UP032
             id_attr=id_pair.name, id_value=id_pair.value,
             category_attr=category_pair.name, category_value=category_pair.value,
             target_attr=target_pair.name, target_value=target_pair.value,
@@ -123,7 +123,7 @@ class DiscussionXBlockImportExportTests(TestCase):
             {id_attr}="{id_value}"
             {category_attr}="{category_value}"
             {target_attr}="{target_value}"
-        />""".format(
+        />""".format(  # noqa: UP032
             id_attr=id_pair.name, id_value=id_pair.value,
             category_attr=category_pair.name, category_value=category_pair.value,
             target_attr=target_pair.name, target_value=target_pair.value,

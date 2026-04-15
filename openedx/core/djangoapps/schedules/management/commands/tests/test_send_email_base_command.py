@@ -6,9 +6,9 @@ Tests for send_email_base_command
 import datetime
 from unittest import skipUnless
 from unittest.mock import DEFAULT, Mock, patch
+from zoneinfo import ZoneInfo
 
 import ddt
-from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.contrib.sites.models import Site
 

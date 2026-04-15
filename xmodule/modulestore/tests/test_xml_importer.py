@@ -6,8 +6,8 @@ Tests for XML importer.
 import importlib
 import os
 import unittest
-from uuid import uuid4
 from unittest import mock
+from uuid import uuid4
 
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator
@@ -31,7 +31,7 @@ class ModuleStoreNoSettings(unittest.TestCase):
     """
     HOST = MONGO_HOST
     PORT = MONGO_PORT_NUM
-    DB = 'test_mongo_%s' % uuid4().hex[:5]
+    DB = 'test_mongo_%s' % uuid4().hex[:5]  # noqa: UP031
     COLLECTION = 'modulestore'
     FS_ROOT = DATA_DIR
     DEFAULT_CLASS = 'xmodule.modulestore.tests.test_xml_importer.StubXBlock'

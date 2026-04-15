@@ -2,13 +2,13 @@
 Unified course experience settings and helper methods.
 """
 
-from django.urls import reverse
+from django.urls import reverse  # noqa: F401
 from django.utils.translation import gettext as _
 from edx_toggles.toggles import WaffleFlag
-from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 from openedx_filters.exceptions import OpenEdxFilterException
 from openedx_filters.learning.filters import CourseHomeUrlCreationStarted
 
+from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 
 # Namespace for course experience waffle flags.
 WAFFLE_FLAG_NAMESPACE = 'course_experience'
@@ -140,7 +140,7 @@ def course_home_url(course_key):
         course_key, home_url = CourseHomeUrlCreationStarted.run_filter(
             course_key=course_key, course_home_url=home_url
         )
-    except OpenEdxFilterException as exc:
+    except OpenEdxFilterException as exc:  # noqa: F841
         pass
 
     return home_url

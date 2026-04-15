@@ -324,7 +324,7 @@ def update_enrollment(
         }
 
     """
-    log.info('Starting Update Enrollment process for user {user} in course {course} to mode {mode}'.format(
+    log.info('Starting Update Enrollment process for user {user} in course {course} to mode {mode}'.format(  # noqa: UP032  # pylint: disable=line-too-long
         user=username,
         course=course_id,
         mode=mode,
@@ -339,7 +339,7 @@ def update_enrollment(
     else:
         if enrollment_attributes is not None:
             set_enrollment_attributes(username, course_id, enrollment_attributes)
-    log.info('Course Enrollment updated for user {user} in course {course} to mode {mode}'.format(
+    log.info('Course Enrollment updated for user {user} in course {course} to mode {mode}'.format(  # noqa: UP032
         user=username,
         course=course_id,
         mode=mode
@@ -406,7 +406,7 @@ def get_course_enrollment_details(course_id, include_expired=False):
     except Exception:
         # Catch any unexpected errors during caching.
         log.exception("Error occurred while caching course enrollment details for course %s", course_id)
-        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise errors.CourseEnrollmentError("An unexpected error occurred while retrieving course enrollment details.")  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return course_enrollment_details
 
@@ -615,4 +615,4 @@ def _data_api():
         return importlib.import_module(api_path)
     except (ImportError, ValueError):
         log.exception(f"Could not load module at '{api_path}'")
-        raise errors.EnrollmentApiLoadError(api_path)  # lint-amnesty, pylint: disable=raise-missing-from
+        raise errors.EnrollmentApiLoadError(api_path)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904

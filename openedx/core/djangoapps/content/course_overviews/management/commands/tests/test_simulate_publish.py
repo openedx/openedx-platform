@@ -11,7 +11,9 @@ from openedx.core.djangoapps.content.course_overviews.management.commands.simula
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, SimulateCoursePublishConfig
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import SwitchedSignal  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 LOGGER_NAME = 'simulate_publish'
@@ -150,7 +152,7 @@ class TestSimulatePublish(SharedModuleStoreTestCase):
     def test_args_from_database(self):
         """Test management command arguments injected from config model."""
         # Nothing in the database, should default to disabled
-        with self.assertRaisesRegex(CommandError, 'SimulateCourseConfigPublish is disabled.*'):
+        with self.assertRaisesRegex(CommandError, 'SimulateCourseConfigPublish is disabled.*'):  # noqa: PT027
             call_command('simulate_publish', '--args-from-database')
 
         # Add a config

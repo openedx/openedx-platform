@@ -8,8 +8,8 @@ from django.utils.translation import gettext as _
 from django.views.generic.edit import FormView
 from enterprise.models import EnterpriseCourseEnrollment
 
-from openedx.features.enterprise_support.admin.forms import CSVImportForm
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAttribute
+from openedx.features.enterprise_support.admin.forms import CSVImportForm
 
 
 class EnrollmentAttributeOverrideView(FormView):

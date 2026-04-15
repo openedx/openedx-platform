@@ -1,30 +1,30 @@
 """
 Test cases for image processing functions in the profile image package.
 """
+import os  # lint-amnesty, pylint: disable=wrong-import-order
 from contextlib import closing
+from itertools import product  # lint-amnesty, pylint: disable=wrong-import-order
+from tempfile import NamedTemporaryFile  # lint-amnesty, pylint: disable=wrong-import-order
 from unittest import mock
 
+import ddt
+import piexif
 import pytest
-from itertools import product  # lint-amnesty, pylint: disable=wrong-import-order
-import os  # lint-amnesty, pylint: disable=wrong-import-order
-from tempfile import NamedTemporaryFile  # lint-amnesty, pylint: disable=wrong-import-order
-
 from django.core.files.uploadedfile import UploadedFile
 from django.test import TestCase
 from django.test.utils import override_settings
-import ddt
-import piexif
 from PIL import Image
 
 from openedx.core.djangolib.testing.utils import skip_unless_lms
+
 from ..exceptions import ImageValidationError
 from ..images import (
+    _get_exif_orientation,
+    _get_valid_file_types,
+    _update_exif_orientation,
     create_profile_images,
     remove_profile_images,
     validate_uploaded_image,
-    _get_exif_orientation,
-    _get_valid_file_types,
-    _update_exif_orientation
 )
 from .helpers import make_image_file, make_uploaded_file
 
@@ -36,7 +36,7 @@ class TestValidateUploadedImage(TestCase):
     Test validate_uploaded_image
     """
     FILE_UPLOAD_BAD_TYPE = (
-        'The file must be one of the following types: {valid_file_types}.'.format(
+        'The file must be one of the following types: {valid_file_types}.'.format(  # noqa: UP032
             valid_file_types=_get_valid_file_types()
         )
     )
@@ -61,7 +61,7 @@ class TestValidateUploadedImage(TestCase):
     )
     @ddt.unpack
     @override_settings(PROFILE_IMAGE_MIN_BYTES=100, PROFILE_IMAGE_MAX_BYTES=1024)
-    def test_file_size(self, upload_size, expected_failure_message=None):
+    def test_file_size(self, upload_size, expected_failure_message=None):  # noqa: PT028
         """
         Ensure that files outside the accepted size range fail validation.
         """
@@ -79,7 +79,7 @@ class TestValidateUploadedImage(TestCase):
         (".tif", "image/tiff", FILE_UPLOAD_BAD_TYPE),
     )
     @ddt.unpack
-    def test_extension(self, extension, content_type, expected_failure_message=None):
+    def test_extension(self, extension, content_type, expected_failure_message=None):  # noqa: PT028
         """
         Ensure that files whose extension is not supported fail validation.
         """

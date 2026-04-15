@@ -9,9 +9,9 @@ import ddt
 from django.contrib.messages.middleware import MessageMiddleware
 from django.test import RequestFactory, TestCase
 
+from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from openedx.core.djangolib.markup import HTML, Text
-from common.djangoapps.student.tests.factories import UserFactory
 
 from ..user_messages import PageLevelMessages, UserMessageType
 

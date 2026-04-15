@@ -6,7 +6,6 @@ from unittest import mock
 import ddt
 import httpretty
 import pytest
-from testfixtures import LogCapture
 from consent.models import DataSharingConsent
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
@@ -14,10 +13,11 @@ from django.core.cache import cache
 from django.http import HttpResponseRedirect
 from django.test.utils import override_settings
 from django.urls import reverse
-from edx_django_utils.cache import get_cache_key, TieredCache
+from edx_django_utils.cache import TieredCache, get_cache_key
 from enterprise.models import EnterpriseCustomerUser  # lint-amnesty, pylint: disable=wrong-import-order
 from requests.exceptions import HTTPError
 from six.moves.urllib.parse import parse_qs
+from testfixtures import LogCapture
 
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteFactory
@@ -1371,7 +1371,7 @@ class TestEnterpriseApi(EnterpriseServiceMockMixin, CacheIsolationTestCase):
             provider_id='the-provider',
         )
         customer = customer_idp.enterprise_customer
-        customer_user = EnterpriseCustomerUserFactory.create(  # lint-amnesty, pylint: disable=unused-variable
+        customer_user = EnterpriseCustomerUserFactory.create(  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
             enterprise_customer=customer,
             user_id=self.user.id,
         )

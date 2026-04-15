@@ -45,7 +45,7 @@ class CourseRunTeamSerializer(serializers.Serializer):  # lint-amnesty, pylint: 
             try:
                 User.objects.get(username=member['user'])
             except User.DoesNotExist:
-                raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+                raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                     _('Course team user does not exist')
                 )
 
@@ -171,7 +171,7 @@ class CourseRunRerunSerializer(CourseRunSerializerCommonFieldsMixin, CourseRunTe
             with store.default_store('split'):
                 new_course_run_key = store.make_course_key(course_run_key.org, number, run)
         except InvalidKeyError:
-            raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise serializers.ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 'Invalid key supplied. Ensure there are no special characters in the Course Number.'
             )
         if store.has_course(new_course_run_key, ignore_case=True):

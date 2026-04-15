@@ -8,22 +8,23 @@ from urllib.parse import urljoin
 import attr
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from django.templatetags.static import static
 from django.db.models import Exists, F, OuterRef, Q
+from django.templatetags.static import static
 from django.urls import reverse
 from edx_ace.recipient import Recipient
 from edx_ace.recipient_resolver import RecipientResolver
 from edx_django_utils.monitoring import function_trace, set_custom_attribute
 from openedx_filters.learning.filters import ScheduleQuerySetRequested
 
-from lms.djangoapps.courseware.utils import verified_upgrade_deadline_link, can_show_verified_upgrade
+from lms.djangoapps.courseware.utils import can_show_verified_upgrade, verified_upgrade_deadline_link
 from lms.djangoapps.discussion.notification_prefs.views import UsernameCipher
 from openedx.core.djangoapps.ace_common.template_context import get_base_template_context
 from openedx.core.djangoapps.course_date_signals.utils import get_expected_duration
 from openedx.core.djangoapps.schedules.config import (
-    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH, query_external_updates
+    COURSE_UPDATE_SHOW_UNSUBSCRIBE_WAFFLE_SWITCH,
+    query_external_updates,
 )
-from openedx.core.djangoapps.schedules.content_highlights import get_week_highlights, get_next_section_highlights
+from openedx.core.djangoapps.schedules.content_highlights import get_next_section_highlights, get_week_highlights
 from openedx.core.djangoapps.schedules.exceptions import CourseUpdateDoesNotExist
 from openedx.core.djangoapps.schedules.message_types import CourseUpdate, InstructorLedCourseUpdate
 from openedx.core.djangoapps.schedules.models import Schedule, ScheduleExperience
@@ -383,7 +384,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -413,7 +414,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
             except CourseUpdateDoesNotExist:
                 LOG.warning(
-                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(
+                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(  # noqa: UP032  # pylint: disable=line-too-long
                         user, week_num, enrollment.course_id
                     )
                 )
@@ -471,13 +472,13 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for course-key: {}'.format(
+                'Sending email to user: {} for course-key: {}'.format(  # noqa: UP032
                     user.username,
                     self.course_id
                 )
             )
             LOG.info(
-                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(
+                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
                     user.username,
                     self.course_id,
                     language
@@ -517,7 +518,7 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
 
             user = schedule.enrollment.user
             start_date = max(filter(None, (schedule.start_date, course.start)))
-            LOG.info('Received a schedule for user {} in course {} for date {}'.format(
+            LOG.info('Received a schedule for user {} in course {} for date {}'.format(  # noqa: UP032
                 user.username, self.course_id, target_date,
             ))
 

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from uuid import UUID
 
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _  # noqa: F401
 from opaque_keys.edx.keys import UsageKey
 from opaque_keys.edx.locator import (
     CourseLocator,
@@ -39,7 +39,7 @@ class CompositionLevel(Enum):
     def is_container(self) -> bool:
         return self is not self.Component
 
-    def is_higher_than(self, other: 'CompositionLevel') -> bool:
+    def is_higher_than(self, other: 'CompositionLevel') -> bool:  # noqa: UP037
         """
         Is this composition level 'above' (more complex than) the other?
         """
@@ -85,7 +85,7 @@ class RepeatHandlingStrategy(Enum):
         return cls.Skip
 
 
-SourceContextKey: t.TypeAlias = CourseLocator | LibraryLocator
+SourceContextKey: t.TypeAlias = CourseLocator | LibraryLocator  # noqa: UP040
 
 
 @dataclass(frozen=True)

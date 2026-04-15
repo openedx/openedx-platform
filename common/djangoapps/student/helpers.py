@@ -32,28 +32,28 @@ from common.djangoapps.student.models import (
     UserProfile,
     email_exists_or_retired,
     unique_id_for_user,
-    username_exists_or_retired
+    username_exists_or_retired,
 )
 from common.djangoapps.util.password_policy_validators import normalize_password
 from lms.djangoapps.certificates.api import (
+    auto_certificate_generation_enabled,
+    certificate_status_for_student,
     certificates_viewable_for_course,
-    has_self_generated_certificates_enabled,
     get_certificate_url,
     has_html_certificates_enabled,
-    certificate_status_for_student,
-    auto_certificate_generation_enabled,
+    has_self_generated_certificates_enabled,
 )
 from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.course_blocks.api import get_course_blocks
+from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
+from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
+from lms.djangoapps.courseware.courses import get_course_date_blocks, get_course_with_access
+from lms.djangoapps.courseware.date_summary import TodaysDate
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.instructor import access
 from lms.djangoapps.verify_student.models import VerificationDeadline
 from lms.djangoapps.verify_student.services import IDVerificationService
 from lms.djangoapps.verify_student.utils import is_verification_expiring_soon, verification_for_datetime
-from lms.djangoapps.courseware.courses import get_course_date_blocks, get_course_with_access
-from lms.djangoapps.courseware.date_summary import TodaysDate
-from lms.djangoapps.courseware.context_processor import user_timezone_locale_prefs
-from lms.djangoapps.course_home_api.dates.serializers import DateSummarySerializer
 from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyNotInBlockStructure
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.djangoapps.theming.helpers import get_themes
@@ -232,7 +232,7 @@ def check_verify_status_by_course(user, course_enrollments):
                 }
 
     if recent_verification_datetime:
-        for key, value in status_by_course.items():  # pylint: disable=unused-variable
+        for key, value in status_by_course.items():  # pylint: disable=unused-variable  # noqa: B007
             status_by_course[key]['verification_good_until'] = recent_verification_datetime.strftime("%m/%d/%Y")
 
     return status_by_course
@@ -715,13 +715,13 @@ def do_create_account(form, custom_form=None):
         # return "It looks like {username} belongs to an existing account. Try again with a
         # different username.")
         if username_exists_or_retired(user.username):  # lint-amnesty, pylint: disable=no-else-raise
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 USERNAME_EXISTS_MSG_FMT.format(username=proposed_username),
                 field="username",
                 error_code='duplicate-username',
             )
         elif email_exists_or_retired(user.email):
-            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from
+            raise AccountValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 _("An account with the Email '{email}' already exists.").format(email=user.email),
                 field="email",
                 error_code='duplicate-email'

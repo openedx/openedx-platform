@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 User = get_user_model()
 
 
-class UserTour(models.Model):
+class UserTour(models.Model):  # noqa: DJ008
     """
     Model to track which tours a user needs to be shown.
 
@@ -27,7 +27,7 @@ class UserTour(models.Model):
     user = models.OneToOneField(User, related_name='tour', on_delete=models.CASCADE)
 
 
-class UserDiscussionsTours(models.Model):
+class UserDiscussionsTours(models.Model):  # noqa: DJ008
     """
     Model to track which discussions tours a user has seen.
 

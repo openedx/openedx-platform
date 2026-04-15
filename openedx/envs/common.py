@@ -25,34 +25,30 @@ def center_with_hashes(text: str, width: int = 76):
     print(f"{f' {text} ':#^{width}}")
 ```
 """
-import os
 import importlib.util
-from path import Path as path
+import os
 
 from django.utils.translation import gettext_lazy as _
+from path import Path as path
 
-from openedx.core.lib.derived import Derived
-from openedx.core.release import doc_version
-from openedx.core.djangoapps.theming.helpers_dirs import (
-    get_themes_unchecked,
-    get_theme_base_dirs_from_settings
-)
+from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 
 # We have legacy components that reference these constants via the settings module.
 # New code should import them directly from `openedx.core.constants` instead.
 from openedx.core.constants import (  # pylint: disable=unused-import
-    ASSET_KEY_PATTERN,
-    COURSE_KEY_REGEX,
-    COURSE_KEY_PATTERN,
-    COURSE_ID_PATTERN,
-    USAGE_KEY_PATTERN,
-    USAGE_ID_PATTERN,
+    ASSET_KEY_PATTERN,  # noqa: F401
+    COURSE_ID_PATTERN,  # noqa: F401
+    COURSE_KEY_PATTERN,  # noqa: F401
+    COURSE_KEY_REGEX,  # noqa: F401
+    USAGE_ID_PATTERN,  # noqa: F401
+    USAGE_KEY_PATTERN,  # noqa: F401
 )
-
+from openedx.core.djangoapps.theming.helpers_dirs import get_theme_base_dirs_from_settings, get_themes_unchecked
+from openedx.core.lib.derived import Derived
+from openedx.core.release import doc_version
 from xmodule.modulestore.edit_info import EditInfoMixin
 from xmodule.modulestore.inheritance import InheritanceMixin
 from xmodule.x_module import XModuleMixin
-from lms.djangoapps.lms_xblock.mixin import LmsBlockMixin
 
 ################ Shared Functions for Derived Configuration ################
 
@@ -2667,6 +2663,14 @@ NOTIFICATION_DIGEST_LOGO = DEFAULT_EMAIL_LOGO_URL
 NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES = 15  # in minutes
 NOTIFICATION_TYPE_ICONS = {}
 DEFAULT_NOTIFICATION_ICON_URL = ""
+
+# Digest email delivery schedule settings (all times in UTC).
+# Instance operators can override these to control when daily/weekly digest emails are sent.
+NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR = 17   # Hour of day (0-23) to send daily digest (default: 5 PM UTC)
+NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE = 0  # Minute of hour (0-59) to send daily digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY = 0    # Day of week (0=Monday, 6=Sunday) to send weekly digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR = 17  # Hour of day (0-23) to send weekly digest (default: 5 PM UTC)
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE = 0 # Minute of hour (0-59) to send weekly digest
 
 # These settings are used to override the default notification preferences values for apps and types.
 # Here is complete documentation about how to use them: openedx/core/djangoapps/notifications/docs/settings.md

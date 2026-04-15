@@ -60,7 +60,7 @@ def clean_json(value, of_type):
     try:
         value_python = json.loads(value)
     except ValueError as err:
-        raise ValidationError(f"Invalid JSON: {err}")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValidationError(f"Invalid JSON: {err}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     if not isinstance(value_python, of_type):
         raise ValidationError(f"Expected a JSON {of_type}")
     return json.dumps(value_python, indent=4)
@@ -425,7 +425,7 @@ class OAuth2ProviderConfig(ProviderConfig):
         site.
         """
         site_id = Site.objects.get_current(get_current_request()).id
-        return super(OAuth2ProviderConfig, cls).current(site_id, *args)
+        return super(OAuth2ProviderConfig, cls).current(site_id, *args)  # noqa: UP008
 
     @property
     def provider_id(self):
@@ -540,7 +540,7 @@ class SAMLConfiguration(ConfigurationModel):
         """
         Return human-readable string representation.
         """
-        return "SAMLConfiguration {site}: {slug} on {date:%Y-%m-%d %H:%M:%S}".format(
+        return "SAMLConfiguration {site}: {slug} on {date:%Y-%m-%d %H:%M:%S}".format(  # noqa: UP032
             site=self.site.name,
             slug=self.slug,
             date=self.change_date,
@@ -909,7 +909,7 @@ class SAMLProviderConfig(ProviderConfig):
         return idp_class(backend, self.slug, **conf)
 
 
-class SAMLProviderData(models.Model):
+class SAMLProviderData(models.Model):  # noqa: DJ008
     """
     Data about a SAML IdP that is fetched automatically by 'manage.py saml pull'
 
@@ -1059,13 +1059,13 @@ class AppleMigrationUserIdInfo(models.Model):
     process of Apple team from edx Inc. to edx LLC.
     """
     old_apple_id = models.CharField(max_length=255)
-    transfer_id = models.CharField(max_length=255, null=True, blank=True)
-    new_apple_id = models.CharField(max_length=255, null=True, blank=True)
+    transfer_id = models.CharField(max_length=255, null=True, blank=True)  # noqa: DJ001
+    new_apple_id = models.CharField(max_length=255, null=True, blank=True)  # noqa: DJ001
 
     def __str__(self):
         return self.old_apple_id
 
-    class Meta:
+    class Meta:  # noqa: DJ012
         app_label = "third_party_auth"
         verbose_name = "Apple User Id Migration Info"
         verbose_name_plural = verbose_name

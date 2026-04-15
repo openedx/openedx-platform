@@ -2,11 +2,12 @@
 Test that various filters are fired for models/views in the student app.
 """
 from django.test import override_settings
-from common.djangoapps.util import course
 from openedx_filters import PipelineStep
+
+from common.djangoapps.util import course
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory
-from openedx.core.djangolib.testing.utils import skip_unless_lms
 
 
 class TestPageURLRequestedPipelineStep(PipelineStep):
@@ -56,7 +57,7 @@ class CourseAboutPageURLRequestedFiltersTest(ModuleStoreTestCase):
         """
         course_about_url = course.get_link_for_about_page(self.course)
 
-        self.assertEqual("https://lms-url-creation", course_about_url)
+        self.assertEqual("https://lms-url-creation", course_about_url)  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={}, LMS_ROOT_URL="https://lms-base")
     def test_course_about_page_url_requested_without_filter_configuration(self):
@@ -74,4 +75,4 @@ class CourseAboutPageURLRequestedFiltersTest(ModuleStoreTestCase):
             course_key=str(self.course.id),
         )
 
-        self.assertEqual(expected_course_about, course_about_url)
+        self.assertEqual(expected_course_about, course_about_url)  # noqa: PT009

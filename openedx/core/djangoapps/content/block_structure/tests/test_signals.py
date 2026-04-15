@@ -3,9 +3,10 @@ Unit tests for the Course Blocks signals
 """
 from unittest.mock import patch
 
-import pytest
 import ddt
+import pytest
 from opaque_keys.edx.locator import CourseLocator, LibraryLocator
+
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory

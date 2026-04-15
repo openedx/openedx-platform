@@ -33,14 +33,14 @@ from common.djangoapps.util.model_utils import truncate_fields
 from lms.djangoapps.courseware.courses import get_course_with_access, has_access
 from lms.djangoapps.discussion.django_comment_client.utils import has_discussion_privileges
 from lms.djangoapps.teams.models import CourseTeam, CourseTeamMembership
-from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser, BearerAuthentication
+from openedx.core.lib.api.authentication import BearerAuthentication, BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.parsers import MergePatchParser
 from openedx.core.lib.api.permissions import IsCourseStaffInstructor, IsStaffOrReadOnly
 from openedx.core.lib.api.view_utils import (
     ExpandableFieldViewMixin,
     RetrievePatchAPIView,
     add_serializer_errors,
-    build_api_error
+    build_api_error,
 )
 from openedx.core.lib.teams_config import TeamsetType
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
@@ -56,7 +56,7 @@ from .api import (
     has_specific_team_access,
     has_specific_teamset_access,
     has_team_api_access,
-    user_organization_protection_status
+    user_organization_protection_status,
 )
 from .csv import TeamMembershipImportManager, load_team_membership_csv
 from .errors import AlreadyOnTeamInTeamset, ElasticSearchConnectionError, NotEnrolledInCourseForTeam
@@ -66,7 +66,7 @@ from .serializers import (
     CourseTeamCreationSerializer,
     CourseTeamSerializer,
     MembershipSerializer,
-    TopicSerializer
+    TopicSerializer,
 )
 from .toggles import are_team_submissions_enabled
 from .utils import emit_team_event
@@ -526,7 +526,7 @@ class TeamsListView(ExpandableFieldViewMixin, GenericAPIView):
         if order_by_input not in ordering_schemes:
             return Response(
                 {
-                    'developer_message': "unsupported order_by value {ordering}".format(
+                    'developer_message': "unsupported order_by value {ordering}".format(  # noqa: UP032
                         ordering=order_by_input,
                     ),
                     # Translators: 'ordering' is a string describing a way
@@ -916,7 +916,7 @@ class TeamsAssignmentsView(GenericAPIView):
         unit = modulestore().get_item(block.parent)
         section = modulestore().get_item(unit.parent)
 
-        return "{section}: {unit}".format(
+        return "{section}: {unit}".format(  # noqa: UP032
             section=section.display_name,
             unit=unit.display_name
         )
@@ -1594,14 +1594,14 @@ class MembershipDetailView(ExpandableFieldViewMixin, GenericAPIView):
         try:
             return CourseTeam.objects.get(team_id=team_id)
         except CourseTeam.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def get_membership(self, username, team):
         """Returns the membership for the given user and team, or throws Http404 if it does not exist."""
         try:
             return CourseTeamMembership.objects.get(user__username=username, team=team)
         except CourseTeamMembership.DoesNotExist:
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     def get(self, request, team_id, username):
         """GET /api/team/v0/team_membership/{team_id},{username}"""
@@ -1663,7 +1663,7 @@ class MembershipBulkManagementView(GenericAPIView):
         """
         self.check_access()
         response = HttpResponse(content_type='text/csv')
-        filename = "team-membership_{}_{}_{}.csv".format(
+        filename = "team-membership_{}_{}_{}.csv".format(  # noqa: UP032
             self.course.id.org, self.course.id.course, self.course.id.run
         )
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -1694,7 +1694,7 @@ class MembershipBulkManagementView(GenericAPIView):
         """
         if not has_course_staff_privileges(self.request.user, self.course.id):
             raise PermissionDenied(
-                "To manage team membership of {}, you must be course staff.".format(
+                "To manage team membership of {}, you must be course staff.".format(  # noqa: UP032
                     self.course.id
                 )
             )
@@ -1711,7 +1711,7 @@ class MembershipBulkManagementView(GenericAPIView):
         try:
             course_id = CourseKey.from_string(course_id_string)
         except InvalidKeyError:
-            raise Http404(f'Invalid course key: {course_id_string}')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404(f'Invalid course key: {course_id_string}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         course_block = modulestore().get_course(course_id)
         if not course_block:
             raise Http404(f'Course not found: {course_id}')

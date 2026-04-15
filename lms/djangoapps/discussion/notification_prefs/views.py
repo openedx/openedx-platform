@@ -73,7 +73,7 @@ class UsernameCipher:
         try:
             base64_decoded = urlsafe_b64decode(token)
         except (TypeError, Error):
-            raise UsernameDecryptionException("base64url")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise UsernameDecryptionException("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         if len(base64_decoded) < AES_BLOCK_SIZE_BYTES:
             raise UsernameDecryptionException("initialization_vector")
@@ -87,7 +87,7 @@ class UsernameCipher:
         try:
             decrypted = decryptor.update(aes_encrypted) + decryptor.finalize()
         except ValueError:
-            raise UsernameDecryptionException("aes")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise UsernameDecryptionException("aes")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         try:
             unpadded = unpadder.update(decrypted) + unpadder.finalize()
@@ -95,7 +95,7 @@ class UsernameCipher:
                 raise UsernameDecryptionException("padding")
             return unpadded
         except ValueError:
-            raise UsernameDecryptionException("padding")  # lint-amnesty, pylint: disable=raise-missing-from
+            raise UsernameDecryptionException("padding")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
 def enable_notifications(user):
@@ -185,11 +185,11 @@ def set_subscription(request, token, subscribe):
         username = UsernameCipher().decrypt(token.encode()).decode()
         user = User.objects.get(username=username)
     except UnicodeDecodeError:
-        raise Http404("base64url")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except UsernameDecryptionException as exn:
-        raise Http404(str(exn))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404(str(exn))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except User.DoesNotExist:
-        raise Http404("username")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("username")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     # Calling UserPreference directly because the fact that the user is passed in the token implies
     # that it may not match request.user.

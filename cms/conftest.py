@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Studio unit test configuration and fixtures.
 
@@ -13,7 +14,7 @@ import pytest
 from openedx.core.pytest_hooks import DeferPlugin
 
 # Patch the xml libs before anything else.
-from openedx.core.lib.safe_lxml import defuse_xml_libs  # isort:skip
+from openedx.core.lib.safe_lxml import defuse_xml_libs  # must patch xml libs before other imports execute
 defuse_xml_libs()
 
 
@@ -27,7 +28,7 @@ def pytest_configure(config):
         logging.info("pytest did not register json_report correctly")
 
 
-@pytest.fixture(autouse=True, scope='function')
+@pytest.fixture(autouse=True, scope='function')  # noqa: PT003
 def _django_clear_site_cache():
     """
     pytest-django uses this fixture to automatically clear the Site object

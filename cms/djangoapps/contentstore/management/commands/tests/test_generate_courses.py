@@ -34,7 +34,7 @@ class TestGenerateCourses(ModuleStoreTestCase):
         arg = json.dumps(settings)
         call_command("generate_courses", arg)
         key = modulestore().make_course_key("test-course-generator", "1", "1")
-        self.assertTrue(modulestore().has_course(key))
+        self.assertTrue(modulestore().has_course(key))  # noqa: PT009
         mock_logger.info.assert_any_call("Created course-v1:test-course-generator+1+1")
         mock_logger.info.assert_any_call("announcement has been set to 2010-04-20T20:08:21.634121")
         mock_logger.info.assert_any_call("display_name has been set to test-course")
@@ -43,7 +43,7 @@ class TestGenerateCourses(ModuleStoreTestCase):
         """
         Test that providing an invalid JSON object will result in the appropriate command error
         """
-        with self.assertRaisesRegex(CommandError, "Invalid JSON object"):
+        with self.assertRaisesRegex(CommandError, "Invalid JSON object"):  # noqa: PT027
             arg = "invalid_json"
             call_command("generate_courses", arg)
 
@@ -51,7 +51,7 @@ class TestGenerateCourses(ModuleStoreTestCase):
         """
         Test that a missing list of courses in json will result in the appropriate command error
         """
-        with self.assertRaisesRegex(CommandError, "JSON object is missing courses list"):
+        with self.assertRaisesRegex(CommandError, "JSON object is missing courses list"):  # noqa: PT027
             settings = {}
             arg = json.dumps(settings)
             call_command("generate_courses", arg)

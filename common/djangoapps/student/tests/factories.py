@@ -24,14 +24,16 @@ from common.djangoapps.student.models import (
     User,
     UserAttribute,
     UserProfile,
-    UserStanding
+    UserStanding,
 )
-from common.djangoapps.student.roles import GlobalStaff
-from common.djangoapps.student.roles import CourseBetaTesterRole
-from common.djangoapps.student.roles import CourseInstructorRole
-from common.djangoapps.student.roles import CourseStaffRole
-from common.djangoapps.student.roles import OrgInstructorRole
-from common.djangoapps.student.roles import OrgStaffRole
+from common.djangoapps.student.roles import (
+    CourseBetaTesterRole,
+    CourseInstructorRole,
+    CourseStaffRole,
+    GlobalStaff,
+    OrgInstructorRole,
+    OrgStaffRole,
+)
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
 
@@ -131,7 +133,7 @@ class RequestFactoryNoCsrf(RequestFactory):
     """
     def request(self, **kwargs):
         request = super().request(**kwargs)
-        setattr(request, '_dont_enforce_csrf_checks', True)  # pylint: disable=literal-used-as-attribute
+        setattr(request, '_dont_enforce_csrf_checks', True)  # pylint: disable=literal-used-as-attribute  # noqa: B010
         return request
 
 

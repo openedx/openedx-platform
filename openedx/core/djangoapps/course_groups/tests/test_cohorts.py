@@ -4,20 +4,24 @@ Tests for cohorts
 # pylint: disable=no-member
 
 from unittest.mock import call, patch
-import pytest
+
 import ddt
+import pytest
 from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.db import IntegrityError
 from django.http import Http404
 from django.test import TestCase
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
-from openedx_events.tests.utils import OpenEdxEventsTestMixin
+from openedx_events.testing import OpenEdxEventsTestMixin
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+    TEST_DATA_SPLIT_MODULESTORE,
+    ModuleStoreTestCase,
+)
 from xmodule.modulestore.tests.factories import ToyCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import cohorts
@@ -26,29 +30,12 @@ from ..tests.helpers import CohortFactory, CourseCohortFactory, config_course_co
 
 
 @patch("openedx.core.djangoapps.course_groups.cohorts.tracker", autospec=True)
-class TestCohortSignals(TestCase, OpenEdxEventsTestMixin):
+class TestCohortSignals(OpenEdxEventsTestMixin, TestCase):
     """
     Test cases to validate event emissions for various cohort-related workflows
     """
 
     ENABLED_OPENEDX_EVENTS = []
-
-    @classmethod
-    def setUpClass(cls):
-        """
-        Set up class method for the Test class.
-
-        This method starts manually events isolation. Explanation here:
-        openedx/core/djangoapps/user_authn/views/tests/test_events.py#L44
-        """
-        super().setUpClass()
-        cls.start_events_isolation()
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Don't let our event isolation affect other test cases """
-        super().tearDownClass()
-        cls.enable_all_events()  # Re-enable events other than the ENABLED_OPENEDX_EVENTS subset we isolated.
 
     def setUp(self):
         super().setUp()
@@ -235,7 +222,7 @@ class TestCohorts(ModuleStoreTestCase):
         assert cohorts.get_assignment_type(cohort) == CourseCohort.RANDOM
 
         exception_msg = "There must be one cohort to which students can automatically be assigned."
-        with pytest.raises(ValueError) as context_manager:
+        with pytest.raises(ValueError) as context_manager:  # noqa: PT011
             cohorts.set_assignment_type(cohort, CourseCohort.MANUAL)
 
         assert exception_msg == str(context_manager.value)
@@ -643,7 +630,7 @@ class TestCohorts(ModuleStoreTestCase):
         """
         course = modulestore().get_course(self.toy_course_key)
 
-        with pytest.raises(ValueError) as value_error:
+        with pytest.raises(ValueError) as value_error:  # noqa: PT011
             cohorts.set_course_cohorted(course.id, 'not a boolean')
 
         assert 'Cohorted must be a boolean' == str(value_error.value)

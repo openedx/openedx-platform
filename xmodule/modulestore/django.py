@@ -4,13 +4,12 @@ Module that provides a connection to the ModuleStore specified in the django set
 Passes settings.MODULESTORE as kwargs to MongoModuleStore
 """
 
+import gettext
+import importlib.resources as resources
+import logging
+import re  # lint-amnesty, pylint: disable=wrong-import-order
 from contextlib import contextmanager
 from importlib import import_module
-import importlib.resources as resources
-import gettext
-import logging
-
-import re  # lint-amnesty, pylint: disable=wrong-import-order
 
 from django.conf import settings
 
@@ -19,17 +18,23 @@ from django.conf import settings
 if not settings.configured:
     settings.configure()
 
-from django.contrib.staticfiles.storage import staticfiles_storage  # lint-amnesty, pylint: disable=wrong-import-position
-from django.core.cache import caches, InvalidCacheBackendError  # lint-amnesty, pylint: disable=wrong-import-position
 import django.dispatch  # lint-amnesty, pylint: disable=wrong-import-position
 import django.utils  # lint-amnesty, pylint: disable=wrong-import-position
+from django.contrib.staticfiles.storage import (  # lint-amnesty, pylint: disable=wrong-import-position
+    staticfiles_storage,
+)
+from django.core.cache import InvalidCacheBackendError, caches  # lint-amnesty, pylint: disable=wrong-import-position
 from django.utils.translation import get_language, to_locale  # lint-amnesty, pylint: disable=wrong-import-position
 from edx_django_utils.cache import DEFAULT_REQUEST_CACHE  # lint-amnesty, pylint: disable=wrong-import-position
 
 from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.modulestore.draft_and_published import BranchSettingMixin  # lint-amnesty, pylint: disable=wrong-import-position
+from xmodule.modulestore.draft_and_published import (  # lint-amnesty, pylint: disable=wrong-import-position
+    BranchSettingMixin,
+)
 from xmodule.modulestore.mixed import MixedModuleStore  # lint-amnesty, pylint: disable=wrong-import-position
-from xmodule.util.xmodule_django import get_current_request_hostname  # lint-amnesty, pylint: disable=wrong-import-position
+from xmodule.util.xmodule_django import (  # lint-amnesty, pylint: disable=wrong-import-position
+    get_current_request_hostname,
+)
 
 from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
     get_javascript_i18n_file_name,
@@ -40,8 +45,9 @@ from .api import (  # lint-amnesty, pylint: disable=wrong-import-position
 
 # We also may not always have the current request user (crum) module available
 try:
-    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
     from crum import get_current_user
+
+    from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 
     HAS_USER_SERVICE = True
 except ImportError:

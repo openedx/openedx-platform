@@ -5,13 +5,15 @@ import copy
 import json
 import logging
 from unittest import mock
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-from celery import Task
 
+import ddt
 import pytest
+from celery import Task
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.db import models
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
@@ -25,29 +27,36 @@ from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.course_action_state.models import CourseRerunState
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.course_apps.toggles import EXAMS_IDA
+from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTURE_DISCUSSIONS
+from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+    BlockFactory,
+    CourseFactory,
+)
+
 from ..tasks import (
     LinkState,
-    export_olx,
-    update_special_exams_and_publish,
-    rerun_course,
-    _validate_urls_access_in_batches,
-    _filter_by_status,
     _check_broken_links,
+    _convert_to_standard_url,
+    _filter_by_status,
     _is_studio_url,
     _scan_course_for_links,
-    _convert_to_standard_url,
-    extract_content_URLs_from_course
+    _validate_urls_access_in_batches,
+    export_olx,
+    extract_content_URLs_from_course,
+    rerun_course,
+    sync_discussion_settings,
+    update_special_exams_and_publish,
 )
 
 logging = logging.getLogger(__name__)
 
 TEST_DATA_CONTENTSTORE = copy.deepcopy(settings.CONTENTSTORE)
-TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex
+TEST_DATA_CONTENTSTORE['DOC_STORE_CONFIG']['db'] = 'test_xcontent_%s' % uuid4().hex  # noqa: UP031
 
 
 def side_effect_exception(*args, **kwargs):
@@ -70,11 +79,11 @@ class ExportCourseTestCase(CourseTestCase):
         key = str(self.course.location.course_key)
         result = export_olx.delay(self.user.id, key, 'en')
         status = UserTaskStatus.objects.get(task_id=result.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         output = artifacts[0]
-        self.assertEqual(output.name, 'Output')
+        self.assertEqual(output.name, 'Output')  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.export_course_to_xml', side_effect=side_effect_exception)
     def test_exception(self, mock_export):  # pylint: disable=unused-argument
@@ -109,12 +118,12 @@ class ExportCourseTestCase(CourseTestCase):
         Verify that a task failed with the specified error message
         """
         status = UserTaskStatus.objects.get(task_id=task_result.id)
-        self.assertEqual(status.state, UserTaskStatus.FAILED)
+        self.assertEqual(status.state, UserTaskStatus.FAILED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         error = artifacts[0]
-        self.assertEqual(error.name, 'Error')
-        self.assertEqual(error.text, error_message)
+        self.assertEqual(error.name, 'Error')  # noqa: PT009
+        self.assertEqual(error.text, error_message)  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -130,11 +139,11 @@ class ExportLibraryTestCase(LibraryTestCase):
         key = str(self.lib_key)
         result = export_olx.delay(self.user.id, key, 'en')
         status = UserTaskStatus.objects.get(task_id=result.id)
-        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)
+        self.assertEqual(status.state, UserTaskStatus.SUCCEEDED)  # noqa: PT009
         artifacts = UserTaskArtifact.objects.filter(status=status)
-        self.assertEqual(len(artifacts), 1)
+        self.assertEqual(len(artifacts), 1)  # noqa: PT009
         output = artifacts[0]
-        self.assertEqual(output.name, 'Output')
+        self.assertEqual(output.name, 'Output')  # noqa: PT009
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -171,18 +180,18 @@ class RerunCourseTaskTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=
 
         # Verify the new course run exists
         course = modulestore().get_course(new_course_key)
-        self.assertIsNotNone(course)
+        self.assertIsNotNone(course)  # noqa: PT009
 
         # Verify the OrganizationCourse is cloned
-        self.assertEqual(OrganizationCourse.objects.count(), 2)
+        self.assertEqual(OrganizationCourse.objects.count(), 2)  # noqa: PT009
         # This will raise an error if the OrganizationCourse object was not cloned
         OrganizationCourse.objects.get(course_id=new_course_id, organization=organization)
 
         # Verify the RestrictedCourse and related objects are cloned
-        self.assertEqual(RestrictedCourse.objects.count(), 2)
+        self.assertEqual(RestrictedCourse.objects.count(), 2)  # noqa: PT009
         restricted_course = RestrictedCourse.objects.get(course_key=new_course_key)
 
-        self.assertEqual(CountryAccessRule.objects.count(), 2)
+        self.assertEqual(CountryAccessRule.objects.count(), 2)  # noqa: PT009
         CountryAccessRule.objects.get(
             rule_type=CountryAccessRule.BLACKLIST_RULE,
             restricted_course=restricted_course,
@@ -206,7 +215,7 @@ class RerunCourseTaskTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=
         self._rerun_course(old_course_key, new_course_key)
 
         # Verify the OrganizationCourse is cloned with a different org
-        self.assertEqual(OrganizationCourse.objects.count(), 2)
+        self.assertEqual(OrganizationCourse.objects.count(), 2)  # noqa: PT009
         OrganizationCourse.objects.get(course_id=new_course_id, organization__short_name='neworg')
 
 
@@ -215,7 +224,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
 
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
-    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_exam_service_not_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019  # pylint: disable=line-too-long
         """ edx-proctoring interface is called if exam service is not enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_called_once_with(self.course.id)
@@ -224,7 +233,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
     @override_waffle_flag(EXAMS_IDA, active=True)
-    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_exam_service_enabled_success(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019  # pylint: disable=line-too-long
         """ exams service interface is called if exam service is enabled """
         update_special_exams_and_publish(str(self.course.id))
         _mock_register_exams_proctoring.assert_not_called()
@@ -232,7 +241,7 @@ class RegisterExamsTaskTestCase(CourseTestCase):  # pylint: disable=missing-clas
 
     @mock.patch('cms.djangoapps.contentstore.exams.register_exams')
     @mock.patch('cms.djangoapps.contentstore.proctoring.register_special_exams')
-    def test_register_exams_failure(self, _mock_register_exams_proctoring, _mock_register_exams_service):
+    def test_register_exams_failure(self, _mock_register_exams_proctoring, _mock_register_exams_service):  # noqa: PT019
         """ credit requirements update signal fires even if exam registration fails """
         with mock.patch('openedx.core.djangoapps.credit.signals.handlers.on_course_publish') as course_publish:
             _mock_register_exams_proctoring.side_effect = Exception('boom!')
@@ -354,22 +363,22 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             f'Processed URL list lines = {processed_lines}; expected {original_lines - 2}'
 
     def test_http_url_not_recognized_as_studio_url_scheme(self):
-        self.assertFalse(_is_studio_url('http://www.google.com'))
+        self.assertFalse(_is_studio_url('http://www.google.com'))  # noqa: PT009
 
     def test_https_url_not_recognized_as_studio_url_scheme(self):
-        self.assertFalse(_is_studio_url('https://www.google.com'))
+        self.assertFalse(_is_studio_url('https://www.google.com'))  # noqa: PT009
 
     def test_http_with_studio_base_url_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url(f'http://{settings.CMS_BASE}/testurl'))
+        self.assertTrue(_is_studio_url(f'http://{settings.CMS_BASE}/testurl'))  # noqa: PT009
 
     def test_https_with_studio_base_url_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url(f'https://{settings.CMS_BASE}/testurl'))
+        self.assertTrue(_is_studio_url(f'https://{settings.CMS_BASE}/testurl'))  # noqa: PT009
 
     def test_container_url_without_url_base_is_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url('container/test'))
+        self.assertTrue(_is_studio_url('container/test'))  # noqa: PT009
 
     def test_slash_url_without_url_base_is_recognized_as_studio_url_scheme(self):
-        self.assertTrue(_is_studio_url('/static/test'))
+        self.assertTrue(_is_studio_url('/static/test'))  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.ModuleStoreEnum', autospec=True)
     @mock.patch('cms.djangoapps.contentstore.tasks.modulestore', autospec=True)
@@ -398,7 +407,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
         expected_blocks = self.store.get_items(self.test_course.id)
 
         _scan_course_for_links(self.test_course.id)
-        self.assertEqual(len(expected_blocks), mockextract_content_URLs_from_course.call_count)
+        self.assertEqual(len(expected_blocks), mockextract_content_URLs_from_course.call_count)  # noqa: PT009
 
     @mock.patch('cms.djangoapps.contentstore.tasks.get_block_info', autospec=True)
     @mock.patch('cms.djangoapps.contentstore.tasks.modulestore', autospec=True)
@@ -434,11 +443,11 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
 
         urls = _scan_course_for_links(self.test_course.id)
         # The drag-and-drop block should not appear in the results
-        self.assertFalse(
+        self.assertFalse(  # noqa: PT009
             any(block_id == str(drag_and_drop_block.usage_key) for block_id, _ in urls),
             "Drag and Drop blocks should be excluded"
         )
-        self.assertTrue(
+        self.assertTrue(  # noqa: PT009
             any(block_id == str(text_block.usage_key) for block_id, _ in urls),
             "Text block should be included"
         )
@@ -536,8 +545,8 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
 
         filtered_results, retry_list = _filter_by_status(results)
 
-        self.assertEqual(filtered_results, expected_filtered_results)
-        self.assertEqual(retry_list, expected_retry_list)
+        self.assertEqual(filtered_results, expected_filtered_results)  # noqa: PT009
+        self.assertEqual(retry_list, expected_retry_list)  # noqa: PT009
 
     @patch("cms.djangoapps.contentstore.tasks._validate_user", return_value=MagicMock())
     @patch("cms.djangoapps.contentstore.tasks._scan_course_for_links", return_value=["url1", "url2"])
@@ -606,7 +615,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             logging.exception("Error checking links for course %s", course_key_string, exc_info=True)
             if mock_self.status.state != "FAILED":
                 mock_self.status.fail({"raw_error_msg": str(e)})
-            assert False, "Exception should not occur"
+            assert False, "Exception should not occur"  # noqa: B011, PT015
 
         # Assertions to confirm patched calls were invoked
         mock_validate_user.assert_called_once_with(mock_self, user_id, language)
@@ -638,7 +647,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
         ]
 
         for url, expected in test_cases:
-            self.assertEqual(
+            self.assertEqual(  # noqa: PT009
                 _convert_to_standard_url(url, course_key),
                 expected,
                 f"Failed for URL: {url}",
@@ -667,4 +676,137 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
             "https://validsite.com",
             "https://another-valid.com"
         ]
-        self.assertEqual(extract_content_URLs_from_course(content), set(expected))
+        self.assertEqual(extract_content_URLs_from_course(content), set(expected))  # noqa: PT009
+
+
+@ddt.ddt
+@override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
+class SyncDiscussionSettingsTaskTestCase(CourseTestCase):
+    """Tests for the `sync_discussion_settings` task."""
+
+    def setUp(self):
+        super().setUp()
+        self.discussion_config = DiscussionsConfiguration.objects.create(context_key=self.course.id)
+
+    def _update_discussion_settings(self, discussions_settings: dict):
+        """Helper method to set discussion settings in the course."""
+        self.course.discussions_settings = discussions_settings
+        modulestore().update_item(self.course, self.user.id)
+
+    def test_sync_settings(self):
+        """Test syncing discussion settings to DiscussionsConfiguration."""
+        self._update_discussion_settings(
+            {
+                "enable_graded_units": True,
+                "unit_level_visibility": False,
+                "enable_in_context": True,
+                "posting_restrictions": "enabled",
+            }
+        )
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.enable_graded_units is True
+        assert self.discussion_config.unit_level_visibility is False
+        assert self.discussion_config.enable_in_context is True
+        assert self.discussion_config.posting_restrictions == "enabled"
+        assert self.discussion_config.provider_type == Provider.LEGACY
+
+    def test_sync_plugin_configuration(self):
+        """Test syncing plugin configuration from provider settings."""
+        # Set up course discussion settings with provider-specific config
+        provider_config = {"test_key": "test_value", "test_key_2": "test_value_2"}
+        self._update_discussion_settings({self.discussion_config.provider_type: provider_config})
+
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.plugin_configuration == provider_config
+
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_auto_migrate_to_new_structure(self):
+        """Test automatic migration to the `OPEN_EDX` provider when new structure is enabled."""
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert any(migration_log in log for log in logs.output)
+
+        self.discussion_config.refresh_from_db()
+        assert self.discussion_config.provider_type == Provider.OPEN_EDX
+
+        course = modulestore().get_course(self.course.id)
+        assert course.discussions_settings.get("provider_type") == Provider.OPEN_EDX
+
+    @ddt.data(
+        {"provider_type": Provider.OPEN_EDX},  # Using the `provider_type` field.
+        {"provider": Provider.OPEN_EDX},  # Using the `provider` field as fallback.
+    )
+    @override_waffle_flag(ENABLE_NEW_STRUCTURE_DISCUSSIONS, active=True)
+    def test_no_provider_migration_when_already_openedx(self, provider_settings: dict):
+        """Test no migration occurs when provider is already `OPEN_EDX`."""
+        self._update_discussion_settings(provider_settings)
+
+        with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+            sync_discussion_settings(self.course.id, self.user)
+
+            migration_log = f"New structure is enabled, also updating {self.course.id} to use new provider"
+            assert not any(migration_log in log for log in logs.output)
+
+    def test_all_syncable_fields_are_overridden(self):
+        """
+        Verify that all syncable DiscussionsConfiguration fields are updated during course import.
+
+        If this test fails after adding a new field, update `sync_discussion_settings` to handle it.
+        """
+
+        excluded_fields = {
+            "context_key",  # Primary key - not synced.
+            "enabled",  # Handled separately in `update_discussions_settings_from_course`.
+            "created",  # Auto-generated by TimeStampedModel.
+            "modified",  # Auto-generated by TimeStampedModel.
+            "plugin_configuration",  # Custom logic. Already tested in `test_sync_plugin_configuration`.
+            "provider_type",  # Custom logic. Already tested in `test_auto_migrate_to_new_structure`.
+        }
+
+        test_values = {}
+        for field in DiscussionsConfiguration._meta.get_fields():
+            if not getattr(field, "concrete", False):
+                continue
+            if field.primary_key or field.name in excluded_fields:
+                continue
+            if isinstance(field, (models.ForeignKey, models.ManyToManyField)):
+                continue
+
+            if isinstance(field, models.BooleanField):
+                test_values[field.name] = not field.default
+            elif isinstance(field, models.CharField) and field.choices:
+                test_values[field.name] = next(v for v, _ in field.choices if v != field.default)
+            elif isinstance(field, models.CharField):
+                test_values[field.name] = "test_sync_value"
+            else:
+                test_values[field.name] = {"synced_key": "synced_value"}
+
+        self._update_discussion_settings(test_values)
+        sync_discussion_settings(self.course.id, self.user)
+
+        self.discussion_config.refresh_from_db()
+        for name, expected in test_values.items():
+            assert getattr(self.discussion_config, name) == expected, (
+                f"Field '{name}' was not synced during course import. "
+                f"Update sync_discussion_settings to handle this field.",
+            )
+
+    def test_handling_exceptions(self):
+        """Test that exceptions are caught and logged properly."""
+        test_error_message = "Test error"
+
+        with mock.patch.object(DiscussionsConfiguration.objects, "get", side_effect=Exception(test_error_message)):
+            with self.assertLogs("cms.djangoapps.contentstore.tasks", level="INFO") as logs:
+                sync_discussion_settings(self.course.id, self.user)
+
+                expected_log = (
+                    f"Course import {self.course.id}: DiscussionsConfiguration sync failed: {test_error_message}"
+                )
+                assert any(expected_log in log for log in logs.output)

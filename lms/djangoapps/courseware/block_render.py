@@ -3,12 +3,13 @@ Block rendering
 """
 
 from __future__ import annotations
+
 import json
 import logging
 import textwrap
 from collections import OrderedDict
-
 from functools import partial
+from typing import TYPE_CHECKING, Callable  # noqa: UP035
 
 from completion.services import CompletionService
 from django.conf import settings
@@ -34,78 +35,77 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import APIException
-from typing import Callable, TYPE_CHECKING
 from web_fragments.fragment import Fragment
 from xblock.django.request import django_to_webob_request, webob_to_django_response
 from xblock.exceptions import NoSuchHandlerError, NoSuchViewError, NotFoundError, ProcessingError
 from xblock.reference.plugins import FSService
 from xblock.runtime import KvsFieldData
-
-from lms.djangoapps.teams.services import TeamsService
-from openedx.core.djangoapps.video_config.services import VideoConfigService
-from openedx.core.djangoapps.discussions.services import DiscussionConfigService
-from openedx.core.lib.xblock_services.call_to_action import CallToActionService
-from xmodule.contentstore.django import contentstore
 from xblocks_contrib.video.exceptions import TranscriptNotFoundError
+
+from common.djangoapps.edxmako.services import MakoService
+from common.djangoapps.static_replace.services import ReplaceURLService
+from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
+from common.djangoapps.student.models import anonymous_id_for_user
+from common.djangoapps.student.roles import CourseBetaTesterRole
+from common.djangoapps.util import milestones_helpers
+from common.djangoapps.util.json_request import JsonResponse
+from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
+from lms.djangoapps.courseware.access import get_user_role, has_access
+from lms.djangoapps.courseware.entrance_exams import user_can_skip_entrance_exam, user_has_passed_entrance_exam
+from lms.djangoapps.courseware.field_overrides import OverrideFieldData
+from lms.djangoapps.courseware.masquerade import (
+    MasqueradingKeyValueStore,
+    filter_displayed_blocks,
+    is_masquerading_as_specific_student,
+    setup_masquerade,
+)
+from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
+from lms.djangoapps.courseware.services import UserStateService
+from lms.djangoapps.grades.api import GradesUtilService
+from lms.djangoapps.lms_xblock.field_data import LmsFieldData
+from lms.djangoapps.lms_xblock.runtime import UserTagsService, lms_applicable_aside_types, lms_wrappers_aside
+from lms.djangoapps.teams.services import TeamsService
+from lms.djangoapps.verify_student.services import XBlockVerificationService
+from openedx.core.djangoapps.bookmarks.api import BookmarksService
+from openedx.core.djangoapps.crawlers.models import CrawlersConfig
+from openedx.core.djangoapps.credit.services import CreditService
+from openedx.core.djangoapps.discussions.services import DiscussionConfigService
+from openedx.core.djangoapps.enrollments.services import EnrollmentsService
+from openedx.core.djangoapps.util.user_utils import SystemUser
+from openedx.core.djangoapps.video_config.services import VideoConfigService
+from openedx.core.djangolib.markup import HTML
+from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from openedx.core.lib.api.view_utils import view_auth_classes
+from openedx.core.lib.cache_utils import CacheService
+from openedx.core.lib.gating.services import GatingService
+from openedx.core.lib.license import wrap_with_license
+from openedx.core.lib.url_utils import quote_slashes, unquote_slashes
+from openedx.core.lib.xblock_services.call_to_action import CallToActionService
+from openedx.core.lib.xblock_utils import (
+    add_staff_markup,
+    get_aside_from_xblock,
+    hash_resource,
+    is_xblock_aside,
+    wrap_xblock,
+)
+from openedx.core.lib.xblock_utils import request_token as xblock_request_token
+from openedx.features.content_type_gating.services import ContentTypeGatingService
+from openedx.features.course_duration_limits.access import course_expiration_wrapper
+from openedx.features.discounts.utils import offer_banner_wrapper
+from xmodule.contentstore.django import contentstore
 from xmodule.exceptions import NotFoundError as XModuleNotFoundError
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore.django import XBlockI18nService, modulestore
 from xmodule.modulestore.exceptions import ItemNotFoundError
 from xmodule.partitions.partitions_service import PartitionService
-from xmodule.util.sandboxing import SandboxService
 from xmodule.services import (
     EventPublishingService,
     RebindUserService,
     SettingsService,
     TeamsConfigurationService,
-    XQueueService
+    XQueueService,
 )
-from common.djangoapps.static_replace.services import ReplaceURLService
-from common.djangoapps.static_replace.wrapper import replace_urls_wrapper
-from lms.djangoapps.courseware.access import get_user_role, has_access
-from lms.djangoapps.courseware.entrance_exams import user_can_skip_entrance_exam, user_has_passed_entrance_exam
-from lms.djangoapps.courseware.masquerade import (
-    MasqueradingKeyValueStore,
-    filter_displayed_blocks,
-    is_masquerading_as_specific_student,
-    setup_masquerade
-)
-from lms.djangoapps.courseware.model_data import DjangoKeyValueStore, FieldDataCache
-from lms.djangoapps.courseware.field_overrides import OverrideFieldData
-from lms.djangoapps.courseware.services import UserStateService
-from lms.djangoapps.grades.api import GradesUtilService
-from lms.djangoapps.lms_xblock.field_data import LmsFieldData
-from lms.djangoapps.lms_xblock.runtime import UserTagsService, lms_wrappers_aside, lms_applicable_aside_types
-from lms.djangoapps.verify_student.services import XBlockVerificationService
-from openedx.core.djangoapps.bookmarks.api import BookmarksService
-from openedx.core.djangoapps.crawlers.models import CrawlersConfig
-from openedx.core.djangoapps.credit.services import CreditService
-from openedx.core.djangoapps.enrollments.services import EnrollmentsService
-from openedx.core.djangoapps.util.user_utils import SystemUser
-from openedx.core.djangolib.markup import HTML
-from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
-from openedx.core.lib.api.view_utils import view_auth_classes
-from openedx.core.lib.gating.services import GatingService
-from openedx.core.lib.license import wrap_with_license
-from openedx.core.lib.url_utils import quote_slashes, unquote_slashes
-from openedx.core.lib.xblock_utils import (
-    add_staff_markup,
-    get_aside_from_xblock,
-    hash_resource,
-    is_xblock_aside
-)
-from openedx.core.lib.xblock_utils import request_token as xblock_request_token
-from openedx.core.lib.xblock_utils import wrap_xblock
-from openedx.features.course_duration_limits.access import course_expiration_wrapper
-from openedx.features.discounts.utils import offer_banner_wrapper
-from openedx.features.content_type_gating.services import ContentTypeGatingService
-from common.djangoapps.student.models import anonymous_id_for_user
-from common.djangoapps.student.roles import CourseBetaTesterRole
-from common.djangoapps.util import milestones_helpers
-from common.djangoapps.util.json_request import JsonResponse
-from common.djangoapps.edxmako.services import MakoService
-from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
-from openedx.core.lib.cache_utils import CacheService
+from xmodule.util.sandboxing import SandboxService
 
 if TYPE_CHECKING:
     from rest_framework.request import Request
@@ -806,13 +806,13 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         try:
             course = modulestore().get_course(course_key)
         except ItemNotFoundError:
-            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         return _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course=course)
 
@@ -973,12 +973,12 @@ def _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course
 
         except NoSuchHandlerError:
             log.exception("XBlock %s attempted to access missing handler %r", instance, handler)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # If we can't find the block, respond with a 404
         except (XModuleNotFoundError, NotFoundError, TranscriptNotFoundError):
             log.exception("Module indicating to user that request doesn't exist")
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         # For XBlock-specific errors, we log the error and respond with an error message
         except ProcessingError as err:
@@ -1013,7 +1013,7 @@ def xblock_view(request, course_id, usage_id, view_name):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404("Invalid location")  # lint-amnesty, pylint: disable=raise-missing-from
+        raise Http404("Invalid location")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     with modulestore().bulk_operations(course_key):
         course = modulestore().get_course(course_key)
@@ -1023,7 +1023,7 @@ def xblock_view(request, course_id, usage_id, view_name):
             fragment = instance.render(view_name, context=request.GET)
         except NoSuchViewError:
             log.exception("Attempt to render missing view on %s: %s", instance, view_name)
-            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from
+            raise Http404  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
         hashed_resources = OrderedDict()
         for resource in fragment.resources:
@@ -1050,14 +1050,14 @@ def _check_files_limits(files):
         # Check number of files submitted
         if len(inputfiles) > settings.MAX_FILEUPLOADS_PER_INPUT:
             msg = 'Submission aborted! Maximum %d files may be submitted at once' % \
-                  settings.MAX_FILEUPLOADS_PER_INPUT
+                  settings.MAX_FILEUPLOADS_PER_INPUT  # noqa: UP031
             return msg
 
         # Check file sizes
         for inputfile in inputfiles:
             if inputfile.size > settings.STUDENT_FILEUPLOAD_MAX_SIZE:  # Bytes
                 msg = 'Submission aborted! Your file "%s" is too large (max size: %d MB)' % \
-                      (inputfile.name, settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))
+                      (inputfile.name, settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))  # noqa: UP031
                 return msg
 
     return None

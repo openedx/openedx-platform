@@ -155,7 +155,7 @@ class InstructorService:
         course = modulestore().get_course(course_key)
         if course is None:
             raise ObjectDoesNotExist(
-                'Could not find proctoring escalation email for course_id={course_id}.'
+                'Could not find proctoring escalation email for course_id={course_id}.'  # noqa: UP032
                 ' This course does not exist.'.format(course_id=course_id)
             )
 

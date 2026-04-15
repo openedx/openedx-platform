@@ -5,10 +5,9 @@ Test module to test the discussion enabled flag.
 
 import json
 
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
-
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_usage_url
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
 
 class TestDiscussionEnabled(CourseTestCase):
@@ -95,23 +94,23 @@ class TestDiscussionEnabled(CourseTestCase):
         """
         Tests discussion_enabled flag is True initially for vertical
         """
-        self.assertTrue(self.get_discussion_enabled_status(self.vertical))
-        self.assertTrue(self.get_discussion_enabled_status(self.vertical_1))
+        self.assertTrue(self.get_discussion_enabled_status(self.vertical))  # noqa: PT009
+        self.assertTrue(self.get_discussion_enabled_status(self.vertical_1))  # noqa: PT009
 
     def test_discussion_enabled_toggle(self):
         """
         Tests discussion_enabled can be toggled.
         """
         self.set_discussion_enabled_status(self.vertical, False)
-        self.assertFalse(self.get_discussion_enabled_status(self.vertical))
-        self.assertTrue(self.get_discussion_enabled_status(self.vertical_1))
+        self.assertFalse(self.get_discussion_enabled_status(self.vertical))  # noqa: PT009
+        self.assertTrue(self.get_discussion_enabled_status(self.vertical_1))  # noqa: PT009
 
     def test_non_course_author_cannot_get_or_set_discussion_enabled_flag(self):
         """
         Test non course author cannot get/set discussion_enabled flag
         """
         resp = self._get_discussion_enabled_status(self.course_usage_key, self.non_staff_authed_user_client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009
         # Set call to the API with non authorised user should raise a 403
         resp = self.set_discussion_enabled_status(self.vertical, True, self.non_staff_authed_user_client)
-        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.status_code, 403)  # noqa: PT009

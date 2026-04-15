@@ -11,15 +11,15 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
-from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from opaque_keys.edx.django.models import CourseKeyField
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import CourseLocator
 from openedx_authz.api import users as authz_api
-from openedx_authz.api.data import RoleAssignmentData, CourseOverviewData
+from openedx_authz.api.data import CourseOverviewData, RoleAssignmentData
 from openedx_authz.constants import roles as authz_roles
 
 from common.djangoapps.student.models import CourseAccessRole
+from common.djangoapps.student.signals.signals import emit_course_access_role_added, emit_course_access_role_removed
 from openedx.core.lib.cache_utils import get_cache
 from openedx.core.toggles import enable_authz_course_authoring
 
@@ -429,8 +429,9 @@ class RoleBase(AccessRole):
         """
         # silently ignores anonymous and inactive users so that any that are
         # legit get updated.
-        from common.djangoapps.student.models import \
-            CourseAccessRole  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+        from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=redefined-outer-name, reimported
+            CourseAccessRole,
+        )
         for user in users:
             if user.is_authenticated and user.is_active:
                 CourseAccessRole.objects.get_or_create(
@@ -532,9 +533,13 @@ class RoleBase(AccessRole):
         Returns a list of org short names for the user with given role.
         AuthZ compatibility layer
         """
-        # TODO: This will be implemented on Milestone 1
-        # of the Authz for Course Authoring project
-        return []
+        role = get_authz_role_from_legacy_role(self._role_name)
+        assignments = authz_api.get_user_role_assignments_filtered(
+            user_external_key=user.username,
+            role_external_key=role,
+        )
+        orgs = {assignment.scope.org for assignment in assignments if assignment.scope.org is not None}
+        return list(orgs)
 
     def _legacy_get_orgs_for_user(self, user) -> list[str]:
         """

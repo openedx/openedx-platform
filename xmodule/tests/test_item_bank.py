@@ -1,8 +1,8 @@
 """
 Unit tests for ItemBankBlock.
 """
-from unittest.mock import MagicMock, Mock, patch
 from random import Random
+from unittest.mock import MagicMock, Mock, patch
 
 import ddt
 from fs.memoryfs import MemoryFS
@@ -11,14 +11,14 @@ from rest_framework import status
 from web_fragments.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
 
-from openedx.core.djangolib.testing.utils import skip_unless_lms, skip_unless_cms
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_cms, skip_unless_lms
+from xmodule.capa_block import ProblemBlock
 from xmodule.modulestore.tests.factories import CourseFactory
 from xmodule.modulestore.tests.utils import MixedSplitTestCase
 from xmodule.tests import prepare_block_runtime
 from xmodule.validation import StudioValidationMessage
 from xmodule.x_module import AUTHOR_VIEW
-from xmodule.capa_block import ProblemBlock
-from common.djangoapps.student.tests.factories import UserFactory
 
 from ..item_bank_block import ItemBankBlock
 from .test_course_block import DummyModuleStoreRuntime
@@ -102,7 +102,7 @@ class TestItemBankForCms(ItemBankTestBase):
         self.item_bank.add_xml_to_node(node)
 
         # Read back the itembank OLX
-        with export_fs.open('{dir}/{file_name}.xml'.format(
+        with export_fs.open('{dir}/{file_name}.xml'.format(  # noqa: UP032
             dir=self.item_bank.scope_ids.usage_id.block_type,
             file_name=self.item_bank.scope_ids.usage_id.block_id
         )) as f:
@@ -251,7 +251,7 @@ class TestItemBankForLms(ItemBankTestBase):
             total_tries += 1
             if total_tries >= max_tries:
                 # The chance that this happens by accident is (4 * (3/4)^100) ~= 1/10^12
-                assert False, "Max tries exceeded before seeing all blocks."
+                assert False, "Max tries exceeded before seeing all blocks."  # noqa: B011, PT015
                 break
 
     def _change_count_and_reselect_children(self, count):

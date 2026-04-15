@@ -109,7 +109,7 @@ class CourseData:
 
     def full_string(self):  # lint-amnesty, pylint: disable=missing-function-docstring
         if self.effective_structure:
-            return 'Course: course_key: {}, version: {}, edited_on: {}, grading_policy: {}'.format(
+            return 'Course: course_key: {}, version: {}, edited_on: {}, grading_policy: {}'.format(  # noqa: UP032
                 self.course_key, self.version, self.edited_on, self.grading_policy_hash,
             )
         else:

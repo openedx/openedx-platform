@@ -4,12 +4,12 @@ Unit tests for the asset upload endpoint.
 from datetime import datetime
 from urllib.parse import urljoin
 
-from pytz import UTC
-
 from django.test import override_settings
-from cms.djangoapps.contentstore import asset_storage_handlers
 from opaque_keys.edx.locator import CourseLocator
 from openedx_filters import PipelineStep
+from pytz import UTC
+
+from cms.djangoapps.contentstore import asset_storage_handlers
 from xmodule.contentstore.content import StaticContent
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 
@@ -74,7 +74,7 @@ class LMSPageURLRequestedFiltersTest(ModuleStoreTestCase):
             self.course_key
         )
 
-        self.assertEqual(output.get('external_url'), urljoin('https://lms-url-creation', self.asset_url))
+        self.assertEqual(output.get('external_url'), urljoin('https://lms-url-creation', self.asset_url))  # noqa: PT009
 
     @override_settings(OPEN_EDX_FILTERS_CONFIG={}, LMS_ROOT_URL="https://lms-base")
     def test_lms_url_requested_without_filter_configuration(self):
@@ -95,4 +95,4 @@ class LMSPageURLRequestedFiltersTest(ModuleStoreTestCase):
             self.course_key
         )
 
-        self.assertEqual(output.get('external_url'), urljoin('https://lms-base', self.asset_url))
+        self.assertEqual(output.get('external_url'), urljoin('https://lms-base', self.asset_url))  # noqa: PT009

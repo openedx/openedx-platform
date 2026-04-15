@@ -1,3 +1,4 @@
+# ruff: noqa: I001
 """
 Safer version of lxml.etree.
 
@@ -5,8 +6,6 @@ It overrides some unsafe functions from lxml.etree with safer versions from defu
 It also includes a safer XMLParser.
 
 For processing xml always prefer this over using lxml.etree directly.
-
-isort:skip_file
 """
 
 # Names are imported into this module so that it can be a stand-in for
@@ -15,11 +14,11 @@ isort:skip_file
 
 
 from lxml.etree import XMLParser as _XMLParser
-from lxml.etree import *  # lint-amnesty, pylint: disable=redefined-builtin
+from lxml.etree import *  # lint-amnesty, pylint: disable=redefined-builtin  # noqa: F403
 # These private elements are used in some libraries to also defuse xml exploits for their own purposes.
 # We need to re-expose them so that the libraries still work.
-from lxml.etree import _Comment, _Element, _ElementTree, _Entity, _ProcessingInstruction
-from .xmlparser import XML, fromstring, parse
+from lxml.etree import _Comment, _Element, _ElementTree, _Entity, _ProcessingInstruction  # noqa: F401
+from .xmlparser import XML, fromstring, parse  # noqa: F401
 
 
 class XMLParser(_XMLParser):  # pylint: disable=function-redefined
@@ -30,4 +29,4 @@ class XMLParser(_XMLParser):  # pylint: disable=function-redefined
     def __init__(self, *args, **kwargs):
         if "resolve_entities" not in kwargs:
             kwargs["resolve_entities"] = False
-        super(XMLParser, self).__init__(*args, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+        super(XMLParser, self).__init__(*args, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments  # noqa: UP008

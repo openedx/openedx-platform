@@ -2,8 +2,8 @@
 
 
 from http.cookies import SimpleCookie
-from urllib.parse import urlencode
 from unittest import mock
+from urllib.parse import urlencode
 
 import ddt
 from django.conf import settings
@@ -19,6 +19,8 @@ from django.urls import reverse
 from django.utils.translation import gettext as _
 
 from common.djangoapps.course_modes.models import CourseMode
+from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
+from common.djangoapps.util.testing import UrlResetMixin
 from lms.djangoapps.branding.api import get_privacy_url
 from openedx.core.djangoapps.site_configuration.tests.mixins import SiteMixin
 from openedx.core.djangoapps.theming.tests.test_util import with_comprehensive_theme_context
@@ -28,9 +30,9 @@ from openedx.core.djangoapps.user_authn.views.login_form import login_and_regist
 from openedx.core.djangolib.js_utils import dump_js_escaped_json
 from openedx.core.djangolib.markup import HTML, Text
 from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.third_party_auth.tests.testutil import ThirdPartyAuthTestMixin, simulate_running_pipeline
-from common.djangoapps.util.testing import UrlResetMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 
 @skip_unless_lms
@@ -411,7 +413,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         params = [("next", "/courses/something/?tpa_hint=oa2-google-oauth2")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         expected_url = '/auth/login/google-oauth2/?auth_entry={}&next=%2Fcourses'\
-                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)
+                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)  # noqa: UP032
         self.assertRedirects(
             response,
             expected_url,
@@ -456,7 +458,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         params = [("next", "/courses/something/")]
         response = self.client.get(reverse(url_name), params, HTTP_ACCEPT="text/html")
         expected_url = '/auth/login/google-oauth2/?auth_entry={}&next=%2Fcourses'\
-                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)
+                       '%2Fsomething%2F%3Ftpa_hint%3Doa2-google-oauth2'.format(auth_entry)  # noqa: UP032
         self.assertRedirects(
             response,
             expected_url,
@@ -577,7 +579,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
             auth_info['providers'] = []
         auth_info = dump_js_escaped_json(auth_info)
 
-        expected_data = '"third_party_auth": {auth_info}'.format(
+        expected_data = '"third_party_auth": {auth_info}'.format(  # noqa: UP032
             auth_info=auth_info
         )
         self.assertContains(response, expected_data)
@@ -606,7 +608,7 @@ class LoginAndRegistrationTest(ThirdPartyAuthTestMixin, UrlResetMixin, ModuleSto
         }
         auth_info = dump_js_escaped_json(auth_info)
 
-        expected_data = '"third_party_auth": {auth_info}'.format(
+        expected_data = '"third_party_auth": {auth_info}'.format(  # noqa: UP032
             auth_info=auth_info
         )
         self.assertContains(response, expected_data)

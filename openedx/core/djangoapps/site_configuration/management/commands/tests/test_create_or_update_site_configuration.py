@@ -4,10 +4,11 @@ Tests for the create_or_update_site_configuration management command.
 
 import codecs
 import json
-import pytest
+
 import ddt
+import pytest
 from django.contrib.sites.models import Site
-from django.core.management import call_command, CommandError
+from django.core.management import CommandError, call_command
 from django.test import TestCase
 from path import Path
 
@@ -148,7 +149,7 @@ class CreateOrUpdateSiteConfigurationTest(TestCase):
         self.assert_site_configuration_does_not_exist()
         call_command(self.command, '--configuration', json.dumps(self.input_configuration), *self.site_id_arg)
         site_configuration = self.get_site_configuration()
-        self.assertDictEqual(site_configuration.site_values, self.input_configuration)
+        self.assertDictEqual(site_configuration.site_values, self.input_configuration)  # noqa: PT009
 
     def test_site_configuration_created_with_json_file_parameters(self):
         """

@@ -2,17 +2,19 @@
 
 
 from datetime import datetime, timedelta
-import pytest
 
+import pytest
 from django.core.management import call_command
 from opaque_keys import InvalidKeyError
 from testfixtures import LogCapture
 
 from common.djangoapps.course_modes.tests.factories import CourseMode
-from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility
 from common.djangoapps.student.models import CourseEnrollment, User
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.credit.models import CreditCourse, CreditEligibility
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.change_eligibility_deadline'
@@ -54,14 +56,14 @@ class ChangeEligibilityDeadlineTests(SharedModuleStoreTestCase):
                          *command_args.format(username=username, course='XYZ', date='2018-12-30').split(' ')
                          )
         # Student not enrolled
-        with pytest.raises(CourseEnrollment.DoesNotExist):
+        with pytest.raises(CourseEnrollment.DoesNotExist):  # noqa: PT012
             unenrolled_user = UserFactory.create()
             call_command('change_eligibility_deadline',
                          *command_args.format(username=unenrolled_user.username, course=course_id_str,
                                               date='2018-12-30').split(' ')
                          )
         # Date format Invalid
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             call_command('change_eligibility_deadline',
                          *command_args.format(username=username, course=course_id_str, date='30-12-2018').split(' ')
                          )

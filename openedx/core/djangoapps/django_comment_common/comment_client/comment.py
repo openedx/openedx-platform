@@ -3,14 +3,13 @@ import logging
 import time
 
 from bs4 import BeautifulSoup
+from forum import api as forum_api
+from forum.backends.mongodb.comments import Comment as ForumComment
 
 from openedx.core.djangoapps.django_comment_common.comment_client import models, settings
 
 from .thread import Thread
 from .utils import CommentClientRequestError, get_course_key
-from forum import api as forum_api
-from forum.backends.mongodb.comments import Comment as ForumComment
-
 
 log = logging.getLogger(__name__)
 

@@ -6,11 +6,11 @@ import json
 import logging
 from datetime import datetime, timedelta
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import ddt
 import httpretty
 import pytest
-from zoneinfo import ZoneInfo
 import requests
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings

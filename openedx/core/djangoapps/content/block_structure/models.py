@@ -12,10 +12,9 @@ from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
 from django.core.files.base import ContentFile
 from django.db import models, transaction
-
-from common.djangoapps.util.storage import resolve_storage_backend
 from model_utils.models import TimeStampedModel
 
+from common.djangoapps.util.storage import resolve_storage_backend
 from openedx.core.djangoapps.xmodule_django.models import UsageKeyWithRunField
 
 from . import config
@@ -47,7 +46,7 @@ def _directory_name(data_usage_key):
     # replace any '/' in the usage key so they aren't interpreted
     # as folder separators.
     encoded_usage_key = str(data_usage_key).replace('/', '_')
-    return '{}{}'.format(
+    return '{}{}'.format(  # noqa: UP032
         directory_prefix,
         encoded_usage_key,
     )
@@ -145,7 +144,7 @@ def _storage_error_handling(bs_model, operation, is_read_operation=False):
             # May have been caused by one of the possible error
             # situations listed above.  Raise BlockStructureNotFound
             # so the block structure can be regenerated and restored.
-            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise BlockStructureNotFound(bs_model.data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         else:
             raise
 
@@ -173,7 +172,7 @@ class BlockStructureModel(TimeStampedModel):
         max_length=255,
         unique=True,
     )
-    data_version = models.CharField(
+    data_version = models.CharField(  # noqa: DJ001
         'Version of the data at the time of collection.',
         blank=True,
         null=True,
@@ -218,7 +217,7 @@ class BlockStructureModel(TimeStampedModel):
             return cls.objects.get(data_usage_key=data_usage_key)
         except cls.DoesNotExist:
             log.info('BlockStructure: Not found in table; %s.', data_usage_key)
-            raise BlockStructureNotFound(data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from
+            raise BlockStructureNotFound(data_usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
     @classmethod
     def update_or_create(cls, serialized_data, data_usage_key, **kwargs):

@@ -12,11 +12,11 @@ from opaque_keys.edx.keys import CourseKey
 from rest_framework.decorators import api_view
 
 from cms.djangoapps.contentstore.transcript_storage_handlers import (
-    validate_transcript_upload_data,
-    upload_transcript,
     delete_video_transcript,
     handle_transcript_credentials,
     handle_transcript_download,
+    upload_transcript,
+    validate_transcript_upload_data,
 )
 from common.djangoapps.student.auth import has_studio_write_access
 from common.djangoapps.util.json_request import JsonResponse, expect_json

@@ -2,14 +2,16 @@
 Tests for site configuration's django models.
 """
 from unittest.mock import patch
+
 import pytest
 from django.contrib.sites.models import Site
 from django.db import IntegrityError, transaction
 from django.test import TestCase
+
 from openedx.core.djangoapps.site_configuration.models import (
     SiteConfiguration,
     SiteConfigurationHistory,
-    save_siteconfig_without_historical_record
+    save_siteconfig_without_historical_record,
 )
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 
@@ -299,7 +301,7 @@ class SiteConfigurationTests(TestCase):
         )
 
         # Test that the default value is returned if the value for the given key is not found in the configuration
-        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)
+        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)  # noqa: PT009
 
     def test_get_all_orgs_returns_only_enabled(self):
         """
@@ -318,4 +320,4 @@ class SiteConfigurationTests(TestCase):
         )
 
         # Test that the default value is returned if the value for the given key is not found in the configuration
-        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)
+        self.assertCountEqual(SiteConfiguration.get_all_orgs(), expected_orgs)  # noqa: PT009

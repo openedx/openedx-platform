@@ -27,12 +27,12 @@ from lms.djangoapps.program_enrollments.api import (
     get_saml_providers_for_organization,
     iter_program_course_grades,
     write_program_course_enrollments,
-    write_program_enrollments
+    write_program_enrollments,
 )
 from lms.djangoapps.program_enrollments.constants import (
     ProgramCourseOperationStatuses,
     ProgramEnrollmentStatuses,
-    ProgramOperationStatuses
+    ProgramOperationStatuses,
 )
 from lms.djangoapps.program_enrollments.exceptions import ProviderDoesNotExistException
 from openedx.core.apidocs import cursor_paginate_serializer
@@ -40,7 +40,7 @@ from openedx.core.djangoapps.catalog.utils import (
     get_programs,
     get_programs_by_type,
     get_programs_for_organization,
-    normalize_program_type
+    normalize_program_type,
 )
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, PaginatedAPIView
@@ -54,7 +54,7 @@ from .serializers import (
     ProgramCourseGradeSerializer,
     ProgramEnrollmentCreateRequestSerializer,
     ProgramEnrollmentSerializer,
-    ProgramEnrollmentUpdateRequestSerializer
+    ProgramEnrollmentUpdateRequestSerializer,
 )
 from .utils import (
     ProgramCourseSpecificViewMixin,
@@ -67,7 +67,7 @@ from .utils import (
     get_enrollments_for_courses_in_program,
     verify_course_exists_and_in_program,
     verify_program_exists,
-    verify_user_enrolled_in_program
+    verify_user_enrolled_in_program,
 )
 
 
@@ -100,7 +100,7 @@ class EnrollmentWriteMixin:
         num_requests = len(self.request.data)
         if num_requests > MAX_ENROLLMENT_RECORDS:
             return Response(
-                '{} enrollments requested, but limit is {}.'.format(
+                '{} enrollments requested, but limit is {}.'.format(  # noqa: UP032
                     MAX_ENROLLMENT_RECORDS, num_requests
                 ),
                 status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,

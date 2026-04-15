@@ -129,7 +129,7 @@ class TestMobileConfig(TestCase):
             'iap config': 'false iap',
             '': 'empty'}
 
-        self.assertDictEqual(configs, expected_result)
+        self.assertDictEqual(configs, expected_result)  # noqa: PT009
 
     def test_structured_configs_without_iap_configs(self):
         """Check that configs are structured properly without iap configs"""
@@ -143,4 +143,4 @@ class TestMobileConfig(TestCase):
             'iap config': 'false iap',
             '': 'empty'}
 
-        self.assertDictEqual(configs, expected_result)
+        self.assertDictEqual(configs, expected_result)  # noqa: PT009

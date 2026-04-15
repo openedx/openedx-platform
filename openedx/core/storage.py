@@ -3,17 +3,18 @@ Django storage backends for Open edX.
 """
 
 
+from functools import lru_cache
+
 from django.conf import settings
 from django.contrib.staticfiles.storage import StaticFilesStorage
 from django.core.files.storage import FileSystemStorage
 from django.utils.deconstruct import deconstructible
 from django.utils.module_loading import import_string
-from functools import lru_cache
 from pipeline.storage import NonPackagingMixin
 from require.storage import OptimizedFilesMixin
 from storages.backends.s3boto3 import S3Boto3Storage
 
-from openedx.core.djangoapps.theming.storage import ThemeManifestFilesMixin, ThemePipelineMixin, ThemeMixin
+from openedx.core.djangoapps.theming.storage import ThemeManifestFilesMixin, ThemeMixin, ThemePipelineMixin
 
 
 class PipelineForgivingMixin:
@@ -102,7 +103,7 @@ class OverwriteStorage(FileSystemStorage):
         return name
 
 
-@lru_cache()
+@lru_cache()  # noqa: UP011
 def get_storage(storage_class=None, **kwargs):
     """
     Returns a storage instance with the given class name and kwargs. If the

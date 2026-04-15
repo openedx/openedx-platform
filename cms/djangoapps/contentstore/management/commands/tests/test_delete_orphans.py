@@ -18,7 +18,7 @@ class TestDeleteOrphan(TestOrphanBase):
         Test delete_orphans command with no arguments
         """
         errstring = 'Error: the following arguments are required: course_id'
-        with self.assertRaisesRegex(CommandError, errstring):
+        with self.assertRaisesRegex(CommandError, errstring):  # noqa: PT027
             call_command('delete_orphans')
 
     def test_delete_orphans_no_commit(self):
@@ -28,10 +28,10 @@ class TestDeleteOrphan(TestOrphanBase):
         """
         course = self.create_course_with_orphans(ModuleStoreEnum.Type.split)
         call_command('delete_orphans', str(course.id))
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'multi_parent_html')))
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('vertical', 'OrphanVert')))
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('chapter', 'OrphanChapter')))
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'OrphanHtml')))
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'multi_parent_html')))  # noqa: PT009
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('vertical', 'OrphanVert')))  # noqa: PT009
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('chapter', 'OrphanChapter')))  # noqa: PT009
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'OrphanHtml')))  # noqa: PT009
 
     def test_delete_orphans_commit(self):
         """
@@ -43,12 +43,12 @@ class TestDeleteOrphan(TestOrphanBase):
         call_command('delete_orphans', str(course.id), '--commit')
 
         # make sure this block wasn't deleted
-        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'multi_parent_html')))
+        self.assertTrue(self.store.has_item(course.id.make_usage_key('html', 'multi_parent_html')))  # noqa: PT009
 
         # and make sure that these were
-        self.assertFalse(self.store.has_item(course.id.make_usage_key('vertical', 'OrphanVert')))
-        self.assertFalse(self.store.has_item(course.id.make_usage_key('chapter', 'OrphanChapter')))
-        self.assertFalse(self.store.has_item(course.id.make_usage_key('html', 'OrphanHtml')))
+        self.assertFalse(self.store.has_item(course.id.make_usage_key('vertical', 'OrphanVert')))  # noqa: PT009
+        self.assertFalse(self.store.has_item(course.id.make_usage_key('chapter', 'OrphanChapter')))  # noqa: PT009
+        self.assertFalse(self.store.has_item(course.id.make_usage_key('html', 'OrphanHtml')))  # noqa: PT009
 
     def test_delete_orphans_published_branch_split(self):
         """
@@ -69,14 +69,14 @@ class TestDeleteOrphan(TestOrphanBase):
         # now all orphans should be deleted
         self.assertOrphanCount(course.id, 0)
         self.assertOrphanCount(published_branch, 0)
-        self.assertNotIn(orphan, self.store.get_items(published_branch))
+        self.assertNotIn(orphan, self.store.get_items(published_branch))  # noqa: PT009
         # we should have one fewer item in the published branch of the course
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             len(items_in_published) - 1,
             len(self.store.get_items(published_branch)),
         )
         # and the same amount of items in the draft branch of the course
-        self.assertEqual(
+        self.assertEqual(  # noqa: PT009
             len(items_in_draft_preferred),
             len(self.store.get_items(course.id)),
         )
@@ -111,6 +111,6 @@ class TestDeleteOrphan(TestOrphanBase):
         # there should be one in published
         self.assertOrphanCount(course.id, 0)
         self.assertOrphanCount(published_branch, 1)
-        self.assertIn(orphan.location, [x.location for x in self.store.get_items(published_branch)])
+        self.assertIn(orphan.location, [x.location for x in self.store.get_items(published_branch)])  # noqa: PT009
 
         return course, orphan

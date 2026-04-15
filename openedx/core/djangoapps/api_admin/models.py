@@ -16,8 +16,6 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext as _u
 from django.utils.translation import gettext_lazy as _
-
-
 from model_utils.models import TimeStampedModel
 
 from common.djangoapps.edxmako.shortcuts import render_to_string
@@ -264,5 +262,5 @@ class Catalog(models.Model):
             'viewers': self.viewers,
         }
 
-    def __str__(self):
+    def __str__(self):  # noqa: DJ012
         return f'Catalog {self.name} [{self.query}]'

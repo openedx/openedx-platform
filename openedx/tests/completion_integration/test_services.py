@@ -10,13 +10,13 @@ from completion.test_utils import CompletionWaffleTestMixin
 from django.conf import settings
 from django.test import override_settings
 from opaque_keys.edx.keys import CourseKey
+
+from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.library_tools import LegacyLibraryToolsService
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory, LibraryFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory, LibraryFactory
 from xmodule.tests import prepare_block_runtime
-
-from openedx.core.djangolib.testing.utils import skip_unless_lms
-from common.djangoapps.student.tests.factories import UserFactory
 
 
 @ddt.ddt
@@ -191,7 +191,7 @@ class CompletionServiceTestCase(CompletionWaffleTestMixin, SharedModuleStoreTest
             source_library_id=str(library.location.library_key),
             user_id=self.user.id,
         )
-        self.assertTrue(self.completion_service.can_mark_block_complete_on_view(library_content_block))
+        self.assertTrue(self.completion_service.can_mark_block_complete_on_view(library_content_block))  # noqa: PT009
 
     def test_vertical_completion_with_library_content(self):
         library = LibraryFactory.create(modulestore=self.store)
@@ -215,7 +215,7 @@ class CompletionServiceTestCase(CompletionWaffleTestMixin, SharedModuleStoreTest
             user_id=self.user.id,
         )
         # Library Content Block needs its children to be completed.
-        self.assertFalse(self.completion_service.can_mark_block_complete_on_view(library_content_block))
+        self.assertFalse(self.completion_service.can_mark_block_complete_on_view(library_content_block))  # noqa: PT009
 
         # Dirty hack:
         # sync_from_library isn't *supposed* to work inside LMS, but this test case was written

@@ -7,8 +7,6 @@ from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
 from django.db import models
-
-
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryLocatorV2
 from user_tasks.models import UserTaskStatus
@@ -17,8 +15,7 @@ from openedx.core.types.http import AuthenticatedHttpRequest
 
 from . import api
 from .data import CompositionLevel, RepeatHandlingStrategy
-from .models import ModulestoreSource, ModulestoreMigration, ModulestoreBlockSource, ModulestoreBlockMigration
-
+from .models import ModulestoreBlockMigration, ModulestoreBlockSource, ModulestoreMigration, ModulestoreSource
 
 log = logging.getLogger(__name__)
 

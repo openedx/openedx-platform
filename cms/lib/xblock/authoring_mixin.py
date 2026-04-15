@@ -8,8 +8,7 @@ import logging
 from django.conf import settings
 from web_fragments.fragment import Fragment
 from xblock.core import XBlock, XBlockMixin
-from xblock.fields import String, Scope
-
+from xblock.fields import Scope, String
 
 log = logging.getLogger(__name__)
 

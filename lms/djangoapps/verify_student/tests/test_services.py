@@ -22,12 +22,13 @@ from lms.djangoapps.verify_student.models import (
     ManualVerification,
     SoftwareSecurePhotoVerification,
     SSOVerification,
-    VerificationAttempt
+    VerificationAttempt,
 )
 from lms.djangoapps.verify_student.services import IDVerificationService
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from xmodule.modulestore.tests.django_utils import \
-    ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 FAKE_SETTINGS = {
@@ -206,10 +207,10 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user_a = UserFactory.create()
 
         SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)
+            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
         newer_record = SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)
+            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user_a, ['approved'])
@@ -223,10 +224,10 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user = UserFactory.create()
 
         SoftwareSecurePhotoVerification.objects.create(
-            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)
+            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
         newest = VerificationAttempt.objects.create(
-            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)
+            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user, ['approved'])
@@ -334,7 +335,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'none', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': ''}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_software_secure_verification(self):
         with freeze_time('2015-01-02'):
@@ -343,7 +344,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_software_secure_verification(self):
         with freeze_time('2015-2-02'):
@@ -357,7 +358,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': ['id_image_missing'],
                 'should_display': True, 'verification_expiry': '', 'status_date': '',
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_verification_attempt_verification(self):
         with freeze_time('2015-01-02'):
@@ -366,7 +367,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_verification_attempt_verification(self):
         with freeze_time('2015-2-02'):
@@ -380,7 +381,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': '',
                 'should_display': True, 'verification_expiry': '', 'status_date': '',
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_approved_sso_verification(self):
         with freeze_time('2015-03-02'):
@@ -389,7 +390,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': False, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_denied_sso_verification(self):
         with freeze_time('2015-04-02'):
@@ -401,7 +402,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status': 'must_reverify', 'error': '', 'should_display': False,
                 'verification_expiry': '', 'status_date': ''
             }
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     def test_manual_verification(self):
         with freeze_time('2015-05-02'):
@@ -410,7 +411,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             status = IDVerificationService.user_status(self.user)
             expected_status = {'status': 'approved', 'error': '', 'should_display': False, 'verification_expiry': '',
                                'status_date': datetime.now(utc)}
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.idata(itertools.product(
         [SoftwareSecurePhotoVerification, VerificationAttempt],
@@ -431,7 +432,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             expected_status = {'status': 'approved', 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': status_date}
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(SoftwareSecurePhotoVerification, VerificationAttempt)
     def test_expired_verification(self, verification_model):
@@ -455,7 +456,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'status_date': ''
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.idata(itertools.product(
         [SoftwareSecurePhotoVerification, VerificationAttempt],
@@ -495,7 +496,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
             expected_status = {'status': check_status, 'error': '', 'should_display': True, 'verification_expiry': '',
                                'status_date': status_date}
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(
         SSOVerification,
@@ -524,7 +525,7 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'verification_expiry': '', 'status_date': now()
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009
 
     @ddt.data(
         SSOVerification,
@@ -553,4 +554,4 @@ class TestIDVerificationServiceUserStatus(TestCase):
                 'verification_expiry': '', 'status_date': expected_date
             }
             status = IDVerificationService.user_status(self.user)
-            self.assertDictEqual(status, expected_status)
+            self.assertDictEqual(status, expected_status)  # noqa: PT009

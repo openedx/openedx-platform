@@ -11,10 +11,7 @@ from user_tasks.models import UserTaskStatus
 from user_tasks.serializers import StatusSerializer
 
 from cms.djangoapps.modulestore_migrator.data import CompositionLevel, RepeatHandlingStrategy
-from cms.djangoapps.modulestore_migrator.models import (
-    ModulestoreMigration,
-    ModulestoreSource,
-)
+from cms.djangoapps.modulestore_migrator.models import ModulestoreMigration, ModulestoreSource
 
 
 class LibraryMigrationCollectionSerializer(serializers.ModelSerializer):

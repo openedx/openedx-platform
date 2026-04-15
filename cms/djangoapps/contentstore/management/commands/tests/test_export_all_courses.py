@@ -10,7 +10,9 @@ from unittest import skip
 from cms.djangoapps.contentstore.management.commands.export_all_courses import export_courses_to_output_path
 from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -41,8 +43,8 @@ class ExportAllCourses(ModuleStoreTestCase):
         """
         # check that both courses exported successfully
         courses, failed_export_courses = export_courses_to_output_path(self.temp_dir)
-        self.assertEqual(len(courses), 2)
-        self.assertEqual(len(failed_export_courses), 0)
+        self.assertEqual(len(courses), 2)  # noqa: PT009
+        self.assertEqual(len(failed_export_courses), 0)  # noqa: PT009
 
         # manually make second course faulty and check that it fails on export
         second_course_id = self.second_course.id
@@ -51,6 +53,6 @@ class ExportAllCourses(ModuleStoreTestCase):
             {'$set': {'metadata.tags': 'crash'}}
         )
         courses, failed_export_courses = export_courses_to_output_path(self.temp_dir)
-        self.assertEqual(len(courses), 2)
-        self.assertEqual(len(failed_export_courses), 1)
-        self.assertEqual(failed_export_courses[0], str(second_course_id))
+        self.assertEqual(len(courses), 2)  # noqa: PT009
+        self.assertEqual(len(failed_export_courses), 1)  # noqa: PT009
+        self.assertEqual(failed_export_courses[0], str(second_course_id))  # noqa: PT009

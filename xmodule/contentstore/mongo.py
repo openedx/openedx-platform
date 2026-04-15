@@ -11,7 +11,7 @@ import gridfs
 import pymongo
 from bson.son import SON
 from fs.osfs import OSFS
-from gridfs.errors import NoFile, FileExists
+from gridfs.errors import FileExists, NoFile
 from opaque_keys.edx.keys import AssetKey
 
 from xmodule.contentstore.content import XASSET_LOCATION_TAG
@@ -207,7 +207,7 @@ class MongoContentStore(ContentStore):
                     )
         except NoFile:
             if throw_on_not_found:  # lint-amnesty, pylint: disable=no-else-raise
-                raise NotFoundError(content_id)  # lint-amnesty, pylint: disable=raise-missing-from
+                raise NotFoundError(content_id)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
             else:
                 return None
 

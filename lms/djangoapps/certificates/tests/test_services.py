@@ -9,7 +9,9 @@ from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.certificates.services import CertificateService
 from lms.djangoapps.certificates.tests.factories import CertificateAllowlistFactory, GeneratedCertificateFactory
 from openedx.core.djangoapps.content.course_overviews.tests.factories import CourseOverviewFactory
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
@@ -58,7 +60,7 @@ class CertificateServiceTests(ModuleStoreTestCase):
             user=self.user_id,
             course_id=self.course_id
         )
-        self.assertDictEqual(
+        self.assertDictEqual(  # noqa: PT009
             self.generated_certificate_to_dict(invalid_generated_certificate),
             {
                 'verify_uuid': invalid_generated_certificate.verify_uuid,

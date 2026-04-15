@@ -16,7 +16,7 @@ from edx_proctoring.api import (
     get_exam_by_content_id,
     remove_review_policy,
     update_exam,
-    update_review_policy
+    update_review_policy,
 )
 from edx_proctoring.exceptions import ProctoredExamNotFoundException, ProctoredExamReviewPolicyNotFoundException
 
@@ -70,7 +70,7 @@ def register_special_exams(course_key):
     # add/update any exam entries in edx-proctoring
     for timed_exam in timed_exams:
         msg = (
-            'Found {location} as a timed-exam in course structure. Inspecting...'.format(
+            'Found {location} as a timed-exam in course structure. Inspecting...'.format(  # noqa: UP032
                 location=str(timed_exam.location)
             )
         )

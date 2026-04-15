@@ -2,6 +2,7 @@
 Utilities for the REST API views.
 """
 from functools import wraps
+
 from django.http import HttpResponseBadRequest
 
 

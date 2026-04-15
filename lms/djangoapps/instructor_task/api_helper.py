@@ -14,14 +14,13 @@ from celery.result import AsyncResult
 from celery.states import FAILURE, READY_STATES, REVOKED, SUCCESS
 from django.utils.translation import gettext as _
 from opaque_keys.edx.keys import UsageKey
-from xmodule.modulestore.django import modulestore
 
 from common.djangoapps.util.db import outer_atomic
 from lms.djangoapps.courseware.courses import get_problems_in_section
 from lms.djangoapps.instructor_task.data import InstructorTaskTypes
 from lms.djangoapps.instructor_task.models import PROGRESS, SCHEDULED, InstructorTask, InstructorTaskSchedule
-
 from lms.djangoapps.instructor_task.tasks import send_bulk_course_email
+from xmodule.modulestore.django import modulestore
 
 log = logging.getLogger(__name__)
 

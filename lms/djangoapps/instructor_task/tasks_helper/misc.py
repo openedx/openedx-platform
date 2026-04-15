@@ -19,7 +19,7 @@ from django.core.files.storage import DefaultStorage
 from openassessment.data import OraAggregateData, OraDownloadData
 from pytz import UTC
 
-from common.djangoapps.student.models import unique_id_for_user, anonymous_id_for_user
+from common.djangoapps.student.models import anonymous_id_for_user, unique_id_for_user
 from lms.djangoapps.instructor_analytics.basic import get_proctored_exam_results
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 from lms.djangoapps.survey.models import SurveyAnswer
@@ -27,13 +27,7 @@ from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort
 from openedx.core.djangoapps.course_groups.models import CourseUserGroup
 
 from .runner import TaskProgress
-from .utils import (
-    UPDATE_STATUS_FAILED,
-    UPDATE_STATUS_SUCCEEDED,
-    upload_csv_to_report_store,
-    upload_zip_to_report_store,
-
-)
+from .utils import UPDATE_STATUS_FAILED, UPDATE_STATUS_SUCCEEDED, upload_csv_to_report_store, upload_zip_to_report_store
 
 # define different loggers for use within tasks and on client side
 TASK_LOG = logging.getLogger('edx.celery.task')

@@ -9,6 +9,7 @@ import pprint
 import pytest
 from path import Path as path
 from xblock.reference.user_service import UserService, XBlockUser
+
 from xmodule.x_module import ModuleStoreRuntime
 
 

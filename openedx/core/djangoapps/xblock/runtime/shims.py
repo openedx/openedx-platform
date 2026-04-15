@@ -4,6 +4,7 @@ Code to implement backwards compatibility
 # pylint: disable=no-member
 
 import warnings
+
 from django.conf import settings
 from django.core.cache import cache
 from django.template import TemplateDoesNotExist

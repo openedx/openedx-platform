@@ -31,7 +31,7 @@ from xblock.fields import Integer, List, Scope, String
 from xmodule.util.keys import BlockKey
 
 if t.TYPE_CHECKING:
-    from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
+    from django.contrib.auth.models import User  # pylint: disable=imported-auth-user  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -253,8 +253,9 @@ class UpstreamLink:
         Otherwise, raises an UpstreamLinkException.
         """
         # We import these here b/c UpstreamSyncMixin is used by cms/envs, which loads before the djangoapps are ready.
-        from openedx.core.djangoapps.content_libraries import api as lib_api
         from openedx_content import api as content_api
+
+        from openedx.core.djangoapps.content_libraries import api as lib_api
 
         if not isinstance(downstream, UpstreamSyncMixin):
             raise BadDownstream(_("Downstream is not an XBlock or is missing required UpstreamSyncMixin"))
@@ -410,7 +411,7 @@ def sever_upstream_link(downstream: XBlock) -> list[XBlock]:
     downstream.upstream = None
     downstream.upstream_version = None
     downstream.downstream_customized = []
-    for _, fetched_upstream_field in downstream.get_customizable_fields().items():
+    for _, fetched_upstream_field in downstream.get_customizable_fields().items():  # noqa: F402
         # Downstream-only fields don't have an upstream fetch field
         if fetched_upstream_field is None:
             continue

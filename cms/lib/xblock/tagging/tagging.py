@@ -95,7 +95,7 @@ class StructuredTagsAside(XBlockAside):
 
                 for posted_tag_value in posted_data[av_tag.name]:
                     if posted_tag_value not in tag_available_values and posted_tag_value not in tag_current_values:
-                        return Response("Invalid tag value was passed: %s" % posted_tag_value, status=400)
+                        return Response("Invalid tag value was passed: %s" % posted_tag_value, status=400)  # noqa: UP031  # pylint: disable=line-too-long
 
                 saved_tags[av_tag.name] = posted_data[av_tag.name]
                 need_update = True

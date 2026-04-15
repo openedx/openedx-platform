@@ -232,7 +232,7 @@ class CourseMetadata:
                     else:
                         key_values[key] = block.fields[key].from_json(val)
             except (TypeError, ValueError) as err:
-                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from
+                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                     name=model['display_name'], detailed_message=str(err)))
 
         return cls.update_from_dict(key_values, block, user)
@@ -556,7 +556,7 @@ class CourseMetadata:
 
             if proctoring_provider == 'software_secure' and not create_zendesk_tickets:
                 LOGGER.info(
-                    'create_zendesk_tickets set to {ticket_value} but proctoring '
+                    'create_zendesk_tickets set to {ticket_value} but proctoring '  # noqa: UP032
                     'provider is {provider} for course {course_id}. create_zendesk_tickets '
                     'should be updated for this course.'.format(
                         ticket_value=create_zendesk_tickets,

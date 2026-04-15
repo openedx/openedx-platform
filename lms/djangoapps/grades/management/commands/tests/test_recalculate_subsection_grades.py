@@ -15,7 +15,9 @@ from common.djangoapps.util.date_utils import to_timestamp
 from lms.djangoapps.grades.constants import ScoreDatabaseTableEnum
 from lms.djangoapps.grades.management.commands import recalculate_subsection_grades
 from lms.djangoapps.grades.tests.test_tasks import HasCourseWithProblemsMixin
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 
 DATE_FORMAT = "%Y-%m-%d %H:%M"
 

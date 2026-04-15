@@ -6,17 +6,17 @@ Tests for the Studio authoring XBlock mixin.
 from django.conf import settings
 from django.test.utils import override_settings
 from xblock.core import XBlock
+
+from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import CourseFactory, BlockFactory
+from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from xmodule.partitions.partitions import (
     ENROLLMENT_TRACK_PARTITION_ID,
     MINIMUM_UNUSED_PARTITION_ID,
     Group,
-    UserPartition
+    UserPartition,
 )
 from xmodule.tests.test_export import PureXBlock
-
-from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 
 
 class AuthoringMixinTestCase(ModuleStoreTestCase):
@@ -110,7 +110,7 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
         item = self.store.get_item(item_location)
         html = item.visibility_view().body_html()
         for string in substrings:
-            self.assertIn(string, html)
+            self.assertIn(string, html)  # noqa: PT009
 
     def verify_visibility_view_does_not_contain(self, item_location, substrings):
         """
@@ -120,7 +120,7 @@ class AuthoringMixinTestCase(ModuleStoreTestCase):
         item = self.store.get_item(item_location)
         html = item.visibility_view().body_html()
         for string in substrings:
-            self.assertNotIn(string, html)
+            self.assertNotIn(string, html)  # noqa: PT009
 
     def test_html_no_partition(self):
         self.verify_visibility_view_contains(self.video_location, [self.NO_CONTENT_OR_ENROLLMENT_GROUPS])

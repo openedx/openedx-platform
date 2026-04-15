@@ -9,7 +9,9 @@ from testfixtures import LogCapture
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import BulkUnenrollConfiguration, CourseEnrollment
 from common.djangoapps.student.tests.factories import UserFactory
-from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (
+    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 LOGGER_NAME = 'common.djangoapps.student.management.commands.bulk_unenroll'
@@ -128,7 +130,7 @@ class BulkUnenrollTests(SharedModuleStoreTestCase):
                 (
                     LOGGER_NAME,
                     'INFO',
-                    'User [{}] have been successfully unenrolled from the course: {}'.format(
+                    'User [{}] have been successfully unenrolled from the course: {}'.format(  # noqa: UP032
                         self.enrollments[0].username, self.enrollments[0].course.id
                     )
                 ),

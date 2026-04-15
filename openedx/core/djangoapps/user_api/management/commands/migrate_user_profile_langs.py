@@ -62,12 +62,12 @@ class Command(BaseCommand):
         langs += dark_lang_config.beta_languages_list if dark_lang_config.enable_beta_languages else []
 
         if new_lang_code not in langs:
-            raise CommandError('{} is not a configured language code in settings.LANGUAGES '
+            raise CommandError('{} is not a configured language code in settings.LANGUAGES '  # noqa: UP032
                                'or the current DarkLangConfig.'.format(new_lang_code))
 
         max_id = UserPreference.objects.all().aggregate(Max('id'))['id__max']
 
-        print('Updating user language preferences from {} to {}. '
+        print('Updating user language preferences from {} to {}. '  # noqa: UP032
               'Start id is {}, current max id is {}. '
               'Chunk size is of {}'.format(old_lang_code, new_lang_code, start, max_id, chunk_size))
 
@@ -98,7 +98,7 @@ class Command(BaseCommand):
             end += chunk_size
             sleep(sleep_time_secs)
 
-        print('Finished! Updated {} total preferences from {} to {}'.format(
+        print('Finished! Updated {} total preferences from {} to {}'.format(  # noqa: UP032
             updated_count,
             old_lang_code,
             new_lang_code
