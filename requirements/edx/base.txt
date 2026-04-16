@@ -479,7 +479,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==6.8.6
+edx-enterprise==7.0.4
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
@@ -734,6 +734,7 @@ lxml[html-clean]==5.3.2
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
+    #   edx-enterprise
     #   edx-i18n-tools
     #   edxval
     #   lti-consumer-xblock
@@ -833,7 +834,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/kernel.in
     #   xblocks-contrib
-openedx-core==0.38.2
+openedx-core==0.39.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
@@ -843,13 +844,14 @@ openedx-django-require==3.0.0
     # via -r requirements/edx/kernel.in
 openedx-django-wiki==3.1.1
     # via -r requirements/edx/kernel.in
-openedx-events==11.1.0
+openedx-events==11.1.1
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
     #   edx-event-bus-kafka
     #   edx-event-bus-redis
     #   event-tracking
+    #   openedx-core
     #   ora2
 openedx-filters==3.1.0
     # via

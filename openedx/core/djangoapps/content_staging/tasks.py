@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
-def delete_expired_clipboards(staged_content_ids: list[int]):
+def delete_expired_clipboards(staged_content_ids: list[StagedContent.ID]):
     """
     A Celery task to delete StagedContent clipboard entries that are no longer
     relevant.

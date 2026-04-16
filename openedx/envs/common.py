@@ -2087,7 +2087,7 @@ USE_EXTRACTED_HTML_BLOCK = True
 # .. toggle_warning: Not production-ready until relevant subtask https://github.com/openedx/edx-platform/issues/34827 is done.
 # .. toggle_creation_date: 2024-11-10
 # .. toggle_target_removal_date: 2026-04-10
-USE_EXTRACTED_DISCUSSION_BLOCK = False
+USE_EXTRACTED_DISCUSSION_BLOCK = True
 
 # .. toggle_name: USE_EXTRACTED_PROBLEM_BLOCK
 # .. toggle_default: False
@@ -2663,6 +2663,14 @@ NOTIFICATION_DIGEST_LOGO = DEFAULT_EMAIL_LOGO_URL
 NOTIFICATION_IMMEDIATE_EMAIL_BUFFER_MINUTES = 15  # in minutes
 NOTIFICATION_TYPE_ICONS = {}
 DEFAULT_NOTIFICATION_ICON_URL = ""
+
+# Digest email delivery schedule settings (all times in UTC).
+# Instance operators can override these to control when daily/weekly digest emails are sent.
+NOTIFICATION_DAILY_DIGEST_DELIVERY_HOUR = 17   # Hour of day (0-23) to send daily digest (default: 5 PM UTC)
+NOTIFICATION_DAILY_DIGEST_DELIVERY_MINUTE = 0  # Minute of hour (0-59) to send daily digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_DAY = 0    # Day of week (0=Monday, 6=Sunday) to send weekly digest
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_HOUR = 17  # Hour of day (0-23) to send weekly digest (default: 5 PM UTC)
+NOTIFICATION_WEEKLY_DIGEST_DELIVERY_MINUTE = 0 # Minute of hour (0-59) to send weekly digest
 
 # These settings are used to override the default notification preferences values for apps and types.
 # Here is complete documentation about how to use them: openedx/core/djangoapps/notifications/docs/settings.md

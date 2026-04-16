@@ -1,9 +1,14 @@
 """
-Management command for sending email digest
+Management command for sending email digest.
+
+DEPRECATED: This command is retained for backward compatibility.
+Digest emails are now scheduled automatically via delayed Celery tasks
+when notifications are created. Remove any cron jobs calling this command.
 """
+import warnings
+
 from django.core.management.base import BaseCommand
 
-from openedx.core.djangoapps.notifications.email.tasks import send_digest_email_to_all_users
 from openedx.core.djangoapps.notifications.email_notifications import EmailCadence
 
 
@@ -13,9 +18,14 @@ class Command(BaseCommand):
 
         python manage.py lms send_email_digest [cadence_type]
         cadence_type: Daily or Weekly
+
+    DEPRECATED: Digest emails are now automatically scheduled via delayed
+    Celery tasks when notifications are created.
     """
     help = (
-        "Send email digest to user."
+        "DEPRECATED: Send email digest to users. "
+        "Digest emails are now scheduled automatically. "
+        "Remove cron jobs using this command."
     )
 
     def add_arguments(self, parser):
@@ -29,4 +39,16 @@ class Command(BaseCommand):
         """
         Start task to send email digest to users
         """
-        send_digest_email_to_all_users.delay(kwargs['cadence_type'])
+        warnings.warn(
+            "The send_email_digest management command is deprecated. "
+            "Digest emails are now scheduled automatically via delayed Celery tasks "
+            "when notifications are created. Remove any cron jobs calling this command.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        self.stderr.write(
+            self.style.WARNING(
+                "WARNING: This command is deprecated. Digest emails are now scheduled "
+                "automatically. Please remove cron jobs using this command."
+            )
+        )

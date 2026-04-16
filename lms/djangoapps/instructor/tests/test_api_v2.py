@@ -26,6 +26,9 @@ from common.djangoapps.student.tests.factories import (
     StaffFactory,
     UserFactory,
 )
+from lms.djangoapps.certificates.data import CertificateStatuses
+from lms.djangoapps.certificates.models import CertificateGenerationHistory
+from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
@@ -1829,6 +1832,267 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIsInstance(extension['email'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_title'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_location'], str)  # noqa: PT009
+
+@ddt.ddt
+class IssuedCertificatesViewTest(SharedModuleStoreTestCase):
+    """
+    Tests for the IssuedCertificatesView API endpoint.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TestX',
+            run='Test_Course',
+            display_name='Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.staff = StaffFactory.create(course_key=self.course_key)
+        self.student1 = UserFactory.create(username='student1', email='student1@example.com')
+        self.student2 = UserFactory.create(username='student2', email='student2@example.com')
+
+        # Enroll students
+        CourseEnrollmentFactory.create(
+            user=self.student1,
+            course_id=self.course_key,
+            mode='verified',
+            is_active=True
+        )
+        CourseEnrollmentFactory.create(
+            user=self.student2,
+            course_id=self.course_key,
+            mode='audit',
+            is_active=True
+        )
+
+    def _get_url(self, course_id=None):
+        """Helper to get the API URL."""
+        if course_id is None:
+            course_id = str(self.course_key)
+        return reverse('instructor_api_v2:issued_certificates', kwargs={'course_id': course_id})
+
+    def test_get_issued_certificates_as_staff(self):
+        """
+        Test that staff can retrieve issued certificates.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'results' in response.data
+        assert 'count' in response.data
+
+    def test_get_issued_certificates_unauthorized(self):
+        """
+        Test that students cannot access issued certificates endpoint.
+        """
+        self.client.force_authenticate(user=self.student1)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_get_issued_certificates_unauthenticated(self):
+        """
+        Test that unauthenticated users cannot access the endpoint.
+        """
+        response = self.client.get(self._get_url())
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_get_issued_certificates_nonexistent_course(self):
+        """
+        Test error handling for non-existent course.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
+        response = self.client.get(self._get_url(course_id=nonexistent_course_id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_search_filter(self):
+        """
+        Test filtering certificates by search term.
+        """
+        # Create a certificate for student1
+        GeneratedCertificateFactory.create(
+            user=self.student1,
+            course_id=self.course_key,
+            status=CertificateStatuses.downloadable
+        )
+        # Create a certificate for student2
+        GeneratedCertificateFactory.create(
+            user=self.student2,
+            course_id=self.course_key,
+            status=CertificateStatuses.downloadable
+        )
+
+        self.client.force_authenticate(user=self.instructor)
+        params = {'search': 'student1'}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == status.HTTP_200_OK
+        # Verify only student1's certificate is returned
+        assert response.data['count'] == 1
+        assert response.data['results'][0]['username'] == 'student1'
+
+    @ddt.data(
+        'received',
+        'not_received',
+        'audit_passing',
+        'audit_not_passing',
+        'error',
+        'granted_exceptions',
+        'invalidated',
+    )
+    def test_filter_types(self, filter_type):
+        """
+        Test various filter types for certificates.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        params = {'filter': filter_type}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'results' in response.data
+
+    def test_pagination(self):
+        """
+        Test pagination parameters work correctly.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        params = {'page': '1', 'page_size': '10'}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'count' in response.data
+        assert 'next' in response.data
+        assert 'previous' in response.data
+        assert 'results' in response.data
+
+
+@ddt.ddt
+class CertificateGenerationHistoryViewTest(SharedModuleStoreTestCase):
+    """
+    Tests for the CertificateGenerationHistoryView API endpoint.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TestX',
+            run='Test_Course',
+            display_name='Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.staff = StaffFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create()
+
+    def _get_url(self, course_id=None):
+        """Helper to get the API URL."""
+        if course_id is None:
+            course_id = str(self.course_key)
+        return reverse('instructor_api_v2:certificate_generation_history', kwargs={'course_id': course_id})
+
+    def test_get_generation_history_as_staff(self):
+        """
+        Test that staff can retrieve certificate generation history.
+        """
+        self.client.force_authenticate(user=self.staff)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'results' in response.data
+        assert 'count' in response.data
+
+    def test_get_generation_history_unauthorized(self):
+        """
+        Test that students cannot access generation history endpoint.
+        """
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_get_generation_history_unauthenticated(self):
+        """
+        Test that unauthenticated users cannot access the endpoint.
+        """
+        response = self.client.get(self._get_url())
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_get_generation_history_nonexistent_course(self):
+        """
+        Test error handling for non-existent course.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        nonexistent_course_id = 'course-v1:edX+NonExistent+2024'
+        response = self.client.get(self._get_url(course_id=nonexistent_course_id))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_pagination(self):
+        """
+        Test pagination parameters work correctly.
+        """
+        self.client.force_authenticate(user=self.instructor)
+        params = {'page': '1', 'page_size': '10'}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'count' in response.data
+        assert 'next' in response.data
+        assert 'previous' in response.data
+        assert 'results' in response.data
+
+    def test_history_entry_structure(self):
+        """
+        Test that history entries have the correct structure.
+        """
+        # Create a real certificate generation history entry
+        task = InstructorTaskFactory.create(
+            course_id=self.course_key,
+            task_type='generate_certificates',
+            task_key=str(self.course_key),
+            task_id=str(uuid4()),
+            task_input='{}',
+            requester=self.instructor,
+        )
+        CertificateGenerationHistory.objects.create(
+            course_id=self.course_key,
+            generated_by=self.instructor,
+            instructor_task=task,
+            is_regeneration=True,
+        )
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['results']) == 1
+
+        entry = response.data['results'][0]
+        # Verify all required fields are present (snake_case from serializer)
+        assert entry['task_name'] == 'Regenerated'
+        assert 'date' in entry
+        assert entry['details'] == 'All learners'
+
+        # Verify data types
+        assert isinstance(entry['task_name'], str)
+        assert isinstance(entry['date'], str)
+        assert isinstance(entry['details'], str)
 
 
 class CourseEnrollmentsViewTest(SharedModuleStoreTestCase):

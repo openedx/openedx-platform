@@ -4,6 +4,7 @@ Public python data types for content staging
 from __future__ import annotations
 
 from datetime import datetime
+from typing import NewType
 
 from attrs import field, frozen, validators
 from django.db.models import TextChoices
@@ -11,6 +12,9 @@ from django.utils.translation import gettext_lazy as _
 from opaque_keys.edx.keys import AssetKey, ContainerKey, LearningContextKey, UsageKey
 
 from openedx.core.djangoapps.content_tagging.api import TagValuesByObjectIdDict
+
+# Typed primary key for the StagedContent model / StagedContentData
+StagedContentID = NewType("StagedContentID", int)
 
 
 class StagedContentStatus(TextChoices):
@@ -42,7 +46,7 @@ class StagedContentData:
 
     (OLX content that isn't part of any course at the moment)
     """
-    id: int = field(validator=validators.instance_of(int))
+    id: StagedContentID = field(validator=validators.instance_of(int))  # type: ignore[assignment]
     user_id: int = field(validator=validators.instance_of(int))
     created: datetime = field(validator=validators.instance_of(datetime))
     purpose: str = field(validator=validators.instance_of(str))

@@ -2913,27 +2913,6 @@ def _list_report_downloads(request, course_id):
     return JsonResponse(response_payload)
 
 
-@require_POST
-@ensure_csrf_cookie
-@cache_control(no_cache=True, no_store=True, must_revalidate=True)
-@require_course_permission(permissions.CAN_RESEARCH)
-@require_finance_admin
-def list_financial_report_downloads(_request, course_id):
-    """
-    List grade CSV files that are available for download for this course.
-    """
-    course_id = CourseKey.from_string(course_id)
-    report_store = ReportStore.from_config(config_name='FINANCIAL_REPORTS')
-
-    response_payload = {
-        'downloads': [
-            dict(name=name, url=url, link=HTML('<a href="{}">{}</a>').format(HTML(url), Text(name)))
-            for name, url in report_store.links_for(course_id)
-        ]
-    }
-    return JsonResponse(response_payload)
-
-
 @method_decorator(transaction.non_atomic_requests, name='dispatch')
 class ExportOra2DataView(DeveloperErrorViewMixin, APIView):
     """

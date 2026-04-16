@@ -476,14 +476,6 @@ class CourseFields:  # lint-amnesty, pylint: disable=missing-class-docstring
         ),
         scope=Scope.settings
     )
-    is_new = Boolean(
-        display_name=_("Course Is New"),
-        help=_(
-            "Enter true or false. If true, the course appears in the list of new courses, and a New! "
-            "badge temporarily appears next to the course image."
-        ),
-        scope=Scope.settings
-    )
     mobile_available = Boolean(
         display_name=_("Mobile Course Available"),
         help=_("Enter true or false. If true, the course will be available to mobile devices."),
@@ -1389,32 +1381,6 @@ class CourseBlock(
             return False
 
         return bool(config.get("always_cohort_inline_discussions", False))
-
-    @property
-    def is_newish(self):
-        """
-        Returns if the course has been flagged as new. If
-        there is no flag, return a heuristic value considering the
-        announcement and the start dates.
-        """
-        flag = self.is_new
-        if flag is None:
-            # Use a heuristic if the course has not been flagged
-            announcement, start, now = course_metadata_utils.sorting_dates(
-                self.start, self.advertised_start, self.announcement
-            )
-            if announcement and (now - announcement).days < 30:
-                # The course has been announced for less that month
-                return True
-            elif (now - start).days < 1:
-                # The course has not started yet
-                return True
-            else:
-                return False
-        elif isinstance(flag, str):
-            return flag.lower() in ['true', 'yes', 'y']
-        else:
-            return bool(flag)
 
     @property
     def sorting_score(self):

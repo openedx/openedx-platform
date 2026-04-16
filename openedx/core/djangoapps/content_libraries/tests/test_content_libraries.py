@@ -1982,3 +1982,24 @@ class ContentLibrariesRestAPIAuthzIntegrationTestCase(ContentLibrariesRestApiTes
             with self.as_user(user):
                 result = self._delete_library(self.lib_id, expect_response=status.HTTP_200_OK)
                 assert result == {}
+
+    def test_learn_from_library_permissions(self):
+        """
+        Verify that users with view permissions can learn from the library.
+        Learning from a library means being able to render/interact with blocks.
+        """
+        # Create and publish a block
+        block_data = self._add_block_to_library(self.lib_id, "problem", "test_problem")
+        block_id = block_data["id"]
+        self._commit_library_changes(self.lib_id)
+
+        # Users with view permissions should be able to learn from the library
+        for user in self.library_viewers:
+            with self.as_user(user):
+                # Rendering a block view requires CAN_LEARN permission
+                self._render_block_view(block_id, "student_view", expect_response=status.HTTP_200_OK)
+
+        # Users without view permissions should NOT be able to learn from the library
+        for user in self._all_users_excluding(self.library_viewers):
+            with self.as_user(user):
+                self._render_block_view(block_id, "student_view", expect_response=status.HTTP_403_FORBIDDEN)

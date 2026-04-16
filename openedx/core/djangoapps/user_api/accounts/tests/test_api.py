@@ -4,7 +4,6 @@ Most of the functionality is covered in test_views.py.
 """
 
 import datetime
-import itertools
 import unicodedata
 from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
@@ -18,7 +17,6 @@ from django.http import HttpResponse
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
-from social_django.models import UserSocialAuth
 
 from common.djangoapps.student.models import (
     AccountRecovery,
@@ -104,10 +102,12 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         self.staff_user = UserFactory(is_staff=True, password=self.password)
         self.reset_tracker()
 
-        enterprise_patcher = patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-        enterprise_learner_patcher = enterprise_patcher.start()
-        enterprise_learner_patcher.return_value = {}
-        self.addCleanup(enterprise_learner_patcher.stop)
+        filter_patcher = patch(
+            'openedx.core.djangoapps.user_api.accounts.api.AccountSettingsReadOnlyFieldsRequested.run_filter',
+            return_value=(set(), None),
+        )
+        filter_patcher.start()
+        self.addCleanup(filter_patcher.stop)
 
     def test_get_username_provided(self):
         """Test the difference in behavior when a username is supplied to get_account_settings."""
@@ -248,73 +248,19 @@ class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAc
         account_settings = get_account_settings(self.default_request)[0]
         assert level_of_education == account_settings['level_of_education']
 
-    @patch('openedx.features.enterprise_support.api.enterprise_customer_for_request')
-    @patch('openedx.features.enterprise_support.utils.third_party_auth.provider.Registry.get')
-    @ddt.data(
-        *itertools.product(
-            # field_name_value values
-            (("email", "new_email@example.com"), ("name", "new name"), ("country", "IN")),
-            # is_enterprise_user
-            (True, False),
-            # is_synch_learner_profile_data
-            (True, False),
-            # has `UserSocialAuth` record
-            (True, False),
-        )
+    @patch(
+        'openedx.core.djangoapps.user_api.accounts.api.AccountSettingsReadOnlyFieldsRequested.run_filter',
+        return_value=({'country'}, None),
     )
-    @ddt.unpack
-    def test_update_validation_error_for_enterprise(
-        self,
-        field_name_value,
-        is_enterprise_user,
-        is_synch_learner_profile_data,
-        has_user_social_auth_record,
-        mock_auth_provider,
-        mock_customer,
-    ):
-        idp_backend_name = 'tpa-saml'
-        mock_customer.return_value = {}
-        if is_enterprise_user:
-            mock_customer.return_value.update({
-                'uuid': 'real-ent-uuid',
-                'name': 'Dummy Enterprise',
-                'identity_provider': 'saml-ubc',
-                'identity_providers': [
-                    {
-                        "provider_id": "saml-ubc",
-                    }
-                ],
-            })
-        mock_auth_provider.return_value.sync_learner_profile_data = is_synch_learner_profile_data
-        mock_auth_provider.return_value.backend_name = idp_backend_name
-
-        update_data = {field_name_value[0]: field_name_value[1]}
-
-        user_fullname_editable = False
-        if has_user_social_auth_record:
-            UserSocialAuth.objects.create(
-                provider=idp_backend_name,
-                user=self.user
-            )
-        else:
-            UserSocialAuth.objects.all().delete()
-            # user's fullname is editable if no `UserSocialAuth` record exists
-            user_fullname_editable = field_name_value[0] == 'name'
-
-        # prevent actual email change requests
-        with patch('openedx.core.djangoapps.user_api.accounts.api.student_views.do_email_change_request'):
-            # expect field un-editability only when all of the following conditions are met
-            if is_enterprise_user and is_synch_learner_profile_data and not user_fullname_editable:
-                with pytest.raises(AccountValidationError) as validation_error:  # noqa: PT012
-                    update_account_settings(self.user, update_data)
-                    field_errors = validation_error.value.field_errors
-                    assert 'This field is not editable via this API' == \
-                           field_errors[field_name_value[0]]['developer_message']
-            else:
-                update_account_settings(self.user, update_data)
-                account_settings = get_account_settings(self.default_request)[0]
-                if field_name_value[0] != "email":
-                    assert field_name_value[1] == account_settings[field_name_value[0]]
+    def test_readonly_field_from_filter_is_rejected(self, mock_run_filter):  # pylint: disable=unused-argument
+        """
+        When AccountSettingsReadOnlyFieldsRequested.run_filter returns a field as read-only,
+        update_account_settings should raise AccountValidationError for that field.
+        """
+        with pytest.raises(AccountValidationError) as exc_info:
+            update_account_settings(self.user, {"country": "IN"})
+        field_errors = exc_info.value.field_errors
+        assert 'This field is not editable via this API' == field_errors['country']['developer_message']
 
     def test_update_error_validating(self):
         """Test that AccountValidationError is thrown if incorrect values are supplied."""
