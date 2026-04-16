@@ -725,6 +725,8 @@ class ReportDownloadsView(DeveloperErrorViewMixin, APIView):
             return ReportType.ANONYMIZED_STUDENT_IDS.value
         elif 'issued_certificates' in name_lower or 'certificate' in name_lower:
             return ReportType.ISSUED_CERTIFICATES.value
+        elif 'cohort_results' in name_lower:
+            return ReportType.COHORT_RESULTS.value
         elif 'grade_report' in name_lower:
             return ReportType.GRADE.value
         elif 'enrolled_students' in name_lower or 'profile' in name_lower:

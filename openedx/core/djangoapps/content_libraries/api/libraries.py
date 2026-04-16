@@ -813,9 +813,15 @@ def get_backup_task_status(
 def _transform_legacy_lib_permission_to_authz_permission(permission: str) -> str:
     """
     Transform a legacy content library permission to an openedx-authz permission.
+
+    Notes:
+    - There is no dedicated permission or role for can_create_content_library in openedx-authz yet,
+        so we reuse the same permission to rely on user.has_perm via Bridgekeeper.
+    - There is no dedicated can_learn_from_this_content_library permission
+        in the new authz system,
+        but we are mapping it to view_library in the new system. So the user who can view
+        library content can learn from it.
     """
-    # There is no dedicated permission or role for can_create_content_library in openedx-authz yet,
-    # so we reuse the same permission to rely on user.has_perm via Bridgekeeper.
     return {
         permissions.CAN_CREATE_CONTENT_LIBRARY: permissions.CAN_CREATE_CONTENT_LIBRARY,
         permissions.CAN_DELETE_THIS_CONTENT_LIBRARY: authz_permissions.DELETE_LIBRARY.identifier,
@@ -823,6 +829,7 @@ def _transform_legacy_lib_permission_to_authz_permission(permission: str) -> str
         permissions.CAN_EDIT_THIS_CONTENT_LIBRARY_TEAM: authz_permissions.MANAGE_LIBRARY_TEAM.identifier,
         permissions.CAN_VIEW_THIS_CONTENT_LIBRARY: authz_permissions.VIEW_LIBRARY.identifier,
         permissions.CAN_VIEW_THIS_CONTENT_LIBRARY_TEAM: authz_permissions.VIEW_LIBRARY_TEAM.identifier,
+        permissions.CAN_LEARN_FROM_THIS_CONTENT_LIBRARY: authz_permissions.VIEW_LIBRARY.identifier,
     }.get(permission, permission)
 
 
@@ -860,6 +867,11 @@ def user_has_permission_across_lib_authz_systems(
     Current gaps covered here:
     - CAN_CREATE_CONTENT_LIBRARY: we call user.has_perm via Bridgekeeper to verify the user is a course creator.
     - CAN_VIEW_THIS_CONTENT_LIBRARY: we respect the allow_public_read flag via Bridgekeeper.
+    - CAN_LEARN_FROM_THIS_CONTENT_LIBRARY: this permission doesn't exist in the new authz system, but we are treating
+    it as equivalent to view_library in the new system, so we check both the legacy permission and the authz permission.
+    This means that if a user can view the library content, they can learn from it.
+    If we want to remove the old check fully, we should either update the can_learn enforcement points
+    or add that specific permission to the authz system.
 
     Replace these with authz_api.is_user_allowed once openedx-authz supports
     these conditions natively (including global (*) roles).
