@@ -585,26 +585,26 @@ class BuildTabUrlTest(SimpleTestCase):
     going through the full API stack.
     """
 
-    def _build(self, setting_name, *parts):
-        return CourseInformationSerializerV2._build_tab_url(setting_name, *parts)  # pylint: disable=protected-access
+    def _build(self, setting_name, *parts, strip_url=True):
+        return CourseInformationSerializerV2._build_tab_url(setting_name, *parts, strip_url=strip_url)  # pylint: disable=protected-access
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard')
     def test_joins_base_and_path_parts(self):
         """Parts are joined with '/' separators."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard/')
     def test_strips_trailing_slash_from_base(self):
         """A trailing slash on the base URL does not produce a double slash."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard')
     def test_strips_slashes_from_path_parts(self):
         """Leading and trailing slashes on path parts are stripped before joining."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', '/instructor/', '/course-v1:edX+DemoX+Demo/', '/grading/')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', '/course-v1:edX+DemoX+Demo/', '/grading/')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
     @override_settings(COMMUNICATIONS_MICROFRONTEND_URL=None)
     def test_logs_warning_and_returns_relative_url_when_setting_is_none(self):
@@ -621,15 +621,17 @@ class BuildTabUrlTest(SimpleTestCase):
     def test_logs_warning_when_setting_does_not_exist(self):
         """When the setting name is not defined at all, behavior matches the None case."""
         with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
-            result = self._build('NONEXISTENT_MFE_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
+            result = self._build('NONEXISTENT_MFE_URL', 'course-v1:edX+DemoX+Demo', 'grading')
 
         self.assertTrue(any('NONEXISTENT_MFE_URL is not configured' in msg for msg in cm.output))  # noqa: PT009
-        self.assertEqual(result, '/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        self.assertEqual(result, '/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
     @override_settings(COMMUNICATIONS_MICROFRONTEND_URL='http://localhost:1984/communications/')
     def test_base_with_subpath_and_trailing_slash(self):
         """Base URL with a subpath and trailing slash is joined cleanly."""
-        result = self._build('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email')
+        result = self._build(
+            "COMMUNICATIONS_MICROFRONTEND_URL", "courses", "course-v1:edX+DemoX+Demo", "bulk_email", strip_url=False
+        )
         self.assertEqual(result, 'http://localhost:1984/communications/courses/course-v1:edX+DemoX+Demo/bulk_email')  # noqa: PT009  # pylint: disable=line-too-long
 
 

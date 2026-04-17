@@ -111,12 +111,12 @@ class CourseInformationSerializerV2(serializers.Serializer):
         base_url = getattr(settings, setting_name, None)
         if base_url is None:
             log.warning("%s is not configured.", setting_name)
-            base_url = ""
-
-        if strip_url:
-            parsed_url = urlparse(base_url)
-            base_part = parsed_url.path
+            base_part = ""
+        elif strip_url and base_url:
+            # Extract only the path component from the URL
+            base_part = urlparse(base_url).path
         else:
+            # Use the full URL as-is
             base_part = base_url
 
         parts = [base_part.rstrip("/")] + [str(part).strip("/") for part in path_parts]
