@@ -292,9 +292,9 @@ paths:
           schema:
             type: object
             required:
-              - role
+              - roles
             properties:
-              role:
+              roles:
                 type: array
                 items:
                   type: string

@@ -2622,14 +2622,14 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
 
         DELETE /api/instructor/v2/courses/{course_id}/team/jane_doe
         {
-            "role": ["staff"]
+            "roles": ["staff"]
         }
 
     **DELETE Example Request (multiple roles)**
 
         DELETE /api/instructor/v2/courses/{course_id}/team/jane_doe
         {
-            "role": ["staff", "beta"]
+            "roles": ["staff", "beta"]
         }
 
     **DELETE Response Values**
@@ -2662,7 +2662,7 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         if not revoke_serializer.is_valid():
             return Response(revoke_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        roles = revoke_serializer.validated_data['role']
+        roles = revoke_serializer.validated_data['roles']
 
         try:
             user = get_student_from_identifier(email_or_username)

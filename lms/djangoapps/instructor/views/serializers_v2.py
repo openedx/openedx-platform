@@ -969,7 +969,7 @@ class CourseTeamModifySerializer(serializers.Serializer):
 
 class CourseTeamRevokeSerializer(serializers.Serializer):
     """Input serializer for revoking course team roles."""
-    role = serializers.ListField(
+    roles = serializers.ListField(
         child=serializers.ChoiceField(choices=list(ROLES.keys()) + list(FORUM_ROLES)),
         allow_empty=False,
         help_text="One or more roles to revoke (course access role or forum role)"

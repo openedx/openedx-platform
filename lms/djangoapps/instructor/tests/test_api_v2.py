@@ -3122,7 +3122,7 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
     def test_revoke_staff_role(self):
         """Revoke staff role from a user."""
         self.client.force_authenticate(user=self.instructor)
-        response = self.client.delete(self._get_url(self.staff_user.username), {'role': ['staff']}, format='json')
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['success']
@@ -3136,7 +3136,7 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         CourseStaffRole(self.course_key).add_users(target)
         CourseBetaTesterRole(self.course_key).add_users(target)
         self.client.force_authenticate(user=self.instructor)
-        response = self.client.delete(self._get_url(target.username), {'role': ['staff', 'beta']}, format='json')
+        response = self.client.delete(self._get_url(target.username), {'roles': ['staff', 'beta']}, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['roles'] == ['staff', 'beta']
@@ -3147,7 +3147,7 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         """Instructors cannot revoke their own instructor access."""
         self.client.force_authenticate(user=self.instructor)
         response = self.client.delete(
-            self._get_url(self.instructor.username), {'role': ['instructor']}, format='json'
+            self._get_url(self.instructor.username), {'roles': ['instructor']}, format='json'
         )
 
         assert response.status_code == status.HTTP_409_CONFLICT
@@ -3163,21 +3163,21 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         """Revoking from non-existent user returns 404."""
         self.client.force_authenticate(user=self.instructor)
         response = self.client.delete(
-            self._get_url('nonexistent_user_12345'), {'role': ['staff']}, format='json'
+            self._get_url('nonexistent_user_12345'), {'roles': ['staff']}, format='json'
         )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_revoke_unauthenticated(self):
         """Unauthenticated request returns 401."""
-        response = self.client.delete(self._get_url(self.staff_user.username), {'role': ['staff']}, format='json')
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_revoke_no_permission(self):
         """Student without instructor access gets 403."""
         self.client.force_authenticate(user=self.student)
-        response = self.client.delete(self._get_url(self.staff_user.username), {'role': ['staff']}, format='json')
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -3189,7 +3189,7 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         role.users.add(target)
 
         self.client.force_authenticate(user=self.instructor)
-        response = self.client.delete(self._get_url(target.username), {'role': ['Moderator']}, format='json')
+        response = self.client.delete(self._get_url(target.username), {'roles': ['Moderator']}, format='json')
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['roles'] == ['Moderator']
