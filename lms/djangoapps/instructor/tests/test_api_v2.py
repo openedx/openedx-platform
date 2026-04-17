@@ -17,7 +17,8 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.student.models.course_enrollment import CourseEnrollment
+from common.djangoapps.student.models import ManualEnrollmentAudit
+from common.djangoapps.student.models.course_enrollment import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.roles import CourseBetaTesterRole, CourseDataResearcherRole, CourseInstructorRole
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
@@ -2313,3 +2314,313 @@ class CourseEnrollmentsViewTest(SharedModuleStoreTestCase):
         data = response.data
         self.assertEqual(data['count'], 1)  # noqa: PT009
         self.assertTrue(data['results'][0]['is_beta_tester'])  # noqa: PT009
+
+
+class EnrollmentModifyViewTest(SharedModuleStoreTestCase):
+    """Tests for the EnrollmentModifyView v2 bulk POST endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory(course_key=self.course.id)
+        self.url = reverse(
+            'instructor_api_v2:enrollment_modify',
+            kwargs={'course_id': str(self.course.id)}
+        )
+
+    def _enroll(self, identifiers, **extra):
+        return self.client.post(
+            self.url,
+            {'identifier': identifiers, 'action': 'enroll', **extra},
+            format='json',
+        )
+
+    def _unenroll(self, identifiers, **extra):
+        return self.client.post(
+            self.url,
+            {'identifier': identifiers, 'action': 'unenroll', **extra},
+            format='json',
+        )
+
+    def test_unauthenticated_returns_401(self):
+        response = self._enroll(['test@example.com'])
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_student_returns_403(self):
+        self.client.force_authenticate(user=UserFactory())
+        response = self._enroll(['test@example.com'])
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_missing_fields_returns_400(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {}, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_empty_identifier_list_returns_400(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([])
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_invalid_action_returns_400(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(
+            self.url,
+            {'identifier': ['a@b.com'], 'action': 'bogus'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_enroll_existing_user(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['action'] == 'enroll'
+        assert response.data['auto_enroll'] is False
+        result = response.data['results'][0]
+        assert result['identifier'] == learner.email
+        assert result['before'] == {'user': True, 'enrollment': False, 'allowed': False, 'auto_enroll': False}
+        assert result['after']['enrollment'] is True
+        assert result['after']['user'] is True
+        assert result['after']['allowed'] is False
+        assert CourseEnrollment.is_enrolled(learner, self.course.id)
+
+    def test_enroll_by_username(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.username])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][0]['after']['enrollment'] is True
+        assert CourseEnrollment.is_enrolled(learner, self.course.id)
+
+    def test_enroll_nonexistent_user_creates_cea(self):
+        email = 'newlearner@example.com'
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([email])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['after']['user'] is False
+        assert result['after']['enrollment'] is False
+        assert result['after']['allowed'] is True
+        assert CourseEnrollmentAllowed.objects.filter(email=email, course_id=self.course.id).exists()
+
+    def test_enroll_invalid_email_returns_invalid_identifier(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll(['not-an-email'])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result.get('invalid_identifier') is True
+        assert 'before' not in result
+        assert 'after' not in result
+
+    def test_enroll_already_enrolled_is_idempotent(self):
+        learner = UserFactory()
+        CourseEnrollmentFactory(user=learner, course_id=self.course.id, is_active=True)
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][0]['after']['enrollment'] is True
+
+    def test_enroll_creates_audit_record(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.email], reason='Manual enrollment')
+        assert response.status_code == status.HTTP_200_OK
+
+        enrollment = CourseEnrollment.get_enrollment(learner, self.course.id)
+        audit = ManualEnrollmentAudit.objects.filter(enrollment=enrollment).first()
+        assert audit is not None
+        assert audit.reason == 'Manual enrollment'
+
+    def test_enroll_ambiguous_identifier_returns_error(self):
+        user_a = UserFactory(username='enroll_ambig@example.com')
+        UserFactory(email='enroll_ambig@example.com')
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([user_a.username])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result.get('error') is True
+
+    def test_enroll_auto_enroll_reflected_top_level(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.email], auto_enroll=True)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['auto_enroll'] is True
+
+    def test_enroll_mixed_success_and_failure(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._enroll([learner.email, 'not-an-email'])
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data['results']
+        assert len(results) == 2
+        assert results[0]['identifier'] == learner.email
+        assert 'after' in results[0]
+        assert results[1]['identifier'] == 'not-an-email'
+        assert results[1].get('invalid_identifier') is True
+
+    def test_unenroll_existing_user(self):
+        learner = UserFactory()
+        CourseEnrollmentFactory(user=learner, course_id=self.course.id, is_active=True)
+        self.client.force_authenticate(user=self.instructor)
+        response = self._unenroll([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['before']['enrollment'] is True
+        assert result['after']['enrollment'] is False
+        assert not CourseEnrollment.is_enrolled(learner, self.course.id)
+
+    def test_unenroll_not_enrolled_returns_200(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._unenroll([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][0]['after']['enrollment'] is False
+
+    def test_unenroll_creates_audit_record(self):
+        learner = UserFactory()
+        CourseEnrollmentFactory(user=learner, course_id=self.course.id, is_active=True)
+        self.client.force_authenticate(user=self.instructor)
+        response = self._unenroll([learner.email], reason='Manual unenrollment')
+        assert response.status_code == status.HTTP_200_OK
+
+        audits = ManualEnrollmentAudit.objects.filter(enrolled_email=learner.email)
+        assert audits.exists()
+
+    def test_staff_can_access(self):
+        staff = StaffFactory(course_key=self.course.id)
+        learner = UserFactory()
+        self.client.force_authenticate(user=staff)
+        response = self._enroll([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+
+
+class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
+    """Tests for the BetaTesterModifyView v2 bulk POST endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory(course_key=self.course.id)
+        self.url = reverse(
+            'instructor_api_v2:beta_tester_modify',
+            kwargs={'course_id': str(self.course.id)}
+        )
+
+    def _add(self, identifiers, **extra):
+        return self.client.post(
+            self.url,
+            {'identifier': identifiers, 'action': 'add', **extra},
+            format='json',
+        )
+
+    def _remove(self, identifiers, **extra):
+        return self.client.post(
+            self.url,
+            {'identifier': identifiers, 'action': 'remove', **extra},
+            format='json',
+        )
+
+    def test_unauthenticated_returns_401(self):
+        response = self._add(['test'])
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_student_returns_403(self):
+        self.client.force_authenticate(user=UserFactory())
+        response = self._add(['test'])
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_missing_fields_returns_400(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {}, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_invalid_action_returns_400(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(
+            self.url,
+            {'identifier': ['someone'], 'action': 'bogus'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_add_beta_tester(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['identifier'] == learner.email
+        assert result['error'] is False
+        assert CourseBetaTesterRole(self.course.id).has_user(learner)
+
+    def test_add_beta_tester_with_auto_enroll(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add([learner.email], auto_enroll=True)
+        assert response.status_code == status.HTTP_200_OK
+        assert CourseEnrollment.is_enrolled(learner, self.course.id)
+
+    def test_add_beta_tester_auto_enroll_already_enrolled(self):
+        learner = UserFactory()
+        CourseEnrollmentFactory(user=learner, course_id=self.course.id, is_active=True)
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add([learner.email], auto_enroll=True)
+        assert response.status_code == status.HTTP_200_OK
+        assert CourseEnrollment.objects.filter(user=learner, course_id=self.course.id).count() == 1
+
+    def test_add_nonexistent_user_returns_per_user_error(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add(['nobody@example.com'])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['error'] is True
+        assert result['user_does_not_exist'] is True
+
+    def test_add_ambiguous_identifier_returns_per_user_error(self):
+        user_a = UserFactory(username='beta_ambig@example.com')
+        UserFactory(email='beta_ambig@example.com')
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add([user_a.username])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['error'] is True
+        assert result['user_does_not_exist'] is False
+
+    def test_remove_beta_tester(self):
+        learner = UserFactory()
+        CourseBetaTesterRole(self.course.id).add_users(learner)
+        self.client.force_authenticate(user=self.instructor)
+        response = self._remove([learner.email])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'][0]['error'] is False
+        assert not CourseBetaTesterRole(self.course.id).has_user(learner)
+
+    def test_remove_nonexistent_user_returns_per_user_error(self):
+        self.client.force_authenticate(user=self.instructor)
+        response = self._remove(['nobody@example.com'])
+        assert response.status_code == status.HTTP_200_OK
+        result = response.data['results'][0]
+        assert result['error'] is True
+        assert result['user_does_not_exist'] is True
+
+    def test_add_mixed_success_and_failure(self):
+        learner = UserFactory()
+        self.client.force_authenticate(user=self.instructor)
+        response = self._add([learner.email, 'nobody@example.com'])
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data['results']
+        assert len(results) == 2
+        assert results[0]['error'] is False
+        assert results[1]['error'] is True

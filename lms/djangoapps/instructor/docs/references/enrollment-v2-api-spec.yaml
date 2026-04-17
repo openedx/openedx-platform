@@ -14,9 +14,7 @@ info:
     - Follows Open edX REST API Conventions
 
     **Execution Model:**
-    - Operations that affect a single learner execute synchronously (< 5s typical)
-    - Operations that affect multiple learners queue a background task
-    - Use the task status endpoint to monitor background tasks
+    - All operations execute synchronously
 
     **Authentication:**
     - OAuth2 for mobile clients and micro-services
@@ -59,15 +57,13 @@ tags:
     description: Course enrollment operations
 
 paths:
-  # ==================== ENROLLMENT ENDPOINTS ====================
-
-  /api/enrollment/v2/courses/{course_key}/enrollments:
+  /api/instructor/v2/courses/{course_id}/enrollments:
     get:
       tags:
         - Enrollments
       summary: List course enrollments
       description: |
-        Retrieve a paginated list of all enrollments for a course.
+        Retrieve a paginated list of all active enrollments for a course.
 
         **Performance:** Returns basic enrollment data by default. Use `requested_fields`
         parameter to include additional data such as profile images or beta tester status.
@@ -78,7 +74,7 @@ paths:
       produces:
         - application/json
       parameters:
-        - $ref: '#/parameters/CourseKey'
+        - $ref: '#/parameters/CourseId'
         - name: page
           in: query
           description: Page number (1-indexed)
@@ -111,7 +107,7 @@ paths:
             application/json:
               count: 1035
               num_pages: 42
-              next: "/api/enrollment/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
+              next: "/api/instructor/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
               previous: null
               results:
                 - username: "bjohnson"
@@ -137,217 +133,86 @@ paths:
         404:
           $ref: '#/responses/NotFound'
 
+  /api/instructor/v2/courses/{course_id}/enrollments/modify:
     post:
       tags:
         - Enrollments
-      summary: Enroll learners in course
+      summary: Enroll or unenroll learners
       description: |
-        Enroll one or more learners in a course by email or username.
+        Enroll or unenroll one or more learners in a course by email or username.
 
-        **Behavior:**
-        - If user exists and is active: Enrolls immediately in specified mode (or default)
+        **Enroll behavior:**
+        - If user exists and is active: Enrolls immediately
         - If user does not exist: Creates CourseEnrollmentAllowed record
         - When the user registers, they will be auto-enrolled if `auto_enroll` is true
 
-        **Scope:**
-        - Single learner: Synchronous operation (~100-500ms)
-        - Multiple learners: Asynchronous task queued
+        **Unenroll behavior:**
+        - If user is enrolled: Deactivates the enrollment
+        - If user has CourseEnrollmentAllowed: Deletes the allowed enrollment
+
+        **Invalid identifiers:**
+        - Identifiers that are neither a valid email nor a known username return
+          `invalid_identifier: true` with no `before`/`after` state
 
         **Email Notifications:**
-        - If user is already registered: Uses "enrolled_enroll" message type
-        - If user is not registered: Uses "allowed_enroll" message type
-      operationId: enrollLearners
+        - Controlled by `email_students` parameter
+        - Enroll (registered user): Uses "enrolled_enroll" message type
+        - Enroll (unregistered): Uses "allowed_enroll" message type
+        - Unenroll (enrolled): Uses "enrolled_unenroll" message type
+        - Unenroll (allowed): Uses "allowed_unenroll" message type
+      operationId: modifyEnrollments
       consumes:
         - application/json
       produces:
         - application/json
       parameters:
-        - $ref: '#/parameters/CourseKey'
+        - $ref: '#/parameters/CourseId'
         - name: body
           in: body
           required: true
           schema:
-            type: object
-            required:
-              - identifiers
-            properties:
-              identifiers:
-                type: array
-                description: List of email addresses or usernames to enroll
-                minItems: 1
-                items:
-                  type: string
-                example: ["john@example.com", "jane_doe"]
-              auto_enroll:
-                type: boolean
-                description: Auto-enroll user when they register (for non-registered users)
-                default: false
-              email_students:
-                type: boolean
-                description: Send email notification to learners
-                default: false
-              reason:
-                type: string
-                description: Reason for enrollment (included in email if email_students is true)
-                x-nullable: true
-              mode:
-                type: string
-                description: Enrollment mode (audit, honor, verified, professional, etc.)
-                x-nullable: true
-                example: "audit"
+            $ref: '#/definitions/EnrollmentModifyRequest'
       responses:
         200:
-          description: Single learner enrolled successfully (synchronous)
+          description: Per-identifier results returned (may include both successes and failures)
           schema:
-            $ref: '#/definitions/EnrollmentOperationResult'
+            $ref: '#/definitions/EnrollmentModifyResponse'
           examples:
             application/json:
               action: "enroll"
-              results:
-                - identifier: "john@example.com"
-                  before:
-                    enrolled: false
-                    allowed: false
-                  after:
-                    enrolled: true
-                    allowed: false
-                    mode: "audit"
-        202:
-          description: Multiple learner enrollment task queued (asynchronous)
-          schema:
-            $ref: '#/definitions/AsyncOperationResult'
-          examples:
-            application/json:
-              task_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-              status_url: "/api/enrollment/v2/courses/course-v1:edX+DemoX+Demo_Course/tasks/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-              action: "enroll"
-              count: 150
-        400:
-          $ref: '#/responses/BadRequest'
-        401:
-          $ref: '#/responses/Unauthorized'
-        403:
-          $ref: '#/responses/Forbidden'
-        404:
-          $ref: '#/responses/NotFound'
-
-  /api/enrollment/v2/courses/{course_key}/enrollments/{email_or_username}:
-    get:
-      tags:
-        - Enrollments
-      summary: Get learner enrollment details
-      description: |
-        Retrieve detailed enrollment information for a specific learner.
-
-        **Returns:**
-        - Current enrollment status
-        - CourseEnrollmentAllowed status (if applicable)
-        - Enrollment mode
-        - User profile information
-      operationId: getEnrollment
-      produces:
-        - application/json
-      parameters:
-        - $ref: '#/parameters/CourseKey'
-        - $ref: '#/parameters/LearnerIdentifierPath'
-      responses:
-        200:
-          description: Enrollment information retrieved successfully
-          schema:
-            $ref: '#/definitions/Enrollment'
-          examples:
-            application/json:
-              username: "john_harvard"
-              email: "john@example.com"
-              full_name: "John Harvard"
-              mode: "audit"
-              is_active: true
-              created: "2024-01-15T10:30:00Z"
-              enrollment_allowed: false
               auto_enroll: false
-              beta_tester: false
-        400:
-          $ref: '#/responses/BadRequest'
-        401:
-          $ref: '#/responses/Unauthorized'
-        403:
-          $ref: '#/responses/Forbidden'
-        404:
-          $ref: '#/responses/NotFound'
-
-    delete:
-      tags:
-        - Enrollments
-      summary: Unenroll learner from course
-      description: |
-        Unenroll a learner from a course.
-
-        **Behavior:**
-        - If user is enrolled: Unenrolls from course
-        - If user has CourseEnrollmentAllowed: Deletes the allowed enrollment
-        - Both operations are performed if both conditions exist
-        - Optionally sends notification email to learner
-
-        **Email Notifications:**
-        - If user was enrolled: Uses "enrolled_unenroll" message type
-        - If user had allowed enrollment: Uses "allowed_unenroll" message type
-      operationId: unenrollLearner
-      produces:
-        - application/json
-      parameters:
-        - $ref: '#/parameters/CourseKey'
-        - $ref: '#/parameters/LearnerIdentifierPath'
-        - name: email_student
-          in: query
-          description: Send email notification to learner
-          required: false
-          type: boolean
-          default: false
-      responses:
-        200:
-          description: Learner unenrolled successfully
-          schema:
-            $ref: '#/definitions/EnrollmentOperationResult'
-          examples:
-            application/json:
-              action: "unenroll"
               results:
                 - identifier: "john@example.com"
                   before:
-                    enrolled: true
+                    user: true
+                    enrollment: false
                     allowed: false
-                    mode: "audit"
+                    auto_enroll: false
                   after:
-                    enrolled: false
+                    user: true
+                    enrollment: true
                     allowed: false
+                    auto_enroll: false
+                - identifier: "not-an-email"
+                  invalid_identifier: true
         400:
           $ref: '#/responses/BadRequest'
         401:
           $ref: '#/responses/Unauthorized'
         403:
           $ref: '#/responses/Forbidden'
-        404:
-          $ref: '#/responses/NotFound'
 
 # ==================== COMPONENTS ====================
 
 parameters:
-  CourseKey:
-    name: course_key
+  CourseId:
+    name: course_id
     in: path
     required: true
     description: Course identifier in format `course-v1:{org}+{course}+{run}`
     type: string
     pattern: '^course-v1:[^/+]+(\+[^/+]+)+(\+[^/]+)$'
     x-example: "course-v1:edX+DemoX+Demo_Course"
-
-  LearnerIdentifierPath:
-    name: email_or_username
-    in: path
-    required: true
-    description: Learner's username or email address
-    type: string
-    minLength: 1
 
 responses:
   BadRequest:
@@ -415,7 +280,7 @@ definitions:
         format: uri
         description: URL to the next page of results
         x-nullable: true
-        example: "/api/enrollment/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
+        example: "/api/instructor/v2/courses/course-v1:edX+DemoX+Demo_Course/enrollments?page=2"
       previous:
         type: string
         format: uri
@@ -464,14 +329,6 @@ definitions:
         description: Enrollment creation timestamp (ISO 8601 format with timezone)
         x-nullable: true
         example: "2024-01-15T10:30:00Z"
-      enrollment_allowed:
-        type: boolean
-        description: Whether user has a CourseEnrollmentAllowed record
-        example: false
-      auto_enroll:
-        type: boolean
-        description: Whether user will be auto-enrolled upon registration
-        example: false
       beta_tester:
         type: boolean
         description: Whether learner is a beta tester (only present if requested_fields includes beta_tester)
@@ -502,85 +359,105 @@ definitions:
             format: uri
             description: Small thumbnail URL
 
-  EnrollmentOperationResult:
+  EnrollmentModifyRequest:
     type: object
-    description: Result from an enrollment operation (enroll/unenroll)
+    description: Request body for enrolling or unenrolling learners
+    required:
+      - identifier
+      - action
+    properties:
+      identifier:
+        type: array
+        description: List of email addresses or usernames to enroll/unenroll
+        minItems: 1
+        items:
+          type: string
+          maxLength: 255
+        example: ["john@example.com", "jane_doe"]
+      action:
+        type: string
+        enum: ["enroll", "unenroll"]
+        description: The enrollment action to perform
+      auto_enroll:
+        type: boolean
+        description: Auto-enroll user when they register (for non-registered users, enroll action only)
+        default: false
+      email_students:
+        type: boolean
+        description: Send email notification to learners
+        default: false
+      reason:
+        type: string
+        description: Reason for the change (for audit trail)
+        default: ""
+
+  EnrollmentModifyResponse:
+    type: object
+    description: Result from an enrollment modify operation
     required:
       - action
+      - auto_enroll
       - results
     properties:
       action:
         type: string
         enum: ["enroll", "unenroll"]
         description: The action that was performed
+      auto_enroll:
+        type: boolean
+        description: The auto_enroll value from the request
       results:
         type: array
-        description: Results for each identifier
+        description: Per-identifier results
         items:
-          type: object
-          required:
-            - identifier
-            - before
-            - after
-          properties:
-            identifier:
-              type: string
-              description: Email or username that was processed
-            before:
-              $ref: '#/definitions/EnrollmentState'
-            after:
-              $ref: '#/definitions/EnrollmentState'
-            error:
-              type: string
-              description: Error message if operation failed for this identifier
-              x-nullable: true
+          $ref: '#/definitions/EnrollmentModifyResult'
+
+  EnrollmentModifyResult:
+    type: object
+    description: |
+      Result for a single identifier. On success, contains `before` and `after` state.
+      On invalid identifier, contains `invalid_identifier: true` with no state.
+      On error, contains `error: true` with no state.
+    required:
+      - identifier
+    properties:
+      identifier:
+        type: string
+        description: Email or username that was processed
+      before:
+        $ref: '#/definitions/EnrollmentState'
+        description: Enrollment state before the operation (absent on error or invalid identifier)
+      after:
+        $ref: '#/definitions/EnrollmentState'
+        description: Enrollment state after the operation (absent on error or invalid identifier)
+      invalid_identifier:
+        type: boolean
+        description: True if the identifier is not a valid email and not a known username
+      error:
+        type: boolean
+        description: True if an unexpected error occurred processing this identifier
 
   EnrollmentState:
     type: object
-    description: Enrollment state snapshot
+    description: Snapshot of a learner's enrollment state (mirrors EmailEnrollmentState.to_dict)
     required:
-      - enrolled
+      - user
+      - enrollment
       - allowed
+      - auto_enroll
     properties:
-      enrolled:
+      user:
         type: boolean
-        description: Whether user is enrolled
+        description: Whether a registered user exists for this identifier
+      enrollment:
+        type: boolean
+        description: Whether the user has an active enrollment
       allowed:
         type: boolean
-        description: Whether user has CourseEnrollmentAllowed record
-      mode:
-        type: string
-        description: Enrollment mode (if enrolled)
-        x-nullable: true
+        description: Whether a CourseEnrollmentAllowed record exists
       auto_enroll:
         type: boolean
-        description: Auto-enroll setting (if allowed)
-        x-nullable: true
-
-  AsyncOperationResult:
-    type: object
-    description: Task information for an asynchronous operation
-    required:
-      - task_id
-      - status_url
-    properties:
-      task_id:
-        type: string
-        description: Unique task identifier
-        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-      status_url:
-        type: string
-        format: uri
-        description: URL to poll for task status (see Task API for details)
-        example: "/api/enrollment/v2/courses/course-v1:edX+DemoX+Demo_Course/tasks/a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-      action:
-        type: string
-        description: The action being performed
-        example: "enroll"
-      count:
-        type: integer
-        description: Number of learners being processed
-        example: 150
+        description: Whether auto_enroll is set on the CourseEnrollmentAllowed record
 
   Error:
     type: object

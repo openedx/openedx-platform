@@ -17,6 +17,8 @@ from typing import Optional, Tuple  # noqa: UP035
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
@@ -36,7 +38,18 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models import (
+    ALLOWEDTOENROLL_TO_ENROLLED,
+    ALLOWEDTOENROLL_TO_UNENROLLED,
+    DEFAULT_TRANSITION_STATE,
+    ENROLLED_TO_ENROLLED,
+    ENROLLED_TO_UNENROLLED,
+    UNENROLLED_TO_ALLOWEDTOENROLL,
+    UNENROLLED_TO_ENROLLED,
+    UNENROLLED_TO_UNENROLLED,
+    CourseEnrollment,
+    ManualEnrollmentAudit,
+)
 from common.djangoapps.student.models.user import get_user_by_username_or_email
 from common.djangoapps.student.roles import CourseBetaTesterRole
 from common.djangoapps.util.json_request import JsonResponseBadRequest
@@ -52,7 +65,15 @@ from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.access import allow_access, revoke_access
 from lms.djangoapps.instructor.constants import ReportType
+from lms.djangoapps.instructor.enrollment import (
+    enroll_email,
+    get_email_params,
+    get_user_email_language,
+    send_beta_role_email,
+    unenroll_email,
+)
 from lms.djangoapps.instructor.ora import get_open_response_assessment_list, get_ora_summary
 from lms.djangoapps.instructor.views.api import _display_unit, get_student_from_identifier
 from lms.djangoapps.instructor.views.instructor_task_helpers import extract_task_features
@@ -72,10 +93,14 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
+    BetaTesterModifyRequestSerializerV2,
+    BetaTesterModifyResponseSerializerV2,
     BlockDueDateSerializerV2,
     CertificateGenerationHistorySerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
+    EnrollmentModifyRequestSerializerV2,
+    EnrollmentModifyResponseSerializerV2,
     GradingConfigSerializer,
     InstructorTaskListSerializer,
     IssuedCertificateSerializer,
@@ -90,6 +115,7 @@ from .serializers_v2 import (
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
 log = logging.getLogger(__name__)
+User = get_user_model()
 
 
 class CourseMetadataView(DeveloperErrorViewMixin, APIView):
@@ -2032,3 +2058,306 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
         }
         serializer = GradingConfigSerializer(config_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
+    """
+    Enroll or unenroll one or more learners in a course.
+
+    **Example Request**
+
+        POST /api/instructor/v2/courses/{course_id}/enrollments/modify
+
+    **Parameters**
+
+        * identifier (required): List of emails or usernames of learners
+        * action (required): 'enroll' or 'unenroll'
+        * auto_enroll (optional): Auto-enroll in verified track (enroll action; default: false)
+        * email_students (optional): Send email notification (default: false)
+        * reason (optional): Reason for the change
+
+    **Response Values**
+
+        {
+            "action": "enroll",
+            "results": [
+                {
+                    "identifier": "learner@example.com",
+                    "success": true,
+                    "user_is_registered": true,
+                    "enrollment": true,
+                    "allowed": false,
+                    "auto_enroll": false
+                },
+                {
+                    "identifier": "bad@",
+                    "success": false,
+                    "error": "Invalid email address: bad@"
+                }
+            ]
+        }
+
+    **Returns**
+
+        * 200: OK - Per-identifier results returned (successes and failures)
+        * 400: Bad Request - Invalid top-level parameters
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks staff permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CAN_ENROLL
+
+    def _compute_enroll_state_transition(self, before, after):
+        """Compute the state transition constant for an enroll action."""
+        if before.user:
+            if after.enrollment:
+                if before.enrollment:
+                    return ENROLLED_TO_ENROLLED
+                if before.allowed:
+                    return ALLOWEDTOENROLL_TO_ENROLLED
+                return UNENROLLED_TO_ENROLLED
+        if after.allowed:
+            return UNENROLLED_TO_ALLOWEDTOENROLL
+        return DEFAULT_TRANSITION_STATE
+
+    def _compute_unenroll_state_transition(self, before):
+        """Compute the state transition constant for an unenroll action."""
+        if before.enrollment:
+            return ENROLLED_TO_UNENROLLED
+        if before.allowed:
+            return ALLOWEDTOENROLL_TO_UNENROLLED
+        return UNENROLLED_TO_UNENROLLED
+
+    def _resolve_identifier(self, identifier):
+        """Resolve identifier to (user, email, language); returns (None, identifier, None) if user not found."""
+        try:
+            user = get_student_from_identifier(identifier)
+            return user, user.email, get_user_email_language(user)
+        except User.DoesNotExist:
+            return None, identifier, None
+
+    def _enroll_one(self, course_key, course, identifier, auto_enroll, email_students, reason, request_user, is_secure):
+        """Enroll a single identifier. Returns a v1-shaped result dict."""
+        try:
+            identified_user, email, language = self._resolve_identifier(identifier)
+        except User.MultipleObjectsReturned:
+            log.exception("Ambiguous identifier while enrolling: %s", identifier)
+            return {'identifier': identifier, 'error': True}
+
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return {'identifier': identifier, 'invalid_identifier': True}
+
+        try:
+            email_params = {}
+            if email_students:
+                email_params = get_email_params(course, auto_enroll, secure=is_secure)
+
+            before, after, enrollment_obj = enroll_email(
+                course_key, email, auto_enroll, email_students, email_params, language=language
+            )
+            ManualEnrollmentAudit.create_manual_enrollment_audit(
+                request_user, email, self._compute_enroll_state_transition(before, after), reason, enrollment_obj
+            )
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error while enrolling student")
+            return {'identifier': identifier, 'error': True}
+
+        return {
+            'identifier': identifier,
+            'before': before.to_dict(),
+            'after': after.to_dict(),
+        }
+
+    def _unenroll_one(self, course_key, course, identifier, email_students, reason, request_user, is_secure):
+        """Unenroll a single identifier. Returns a v1-shaped result dict."""
+        try:
+            identified_user, email, language = self._resolve_identifier(identifier)
+        except User.MultipleObjectsReturned:
+            log.exception("Ambiguous identifier while unenrolling: %s", identifier)
+            return {'identifier': identifier, 'error': True}
+
+        try:
+            validate_email(email)
+        except DjangoValidationError:
+            return {'identifier': identifier, 'invalid_identifier': True}
+
+        try:
+            email_params = {}
+            if email_students:
+                email_params = get_email_params(course, False, secure=is_secure)
+
+            before, after = unenroll_email(
+                course_key, email, email_students, email_params, language=language
+            )
+            enrollment_obj = (
+                CourseEnrollment.get_enrollment(identified_user, course_key)
+                if identified_user else None
+            )
+            ManualEnrollmentAudit.create_manual_enrollment_audit(
+                request_user, email, self._compute_unenroll_state_transition(before), reason, enrollment_obj
+            )
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error while unenrolling student")
+            return {'identifier': identifier, 'error': True}
+
+        return {
+            'identifier': identifier,
+            'before': before.to_dict(),
+            'after': after.to_dict(),
+        }
+
+    @apidocs.schema(
+        body=EnrollmentModifyRequestSerializerV2,
+        responses={
+            200: EnrollmentModifyResponseSerializerV2,
+            400: "Invalid parameters",
+            403: "User does not have permission",
+        },
+    )
+    def post(self, request, course_id):
+        """
+        Enroll or unenroll one or more learners in the course.
+        """
+        course_key = CourseKey.from_string(course_id)
+
+        serializer = EnrollmentModifyRequestSerializerV2(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        identifiers = serializer.validated_data['identifier']
+        action = serializer.validated_data['action']
+        auto_enroll = serializer.validated_data['auto_enroll']
+        email_students = serializer.validated_data['email_students']
+        reason = serializer.validated_data.get('reason', '')
+
+        course = get_course_by_id(course_key) if email_students else None
+        is_secure = request.is_secure()
+
+        results = []
+        for identifier in identifiers:
+            if action == 'enroll':
+                results.append(self._enroll_one(
+                    course_key, course, identifier, auto_enroll, email_students, reason, request.user, is_secure
+                ))
+            else:
+                results.append(self._unenroll_one(
+                    course_key, course, identifier, email_students, reason, request.user, is_secure
+                ))
+
+        response_serializer = EnrollmentModifyResponseSerializerV2({
+            'action': action,
+            'auto_enroll': auto_enroll,
+            'results': results,
+        })
+        return Response(response_serializer.data)
+
+
+@method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
+    """
+    Add or remove one or more beta testers for a course.
+
+    **Example Request**
+
+        POST /api/instructor/v2/courses/{course_id}/beta_testers/modify
+
+    **Parameters**
+
+        * identifier (required): List of emails or usernames of learners
+        * action (required): 'add' or 'remove'
+        * email_students (optional): Send email notification (default: false)
+        * auto_enroll (optional): Auto-enroll in the course (add action; default: false)
+
+    **Response Values**
+
+        {
+            "action": "add",
+            "results": [
+                {"identifier": "learner@example.com", "success": true, "is_active": true},
+                {"identifier": "missing", "success": false, "error": "User not found: missing"}
+            ]
+        }
+
+    **Returns**
+
+        * 200: OK - Per-identifier results returned (successes and failures)
+        * 400: Bad Request - Invalid top-level parameters
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CAN_BETATEST
+
+    def _modify_one(self, action, course, course_key, identifier, email_students, auto_enroll, is_secure):
+        """Add or remove a single identifier as a beta tester. Returns a v1-shaped result dict."""
+        error = False
+        user_does_not_exist = False
+        user_active = None
+        try:
+            user = get_student_from_identifier(identifier)
+            user_active = user.is_active
+            if action == 'add':
+                allow_access(course, user, 'beta')
+            else:
+                revoke_access(course, user, 'beta')
+        except User.DoesNotExist:
+            error = True
+            user_does_not_exist = True
+        except User.MultipleObjectsReturned:
+            log.exception("Ambiguous identifier for beta tester action: %s", identifier)
+            error = True
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error while modifying beta tester")
+            error = True
+        else:
+            if email_students:
+                email_params = get_email_params(course, False, secure=is_secure)
+                send_beta_role_email(action, user, email_params)
+            if auto_enroll and action == 'add' and not CourseEnrollment.is_enrolled(user, course_key):
+                CourseEnrollment.enroll(user, course_key)
+
+        return {
+            'identifier': identifier,
+            'error': error,
+            'user_does_not_exist': user_does_not_exist,
+            'is_active': user_active,
+        }
+
+    @apidocs.schema(
+        body=BetaTesterModifyRequestSerializerV2,
+        responses={
+            200: BetaTesterModifyResponseSerializerV2,
+            400: "Invalid parameters",
+            403: "User does not have permission",
+        },
+    )
+    def post(self, request, course_id):
+        """
+        Add or remove one or more beta testers for the course.
+        """
+        course_key = CourseKey.from_string(course_id)
+
+        serializer = BetaTesterModifyRequestSerializerV2(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        identifiers = serializer.validated_data['identifier']
+        action = serializer.validated_data['action']
+        email_students = serializer.validated_data['email_students']
+        auto_enroll = serializer.validated_data['auto_enroll']
+
+        course = get_course_by_id(course_key)
+        is_secure = request.is_secure()
+
+        results = [
+            self._modify_one(action, course, course_key, identifier, email_students, auto_enroll, is_secure)
+            for identifier in identifiers
+        ]
+
+        response_serializer = BetaTesterModifyResponseSerializerV2({
+            'action': action,
+            'results': results,
+        })
+        return Response(response_serializer.data)
