@@ -2378,6 +2378,63 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
         return Response(response_serializer.data)
 
 
+class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
+    """
+    List the available course team roles for a specific course.
+
+    The returned roles are filtered based on course configuration.
+    For example, the ``ccx_coach`` role is only included when the
+    ``CUSTOM_COURSES_EDX`` feature flag is enabled **and** the course
+    has CCX enabled (``course.enable_ccx``).
+
+    **GET Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/team/roles
+
+    **GET Response Values**
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "results": [
+                {"role": "beta", "display_name": "Beta Tester"},
+                {"role": "data_researcher", "display_name": "Data Researcher"},
+                {"role": "instructor", "display_name": "Admin"},
+                {"role": "limited_staff", "display_name": "Limited Staff"},
+                {"role": "staff", "display_name": "Staff"}
+            ]
+        }
+
+    **Returns**
+
+        * 200: OK
+        * 401: User is not authenticated
+        * 403: User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EDIT_COURSE_ACCESS
+
+    def get(self, request, course_id):
+        """Return the list of available course team roles for this course."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+
+        roles = set(ROLES.keys()) | set(FORUM_ROLES)
+
+        ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
+        if not ccx_enabled:
+            roles.discard('ccx_coach')
+
+        results = [
+            {'role': rolename, 'display_name': str(ROLE_DISPLAY_NAMES[rolename])}
+            for rolename in sorted(roles)
+        ]
+
+        return Response({
+            'course_id': str(course_key),
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+
 @method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
 class CourseTeamView(DeveloperErrorViewMixin, APIView):
     """

@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import Http404
 from django.test import SimpleTestCase, override_settings
@@ -2635,6 +2636,76 @@ class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
         assert len(results) == 2
         assert results[0]['error'] is False
         assert results[1]['error'] is True
+
+
+class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
+    """Tests for CourseTeamRolesView (GET available roles) endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='RolesX',
+            run='2024',
+            display_name='Roles Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create()
+        self.url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+
+    def test_list_roles_without_ccx(self):
+        """Returns roles excluding ccx_coach when CCX is not enabled; includes forum roles."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['course_id'] == str(self.course_key)
+        returned_roles = [r['role'] for r in response.data['results']]
+        assert 'ccx_coach' not in returned_roles
+        for expected in ['beta', 'data_researcher', 'instructor', 'limited_staff', 'staff']:
+            assert expected in returned_roles
+        for expected in ['Administrator', 'Moderator', 'Group Moderator', 'Community TA']:
+            assert expected in returned_roles
+
+    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    def test_list_roles_with_ccx_enabled(self):
+        """Returns all roles including ccx_coach when CCX is enabled for the course."""
+        ccx_course = CourseFactory.create(
+            org='edX',
+            number='CcxX',
+            run='2024',
+            display_name='CCX Test Course',
+            enable_ccx=True,
+        )
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(ccx_course.id)})
+        instructor = InstructorFactory.create(course_key=ccx_course.id)
+        self.client.force_authenticate(user=instructor)
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = [r['role'] for r in response.data['results']]
+        assert 'ccx_coach' in returned_roles
+        ccx_entry = next(r for r in response.data['results'] if r['role'] == 'ccx_coach')
+        assert ccx_entry['display_name'] == 'CCX Coach'
+
+    def test_list_roles_unauthenticated(self):
+        """Unauthenticated request returns 401."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_list_roles_no_permission(self):
+        """Student without instructor access gets 403."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @ddt.ddt
