@@ -130,7 +130,8 @@ from .tools import find_unit, get_units_with_due_date, keep_field_private, set_d
 
 User = get_user_model()
 log = logging.getLogger(__name__)
-User = get_user_model()
+
+VALID_TEAM_ROLES = frozenset(ROLES.keys()) | frozenset(FORUM_ROLES)
 
 
 class CourseMetadataView(DeveloperErrorViewMixin, APIView):
@@ -2554,12 +2555,11 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         role = request.query_params.get('role')
         email_or_username = (request.query_params.get('email_or_username') or '').strip()
 
-        valid_roles = set(ROLES.keys()) | set(FORUM_ROLES)
-        if role and role not in valid_roles:
+        if role and role not in VALID_TEAM_ROLES:
             return Response(
                 {'error': _("Invalid role '%(role)s'. Must be one of: %(valid)s") % {
                     'role': role,
-                    'valid': ', '.join(sorted(valid_roles)),
+                    'valid': ', '.join(sorted(VALID_TEAM_ROLES)),
                 }},
                 status=status.HTTP_400_BAD_REQUEST
             )
