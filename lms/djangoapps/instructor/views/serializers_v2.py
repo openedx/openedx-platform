@@ -903,7 +903,7 @@ class EnrollmentModifyResultSerializerV2(serializers.Serializer):
     identifier = serializers.CharField()
     before = EnrollmentStateSerializerV2(required=False)
     after = EnrollmentStateSerializerV2(required=False)
-    invalidIdentifier = serializers.BooleanField(required=False)
+    invalid_identifier = serializers.BooleanField(required=False)
     error = serializers.BooleanField(required=False)
 
 
@@ -939,7 +939,7 @@ class BetaTesterModifyResultSerializerV2(serializers.Serializer):
     """Documents the per-identifier result shape for beta tester modifications (mirrors v1)."""
     identifier = serializers.CharField()
     error = serializers.BooleanField()
-    userDoesNotExist = serializers.BooleanField()
+    user_does_not_exist = serializers.BooleanField()
     is_active = serializers.BooleanField(allow_null=True)
 
 

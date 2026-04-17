@@ -2414,7 +2414,7 @@ class EnrollmentModifyViewTest(SharedModuleStoreTestCase):
         response = self._enroll(['not-an-email'])
         assert response.status_code == status.HTTP_200_OK
         result = response.data['results'][0]
-        assert result.get('invalidIdentifier') is True
+        assert result.get('invalid_identifier') is True
         assert 'before' not in result
         assert 'after' not in result
 
@@ -2463,7 +2463,7 @@ class EnrollmentModifyViewTest(SharedModuleStoreTestCase):
         assert results[0]['identifier'] == learner.email
         assert 'after' in results[0]
         assert results[1]['identifier'] == 'not-an-email'
-        assert results[1].get('invalidIdentifier') is True
+        assert results[1].get('invalid_identifier') is True
 
     def test_unenroll_existing_user(self):
         learner = UserFactory()
@@ -2586,7 +2586,7 @@ class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
         assert response.status_code == status.HTTP_200_OK
         result = response.data['results'][0]
         assert result['error'] is True
-        assert result['userDoesNotExist'] is True
+        assert result['user_does_not_exist'] is True
 
     def test_add_ambiguous_identifier_returns_per_user_error(self):
         user_a = UserFactory(username='beta_ambig@example.com')
@@ -2596,7 +2596,7 @@ class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
         assert response.status_code == status.HTTP_200_OK
         result = response.data['results'][0]
         assert result['error'] is True
-        assert result['userDoesNotExist'] is False
+        assert result['user_does_not_exist'] is False
 
     def test_remove_beta_tester(self):
         learner = UserFactory()
@@ -2613,7 +2613,7 @@ class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
         assert response.status_code == status.HTTP_200_OK
         result = response.data['results'][0]
         assert result['error'] is True
-        assert result['userDoesNotExist'] is True
+        assert result['user_does_not_exist'] is True
 
     def test_add_mixed_success_and_failure(self):
         learner = UserFactory()

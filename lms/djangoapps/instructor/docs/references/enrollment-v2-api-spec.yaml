@@ -152,7 +152,7 @@ paths:
 
         **Invalid identifiers:**
         - Identifiers that are neither a valid email nor a known username return
-          `invalidIdentifier: true` with no `before`/`after` state
+          `invalid_identifier: true` with no `before`/`after` state
 
         **Email Notifications:**
         - Controlled by `email_students` parameter
@@ -194,7 +194,7 @@ paths:
                     allowed: false
                     auto_enroll: false
                 - identifier: "not-an-email"
-                  invalidIdentifier: true
+                  invalid_identifier: true
         400:
           $ref: '#/responses/BadRequest'
         401:
@@ -416,7 +416,7 @@ definitions:
     type: object
     description: |
       Result for a single identifier. On success, contains `before` and `after` state.
-      On invalid identifier, contains `invalidIdentifier: true` with no state.
+      On invalid identifier, contains `invalid_identifier: true` with no state.
       On error, contains `error: true` with no state.
     required:
       - identifier
@@ -430,7 +430,7 @@ definitions:
       after:
         $ref: '#/definitions/EnrollmentState'
         description: Enrollment state after the operation (absent on error or invalid identifier)
-      invalidIdentifier:
+      invalid_identifier:
         type: boolean
         description: True if the identifier is not a valid email and not a known username
       error:

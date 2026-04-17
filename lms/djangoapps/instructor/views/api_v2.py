@@ -2147,7 +2147,7 @@ class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
         try:
             validate_email(email)
         except DjangoValidationError:
-            return {'identifier': identifier, 'invalidIdentifier': True}
+            return {'identifier': identifier, 'invalid_identifier': True}
 
         try:
             email_params = {}
@@ -2181,7 +2181,7 @@ class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
         try:
             validate_email(email)
         except DjangoValidationError:
-            return {'identifier': identifier, 'invalidIdentifier': True}
+            return {'identifier': identifier, 'invalid_identifier': True}
 
         try:
             email_params = {}
@@ -2321,7 +2321,7 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
         return {
             'identifier': identifier,
             'error': error,
-            'userDoesNotExist': user_does_not_exist,
+            'user_does_not_exist': user_does_not_exist,
             'is_active': user_active,
         }
 
