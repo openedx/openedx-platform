@@ -34,6 +34,7 @@ from openedx_authz.constants.permissions import (
     COURSES_MANAGE_COURSE_UPDATES,
     COURSES_MANAGE_GROUP_CONFIGURATIONS,
     COURSES_MANAGE_PAGES_AND_RESOURCES,
+    COURSES_PUBLISH_COURSE_CONTENT,
     COURSES_VIEW_COURSE,
     COURSES_VIEW_COURSE_UPDATES,
     COURSES_VIEW_PAGES_AND_RESOURCES,
@@ -56,7 +57,6 @@ from common.djangoapps.course_action_state.managers import CourseActionStateItem
 from common.djangoapps.course_action_state.models import CourseRerunState, CourseRerunUIStateManager
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import (
-    has_course_author_access,
     has_studio_advanced_settings_access,
     has_studio_read_access,
     has_studio_write_access,
@@ -191,7 +191,12 @@ def reindex_course_and_check_access(course_key, user):
     """
     Internal method used to restart indexing on a course.
     """
-    if not has_course_author_access(user, course_key):
+    if not user_has_course_permission(
+        user=user,
+        authz_permission=COURSES_PUBLISH_COURSE_CONTENT.identifier,
+        course_key=course_key,
+        legacy_permission=LegacyAuthoringPermission.WRITE
+    ):
         raise PermissionDenied()
     return CoursewareSearchIndexer.do_course_reindex(modulestore(), course_key)
 
@@ -367,10 +372,13 @@ def course_search_index_handler(request, course_key_string):
         html: return status of indexing task
         json: return status of indexing task
     """
-    # Only global staff (PMs) are able to index courses
-    if not GlobalStaff().has_user(request.user):
-        raise PermissionDenied()
     course_key = CourseKey.from_string(course_key_string)
+    is_authz_enabled = core_toggles.AUTHZ_COURSE_AUTHORING_FLAG.is_enabled(course_key)
+    if not is_authz_enabled and not GlobalStaff().has_user(request.user):
+        # When AuthZ is disabled, restrict to global staff (legacy behavior).
+        # When AuthZ is enabled, access control is enforced by the AuthZ layer,
+        # which includes staff/superuser checks and course-level permissions.
+        raise PermissionDenied()
     content_type = request.META.get('CONTENT_TYPE', None)
     if content_type is None:
         content_type = "application/json; charset=utf-8"

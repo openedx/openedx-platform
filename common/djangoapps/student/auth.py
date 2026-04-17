@@ -256,7 +256,8 @@ def _has_content_creator_access(user, org):
     """
     if settings.FEATURES.get('DISABLE_COURSE_CREATION', False):
         return False
-    org_scope_key = f"course-v1:{org}+*"
+    # Using Org scope. e.g. "course-v1:{org}+*"
+    org_scope_key = authz_api.OrgCourseOverviewGlobData.build_external_key(org)
 
     return authz_api.is_user_allowed(
         user.username,
