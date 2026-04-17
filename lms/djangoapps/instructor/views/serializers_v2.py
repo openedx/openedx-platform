@@ -28,6 +28,7 @@ from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from xmodule.modulestore.django import modulestore
@@ -947,3 +948,29 @@ class BetaTesterModifyResponseSerializerV2(serializers.Serializer):
     """Documents the response shape for the bulk beta tester add/remove endpoint (mirrors v1)."""
     action = serializers.CharField()
     results = BetaTesterModifyResultSerializerV2(many=True)
+
+
+class CourseTeamModifySerializer(serializers.Serializer):
+    """Input serializer for granting or revoking a course team role."""
+    identifiers = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of usernames or emails of users to modify"
+    )
+    role = serializers.ChoiceField(
+        choices=list(ROLES.keys()) + list(FORUM_ROLES),
+        help_text="The role to grant or revoke (course access role or forum role)"
+    )
+    action = serializers.ChoiceField(
+        choices=['allow', 'revoke'],
+        help_text="Whether to grant ('allow') or revoke ('revoke') the role"
+    )
+
+
+class CourseTeamRevokeSerializer(serializers.Serializer):
+    """Input serializer for revoking course team roles."""
+    role = serializers.ListField(
+        child=serializers.ChoiceField(choices=list(ROLES.keys()) + list(FORUM_ROLES)),
+        allow_empty=False,
+        help_text="One or more roles to revoke (course access role or forum role)"
+    )
