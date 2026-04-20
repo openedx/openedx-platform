@@ -53,10 +53,10 @@ def _check_tarinfo(finfo: TarInfo, base: str):
         SuspiciousOperation: If the TarInfo object is found to be a
         hard link, symlink, or a special device file.
     """
-    if finfo.issym() and _is_bad_link(finfo, base):
+    if finfo.islnk() and _is_bad_link(finfo, base):
         log.debug("File %r is blocked: Hard link to %r", finfo.name, finfo.linkname)
         raise SuspiciousOperation("Hard link")
-    if finfo.islnk() and _is_bad_link(finfo, base):
+    if finfo.issym() and _is_bad_link(finfo, base):
         log.debug("File %r is blocked: Symlink to %r", finfo.name, finfo.linkname)
         raise SuspiciousOperation("Symlink")
     if finfo.isdev():
