@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.84
+boto3==1.42.91
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.84
+botocore==1.42.91
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -49,7 +49,7 @@ cryptography==45.0.7
     #   pyjwt
 ddt==1.7.2
     # via -r scripts/user_retirement/requirements/testing.in
-django==5.2.12
+django==5.2.13
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   django-crum
@@ -67,15 +67,15 @@ edx-django-utils==8.0.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-rest-api-client
-edx-rest-api-client==6.2.0
+edx-rest-api-client==7.0.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-api-core==2.30.2
+google-api-core==2.30.3
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-python-client
-google-api-python-client==2.193.0
+google-api-python-client==2.194.0
     # via -r scripts/user_retirement/requirements/base.txt
-google-auth==2.49.1
+google-auth==2.49.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-api-core
@@ -123,15 +123,15 @@ markupsafe==3.0.3
     #   werkzeug
 mock==5.2.0
     # via -r scripts/user_retirement/requirements/testing.in
-more-itertools==11.0.1
+more-itertools==11.0.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   simple-salesforce
 moto==5.1.22
     # via -r scripts/user_retirement/requirements/testing.in
-packaging==26.0
+packaging==26.1
     # via pytest
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   zeep
@@ -178,7 +178,7 @@ pyparsing==3.3.2
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   httplib2
-pytest==9.0.2
+pytest==9.0.3
     # via -r scripts/user_retirement/requirements/testing.in
 python-dateutil==2.9.0.post0
     # via
@@ -227,7 +227,7 @@ s3transfer==0.16.0
     #   boto3
 simple-salesforce==1.12.9
     # via -r scripts/user_retirement/requirements/base.txt
-simplejson==3.20.2
+simplejson==4.0.1
     # via -r scripts/user_retirement/requirements/base.txt
 six==1.17.0
     # via
