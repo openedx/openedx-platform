@@ -17,6 +17,7 @@ from django.utils.translation import gettext_noop
 from django.views.decorators.cache import cache_control
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
+from django.shortcuts import redirect
 from edx_django_utils.plugins import get_plugins_view_context
 from edx_proctoring.api import does_backend_support_onboarding
 from edx_when.api import is_enabled_for_course
@@ -46,6 +47,7 @@ from lms.djangoapps.courseware.masquerade import get_masquerade_role
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor.constants import INSTRUCTOR_DASHBOARD_PLUGIN_VIEW_NAME
+from lms.djangoapps.utils import get_instructor_dashboard_url
 from openedx.core.djangoapps.course_groups.cohorts import DEFAULT_COHORT_NAME, get_course_cohorts, is_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle_utils import legacy_discussion_experience_enabled
 from openedx.core.djangoapps.discussions.utils import available_division_schemes
@@ -58,7 +60,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import permissions
-from ..toggles import data_download_v2_is_enabled
+from ..toggles import data_download_v2_is_enabled, disable_new_instructor_dashboard_mfe
 from .tools import get_units_with_due_date, title_or_url
 
 log = logging.getLogger(__name__)
@@ -143,6 +145,11 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
 
     if not request.user.has_perm(permissions.VIEW_DASHBOARD, course_key):
         raise Http404()
+
+    # With new instructor dashboard we need to redirect them to it instead of rendering the old one,
+    # but we still want to check if they have access to view the dashboard before redirecting.
+    if not disable_new_instructor_dashboard_mfe():
+        return redirect(get_instructor_dashboard_url(course_key))
 
     sections = []
     if access['staff']:
