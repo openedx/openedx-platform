@@ -385,7 +385,7 @@ class TestReconcileIndex(TestCase):
         reconcile_index(status_cb=status_cb)
 
         status_cb.assert_any_call(
-            "Index exists and is correctly configured but empty. Run './manage.py cms' reindex_studio to populate."
+            "Index exists and is correctly configured but empty. Run './manage.py cms reindex_studio' to populate."
         )
 
     @patch("openedx.core.djangoapps.content.search.api._detect_index_drift")
@@ -496,7 +496,7 @@ class TestReconcileIndex(TestCase):
 
         mock_reset.assert_called_once()
         # Should warn about data loss
-        warn_cb.assert_any_call("Index recreated empty. Run './manage.py cms' reindex_studio to repopulate.")
+        warn_cb.assert_any_call("Index recreated empty. Run './manage.py cms reindex_studio' to repopulate.")
 
     @override_settings(MEILISEARCH_ENABLED=False)
     def test_meilisearch_disabled(self, mock_meilisearch):

@@ -476,7 +476,7 @@ def reconcile_index(
     if not drift.exists:
         status_cb("Studio search index not found. Creating and configuring...")
         reset_index(status_cb)
-        status_cb("Index created. Run './manage.py cms' reindex_studio to populate.")
+        status_cb("Index created. Run './manage.py cms reindex_studio' to populate.")
         return
 
     # CASE: Primary key mismatch (must recreate regardless of population state)
@@ -488,9 +488,9 @@ def reconcile_index(
                 f"PRIMARY KEY MISMATCH on populated index '{STUDIO_INDEX_NAME}'. "
                 "Index must be recreated (data loss is unavoidable for primary key changes)."
             )
-            warn_cb("Dropping and recreating index. Repopulate with: './manage.py cms' reindex_studio")
+            warn_cb("Dropping and recreating index. Repopulate with: './manage.py cms reindex_studio'")
         reset_index(status_cb)
-        warn_cb("Index recreated empty. Run './manage.py cms' reindex_studio to repopulate.")
+        warn_cb("Index recreated empty. Run './manage.py cms reindex_studio' to repopulate.")
         return
 
     # CASE: Index empty
@@ -498,10 +498,10 @@ def reconcile_index(
         if drift.is_settings_drifted:
             status_cb("Empty index has drifted settings. Reconfiguring...")
             _apply_index_settings(STUDIO_INDEX_NAME, wait=True, status_cb=status_cb)
-            status_cb("Reconfigured. Run './manage.py cms' reindex_studio to populate.")
+            status_cb("Reconfigured. Run './manage.py cms reindex_studio' to populate.")
         else:
             status_cb(
-                "Index exists and is correctly configured but empty. Run './manage.py cms' reindex_studio to populate."
+                "Index exists and is correctly configured but empty. Run './manage.py cms reindex_studio' to populate."
             )
         return
 
@@ -522,7 +522,7 @@ def reconcile_index(
         _apply_index_settings(STUDIO_INDEX_NAME, wait=True, status_cb=status_cb)
         warn_cb(
             "Settings applied. Meilisearch will re-index documents in the background. "
-            "Consider running './manage.py cms' reindex_studio for a full rebuild "
+            "Consider running './manage.py cms reindex_studio' for a full rebuild "
             "if search quality is affected."
         )
     else:
