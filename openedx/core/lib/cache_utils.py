@@ -3,7 +3,6 @@ Utilities related to caching.
 """
 
 
-import collections
 import functools
 import itertools
 import pickle
@@ -125,7 +124,9 @@ class process_cached:  # pylint: disable=invalid-name
         self.cache = {}
 
     def __call__(self, *args):
-        if not isinstance(args, collections.abc.Hashable):
+        try:
+            hash(args)
+        except TypeError:
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
             return self.func(*args)
