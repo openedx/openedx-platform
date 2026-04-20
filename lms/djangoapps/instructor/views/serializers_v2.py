@@ -103,7 +103,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
         Example:
 
             _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', course_key, 'grading')
-            # => '/instructor/course-v1:.../grading' (with strip_url=True)
+            # => '/instructor-dashboard/course-v1:.../grading' (with strip_url=True)
 
             _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email', strip_url=False)
             # => 'http://localhost:1984/communications/courses/course-v1:.../bulk_email'
