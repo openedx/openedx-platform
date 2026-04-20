@@ -8,18 +8,26 @@ from urllib.parse import urlencode
 from uuid import uuid4
 
 import ddt
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.http import Http404
 from django.test import SimpleTestCase, override_settings
 from django.urls import NoReverseMatch, reverse
 from edx_when.api import set_date_for_block, set_dates_for_course
 from opaque_keys import InvalidKeyError
 from pytz import UTC
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.test import APIClient, APIRequestFactory, APITestCase
 
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.models import ManualEnrollmentAudit
 from common.djangoapps.student.models.course_enrollment import CourseEnrollment, CourseEnrollmentAllowed
-from common.djangoapps.student.roles import CourseBetaTesterRole, CourseDataResearcherRole, CourseInstructorRole
+from common.djangoapps.student.roles import (
+    CourseBetaTesterRole,
+    CourseDataResearcherRole,
+    CourseInstructorRole,
+    CourseStaffRole,
+)
 from common.djangoapps.student.tests.factories import (
     AdminFactory,
     CourseEnrollmentFactory,
@@ -31,8 +39,12 @@ from lms.djangoapps.certificates.data import CertificateStatuses
 from lms.djangoapps.certificates.models import CertificateGenerationHistory
 from lms.djangoapps.certificates.tests.factories import GeneratedCertificateFactory
 from lms.djangoapps.courseware.models import StudentModule
+from lms.djangoapps.instructor.access import ROLE_DISPLAY_NAMES
+from lms.djangoapps.instructor.permissions import InstructorPermission
 from lms.djangoapps.instructor.views.serializers_v2 import CourseInformationSerializerV2
 from lms.djangoapps.instructor_task.tests.factories import InstructorTaskFactory
+from openedx.core.djangoapps.django_comment_common.models import Role
+from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, SharedModuleStoreTestCase
 from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 
@@ -2626,3 +2638,633 @@ class BetaTesterModifyViewTest(SharedModuleStoreTestCase):
         assert len(results) == 2
         assert results[0]['error'] is False
         assert results[1]['error'] is True
+
+
+class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
+    """Tests for CourseTeamRolesView (GET available roles) endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='RolesX',
+            run='2024',
+            display_name='Roles Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create()
+        self.url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+
+    def test_list_roles_without_ccx(self):
+        """Returns roles excluding ccx_coach when CCX is not enabled; includes forum roles."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['course_id'] == str(self.course_key)
+        returned_roles = [r['role'] for r in response.data['results']]
+        assert 'ccx_coach' not in returned_roles
+        for expected in ['beta', 'data_researcher', 'instructor', 'limited_staff', 'staff']:
+            assert expected in returned_roles
+        for expected in ['Administrator', 'Moderator', 'Group Moderator', 'Community TA']:
+            assert expected in returned_roles
+
+    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    def test_list_roles_with_ccx_enabled(self):
+        """Returns all roles including ccx_coach when CCX is enabled for the course."""
+        ccx_course = CourseFactory.create(
+            org='edX',
+            number='CcxX',
+            run='2024',
+            display_name='CCX Test Course',
+            enable_ccx=True,
+        )
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(ccx_course.id)})
+        instructor = InstructorFactory.create(course_key=ccx_course.id)
+        self.client.force_authenticate(user=instructor)
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = [r['role'] for r in response.data['results']]
+        assert 'ccx_coach' in returned_roles
+        ccx_entry = next(r for r in response.data['results'] if r['role'] == 'ccx_coach')
+        assert ccx_entry['display_name'] == 'CCX Coach'
+
+    def test_list_roles_unauthenticated(self):
+        """Unauthenticated request returns 401."""
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_list_roles_no_permission(self):
+        """Student without instructor access gets 403."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@ddt.ddt
+class CourseTeamViewTest(SharedModuleStoreTestCase):
+    """Tests for CourseTeamView (GET list and POST grant) endpoints."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TeamX',
+            run='2024',
+            display_name='Team Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create()
+        self.url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+
+    # ---- GET tests ----
+
+    def test_list_staff_members(self):
+        """Instructors can list users with a given role."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'staff'})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['course_id'] == str(self.course_key)
+        assert response.data['role'] == 'staff'
+        usernames = [m['username'] for m in response.data['results']]
+        assert self.staff_user.username in usernames
+
+    def test_list_instructors(self):
+        """List instructor role members."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'instructor'})
+
+        assert response.status_code == status.HTTP_200_OK
+        usernames = [m['username'] for m in response.data['results']]
+        assert self.instructor.username in usernames
+
+    def test_list_all_roles_when_no_role_param(self):
+        """GET without role param returns all team members aggregated per user."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['role'] is None
+        usernames = [m['username'] for m in response.data['results']]
+        assert self.instructor.username in usernames
+        assert self.staff_user.username in usernames
+        for member in response.data['results']:
+            assert 'roles' in member
+            assert isinstance(member['roles'], list)
+            for role_entry in member['roles']:
+                assert 'role' in role_entry
+                assert 'display_name' in role_entry
+
+    def test_list_aggregates_user_with_multiple_roles(self):
+        """A user with multiple roles appears as a single record with all roles."""
+        multi_role_user = UserFactory.create(username='multirole')
+        CourseStaffRole(self.course_key).add_users(multi_role_user)
+        CourseBetaTesterRole(self.course_key).add_users(multi_role_user)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        matches = [m for m in response.data['results'] if m['username'] == 'multirole']
+        assert len(matches) == 1
+        role_names = {r['role'] for r in matches[0]['roles']}
+        assert {'staff', 'beta'}.issubset(role_names)
+        for role_entry in matches[0]['roles']:
+            assert role_entry['display_name'] == str(ROLE_DISPLAY_NAMES[role_entry['role']])
+
+    def test_list_invalid_role(self):
+        """GET with invalid role returns 400."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'nonexistent'})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_list_unauthenticated(self):
+        """Unauthenticated request returns 401."""
+        response = self.client.get(self.url, {'role': 'staff'})
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_list_no_permission(self):
+        """Student without instructor access gets 403."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(self.url, {'role': 'staff'})
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_list_response_fields(self):
+        """Verify response contains expected user fields and roles array."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'staff'})
+
+        assert response.status_code == status.HTTP_200_OK
+        for member in response.data['results']:
+            assert 'username' in member
+            assert 'email' in member
+            assert 'first_name' in member
+            assert 'last_name' in member
+            assert 'roles' in member
+            assert any(r['role'] == 'staff' for r in member['roles'])
+
+    @ddt.data('instructor', 'staff', 'limited_staff', 'beta', 'ccx_coach', 'data_researcher')
+    def test_list_all_valid_roles(self, role):
+        """GET with any valid role returns 200."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': role})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['role'] == role
+        assert 'results' in response.data
+
+    # ---- POST grant tests ----
+
+    def test_grant_staff_role(self):
+        """Grant staff role to one or more users via array."""
+        new_user = UserFactory.create()
+        other_user = UserFactory.create()
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [new_user.username, other_user.email],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['action'] == 'allow'
+        assert response.data['role'] == 'staff'
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[new_user.username]['error'] is False
+        assert results_by_id[new_user.username]['userDoesNotExist'] is False
+        assert results_by_id[new_user.username]['is_active'] is True
+        assert results_by_id[other_user.email]['error'] is False
+        assert CourseStaffRole(self.course_key).has_user(new_user)
+        assert CourseStaffRole(self.course_key).has_user(other_user)
+
+    def test_grant_role_auto_enrolls(self):
+        """Granting a role also enrolls the user if not already enrolled."""
+        new_user = UserFactory.create()
+        self.client.force_authenticate(user=self.instructor)
+        self.client.post(self.url, {
+            'identifiers': [new_user.username],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+
+        assert CourseEnrollment.is_enrolled(new_user, self.course_key)
+
+    def test_grant_role_user_not_found(self):
+        """Granting a role to a non-existent user reports per-identifier error."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': ['nonexistent_user_12345'],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id['nonexistent_user_12345']['error'] is True
+        assert results_by_id['nonexistent_user_12345']['userDoesNotExist'] is True
+        assert results_by_id['nonexistent_user_12345']['is_active'] is None
+
+    def test_grant_role_invalid_role(self):
+        """Granting an invalid role returns 400."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [self.student.username],
+            'role': 'nonexistent',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_grant_role_inactive_user(self):
+        """Granting a role to an inactive user reports per-identifier error."""
+        inactive_user = UserFactory.create(is_active=False)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [inactive_user.username],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[inactive_user.username]['error'] is True
+        assert results_by_id[inactive_user.username]['userDoesNotExist'] is False
+        assert results_by_id[inactive_user.username]['is_active'] is False
+        assert not CourseStaffRole(self.course_key).has_user(inactive_user)
+
+    def test_grant_role_empty_identifiers(self):
+        """POST with empty identifiers array returns 400."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_post_missing_action_returns_400(self):
+        """POST without action field returns 400."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [self.student.username],
+            'role': 'staff',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # ---- POST revoke tests ----
+
+    def test_revoke_staff_role(self):
+        """Revoke staff role from one or more users via array."""
+        user_a = UserFactory.create()
+        user_b = UserFactory.create()
+        CourseStaffRole(self.course_key).add_users(user_a, user_b)
+        assert CourseStaffRole(self.course_key).has_user(user_a)
+        assert CourseStaffRole(self.course_key).has_user(user_b)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [user_a.username, user_b.username],
+            'role': 'staff',
+            'action': 'revoke',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['action'] == 'revoke'
+        assert response.data['role'] == 'staff'
+        for result in response.data['results']:
+            assert result['error'] is False
+        fresh_a = get_user_model().objects.get(pk=user_a.pk)
+        fresh_b = get_user_model().objects.get(pk=user_b.pk)
+        assert not CourseStaffRole(self.course_key).has_user(fresh_a)
+        assert not CourseStaffRole(self.course_key).has_user(fresh_b)
+
+    def test_revoke_own_instructor_role_errors(self):
+        """Instructors cannot revoke their own instructor access."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [self.instructor.username],
+            'role': 'instructor',
+            'action': 'revoke',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[self.instructor.username]['error'] is True
+        assert CourseInstructorRole(self.course_key).has_user(self.instructor)
+
+    def test_revoke_role_user_not_found(self):
+        """Revoking a role from a non-existent user reports per-identifier error."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': ['ghost_user_xyz'],
+            'role': 'staff',
+            'action': 'revoke',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id['ghost_user_xyz']['error'] is True
+        assert results_by_id['ghost_user_xyz']['userDoesNotExist'] is True
+
+    def test_revoke_inactive_user_errors(self):
+        """Revoking a role from an inactive user reports per-identifier error."""
+        inactive_user = UserFactory.create(is_active=False)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [inactive_user.username],
+            'role': 'staff',
+            'action': 'revoke',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[inactive_user.username]['error'] is True
+        assert results_by_id[inactive_user.username]['is_active'] is False
+
+    # ---- email_or_username filter tests ----
+
+    def test_list_email_or_username_filters_by_username(self):
+        """email_or_username filters by username substring (case-insensitive)."""
+        target = UserFactory.create(username='alicelookup', email='alice@example.com')
+        CourseStaffRole(self.course_key).add_users(target)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'email_or_username': 'ALICELOOK'})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['email_or_username'] == 'ALICELOOK'
+        usernames = [m['username'] for m in response.data['results']]
+        assert target.username in usernames
+        assert self.staff_user.username not in usernames
+
+    def test_list_email_or_username_filters_by_email(self):
+        """email_or_username filters by email substring."""
+        target = UserFactory.create(email='needle@example.com')
+        CourseStaffRole(self.course_key).add_users(target)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'email_or_username': 'needle'})
+
+        assert response.status_code == status.HTTP_200_OK
+        emails = [m['email'] for m in response.data['results']]
+        assert target.email in emails
+
+    def test_list_email_or_username_no_match_returns_empty(self):
+        """email_or_username that matches nothing returns an empty results list."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'email_or_username': 'zzz_no_match_zzz'})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['results'] == []
+        assert response.data['count'] == 0
+
+    def test_list_email_or_username_null_when_omitted(self):
+        """email_or_username is null in response when no filter is provided."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['email_or_username'] is None
+
+    # ---- Pagination tests ----
+
+    def test_list_pagination_fields_present(self):
+        """Paginated response includes DRF pagination fields."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url)
+
+        assert response.status_code == status.HTTP_200_OK
+        for field in ('count', 'num_pages', 'current_page', 'next', 'previous', 'results'):
+            assert field in response.data
+
+    def test_list_page_size_limits_results(self):
+        """page_size limits the number of returned results per page."""
+        for i in range(5):
+            user = UserFactory.create(username=f'extra_staff_{i}')
+            CourseStaffRole(self.course_key).add_users(user)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'staff', 'page_size': 2})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.data['results']) == 2
+        assert response.data['count'] >= 5
+        assert response.data['num_pages'] >= 3
+
+    def test_list_page_navigation(self):
+        """Second page returns different results than the first."""
+        for i in range(5):
+            user = UserFactory.create(username=f'paged_staff_{i:02d}')
+            CourseStaffRole(self.course_key).add_users(user)
+        self.client.force_authenticate(user=self.instructor)
+
+        page1 = self.client.get(self.url, {'role': 'staff', 'page_size': 2, 'page': 1})
+        page2 = self.client.get(self.url, {'role': 'staff', 'page_size': 2, 'page': 2})
+
+        assert page1.status_code == status.HTTP_200_OK
+        assert page2.status_code == status.HTTP_200_OK
+        page1_users = {m['username'] for m in page1.data['results']}
+        page2_users = {m['username'] for m in page2.data['results']}
+        assert page1_users.isdisjoint(page2_users)
+
+    # ---- Forum role tests ----
+
+    def test_grant_forum_role(self):
+        """POST with a forum role grants the role via the forum role system."""
+        seed_permissions_roles(self.course_key)
+
+        new_user = UserFactory.create()
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [new_user.username],
+            'role': 'Moderator',
+            'action': 'allow',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['role'] == 'Moderator'
+        assert response.data['action'] == 'allow'
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[new_user.username]['error'] is False
+        role = Role.objects.get(course_id=self.course_key, name='Moderator')
+        assert role.users.filter(pk=new_user.pk).exists()
+
+    def test_list_forum_role(self):
+        """GET with a forum role query lists forum role holders."""
+        seed_permissions_roles(self.course_key)
+
+        target = UserFactory.create()
+        role = Role.objects.get(course_id=self.course_key, name='Community TA')
+        role.users.add(target)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self.url, {'role': 'Community TA'})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['role'] == 'Community TA'
+        usernames = [m['username'] for m in response.data['results']]
+        assert target.username in usernames
+        for member in response.data['results']:
+            assert any(r['role'] == 'Community TA' for r in member['roles'])
+
+    def test_revoke_forum_role(self):
+        """POST with action=revoke removes a forum role."""
+        seed_permissions_roles(self.course_key)
+        target = UserFactory.create()
+        role = Role.objects.get(course_id=self.course_key, name='Moderator')
+        role.users.add(target)
+        assert role.users.filter(pk=target.pk).exists()
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.post(self.url, {
+            'identifiers': [target.username],
+            'role': 'Moderator',
+            'action': 'revoke',
+        }, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['action'] == 'revoke'
+        results_by_id = {r['identifier']: r for r in response.data['results']}
+        assert results_by_id[target.username]['error'] is False
+        assert not role.users.filter(pk=target.pk).exists()
+
+
+class InstructorPermissionInvalidKeyTest(SimpleTestCase):
+    """InstructorPermission must translate InvalidKeyError into Http404."""
+
+    def test_invalid_course_key_raises_http404(self):
+        """A malformed course_id on the view kwargs raises Http404, not 500."""
+        permission = InstructorPermission()
+        request = APIRequestFactory().get('/irrelevant')
+        view = Mock(kwargs={'course_id': 'this-is-not-a-course-key'})
+
+        try:
+            permission.has_permission(request, view)
+        except Http404:
+            return
+        raise AssertionError('Expected Http404 for invalid course key')
+
+
+class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
+    """Tests for CourseTeamMemberView (DELETE revoke) endpoint."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TeamX',
+            run='2024_revoke',
+            display_name='Team Revoke Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+        self.student = UserFactory.create()
+
+    def _get_url(self, email_or_username):
+        """Build URL for course team member endpoint."""
+        return reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': email_or_username}
+        )
+
+    def test_revoke_staff_role(self):
+        """Revoke staff role from a user."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['success']
+        assert response.data['action'] == 'revoke'
+        assert response.data['roles'] == ['staff']
+        assert not CourseStaffRole(self.course_key).has_user(self.staff_user)
+
+    def test_revoke_multiple_roles(self):
+        """Revoke multiple roles from a user in one request."""
+        target = UserFactory.create()
+        CourseStaffRole(self.course_key).add_users(target)
+        CourseBetaTesterRole(self.course_key).add_users(target)
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(self._get_url(target.username), {'roles': ['staff', 'beta']}, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['roles'] == ['staff', 'beta']
+        assert not CourseStaffRole(self.course_key).has_user(target)
+        assert not CourseBetaTesterRole(self.course_key).has_user(target)
+
+    def test_revoke_self_instructor_blocked(self):
+        """Instructors cannot revoke their own instructor access."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(
+            self._get_url(self.instructor.username), {'roles': ['instructor']}, format='json'
+        )
+
+        assert response.status_code == status.HTTP_409_CONFLICT
+
+    def test_revoke_missing_role_param(self):
+        """DELETE without role returns 400."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(self._get_url(self.staff_user.username), format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_revoke_user_not_found(self):
+        """Revoking from non-existent user returns 404."""
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(
+            self._get_url('nonexistent_user_12345'), {'roles': ['staff']}, format='json'
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_revoke_unauthenticated(self):
+        """Unauthenticated request returns 401."""
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_revoke_no_permission(self):
+        """Student without instructor access gets 403."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.delete(self._get_url(self.staff_user.username), {'roles': ['staff']}, format='json')
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_revoke_forum_role(self):
+        """DELETE with a forum role revokes the role via the forum role system."""
+        seed_permissions_roles(self.course_key)
+        target = UserFactory.create()
+        role = Role.objects.get(course_id=self.course_key, name='Moderator')
+        role.users.add(target)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.delete(self._get_url(target.username), {'roles': ['Moderator']}, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['roles'] == ['Moderator']
+        assert response.data['action'] == 'revoke'
+        assert not role.users.filter(pk=target.pk).exists()

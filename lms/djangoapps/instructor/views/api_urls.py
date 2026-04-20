@@ -121,6 +121,21 @@ v2_api_urls = [
         api_v2.BetaTesterModifyView.as_view(),
         name='beta_tester_modify'
     ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team/roles$',
+        api_v2.CourseTeamRolesView.as_view(),
+        name='course_team_roles'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team/(?P<email_or_username>[^/]+)$',
+        api_v2.CourseTeamMemberView.as_view(),
+        name='course_team_member'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/team$',
+        api_v2.CourseTeamView.as_view(),
+        name='course_team'
+    ),
 ]
 
 urlpatterns = [

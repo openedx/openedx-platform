@@ -27,6 +27,7 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django_filters.rest_framework import DjangoFilterBackend
+from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
@@ -38,6 +39,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import (
     ALLOWEDTOENROLL_TO_ENROLLED,
     ALLOWEDTOENROLL_TO_UNENROLLED,
@@ -65,7 +67,17 @@ from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.instructor import permissions
-from lms.djangoapps.instructor.access import allow_access, revoke_access
+from lms.djangoapps.instructor.access import (
+    FORUM_ROLES,
+    ROLE_DISPLAY_NAMES,
+    ROLES,
+    allow_access,
+    is_forum_role,
+    list_forum_members,
+    list_with_level,
+    revoke_access,
+    update_forum_role,
+)
 from lms.djangoapps.instructor.constants import ReportType
 from lms.djangoapps.instructor.enrollment import (
     enroll_email,
@@ -99,6 +111,8 @@ from .serializers_v2 import (
     CertificateGenerationHistorySerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
+    CourseTeamModifySerializer,
+    CourseTeamRevokeSerializer,
     EnrollmentModifyRequestSerializerV2,
     EnrollmentModifyResponseSerializerV2,
     GradingConfigSerializer,
@@ -114,8 +128,10 @@ from .serializers_v2 import (
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
-log = logging.getLogger(__name__)
 User = get_user_model()
+log = logging.getLogger(__name__)
+
+VALID_TEAM_ROLES = frozenset(ROLES.keys()) | frozenset(FORUM_ROLES)
 
 
 class CourseMetadataView(DeveloperErrorViewMixin, APIView):
@@ -2361,3 +2377,379 @@ class BetaTesterModifyView(DeveloperErrorViewMixin, APIView):
             'results': results,
         })
         return Response(response_serializer.data)
+
+
+class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
+    """
+    List the available course team roles for a specific course.
+
+    The returned roles are filtered based on course configuration.
+    For example, the ``ccx_coach`` role is only included when the
+    ``CUSTOM_COURSES_EDX`` feature flag is enabled **and** the course
+    has CCX enabled (``course.enable_ccx``).
+
+    **GET Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/team/roles
+
+    **GET Response Values**
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "results": [
+                {"role": "beta", "display_name": "Beta Tester"},
+                {"role": "data_researcher", "display_name": "Data Researcher"},
+                {"role": "instructor", "display_name": "Admin"},
+                {"role": "limited_staff", "display_name": "Limited Staff"},
+                {"role": "staff", "display_name": "Staff"}
+            ]
+        }
+
+    **Returns**
+
+        * 200: OK
+        * 401: User is not authenticated
+        * 403: User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EDIT_COURSE_ACCESS
+
+    def get(self, request, course_id):
+        """Return the list of available course team roles for this course."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+
+        roles = set(ROLES.keys()) | set(FORUM_ROLES)
+
+        ccx_enabled = settings.FEATURES.get('CUSTOM_COURSES_EDX', False) and course.enable_ccx
+        if not ccx_enabled:
+            roles.discard('ccx_coach')
+
+        results = [
+            {'role': rolename, 'display_name': str(ROLE_DISPLAY_NAMES[rolename])}
+            for rolename in sorted(roles)
+        ]
+
+        return Response({
+            'course_id': str(course_key),
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+class CourseTeamView(DeveloperErrorViewMixin, APIView):
+    """
+    List course team members, or grant/revoke a role for one or more users.
+
+    **GET Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/team
+        GET /api/instructor/v2/courses/{course_id}/team?role=staff
+
+    **GET Response Values**
+
+    Each result is one record per user, aggregating all of that user's roles
+    into a ``roles`` array. Each role object contains the ``role`` identifier
+    and its localized ``display_name``.
+
+    When ``role`` is omitted, returns all team members across all roles:
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "role": null,
+            "results": [
+                {
+                    "username": "jane_doe",
+                    "email": "jane@example.com",
+                    "first_name": "Jane",
+                    "last_name": "Doe",
+                    "roles": [
+                        {"role": "staff", "display_name": "Staff"},
+                        {"role": "beta", "display_name": "Beta Tester"},
+                        {"role": "ccx_coach", "display_name": "CCX Coach"}
+                    ]
+                }
+            ]
+        }
+
+    When ``role`` is specified, returns only members with that role (still
+    one record per user, with the ``roles`` array containing only that role):
+
+        {
+            "course_id": "course-v1:edX+DemoX+Demo_Course",
+            "role": "staff",
+            "results": [
+                {
+                    "username": "staff_user1",
+                    "email": "staff1@example.com",
+                    "first_name": "Bob",
+                    "last_name": "Jones",
+                    "roles": [
+                        {"role": "staff", "display_name": "Staff"}
+                    ]
+                }
+            ]
+        }
+
+    **POST Example Request (grant)**
+
+        POST /api/instructor/v2/courses/{course_id}/team
+        {
+            "identifiers": ["jane_doe", "john@example.com"],
+            "role": "staff",
+            "action": "allow"
+        }
+
+    **POST Example Request (revoke)**
+
+        POST /api/instructor/v2/courses/{course_id}/team
+        {
+            "identifiers": ["jane_doe"],
+            "role": "staff",
+            "action": "revoke"
+        }
+
+    **POST Response Values**
+
+        {
+            "action": "allow",
+            "role": "staff",
+            "results": [
+                {
+                    "identifier": "jane_doe",
+                    "error": false,
+                    "userDoesNotExist": false,
+                    "is_active": true
+                },
+                {
+                    "identifier": "john@example.com",
+                    "error": false,
+                    "userDoesNotExist": false,
+                    "is_active": true
+                }
+            ]
+        }
+
+    **Returns**
+
+        * 200: OK (GET, POST - role granted/revoked)
+        * 400: Invalid parameters
+        * 401: User is not authenticated
+        * 403: User lacks instructor permissions
+        * 404: Course not found
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EDIT_COURSE_ACCESS
+
+    def get(self, request, course_id):
+        """
+        List course team members, optionally filtered by role and identity.
+
+        If no role is specified, returns members across all course and forum
+        roles. The optional ``email_or_username`` query param performs a
+        case-insensitive substring match against username and email.
+
+        Results are paginated via ``page`` and ``page_size``.
+        """
+        course_key = CourseKey.from_string(course_id)
+        role = request.query_params.get('role')
+        email_or_username = (request.query_params.get('email_or_username') or '').strip()
+
+        if role and role not in VALID_TEAM_ROLES:
+            return Response(
+                {'error': _("Invalid role '%(role)s'. Must be one of: %(valid)s") % {
+                    'role': role,
+                    'valid': ', '.join(sorted(VALID_TEAM_ROLES)),
+                }},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify course exists
+        get_course_by_id(course_key)
+
+        if role:
+            roles_to_query = [role]
+        else:
+            roles_to_query = list(ROLES.keys()) + list(FORUM_ROLES)
+
+        users_by_id = {}
+        for rolename in roles_to_query:
+            if is_forum_role(rolename):
+                users = list_forum_members(course_key, rolename)
+            else:
+                users = list_with_level(course_key, rolename)
+            for user in users:
+                entry = users_by_id.get(user.id)
+                if entry is None:
+                    entry = {
+                        'username': user.username,
+                        'email': user.email,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'roles': [],
+                    }
+                    users_by_id[user.id] = entry
+                entry['roles'].append({
+                    'role': rolename,
+                    'display_name': str(ROLE_DISPLAY_NAMES.get(rolename, rolename)),
+                })
+
+        results = sorted(users_by_id.values(), key=lambda r: r['username'].lower())
+
+        if email_or_username:
+            needle = email_or_username.lower()
+            results = [
+                r for r in results
+                if needle in r['username'].lower() or needle in r['email'].lower()
+            ]
+
+        paginator = DefaultPagination()
+        page = paginator.paginate_queryset(results, request, view=self)
+        paginated = paginator.get_paginated_response(page).data
+        paginated['course_id'] = str(course_key)
+        paginated['role'] = role
+        paginated['email_or_username'] = email_or_username or None
+        return Response(paginated, status=status.HTTP_200_OK)
+
+    def post(self, request, course_id):
+        """Grant or revoke a course role for one or more users."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+
+        serializer = CourseTeamModifySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        identifiers = serializer.validated_data['identifiers']
+        rolename = serializer.validated_data['role']
+        action = serializer.validated_data['action']
+
+        results = []
+        for identifier in identifiers:
+            error = False
+            user_does_not_exist = False
+            user_active = None
+            try:
+                user = get_student_from_identifier(identifier)
+                user_active = user.is_active
+
+                if not user.is_active:
+                    error = True
+                elif action == 'allow':
+                    if is_forum_role(rolename):
+                        update_forum_role(course_key, user, rolename, 'allow')
+                    else:
+                        allow_access(course, user, rolename)
+                        if not is_user_enrolled_in_course(user, course_key):
+                            CourseEnrollment.enroll(user, course_key)
+                elif action == 'revoke':
+                    if rolename == 'instructor' and user == request.user:
+                        error = True
+                    elif is_forum_role(rolename):
+                        update_forum_role(course_key, user, rolename, 'revoke')
+                    else:
+                        revoke_access(course, user, rolename)
+            except User.DoesNotExist:
+                error = True
+                user_does_not_exist = True
+            except Exception:  # pylint: disable=broad-except
+                log.exception("Error while %s role %s for %s", action, rolename, identifier)
+                error = True
+            finally:
+                results.append({
+                    'identifier': identifier,
+                    'error': error,
+                    'userDoesNotExist': user_does_not_exist,
+                    'is_active': user_active,
+                })
+
+        return Response({
+            'action': action,
+            'role': rolename,
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+
+@method_decorator(cache_control(no_cache=True, no_store=True, must_revalidate=True), name='dispatch')
+class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
+    """
+    Revoke one or more course roles from a user.
+
+    **DELETE Example Request (single role)**
+
+        DELETE /api/instructor/v2/courses/{course_id}/team/jane_doe
+        {
+            "roles": ["staff"]
+        }
+
+    **DELETE Example Request (multiple roles)**
+
+        DELETE /api/instructor/v2/courses/{course_id}/team/jane_doe
+        {
+            "roles": ["staff", "beta"]
+        }
+
+    **DELETE Response Values**
+
+        {
+            "identifier": "jane_doe",
+            "roles": ["staff", "beta"],
+            "action": "revoke",
+            "success": true
+        }
+
+    **Returns**
+
+        * 200: Role(s) revoked successfully
+        * 400: Invalid parameters
+        * 401: User is not authenticated
+        * 403: User lacks instructor permissions
+        * 404: Course or user not found
+        * 409: Cannot remove own instructor access
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EDIT_COURSE_ACCESS
+
+    def delete(self, request, course_id, email_or_username):
+        """Revoke one or more course roles from a user."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+
+        revoke_serializer = CourseTeamRevokeSerializer(data=request.data)
+        if not revoke_serializer.is_valid():
+            return Response(revoke_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        roles = revoke_serializer.validated_data['roles']
+
+        try:
+            user = get_student_from_identifier(email_or_username)
+        except User.DoesNotExist:
+            return Response(
+                {'error': _("User '%(identifier)s' not found.") % {'identifier': email_or_username}},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not user.is_active:
+            return Response(
+                {'error': _("User '%(identifier)s' is inactive.") % {'identifier': email_or_username}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if 'instructor' in roles and user == request.user:
+            return Response(
+                {'error': _('Instructors cannot remove their own instructor access.')},
+                status=status.HTTP_409_CONFLICT
+            )
+
+        for rolename in roles:
+            if is_forum_role(rolename):
+                update_forum_role(course_key, user, rolename, 'revoke')
+            else:
+                revoke_access(course, user, rolename)
+
+        return Response({
+            'identifier': user.username,
+            'roles': roles,
+            'action': 'revoke',
+            'success': True,
+        }, status=status.HTTP_200_OK)

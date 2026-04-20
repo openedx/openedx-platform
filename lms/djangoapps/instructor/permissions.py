@@ -3,6 +3,8 @@ Permissions for the instructor dashboard and associated actions
 """
 from bridgekeeper import perms
 from bridgekeeper.rules import is_staff
+from django.http import Http404
+from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import BasePermission
@@ -83,7 +85,11 @@ perms[VIEW_FORUM_MEMBERS] = HasAccessRule('staff')
 class InstructorPermission(BasePermission):
     """Generic permissions"""
     def has_permission(self, request, view):
-        course = get_course_by_id(CourseKey.from_string(view.kwargs.get('course_id')))
+        try:
+            course_key = CourseKey.from_string(view.kwargs.get('course_id'))
+        except InvalidKeyError as exc:
+            raise Http404('Invalid course key') from exc
+        course = get_course_by_id(course_key)
         permission = getattr(view, 'permission_name', None)
         return request.user.has_perm(permission, course)
 
