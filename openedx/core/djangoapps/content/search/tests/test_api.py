@@ -449,19 +449,32 @@ class TestSearchApi(ModuleStoreTestCase):
 
     @override_settings(MEILISEARCH_ENABLED=True)
     def test_init_meilisearch_index(self, mock_meilisearch) -> None:
-        # Test index already exists
+        # Test index already exists, is populated, and correctly configured
+        mock_index = Mock()
+        mock_index.primary_key = "id"
+        mock_index.get_stats.return_value = Mock(number_of_documents=100)
+        mock_index.get_settings.return_value = {
+            "distinctAttribute": "usage_key",
+            "filterableAttributes": list(api.INDEX_FILTERABLE_ATTRIBUTES),
+            "searchableAttributes": list(api.INDEX_SEARCHABLE_ATTRIBUTES),
+            "sortableAttributes": list(api.INDEX_SORTABLE_ATTRIBUTES),
+            "rankingRules": list(api.INDEX_RANKING_RULES),
+        }
+        mock_meilisearch.return_value.get_index.return_value = mock_index
+
         api.init_index()
         mock_meilisearch.return_value.swap_indexes.assert_not_called()
         mock_meilisearch.return_value.create_index.assert_not_called()
         mock_meilisearch.return_value.delete_index.assert_not_called()
 
-        # Test index already exists and has no documents
-        mock_meilisearch.return_value.get_stats.return_value = 0
+        # Test index already exists and is empty but correctly configured
+        mock_index.get_stats.return_value = Mock(number_of_documents=0)
         api.init_index()
         mock_meilisearch.return_value.swap_indexes.assert_not_called()
         mock_meilisearch.return_value.create_index.assert_not_called()
         mock_meilisearch.return_value.delete_index.assert_not_called()
 
+        # Test index does not exist — should create it
         mock_meilisearch.return_value.get_index.side_effect = [
             MeilisearchApiError("Testing reindex", Mock(text='{"code":"index_not_found"}')),
             MeilisearchApiError("Testing reindex", Mock(text='{"code":"index_not_found"}')),
