@@ -6,6 +6,7 @@ Following REST best practices, serializers encapsulate most of the data processi
 """
 
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.html import escape
@@ -101,7 +102,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
         Example:
 
-            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', course_key, 'grading')
+            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', course_key, 'grading')
             # => '/instructor/course-v1:.../grading' (with strip_url=True)
 
             _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email', strip_url=False)
@@ -152,7 +153,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Info'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_info'
                     ),
@@ -163,7 +163,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Enrollments'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'enrollments'
                     ),
@@ -174,7 +173,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Team'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_team'
                     ),
@@ -185,7 +183,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Grading'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'grading'
                     ),
@@ -196,7 +193,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Cohorts'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'cohorts'
                     ),
@@ -222,7 +218,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Date Extensions'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'date_extensions'
                 ),
@@ -235,7 +230,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Data Downloads'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'data_downloads'
                 ),
@@ -255,7 +249,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Open Responses'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'open_responses'
                 ),
@@ -272,7 +265,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Certificates'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'certificates'
                 ),
@@ -294,7 +286,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Special Exams'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'special_exams'
                 ),
