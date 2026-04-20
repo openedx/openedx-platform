@@ -19,6 +19,7 @@ import edx_api_doc_tools as apidocs
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django_countries.fields import Country
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
@@ -384,6 +385,17 @@ class RegisterAndEnrollStudents(APIView):
                 else:
                     cohort_name = None
                     course_mode = None
+
+                if not Country(country).name:
+                    row_errors.append({
+                        'username': username,
+                        'email': email,
+                        'response': _(
+                            'Invalid country: {country}. '
+                            'Please enter a valid country code. e.g., US, GB'
+                        ).format(country=country)
+                    })
+                    continue
 
                 # Validate cohort name, and get the cohort object.  Skip if course
                 # is not cohorted.
