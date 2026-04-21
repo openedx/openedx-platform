@@ -272,7 +272,7 @@ class LibraryBlockCollectionsView(APIView):
         collection_keys = serializer.validated_data['collection_keys']
         api.set_library_item_collections(
             library_key=key.lib_key,
-            entity_key=component.publishable_entity.key,
+            entity_ref=component.publishable_entity.entity_ref,
             collection_keys=collection_keys,
             created_by=request.user.id,
             content_library=content_library,

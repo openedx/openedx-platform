@@ -142,7 +142,7 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
                 pass
         else:
             log.warning(
-                f"PublishableEntity {record.entity.pk} / {record.entity.key} was modified during publish operation "
+                f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} was modified during publish operation "
                 "but is of unknown type."
             )
 
@@ -246,13 +246,13 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
                 updated_container_keys.add(container_key)
         else:
             log.warning(
-                f"PublishableEntity {record.entity.pk} / {record.entity.key} was modified during publish operation "
+                f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} was modified during publish operation "
                 "but is of unknown type."
             )
         # If any collections contain this entity, their item count may need to be updated, e.g. if this was a
         # newly created component in the collection and is now deleted, or this was deleted and is now re-added.
         for parent_collection in content_api.get_entity_collections(
-            record.entity.learning_package_id, record.entity.key,
+            record.entity.learning_package_id, record.entity.entity_ref,
         ):
             collection_key = api.library_collection_locator(
                 library_key=library_key,

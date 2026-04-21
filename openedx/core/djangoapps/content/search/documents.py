@@ -450,7 +450,7 @@ def searchable_doc_collections(object_id: OpaqueKey) -> dict:
             component = lib_api.get_component_from_usage_key(object_id)
             collections = content_api.get_entity_collections(
                 component.learning_package_id,
-                component.key,
+                component.entity_ref,
             ).values('key', 'title')
         elif isinstance(object_id, LibraryContainerLocator):
             container = lib_api.get_container(object_id, include_collections=True)

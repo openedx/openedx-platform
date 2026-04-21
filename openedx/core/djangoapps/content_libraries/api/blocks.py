@@ -178,7 +178,7 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
     if include_collections:
         associated_collections = content_api.get_entity_collections(
             component.learning_package_id,
-            component.key,
+            component.entity_ref,
         ).values('key', 'title')
     else:
         associated_collections = None
@@ -725,7 +725,7 @@ def delete_library_block(
         send_block_deleted_signal()
         raise
 
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
     affected_containers = get_containers_contains_item(usage_key)
 
     content_api.soft_delete_draft(component.id, deleted_by=user_id)
@@ -770,7 +770,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     """
     component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
 
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
@@ -985,7 +985,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
-    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__key=component.key)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__entity_ref=component.entity_ref)
     # Publish the component and update anything that needs to be updated (e.g. search index):
     publish_log = content_api.publish_from_drafts(
         learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
