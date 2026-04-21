@@ -718,7 +718,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
-            local_key="child_problem_1",
+            component_code="child_problem_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -734,7 +734,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
-            local_key="child_html_1",
+            component_code="child_html_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -906,7 +906,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 component_type=content_api.get_or_create_component_type(
                     "xblock.v1", "problem"
                 ),
-                local_key=f"child_problem_{i}",
+                component_code=f"child_problem_{i}",
                 created=timezone.now(),
                 created_by=self.user.id,
             )
@@ -946,7 +946,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
-            local_key="mixed_problem",
+            component_code="mixed_problem",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -962,7 +962,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
-            local_key="mixed_html",
+            component_code="mixed_html",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -978,7 +978,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "video"
             ),
-            local_key="mixed_video",
+            component_code="mixed_video",
             created=timezone.now(),
             created_by=self.user.id,
         )

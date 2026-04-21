@@ -144,11 +144,11 @@ def update_library_collection_items(
             # Parse the block_family from the key to use as namespace.
             block_type = BlockTypeKey.from_string(str(opaque_key))
             try:
-                component = content_api.get_component_by_key(
+                component = content_api.get_component_by_code(
                     content_library.learning_package_id,
                     namespace=block_type.block_family,
                     type_name=opaque_key.block_type,
-                    local_key=opaque_key.block_id,
+                    component_code=opaque_key.block_id,
                 )
             except Component.DoesNotExist as exc:
                 raise ContentLibraryBlockNotFound(opaque_key) from exc

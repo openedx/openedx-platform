@@ -346,13 +346,13 @@ def _import_structure(
             LibraryUsageLocatorV2(target_library.key, block_type, block_id)  # type: ignore[abstract]
             for block_type, block_id
             in content_api.get_components(migration.target.id).values_list(
-                "component_type__name", "local_key"
+                "component_type__name", "component_code"
             )
         ),
         used_container_slugs=set(
             content_api.get_containers(
                 migration.target.id
-            ).values_list("publishable_entity__key", flat=True)
+            ).values_list("publishable_entity__entity_ref", flat=True)
         ),
         previous_block_migrations=(
             get_migration_blocks(source_data.previous_migration.pk)
@@ -932,7 +932,7 @@ def _migrate_component(
     try:
         component = content_api.get_components(context.target_package_id).get(
             component_type=component_type,
-            local_key=target_key.block_id,
+            component_code=target_key.block_id,
         )
         component_existed = True
         # Do we have a specific method for this?
@@ -953,7 +953,7 @@ def _migrate_component(
         component = content_api.create_component(
             context.target_package_id,
             component_type=component_type,
-            local_key=target_key.block_id,
+            component_code=target_key.block_id,
             created=context.created_at,
             created_by=context.created_by,
         )

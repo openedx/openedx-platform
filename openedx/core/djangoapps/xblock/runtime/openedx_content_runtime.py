@@ -328,11 +328,11 @@ class OpenedXContentRuntime(XBlockRuntime):
         """
         learning_package = content_api.get_learning_package_by_ref(str(usage_key.lib_key))
         try:
-            component = content_api.get_component_by_key(
+            component = content_api.get_component_by_code(
                 learning_package.id,
                 namespace='xblock.v1',
                 type_name=usage_key.block_type,
-                local_key=usage_key.block_id,
+                component_code=usage_key.block_id,
             )
         except ObjectDoesNotExist as exc:
             raise NoSuchUsage(usage_key) from exc
