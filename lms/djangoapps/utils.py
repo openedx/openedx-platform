@@ -67,11 +67,3 @@ class OptimizelyClient:
 
         return cls.optimizely_client
 
-
-def get_instructor_dashboard_url(course_locator) -> str:
-    """
-    Gets instructor microfrontend URL for the current course locator.
-    """
-    mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
-    print(f'mfe_base_url: {mfe_base_url}')
-    return f'{mfe_base_url}/{course_locator}/course_info'

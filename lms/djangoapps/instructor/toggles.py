@@ -28,14 +28,14 @@ DATA_DOWNLOAD_V2 = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_data_download_v2'
 # .. toggle_tickets: PROD-1740
 OPTIMISED_IS_SMALL_COURSE = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.optimised_is_small_course', __name__)
 
-# .. toggle_name: instructor.disable_new_instructor_dashboard_mfe
+# .. toggle_name: instructor.legacy_instructor_dashboard_mfe
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
-# .. toggle_description: Waffle flag to disable the new instructor dashboard microfrontend and revert back
-# .. toggle_use_cases: open_edx
+# .. toggle_description: Waffle flag to enable the legacy instructor experience
+# .. toggle_use_cases: opt_out
 # .. toggle_creation_date: 2026-04-20
-DISABLE_NEW_INSTRUCTOR_DASHBOARD_MFE = WaffleFlag(
-    f'{WAFFLE_FLAG_NAMESPACE}.disable_new_instructor_dashboard_mfe', __name__
+LEGACY_INSTRUCTOR_DASHBOARD_MFE = WaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.legacy_instructor_dashboard_mfe', __name__
 )
 
 
@@ -50,8 +50,8 @@ def use_optimised_is_small_course():
     return OPTIMISED_IS_SMALL_COURSE.is_enabled()
 
 
-def disable_new_instructor_dashboard_mfe():
+def legacy_instructor_dashboard_mfe():
     """
     check if new instructor dashboard microfrontend is disabled.
     """
-    return DISABLE_NEW_INSTRUCTOR_DASHBOARD_MFE.is_enabled()
+    return LEGACY_INSTRUCTOR_DASHBOARD_MFE.is_enabled()

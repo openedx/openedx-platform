@@ -92,7 +92,12 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
             for index in range(len(course.textbooks))
         ])
         for url in urls:
-            self.assert_request_status_code(200, url)
+            # Instructor dashboard can return either 200 (traditional) or 302 (MFE redirect)
+            if 'instructor' in url:
+                response = self.client.get(url)
+                assert(response.status_code in [200, 302])
+            else:
+                self.assert_request_status_code(200, url)
 
         # The student progress tab is not accessible to a student
         # before launch, so the instructor view-as-student feature
@@ -186,7 +191,8 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
 
         # Now should be able to get to self.course, but not  self.test_course
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
         self.assert_request_status_code(404, url)
@@ -200,7 +206,8 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
 
         # Now should be able to get to self.course, but not  self.test_course
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
         self.assert_request_status_code(404, url)
@@ -212,10 +219,12 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         """
         self.login(self.org_staff_user)
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
         self.assert_request_status_code(404, url)
@@ -227,10 +236,12 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         """
         self.login(self.org_instructor_user)
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
-        self.assert_request_status_code(200, url)
+        response = self.client.get(url)
+        assert(response.status_code in [200, 302])
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
         self.assert_request_status_code(404, url)
@@ -246,7 +257,8 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
                 reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})]
 
         for url in urls:
-            self.assert_request_status_code(200, url)
+            response = self.client.get(url)
+            assert(response.status_code in [200, 302])
 
     @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
     def test_dark_launch_enrolled_student(self):
