@@ -651,7 +651,7 @@ def restore_library(self, user_id, storage_path):
         TASK_LOGGER.info(
             'Restored learning package (id: %s) with key %s',
             learning_package_data.get('id'),
-            learning_package_data.get('key')
+            learning_package_data.get('package_ref')
         )
 
         # Save the restore details as an artifact in JSON format

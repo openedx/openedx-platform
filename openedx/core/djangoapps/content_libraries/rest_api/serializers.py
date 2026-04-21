@@ -447,14 +447,16 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     """
     learning_package_id = serializers.IntegerField(source="lp_restored_data.id")
     title = serializers.CharField(source="lp_restored_data.title")
-    org = serializers.CharField(source="lp_restored_data.archive_org_key")
-    slug = serializers.CharField(source="lp_restored_data.archive_slug")
+    # archive_org_code and archive_package_code may be None when archive_package_ref cannot be parsed
+    # as {prefix}:{org_code}:{package_code} (previously this raised ValueError in openedx-core).
+    org = serializers.CharField(source="lp_restored_data.archive_org_code", allow_null=True)
+    slug = serializers.CharField(source="lp_restored_data.archive_package_code", allow_null=True)
 
     # The `key` is a unique temporary key assigned to the learning package during the restore process,
     # whereas the `archive_key` is the original key of the learning package from the backup.
     # The temporary learning package key is replaced with a standard key once it is added to a content library.
-    key = serializers.CharField(source="lp_restored_data.key")
-    archive_key = serializers.CharField(source="lp_restored_data.archive_lp_key")
+    key = serializers.CharField(source="lp_restored_data.package_ref")
+    archive_key = serializers.CharField(source="lp_restored_data.archive_package_ref")
 
     containers = serializers.IntegerField(source="lp_restored_data.num_containers")
     components = serializers.IntegerField(source="lp_restored_data.num_components")
