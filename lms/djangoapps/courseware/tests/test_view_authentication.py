@@ -20,9 +20,9 @@ from common.djangoapps.student.tests.factories import (
     StaffFactory,
     UserFactory,
 )
-from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.tests.helpers import CourseAccessTestMixin, LoginEnrollmentTestCase
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
