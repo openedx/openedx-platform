@@ -66,4 +66,3 @@ class OptimizelyClient:
             cls.optimizely_client = optimizely.Optimizely(config_manager=config_manager)
 
         return cls.optimizely_client
-
