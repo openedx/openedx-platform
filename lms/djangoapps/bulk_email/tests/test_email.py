@@ -16,6 +16,7 @@ from django.core.management import call_command
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.translation import get_language
+from edx_toggles.toggles.testutils import override_waffle_flag
 from markupsafe import escape
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -29,6 +30,7 @@ from common.djangoapps.student.tests.factories import (
 )
 from lms.djangoapps.bulk_email.messages import ACEEmail
 from lms.djangoapps.bulk_email.tasks import _get_course_email_context, _get_source_address
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from lms.djangoapps.instructor_task.subtasks import update_subtask_status
 from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort
 from openedx.core.djangoapps.course_groups.models import CourseCohort
@@ -62,6 +64,11 @@ class MockCourseEmailResult:
         return mock_update_subtask_status
 
 
+# Enable legacy instructor dashboard to access email section HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect email functionality, but these tests need to verify
+# that the email section exists in the HTML, which is no longer a primary concern since
+# we're testing email sending capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class EmailSendFromDashboardTestCase(SharedModuleStoreTestCase):
     """
     Test that emails send correctly.

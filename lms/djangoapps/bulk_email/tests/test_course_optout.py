@@ -13,12 +13,14 @@ from edx_ace.channel import ChannelType
 from edx_ace.message import Message
 from edx_ace.policy import PolicyResult
 from edx_ace.recipient import Recipient
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.bulk_email.api import get_unsubscribed_link
 from lms.djangoapps.bulk_email.models import BulkEmailFlag
 from lms.djangoapps.bulk_email.policies import CourseEmailOptout
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
 )
@@ -26,6 +28,11 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 
 @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+# Enable legacy instructor dashboard to access email section HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect email functionality, but these tests need to verify
+# that the email section exists in the HTML, which is no longer a primary concern since
+# we're testing email opt-out capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestOptoutCourseEmails(ModuleStoreTestCase):
     """
     Test that optouts are referenced in sending course email.
