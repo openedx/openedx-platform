@@ -226,7 +226,7 @@ def delete_container(
     # Fetch related collections and containers before soft-delete
     affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
-        container.key,
+        container.entity_ref,
     )
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
@@ -291,7 +291,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
 
     affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
-        container.key,
+        container.entity_ref,
     )
 
     content_api.set_draft_version(container.id, container.versioning.latest.pk)

@@ -346,7 +346,7 @@ class LibraryContainerCollectionsView(GenericAPIView):
         collection_keys = serializer.validated_data['collection_keys']
         api.set_library_item_collections(
             library_key=container_key.lib_key,
-            entity_key=container_key.container_id,
+            entity_ref=container_key.container_id,
             collection_keys=collection_keys,
             created_by=request.user.id,
             content_library=content_library,
