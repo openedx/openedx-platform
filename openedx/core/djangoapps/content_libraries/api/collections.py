@@ -132,9 +132,9 @@ def update_library_collection_items(
     for opaque_key in opaque_keys:
         if isinstance(opaque_key, LibraryContainerLocator):
             try:
-                container = content_api.get_container_by_key(
+                container = content_api.get_container_by_code(
                     content_library.learning_package_id,
-                    key=opaque_key.container_id,
+                    container_code=opaque_key.container_id,
                 )
             except Collection.DoesNotExist as exc:
                 raise ContentLibraryContainerNotFound(opaque_key) from exc

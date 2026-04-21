@@ -402,7 +402,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
         return redirect_response
 
     # If we got here, we know that the asset exists and it's okay to download.
-    cv_media = component_version.componentversionmedia_set.get(key=asset_path)
+    cv_media = component_version.componentversionmedia_set.get(path=asset_path)
     media = cv_media.media
 
     # Delete the re-direct part of the response headers. We'll copy the rest.
