@@ -326,7 +326,7 @@ class OpenedXContentRuntime(XBlockRuntime):
         TODO: This is the third place where we're implementing this. Figure out
         where the definitive place should be and have everything else call that.
         """
-        learning_package = content_api.get_learning_package_by_key(str(usage_key.lib_key))
+        learning_package = content_api.get_learning_package_by_ref(str(usage_key.lib_key))
         try:
             component = content_api.get_component_by_key(
                 learning_package.id,

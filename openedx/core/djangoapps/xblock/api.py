@@ -199,7 +199,7 @@ def get_component_from_usage_key(usage_key: UsageKeyV2) -> Component:
     This is a lower-level function that will return a Component even if there is
     no current draft version of that Component (because it's been soft-deleted).
     """
-    learning_package = content_api.get_learning_package_by_key(
+    learning_package = content_api.get_learning_package_by_ref(
         str(usage_key.context_key)
     )
     return content_api.get_component_by_key(
