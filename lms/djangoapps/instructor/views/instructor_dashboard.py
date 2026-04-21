@@ -59,7 +59,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import permissions
-from ..toggles import data_download_v2_is_enabled, legacy_instructor_dashboard_mfe
+from ..toggles import data_download_v2_is_enabled, legacy_instructor_dashboard
 from .tools import get_units_with_due_date, title_or_url
 
 log = logging.getLogger(__name__)
@@ -147,7 +147,7 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
 
     # With new instructor dashboard we need to redirect them to it instead of rendering the old one,
     # but we still want to check if they have access to view the dashboard before redirecting.
-    if not legacy_instructor_dashboard_mfe():
+    if not legacy_instructor_dashboard():
         return redirect(get_instructor_dashboard_url(course_key))
 
     sections = []
@@ -825,9 +825,9 @@ def is_ecommerce_course(course_key):
     return sku_count > 0
 
 
-def get_instructor_dashboard_url(course_locator: CourseKey) -> str:
+def get_instructor_dashboard_url(course_key: CourseKey) -> str:
     """
     Gets instructor microfrontend URL for the current course locator.
     """
     mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
-    return f'{mfe_base_url}/{course_locator}/course_info'
+    return f'{mfe_base_url}/{course_key}/course_info'
