@@ -7,6 +7,7 @@ that the view is conditionally available when Course Auth is turned on.
 
 
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.tests.factories import AdminFactory
@@ -16,6 +17,7 @@ from lms.djangoapps.bulk_email.models_api import (
     is_bulk_email_enabled_for_course,
     is_bulk_email_feature_enabled,
 )
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
     TEST_DATA_MIXED_MODULESTORE,
     SharedModuleStoreTestCase,
@@ -23,6 +25,11 @@ from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: di
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
+# Enable legacy instructor dashboard to access email management HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect email functionality, but these tests need to verify
+# that the email sections exist in the HTML, which is no longer a primary concern since
+# we're testing email feature flag functionality, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestNewInstructorDashboardEmailViewMongoBacked(SharedModuleStoreTestCase):
     """
     Check for email view on the new instructor dashboard

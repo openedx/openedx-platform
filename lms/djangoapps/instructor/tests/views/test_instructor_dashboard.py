@@ -32,7 +32,7 @@ from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.grades.config.waffle import WRITABLE_GRADEBOOK
-from lms.djangoapps.instructor.toggles import DATA_DOWNLOAD_V2
+from lms.djangoapps.instructor.toggles import DATA_DOWNLOAD_V2, LEGACY_INSTRUCTOR_DASHBOARD
 from lms.djangoapps.instructor.views.gradebook_api import calculate_page_info
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle import (
@@ -60,6 +60,11 @@ def intercept_renderer(path, context):
 
 
 @ddt.ddt
+# Enable legacy instructor dashboard to access dashboard HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect instructor functionality, but these tests need to verify
+# that the dashboard sections exist in the HTML, which is no longer a primary concern since
+# we're testing instructor dashboard capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssTestMixin):
     """
     Tests for the instructor dashboard (not legacy).

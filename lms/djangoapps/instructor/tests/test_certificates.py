@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test.utils import override_settings
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import GlobalStaffFactory, InstructorFactory, UserFactory
@@ -24,6 +25,7 @@ from lms.djangoapps.certificates.tests.factories import (
     CertificateInvalidationFactory,
     GeneratedCertificateFactory,
 )
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
 )
@@ -31,6 +33,11 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 
 @ddt.ddt
+# Enable legacy instructor dashboard to access certificate management HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
+# that the certificate management sections exist in the HTML, which is no longer a primary concern since
+# we're testing certificate generation capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificateTaskViewTests(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
 
@@ -153,6 +160,11 @@ class CertificateTaskViewTests(SharedModuleStoreTestCase):
 
 
 @ddt.ddt
+# Enable legacy instructor dashboard to access certificate management HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
+# that the certificate sections exist in the HTML, which is no longer a primary concern since
+# we're testing certificate dashboard capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
 
@@ -336,6 +348,11 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
 
 @override_settings(CERT_QUEUE='certificates')
 @ddt.ddt
+# Enable legacy instructor dashboard to access certificate API HTML instead of getting 302 redirects.
+# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
+# that the certificate API sections exist in the HTML, which is no longer a primary concern since
+# we're testing certificate API capabilities, not the UI redirect behavior.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
     """Tests for the certificates end-points in the instructor dash API. """
     @classmethod
