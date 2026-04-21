@@ -209,7 +209,7 @@ def _block_migration_success(
     """
     Build an instance of the migration success dataclass
     """
-    target_library_key = LibraryLocatorV2.from_string(target.learning_package.key)
+    target_library_key = LibraryLocatorV2.from_string(target.learning_package.package_ref)
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
     if hasattr(target, "component"):
         target_key = library_component_usage_key(target_library_key, target.component)

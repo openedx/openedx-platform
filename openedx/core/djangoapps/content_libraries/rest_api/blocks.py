@@ -379,7 +379,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
 
     # Permissions check...
     learning_package = component_version.component.learning_package
-    library_key = LibraryLocatorV2.from_string(learning_package.key)
+    library_key = LibraryLocatorV2.from_string(learning_package.package_ref)
     api.require_permission_for_library_key(
         library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
     )

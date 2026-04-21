@@ -188,7 +188,7 @@ class TestSearchApi(ModuleStoreTestCase):
         tagging_api.add_tag_to_taxonomy(self.taxonomyB, "four")
 
         # Create a collection:
-        self.learning_package = content_api.get_learning_package_by_key(self.library.key)
+        self.learning_package = content_api.get_learning_package_by_ref(str(self.library.key))
         with freeze_time(self.created_date):
             self.collection = content_api.create_collection(
                 learning_package_id=self.learning_package.id,
