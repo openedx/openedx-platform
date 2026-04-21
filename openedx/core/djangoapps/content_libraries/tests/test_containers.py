@@ -591,7 +591,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
 
         result = self._patch_container_collections(
             self.unit["id"],
-            collection_keys=[col1.key],
+            collection_keys=[col1.collection_code],
         )
 
         assert result['count'] == 1
@@ -600,7 +600,7 @@ class ContainersTestCase(ContentLibrariesRestApiTest):
         unit_as_read = self._get_container(self.unit["id"])
 
         # Verify the collections
-        assert unit_as_read['collections'] == [{"title": col1.title, "key": col1.key}]
+        assert unit_as_read['collections'] == [{"title": col1.title, "key": col1.collection_code}]
 
     def test_section_hierarchy(self):
         with self.assertNumQueries(126):

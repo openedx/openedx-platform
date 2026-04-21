@@ -743,7 +743,7 @@ def delete_library_block(
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )
@@ -809,7 +809,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )

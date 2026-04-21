@@ -54,7 +54,7 @@ def create_library_collection(
     try:
         collection = content_api.create_collection(
             learning_package_id=content_library.learning_package_id,
-            key=collection_key,
+            collection_code=collection_key,
             title=title,
             description=description,
             created_by=created_by,
@@ -86,7 +86,7 @@ def update_library_collection(
     try:
         collection = content_api.update_collection(
             learning_package_id=content_library.learning_package_id,
-            key=collection_key,
+            collection_code=collection_key,
             title=title,
             description=description,
         )
@@ -214,7 +214,7 @@ def set_library_item_collections(
 
     # Note: Component.entity_ref matches its PublishableEntity.entity_ref
     collection_qs = content_api.get_collections(content_library.learning_package_id).filter(
-        key__in=collection_keys
+        collection_code__in=collection_keys
     )
 
     affected_collections = content_api.set_collections(
@@ -232,7 +232,7 @@ def set_library_item_collections(
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )

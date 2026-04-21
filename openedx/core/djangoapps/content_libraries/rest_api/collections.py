@@ -184,7 +184,7 @@ class LibraryCollectionsView(ModelViewSet):
         assert collection.learning_package_id
         content_api.delete_collection(
             collection.learning_package_id,
-            collection.key,
+            collection.collection_code,
             hard_delete=False,
         )
         return Response(None, status=HTTP_204_NO_CONTENT)

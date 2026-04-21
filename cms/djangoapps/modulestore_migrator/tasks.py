@@ -409,7 +409,7 @@ def _populate_collection(user_id: int, migration: models.ModulestoreMigration) -
     if block_target_pks:
         content_api.add_to_collection(
             learning_package_id=migration.target.pk,
-            key=migration.target_collection.key,
+            collection_code=migration.target_collection.collection_code,
             entities_qset=PublishableEntity.objects.filter(id__in=block_target_pks),
             created_by=user_id,
         )

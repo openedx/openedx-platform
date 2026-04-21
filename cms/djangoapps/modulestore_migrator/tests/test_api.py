@@ -232,7 +232,7 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         collection_key = "test-collection"
         content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key=collection_key,
+            collection_code=collection_key,
             title="Test Collection",
             created_by=user.id,
         )
@@ -249,7 +249,7 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         )
 
         modulestoremigration = ModulestoreMigration.objects.get()
-        assert modulestoremigration.target_collection.key == collection_key
+        assert modulestoremigration.target_collection.collection_code == collection_key
 
     def test_start_migration_to_library_with_strategy_skip(self):
         """
@@ -487,19 +487,19 @@ class TestModulestoreMigratorAPI(ModuleStoreTestCase):
         # Lib 2 has Collection C
         content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key="test-collection-1a",
+            collection_code="test-collection-1a",
             title="Test Collection A in Lib 1",
             created_by=user.id,
         )
         content_api.create_collection(
             learning_package_id=self.learning_package.id,
-            key="test-collection-1b",
+            collection_code="test-collection-1b",
             title="Test Collection B in Lib 1",
             created_by=user.id,
         )
         content_api.create_collection(
             learning_package_id=self.learning_package_2.id,
-            key="test-collection-2c",
+            collection_code="test-collection-2c",
             title="Test Collection C in Lib 2",
             created_by=user.id,
         )

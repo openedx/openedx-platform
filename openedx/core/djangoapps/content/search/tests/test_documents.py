@@ -492,7 +492,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
 
         assert doc == {
             "id": "lib-collectionedx2012_falltoy_collection-d1d907a4",
-            "block_id": self.collection.key,
+            "block_id": self.collection.collection_code,
             "usage_key": str(self.collection_key),
             "type": "collection",
             "org": "edX",
@@ -521,7 +521,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
 
         assert doc == {
             "id": "lib-collectionedx2012_falltoy_collection-d1d907a4",
-            "block_id": self.collection.key,
+            "block_id": self.collection.collection_code,
             "usage_key": str(self.collection_key),
             "type": "collection",
             "org": "edX",
