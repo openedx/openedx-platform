@@ -14,6 +14,7 @@ Architecture note:
     A longer-term solution to this issue would be to move the content_libraries app to cms:
     https://github.com/openedx/edx-platform/issues/33428
 """
+
 from __future__ import annotations
 
 import json
@@ -38,22 +39,26 @@ from edx_django_utils.monitoring import (
     set_code_owner_attribute_from_module,
     set_custom_attribute,
 )
+from opaque_keys import OpaqueKey
 from opaque_keys.edx.locator import (
     BlockUsageLocator,
-    LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
 )
 from openedx_content import api as content_api
 from openedx_content.api import create_zip_file as create_lib_zip_file
-from openedx_content.models_api import DraftChangeLog, PublishLog
-from openedx_events.content_authoring.data import LibraryBlockData, LibraryCollectionData, LibraryContainerData
+from openedx_content.models_api import DraftChangeLog, LearningPackage, PublishableEntity, PublishLog
+from openedx_events.content_authoring.data import (
+    ContentObjectChangedData,
+    LibraryBlockData,
+    LibraryContainerData,
+)
 from openedx_events.content_authoring.signals import (
+    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_PUBLISHED,
     LIBRARY_BLOCK_UPDATED,
-    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_PUBLISHED,
@@ -81,6 +86,48 @@ TASK_LOGGER = get_task_logger(__name__)
 User = get_user_model()
 
 DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'  # Should match serializer format. Redefined to avoid circular import.
+
+
+@shared_task(base=LoggedTask)
+@set_code_owner_attribute
+def send_collections_changed_events(
+    publishable_entity_ids: list[PublishableEntity.ID],
+    learning_package_id: LearningPackage.ID,
+    library_key_str: str,
+):
+    """
+    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for each modified library
+    entity in the given list, because their associated collections have changed.
+
+    ⏳ This task is designed to be run asynchronously so it can handle many
+       entities, but you can also call it synchronously if you are only
+       processing a single entity. Handlers should be synchronous and fast, to
+       support the "update one item synchronously" use case, but can be async if
+       needed.
+    """
+    library_key = LibraryLocatorV2.from_string(library_key_str)
+    entities = (
+        content_api.get_publishable_entities(learning_package_id)
+        .filter(id__in=publishable_entity_ids)
+        .select_related("component", "container")
+    )
+
+    for entity in entities:
+        opaque_key: OpaqueKey
+
+        if hasattr(entity, "component"):
+            opaque_key = api.library_component_usage_key(library_key, entity.component)
+        elif hasattr(entity, "container"):
+            opaque_key = api.library_container_locator(library_key, entity.container)
+        else:
+            log.error("Unknown publishable entity type: %s", entity)
+            continue
+
+        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
+        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
+            content_object=ContentObjectChangedData(object_id=str(opaque_key), changes=["collections"]),
+        )
 
 
 @shared_task(base=LoggedTask)
@@ -199,7 +246,6 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
     created_container_keys: set[LibraryContainerLocator] = set()
     updated_container_keys: set[LibraryContainerLocator] = set()
     deleted_container_keys: set[LibraryContainerLocator] = set()
-    affected_collection_keys: set[LibraryCollectionLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):
     for record in affected_entities:
@@ -249,16 +295,6 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
                 f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
                 "was modified during publish operation but is of unknown type."
             )
-        # If any collections contain this entity, their item count may need to be updated, e.g. if this was a
-        # newly created component in the collection and is now deleted, or this was deleted and is now re-added.
-        for parent_collection in content_api.get_entity_collections(
-            record.entity.learning_package_id, record.entity.entity_ref,
-        ):
-            collection_key = api.library_collection_locator(
-                library_key=library_key,
-                collection_key=parent_collection.collection_code,
-            )
-            affected_collection_keys.add(collection_key)
 
     for container_key in deleted_container_keys:
         # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
@@ -281,13 +317,6 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
         # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
         LIBRARY_CONTAINER_UPDATED.send_event(
             library_container=LibraryContainerData(container_key=container_key)
-        )
-
-    for collection_key in affected_collection_keys:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(collection_key=collection_key)
         )
 
 

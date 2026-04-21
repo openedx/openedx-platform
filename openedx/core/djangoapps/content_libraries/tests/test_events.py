@@ -611,11 +611,11 @@ class ContentLibrariesEventsTestCase(BaseEventsTestCase):
             "library_collection": LibraryCollectionData(collection_key),
         })
 
-        # Soft delete the collection. NOTE: at the moment, it's only possible to "soft delete" collections via
-        # the REST API, which sends an UPDATED event because the collection is now "disabled" but not deleted.
+        # Soft delete the collection. Whether we "soft" or "hard" delete, it sends a "DELETED" event.
+        # If we later restore it, it would send a "CREATED" event.
         self._soft_delete_collection(collection_key)
         self.expect_new_events({
-            "signal": LIBRARY_COLLECTION_UPDATED,  # UPDATED not DELETED. If we do a hard delete, it should be DELETED.
+            "signal": LIBRARY_COLLECTION_DELETED,
             "library_collection": LibraryCollectionData(collection_key),
         })
 

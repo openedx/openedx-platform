@@ -28,7 +28,6 @@ from openedx_content.models_api import Collection, Component, ComponentVersion, 
 from openedx_events.content_authoring.data import (
     ContentObjectChangedData,
     LibraryBlockData,
-    LibraryCollectionData,
     LibraryContainerData,
 )
 from openedx_events.content_authoring.signals import (
@@ -36,7 +35,6 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_UPDATED,
-    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_UPDATED,
 )
 from xblock.core import XBlock
@@ -52,7 +50,6 @@ from openedx.core.types import User as UserType
 from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
-from .collections import library_collection_locator
 from .container_metadata import container_subclass_for_olx_tag
 from .containers import (
     ContainerMetadata,
@@ -728,29 +725,11 @@ def delete_library_block(
         send_block_deleted_signal()
         raise
 
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
     affected_containers = get_containers_contains_item(usage_key)
 
     content_api.soft_delete_draft(component.id, deleted_by=user_id)
 
     send_block_deleted_signal()
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To delete the component on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
 
     # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
     # container indexing asynchronously.
@@ -773,7 +752,6 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     """
     component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
 
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
@@ -800,23 +778,6 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
             changes=["collections", "tags", "units"],
         ),
     )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To restore the component in the collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
 
     # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
     # container indexing asynchronously.

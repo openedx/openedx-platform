@@ -15,16 +15,13 @@ from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import Container, Unit
-from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData, LibraryContainerData
+from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryContainerData
 from openedx_events.content_authoring.signals import (
     CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    LIBRARY_COLLECTION_UPDATED,
     LIBRARY_CONTAINER_CREATED,
     LIBRARY_CONTAINER_DELETED,
     LIBRARY_CONTAINER_UPDATED,
 )
-
-from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
 
 from .. import tasks
 from ..models import ContentLibrary
@@ -225,13 +222,6 @@ def delete_container(
         send_container_deleted_signal()
         raise
 
-    library_key = container_key.lib_key
-
-    # Fetch related collections and containers before soft-delete
-    affected_collections = content_api.get_entity_collections(
-        container.publishable_entity.learning_package_id,
-        container.entity_ref,
-    )
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
     children = get_container_children(
@@ -242,22 +232,6 @@ def delete_container(
 
     send_container_deleted_signal()
 
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To delete the container on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
     # Send events related to the containers that contains the updated container.
     # This is to update the children display names used in the section/subsection previews.
     for affected_container in affected_containers:
@@ -290,13 +264,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
     """
     [ 🛑 UNSTABLE ] Restore the specified library container.
     """
-    library_key = container_key.lib_key
     container = get_container_from_key(container_key, include_deleted=True)
-
-    affected_collections = content_api.get_entity_collections(
-        container.publishable_entity.learning_package_id,
-        container.entity_ref,
-    )
 
     content_api.set_draft_version(container.id, container.versioning.latest.pk)
     # Fetch related containers after restore
@@ -326,21 +294,6 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
         ),
     )
 
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To restore the container on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-            )
-        )
     # Send events related to the containers that contains the updated container.
     # This is to update the children display names used in the section/subsection previews.
     for affected_container in affected_containers:
