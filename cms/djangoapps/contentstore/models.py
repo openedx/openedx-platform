@@ -17,7 +17,7 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryContainerLocator
 from openedx_content.api import get_published_version
 from openedx_content.models_api import Component, Container
-from openedx_django_lib.fields import immutable_uuid_field, key_field, manual_date_time_field
+from openedx_django_lib.fields import immutable_uuid_field, manual_date_time_field, ref_field
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +87,7 @@ class EntityLinkBase(models.Model):
     """
     uuid = immutable_uuid_field()
     # Search by library/upstream context key
-    upstream_context_key = key_field(
+    upstream_context_key = ref_field(
         help_text=_("Upstream context key i.e., learning_package/library key"),
         db_index=True,
     )
