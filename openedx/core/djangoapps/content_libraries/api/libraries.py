@@ -718,7 +718,7 @@ def library_component_usage_key(
     return LibraryUsageLocatorV2(  # type: ignore[abstract]
         library_key,
         block_type=component.component_type.name,
-        usage_id=component.local_key,
+        usage_id=component.component_code,
     )
 
 

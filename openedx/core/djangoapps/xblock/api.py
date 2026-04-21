@@ -202,11 +202,11 @@ def get_component_from_usage_key(usage_key: UsageKeyV2) -> Component:
     learning_package = content_api.get_learning_package_by_ref(
         str(usage_key.context_key)
     )
-    return content_api.get_component_by_key(
+    return content_api.get_component_by_code(
         learning_package.id,
         namespace='xblock.v1',
         type_name=usage_key.block_type,
-        local_key=usage_key.block_id,
+        component_code=usage_key.block_id,
     )
 
 

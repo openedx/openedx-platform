@@ -425,7 +425,7 @@ def _import_staged_block(
         component = content_api.create_component(  # noqa: F841
             learning_package.id,
             component_type=component_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
             created=now,
             created_by=user.id,
         )
@@ -1046,7 +1046,7 @@ def _create_component_for_block(
         component, component_version = content_api.create_component_and_version(
             learning_package.id,
             component_type=component_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
             title=display_name,
             created=now,
             created_by=user_id,
