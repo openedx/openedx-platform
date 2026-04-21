@@ -490,7 +490,7 @@ def _import_staged_block(
             content_api.create_component_version_media(
                 component_version.pk,
                 content.id,
-                key=filename,
+                path=filename,
             )
 
     # Emit library block created event
@@ -852,7 +852,7 @@ def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> li
         component_version
         .componentversionmedia_set
         .filter(media__has_file=True)
-        .order_by('key')
+        .order_by('path')
         .select_related('media')
     )
 
@@ -860,13 +860,13 @@ def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> li
 
     return [
         LibraryXBlockStaticFile(
-            path=cvm.key,
+            path=cvm.path,
             size=cvm.media.size,
             url=site_root_url + reverse(
                 'content_libraries:library-assets',
                 kwargs={
                     'component_version_uuid': component_version.uuid,
-                    'asset_path': cvm.key,
+                    'asset_path': cvm.path,
                 }
             ),
         )
@@ -1061,7 +1061,7 @@ def _create_component_for_block(
         content_api.create_component_version_media(
             component_version.pk,
             content.id,
-            key="block.xml",
+            path="block.xml",
         )
 
         return component_version

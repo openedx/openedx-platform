@@ -121,7 +121,7 @@ def create_container(
     # Then try creating the actual container:
     container, _initial_version = content_api.create_container_and_version(
         content_library.learning_package_id,
-        key=slug,
+        container_code=slug,
         title=title,
         container_cls=container_cls,
         entities=[],

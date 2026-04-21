@@ -971,7 +971,7 @@ def _migrate_component(
             continue
         new_path = f"static/{filename}"
         content_api.create_component_version_media(
-            component_version.pk, media_pk, key=new_path
+            component_version.pk, media_pk, path=new_path
         )
 
     # Publish the component

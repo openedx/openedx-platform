@@ -251,13 +251,13 @@ class OpenedXContentRuntime(XBlockRuntime):
             .componentversionmedia_set
             .filter(media__has_file=True)
             .select_related('media')
-            .order_by('key')
+            .order_by('path')
         )
 
         return [
             StaticFile(
-                name=cvm.key,
-                url=self._absolute_url_for_asset(component_version, cvm.key),
+                name=cvm.path,
+                url=self._absolute_url_for_asset(component_version, cvm.path),
                 data=cvm.media.read_file().read() if fetch_asset_data else None,
             )
             for cvm in cvm_list
