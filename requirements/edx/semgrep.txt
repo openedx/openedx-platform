@@ -132,11 +132,11 @@ protobuf==6.33.6
     #   opentelemetry-proto
 pycparser==3.0
     # via cffi
-pydantic==2.13.2
+pydantic==2.13.3
     # via
     #   mcp
     #   pydantic-settings
-pydantic-core==2.46.2
+pydantic-core==2.46.3
     # via pydantic
 pydantic-settings==2.14.0
     # via mcp
@@ -170,7 +170,7 @@ ruamel-yaml-clib==0.2.14
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.159.0
+semgrep==1.160.0
     # via -r requirements/edx/semgrep.in
 sse-starlette==3.3.4
     # via mcp
