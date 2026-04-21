@@ -195,11 +195,19 @@ class SignalHandler:
     course_deleted = SwitchedSignal("course_deleted")
     library_updated = SwitchedSignal("library_updated")
     item_deleted = SwitchedSignal("item_deleted")
+    pre_item_delete = SwitchedSignal("pre_item_delete")
 
     _mapping = {
         signal.name: signal
         for signal
-        in [pre_publish, course_published, course_deleted, library_updated, item_deleted]
+        in [
+            pre_publish,
+            course_published,
+            course_deleted,
+            library_updated,
+            item_deleted,
+            pre_item_delete,
+        ]
     }
 
     def __init__(self, modulestore_class):
