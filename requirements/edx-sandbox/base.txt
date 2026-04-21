@@ -56,9 +56,9 @@ numpy==1.26.4
     #   matplotlib
     #   openedx-calc
     #   scipy
-openedx-calc==4.0.3
+openedx-calc==5.0.0
     # via -r requirements/edx-sandbox/base.in
-packaging==26.0
+packaging==26.1
     # via matplotlib
 pillow==12.2.0
     # via matplotlib
