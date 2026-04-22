@@ -9,6 +9,7 @@ from unittest.mock import Mock, PropertyMock, patch
 import ddt
 from bs4 import BeautifulSoup
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.test import TestCase
 from django.test.client import RequestFactory
@@ -54,9 +55,13 @@ from common.djangoapps.xblock_django.models import (
 from common.djangoapps.xblock_django.user_service import DjangoXBlockUserService
 from common.test.utils import assert_dict_contains_subset
 from lms.djangoapps.lms_xblock.mixin import NONSENSICAL_ACCESS_RESTRICTION
+from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.content_tagging import api as tagging_api
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration
 from openedx.core.djangoapps.video_config.toggles import PUBLIC_VIDEO_SHARE
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
+from openedx_authz.constants.roles import COURSE_STAFF
 from xmodule.course_block import DEFAULT_START_DATE
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.django import modulestore
@@ -3484,6 +3489,125 @@ class TestXBlockInfo(ItemTest):
                     )
         else:
             self.assertIsNone(xblock_info.get("child_info", None))  # noqa: PT009
+
+
+class TestXBlockOutlineHandlerAuthz(CourseAuthoringAuthzTestMixin, ItemTest):
+    """
+    Unit tests for xblock_outline_handler authorization functionality.
+    """
+
+    def setUp(self):
+        super().setUp()
+        user_id = self.user.id
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category="chapter",
+            display_name="Week 1",
+            user_id=user_id,
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category="sequential",
+            display_name="Lesson 1",
+            user_id=user_id,
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category="vertical",
+            display_name="Unit 1",
+            user_id=user_id,
+        )
+        # Assign COURSE_STAFF role to authorized_user for the course
+        self.add_user_to_role_in_course(
+            self.authorized_user,
+            COURSE_STAFF.external_key,
+            self.course.id
+        )
+
+    def test_authorized_user_gets_json_response(self):
+        """
+        Test that authorized user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_unauthorized_user_gets_permission_denied(self):
+        """
+        Test that unauthorized user gets 403 response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 403
+
+    def test_superuser_gets_json_response(self):
+        """
+        Test that superuser gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        
+        self.client.login(username=self.super_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_staff_user_gets_json_response(self):
+        """
+        Test that staff user gets JSON response from xblock_outline_handler.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.usage_key)
+        
+        self.client.login(username=self.staff_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert "id" in json_response
+        assert "display_name" in json_response
+        assert "child_info" in json_response
+
+    def test_authorized_chapter_outline(self):
+        """
+        Test that authorized user can access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+        
+        self.client.login(username=self.authorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 200
+        json_response = json.loads(resp.content.decode("utf-8"))
+        assert json_response["display_name"] == "Week 1"
+        assert "child_info" in json_response
+        # Verify that children are included (should have the sequential)
+        children = json_response["child_info"]["children"]
+        assert len(children) > 0
+        assert children[0]["display_name"] == "Lesson 1"
+
+    def test_unauthorized_chapter_outline(self):
+        """
+        Test that unauthorized user cannot access chapter-level outline.
+        """
+        outline_url = reverse_usage_url("xblock_outline_handler", self.chapter.location)
+        
+        self.client.login(username=self.unauthorized_user.username, password=self.password)
+        resp = self.client.get(outline_url, HTTP_ACCEPT="application/json")
+        
+        assert resp.status_code == 403
 
 
 class TestGetMetadataWithProblemDefaults(ModuleStoreTestCase):
