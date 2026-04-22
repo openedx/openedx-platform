@@ -33,7 +33,10 @@ class LibraryCollectionsView(ModelViewSet):
     """
 
     serializer_class = ContentLibraryCollectionSerializer
-    lookup_field = 'key'
+    # URL kwarg is `key` for backwards compatibility.
+    # https://github.com/openedx/openedx-platform/issues/38406
+    lookup_field = 'collection_code'
+    lookup_url_kwarg = 'key'
 
     def __init__(self, *args, **kwargs) -> None:
         """

@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_unicode_slug
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
@@ -176,10 +176,13 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
         raise ContentLibraryBlockNotFound(usage_key)
 
     if include_collections:
+        # Temporarily alias collection_code to "key" so downstream consumers
+        # (search indexer, REST API) keep the same field name.  We will update
+        # downstream consumers later: https://github.com/openedx/openedx-platform/issues/38406
         associated_collections = content_api.get_entity_collections(
             component.learning_package_id,
             component.entity_ref,
-        ).values('key', 'title')
+        ).values("title", key=F('collection_code'))
     else:
         associated_collections = None
     xblock_metadata = LibraryXBlockMetadata.from_component(

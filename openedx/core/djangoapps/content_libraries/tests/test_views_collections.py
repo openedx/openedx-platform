@@ -247,7 +247,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
 
         assert resp.status_code == 400
 
-        # Create collection with an existing collection.key; it should fail
+        # Create collection with an existing collection.collection_code; it should fail
         post_data_existing_key = {
             "key": self.col1.collection_code,
             "title": "Collection 4",

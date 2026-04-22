@@ -135,7 +135,7 @@ def get_migrations(
     if source_key:
         migrations = migrations.filter(source__key=source_key)
     if target_key:
-        migrations = migrations.filter(target__key=str(target_key))
+        migrations = migrations.filter(target__package_ref=str(target_key))
     if target_collection_slug:
         migrations = migrations.filter(target_collection__collection_code=target_collection_slug)
     if task_uuid:

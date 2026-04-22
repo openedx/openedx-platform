@@ -191,7 +191,7 @@ class OpenedXContentRuntime(XBlockRuntime):
             raise NoSuchUsage(usage_key)
 
         content = component_version.media.get(
-            componentversionmedia__key="block.xml"
+            componentversionmedia__path="block.xml"
         )
         xml_node = etree.fromstring(content.text)
         block_type = usage_key.block_type
@@ -447,7 +447,7 @@ class OpenedXContentRuntime(XBlockRuntime):
                 component_version
                 .componentversionmedia_set
                 .filter(media__has_file=True)
-                .get(key=f"static/{asset_path}")
+                .get(path=f"static/{asset_path}")
             )
         except ObjectDoesNotExist:
             try:
@@ -458,7 +458,7 @@ class OpenedXContentRuntime(XBlockRuntime):
                     component_version
                     .componentversionmedia_set
                     .filter(media__has_file=True)
-                    .get(key=f"static/{asset_path}")
+                    .get(path=f"static/{asset_path}")
                 )
             except ObjectDoesNotExist:
                 # This means we see a path that _looks_ like it should be a static

@@ -284,10 +284,13 @@ class ContentLibraryCollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for a Content Library Collection
     """
+    # Expose Collection.collection_code as "key" to preserve the REST API field name.
+    # https://github.com/openedx/openedx-platform/issues/38406
+    key = serializers.CharField(source='collection_code')
 
     class Meta:
         model = Collection
-        fields = '__all__'
+        exclude = ['collection_code']
 
 
 class ContentLibraryCollectionUpdateSerializer(serializers.Serializer):
