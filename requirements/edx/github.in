@@ -80,7 +80,8 @@
 # Release candidates being tested.
 ##############################################################################
 
-# ... add dependencies here
+# Temporary to test in CI for PR
+git+https://github.com/WGU-Open-edX/openedx-core.git@tpayne/object-tag-modular-permissions#egg=openedx-core
 
 ##############################################################################
 # Critical fixes for packages that are not yet available in a PyPI release.
