@@ -35,19 +35,20 @@ Decision
 
 1. **JWT authentication via** ``JwtAuthentication`` **MUST be the standard
    authentication mechanism for all API access** (external and internal), per `OEP-0042`_
-2. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
+2. **Session authentication MAY be supported alongside** ``JwtAuthentication``
+   on any endpoint — this is the platform default and has no security implications
+3. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
    deprecated and MUST NOT be used in new code**
-3. **Session authentication MUST be used only for browser-based UI interactions**
-4. **All new APIs MUST follow these authentication patterns based on use case**
-5. **Existing APIs MUST be audited and updated to follow consistent patterns**
+4. **``OAuth2Authentication`` and ``OAuth2AuthenticationAllowInactiveUser`` are
+   deprecated aliases for** ``BearerAuthentication`` **and MUST NOT be used in new code**
+5. **All new APIs MUST follow these authentication patterns based on use case**
+6. **Existing APIs MUST be audited and updated to remove** ``BearerAuthentication``
 
 Implementation requirements:
 
-* External APIs (public, partner integrations): ``JwtAuthentication`` only
-* Internal APIs (service-to-service): ``JwtAuthentication`` only
-* Browser-based APIs (UI interactions): Session only
-* DRF authentication classes must match the intended use case
-* No mixing of authentication mechanisms in single endpoints
+* All APIs: ``JwtAuthentication`` (+ ``SessionAuthentication`` where appropriate)
+* ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser``: remove from all endpoints
+* ``OAuth2Authentication`` / ``OAuth2AuthenticationAllowInactiveUser``: remove once external repos migrate
 
 Consequences
 ============
@@ -136,24 +137,30 @@ Code examples (authentication patterns by use case)
 Implementation Notes
 ====================
 
-* Audit existing APIs to identify authentication pattern violations
+* Supporting both ``JwtAuthentication`` and ``SessionAuthentication`` on the same
+  endpoint is acceptable — this is already the platform default in
+  ``openedx/envs/common.py`` (``DEFAULT_AUTHENTICATION_CLASSES``)
 * The primary migration target is the ``view_auth_classes`` decorator — one change
   removes ``BearerAuthentication`` from 49+ endpoints
 * Verify no active external clients are still sending Bearer tokens before
   removing ``BearerAuthentication`` from any endpoint
-* Provide migration guidance for APIs currently using mixed authentication
-* Document authentication patterns for development teams
+* ``JWT_AUTH_ADD_KID_HEADER`` toggle in ``openedx/core/djangoapps/oauth_dispatch/jwt.py``
+  is past its removal date (target: 2024-04-20) — KID header should be made always-on
+  and the toggle removed
+* ``OAuth2Authentication`` / ``OAuth2AuthenticationAllowInactiveUser`` in
+  ``openedx/core/lib/api/authentication.py`` are deprecated aliases that exist only
+  to avoid breaking external repos — remove once those repos migrate to ``JwtAuthentication``
 
 Rollout Plan
 ------------
 
-1. Audit existing APIs and categorize by intended use case (external/internal/browser)
+1. Audit existing APIs and categorize — flag any using ``BearerAuthentication`` variants
 2. Check client metrics for active Bearer token usage
 3. Update ``view_auth_classes`` decorator to remove ``BearerAuthenticationAllowInactiveUser``
 4. Mark ``BearerAuthentication`` / ``BearerAuthenticationAllowInactiveUser`` deprecated in source
-5. Refactor high-priority APIs to follow single-authentication patterns
+5. Remove overdue ``JWT_AUTH_ADD_KID_HEADER`` toggle — make KID header always-on
 6. Migrate external clients from Bearer tokens to JWT token flow
-7. Remove ``BearerAuthentication`` classes once client migration is confirmed complete
+7. Remove ``BearerAuthentication`` and its ``OAuth2Authentication`` aliases once migration is complete
 
 References
 ==========
