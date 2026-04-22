@@ -450,14 +450,14 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     """
     learning_package_id = serializers.IntegerField(source="lp_restored_data.id")
     title = serializers.CharField(source="lp_restored_data.title")
-    # archive_org_code and archive_package_code may be None when archive_package_ref cannot be parsed
-    # as {prefix}:{org_code}:{package_code} (previously this raised ValueError in openedx-core).
-    org = serializers.CharField(source="lp_restored_data.archive_org_code", allow_null=True)
-    slug = serializers.CharField(source="lp_restored_data.archive_package_code", allow_null=True)
+    org = serializers.SerializerMethodField()
+    slug = serializers.SerializerMethodField()
 
-    # The `key` is a unique temporary key assigned to the learning package during the restore process,
-    # whereas the `archive_key` is the original key of the learning package from the backup.
-    # The temporary learning package key is replaced with a standard key once it is added to a content library.
+    # The `package_ref` is a unique temporary key assigned to the learning
+    # package during the restore process, whereas the `archive_package_ref` is
+    # the original key of the learning package from the backup.  The temporary
+    # learning package_ref is replaced with a standard key once it is added to a
+    # content library.
     key = serializers.CharField(source="lp_restored_data.package_ref")
     archive_key = serializers.CharField(source="lp_restored_data.archive_package_ref")
 
@@ -471,6 +471,18 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     created_on_server = serializers.CharField(source="backup_metadata.original_server", required=False)
     created_at = serializers.DateTimeField(source="backup_metadata.created_at", format=DATETIME_FORMAT)
     created_by = serializers.SerializerMethodField()
+
+    def get_org(self, obj) -> str:
+        """
+        The org code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_org_code"] or "unknown"
+
+    def get_slug(self, obj) -> str:
+        """
+        The library code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_package_code"] or "unknown"
 
     def get_created_by(self, obj):
         """
