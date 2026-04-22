@@ -118,6 +118,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
             course_id = str(self.course_key)
         return reverse('instructor_api_v2:course_metadata', kwargs={'course_id': course_id})
 
+    @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='http://localhost:2001/authoring')
     def test_get_course_metadata_as_instructor(self):
         """
         Test that an instructor can retrieve comprehensive course metadata.
@@ -172,6 +173,9 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.assertIn('has_started', data)  # noqa: PT009
         self.assertIn('has_ended', data)  # noqa: PT009
         self.assertIn('analytics_dashboard_message', data)  # noqa: PT009
+
+        assert 'studio_grading_url' in data
+        assert data['studio_grading_url'] == f'http://localhost:2001/authoring/course/{self.course.id}/settings/grading'
 
     def test_get_course_metadata_as_staff(self):
         """

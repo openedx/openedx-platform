@@ -34,6 +34,7 @@ from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.django import modulestore
 
 from .tools import DashboardError, get_student_from_identifier, parse_datetime
@@ -462,7 +463,11 @@ class CourseInformationSerializerV2(serializers.Serializer):
     def get_studio_grading_url(self, data):
         """Get Studio MFE grading settings URL for the course."""
         course_key = data['course'].id
-        mfe_base_url = getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
+        mfe_base_url = configuration_helpers.get_value_for_org(
+            course_key.org,
+            'COURSE_AUTHORING_MICROFRONTEND_URL',
+            settings.COURSE_AUTHORING_MICROFRONTEND_URL
+        )
         if mfe_base_url:
             return f'{mfe_base_url}/course/{course_key}/settings/grading'
         return None
