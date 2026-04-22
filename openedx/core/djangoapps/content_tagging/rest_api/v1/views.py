@@ -9,9 +9,12 @@ from openedx_events.content_authoring.data import ContentObjectChangedData, Cont
 from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
+from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
+from openedx_authz import api as authz_api
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -26,11 +29,12 @@ from ...api import (
     get_unassigned_taxonomies,
     set_taxonomy_orgs,
 )
-from ...auth import has_view_object_tags_access
+from ...auth import has_view_object_tags_access, should_use_authz_for_object
 from ...rules import get_admin_orgs
 from .filters import ObjectTagTaxonomyOrgFilterBackend, UserOrgFilterBackend
 from .serializers import (
     ObjectTagCopiedMinimalSerializer,
+    ObjectTagOrgByTaxonomySerializer,
     TaxonomyOrgListQueryParamsSerializer,
     TaxonomyOrgSerializer,
     TaxonomyUpdateOrgBodySerializer,
@@ -151,8 +155,67 @@ class ObjectTagOrgView(ObjectTagView):
 
     Refer to ObjectTagView docstring for usage details.
     """
+    # Serializer overrides
     minimal_serializer_class = ObjectTagCopiedMinimalSerializer
+    object_tags_serializer_class = ObjectTagOrgByTaxonomySerializer
+
     filter_backends = [ObjectTagTaxonomyOrgFilterBackend]
+
+    def _should_use_authz(self) -> bool:
+        """
+        Determine if we should use openedx-authz for the current object_id.
+        """
+        object_id = self.kwargs.get('object_id')
+        if object_id:
+            should_use_authz, _ = should_use_authz_for_object(object_id)
+            return should_use_authz
+        return False
+
+    def get_permissions(self):
+        """
+        Override get_permissions when using openedx-authz.
+        
+        When the toggle is enabled for course objects, we need to change the default
+        permission classes set by the parent ObjectTagView so that only openedx-authz
+        permissions are used.
+        """
+        if self._should_use_authz():
+            return [IsAuthenticated()]
+        
+        return super().get_permissions()
+
+    def ensure_has_view_object_tag_permission(self, user, taxonomy, object_id):
+        """
+        Check if user has permission to view object tags.
+
+        This method is overridden to conditionally use openedx-authz when the toggle is enabled.
+        """
+        should_use_authz, course_key = should_use_authz_for_object(object_id)
+        if should_use_authz and not authz_api.is_user_allowed(
+            user.username, COURSES_VIEW_COURSE.identifier, str(course_key)
+        ):
+            raise PermissionDenied("You do not have permission to view object tags.")
+        elif not should_use_authz:
+            # Fall back to parent implementation
+            super().ensure_has_view_object_tag_permission(user, taxonomy, object_id)
+
+    def ensure_user_has_can_tag_object_permissions(self, user, tags_data, object_id):
+        """
+        Check if user has permission to tag object for each taxonomy in tags_data.
+
+        This method is overridden to conditionally use openedx-authz when the toggle is enabled.
+
+        When using openedx-authz, if the user has manage tags permission for the course,
+        they can tag the object regardless of the taxonomy.
+        """
+        should_use_authz, course_key = should_use_authz_for_object(object_id)
+        if should_use_authz and not authz_api.is_user_allowed(
+            user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
+        ):
+            raise PermissionDenied("You do not have permission to manage object tags.")
+        elif not should_use_authz:
+            # Fall back to parent implementation
+            super().ensure_user_has_can_tag_object_permissions(user, tags_data, object_id)
 
     def update(self, request, *args, **kwargs) -> Response:
         """

@@ -17,7 +17,7 @@ from django.urls import reverse
 from edx_django_utils.cache import RequestCache
 from opaque_keys.edx.locator import BlockUsageLocator, CourseLocator, LibraryCollectionLocator, LibraryContainerLocator
 from openedx_authz.constants import permissions as authz_permissions
-from openedx_authz.constants.roles import COURSE_STAFF
+from openedx_authz.constants.roles import COURSE_AUDITOR, COURSE_STAFF
 from openedx_tagging.models import Tag, Taxonomy
 from openedx_tagging.models.system_defined import SystemDefinedTaxonomy
 from openedx_tagging.rest_api.v1.serializers import TaxonomySerializer
@@ -2135,6 +2135,193 @@ class TestContentObjectChildrenExportViewWithAuthz(CourseAuthzTestMixin, SharedM
         client.force_authenticate(user=superuser)
         resp = client.get(self.get_url(self.course_key))
         self.assertEqual(resp.status_code, status.HTTP_200_OK)  # noqa: PT009
+
+
+@skip_unless_cms
+class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestCase, APITestCase):
+    """
+    Test ObjectTagOrgView with authz permissions.
+    """
+
+    authz_roles_to_assign = [COURSE_STAFF.external_key]
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create()
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        
+        # Create another course for cross-course scoping tests
+        self.other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.authorized_user.id)
+        self.other_course_key = self.other_course.id
+        
+        # Create taxonomy
+        self.taxonomy = tagging_api.create_taxonomy(
+            name="Test Taxonomy",
+            description="Test taxonomy for authz",
+        )
+        TaxonomyOrg.objects.create(
+            taxonomy=self.taxonomy,
+            org=None, # Global taxonomy not tied to any org
+            rel_type=TaxonomyOrg.RelType.OWNER,
+        )
+        
+        # Create tags
+        self.tag1 = Tag.objects.create(
+            taxonomy=self.taxonomy,
+            value="Tag 1",
+        )
+        self.tag2 = Tag.objects.create(
+            taxonomy=self.taxonomy,
+            value="Tag 2",
+        )
+        
+        # Create auditor user with view-only permissions  
+        self.auditor_user = UserFactory(password=self.password)
+        self.auditor_client = APIClient()
+        self.auditor_client.force_authenticate(user=self.auditor_user)
+        
+        # Assign auditor role to auditor_user
+        self.add_user_to_role_in_course(
+            self.auditor_user,
+            COURSE_AUDITOR.external_key,
+            self.course_key
+        )
+
+    def _update_tags_request(self, object_id, tags_data=None):
+        """Helper method to make PUT request to update tags."""
+        if tags_data is None:
+            tags_data = [
+                {
+                    "taxonomy": self.taxonomy.pk,
+                    "tags": ["Tag 1", "Tag 2"]
+                }
+            ]
+        
+        url = OBJECT_TAG_UPDATE_URL.format(object_id=object_id)
+        return url, {"tagsData": tags_data}
+
+    def _get_tags_request(self, object_id):
+        """Helper method to make GET request to retrieve tags."""
+        url = OBJECT_TAGS_URL.format(object_id=object_id)
+        return url
+
+    def test_course_staff_can_update_tags(self):
+        """course_staff can update tags → 200"""
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.authorized_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_course_auditor_denied_update(self):
+        """course_auditor denied → 403"""
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.auditor_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_no_role_user_denied_update(self):
+        """No-role user denied → 403"""
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.unauthorized_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_superuser_allowed_update(self):
+        """Superuser allowed → 200"""
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.super_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_django_staff_allowed_update(self):
+        """Django is_staff allowed → 200"""
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.staff_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_cross_course_scoping_denied(self):
+        """course_staff for course A tags course B → 403"""
+        url, data = self._update_tags_request(str(self.other_course_key))
+        response = self.authorized_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_course_staff_sees_manage_permissions(self):
+        """course_staff sees can_tag_object=True, can_delete_objecttag=True"""
+        # First add some tags to the course
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.authorized_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Now check permissions in GET response
+        url = self._get_tags_request(str(self.course_key))
+        response = self.authorized_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Check serializer permissions in response data
+        taxonomies = response.data[str(self.course_key)]["taxonomies"]
+        assert len(taxonomies) == 1
+        for taxonomy_data in taxonomies:
+            assert taxonomy_data.get('can_tag_object') is True
+            tags = taxonomy_data.get('tags', [])
+            assert len(tags) == 2
+            for tag_data in tags:
+                assert tag_data.get('can_delete_objecttag') is True
+
+    def test_course_auditor_sees_view_only_permissions(self):
+        """course_auditor sees can_tag_object=False, can_delete_objecttag=False"""
+        # First add some tags using authorized user
+        url, data = self._update_tags_request(str(self.course_key))
+        response = self.authorized_client.put(url, data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Now check permissions as auditor in GET response
+        url = self._get_tags_request(str(self.course_key))
+        response = self.auditor_client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        
+        # Check serializer permissions in response data
+        taxonomies = response.data[str(self.course_key)]["taxonomies"]
+        assert len(taxonomies) == 1
+        for taxonomy_data in taxonomies:
+            assert taxonomy_data.get('can_tag_object') is False
+            tags = taxonomy_data.get('tags', [])
+            assert len(tags) == 2
+            for tag_data in tags:
+                assert tag_data.get('can_delete_objecttag') is False
+
+    def test_no_role_user_denied_view(self):
+        """No-role user denied on view → 403 (checks view_course)"""
+        url = self._get_tags_request(str(self.course_key))
+        response = self.unauthorized_client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_library_fallthrough_to_legacy(self):
+        """Library object_id falls through to legacy permissions"""
+        # Create organization for library
+        org, created = Organization.objects.get_or_create(short_name="TestOrg")
+        
+        # Create library
+        library = create_library(
+            org=org,
+            slug="test-lib",
+            title="Test Library",
+            description="Test library for authz fallthrough",
+        )
+        library_key = library.key
+        
+        # Grant library access to authorized_user
+        set_library_user_permissions(
+            library_key,
+            self.authorized_user,
+            AccessLevel.ADMIN_LEVEL
+        )
+        
+        # Test that library requests fall through to legacy permissions
+        url = self._get_tags_request(str(library_key))
+        response = self.authorized_client.get(url)
+        # Should succeed via legacy permissions, not authz
+        assert response.status_code == status.HTTP_200_OK
+
 
 @skip_unless_cms
 @ddt.ddt
