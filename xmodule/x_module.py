@@ -356,6 +356,14 @@ class XModuleMixin(XModuleFields, XBlock):  # pylint: disable=too-many-public-me
         return self.usage_key.block_id
 
     @property
+    def display_name_with_default(self):
+        """
+        Return a display name for the module: use display_name if defined in
+        metadata, otherwise convert the url name.
+        """
+        return block_metadata_utils.display_name_with_default(self)
+
+    @property
     def display_name_with_default_escaped(self):
         """
         DEPRECATED: use display_name_with_default
