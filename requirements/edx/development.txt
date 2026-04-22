@@ -893,7 +893,7 @@ enmerkar-underscore==2.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-enterprise-integrated-channels==0.1.56
+enterprise-integrated-channels==0.1.57
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1212,7 +1212,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==10.0.1
+lti-consumer-xblock==11.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1418,6 +1418,7 @@ openedx-events==11.1.1
     #   edx-event-bus-kafka
     #   edx-event-bus-redis
     #   event-tracking
+    #   lti-consumer-xblock
     #   openedx-core
     #   ora2
 openedx-filters==3.1.0
