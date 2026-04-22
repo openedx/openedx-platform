@@ -867,7 +867,7 @@ def _migrate_container(
         container_exists = False
         if PublishableEntity.objects.filter(
             learning_package_id=context.target_package_id,
-            key=target_key.container_id,
+            entity_ref=target_key.container_id,
         ).exists():
             libraries_api.restore_container(container_key=target_key)
             container = libraries_api.get_container(target_key)

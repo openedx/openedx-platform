@@ -1016,7 +1016,7 @@ def get_transcript_from_openedx_content(video_block, language, output_format, tr
             .componentversionmedia_set
             .filter(media__has_file=True)
             .select_related('media')
-            .get(key=file_path)
+            .get(path=file_path)
             .media
         )
         data = media.read_file().read()

@@ -323,8 +323,10 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         )
 
         assert self.lib2.learning_package_id is not None
-        assert len(content_api.get_collection(self.lib2.learning_package_id, self.col2.collection_code).entities.all()) == 1
-        assert len(content_api.get_collection(self.lib2.learning_package_id, self.col3.collection_code).entities.all()) == 1
+        col2 = content_api.get_collection(self.lib2.learning_package_id, self.col2.collection_code)
+        col3 = content_api.get_collection(self.lib2.learning_package_id, self.col3.collection_code)
+        assert len(col2.entities.all()) == 1
+        assert len(col3.entities.all()) == 1
 
         self.assertDictContainsEntries(
             event_receiver.call_args_list[0].kwargs,
@@ -343,11 +345,15 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest):
         assert all(event["signal"] == LIBRARY_COLLECTION_UPDATED for event in collection_update_events)
         assert {event["library_collection"] for event in collection_update_events} == {
             LibraryCollectionData(
-                collection_key=api.library_collection_locator(self.lib2.library_key, collection_key=self.col2.collection_code),
+                collection_key=api.library_collection_locator(
+                    self.lib2.library_key, collection_key=self.col2.collection_code,
+                ),
                 background=True,
             ),
             LibraryCollectionData(
-                collection_key=api.library_collection_locator(self.lib2.library_key, collection_key=self.col3.collection_code),
+                collection_key=api.library_collection_locator(
+                    self.lib2.library_key, collection_key=self.col3.collection_code,
+                ),
                 background=True,
             )
         }

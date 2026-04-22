@@ -18,6 +18,10 @@ class LibraryMigrationCollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for the target collection of a library migration.
     """
+    # Expose Collection.collection_code as "key" to preserve the REST API field name.
+    # This is temporary: https://github.com/openedx/openedx-platform/issues/38406
+    key = serializers.CharField(source='collection_code')
+
     class Meta:
         model = Collection
         fields = ["key", "title"]

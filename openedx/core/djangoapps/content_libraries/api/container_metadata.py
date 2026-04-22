@@ -365,9 +365,9 @@ def library_container_locator(
     container_type_code = content_api.get_container_type_code_of(container)
     if container_type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
         raise ValueError(f"Unsupported container type for content libraries: {container!r}")
-
-    # TODO: verify whether container_id should use entity_ref (opaque) or container_code (local slug).
-    return LibraryContainerLocator(library_key, container_type=container_type_code, container_id=container.entity_ref)
+    return LibraryContainerLocator(
+        library_key, container_type=container_type_code, container_id=container.container_code,
+    )
 
 
 def get_container_from_key(container_key: LibraryContainerLocator, include_deleted=False) -> Container:

@@ -732,8 +732,8 @@ class TestSearchApi(ModuleStoreTestCase):
         lib_access, _ = SearchAccess.objects.get_or_create(context_key=self.library.key)
         doc_collection1_created = {
             "id": "lib-collectionorg1libcol1-283a79c9",
-            "block_id": collection1.key,
-            "usage_key": f"lib-collection:org1:lib:{collection1.key}",
+            "block_id": collection1.collection_code,
+            "usage_key": f"lib-collection:org1:lib:{collection1.collection_code}",
             "type": "collection",
             "display_name": "Collection 1",
             "description": "First Collection",
@@ -750,8 +750,8 @@ class TestSearchApi(ModuleStoreTestCase):
         }
         doc_collection2_created = {
             "id": "lib-collectionorg1libcol2-46823d4d",
-            "block_id": collection2.key,
-            "usage_key": f"lib-collection:org1:lib:{collection2.key}",
+            "block_id": collection2.collection_code,
+            "usage_key": f"lib-collection:org1:lib:{collection2.collection_code}",
             "type": "collection",
             "display_name": "Collection 2",
             "description": "Second Collection",
@@ -768,8 +768,8 @@ class TestSearchApi(ModuleStoreTestCase):
         }
         doc_collection2_updated = {
             "id": "lib-collectionorg1libcol2-46823d4d",
-            "block_id": collection2.key,
-            "usage_key": f"lib-collection:org1:lib:{collection2.key}",
+            "block_id": collection2.collection_code,
+            "usage_key": f"lib-collection:org1:lib:{collection2.collection_code}",
             "type": "collection",
             "display_name": "Collection 2",
             "description": "Second Collection",
@@ -786,8 +786,8 @@ class TestSearchApi(ModuleStoreTestCase):
         }
         doc_collection1_updated = {
             "id": "lib-collectionorg1libcol1-283a79c9",
-            "block_id": collection1.key,
-            "usage_key": f"lib-collection:org1:lib:{collection1.key}",
+            "block_id": collection1.collection_code,
+            "usage_key": f"lib-collection:org1:lib:{collection1.collection_code}",
             "type": "collection",
             "display_name": "Collection 1",
             "description": "First Collection",

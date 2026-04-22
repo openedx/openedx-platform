@@ -89,12 +89,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         self.collection = Collection.objects.create(
             learning_package=self.learning_package,
-            key="test_collection",
+            collection_code="test_collection",
             title="Test Collection",
         )
         self.collection2 = Collection.objects.create(
             learning_package=self.learning_package,
-            key="test_collection2",
+            collection_code="test_collection2",
             title="Test Collection 2",
         )
 
@@ -426,7 +426,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNone(reason)  # noqa: PT009
 
         component_media = result.componentversion.componentversionmedia_set.filter(
-            key="static/test_image.png"
+            path="static/test_image.png"
         ).first()
         self.assertIsNotNone(component_media)  # noqa: PT009
         self.assertEqual(component_media.media.id, test_media.id)  # noqa: PT009
@@ -673,12 +673,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
         referenced_content_exists = (
             result.componentversion.componentversionmedia_set.filter(
-                key="static/referenced.png"
+                path="static/referenced.png"
             ).exists()
         )
         unreferenced_content_exists = (
             result.componentversion.componentversionmedia_set.filter(
-                key="static/unreferenced.png"
+                path="static/unreferenced.png"
             ).exists()
         )
 

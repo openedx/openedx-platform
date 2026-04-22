@@ -232,9 +232,9 @@ def get_block_olx(
         raise NoSuchUsage(usage_key)
 
     # TODO: we should probably make a method on ComponentVersion that returns
-    # a content based on the name. Accessing by componentversionmedia__key is
+    # a content based on the name. Accessing by componentversionmedia__path is
     # awkward.
-    content = component_version.media.get(componentversionmedia__key="block.xml")
+    content = component_version.media.get(componentversionmedia__path="block.xml")
 
     return content.text
 

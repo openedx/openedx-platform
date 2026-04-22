@@ -7,6 +7,7 @@ import logging
 from hashlib import blake2b
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import F
 from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, OpaqueKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
@@ -64,7 +65,8 @@ class Fields:
     tags_level2 = "level2"
     tags_level3 = "level3"
     # Collections (dictionary) that this object belongs to.
-    # Similarly to tags above, we collect the collection.titles and collection.collection_codes into hierarchical facets.
+    # Similarly to tags above, we collect the collection.titles and collection.collection_codes
+    # into hierarchical facets.
     collections = "collections"
     collections_display_name = "display_name"
     collections_key = "key"
@@ -448,10 +450,13 @@ def searchable_doc_collections(object_id: OpaqueKey) -> dict:
     try:
         if isinstance(object_id, UsageKey):
             component = lib_api.get_component_from_usage_key(object_id)
+            # Temporarily alias collection_code to "key" so downstream consumers
+            # (search indexer, REST API) keep the same field name.  We will update
+            # downstream consumers later: https://github.com/openedx/openedx-platform/issues/38406
             collections = content_api.get_entity_collections(
                 component.learning_package_id,
                 component.entity_ref,
-            ).values('key', 'title')
+            ).values("title", key=F('collection_code'))
         elif isinstance(object_id, LibraryContainerLocator):
             container = lib_api.get_container(object_id, include_collections=True)
             collections = container.collections

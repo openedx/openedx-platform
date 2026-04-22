@@ -2,7 +2,6 @@
 Python API for library collections
 ==================================
 """
-from django.db import IntegrityError
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
@@ -51,18 +50,18 @@ def create_library_collection(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    try:
-        collection = content_api.create_collection(
-            learning_package_id=content_library.learning_package_id,
-            collection_code=collection_key,
-            title=title,
-            description=description,
-            created_by=created_by,
-        )
-    except IntegrityError as err:
-        raise LibraryCollectionAlreadyExists from err
-
-    return collection
+    if Collection.objects.filter(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+    ).exists():
+        raise LibraryCollectionAlreadyExists(f"Collection {collection_key} already exists in {library_key}")
+    return content_api.create_collection(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+        title=title,
+        description=description,
+        created_by=created_by,
+    )
 
 
 def update_library_collection(
