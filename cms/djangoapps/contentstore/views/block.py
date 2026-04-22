@@ -11,8 +11,8 @@ from django.http import Http404, HttpResponse
 from django.utils.translation import gettext as _
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_http_methods
-from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from opaque_keys.edx.keys import CourseKey
+from openedx_authz.constants.permissions import COURSES_VIEW_COURSE
 from web_fragments.fragment import Fragment
 
 from cms.djangoapps.contentstore.utils import load_services_for_studio
@@ -28,9 +28,9 @@ from cms.lib.xblock.authoring_mixin import VISIBILITY_VIEW
 from common.djangoapps.edxmako.shortcuts import render_to_response, render_to_string
 from common.djangoapps.student.auth import has_studio_read_access, has_studio_write_access
 from common.djangoapps.util.json_request import JsonResponse, expect_json
-from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
-from openedx.core.djangoapps.authz.decorators import user_has_course_permission
 from openedx.core.djangoapps.authz.constants import LegacyAuthoringPermission
+from openedx.core.djangoapps.authz.decorators import user_has_course_permission
+from openedx.core.djangoapps.content_tagging.toggles import is_tagging_feature_disabled
 from openedx.core.lib.xblock_utils import hash_resource, request_token, wrap_xblock, wrap_xblock_aside
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.x_module import (  # lint-amnesty, pylint: disable=wrong-import-order

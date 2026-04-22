@@ -4,17 +4,16 @@ API Serializers for content tagging org
 
 from __future__ import annotations
 
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
 from openedx_tagging.rest_api.v1.serializers import (
     ObjectTagMinimalSerializer,
     ObjectTagsByTaxonomySerializer,
-    ObjectTagSerializer,
     TaxonomyListQueryParamsSerializer,
     TaxonomySerializer,
 )
 from organizations.models import Organization
 from rest_framework import fields, serializers
-from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS
 
 from ...auth import should_use_authz_for_object
 from ...models import TaxonomyOrg
@@ -118,7 +117,7 @@ class ObjectTagOrgByTaxonomySerializer(ObjectTagsByTaxonomySerializer):
                     request.user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
                 )
             return False
-        
+
         # Fall back to parent implementation
         return super().can_tag_object(obj_tag)
 
@@ -139,7 +138,7 @@ class ObjectTagCopiedMinimalSerializer(ObjectTagMinimalSerializer):
     def can_delete_object_tag(self, instance) -> bool | None:
         """
         Check if the user is authorized to delete the provided tag.
-        
+
         Override to return `False` if the object tag is copied,
         and conditionally use openedx-authz for course objects with the toggle enabled.
         """

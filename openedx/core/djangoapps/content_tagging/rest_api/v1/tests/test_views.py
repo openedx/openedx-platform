@@ -2153,11 +2153,11 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
 
     def setUp(self):
         super().setUp()
-        
+
         # Create another course for cross-course scoping tests
         self.other_course = self.store.create_course("OtherOrg", "OtherCourse", "Run", self.authorized_user.id)
         self.other_course_key = self.other_course.id
-        
+
         # Create taxonomy
         self.taxonomy = tagging_api.create_taxonomy(
             name="Test Taxonomy",
@@ -2168,7 +2168,7 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
             org=None, # Global taxonomy not tied to any org
             rel_type=TaxonomyOrg.RelType.OWNER,
         )
-        
+
         # Create tags
         self.tag1 = Tag.objects.create(
             taxonomy=self.taxonomy,
@@ -2178,12 +2178,12 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
             taxonomy=self.taxonomy,
             value="Tag 2",
         )
-        
-        # Create auditor user with view-only permissions  
+
+        # Create auditor user with view-only permissions
         self.auditor_user = UserFactory(password=self.password)
         self.auditor_client = APIClient()
         self.auditor_client.force_authenticate(user=self.auditor_user)
-        
+
         # Assign auditor role to auditor_user
         self.add_user_to_role_in_course(
             self.auditor_user,
@@ -2200,7 +2200,7 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
                     "tags": ["Tag 1", "Tag 2"]
                 }
             ]
-        
+
         url = OBJECT_TAG_UPDATE_URL.format(object_id=object_id)
         return url, {"tagsData": tags_data}
 
@@ -2251,12 +2251,12 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
         url, data = self._update_tags_request(str(self.course_key))
         response = self.authorized_client.put(url, data, format='json')
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Now check permissions in GET response
         url = self._get_tags_request(str(self.course_key))
         response = self.authorized_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Check serializer permissions in response data
         taxonomies = response.data[str(self.course_key)]["taxonomies"]
         assert len(taxonomies) == 1
@@ -2273,12 +2273,12 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
         url, data = self._update_tags_request(str(self.course_key))
         response = self.authorized_client.put(url, data, format='json')
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Now check permissions as auditor in GET response
         url = self._get_tags_request(str(self.course_key))
         response = self.auditor_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Check serializer permissions in response data
         taxonomies = response.data[str(self.course_key)]["taxonomies"]
         assert len(taxonomies) == 1
@@ -2299,7 +2299,7 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
         """Library object_id falls through to legacy permissions"""
         # Create organization for library
         org, created = Organization.objects.get_or_create(short_name="TestOrg")
-        
+
         # Create library
         library = create_library(
             org=org,
@@ -2308,14 +2308,14 @@ class TestObjectTagOrgViewWithAuthz(CourseAuthzTestMixin, SharedModuleStoreTestC
             description="Test library for authz fallthrough",
         )
         library_key = library.key
-        
+
         # Grant library access to authorized_user
         set_library_user_permissions(
             library_key,
             self.authorized_user,
             AccessLevel.ADMIN_LEVEL
         )
-        
+
         # Test that library requests fall through to legacy permissions
         url = self._get_tags_request(str(library_key))
         response = self.authorized_client.get(url)

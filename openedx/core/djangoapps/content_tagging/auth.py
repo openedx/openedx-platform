@@ -7,10 +7,11 @@ from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey
 from opaque_keys.edx.locator import LibraryLocatorV2
 from openedx_authz import api as authz_api
-from openedx_authz.constants.permissions import COURSES_EXPORT_TAGS, COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
+from openedx_authz.constants.permissions import COURSES_EXPORT_TAGS
 from openedx_tagging import rules as oel_tagging_rules
 
 from openedx.core import toggles as core_toggles
+
 from .utils import get_context_key_from_key_string
 
 log = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def has_view_object_tags_access(user, object_id):
 def should_use_authz_for_object(object_id) -> tuple[bool, CourseKey | None]:
     """
     Check if openedx-authz should be used for the given object based on the context key and toggle.
-    
+
     Returns (should_use_authz, course_key) where:
     - should_use_authz: True if authz should be used, False otherwise
     - course_key: The CourseKey if object is a course, None otherwise
@@ -62,6 +63,6 @@ def should_use_authz_for_object(object_id) -> tuple[bool, CourseKey | None]:
     # Check if toggle is active
     if not core_toggles.enable_authz_course_authoring(context_key):
         return False, context_key
-    
+
     # Authz should be used for this course object
     return True, context_key

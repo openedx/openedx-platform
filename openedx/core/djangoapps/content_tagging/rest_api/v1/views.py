@@ -5,12 +5,12 @@ from __future__ import annotations
 
 from django.db.models import Count
 from django.http import StreamingHttpResponse
+from openedx_authz import api as authz_api
+from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
 from openedx_events.content_authoring.data import ContentObjectChangedData, ContentObjectData
 from openedx_events.content_authoring.signals import CONTENT_OBJECT_ASSOCIATIONS_CHANGED, CONTENT_OBJECT_TAGS_CHANGED
 from openedx_tagging import rules as oel_tagging_rules
 from openedx_tagging.rest_api.v1.views import ObjectTagView, TaxonomyView
-from openedx_authz.constants.permissions import COURSES_MANAGE_TAGS, COURSES_VIEW_COURSE
-from openedx_authz import api as authz_api
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -174,14 +174,14 @@ class ObjectTagOrgView(ObjectTagView):
     def get_permissions(self):
         """
         Override get_permissions when using openedx-authz.
-        
+
         When the toggle is enabled for course objects, we need to change the default
         permission classes set by the parent ObjectTagView so that only openedx-authz
         permissions are used.
         """
         if self._should_use_authz():
             return [IsAuthenticated()]
-        
+
         return super().get_permissions()
 
     def ensure_has_view_object_tag_permission(self, user, taxonomy, object_id):
