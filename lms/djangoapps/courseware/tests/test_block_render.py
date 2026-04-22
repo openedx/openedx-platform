@@ -45,7 +45,11 @@ from xblock.core import XBlock, XBlockAside  # lint-amnesty, pylint: disable=wro
 from xblock.exceptions import NoSuchServiceError
 from xblock.field_data import FieldData  # lint-amnesty, pylint: disable=wrong-import-order
 from xblock.fields import ScopeIds  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.runtime import DictKeyValueStore, KvsFieldData  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.runtime import (  # lint-amnesty, pylint: disable=wrong-import-order
+    DictKeyValueStore,
+    KvsFieldData,
+    Mixologist,  # lint-amnesty, pylint: disable=wrong-import-order
+)
 from xblock.test.tools import TestRuntime  # lint-amnesty, pylint: disable=wrong-import-order
 from xblocks_contrib.problem.capa.tests.response_xml_factory import (
     OptionResponseXMLFactory,  # lint-amnesty, pylint: disable=reimported
@@ -1931,8 +1935,9 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
     @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
     def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # lint-amnesty, pylint: disable=missing-function-docstring
         location = course_id.make_usage_key('dummy_category', 'dummy_name')
+        mixed_class = Mixologist(settings.XBLOCK_MIXINS).mix(xblock_class)
         block = Mock(
-            spec=xblock_class,
+            spec=mixed_class,
             _field_data=Mock(spec=FieldData, name='field_data'),
             location=location,
             static_asset_path=None,
@@ -1951,8 +1956,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
             days_early_for_beta=None,
         )
         block.runtime = ModuleStoreRuntime(None, None, None)
-        # Use the xblock_class's bind_for_student method
-        block.bind_for_student = partial(xblock_class.bind_for_student, block)
+        block.bind_for_student = partial(mixed_class.bind_for_student, block)
 
         if hasattr(xblock_class, 'module_class'):
             block.module_class = xblock_class.module_class

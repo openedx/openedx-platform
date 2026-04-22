@@ -2,7 +2,7 @@
 Unit tests for instructor API v2 endpoints.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -1847,6 +1847,107 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIsInstance(extension['email'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_title'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_location'], str)  # noqa: PT009
+
+    def test_reset_extension_with_none_date_excluded(self):
+        """
+        Test that extensions reset via set_date_for_block(None) are excluded from results.
+        When an extension is reset, edx-when creates a UserDate with abs_date=None and rel_date=None,
+        causing actual_date to fall back to the original block due date. These reverted overrides
+        should not appear as granted extensions.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then reset it by passing None
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', None, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_reset_extension_matching_original_date_excluded(self):
+        """
+        Test that extensions whose override date matches the original due date are excluded.
+        When an extension is reset, the override reverts to the original subsection date,
+        making it appear as if there's an active extension when there isn't one.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then "reset" it by setting it back to the original date
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', original_due, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_reset_extension_excluded_with_block_id_filter(self):
+        """
+        Test that reset extensions are also excluded when filtering by block_id.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then reset it
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', None, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        params = {'block_id': str(self.subsection.location)}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_active_extensions_still_returned(self):
+        """
+        Test that legitimate extensions (date differs from original) are still returned.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended1 = original_due + timedelta(days=30)
+        extended2 = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended1, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended2, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 2
+        results_by_username = {r['username']: r for r in results}
+        assert results_by_username['student1']['extended_due_date'] == extended1.strftime('%Y-%m-%dT%H:%M:%SZ')
+        assert results_by_username['student2']['extended_due_date'] == extended2.strftime('%Y-%m-%dT%H:%M:%SZ')
+
 
 @ddt.ddt
 class IssuedCertificatesViewTest(SharedModuleStoreTestCase):

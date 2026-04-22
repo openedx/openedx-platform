@@ -881,7 +881,7 @@ class SidebarBlocksTestViews(BaseCourseHomeTests):
 
         assert vertical_data['icon'] == expected_icon
 
-    @patch('xmodule.html_block.HtmlBlock.icon_class', 'video')
+    @patch('xmodule.x_module.XModuleMixin.icon_class', 'video')
     def test_vertical_icon_determined_by_icon_class(self):
         """Test that the API checks the children `icon_class` to determine the icon for the unit."""
         self.add_blocks_to_course()
