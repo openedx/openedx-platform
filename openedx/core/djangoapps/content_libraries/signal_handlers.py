@@ -4,6 +4,7 @@ Content library signal handlers.
 
 import logging
 
+from attrs import asdict
 from django.dispatch import receiver
 from openedx_content.api import signals as content_signals
 from openedx_events.content_authoring.data import LibraryCollectionData
@@ -20,12 +21,47 @@ from .models import ContentLibrary
 log = logging.getLogger(__name__)
 
 
+@receiver(content_signals.LEARNING_PACKAGE_ENTITIES_CHANGED)
+def entities_updated(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.DraftChangeLogEventData,
+    **kwargs,
+) -> None:
+    """
+    Entities (containers/components) have been changed - handle that as needed.
+
+    We receive this low-level event from `openedx_content`, and check if it
+    happened in a library. If so, we emit more detailed library-specific events.
+
+    💾 This event is only received after the transaction has committed.
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously. If a lot of entities were changed, we need to dispatch an
+       asynchronous handler to deal with them to avoid slowdowns. If only one
+       entity is changed, we want to deal with that synchronously so that we
+       can show the user correct data when the current requests completes.
+    """
+    try:
+        ContentLibrary.objects.get(learning_package_id=learning_package.id)
+    except ContentLibrary.DoesNotExist:
+        return  # We don't care about non-library events.
+
+    entities_changed = [change.entity_id for change in change_log.changes]
+
+    if len(entities_changed) == 1:
+        fn = tasks.send_change_events_for_modified_entities
+    else:
+        # More than one entity was changed at once. Handle asynchronously:
+        fn = tasks.send_change_events_for_modified_entities.delay
+
+    fn(learning_package_id=learning_package.id, change_list=[asdict(chg) for chg in change_log.changes])
+
+
 @receiver(content_signals.LEARNING_PACKAGE_COLLECTION_CHANGED)
 def collection_updated(
     learning_package: content_signals.LearningPackageEventData,
     change: content_signals.CollectionChangeData,
     **kwargs,
-):
+) -> None:
     """
     A Collection has been updated - handle that as needed.
 

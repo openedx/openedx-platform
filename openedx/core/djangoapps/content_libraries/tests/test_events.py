@@ -1,7 +1,6 @@
 """
 Tests for openedx_content-based Content Libraries
 """
-
 from unittest import mock
 
 from django.db import transaction
@@ -115,10 +114,22 @@ class BaseEventsTestCase(ContentLibrariesRestApiTest):
                     found = True
                     break
             if not found:
-                raise AssertionError(f"Event {expected} not found among actual events: {self.new_events}")
+                raise AssertionError(f"Event {expected} not found among actual events:\n{self.new_events_str}")
         if len(self.new_events) > 0:
-            raise AssertionError(f"Events were emitted but not expected: {self.new_events}")
+            raise AssertionError(f"Events were emitted but not expected:\n{self.new_events_str}")
         self.clear_events()
+
+    @property
+    def new_events_str(self) -> str:
+        """Friendly-ish string representation of self.new_events"""
+        simplified_events = [e.copy() for e in self.new_events]
+        for e in simplified_events:
+            if e["sender"] is None:
+                del e["sender"]
+            if e["from_event_bus"] is False:
+                del e["from_event_bus"]
+            del e["metadata"]
+        return "\n".join([str(e) for e in simplified_events])
 
 
 @skip_unless_cms
@@ -543,13 +554,10 @@ class ContentLibrariesEventsTestCase(BaseEventsTestCase):
                 "signal": LIBRARY_CONTAINER_CREATED,
                 "library_container": LibraryContainerData(container_key),
             },
-            {
-                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-                "content_object": ContentObjectChangedData(
-                    object_id=str(container_key),
-                    changes=["collections", "tags"],
-                ),
-            },
+            # We used to emit CONTENT_OBJECT_ASSOCIATIONS_CHANGED here for the restored container, specifically noting
+            # that changes=["collections", "tags"], because deleted things may have collections+tags that are once
+            # again relevant when it is restored. However, the CREATED event should be sufficient for notifying of that.
+            # (Or should we emit CREATED+UPDATED to be extra sure?)
         )
 
     def test_restore_unit_via_revert(self) -> None:
@@ -624,6 +632,22 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
     """
     Event tests for container operations: signals emitted when components and
     containers are created, updated, deleted, and associated with one another.
+
+    setUp() builds the following structure in lib1 (note that some entities
+    are shared across multiple parents, so this is a DAG, not a strict tree)::
+
+        Section 1                                    Section 2
+        ├── Subsection 1 ◄───────── (shared) ────────┴── Subsection 1
+        │   ├── Unit 1 ◄────────────────┐ (shared)
+        │   │   ├── problem1            │
+        │   │   └── html1 ◄──┐          │
+        │   └── Unit 2       │(shared)  │
+        │       └── html1 ◄──┘          │
+        └── Subsection 2                │
+            └── Unit 1 ◄────────────────┘
+
+        Orphans (created but not attached to any parent):
+            Unit 3, problem2
     """
 
     def setUp(self) -> None:
@@ -689,21 +713,38 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
     def test_container_updated_when_component_deleted(self) -> None:
         api.delete_library_block(self.html_block_usage_key)
         self.expect_new_events(
+            # The block itself was deleted:
             {
                 "signal": LIBRARY_BLOCK_DELETED,
                 "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
             },
+            # That block was a child of two units, so both parent units are flagged as updated
+            # e.g. to update their "child_display_names" in the search index.
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit1.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
             },
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit2.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+            # openedx_content also lists ancestor containers of the affected units as changed.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
         )
 
@@ -713,49 +754,79 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
 
         api.restore_library_block(self.html_block_usage_key)
         self.expect_new_events(
+            # Restoring the block re-creates it:
             {
                 "signal": LIBRARY_BLOCK_CREATED,
                 "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
             },
+            # We used to emit CONTENT_OBJECT_ASSOCIATIONS_CHANGED here for the restored block, specifically noting
+            # that changes=["collections", "tags", "units"], because deleted things may have collections+tags+containers
+            # that are once again relevant when it is restored. However, the CREATED event should be sufficient for
+            # notifying of that. (Or should we emit CREATED+UPDATED to be extra sure?)
+            # The restored block is a child of two units, so both parent units are flagged as updated:
             {
-                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-                "content_object": ContentObjectChangedData(
-                    object_id=str(self.html_block_usage_key),
-                    changes=["collections", "tags", "units"],
-                ),
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
             },
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit1.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+            # openedx_content also lists ancestor containers of the affected units as changed.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
             },
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit2.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
         )
 
     def test_container_updated_when_component_olx_updated(self) -> None:
         self._set_library_block_olx(self.html_block_usage_key, "<html><b>Hello world!</b></html>")
         self.expect_new_events(
+            # The block's OLX changed:
             {
                 "signal": LIBRARY_BLOCK_UPDATED,
                 "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
             },
+            # That block is used in two units, so both parent units are flagged as updated
+            # e.g. to update their "child_display_names" in the search index, if the child's name has changed.
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit1.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
             },
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit2.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+            # openedx_content also lists ancestor containers of the affected units as changed.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
         )
 
@@ -767,29 +838,18 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                 "signal": LIBRARY_BLOCK_UPDATED,
                 "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
             },
-            {
-                "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit1.container_key, background=True,
-                ),
-            },
-            {
-                "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit2.container_key, background=True,
-                ),
-            },
-        )
-
-    ############################## Container update signals ##################################
-
-    def test_container_updated_when_unit_updated(self) -> None:
-        self._update_container(self.unit1.container_key, 'New Unit Display Name')
-        self.expect_new_events(
+            # That block is used in two containers, so we expect events for them too:
+            # This is used e.g. to update "child_display_names" in the search index, if the child's name has changed.
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.unit1.container_key),
             },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+            # openedx_content also lists and parent containers of affected containers as changed, and so on...
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
@@ -798,6 +858,48 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
             },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
+        )
+
+    ############################## Container update signals ##################################
+
+    def test_container_updated_when_unit_updated(self) -> None:
+        self._update_container(self.unit1.container_key, 'New Unit Display Name')
+        self.expect_new_events(
+            # We renamed this unit, so we get an UPDATED event for it:
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
+            },
+            # We also get events for its parent containers
+            # e.g. to update their "child_display_names" in the search index.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            # openedx_content also lists ancestor containers of the affected unit as changed.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
+            # Finally, any child components receive a "units changed" notification
+            # e.g. to update the "units this component is used in" in the search index.
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
@@ -815,10 +917,13 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
     def test_container_updated_when_subsection_updated(self) -> None:
         self._update_container(self.subsection1.container_key, 'New Subsection Display Name')
         self.expect_new_events(
+            # We renamed this container, so we get an UPDATED event for it:
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
             },
+            # We also get events for its parent containers
+            # e.g. to update their "child_display_names" in the search index
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.section1.container_key),
@@ -827,6 +932,8 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
+            # Finally, any child containers receive a "subsections changed" notification
+            # e.g. to update the "subsections this unit is used in" in the search index.
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
@@ -865,10 +972,10 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
     ############################## Association change signals ##################################
 
     def test_associations_changed_when_component_removed(self) -> None:
-        html_block_1 = self._add_block_to_library(self.lib1_key, "html", "html3")
+        html_block_3 = self._add_block_to_library(self.lib1_key, "html", "html3")
         api.update_container_children(
             self.unit2.container_key,
-            [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
+            [LibraryUsageLocatorV2.from_string(html_block_3["id"])],
             None,
             entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
@@ -876,7 +983,7 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
 
         api.update_container_children(
             self.unit2.container_key,
-            [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
+            [LibraryUsageLocatorV2.from_string(html_block_3["id"])],
             None,
             entities_action=content_api.ChildrenEntitiesAction.REMOVE,
         )
@@ -884,12 +991,26 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
-                    object_id=html_block_1["id"], changes=["units"],
+                    object_id=html_block_3["id"], changes=["units"],
                 ),
             },
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+            # Because we removed html3 from unit2, the ancestor containers of unit2 are also emitted as changed.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
         )
 
@@ -910,15 +1031,23 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
             entities_action=content_api.ChildrenEntitiesAction.REMOVE,
         )
         self.expect_new_events(
+            # unit4 was removed from subsection2, so we get a notification that "parent subsection(s) have changed":
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
                     object_id=str(unit4.container_key), changes=["subsections"],
                 ),
             },
+            # We modified subsection2 by changing its list of children, so we get a CONTAINER_UPDATED event for it:
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            # Because subsection2 itself was changed, we get change notifications for its ancestors.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
             },
         )
 
@@ -968,6 +1097,7 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
             entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
         self.expect_new_events(
+            # We added html4 and html4 to a new unit, so they get "parent unit(s) changed" events:
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
@@ -980,13 +1110,29 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                     object_id=html_block_2["id"], changes=["units"],
                 ),
             },
+            # We modified unit2 by changing its list of children, so we get a CONTAINER_UPDATED event for it:
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.unit2.container_key),
             },
+            # Because the unit itself was changed, we get change notifications for its ancestors.
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
         )
 
     def test_associations_changed_when_units_added(self) -> None:
+        # Create "unit4" and "unit5" and add them to subsection2:
         unit4 = api.create_container(self.lib1_key, content_models.Unit, 'unit-4', 'Unit 4', None)
         unit5 = api.create_container(self.lib1_key, content_models.Unit, 'unit-5', 'Unit 5', None)
         self.clear_events()
@@ -998,6 +1144,7 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
             entities_action=content_api.ChildrenEntitiesAction.APPEND,
         )
         self.expect_new_events(
+            # Each unit was added to a new subsection, so we get a "subsections changed" event for each:
             {
                 "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
                 "content_object": ContentObjectChangedData(
@@ -1010,9 +1157,15 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                     object_id=str(unit5.container_key), changes=["subsections"],
                 ),
             },
+            # The subsection itself was updated (its list of children changed):
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
                 "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            # And because the subsection itself was changed, we get change notifications for its ancestors.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
             },
         )
 
@@ -1111,11 +1264,29 @@ class ContentLibraryContainerEventsTest(BaseEventsTestCase):
                     usage_key=self.problem_block_usage_key,
                 ),
             },
+            # Since the problem is part of a unit, we also get LIBRARY_CONTAINER_UPDATED on the parent unit.
+            # This is used e.g. to update "child_display_names" in the search index, if the child's name has changed.
             {
                 "signal": LIBRARY_CONTAINER_UPDATED,
-                "library_container": LibraryContainerData(
-                    container_key=self.unit1.container_key, background=True,
-                ),
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
+            },
+            # openedx_content also lists and parent containers of affected containers as changed, and so on...
+            # We don't strictly need this at the moment, at least as far as keeping our search index updated.
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
             },
         )
 

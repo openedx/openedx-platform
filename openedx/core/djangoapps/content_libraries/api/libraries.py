@@ -776,11 +776,8 @@ def revert_changes(library_key: LibraryLocatorV2, user_id: int | None = None) ->
     """
     learning_package = ContentLibrary.objects.get_by_key(library_key).learning_package
     assert learning_package is not None  # shouldn't happen but it's technically possible.
-    with content_api.bulk_draft_changes_for(learning_package.id) as draft_change_log:
+    with content_api.bulk_draft_changes_for(learning_package.id):
         content_api.reset_drafts_to_published(learning_package.id, reset_by=user_id)
-
-    # Call the event handlers as needed.
-    tasks.wait_for_post_revert_events(draft_change_log, library_key)
 
 
 def get_backup_task_status(
