@@ -12,6 +12,9 @@ TO DO sync instructor and staff flags
 
 import logging
 
+from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
+
 from common.djangoapps.student.roles import (
     CourseBetaTesterRole,
     CourseCcxCoachRole,
@@ -21,7 +24,13 @@ from common.djangoapps.student.roles import (
     CourseStaffRole,
 )
 from lms.djangoapps.instructor.enrollment import enroll_email, get_email_params
-from openedx.core.djangoapps.django_comment_common.models import Role
+from openedx.core.djangoapps.django_comment_common.models import (
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_MODERATOR,
+    Role,
+)
 
 log = logging.getLogger(__name__)
 
@@ -33,6 +42,47 @@ ROLES = {
     'ccx_coach': CourseCcxCoachRole,
     'data_researcher': CourseDataResearcherRole,
 }
+
+#: Forum/discussion roles managed through :func:`update_forum_role`.
+#: Stored separately from :data:`ROLES` because they use a different
+#: model (``Role`` from django_comment_common) and different helpers.
+FORUM_ROLES = (
+    FORUM_ROLE_ADMINISTRATOR,
+    FORUM_ROLE_MODERATOR,
+    FORUM_ROLE_GROUP_MODERATOR,
+    FORUM_ROLE_COMMUNITY_TA,
+)
+
+ROLE_DISPLAY_NAMES = {
+    'instructor': _('Admin'),
+    'staff': _('Staff'),
+    'limited_staff': _('Limited Staff'),
+    'beta': _('Beta Tester'),
+    'ccx_coach': _('CCX Coach'),
+    'data_researcher': _('Data Researcher'),
+    FORUM_ROLE_ADMINISTRATOR: _('Discussion Admin'),
+    FORUM_ROLE_MODERATOR: _('Discussion Moderator'),
+    FORUM_ROLE_GROUP_MODERATOR: _('Group Moderator'),
+    FORUM_ROLE_COMMUNITY_TA: _('Community TA'),
+}
+
+
+def is_forum_role(rolename):
+    """Return True if ``rolename`` is a forum/discussion role."""
+    return rolename in FORUM_ROLES
+
+
+def list_forum_members(course_id, rolename):
+    """
+    Return a User QuerySet of users holding ``rolename`` forum role for the course.
+
+    Returns an empty QuerySet if the role doesn't exist for the course.
+    """
+    try:
+        role = Role.objects.get(course_id=course_id, name=rolename)
+    except Role.DoesNotExist:
+        return get_user_model().objects.none()
+    return role.users.all()
 
 
 def list_with_level(course_id, level):

@@ -11,13 +11,15 @@ import ddt
 import pytz
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext as _
+from openedx_authz.constants.roles import COURSE_STAFF
 from search.api import perform_search
 
 from cms.djangoapps.contentstore.courseware_index import CoursewareSearchIndexer, SearchIndexingError
-from cms.djangoapps.contentstore.tests.utils import CourseTestCase
+from cms.djangoapps.contentstore.tests.utils import AjaxEnabledTestClient, CourseTestCase
 from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_url
 from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import VisibilityState, create_xblock_info
 from common.djangoapps.student.tests.factories import UserFactory
+from openedx.core.djangoapps.authz.tests.mixins import CourseAuthoringAuthzTestMixin
 from openedx.core.djangoapps.waffle_utils.testutils import WAFFLE_TABLES
 from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
 from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
@@ -541,3 +543,86 @@ class TestCourseReIndex(CourseTestCase):
         # Start manual reindex and check error in response
         with self.assertRaises(SearchIndexingError):  # noqa: PT027
             CoursewareSearchIndexer.do_course_reindex(modulestore(), self.course.id)
+
+
+class TestCourseReIndexAuthz(CourseAuthoringAuthzTestMixin, CourseTestCase):
+    """
+    AuthZ-based tests for course reindex.
+    """
+
+    MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
+    SUCCESSFUL_RESPONSE = _("Course has been successfully reindexed.")
+    ENABLED_SIGNALS = ['course_published']
+
+    @mock.patch(
+        'cms.djangoapps.contentstore.signals.handlers.transaction.on_commit',
+        new=mock.Mock(side_effect=lambda func: func()),
+    )
+    def setUp(self):
+        super().setUp()
+
+        self.url = reverse_course_url('course_search_index_handler', self.course.id)
+
+        self.non_staff_client = AjaxEnabledTestClient()
+        self.non_staff_user, self.non_staff_password = self.create_non_staff_user()
+        self.non_staff_client.login(username=self.non_staff_user.username, password=self.non_staff_password)
+
+        self.course.start = datetime.datetime(2014, 1, 1, tzinfo=pytz.utc)
+        modulestore().update_item(self.course, self.user.id)
+
+        self.chapter = BlockFactory.create(
+            parent_location=self.course.location,
+            category='chapter',
+            display_name="Week 1"
+        )
+        self.sequential = BlockFactory.create(
+            parent_location=self.chapter.location,
+            category='sequential',
+            display_name="Lesson 1"
+        )
+        self.vertical = BlockFactory.create(
+            parent_location=self.sequential.location,
+            category='vertical',
+            display_name='Subsection 1'
+        )
+        self.video = BlockFactory.create(
+            parent_location=self.vertical.location,
+            category="video",
+            display_name="My Video"
+        )
+        self.html = BlockFactory.create(
+            parent_location=self.vertical.location,
+            category="html",
+            display_name="My HTML",
+            data="<div>This is my unique HTML content</div>",
+        )
+
+    def test_staff_user_can_reindex(self):
+        """ Verify that staff user can reindex the course. """
+
+        response = self.client.get(self.url, HTTP_ACCEPT='application/json')
+
+        assert self.user.is_staff
+        assert response.status_code == 200
+        assert self.SUCCESSFUL_RESPONSE in response.content.decode()
+
+    def test_non_staff_user_cannot_reindex(self):
+        """ Verify that non-staff user without course authoring permissions cannot reindex the course. """
+        response = self.non_staff_client.get(self.url, HTTP_ACCEPT='application/json')
+
+        assert not self.non_staff_user.is_staff
+        assert response.status_code == 403
+
+    def test_non_staff_user_can_reindex(self):
+        """ Verify that non-staff user with course authoring permissions can reindex the course. """
+
+        # Grant access helper
+        self.add_user_to_role_in_course(
+            self.non_staff_user,
+            COURSE_STAFF.external_key,
+            self.course.id
+        )
+        response = self.non_staff_client.get(self.url, HTTP_ACCEPT='application/json')
+        assert not self.non_staff_user.is_staff
+        assert response.status_code == 200
+        assert self.SUCCESSFUL_RESPONSE in response.content.decode()

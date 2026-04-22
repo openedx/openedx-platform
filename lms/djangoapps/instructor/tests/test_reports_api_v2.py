@@ -191,6 +191,11 @@ class ReportDownloadsViewTest(SharedModuleStoreTestCase):
             'anonymized_student_ids',
             '2024-08-20T16:00:00Z'
         ),
+        (
+            'course-v1_edX_ReportTestX_Report_Test_Course_cohort_results_2024-09-15-1400.csv',
+            'cohort_results',
+            '2024-09-15T14:00:00Z'
+        ),
     )
     @ddt.unpack
     def test_report_type_detection(self, filename, expected_type, expected_date, mock_report_store):

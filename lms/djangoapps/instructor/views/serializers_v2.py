@@ -6,6 +6,7 @@ Following REST best practices, serializers encapsulate most of the data processi
 """
 
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.html import escape
@@ -28,6 +29,7 @@ from lms.djangoapps.courseware.courses import get_studio_url
 from lms.djangoapps.discussion.django_comment_client.utils import has_forum_access
 from lms.djangoapps.grades.api import is_writable_gradebook_enabled
 from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
 from xmodule.modulestore.django import modulestore
@@ -82,30 +84,43 @@ class CourseInformationSerializerV2(serializers.Serializer):
     )
 
     @staticmethod
-    def _build_tab_url(setting_name, *path_parts):
+    def _build_tab_url(setting_name, *path_parts, strip_url=True):
         """
         Build a tab URL from a Django setting and path parts.
 
-        Retrieves the base URL from `setting_name`, strips any trailing slash,
+        Retrieves the base URL from `setting_name`, optionally strips the protocol and host,
         then joins the provided path parts (stripping their leading/trailing
         slashes) with `/` separators — behaving like ``os.path.join`` for URLs.
 
         Logs a warning and falls back to a relative URL if the setting is unset.
 
+        Args:
+            setting_name: Django setting name containing the base URL
+            *path_parts: Path components to append to the base URL
+            strip_url: If True, strips protocol/host and uses only the path component.
+                      If False, uses the full URL. Defaults to True.
+
         Example:
 
-            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', course_key, 'grading')
-            # => 'http://localhost:2003/instructor/course-v1:.../grading'
+            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', course_key, 'grading')
+            # => '/instructor-dashboard/course-v1:.../grading' (with strip_url=True)
 
-            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email')
+            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email', strip_url=False)
             # => 'http://localhost:1984/communications/courses/course-v1:.../bulk_email'
         """
         base_url = getattr(settings, setting_name, None)
         if base_url is None:
-            log.warning('%s is not configured.', setting_name)
-            base_url = ''
-        parts = [base_url.rstrip('/')] + [str(part).strip('/') for part in path_parts]
-        return '/'.join(parts)
+            log.warning("%s is not configured.", setting_name)
+            base_part = ""
+        elif strip_url and base_url:
+            # Extract only the path component from the URL
+            base_part = urlparse(base_url).path
+        else:
+            # Use the full URL as-is
+            base_part = base_url
+
+        parts = [base_part.rstrip("/")] + [str(part).strip("/") for part in path_parts]
+        return "/".join(parts)
 
     def get_tabs(self, data):
         """Get serialized course tabs."""
@@ -138,7 +153,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Info'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_info'
                     ),
@@ -149,7 +163,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Enrollments'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'enrollments'
                     ),
@@ -160,7 +173,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Team'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_team'
                     ),
@@ -171,7 +183,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Grading'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'grading'
                     ),
@@ -182,7 +193,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Cohorts'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'cohorts'
                     ),
@@ -191,17 +201,16 @@ class CourseInformationSerializerV2(serializers.Serializer):
             ])
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
-            tabs.append({
-                'tab_id': 'bulk_email',
-                'title': _('Bulk Email'),
-                'url': self._build_tab_url(
-                    'COMMUNICATIONS_MICROFRONTEND_URL',
-                    'courses',
-                    course_key,
-                    'bulk_email'
-                ),
-                'sort_order': 100,
-            })
+            tabs.append(
+                {
+                    "tab_id": "bulk_email",
+                    "title": _("Bulk Email"),
+                    "url": self._build_tab_url(
+                        "COMMUNICATIONS_MICROFRONTEND_URL", "courses", course_key, "bulk_email", strip_url=False
+                    ),
+                    "sort_order": 100,
+                }
+            )
 
         if access['instructor'] and is_enabled_for_course(course_key):
             tabs.append({
@@ -209,7 +218,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Date Extensions'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'date_extensions'
                 ),
@@ -222,7 +230,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Data Downloads'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'data_downloads'
                 ),
@@ -242,7 +249,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Open Responses'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'open_responses'
                 ),
@@ -259,7 +265,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Certificates'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'certificates'
                 ),
@@ -281,7 +286,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Special Exams'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'special_exams'
                 ),
@@ -860,4 +864,116 @@ class TaskStatusSerializer(serializers.Serializer):
     )
     updated_at = serializers.DateTimeField(
         help_text="Last update timestamp"
+    )
+
+
+class EnrollmentModifyRequestSerializerV2(serializers.Serializer):
+    """Validates request body for enrolling/unenrolling one or more learners."""
+    identifier = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of email addresses or usernames of learners to enroll/unenroll.",
+    )
+    action = serializers.ChoiceField(
+        choices=('enroll', 'unenroll'),
+        help_text="The enrollment action to perform: 'enroll' or 'unenroll'.",
+    )
+    auto_enroll = serializers.BooleanField(
+        default=False,
+        help_text="Whether to auto-enroll in the verified track (enroll action only).",
+    )
+    email_students = serializers.BooleanField(
+        default=False,
+        help_text="Whether to send an email notification.",
+    )
+    reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Reason for the change (for audit trail).",
+    )
+
+
+class EnrollmentStateSerializerV2(serializers.Serializer):
+    """Documents the before/after enrollment state shape (mirrors EmailEnrollmentState.to_dict)."""
+    user = serializers.BooleanField()
+    enrollment = serializers.BooleanField()
+    allowed = serializers.BooleanField()
+    auto_enroll = serializers.BooleanField()
+
+
+class EnrollmentModifyResultSerializerV2(serializers.Serializer):
+    """Documents the per-identifier result shape for enrollment modifications (mirrors v1)."""
+    identifier = serializers.CharField()
+    before = EnrollmentStateSerializerV2(required=False)
+    after = EnrollmentStateSerializerV2(required=False)
+    invalid_identifier = serializers.BooleanField(required=False)
+    error = serializers.BooleanField(required=False)
+
+
+class EnrollmentModifyResponseSerializerV2(serializers.Serializer):
+    """Documents the response shape for the bulk enroll/unenroll endpoint (mirrors v1)."""
+    action = serializers.CharField()
+    auto_enroll = serializers.BooleanField()
+    results = EnrollmentModifyResultSerializerV2(many=True)
+
+
+class BetaTesterModifyRequestSerializerV2(serializers.Serializer):
+    """Validates request body for adding/removing one or more beta testers."""
+    identifier = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of email addresses or usernames of learners to add/remove as beta testers.",
+    )
+    action = serializers.ChoiceField(
+        choices=('add', 'remove'),
+        help_text="The beta tester action to perform: 'add' or 'remove'.",
+    )
+    email_students = serializers.BooleanField(
+        default=False,
+        help_text="Whether to send an email notification.",
+    )
+    auto_enroll = serializers.BooleanField(
+        default=False,
+        help_text="Whether to auto-enroll the user in the course (add action only).",
+    )
+
+
+class BetaTesterModifyResultSerializerV2(serializers.Serializer):
+    """Documents the per-identifier result shape for beta tester modifications (mirrors v1)."""
+    identifier = serializers.CharField()
+    error = serializers.BooleanField()
+    user_does_not_exist = serializers.BooleanField()
+    is_active = serializers.BooleanField(allow_null=True)
+
+
+class BetaTesterModifyResponseSerializerV2(serializers.Serializer):
+    """Documents the response shape for the bulk beta tester add/remove endpoint (mirrors v1)."""
+    action = serializers.CharField()
+    results = BetaTesterModifyResultSerializerV2(many=True)
+
+
+class CourseTeamModifySerializer(serializers.Serializer):
+    """Input serializer for granting or revoking a course team role."""
+    identifiers = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        help_text="List of usernames or emails of users to modify"
+    )
+    role = serializers.ChoiceField(
+        choices=list(ROLES.keys()) + list(FORUM_ROLES),
+        help_text="The role to grant or revoke (course access role or forum role)"
+    )
+    action = serializers.ChoiceField(
+        choices=['allow', 'revoke'],
+        help_text="Whether to grant ('allow') or revoke ('revoke') the role"
+    )
+
+
+class CourseTeamRevokeSerializer(serializers.Serializer):
+    """Input serializer for revoking course team roles."""
+    roles = serializers.ListField(
+        child=serializers.ChoiceField(choices=list(ROLES.keys()) + list(FORUM_ROLES)),
+        allow_empty=False,
+        help_text="One or more roles to revoke (course access role or forum role)"
     )
