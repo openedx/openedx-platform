@@ -136,6 +136,27 @@ v2_api_urls = [
         api_v2.CourseTeamView.as_view(),
         name='course_team'
     ),
+    # Grading endpoints
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/attempts/reset$',
+        api_v2.ResetAttemptsView.as_view(),
+        name='reset_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/state$',
+        api_v2.DeleteStateView.as_view(),
+        name='delete_state'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/scores/rescore$',
+        api_v2.RescoreView.as_view(),
+        name='rescore'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/(?P<problem>.+)/grading/scores$',
+        api_v2.ScoreOverrideView.as_view(),
+        name='score_override'
+    ),
 ]
 
 urlpatterns = [

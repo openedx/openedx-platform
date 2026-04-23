@@ -1,13 +1,16 @@
 """
-Tests for Instructor API v2 GET endpoints.
+Tests for Instructor API v2 endpoints.
 """
 import json
+from textwrap import dedent
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, InstructorFactory, UserFactory
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor_task.models import InstructorTask
@@ -382,33 +385,39 @@ class GradingConfigViewTestCase(ModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
 
     def test_get_grading_config(self):
-        """Test retrieving grading configuration returns graders and grade cutoffs"""
+        """Test retrieving grading configuration returns HTML summary from dump_grading_context"""
         url = reverse('instructor_api_v2:grading_config', kwargs={
             'course_id': str(self.course.id),
         })
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        data = response.json()
-        self.assertIn('graders', data)  # noqa: PT009
-        self.assertIn('grade_cutoffs', data)  # noqa: PT009
-        self.assertIsInstance(data['graders'], list)  # noqa: PT009
-        self.assertIsInstance(data['grade_cutoffs'], dict)  # noqa: PT009
+        self.assertEqual(response['Content-Type'], 'text/html')  # noqa: PT009
 
-    def test_get_grading_config_grader_fields(self):
-        """Test that each grader entry has the expected fields"""
-        url = reverse('instructor_api_v2:grading_config', kwargs={
-            'course_id': str(self.course.id),
-        })
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
-        data = response.json()
-        for grader in data['graders']:
-            self.assertIn('type', grader)  # noqa: PT009
-            self.assertIn('min_count', grader)  # noqa: PT009
-            self.assertIn('drop_count', grader)  # noqa: PT009
-            self.assertIn('weight', grader)  # noqa: PT009
+        hbar = '-' * 77
+        expected_html = (
+            f'<pre>{hbar}\n'
+            'Course grader:\n'
+            '&lt;class &#39;xmodule.graders.WeightedSubsectionsGrader&#39;&gt;\n'
+            '\n'
+            'Graded sections:\n'
+            '  subgrader=&lt;class &#39;xmodule.graders.AssignmentFormatGrader&#39;&gt;,'
+            ' type=Homework, category=Homework, weight=0.15\n'
+            '  subgrader=&lt;class &#39;xmodule.graders.AssignmentFormatGrader&#39;&gt;,'
+            ' type=Lab, category=Lab, weight=0.15\n'
+            '  subgrader=&lt;class &#39;xmodule.graders.AssignmentFormatGrader&#39;&gt;,'
+            ' type=Midterm Exam, category=Midterm Exam, weight=0.3\n'
+            '  subgrader=&lt;class &#39;xmodule.graders.AssignmentFormatGrader&#39;&gt;,'
+            ' type=Final Exam, category=Final Exam, weight=0.4\n'
+            f'{hbar}\n'
+            f'Listing grading context for course {self.course.id}\n'
+            'graded sections:\n'
+            '[]\n'
+            'all graded blocks:\n'
+            'length=0\n'
+            '</pre>'
+        )
+        self.assertEqual(response.content.decode(), expected_html)  # noqa: PT009
 
     def test_get_grading_config_requires_authentication(self):
         """Test that endpoint requires authentication"""
@@ -420,3 +429,266 @@ class GradingConfigViewTestCase(ModuleStoreTestCase):
         response = self.client.get(url)
 
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])  # noqa: PT009
+
+
+class GradingEndpointTestBase(ModuleStoreTestCase):
+    """
+    Base test class for grading endpoints with real course structures,
+    real permissions, and real StudentModule records.
+    """
+
+    PROBLEM_XML = dedent("""\
+        <problem>
+          <optionresponse>
+            <optioninput options="('Option 1','Option 2')" correct="Option 1" />
+          </optionresponse>
+        </problem>
+    """)
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.course = CourseFactory.create(display_name='Test Course')
+        self.chapter = BlockFactory.create(
+            parent=self.course,
+            category='chapter',
+            display_name='Week 1'
+        )
+        self.sequential = BlockFactory.create(
+            parent=self.chapter,
+            category='sequential',
+            display_name='Homework 1'
+        )
+        self.problem = BlockFactory.create(
+            parent=self.sequential,
+            category='problem',
+            display_name='Test Problem',
+            data=self.PROBLEM_XML,
+        )
+
+        # Real instructor with real course permissions
+        self.instructor = InstructorFactory(course_key=self.course.id)
+        self.client.force_authenticate(user=self.instructor)
+
+        # Real enrolled student with real module state
+        self.student = UserFactory(username='test_student', email='student@example.com')
+        CourseEnrollment.enroll(self.student, self.course.id)
+        self.student_module = StudentModule.objects.create(
+            student=self.student,
+            course_id=self.course.id,
+            module_state_key=self.problem.location,
+            state=json.dumps({'attempts': 10}),
+        )
+
+
+class ResetAttemptsViewTestCase(GradingEndpointTestBase):
+    """
+    Tests for POST /api/instructor/v2/courses/{course_key}/{problem}/grading/attempts/reset
+    """
+
+    def _get_url(self, problem=None):
+        return reverse('instructor_api_v2:reset_attempts', kwargs={
+            'course_id': str(self.course.id),
+            'problem': problem or str(self.problem.location),
+        })
+
+    def test_reset_single_learner(self):
+        """Single learner reset zeroes attempt count and returns 200."""
+        response = self.client.post(self._get_url() + '?learner=test_student')
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['success'] is True
+        assert data['learner'] == 'test_student'
+        assert data['message'] == 'Attempts reset successfully'
+
+        # Verify the actual StudentModule was modified
+        self.student_module.refresh_from_db()
+        assert json.loads(self.student_module.state)['attempts'] == 0
+
+    @patch('lms.djangoapps.instructor_task.tasks.reset_problem_attempts.apply_async')
+    def test_reset_all_learners(self, mock_apply):
+        """Bulk reset queues a background task and returns 202."""
+        response = self.client.post(self._get_url())
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert 'task_id' in data
+        assert 'status_url' in data
+        assert data['scope']['learners'] == 'all'
+        mock_apply.assert_called_once()
+
+
+class DeleteStateViewTestCase(GradingEndpointTestBase):
+    """
+    Tests for DELETE /api/instructor/v2/courses/{course_key}/{problem}/grading/state
+    """
+
+    def _get_url(self, problem=None):
+        return reverse('instructor_api_v2:delete_state', kwargs={
+            'course_id': str(self.course.id),
+            'problem': problem or str(self.problem.location),
+        })
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_delete_state(self, _mock_signal):  # noqa: PT019
+        """Delete state removes the StudentModule record and returns 200."""
+        response = self.client.delete(self._get_url() + '?learner=test_student')
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['success'] is True
+        assert data['learner'] == 'test_student'
+        assert data['message'] == 'State deleted successfully'
+
+        # Verify the StudentModule was actually deleted
+        assert not StudentModule.objects.filter(pk=self.student_module.pk).exists()
+
+    def test_delete_state_requires_learner_param(self):
+        """DELETE without learner query param returns 400."""
+        response = self.client.delete(self._get_url())
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @patch('lms.djangoapps.grades.signals.handlers.PROBLEM_WEIGHTED_SCORE_CHANGED.send')
+    def test_delete_state_learner_in_body(self, _mock_signal):  # noqa: PT019
+        """DELETE with learner in request body (form data) also works."""
+        response = self.client.delete(self._get_url(), data={'learner': 'test_student'})
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['success'] is True
+
+
+class RescoreViewTestCase(GradingEndpointTestBase):
+    """
+    Tests for POST /api/instructor/v2/courses/{course_key}/{problem}/grading/scores/rescore
+    """
+
+    def _get_url(self, problem=None):
+        return reverse('instructor_api_v2:rescore', kwargs={
+            'course_id': str(self.course.id),
+            'problem': problem or str(self.problem.location),
+        })
+
+    @patch('lms.djangoapps.instructor_task.tasks.rescore_problem.apply_async')
+    def test_rescore_single_learner(self, mock_apply):
+        """Single learner rescore queues a task and returns 202."""
+        response = self.client.post(self._get_url() + '?learner=test_student')
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert 'task_id' in data
+        assert data['scope']['learners'] == 'test_student'
+        mock_apply.assert_called_once()
+
+    @patch('lms.djangoapps.instructor_task.api.submit_rescore_problem_for_student')
+    def test_rescore_only_if_higher(self, mock_submit):
+        """Rescore with only_if_higher=true passes the flag through."""
+        mock_task = MagicMock()
+        mock_task.task_id = str(uuid4())
+        mock_submit.return_value = mock_task
+
+        response = self.client.post(self._get_url() + '?learner=test_student&only_if_higher=true')
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        assert mock_submit.call_args[0][3] is True
+
+    @patch('lms.djangoapps.instructor_task.tasks.rescore_problem.apply_async')
+    def test_rescore_all_learners(self, mock_apply):
+        """Bulk rescore queues a task and returns 202."""
+        response = self.client.post(self._get_url())
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert data['scope']['learners'] == 'all'
+        mock_apply.assert_called_once()
+
+
+class ScoreOverrideViewTestCase(GradingEndpointTestBase):
+    """
+    Tests for PUT /api/instructor/v2/courses/{course_key}/{problem}/grading/scores
+    """
+
+    def _get_url(self, problem=None):
+        return reverse('instructor_api_v2:score_override', kwargs={
+            'course_id': str(self.course.id),
+            'problem': problem or str(self.problem.location),
+        })
+
+    @patch('lms.djangoapps.instructor_task.tasks.override_problem_score.apply_async')
+    def test_override_score(self, mock_apply):
+        """Score override queues a task and returns 202."""
+        response = self.client.put(
+            self._get_url() + '?learner=test_student',
+            data={'score': 0.5},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        data = response.json()
+        assert 'task_id' in data
+        assert data['scope']['learners'] == 'test_student'
+        mock_apply.assert_called_once()
+
+        task = InstructorTask.objects.get(task_id=data['task_id'])
+        assert json.loads(task.task_input)['score'] == 0.5
+
+    @patch('lms.djangoapps.instructor_task.tasks.override_problem_score.apply_async')
+    def test_override_score_with_new_score_field(self, mock_apply):
+        """Score override also accepts 'new_score' field name (frontend compat)."""
+        response = self.client.put(
+            self._get_url(),
+            data={'new_score': 0.5, 'learner': 'test_student'},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        mock_apply.assert_called_once()
+
+        task = InstructorTask.objects.get(task_id=response.json()['task_id'])
+        assert json.loads(task.task_input)['score'] == 0.5
+
+    @patch('lms.djangoapps.instructor_task.tasks.override_problem_score.apply_async')
+    def test_override_score_zero(self, mock_apply):
+        """Score of 0 via 'score' field is a valid override."""
+        response = self.client.put(
+            self._get_url() + '?learner=test_student',
+            data={'score': 0},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        mock_apply.assert_called_once()
+
+        task = InstructorTask.objects.get(task_id=response.json()['task_id'])
+        assert json.loads(task.task_input)['score'] == 0
+
+    @patch('lms.djangoapps.instructor_task.tasks.override_problem_score.apply_async')
+    def test_override_new_score_zero(self, mock_apply):
+        """Score of 0 via 'new_score' field is a valid override."""
+        response = self.client.put(
+            self._get_url() + '?learner=test_student',
+            data={'new_score': 0},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_202_ACCEPTED
+        mock_apply.assert_called_once()
+
+        task = InstructorTask.objects.get(task_id=response.json()['task_id'])
+        assert json.loads(task.task_input)['score'] == 0
+
+    def test_override_requires_learner_param(self):
+        """PUT without learner query param returns 400."""
+        response = self.client.put(
+            self._get_url(),
+            data={'score': 8.5},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_override_requires_score_in_body(self):
+        """PUT without score in body returns 400."""
+        response = self.client.put(
+            self._get_url() + '?learner=test_student',
+            data={},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_override_rejects_negative_score(self):
+        """PUT with negative score returns 400."""
+        response = self.client.put(
+            self._get_url() + '?learner=test_student',
+            data={'score': -1},
+            format='json',
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

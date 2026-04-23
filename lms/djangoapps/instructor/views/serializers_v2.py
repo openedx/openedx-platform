@@ -766,44 +766,6 @@ class LearnerSerializer(serializers.Serializer):
     )
 
 
-class GraderSerializer(serializers.Serializer):
-    """Serializer for a single grader configuration entry."""
-    type = serializers.CharField(
-        help_text="Assignment type (e.g. Homework, Lab, Midterm Exam)"
-    )
-    short_label = serializers.CharField(
-        required=False,
-        allow_null=True,
-        help_text="Short label used when displaying assignment names"
-    )
-    min_count = serializers.IntegerField(
-        help_text="Minimum number of assignments counted in this category"
-    )
-    drop_count = serializers.IntegerField(
-        help_text="Number of lowest scores dropped from this category"
-    )
-    weight = serializers.FloatField(
-        help_text="Weight of this assignment type in the final grade (0.0 to 1.0)"
-    )
-
-
-class GradingConfigSerializer(serializers.Serializer):
-    """
-    Serializer for course grading configuration.
-
-    Returns structured grading policy data including assignment type weights
-    and grade cutoff thresholds.
-    """
-    graders = GraderSerializer(
-        many=True,
-        help_text="List of grader configurations by assignment type"
-    )
-    grade_cutoffs = serializers.DictField(
-        child=serializers.FloatField(),
-        help_text="Grade cutoffs mapping letter grades to minimum score thresholds (0.0 to 1.0)"
-    )
-
-
 class ProblemSerializer(serializers.Serializer):
     """
     Serializer for problem metadata and location.
@@ -980,3 +942,69 @@ class CourseTeamRevokeSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="One or more roles to revoke (course access role or forum role)"
     )
+
+
+class SyncOperationResultSerializer(serializers.Serializer):
+    """
+    Serializer for synchronous grading operation results.
+    """
+    success = serializers.BooleanField(
+        help_text="Whether the operation succeeded"
+    )
+    learner = serializers.CharField(
+        allow_null=True,
+        required=False,
+        help_text="Learner identifier (if applicable)"
+    )
+    problem_location = serializers.CharField(
+        allow_null=True,
+        required=False,
+        help_text="Problem location (if applicable)"
+    )
+    score = serializers.FloatField(
+        allow_null=True,
+        required=False,
+        help_text="Updated score (for override operations)"
+    )
+    previous_score = serializers.FloatField(
+        allow_null=True,
+        required=False,
+        help_text="Previous score (for override operations)"
+    )
+    message = serializers.CharField(
+        help_text="Human-readable result message"
+    )
+
+
+class AsyncOperationResultSerializer(serializers.Serializer):
+    """
+    Serializer for asynchronous grading operation results.
+    """
+    task_id = serializers.CharField(
+        help_text="Unique task identifier"
+    )
+    status_url = serializers.CharField(
+        help_text="URL to poll for task status"
+    )
+    scope = serializers.DictField(
+        required=False,
+        help_text="Scope of the operation"
+    )
+
+
+class ScoreOverrideRequestSerializer(serializers.Serializer):
+    """
+    Serializer for score override request body.
+    """
+    score = serializers.FloatField(
+        min_value=0,
+        help_text="New score value (out of problem's total possible points)"
+    )
+
+    def to_internal_value(self, data):
+        # The frontend sends `new_score` but the field is `score`.
+        # Convert here, before field level validation, so that DRF's required
+        # check and min_value constraint apply to whichever name was provided.
+        if "score" not in data and "new_score" in data:
+            data = {**data, "score": data["new_score"]}
+        return super().to_internal_value(data)
