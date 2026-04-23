@@ -31,7 +31,8 @@ class Command(BaseCommand):
     Index creation and configuration are handled by post_migrate reconciliation
     (runs automatically on ./manage.py cms migrate).
 
-    In order to reset the incremental indexing state, please run:
+    If it's ever necessary to reset the incremental indexing state (force
+    the full re-index process to start from the beginning), use:
 
     ./manage.py cms shell -c 'IncrementalIndexCompleted.objects.all().delete()'
 
