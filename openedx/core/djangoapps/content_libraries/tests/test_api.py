@@ -351,11 +351,15 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolation
         assert all(event["signal"] == LIBRARY_COLLECTION_UPDATED for event in collection_update_events)
         assert {event["library_collection"] for event in collection_update_events} == {
             LibraryCollectionData(
-                collection_key=api.library_collection_locator(self.lib2.library_key, collection_key=self.col2.collection_code)
+                collection_key=api.library_collection_locator(
+                    self.lib2.library_key, collection_key=self.col2.collection_code
+                )
             ),
             LibraryCollectionData(
-                collection_key=api.library_collection_locator(self.lib2.library_key, collection_key=self.col3.collection_code)
-            )
+                collection_key=api.library_collection_locator(
+                    self.lib2.library_key, collection_key=self.col3.collection_code
+                )
+            ),
         }
 
     def test_delete_library_block(self) -> None:
@@ -380,7 +384,9 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolation
                 "signal": LIBRARY_COLLECTION_UPDATED,
                 "sender": None,
                 "library_collection": LibraryCollectionData(
-                    collection_key=api.library_collection_locator(self.lib1.library_key, collection_key=self.col1.collection_code),
+                    collection_key=api.library_collection_locator(
+                        self.lib1.library_key, collection_key=self.col1.collection_code
+                    ),
                 ),
             },
         )
@@ -430,7 +436,7 @@ class ContentLibraryCollectionsTest(ContentLibrariesRestApiTest, EventsIsolation
                 "library_container": LibraryContainerData(
                     container_key=self.subsection1.container_key,
                     background=False,
-                )
+                ),
             },
         )
 

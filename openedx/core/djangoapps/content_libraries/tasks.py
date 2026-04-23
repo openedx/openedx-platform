@@ -45,6 +45,7 @@ from opaque_keys.edx.locator import (
     BlockUsageLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
+    LibraryUsageLocatorV2,
 )
 from openedx_content import api as content_api
 from openedx_content.api import create_zip_file as create_lib_zip_file
@@ -228,8 +229,12 @@ def check_container_content_changes(
         return
     else:
         # TODO: there is no "get entity list for container version" API in openedx_content
-        old_child_ids = old_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if old_version else []
-        new_child_ids = new_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if new_version else []
+        old_child_ids = (
+            old_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if old_version else []
+        )
+        new_child_ids = (
+            new_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True) if new_version else []
+        )
         # We only need to notify any added or removed children that their parent container(s) changed:
         changed_child_ids = list(set(old_child_ids) ^ set(new_child_ids))
 
@@ -241,6 +246,7 @@ def check_container_content_changes(
         .select_related("component", "container")
     )
     for entity in entities:
+        child_key: LibraryUsageLocatorV2 | LibraryContainerLocator
         if hasattr(entity, "component"):
             child_key = api.library_component_usage_key(library.library_key, entity.component)
         elif hasattr(entity, "container"):
