@@ -43,6 +43,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         # Removed flags — provide clear error messages for operators with old automation.
+         parser.add_argument(
+            "--experimental",
+            action="store_true",
+            default=False,
+            help="(Removed) reindex_studio is no longer experimental.",
+        )
         parser.add_argument(
             "--reset",
             action="store_true",
@@ -84,6 +90,11 @@ class Command(BaseCommand):
             log.warning(
                 "The --incremental flag has been removed. "
                 "Incremental population is now the default behavior of this command."
+            )
+        if options["experimental"]:
+            log.warning(
+                "The --experimental flag has been removed. "
+                "reindex_studio is now a stable command, so the flag is no longer necessary."
             )
 
         result = rebuild_index_incremental.delay()
