@@ -195,7 +195,7 @@ class ObjectTagOrgView(ObjectTagView):
             user.username, COURSES_VIEW_COURSE.identifier, str(course_key)
         ):
             raise PermissionDenied("You do not have permission to view object tags.")
-        elif not should_use_authz:
+        if not should_use_authz:
             # Fall back to parent implementation
             super().ensure_has_view_object_tag_permission(user, taxonomy, object_id)
 
@@ -213,7 +213,7 @@ class ObjectTagOrgView(ObjectTagView):
             user.username, COURSES_MANAGE_TAGS.identifier, str(course_key)
         ):
             raise PermissionDenied("You do not have permission to manage object tags.")
-        elif not should_use_authz:
+        if not should_use_authz:
             # Fall back to parent implementation
             super().ensure_user_has_can_tag_object_permissions(user, tags_data, object_id)
 
