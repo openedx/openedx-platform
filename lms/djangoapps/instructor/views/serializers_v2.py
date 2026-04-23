@@ -479,12 +479,14 @@ class CourseInformationSerializerV2(serializers.Serializer):
     def get_admin_console_url(self, data):
         """Get admin console URL."""
         course_key = data['course'].id
+        request = data['request']
+        has_instructor_access = has_access(request.user, 'instructor', data['course'])
         mfe_base_url = configuration_helpers.get_value_for_org(
             course_key.org,
             'ADMIN_CONSOLE_MICROFRONTEND_URL',
             getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
         )
-        if not mfe_base_url:
+        if not mfe_base_url or not has_instructor_access:
             return None
 
         return f'{mfe_base_url}/authz'
