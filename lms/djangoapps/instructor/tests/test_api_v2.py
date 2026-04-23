@@ -180,6 +180,19 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         assert data['studio_grading_url'] == f'http://localhost:2001/authoring/course/{self.course.id}/settings/grading'
         assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
 
+    def test_admin_console_url_requires_instructor_access(self):
+        """
+        Test that the admin console URL is only available to users with instructor access.
+        """
+        # data researcher has access to course but is not an instructor
+        self.client.force_authenticate(user=self.data_researcher)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'admin_console_url' in response.data
+        data = response.data
+        assert data['admin_console_url'] is None
+
     def test_get_course_metadata_as_staff(self):
         """
         Test that course staff can retrieve course metadata.

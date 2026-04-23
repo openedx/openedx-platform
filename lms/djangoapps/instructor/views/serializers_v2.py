@@ -79,7 +79,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
         help_text="URL to the Studio grading settings page for the course (null if not configured)"
     )
     admin_console_url = serializers.SerializerMethodField(
-        help_text="URL to the admin console"
+        help_text="URL to the admin console (requires instructor access and MFE configuration, null if not accessible)"
     )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
@@ -477,7 +477,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
         return f'{mfe_base_url}/course/{course_key}/settings/grading'
 
     def get_admin_console_url(self, data):
-        """Get admin console URL."""
+        """Get admin console URL (requires instructor access and MFE configuration, null if not accessible)."""
         course_key = data['course'].id
         request = data['request']
         has_instructor_access = has_access(request.user, 'instructor', data['course'])
@@ -488,7 +488,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
         )
         if not mfe_base_url or not has_instructor_access:
             return None
-
         return f'{mfe_base_url}/authz'
 
     def get_disable_buttons(self, data):
