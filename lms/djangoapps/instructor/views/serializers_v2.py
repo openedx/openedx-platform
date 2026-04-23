@@ -471,9 +471,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
             'COURSE_AUTHORING_MICROFRONTEND_URL',
             getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
         )
-        if mfe_base_url:
-            return f'{mfe_base_url}/authoring/course/{course_key}/settings/grading'
-        return None
+        if not mfe_base_url:
+            return None
+        return f'{mfe_base_url}/course/{course_key}/settings/grading'
 
     def get_admin_console_url(self, data):
         """Get admin console URL."""
@@ -483,9 +483,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
             'ADMIN_CONSOLE_MICROFRONTEND_URL',
             getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
         )
-        if mfe_base_url:
-            return f'{mfe_base_url}/admin-console/authz'
-        return mfe_base_url
+        if not mfe_base_url:
+            return None
+
+        return f'{mfe_base_url}/authz'
 
     def get_disable_buttons(self, data):
         """Check if buttons should be disabled for large courses."""
