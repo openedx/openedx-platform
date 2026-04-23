@@ -119,6 +119,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         return reverse('instructor_api_v2:course_metadata', kwargs={'course_id': course_id})
 
     @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='http://localhost:2001')
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025')
     def test_get_course_metadata_as_instructor(self):
         """
         Test that an instructor can retrieve comprehensive course metadata.
@@ -130,52 +131,54 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         data = response.data
 
         # Verify basic course information
-        self.assertEqual(data['course_id'], str(self.course_key))  # noqa: PT009
-        self.assertEqual(data['display_name'], 'Demonstration Course')  # noqa: PT009
-        self.assertEqual(data['org'], 'edX')  # noqa: PT009
-        self.assertEqual(data['course_number'], 'DemoX')  # noqa: PT009
-        self.assertEqual(data['course_run'], 'Demo_Course')  # noqa: PT009
-        self.assertEqual(data['pacing'], 'instructor')  # noqa: PT009
+        assert data['course_id'] == str(self.course_key)
+        assert data['display_name'] == 'Demonstration Course'
+        assert data['org'] == 'edX'
+        assert data['course_number'] == 'DemoX'
+        assert data['course_run'] == 'Demo_Course'
+        assert data['pacing'] == 'instructor'
 
         # Verify enrollment counts structure
-        self.assertIn('enrollment_counts', data)  # noqa: PT009
-        self.assertIn('total', data['enrollment_counts'])  # noqa: PT009
-        self.assertIn('total_enrollment', data)  # noqa: PT009
-        self.assertGreaterEqual(data['total_enrollment'], 3)  # noqa: PT009
+        assert 'enrollment_counts' in data
+        assert 'total' in data['enrollment_counts']
+        assert 'total_enrollment' in data
+        assert data['total_enrollment'] >= 3
 
         # Verify role-based enrollment counts are present
-        self.assertIn('learner_count', data)  # noqa: PT009
-        self.assertIn('staff_count', data)  # noqa: PT009
-        self.assertEqual(data['total_enrollment'], data['learner_count'] + data['staff_count'])  # noqa: PT009
+        assert 'learner_count' in data
+        assert 'staff_count' in data
+        assert data['total_enrollment'] == data['learner_count'] + data['staff_count']
 
         # Verify permissions structure
-        self.assertIn('permissions', data)  # noqa: PT009
+        assert 'permissions' in data
         permissions_data = data['permissions']
-        self.assertIn('admin', permissions_data)  # noqa: PT009
-        self.assertIn('instructor', permissions_data)  # noqa: PT009
-        self.assertIn('staff', permissions_data)  # noqa: PT009
-        self.assertIn('forum_admin', permissions_data)  # noqa: PT009
-        self.assertIn('finance_admin', permissions_data)  # noqa: PT009
-        self.assertIn('sales_admin', permissions_data)  # noqa: PT009
-        self.assertIn('data_researcher', permissions_data)  # noqa: PT009
+        assert 'admin' in permissions_data
+        assert 'instructor' in permissions_data
+        assert 'staff' in permissions_data
+        assert 'forum_admin' in permissions_data
+        assert 'finance_admin' in permissions_data
+        assert 'sales_admin' in permissions_data
+        assert 'data_researcher' in permissions_data
 
         # Verify sections structure
-        self.assertIn('tabs', data)  # noqa: PT009
-        self.assertIsInstance(data['tabs'], list)  # noqa: PT009
+        assert 'tabs' in data
+        assert isinstance(data['tabs'], list)
 
         # Verify other metadata fields
-        self.assertIn('num_sections', data)  # noqa: PT009
-        self.assertIn('tabs', data)  # noqa: PT009
-        self.assertIn('grade_cutoffs', data)  # noqa: PT009
-        self.assertIn('course_errors', data)  # noqa: PT009
-        self.assertIn('studio_url', data)  # noqa: PT009
-        self.assertIn('disable_buttons', data)  # noqa: PT009
-        self.assertIn('has_started', data)  # noqa: PT009
-        self.assertIn('has_ended', data)  # noqa: PT009
-        self.assertIn('analytics_dashboard_message', data)  # noqa: PT009
-
+        assert 'num_sections' in data
+        assert 'tabs' in data
+        assert 'grade_cutoffs' in data
+        assert 'course_errors' in data
+        assert 'studio_url' in data
+        assert 'disable_buttons' in data
+        assert 'has_started' in data
+        assert 'has_ended' in data
+        assert 'analytics_dashboard_message' in data
         assert 'studio_grading_url' in data
+        assert 'admin_console_url' in data
+
         assert data['studio_grading_url'] == f'http://localhost:2001/authoring/course/{self.course.id}/settings/grading'
+        assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
 
     def test_get_course_metadata_as_staff(self):
         """

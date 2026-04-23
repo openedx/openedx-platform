@@ -78,6 +78,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
     studio_grading_url = serializers.SerializerMethodField(
         help_text="URL to the Studio grading settings page for the course (null if not configured)"
     )
+    admin_console_url = serializers.SerializerMethodField(
+        help_text="URL to the admin console"
+    )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
     disable_buttons = serializers.SerializerMethodField(
@@ -471,6 +474,18 @@ class CourseInformationSerializerV2(serializers.Serializer):
         if mfe_base_url:
             return f'{mfe_base_url}/authoring/course/{course_key}/settings/grading'
         return None
+
+    def get_admin_console_url(self, data):
+        """Get admin console URL."""
+        course_key = data['course'].id
+        mfe_base_url = configuration_helpers.get_value_for_org(
+            course_key.org,
+            'ADMIN_CONSOLE_MICROFRONTEND_URL',
+            getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
+        )
+        if mfe_base_url:
+            return f'{mfe_base_url}/admin-console/authz'
+        return mfe_base_url
 
     def get_disable_buttons(self, data):
         """Check if buttons should be disabled for large courses."""

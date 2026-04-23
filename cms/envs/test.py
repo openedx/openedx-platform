@@ -97,6 +97,7 @@ CMS_BASE = "localhost:8001"
 CMS_ROOT_URL = f"http://{CMS_BASE}"
 
 COURSE_AUTHORING_MICROFRONTEND_URL = "http://course-authoring-mfe"
+ADMIN_CONSOLE_MICROFRONTEND_URL = "http://admin-console-mfe"
 
 CACHES = {
     # This is the cache used for most things.
