@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         # Removed flags — provide clear error messages for operators with old automation.
-         parser.add_argument(
+        parser.add_argument(
             "--experimental",
             action="store_true",
             default=False,
