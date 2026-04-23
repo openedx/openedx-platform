@@ -1,43 +1,100 @@
 """
-Command to build or re-build the search index for courses (in Studio, i.e. Draft
-mode), in Meilisearch.
+Command to queue incremental population of the Studio Meilisearch search index.
+
+Index creation, configuration, and schema reconciliation are handled
+automatically via the post_migrate signal. This command is solely
+responsible for enqueuing the population task in Celery.
 
 See also cms/djangoapps/contentstore/management/commands/reindex_course.py which
 indexes LMS (published) courses in ElasticSearch.
 """
+
+import logging
+
+from django.conf import settings
 from django.core.management import BaseCommand, CommandError
 
 from ... import api
+from ...tasks import rebuild_index_incremental
+
+log = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
     """
-    Build or re-build the Meilisearch search index for courses and libraries in Studio.
+    Add all course and library content to the Studio search index.
 
-    This is separate from LMS search features like courseware search or forum search.
+    This enqueues a Celery task that incrementally indexes all courses and
+    libraries. Progress is tracked via IncrementalIndexCompleted, so the task
+    can safely resume if interrupted.
+
+    Index creation and configuration are handled by post_migrate reconciliation
+    (runs automatically on ./manage.py cms migrate).
+
+    If it's ever necessary to reset the incremental indexing state (force
+    the full re-index process to start from the beginning), use:
+
+    ./manage.py cms shell -c 'IncrementalIndexCompleted.objects.all().delete()'
+
+    This will delete all the IncrementalIndexCompleted records and will help in restarting the index population.
     """
 
-    # TODO: improve this - see https://github.com/openedx/edx-platform/issues/36868
+    help = "Add all course and library content to the Studio search index."
 
     def add_arguments(self, parser):
-        parser.add_argument("--experimental", action="store_true")  # kept for compatibility but ignored.
-        parser.add_argument("--reset", action="store_true")
-        parser.add_argument("--init", action="store_true")
-        parser.add_argument("--incremental", action="store_true")
-        parser.set_defaults(experimental=False, reset=False, init=False, incremental=False)
+        # Removed flags — provide clear error messages for operators with old automation.
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            default=False,
+            help="(Removed) Index reset is now handled by post_migrate reconciliation.",
+        )
+        parser.add_argument(
+            "--init",
+            action="store_true",
+            default=False,
+            help="(Removed) Index initialization is now handled by post_migrate reconciliation.",
+        )
+        parser.add_argument(
+            "--incremental",
+            action="store_true",
+            default=False,
+            help="(Removed) Incremental is now the default and only population mode.",
+        )
 
     def handle(self, *args, **options):
-        """
-        Build a new search index for Studio, containing content from courses and libraries
-        """
         if not api.is_meilisearch_enabled():
             raise CommandError("Meilisearch is not enabled. Please set MEILISEARCH_ENABLED to True in your settings.")
 
         if options["reset"]:
-            api.reset_index(self.stdout.write)
-        elif options["init"]:
-            api.init_index(self.stdout.write, self.stderr.write)
-        elif options["incremental"]:
-            api.rebuild_index(self.stdout.write, incremental=True)
+            raise CommandError(
+                "The --reset flag has been removed. "
+                "Index reset is now handled automatically by post_migrate reconciliation. "
+                "Run: ./manage.py cms migrate"
+            )
+
+        if options["init"]:
+            raise CommandError(
+                "The --init flag has been removed. "
+                "Index initialization is now handled automatically by post_migrate reconciliation. "
+                "Run: ./manage.py cms migrate"
+            )
+
+        if options["incremental"]:
+            log.warning(
+                "The --incremental flag has been removed. "
+                "Incremental population is now the default behavior of this command."
+            )
+
+        result = rebuild_index_incremental.delay()
+
+        if settings.CELERY_ALWAYS_EAGER:
+            self.stdout.write("Indexing complete!")
         else:
-            api.rebuild_index(self.stdout.write)
+            self.stdout.write(
+                f"Studio search index population has been queued (task_id={result.id}). "
+                "Population will run incrementally in a Celery worker. "
+                "Monitor progress in Celery worker logs. "
+                "In order to reset the incremental indexing state, please run: "
+                "./manage.py cms shell -c 'IncrementalIndexCompleted.objects.all().delete()'"
+            )

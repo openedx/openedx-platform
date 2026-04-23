@@ -184,3 +184,36 @@ def delete_course_index_docs(course_key_str: str) -> None:
 
     # Delete children index data for course blocks.
     api.delete_docs_with_context_key(course_key)
+
+
+@shared_task(
+    base=LoggedTask,
+    autoretry_for=(MeilisearchError, ConnectionError),
+    max_retries=3,
+    retry_backoff=True,
+)
+@set_code_owner_attribute
+def rebuild_index_incremental() -> None:
+    """
+    Celery task to incrementally populate the Studio Meilisearch index.
+
+    Uses IncrementalIndexCompleted to track progress and resume from where
+    it left off if interrupted. Safe to call multiple times — already-indexed
+    contexts are skipped.
+
+    If a rebuild is already in progress (lock held), the task exits gracefully.
+    """
+    log.info("Starting incremental Studio search index population...")
+
+    try:
+        api.rebuild_index(status_cb=log.info, incremental=True)
+    except RuntimeError as exc:
+        # rebuild_index -> _using_temp_index or lock contention
+        if "already in progress" in str(exc).lower():
+            log.warning(
+                "Studio index population skipped: a rebuild is already in progress. Will retry later if re-enqueued."
+            )
+            return
+        raise
+
+    log.info("Incremental Studio search index population complete.")
