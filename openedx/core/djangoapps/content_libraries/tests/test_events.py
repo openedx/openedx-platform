@@ -1,16 +1,23 @@
 """
 Tests for openedx_content-based Content Libraries
 """
+
+from unittest import mock
+
+from django.db import transaction
 from opaque_keys.edx.locator import (
     LibraryCollectionLocator,
     LibraryContainerLocator,
     LibraryLocatorV2,
     LibraryUsageLocatorV2,
 )
+from openedx_content import api as content_api
+from openedx_content import models_api as content_models
 from openedx_events.content_authoring.signals import (
     CONTENT_LIBRARY_CREATED,
     CONTENT_LIBRARY_DELETED,
     CONTENT_LIBRARY_UPDATED,
+    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_BLOCK_CREATED,
     LIBRARY_BLOCK_DELETED,
     LIBRARY_BLOCK_PUBLISHED,
@@ -23,6 +30,7 @@ from openedx_events.content_authoring.signals import (
     LIBRARY_CONTAINER_PUBLISHED,
     LIBRARY_CONTAINER_UPDATED,
     ContentLibraryData,
+    ContentObjectChangedData,
     LibraryBlockData,
     LibraryCollectionData,
     LibraryContainerData,
@@ -31,14 +39,16 @@ from openedx_events.content_authoring.signals import (
 from openedx.core.djangoapps.content_libraries.tests.base import ContentLibrariesRestApiTest
 from openedx.core.djangolib.testing.utils import skip_unless_cms
 
+from .. import api
 
-@skip_unless_cms
-class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
+
+class BaseEventsTestCase(ContentLibrariesRestApiTest):
     """
-    Event tests for openedx_content-based Content Libraries
+    Base class for testing library events
 
     These tests use the REST API, which in turn relies on the Python API.
     """
+
     # Note: we assume all events are already enabled, as they should be. We do
     # NOT use OpenEdxEventsTestMixin, because it disables any events that you
     # don't explicitly enable and does so in a way that interferes with other
@@ -47,6 +57,7 @@ class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
         CONTENT_LIBRARY_CREATED,
         CONTENT_LIBRARY_DELETED,
         CONTENT_LIBRARY_UPDATED,
+        CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
         LIBRARY_BLOCK_CREATED,
         LIBRARY_BLOCK_DELETED,
         LIBRARY_BLOCK_UPDATED,
@@ -108,6 +119,13 @@ class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
         if len(self.new_events) > 0:
             raise AssertionError(f"Events were emitted but not expected: {self.new_events}")
         self.clear_events()
+
+
+@skip_unless_cms
+class ContentLibrariesEventsTestCase(BaseEventsTestCase):
+    """
+    Event tests for openedx_content-based Content Libraries
+    """
 
     ############################## Libraries ##################################
 
@@ -520,10 +538,19 @@ class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
         # Restore the unit
         self._restore_container(container_data["id"])
 
-        self.expect_new_events({
-            "signal": LIBRARY_CONTAINER_CREATED,
-            "library_container": LibraryContainerData(container_key),
-        })
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_CONTAINER_CREATED,
+                "library_container": LibraryContainerData(container_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(container_key),
+                    changes=["collections", "tags"],
+                ),
+            },
+        )
 
     def test_restore_unit_via_revert(self) -> None:
         """
@@ -592,4 +619,549 @@ class ContentLibrariesEventsTestCase(ContentLibrariesRestApiTest):
             "library_collection": LibraryCollectionData(collection_key),
         })
 
-    # TODO: move more of the event-related collection tests from test_api.py to here, and convert them to use REST APIs
+@skip_unless_cms
+class ContentLibraryContainerEventsTest(BaseEventsTestCase):
+    """
+    Event tests for container operations: signals emitted when components and
+    containers are created, updated, deleted, and associated with one another.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+
+        # Create Units
+        self.unit1 = api.create_container(self.lib1_key, content_models.Unit, 'unit-1', 'Unit 1', None)
+        self.unit2 = api.create_container(self.lib1_key, content_models.Unit, 'unit-2', 'Unit 2', None)
+        self.unit3 = api.create_container(self.lib1_key, content_models.Unit, 'unit-3', 'Unit 3', None)
+
+        # Create Subsections
+        self.subsection1 = api.create_container(
+            self.lib1_key, content_models.Subsection, 'subsection-1', 'Subsection 1', None,
+        )
+        self.subsection2 = api.create_container(
+            self.lib1_key, content_models.Subsection, 'subsection-2', 'Subsection 2', None,
+        )
+
+        # Create Sections
+        self.section1 = api.create_container(
+            self.lib1_key, content_models.Section, 'section-1', 'Section 1', None,
+        )
+        self.section2 = api.create_container(
+            self.lib1_key, content_models.Section, 'section-2', 'Section 2', None,
+        )
+
+        # Create XBlocks
+        self.problem_block = self._add_block_to_library(self.lib1_key, "problem", "problem1")
+        self.problem_block_usage_key = LibraryUsageLocatorV2.from_string(self.problem_block["id"])
+        self.problem_block_2 = self._add_block_to_library(self.lib1_key, "problem", "problem2")
+        self.html_block = self._add_block_to_library(self.lib1_key, "html", "html1")
+        self.html_block_usage_key = LibraryUsageLocatorV2.from_string(self.html_block["id"])
+
+        # Add content to units
+        api.update_container_children(
+            self.unit1.container_key, [self.problem_block_usage_key, self.html_block_usage_key], None,
+        )
+        api.update_container_children(
+            self.unit2.container_key, [self.html_block_usage_key], None,
+        )
+
+        # Add units to subsections
+        api.update_container_children(
+            self.subsection1.container_key, [self.unit1.container_key, self.unit2.container_key], None,
+        )
+        api.update_container_children(
+            self.subsection2.container_key, [self.unit1.container_key], None,
+        )
+
+        # Add subsections to sections
+        api.update_container_children(
+            self.section1.container_key, [self.subsection1.container_key, self.subsection2.container_key], None,
+        )
+        api.update_container_children(
+            self.section2.container_key, [self.subsection1.container_key], None,
+        )
+
+        # Clear events emitted during setUp
+        self.clear_events()
+
+    ############################## Component update signals ##################################
+
+    def test_container_updated_when_component_deleted(self) -> None:
+        api.delete_library_block(self.html_block_usage_key)
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_DELETED,
+                "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit1.container_key, background=True,
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit2.container_key, background=True,
+                ),
+            },
+        )
+
+    def test_container_updated_when_component_restored(self) -> None:
+        api.delete_library_block(self.html_block_usage_key)
+        self.clear_events()
+
+        api.restore_library_block(self.html_block_usage_key)
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_CREATED,
+                "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.html_block_usage_key),
+                    changes=["collections", "tags", "units"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit1.container_key, background=True,
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit2.container_key, background=True,
+                ),
+            },
+        )
+
+    def test_container_updated_when_component_olx_updated(self) -> None:
+        self._set_library_block_olx(self.html_block_usage_key, "<html><b>Hello world!</b></html>")
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_UPDATED,
+                "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit1.container_key, background=True,
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit2.container_key, background=True,
+                ),
+            },
+        )
+
+    def test_container_updated_when_component_fields_updated(self) -> None:
+        block_olx = "<html><b>Hello world!</b></html>"
+        self._set_library_block_fields(self.html_block_usage_key, {"data": block_olx, "metadata": {}})
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_UPDATED,
+                "library_block": LibraryBlockData(self.lib1_key, self.html_block_usage_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit1.container_key, background=True,
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit2.container_key, background=True,
+                ),
+            },
+        )
+
+    ############################## Container update signals ##################################
+
+    def test_container_updated_when_unit_updated(self) -> None:
+        self._update_container(self.unit1.container_key, 'New Unit Display Name')
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.problem_block_usage_key), changes=["units"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.html_block_usage_key), changes=["units"],
+                ),
+            },
+        )
+
+    def test_container_updated_when_subsection_updated(self) -> None:
+        self._update_container(self.subsection1.container_key, 'New Subsection Display Name')
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.unit1.container_key), changes=["subsections"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.unit2.container_key), changes=["subsections"],
+                ),
+            },
+        )
+
+    def test_container_updated_when_section_updated(self) -> None:
+        self._update_container(self.section1.container_key, 'New Section Display Name')
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section1.container_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.subsection1.container_key), changes=["sections"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.subsection2.container_key), changes=["sections"],
+                ),
+            },
+        )
+
+    ############################## Association change signals ##################################
+
+    def test_associations_changed_when_component_removed(self) -> None:
+        html_block_1 = self._add_block_to_library(self.lib1_key, "html", "html3")
+        api.update_container_children(
+            self.unit2.container_key,
+            [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.clear_events()
+
+        api.update_container_children(
+            self.unit2.container_key,
+            [LibraryUsageLocatorV2.from_string(html_block_1["id"])],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=html_block_1["id"], changes=["units"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+        )
+
+    def test_associations_changed_when_unit_removed(self) -> None:
+        unit4 = api.create_container(self.lib1_key, content_models.Unit, 'unit-4', 'Unit 4', None)
+        api.update_container_children(
+            self.subsection2.container_key,
+            [unit4.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.clear_events()
+
+        api.update_container_children(
+            self.subsection2.container_key,
+            [unit4.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(unit4.container_key), changes=["subsections"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+        )
+
+    def test_associations_changed_when_subsection_removed(self) -> None:
+        subsection3 = api.create_container(
+            self.lib1_key, content_models.Subsection, 'subsection-3', 'Subsection 3', None,
+        )
+        api.update_container_children(
+            self.section2.container_key,
+            [subsection3.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.clear_events()
+
+        api.update_container_children(
+            self.section2.container_key,
+            [subsection3.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.REMOVE,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(subsection3.container_key), changes=["sections"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
+        )
+
+    def test_associations_changed_when_components_added(self) -> None:
+        html_block_1 = self._add_block_to_library(self.lib1_key, "html", "html4")
+        html_block_2 = self._add_block_to_library(self.lib1_key, "html", "html5")
+        self.clear_events()
+
+        api.update_container_children(
+            self.unit2.container_key,
+            [
+                LibraryUsageLocatorV2.from_string(html_block_1["id"]),
+                LibraryUsageLocatorV2.from_string(html_block_2["id"]),
+            ],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=html_block_1["id"], changes=["units"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=html_block_2["id"], changes=["units"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit2.container_key),
+            },
+        )
+
+    def test_associations_changed_when_units_added(self) -> None:
+        unit4 = api.create_container(self.lib1_key, content_models.Unit, 'unit-4', 'Unit 4', None)
+        unit5 = api.create_container(self.lib1_key, content_models.Unit, 'unit-5', 'Unit 5', None)
+        self.clear_events()
+
+        api.update_container_children(
+            self.subsection2.container_key,
+            [unit4.container_key, unit5.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(unit4.container_key), changes=["subsections"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(unit5.container_key), changes=["subsections"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.subsection2.container_key),
+            },
+        )
+
+    def test_associations_changed_when_subsections_added(self) -> None:
+        subsection3 = api.create_container(
+            self.lib1_key, content_models.Subsection, 'subsection-3', 'Subsection 3', None,
+        )
+        subsection4 = api.create_container(
+            self.lib1_key, content_models.Subsection, 'subsection-4', 'Subsection 4', None,
+        )
+        self.clear_events()
+
+        api.update_container_children(
+            self.section2.container_key,
+            [subsection3.container_key, subsection4.container_key],
+            None,
+            entities_action=content_api.ChildrenEntitiesAction.APPEND,
+        )
+        self.expect_new_events(
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(subsection3.container_key), changes=["sections"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(subsection4.container_key), changes=["sections"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.section2.container_key),
+            },
+        )
+
+    ############################## Revert signals ##################################
+
+    def test_container_updated_when_component_delete_reverted(self) -> None:
+        """
+        When a component is deleted and then the delete is reverted, signals
+        will be emitted to update any containing containers.
+        """
+        problem_block_2_key = LibraryUsageLocatorV2.from_string(self.problem_block_2["id"])
+        api.update_container_children(self.unit3.container_key, [problem_block_2_key], user_id=None)
+        api.publish_changes(self.lib1_key)
+        api.delete_library_block(problem_block_2_key)
+        self.clear_events()
+
+        api.revert_changes(self.lib1_key)
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_CREATED,
+                "library_block": LibraryBlockData(library_key=self.lib1_key, usage_key=problem_block_2_key),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=self.unit3.container_key),
+            },
+        )
+
+    ############################## Transaction/signal correctness ##################################
+
+    def test_no_signal_on_set_block_olx_rollback(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED is NOT emitted when set_library_block_olx is called
+        within a transaction that is later rolled back.
+        """
+        try:
+            with transaction.atomic():
+                api.set_library_block_olx(
+                    self.problem_block_usage_key,
+                    "<problem>Updated inside rolled-back transaction</problem>",
+                )
+                raise RuntimeError("Force rollback")
+        except RuntimeError:
+            pass
+
+        self.expect_new_events()
+
+    def test_signal_emitted_when_set_block_olx_succeeds(self) -> None:
+        """
+        LIBRARY_BLOCK_UPDATED IS emitted when set_library_block_olx completes
+        successfully.
+        """
+        api.set_library_block_olx(
+            self.problem_block_usage_key,
+            "<problem>Updated successfully</problem>",
+        )
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_BLOCK_UPDATED,
+                "library_block": LibraryBlockData(
+                    library_key=self.lib1_key,
+                    usage_key=self.problem_block_usage_key,
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(
+                    container_key=self.unit1.container_key, background=True,
+                ),
+            },
+        )
+
+    def test_no_signals_on_import_container_failure(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard fails mid-way, none of
+        LIBRARY_CONTAINER_CREATED, LIBRARY_BLOCK_CREATED, or LIBRARY_BLOCK_UPDATED
+        are emitted, so the search index is not polluted with orphan entries.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+
+        with mock.patch(
+            "openedx.core.djangoapps.content_libraries.api.blocks.update_container_children",
+            side_effect=RuntimeError("Simulated failure"),
+        ), self.assertRaises(RuntimeError):  # noqa: PT027
+            api.import_staged_content_from_user_clipboard(self.lib1_key, self.user)
+
+        self.expect_new_events()
+
+    def test_signals_emitted_on_import_container_success(self) -> None:
+        """
+        When import_staged_content_from_user_clipboard succeeds, LIBRARY_CONTAINER_CREATED
+        is emitted for the new container, along with association change events for its children.
+        """
+        api.copy_container(self.unit1.container_key, self.user.id)
+        new_container = api.import_staged_content_from_user_clipboard(self.lib1_key, self.user)
+        new_container_key = new_container.container_key  # type: ignore[attr-defined]
+        self.expect_new_events(
+            {
+                "signal": LIBRARY_CONTAINER_CREATED,
+                "library_container": LibraryContainerData(container_key=new_container_key),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.problem_block_usage_key), changes=["units"],
+                ),
+            },
+            {
+                "signal": CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
+                "content_object": ContentObjectChangedData(
+                    object_id=str(self.html_block_usage_key), changes=["units"],
+                ),
+            },
+            {
+                "signal": LIBRARY_CONTAINER_UPDATED,
+                "library_container": LibraryContainerData(container_key=new_container_key),
+            },
+        )

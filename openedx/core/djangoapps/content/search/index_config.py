@@ -1,6 +1,9 @@
 """Configuration for the search index."""
 from .documents import Fields
 
+# The Meilisearch primary key for all documents in the index.
+INDEX_PRIMARY_KEY = Fields.id
+
 INDEX_DISTINCT_ATTRIBUTE = "usage_key"
 
 # Mark which attributes can be used for filtering/faceted search:

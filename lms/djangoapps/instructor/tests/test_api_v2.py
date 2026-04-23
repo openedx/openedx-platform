@@ -2,7 +2,7 @@
 Unit tests for instructor API v2 endpoints.
 """
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -564,8 +564,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         for tab in tabs:
             self.assertFalse(tab['url'].startswith('None'), f"Tab URL should not start with 'None': {tab['url']}")  # noqa: PT009  # pylint: disable=line-too-long
             self.assertTrue(  # noqa: PT009
-                tab['url'].startswith('/instructor/'),
-                f"Tab URL should start with '/instructor/': {tab['url']}"
+                tab['url'].startswith(f'/{self.course.id}/'),
+                f"Tab URL should start with '/{self.course.id}/': {tab['url']}"
             )
 
     def test_pacing_self_for_self_paced_course(self):
@@ -597,26 +597,26 @@ class BuildTabUrlTest(SimpleTestCase):
     going through the full API stack.
     """
 
-    def _build(self, setting_name, *parts):
-        return CourseInformationSerializerV2._build_tab_url(setting_name, *parts)  # pylint: disable=protected-access
+    def _build(self, setting_name, *parts, strip_url=True):
+        return CourseInformationSerializerV2._build_tab_url(setting_name, *parts, strip_url=strip_url)  # pylint: disable=protected-access
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard')
     def test_joins_base_and_path_parts(self):
         """Parts are joined with '/' separators."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard/')
     def test_strips_trailing_slash_from_base(self):
         """A trailing slash on the base URL does not produce a double slash."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', 'course-v1:edX+DemoX+Demo', 'grading')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
-    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003')
+    @override_settings(INSTRUCTOR_MICROFRONTEND_URL='http://localhost:2003/instructor-dashboard')
     def test_strips_slashes_from_path_parts(self):
         """Leading and trailing slashes on path parts are stripped before joining."""
-        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', '/instructor/', '/course-v1:edX+DemoX+Demo/', '/grading/')
-        self.assertEqual(result, 'http://localhost:2003/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        result = self._build('INSTRUCTOR_MICROFRONTEND_URL', '/course-v1:edX+DemoX+Demo/', '/grading/')
+        self.assertEqual(result, '/instructor-dashboard/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
     @override_settings(COMMUNICATIONS_MICROFRONTEND_URL=None)
     def test_logs_warning_and_returns_relative_url_when_setting_is_none(self):
@@ -633,15 +633,17 @@ class BuildTabUrlTest(SimpleTestCase):
     def test_logs_warning_when_setting_does_not_exist(self):
         """When the setting name is not defined at all, behavior matches the None case."""
         with self.assertLogs('lms.djangoapps.instructor.views.serializers_v2', level='WARNING') as cm:
-            result = self._build('NONEXISTENT_MFE_URL', 'instructor', 'course-v1:edX+DemoX+Demo', 'grading')
+            result = self._build('NONEXISTENT_MFE_URL', 'course-v1:edX+DemoX+Demo', 'grading')
 
         self.assertTrue(any('NONEXISTENT_MFE_URL is not configured' in msg for msg in cm.output))  # noqa: PT009
-        self.assertEqual(result, '/instructor/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
+        self.assertEqual(result, '/course-v1:edX+DemoX+Demo/grading')  # noqa: PT009
 
     @override_settings(COMMUNICATIONS_MICROFRONTEND_URL='http://localhost:1984/communications/')
     def test_base_with_subpath_and_trailing_slash(self):
         """Base URL with a subpath and trailing slash is joined cleanly."""
-        result = self._build('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', 'course-v1:edX+DemoX+Demo', 'bulk_email')
+        result = self._build(
+            "COMMUNICATIONS_MICROFRONTEND_URL", "courses", "course-v1:edX+DemoX+Demo", "bulk_email", strip_url=False
+        )
         self.assertEqual(result, 'http://localhost:1984/communications/courses/course-v1:edX+DemoX+Demo/bulk_email')  # noqa: PT009  # pylint: disable=line-too-long
 
 
@@ -1845,6 +1847,107 @@ class UnitExtensionsViewTest(SharedModuleStoreTestCase):
         self.assertIsInstance(extension['email'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_title'], str)  # noqa: PT009
         self.assertIsInstance(extension['unit_location'], str)  # noqa: PT009
+
+    def test_reset_extension_with_none_date_excluded(self):
+        """
+        Test that extensions reset via set_date_for_block(None) are excluded from results.
+        When an extension is reset, edx-when creates a UserDate with abs_date=None and rel_date=None,
+        causing actual_date to fall back to the original block due date. These reverted overrides
+        should not appear as granted extensions.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then reset it by passing None
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', None, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_reset_extension_matching_original_date_excluded(self):
+        """
+        Test that extensions whose override date matches the original due date are excluded.
+        When an extension is reset, the override reverts to the original subsection date,
+        making it appear as if there's an active extension when there isn't one.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then "reset" it by setting it back to the original date
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', original_due, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_reset_extension_excluded_with_block_id_filter(self):
+        """
+        Test that reset extensions are also excluded when filtering by block_id.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        # Grant extension to student1, then reset it
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', None, user=self.student1)
+
+        # Grant a real extension to student2
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        params = {'block_id': str(self.subsection.location)}
+        response = self.client.get(self._get_url(), params)
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 1
+        assert results[0]['username'] == 'student2'
+        assert results[0]['extended_due_date'] == extended.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+    def test_active_extensions_still_returned(self):
+        """
+        Test that legitimate extensions (date differs from original) are still returned.
+        """
+        original_due = datetime.now(UTC).replace(microsecond=0)
+        extended1 = original_due + timedelta(days=30)
+        extended2 = original_due + timedelta(days=60)
+        set_dates_for_course(self.course_key, [(self.subsection.location, {'due': original_due})])
+
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended1, user=self.student1)
+        set_date_for_block(self.course_key, self.subsection.location, 'due', extended2, user=self.student2)
+
+        self.client.force_authenticate(user=self.instructor)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == 200
+        results = response.data['results']
+        assert len(results) == 2
+        results_by_username = {r['username']: r for r in results}
+        assert results_by_username['student1']['extended_due_date'] == extended1.strftime('%Y-%m-%dT%H:%M:%SZ')
+        assert results_by_username['student2']['extended_due_date'] == extended2.strftime('%Y-%m-%dT%H:%M:%SZ')
+
 
 @ddt.ddt
 class IssuedCertificatesViewTest(SharedModuleStoreTestCase):

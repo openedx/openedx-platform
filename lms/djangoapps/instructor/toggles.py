@@ -28,6 +28,18 @@ DATA_DOWNLOAD_V2 = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.enable_data_download_v2'
 # .. toggle_tickets: PROD-1740
 OPTIMISED_IS_SMALL_COURSE = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.optimised_is_small_course', __name__)
 
+# .. toggle_name: instructor.legacy_instructor_dashboard
+# .. toggle_implementation: WaffleFlag
+# .. toggle_default: False
+# .. toggle_description: Waffle flag to enable the legacy instructor experience
+# .. toggle_use_cases: opt_out, temporary
+# .. toggle_creation_date: 2026-04-20
+# .. toggle_target_removal_date: 2026-11-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38432
+LEGACY_INSTRUCTOR_DASHBOARD = WaffleFlag(
+    f'{WAFFLE_FLAG_NAMESPACE}.legacy_instructor_dashboard', __name__
+)
+
 
 def data_download_v2_is_enabled():
     """
@@ -38,3 +50,10 @@ def data_download_v2_is_enabled():
 
 def use_optimised_is_small_course():
     return OPTIMISED_IS_SMALL_COURSE.is_enabled()
+
+
+def legacy_instructor_dashboard():
+    """
+    Check if legacy instructor dashboard experience is enabled.
+    """
+    return LEGACY_INSTRUCTOR_DASHBOARD.is_enabled()

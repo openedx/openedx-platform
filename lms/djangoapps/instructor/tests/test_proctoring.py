@@ -10,9 +10,11 @@ from django.conf import settings
 from django.urls import reverse
 from edx_proctoring.api import create_exam
 from edx_proctoring.backends.tests.test_backend import TestBackendProvider
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.roles import CourseInstructorRole, CourseStaffRole
 from common.djangoapps.student.tests.factories import AdminFactory
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
 )
@@ -21,6 +23,10 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
 @ddt.ddt
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestProctoringDashboardViews(SharedModuleStoreTestCase):
     """
     Check for Proctoring view on the new instructor dashboard

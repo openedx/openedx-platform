@@ -10,6 +10,7 @@ import pytz
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseRedirect, HttpResponseServerError
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import escape
 from django.utils.translation import gettext as _
@@ -58,7 +59,7 @@ from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disa
 from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
 
 from .. import permissions
-from ..toggles import data_download_v2_is_enabled
+from ..toggles import data_download_v2_is_enabled, legacy_instructor_dashboard
 from .tools import get_units_with_due_date, title_or_url
 
 log = logging.getLogger(__name__)
@@ -143,6 +144,13 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
 
     if not request.user.has_perm(permissions.VIEW_DASHBOARD, course_key):
         raise Http404()
+
+    # With new instructor dashboard we need to redirect them to it instead of rendering the old one,
+    # but we still want to check if they have access to view the dashboard before redirecting.
+    if not legacy_instructor_dashboard():
+        return redirect(get_instructor_dashboard_url(course_key))
+
+    # WHEN DEPR-38432 is picked up the legacy dashboard may be removed
 
     sections = []
     if access['staff']:
@@ -817,3 +825,11 @@ def is_ecommerce_course(course_key):
     """
     sku_count = len([mode.sku for mode in CourseMode.modes_for_course(course_key) if mode.sku])
     return sku_count > 0
+
+
+def get_instructor_dashboard_url(course_key: CourseKey) -> str:
+    """
+    Gets instructor microfrontend URL for the current course locator.
+    """
+    mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
+    return f'{mfe_base_url}/{course_key}/course_info'
