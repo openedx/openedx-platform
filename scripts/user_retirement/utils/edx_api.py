@@ -352,11 +352,19 @@ class LmsApi(BaseApiClient):
         return self._request("POST", api_url)
 
     @_retry_lms_api()
-    def bulk_cleanup_retirements(self, usernames):
+    def bulk_cleanup_retirements(self, usernames, redacted_username=None,
+                                 redacted_email=None, redacted_name=None):
         """
-        Deletes the retirements for all given usernames
+        Redacts and then deletes the retirements for all given usernames.
+        Optionally pass caller-defined redacted values for each PII field before deletion.
         """
-        data = {"usernames": usernames}
+        data = {'usernames': usernames}
+        if redacted_username is not None:
+            data['redacted_username'] = redacted_username
+        if redacted_email is not None:
+            data['redacted_email'] = redacted_email
+        if redacted_name is not None:
+            data['redacted_name'] = redacted_name
         api_url = self.get_api_url("api/user/v1/accounts/retirement_cleanup")
         return self._request("POST", api_url, json=data)
 

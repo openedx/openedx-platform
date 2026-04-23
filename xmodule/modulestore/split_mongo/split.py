@@ -2517,6 +2517,9 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             # The supplied UsageKey is of the wrong type, so it can't possibly be stored in this modulestore.
             raise ItemNotFoundError(usage_locator)
 
+        # Send pre delete event signal before deleting any item
+        self._emit_pre_item_delete_signal(usage_locator, user_id)
+
         with self.bulk_operations(usage_locator.course_key):
             original_structure = self._lookup_course(usage_locator.course_key).structure
             block_key = BlockKey.from_usage_key(usage_locator)

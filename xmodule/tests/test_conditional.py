@@ -20,7 +20,7 @@ from xmodule.tests import DATA_DIR, get_test_system, prepare_block_runtime
 from xmodule.tests.xml import XModuleXmlImportTest
 from xmodule.tests.xml import factories as xml
 from xmodule.validation import StudioValidationMessage
-from xmodule.x_module import AUTHOR_VIEW, STUDENT_VIEW
+from xmodule.x_module import AUTHOR_VIEW, STUDENT_VIEW, XModuleMixin
 
 ORG = 'test_org'
 COURSE = 'conditional'      # name of directory with course data
@@ -227,7 +227,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
             block.add_xml_to_node(child)
         self.test_system = get_test_system(add_get_block_overrides=True)
         self.test_system.add_block_as_child_node = add_block_as_child_node
-        self.modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'])
+        self.modulestore = XMLModuleStore(DATA_DIR, source_dirs=['conditional_and_poll'], xblock_mixins=(XModuleMixin,))
         courses = self.modulestore.get_courses()
         assert len(courses) == 1
         self.course = courses[0]

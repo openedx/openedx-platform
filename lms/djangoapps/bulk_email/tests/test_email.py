@@ -16,6 +16,7 @@ from django.core.management import call_command
 from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.translation import get_language
+from edx_toggles.toggles.testutils import override_waffle_flag
 from markupsafe import escape
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -29,6 +30,7 @@ from common.djangoapps.student.tests.factories import (
 )
 from lms.djangoapps.bulk_email.messages import ACEEmail
 from lms.djangoapps.bulk_email.tasks import _get_course_email_context, _get_source_address
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from lms.djangoapps.instructor_task.subtasks import update_subtask_status
 from openedx.core.djangoapps.course_groups.cohorts import add_user_to_cohort
 from openedx.core.djangoapps.course_groups.models import CourseCohort
@@ -62,6 +64,10 @@ class MockCourseEmailResult:
         return mock_update_subtask_status
 
 
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class EmailSendFromDashboardTestCase(SharedModuleStoreTestCase):
     """
     Test that emails send correctly.
