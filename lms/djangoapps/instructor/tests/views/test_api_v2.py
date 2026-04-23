@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from common.djangoapps.student.tests.factories import InstructorFactory, UserFactory
+from common.djangoapps.student.tests.factories import CourseEnrollmentFactory, InstructorFactory, UserFactory
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.instructor_task.models import InstructorTask
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -46,12 +46,30 @@ class LearnerViewTestCase(ModuleStoreTestCase):
             'student_id': self.student.id,
         })
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        self.assertEqual(data['username'], 'john_harvard')  # noqa: PT009
-        self.assertEqual(data['email'], 'john@example.com')  # noqa: PT009
-        self.assertEqual(data['full_name'], 'John Harvard')  # noqa: PT009
-        self.assertEqual(data['progress_url'], expected_progress_url)  # noqa: PT009
+        assert data['username'] == 'john_harvard'
+        assert data['email'] == 'john@example.com'
+        assert data['full_name'] == 'John Harvard'
+        assert data['progress_url'] == expected_progress_url
+        assert not data['is_enrolled']
+
+    def test_get_learner_by_username_enrolled(self):
+        """Test that is_enrolled is true for users enrolled in the course"""
+        CourseEnrollmentFactory(
+            is_active=True,
+            course_id=self.course.id,
+            user=self.student
+        )
+        url = reverse('instructor_api_v2:learner_detail', kwargs={
+            'course_id': str(self.course.id),
+            'email_or_username': self.student.username
+        })
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['is_enrolled']
 
     def test_get_learner_by_email(self):
         """Test retrieving learner info by email"""

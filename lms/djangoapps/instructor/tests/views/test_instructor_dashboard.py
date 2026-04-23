@@ -32,7 +32,7 @@ from lms.djangoapps.courseware.tabs import get_course_tab_list
 from lms.djangoapps.courseware.tests.factories import StudentModuleFactory
 from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 from lms.djangoapps.grades.config.waffle import WRITABLE_GRADEBOOK
-from lms.djangoapps.instructor.toggles import DATA_DOWNLOAD_V2
+from lms.djangoapps.instructor.toggles import DATA_DOWNLOAD_V2, LEGACY_INSTRUCTOR_DASHBOARD
 from lms.djangoapps.instructor.views.gradebook_api import calculate_page_info
 from openedx.core.djangoapps.course_groups.cohorts import set_course_cohorted
 from openedx.core.djangoapps.discussions.config.waffle import (
@@ -60,6 +60,10 @@ def intercept_renderer(path, context):
 
 
 @ddt.ddt
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssTestMixin):
     """
     Tests for the instructor dashboard (not legacy).

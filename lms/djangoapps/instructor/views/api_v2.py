@@ -96,6 +96,7 @@ from lms.djangoapps.instructor_task.api_helper import AlreadyRunningError, Queue
 from lms.djangoapps.instructor_task.models import InstructorTask, ReportStore
 from lms.djangoapps.instructor_task.tasks_helper.utils import upload_csv_file_to_report_store
 from openedx.core.djangoapps.course_groups.cohorts import is_course_cohorted
+from openedx.core.djangoapps.schedules.models import Schedule
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin
 from openedx.core.lib.courses import get_course_by_id
@@ -579,6 +580,27 @@ class UnitExtensionsView(ListAPIView):
                 UnitDueDateExtension.from_course_tuple(row, units_dict)
                 for row in query_data
                 if str(row[3]) in units_dict  # Ensure unit has due date
+            ]
+
+        # TODO: This filtering should ideally live in edx-when get_overrides_for_block/get_overrides_for_course.
+        # See https://github.com/openedx/edx-when/issues/353
+        # Filter out reset extensions (None dates or dates matching the original due date)
+        if unit_due_date_extensions:
+            version = getattr(course, 'course_version', None)
+            schedule = Schedule(start_date=course.start)
+            base_dates = edx_when_api.get_dates_for_course(
+                course.id, schedule=schedule, published_version=version
+            )
+            relevant_locations = {str(ext.unit_location) for ext in unit_due_date_extensions}
+            original_due_dates = {
+                str(loc): date
+                for (loc, field), date in base_dates.items()
+                if field == 'due' and str(loc) in relevant_locations
+            }
+            unit_due_date_extensions = [
+                ext for ext in unit_due_date_extensions
+                if ext.extended_due_date is not None
+                and ext.extended_due_date != original_due_dates.get(str(ext.unit_location))
             ]
 
         # Apply filters if any
@@ -1662,7 +1684,8 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
         "username": "john_harvard",
         "email": "john@example.com",
         "full_name": "John Harvard",
-        "progress_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/progress/john_harvard/"
+        "progress_url": "https://example.com/courses/course-v1:edX+DemoX+Demo_Course/progress/42/",
+        "is_enrolled": true
     }
     ```
     """
@@ -1732,6 +1755,7 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
             'email': student.email,
             'full_name': student.profile.name,
             'progress_url': progress_url,
+            'is_enrolled': CourseEnrollment.is_enrolled(student, course_key),
         }
 
         serializer = LearnerSerializer(learner_data)

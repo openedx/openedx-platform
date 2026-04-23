@@ -9,12 +9,14 @@ from unittest.mock import Mock, patch
 from django.core import mail
 from django.core.management import call_command
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 from opaque_keys.edx.keys import CourseKey
 
 from common.djangoapps.student.models import CourseEnrollment
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.bulk_email.models import BulkEmailFlag, Optout
 from lms.djangoapps.bulk_email.signals import force_optout_all
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from xmodule.modulestore.tests.django_utils import (
     ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
 )
@@ -22,6 +24,10 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 
 @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
+@override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestOptoutCourseEmailsBySignal(ModuleStoreTestCase):
     """
     Tests that the force_optout_all signal receiver opts the user out of course emails

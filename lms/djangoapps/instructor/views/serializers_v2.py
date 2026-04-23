@@ -6,6 +6,7 @@ Following REST best practices, serializers encapsulate most of the data processi
 """
 
 import logging
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.utils.html import escape
@@ -83,30 +84,43 @@ class CourseInformationSerializerV2(serializers.Serializer):
     )
 
     @staticmethod
-    def _build_tab_url(setting_name, *path_parts):
+    def _build_tab_url(setting_name, *path_parts, strip_url=True):
         """
         Build a tab URL from a Django setting and path parts.
 
-        Retrieves the base URL from `setting_name`, strips any trailing slash,
+        Retrieves the base URL from `setting_name`, optionally strips the protocol and host,
         then joins the provided path parts (stripping their leading/trailing
         slashes) with `/` separators — behaving like ``os.path.join`` for URLs.
 
         Logs a warning and falls back to a relative URL if the setting is unset.
 
+        Args:
+            setting_name: Django setting name containing the base URL
+            *path_parts: Path components to append to the base URL
+            strip_url: If True, strips protocol/host and uses only the path component.
+                      If False, uses the full URL. Defaults to True.
+
         Example:
 
-            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', 'instructor', course_key, 'grading')
-            # => 'http://localhost:2003/instructor/course-v1:.../grading'
+            _build_tab_url('INSTRUCTOR_MICROFRONTEND_URL', course_key, 'grading')
+            # => '/instructor-dashboard/course-v1:.../grading' (with strip_url=True)
 
-            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email')
+            _build_tab_url('COMMUNICATIONS_MICROFRONTEND_URL', 'courses', course_key, 'bulk_email', strip_url=False)
             # => 'http://localhost:1984/communications/courses/course-v1:.../bulk_email'
         """
         base_url = getattr(settings, setting_name, None)
         if base_url is None:
-            log.warning('%s is not configured.', setting_name)
-            base_url = ''
-        parts = [base_url.rstrip('/')] + [str(part).strip('/') for part in path_parts]
-        return '/'.join(parts)
+            log.warning("%s is not configured.", setting_name)
+            base_part = ""
+        elif strip_url and base_url:
+            # Extract only the path component from the URL
+            base_part = urlparse(base_url).path
+        else:
+            # Use the full URL as-is
+            base_part = base_url
+
+        parts = [base_part.rstrip("/")] + [str(part).strip("/") for part in path_parts]
+        return "/".join(parts)
 
     def get_tabs(self, data):
         """Get serialized course tabs."""
@@ -139,7 +153,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Info'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_info'
                     ),
@@ -150,7 +163,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Enrollments'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'enrollments'
                     ),
@@ -161,7 +173,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Course Team'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'course_team'
                     ),
@@ -172,7 +183,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Grading'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'grading'
                     ),
@@ -183,7 +193,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'title': _('Cohorts'),
                     'url': self._build_tab_url(
                         'INSTRUCTOR_MICROFRONTEND_URL',
-                        'instructor',
                         course_key,
                         'cohorts'
                     ),
@@ -192,17 +201,16 @@ class CourseInformationSerializerV2(serializers.Serializer):
             ])
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
-            tabs.append({
-                'tab_id': 'bulk_email',
-                'title': _('Bulk Email'),
-                'url': self._build_tab_url(
-                    'COMMUNICATIONS_MICROFRONTEND_URL',
-                    'courses',
-                    course_key,
-                    'bulk_email'
-                ),
-                'sort_order': 100,
-            })
+            tabs.append(
+                {
+                    "tab_id": "bulk_email",
+                    "title": _("Bulk Email"),
+                    "url": self._build_tab_url(
+                        "COMMUNICATIONS_MICROFRONTEND_URL", "courses", course_key, "bulk_email", strip_url=False
+                    ),
+                    "sort_order": 100,
+                }
+            )
 
         if access['instructor'] and is_enabled_for_course(course_key):
             tabs.append({
@@ -210,7 +218,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Date Extensions'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'date_extensions'
                 ),
@@ -223,7 +230,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Data Downloads'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'data_downloads'
                 ),
@@ -243,7 +249,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Open Responses'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'open_responses'
                 ),
@@ -260,7 +265,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Certificates'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'certificates'
                 ),
@@ -282,7 +286,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 'title': _('Special Exams'),
                 'url': self._build_tab_url(
                     'INSTRUCTOR_MICROFRONTEND_URL',
-                    'instructor',
                     course_key,
                     'special_exams'
                 ),
@@ -757,6 +760,9 @@ class LearnerSerializer(serializers.Serializer):
         allow_null=True,
         required=False,
         help_text="URL to learner's progress page"
+    )
+    is_enrolled = serializers.BooleanField(
+        help_text="Whether the learner has an active enrollment in the course"
     )
 
 

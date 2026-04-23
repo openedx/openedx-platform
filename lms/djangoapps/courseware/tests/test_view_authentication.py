@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import pytz
 from django.urls import reverse
+from edx_toggles.toggles.testutils import override_waffle_flag
 
 from common.djangoapps.student.tests.factories import (
     BetaTesterFactory,
@@ -21,6 +22,7 @@ from common.djangoapps.student.tests.factories import (
 )
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.tests.helpers import CourseAccessTestMixin, LoginEnrollmentTestCase
+from lms.djangoapps.instructor.toggles import LEGACY_INSTRUCTOR_DASHBOARD
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
@@ -92,7 +94,11 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
             for index in range(len(course.textbooks))
         ])
         for url in urls:
-            self.assert_request_status_code(200, url)
+            # Instructor dashboard returns 302 (MFE redirect) by default
+            if 'instructor' in url:
+                self.assert_request_status_code(302, url)
+            else:
+                self.assert_request_status_code(200, url)
 
         # The student progress tab is not accessible to a student
         # before launch, so the instructor view-as-student feature
@@ -100,6 +106,58 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         # TODO (vshnayder): If this is not the behavior we want, will need
         # to make access checking smarter and understand both the effective
         # user (the student), and the requesting user (the prof)
+        url = reverse(
+            'student_progress',
+            kwargs={
+                'course_id': str(course.id),
+                'student_id': self.enrolled_user.id,
+            }
+        )
+        self.assert_request_status_code(302, url)
+
+    def _check_staff_legacy(self, course):
+        """
+        Check that access is right for staff in course with legacy instructor dashboard enabled.
+        """
+        names = ['about_course', 'instructor_dashboard', 'progress']
+        urls = self._reverse_urls(names, course)
+        urls.extend([
+            reverse('book', kwargs={'course_id': str(course.id),
+                                    'book_index': index})
+            for index in range(len(course.textbooks))
+        ])
+        for url in urls:
+            # With legacy flag enabled, all URLs return 200 (instructor dashboard skips MFE redirect)
+            self.assert_request_status_code(200, url)
+
+        # The student progress tab behavior is affected by legacy flag in normal scenarios
+        url = reverse(
+            'student_progress',
+            kwargs={
+                'course_id': str(course.id),
+                'student_id': self.enrolled_user.id,
+            }
+        )
+        self.assert_request_status_code(200, url)
+
+    def _check_staff_legacy_dark_launch(self, course):
+        """
+        Check staff access during dark launch with legacy instructor dashboard enabled.
+        In dark launch scenarios, student progress URL still returns 302 even with legacy flag.
+        """
+        names = ['about_course', 'instructor_dashboard', 'progress']
+        urls = self._reverse_urls(names, course)
+        urls.extend([
+            reverse('book', kwargs={'course_id': str(course.id),
+                                    'book_index': index})
+            for index in range(len(course.textbooks))
+        ])
+        for url in urls:
+            # With legacy flag enabled, all URLs return 200 (instructor dashboard skips MFE redirect)
+            self.assert_request_status_code(200, url)
+
+        # In dark launch scenarios, student progress URL still returns 302 even with legacy flag
+        # because course access restrictions take precedence
         url = reverse(
             'student_progress',
             kwargs={
@@ -186,7 +244,7 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
 
         # Now should be able to get to self.course, but not  self.test_course
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
         self.assert_request_status_code(404, url)
@@ -200,7 +258,7 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
 
         # Now should be able to get to self.course, but not  self.test_course
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
         self.assert_request_status_code(404, url)
@@ -212,10 +270,10 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         """
         self.login(self.org_staff_user)
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
         self.assert_request_status_code(404, url)
@@ -227,10 +285,10 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         """
         self.login(self.org_instructor_user)
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
-        self.assert_request_status_code(200, url)
+        self.assert_request_status_code(302, url)
 
         url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
         self.assert_request_status_code(404, url)
@@ -246,7 +304,89 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
                 reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})]
 
         for url in urls:
+            self.assert_request_status_code(302, url)
+
+    # Legacy instructor dashboard tests (with waffle flag enabled, expect 200 responses)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_staff_course_access_legacy(self):
+        """
+        Verify staff can load the legacy instructor dashboard (expects 200 response).
+        """
+        self.login(self.staff_user)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
+        self.assert_request_status_code(404, url)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_instructor_course_access_legacy(self):
+        """
+        Verify instructor can load the legacy instructor dashboard (expects 200 response).
+        """
+        self.login(self.instructor_user)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
+        self.assert_request_status_code(404, url)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_org_staff_access_legacy(self):
+        """
+        Verify org staff can load the legacy instructor dashboard (expects 200 response).
+        """
+        self.login(self.org_staff_user)
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
+        self.assert_request_status_code(404, url)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_org_instructor_access_legacy(self):
+        """
+        Verify org instructor can load the legacy instructor dashboard (expects 200 response).
+        """
+        self.login(self.org_instructor_user)
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})
+        self.assert_request_status_code(200, url)
+
+        url = reverse('instructor_dashboard', kwargs={'course_id': str(self.other_org_course.id)})
+        self.assert_request_status_code(404, url)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_global_staff_access_legacy(self):
+        """
+        Verify the global staff user can access the legacy instructor dashboard (expects 200 response).
+        """
+        self.login(self.global_staff_user)
+
+        urls = [reverse('instructor_dashboard', kwargs={'course_id': str(self.course.id)}),
+                reverse('instructor_dashboard', kwargs={'course_id': str(self.test_course.id)})]
+
+        for url in urls:
             self.assert_request_status_code(200, url)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    def test_staff_method_legacy(self):
+        """
+        Test the _check_staff_legacy helper method with legacy flag enabled (expects 200 response).
+        """
+        self.login(self.staff_user)
+        self.enroll(self.course, True)
+
+        # Test the _check_staff_legacy method which includes instructor dashboard checks
+        self._check_staff_legacy(self.course)
 
     @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
     def test_dark_launch_enrolled_student(self):
@@ -354,6 +494,52 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         self.logout()
         self.login(self.global_staff_user)
         assert self.enroll(self.course)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    def test_dark_launch_instructor_legacy(self):
+        """
+        Make sure that before course start instructors can access the
+        page for their course with legacy instructor dashboard enabled.
+        """
+        now = datetime.datetime.now(pytz.UTC)
+        tomorrow = now + datetime.timedelta(days=1)
+        self.course.start = tomorrow
+        self.test_course.start = tomorrow
+        self.course = self.update_course(self.course, self.user.id)
+        self.test_course = self.update_course(self.test_course, self.user.id)
+
+        self.login(self.instructor_user)
+        # Enroll in the classes---can't see courseware otherwise.
+        self.enroll(self.course, True)
+        self.enroll(self.test_course, True)
+
+        # should now be able to get to everything for self.course
+        self._check_staff_legacy_dark_launch(self.course)
+        self._check_non_staff_dark(self.test_course)
+
+    @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
+    @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
+    def test_dark_launch_global_staff_legacy(self):
+        """
+        Make sure that before course start staff can access
+        course pages with legacy instructor dashboard enabled.
+        """
+        now = datetime.datetime.now(pytz.UTC)
+        tomorrow = now + datetime.timedelta(days=1)
+
+        self.course.start = tomorrow
+        self.test_course.start = tomorrow
+        self.course = self.update_course(self.course, self.user.id)
+        self.test_course = self.update_course(self.test_course, self.user.id)
+
+        self.login(self.global_staff_user)
+        self.enroll(self.course, True)
+        self.enroll(self.test_course, True)
+
+        # and now should be able to load both
+        self._check_staff_legacy_dark_launch(self.course)
+        self._check_staff_legacy_dark_launch(self.test_course)
 
 
 class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
