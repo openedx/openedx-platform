@@ -230,7 +230,6 @@ CORS_ORIGIN_WHITELIST:
 - https://localhost
 - https://www.localhost
 COURSE_AUTHORING_MICROFRONTEND_URL: https://course-authoring.localhost
-ADMIN_CONSOLE_MICROFRONTEND_URL: http://admin-console.localhost
 COURSE_CATALOG_API_URL: https://discovery.localhost/api/v1
 COURSE_CATALOG_URL_ROOT: https://discovery.localhost
 COURSE_IMPORT_EXPORT_BUCKET: import-export

@@ -258,7 +258,6 @@ MARKETING_EMAILS_OPT_IN = False
 
 ############################# MICROFRONTENDS ###################################
 COURSE_AUTHORING_MICROFRONTEND_URL = None
-ADMIN_CONSOLE_MICROFRONTEND_URL = None
 
 ############################# SET PATH INFORMATION #############################
 PROJECT_ROOT = path(__file__).abspath().dirname().dirname()  # /edx-platform/cms

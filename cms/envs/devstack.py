@@ -181,7 +181,6 @@ FRONTEND_APP_PUBLISHER_URL = 'http://localhost:18400'
 
 ################### FRONTEND APPLICATION COURSE AUTHORING ###################
 COURSE_AUTHORING_MICROFRONTEND_URL = 'http://localhost:2001'
-ADMIN_CONSOLE_MICROFRONTEND_URL = 'http://localhost:2025'
 
 ################### FRONTEND APPLICATION DISCUSSIONS ###################
 DISCUSSIONS_MICROFRONTEND_URL = 'http://localhost:2002'
