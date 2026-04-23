@@ -10,13 +10,13 @@ attrs==26.1.0
     # via zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.in
-boto3==1.42.91
+boto3==1.42.93
     # via -r scripts/user_retirement/requirements/base.in
-botocore==1.42.91
+botocore==1.42.93
     # via
     #   boto3
     #   s3transfer
-certifi==2026.2.25
+certifi==2026.4.22
     # via requests
 cffi==2.0.0
     # via
@@ -24,7 +24,7 @@ cffi==2.0.0
     #   pynacl
 charset-normalizer==3.4.7
     # via requests
-click==8.3.2
+click==8.3.3
     # via
     #   -r scripts/user_retirement/requirements/base.in
     #   edx-django-utils
@@ -65,11 +65,11 @@ httplib2==0.31.2
     # via
     #   google-api-python-client
     #   google-auth-httplib2
-idna==3.11
+idna==3.13
     # via requests
 isodate==0.7.2
     # via zeep
-jenkinsapi==0.3.22
+jenkinsapi==0.3.23
     # via -r scripts/user_retirement/requirements/base.in
 jmespath==1.1.0
     # via

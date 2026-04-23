@@ -761,6 +761,9 @@ class LearnerSerializer(serializers.Serializer):
         required=False,
         help_text="URL to learner's progress page"
     )
+    is_enrolled = serializers.BooleanField(
+        help_text="Whether the learner has an active enrollment in the course"
+    )
 
 
 class GraderSerializer(serializers.Serializer):
