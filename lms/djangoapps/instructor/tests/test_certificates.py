@@ -33,10 +33,9 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 
 @ddt.ddt
-# Enable legacy instructor dashboard to access certificate management HTML instead of getting 302 redirects.
-# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
-# that the certificate management sections exist in the HTML, which is no longer a primary concern since
-# we're testing certificate generation capabilities, not the UI redirect behavior.
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
 @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificateTaskViewTests(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
@@ -160,10 +159,9 @@ class CertificateTaskViewTests(SharedModuleStoreTestCase):
 
 
 @ddt.ddt
-# Enable legacy instructor dashboard to access certificate management HTML instead of getting 302 redirects.
-# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
-# that the certificate sections exist in the HTML, which is no longer a primary concern since
-# we're testing certificate dashboard capabilities, not the UI redirect behavior.
+# Tests for legacy views. When DEPR-XXXX is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
 @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
     """Tests for the certificate panel of the instructor dash. """
@@ -348,10 +346,9 @@ class CertificatesInstructorDashTest(SharedModuleStoreTestCase):
 
 @override_settings(CERT_QUEUE='certificates')
 @ddt.ddt
-# Enable legacy instructor dashboard to access certificate API HTML instead of getting 302 redirects.
-# The 302 redirects to MFE don't affect certificate functionality, but these tests need to verify
-# that the certificate API sections exist in the HTML, which is no longer a primary concern since
-# we're testing certificate API capabilities, not the UI redirect behavior.
+# Tests for legacy views. When DEPR-XXXX is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
 @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class CertificatesInstructorApiTest(SharedModuleStoreTestCase):
     """Tests for the certificates end-points in the instructor dash API. """

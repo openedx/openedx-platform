@@ -150,6 +150,8 @@ def instructor_dashboard_2(request, course_id):  # lint-amnesty, pylint: disable
     if not legacy_instructor_dashboard():
         return redirect(get_instructor_dashboard_url(course_key))
 
+    # WHEN DEPR-38432 is picked up the legacy dashboard may be removed
+
     sections = []
     if access['staff']:
         sections_content = [

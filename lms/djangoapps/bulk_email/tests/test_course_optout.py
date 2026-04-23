@@ -28,10 +28,9 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 
 @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
-# Enable legacy instructor dashboard to access email section HTML instead of getting 302 redirects.
-# The 302 redirects to MFE don't affect email functionality, but these tests need to verify
-# that the email section exists in the HTML, which is no longer a primary concern since
-# we're testing email opt-out capabilities, not the UI redirect behavior.
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
 @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestOptoutCourseEmails(ModuleStoreTestCase):
     """

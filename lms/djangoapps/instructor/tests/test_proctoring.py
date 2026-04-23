@@ -23,10 +23,9 @@ from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, p
 
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
 @ddt.ddt
-# Enable legacy instructor dashboard to access proctoring management HTML instead of getting 302 redirects.
-# The 302 redirects to MFE don't affect proctoring functionality, but these tests need to verify
-# that the proctoring sections exist in the HTML, which is no longer a primary concern since
-# we're testing proctoring dashboard capabilities, not the UI redirect behavior.
+# Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
+# Either remove or leave the specific parts that reference the legacy instructor dashboard,
+# and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
 @override_waffle_flag(LEGACY_INSTRUCTOR_DASHBOARD, active=True)
 class TestProctoringDashboardViews(SharedModuleStoreTestCase):
     """
