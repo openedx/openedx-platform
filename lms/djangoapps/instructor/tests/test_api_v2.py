@@ -118,7 +118,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
             course_id = str(self.course_key)
         return reverse('instructor_api_v2:course_metadata', kwargs={'course_id': course_id})
 
-    @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='http://localhost:2001/authoring')
+    @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='http://localhost:2001')
     def test_get_course_metadata_as_instructor(self):
         """
         Test that an instructor can retrieve comprehensive course metadata.

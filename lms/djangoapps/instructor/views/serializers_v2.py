@@ -466,10 +466,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
         mfe_base_url = configuration_helpers.get_value_for_org(
             course_key.org,
             'COURSE_AUTHORING_MICROFRONTEND_URL',
-            settings.COURSE_AUTHORING_MICROFRONTEND_URL
+            getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
         )
         if mfe_base_url:
-            return f'{mfe_base_url}/course/{course_key}/settings/grading'
+            return f'{mfe_base_url}/authoring/course/{course_key}/settings/grading'
         return None
 
     def get_disable_buttons(self, data):
