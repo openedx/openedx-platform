@@ -3,6 +3,7 @@ Content library signal handlers.
 """
 
 import logging
+from functools import partial
 
 from attrs import asdict
 from django.dispatch import receiver
@@ -45,15 +46,26 @@ def entities_updated(
     except ContentLibrary.DoesNotExist:
         return  # We don't care about non-library events.
 
-    entities_changed = [change.entity_id for change in change_log.changes]
+    # Which entities were _directly_ changed here?
+    direct_changes = [asdict(change) for change in change_log.changes if change.new_version != change.old_version]
+    # And which entities were indirectly affected (e.g. parent containers)?
+    indirect_changes = [asdict(change) for change in change_log.changes if change.new_version == change.old_version]
 
-    if len(entities_changed) == 1:
-        fn = tasks.send_change_events_for_modified_entities
+    update_task_fn = tasks.send_change_events_for_modified_entities
+    update_sync = partial(update_task_fn, learning_package_id=learning_package.id)
+    update_async = partial(update_task_fn.delay, learning_package_id=learning_package.id)
+
+    if len(direct_changes) == 1:
+        # We directly changed only one entity. Update it synchronously so that the UI will reflect changes right away.
+        if len(indirect_changes) <= 1:
+            # And update any other affected entity synchronously too; there's at most one. (More efficient, better UX.)
+            update_sync(change_list=[*direct_changes, *indirect_changes])
+        else:
+            update_sync(change_list=direct_changes)  # Update this one entity synchronously, and
+            update_async(change_list=indirect_changes)  # update the many other affects entities async.
     else:
         # More than one entity was changed at once. Handle asynchronously:
-        fn = tasks.send_change_events_for_modified_entities.delay
-
-    fn(learning_package_id=learning_package.id, change_list=[asdict(chg) for chg in change_log.changes])
+        update_async(change_list=[*direct_changes, *indirect_changes])
 
 
 @receiver(content_signals.LEARNING_PACKAGE_ENTITIES_PUBLISHED)
