@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import shutil
+from collections.abc import Iterable
 from datetime import datetime
 from io import StringIO
 from tempfile import NamedTemporaryFile, mkdtemp
@@ -204,14 +205,16 @@ def check_container_content_changes(
     else:
         old_entity_list_id = None
     if new_version_id:
-        new_version = content_api.get_container_version(new_version_id) if new_version_id else None
+        new_version = content_api.get_container_version(new_version_id)
         new_entity_list_id = new_version.entity_list_id
     else:
         new_entity_list_id = None
 
+    old_child_ids: Iterable[PublishableEntity.ID]
+    new_child_ids: Iterable[PublishableEntity.ID]
     # If the title has changed, we notify ALL children that their parent container(s) have changed, e.g. to update the
     # list of "units this component is used in", "sections this subsection is used in", etc. in the search index
-    title_changed: bool = old_version and new_version and old_version.title != new_version.title
+    title_changed: bool = bool(old_version and new_version) and (old_version.title != new_version.title)
     if title_changed:
         # TODO: there is no "get entity list for container version" API in openedx_content
         new_child_ids = new_version.entity_list.entitylistrow_set.values_list("entity_id", flat=True)
@@ -297,7 +300,7 @@ def send_collections_changed_events(
 
 @shared_task(base=LoggedTask)
 @set_code_owner_attribute
-def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None:
+def send_events_after_publish(publish_log_id: int, library_key_str: str) -> None:
     """
     Send events to trigger actions like updating the search index, after we've
     published some items in a library.
@@ -311,12 +314,11 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
     event handlers like updating the search index may a while to complete in
     that case.
     """
-    publish_log = PublishLog.objects.get(pk=publish_log_pk)
+    publish_log = PublishLog.objects.get(id=publish_log_id)
     library_key = LibraryLocatorV2.from_string(library_key_str)
     affected_entities = publish_log.records.select_related(
         "entity", "entity__container", "entity__container__container_type", "entity__component",
     ).all()
-    affected_containers: set[LibraryContainerLocator] = set()
 
     # Update anything that needs to be updated (e.g. search index):
     for record in affected_entities:
@@ -330,60 +332,20 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
             LIBRARY_BLOCK_PUBLISHED.send_event(
                 library_block=LibraryBlockData(library_key=library_key, usage_key=usage_key)
             )
-            # Publishing a container will auto-publish its children, but publishing a single component or all changes
-            # in the library will NOT usually include any parent containers. But we do need to notify listeners that the
-            # parent container(s) have changed, e.g. so the search index can update the "has_unpublished_changes"
-            try:
-                for parent_container in api.get_containers_contains_item(usage_key):
-                    affected_containers.add(parent_container.container_key)
-                    # TODO: should this be a CONTAINER_CHILD_PUBLISHED event instead of CONTAINER_PUBLISHED ?
-            except api.ContentLibraryBlockNotFound:
-                # The component has been deleted.
-                pass
         elif hasattr(record.entity, "container"):
             container_key = api.library_container_locator(library_key, record.entity.container)
-            affected_containers.add(container_key)
-
-            try:
-                # We do need to notify listeners that the parent container(s) have changed,
-                # e.g. so the search index can update the "has_unpublished_changes"
-                for parent_container in api.get_containers_contains_item(container_key):
-                    affected_containers.add(parent_container.container_key)
-            except api.ContentLibraryContainerNotFound:
-                # The deleted children remains in the entity, so, in this case, the container may not be found.
-                pass
+            # Note: this container may have been directly published, or perhaps one of its children was published and
+            # it hasn't technically changed. Such ancestors of published entities are still included in the publish log.
+            # .. event_implemented_name: LIBRARY_CONTAINER_PUBLISHED
+            # .. event_type: org.openedx.content_authoring.content_library.container.published.v1
+            LIBRARY_CONTAINER_PUBLISHED.send_event(
+                library_container=LibraryContainerData(container_key=container_key)
+            )
         else:
             log.warning(
                 f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
                 "was modified during publish operation but is of unknown type."
             )
-
-    for container_key in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_PUBLISHED
-        # .. event_type: org.openedx.content_authoring.content_library.container.published.v1
-        LIBRARY_CONTAINER_PUBLISHED.send_event(
-            library_container=LibraryContainerData(container_key=container_key)
-        )
-
-
-def wait_for_post_publish_events(publish_log: PublishLog, library_key: LibraryLocatorV2):
-    """
-    After publishing some changes, trigger the required event handlers (e.g.
-    update the search index). Try to wait for that to complete before returning,
-    up to some reasonable timeout, and then finish anything remaining
-    asynchonrously.
-    """
-    # Update the search index (and anything else) for the affected blocks
-    result = send_events_after_publish.apply_async(args=(publish_log.pk, str(library_key)))
-    # Try waiting a bit for those post-publish events to be handled:
-    try:
-        result.get(timeout=15)
-    except TimeoutError:
-        pass
-        # This is fine! The search index is still being updated, and/or other
-        # event handlers are still following up on the results, but the publish
-        # already *did* succeed, and the events will continue to be processed in
-        # the background by the celery worker until everything is updated.
 
 
 def _filter_child(store, usage_key, capa_type):

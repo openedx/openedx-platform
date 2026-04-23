@@ -17,7 +17,6 @@ from openedx_content.models_api import Container
 from openedx_events.content_authoring.data import LibraryContainerData
 from openedx_events.content_authoring.signals import LIBRARY_CONTAINER_DELETED
 
-from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata
 from .container_metadata import (
@@ -249,7 +248,6 @@ def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLo
 def publish_container_changes(
     container_key: LibraryContainerLocator,
     user_id: int | None,
-    call_post_publish_events_sync=False,
 ) -> None:
     """
     [ 🛑 UNSTABLE ] Publish all unpublished changes in a container and all its child
@@ -263,17 +261,7 @@ def publish_container_changes(
     # The core publishing API is based on draft objects, so find the draft that corresponds to this container:
     drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.id)
     # Publish the container, which will also auto-publish any unpublished child components:
-    publish_log = content_api.publish_from_drafts(
-        learning_package.id,
-        draft_qset=drafts_to_publish,
-        published_by=user_id,
-    )
-    # Update the search index (and anything else) for the affected container + blocks
-    # This is mostly synchronous but may complete some work asynchronously if there are a lot of changes.
-    if call_post_publish_events_sync:
-        tasks.send_events_after_publish(publish_log.pk, str(library_key))
-    else:
-        tasks.wait_for_post_publish_events(publish_log, library_key)
+    content_api.publish_from_drafts(learning_package.id, draft_qset=drafts_to_publish, published_by=user_id)
 
 
 def copy_container(container_key: LibraryContainerLocator, user_id: int) -> UserClipboardData:

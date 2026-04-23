@@ -72,7 +72,7 @@ from xblock.core import XBlock
 
 from openedx.core.types import User as UserType
 
-from .. import permissions, tasks
+from .. import permissions
 from ..constants import ALL_RIGHTS_RESERVED
 from ..models import ContentLibrary, ContentLibraryPermission
 from .exceptions import LibraryAlreadyExists, LibraryPermissionIntegrityError
@@ -758,15 +758,7 @@ def publish_changes(library_key: LibraryLocatorV2, user_id: int | None = None):
     """
     learning_package = ContentLibrary.objects.get_by_key(library_key).learning_package
     assert learning_package is not None  # shouldn't happen but it's technically possible.
-    publish_log = content_api.publish_all_drafts(learning_package.id, published_by=user_id)
-
-    # Update the search index (and anything else) for the affected blocks
-    # This is mostly synchronous but may complete some work asynchronously if there are a lot of changes.
-    tasks.wait_for_post_publish_events(publish_log, library_key)
-
-    # Unlike revert_changes below, we do not have to re-index collections,
-    # because publishing changes does not affect the component counts, and
-    # collections themselves don't have draft/published/unpublished status.
+    content_api.publish_all_drafts(learning_package.id, published_by=user_id)
 
 
 def revert_changes(library_key: LibraryLocatorV2, user_id: int | None = None) -> None:

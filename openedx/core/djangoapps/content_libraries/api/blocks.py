@@ -37,7 +37,6 @@ from openedx.core.djangoapps.xblock.api import (
 )
 from openedx.core.types import User as UserType
 
-from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
 from .container_metadata import container_subclass_for_olx_tag
@@ -818,13 +817,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
     drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__entity_ref=component.entity_ref)
     # Publish the component and update anything that needs to be updated (e.g. search index):
-    publish_log = content_api.publish_from_drafts(
-        learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
-    )
-    # Since this is a single component, it should be safe to process synchronously and in-process:
-    tasks.send_events_after_publish(publish_log.pk, str(library_key))
-    # IF this is found to be a performance issue, we could instead make it async where necessary:
-    # tasks.wait_for_post_publish_events(publish_log, library_key=library_key)
+    content_api.publish_from_drafts(learning_package.id, draft_qset=drafts_to_publish, published_by=user_id)
 
 
 def _component_exists(usage_key: UsageKeyV2) -> bool:

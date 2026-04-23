@@ -462,21 +462,87 @@ class ContentLibrariesEventsTestCase(BaseEventsTestCase):
                     self.lib1_key, LibraryUsageLocatorV2.from_string(html_block["id"]),
                 ),
             },
-            {   # Not 100% sure we want this, but a PUBLISHED event is emitted for container 2
-                # because one of its children's published versions has changed, so whether or
-                # not it contains unpublished changes may have changed and the search index
-                # may need to be updated. It is not actually published though.
-                # TODO: should this be a CONTAINER_CHILD_PUBLISHED event?
+            # No PUBLISHED event is emitted for container 2, because it doesn't have a published version yet.
+            # Publishing 'html_block' would have potentially affected it if container 2's published version had a
+            # reference to 'html_block', but it doesn't yet until we publish it.
+        )
+
+        # note that container 2 is still unpublished
+        c2_after = self._get_container(container2["id"])
+        assert c2_after["has_unpublished_changes"]
+
+        # publish container2 now:
+        self._publish_container(container2["id"])
+        self.expect_new_events(
+            {  # An event for container 1 being published:
+                "signal": LIBRARY_CONTAINER_PUBLISHED,
+                "library_container": LibraryContainerData(
+                    container_key=LibraryContainerLocator.from_string(container2["id"]),
+                ),
+            },
+            {  # An event for the html block in container 2 only:
+                "signal": LIBRARY_BLOCK_PUBLISHED,
+                "library_block": LibraryBlockData(
+                    self.lib1_key, LibraryUsageLocatorV2.from_string(html_block2["id"]),
+                ),
+            },
+        )
+
+    def test_publish_container_propagation(self) -> None:
+        """
+        Test the events that get emitted when we publish the changes to an entity
+        that is used in multiple published containers
+        """
+        # Create two containers and add the same component to both:
+        container1 = self._create_container(self.lib1_key, "unit", display_name="Alpha Unit", slug=None)
+        container2 = self._create_container(self.lib1_key, "unit", display_name="Bravo Unit", slug=None)
+        problem_block = self._add_block_to_library(self.lib1_key, "problem", "Problem1", can_stand_alone=False)
+        self._add_container_children(container1["id"], children_ids=[problem_block["id"]])
+        self._add_container_children(container2["id"], children_ids=[problem_block["id"]])
+        # Publish everything:
+        self._commit_library_changes(self.lib1_key)
+
+        # clear event log after the initial mock data setup is complete:
+        self.clear_events()
+
+        # Now modify the problem that's shared by both containers and publish the new version
+        self._set_library_block_olx(problem_block["id"], "<problem>UPDATED</problem>")
+        self.clear_events()  # Clears the LIBRARY_BLOCK_UPDATED event + 2x LIBRARY_CONTAINER_UPDATED events
+
+        # Now both containers have unpublished changes:
+        assert self._get_container(container1["id"])["has_unpublished_changes"]
+        assert self._get_container(container2["id"])["has_unpublished_changes"]
+        # Publish container1, which also published the shared problem component:
+        self._publish_container(container1["id"])
+        # Now neither container has unpublished changes (even though we never touched container2):
+        assert self._get_container(container1["id"])["has_unpublished_changes"] is False
+        assert self._get_container(container2["id"])["has_unpublished_changes"] is False
+
+        # And publish events were emitted:
+        self.expect_new_events(
+            # An event for the problem block in container 1 being indirectly published:
+            {
+                "signal": LIBRARY_BLOCK_PUBLISHED,
+                "library_block": LibraryBlockData(
+                    self.lib1_key, LibraryUsageLocatorV2.from_string(problem_block["id"]),
+                ),
+            },
+            # An event for container 1 being published *directly*:
+            {
+                "signal": LIBRARY_CONTAINER_PUBLISHED,
+                "library_container": LibraryContainerData(
+                    container_key=LibraryContainerLocator.from_string(container1["id"]),
+                ),
+            },
+            # And this time a PUBLISHED event should also be emitted for container2.
+            # It's published version hasn't changed, but its "contains unpublished changes" status has.
+            {
                 "signal": LIBRARY_CONTAINER_PUBLISHED,
                 "library_container": LibraryContainerData(
                     container_key=LibraryContainerLocator.from_string(container2["id"]),
                 ),
             },
         )
-
-        # note that container 2 is still unpublished
-        c2_after = self._get_container(container2["id"])
-        assert c2_after["has_unpublished_changes"]
 
     def test_publish_child_container(self):
         """
@@ -513,7 +579,17 @@ class ContentLibrariesEventsTestCase(BaseEventsTestCase):
                     container_key=LibraryContainerLocator.from_string(unit["id"]),
                 ),
             },
-            {   # An event for parent (subsection):
+            # No PUBLISHED event is emitted for the subsection, because it doesn't have a published version yet.
+        )
+
+        # note that subsection is still unpublished
+        c2_after = self._get_container(subsection["id"])
+        assert c2_after["has_unpublished_changes"]
+
+        # Now publish the subsection
+        self._publish_container(subsection["id"])
+        self.expect_new_events(
+            {  # An event for the subsection being published:
                 "signal": LIBRARY_CONTAINER_PUBLISHED,
                 "library_container": LibraryContainerData(
                     container_key=LibraryContainerLocator.from_string(subsection["id"]),
@@ -521,9 +597,27 @@ class ContentLibrariesEventsTestCase(BaseEventsTestCase):
             },
         )
 
-        # note that subsection is still unpublished
-        c2_after = self._get_container(subsection["id"])
-        assert c2_after["has_unpublished_changes"]
+        # Now rename the unit:
+        self._update_container(unit["id"], 'New Unit Display Name')
+        self.clear_events()
+        # Publish changes to the unit:
+        self._publish_container(unit["id"])
+        self.expect_new_events(
+            {  # An event for the unit being published:
+                "signal": LIBRARY_CONTAINER_PUBLISHED,
+                "library_container": LibraryContainerData(
+                    container_key=LibraryContainerLocator.from_string(unit["id"]),
+                ),
+            },
+            # And this time we DO get notified that the parent container is affected, because the unit is in its
+            # published version, and this publish affects the parent's "contains_unpublished_changes" status.
+            {
+                "signal": LIBRARY_CONTAINER_PUBLISHED,
+                "library_container": LibraryContainerData(
+                    container_key=LibraryContainerLocator.from_string(subsection["id"]),
+                ),
+            },
+        )
 
     def test_restore_unit(self) -> None:
         """

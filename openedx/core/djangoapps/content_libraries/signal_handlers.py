@@ -56,6 +56,39 @@ def entities_updated(
     fn(learning_package_id=learning_package.id, change_list=[asdict(chg) for chg in change_log.changes])
 
 
+@receiver(content_signals.LEARNING_PACKAGE_ENTITIES_PUBLISHED)
+def entities_published(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.PublishLogEventData,
+    **kwargs,
+) -> None:
+    """
+    Entities (containers/components) have been published - handle that as needed.
+
+    We receive this low-level event from `openedx_content`, and check if it
+    happened in a library. If so, we emit more detailed library-specific events.
+
+    💾 This event is only received after the transaction has committed.
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously. If a lot of entities were published, we need to dispatch
+       an asynchronous handler to deal with them to avoid slowdowns. If only one
+       entity was published, we want to deal with that synchronously so that we
+       can show the user correct data when the current requests completes.
+    """
+    try:
+        library = ContentLibrary.objects.get(learning_package_id=learning_package.id)
+    except ContentLibrary.DoesNotExist:
+        return  # We don't care about non-library events.
+
+    if len(change_log.changes) == 1:
+        fn = tasks.send_events_after_publish
+    else:
+        # More than one entity was published at once. Handle asynchronously:
+        fn = tasks.send_events_after_publish.delay
+
+    fn(publish_log_id=change_log.publish_log_id, library_key_str=str(library.library_key))
+
+
 @receiver(content_signals.LEARNING_PACKAGE_COLLECTION_CHANGED)
 def collection_updated(
     learning_package: content_signals.LearningPackageEventData,
