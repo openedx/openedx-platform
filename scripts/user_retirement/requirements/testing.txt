@@ -14,11 +14,11 @@ attrs==26.1.0
     #   zeep
 backoff==2.2.1
     # via -r scripts/user_retirement/requirements/base.txt
-boto3==1.42.93
+boto3==1.42.94
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   moto
-botocore==1.42.93
+botocore==1.42.94
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
@@ -221,13 +221,13 @@ responses==0.26.0
     # via
     #   -r scripts/user_retirement/requirements/testing.in
     #   moto
-s3transfer==0.16.0
+s3transfer==0.16.1
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   boto3
 simple-salesforce==1.12.9
     # via -r scripts/user_retirement/requirements/base.txt
-simplejson==4.0.1
+simplejson==4.1.0
     # via -r scripts/user_retirement/requirements/base.txt
 six==1.17.0
     # via

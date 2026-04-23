@@ -170,7 +170,7 @@ ruamel-yaml-clib==0.2.14
     # via semgrep
 semantic-version==2.10.0
     # via semgrep
-semgrep==1.160.0
+semgrep==1.161.0
     # via -r requirements/edx/semgrep.in
 sse-starlette==3.3.4
     # via mcp
@@ -203,7 +203,7 @@ urllib3==2.6.3
     # via
     #   requests
     #   semgrep
-uvicorn==0.45.0
+uvicorn==0.46.0
     # via mcp
 wcmatch==8.5.2
     # via semgrep

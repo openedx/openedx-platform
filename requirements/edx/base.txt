@@ -68,14 +68,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.93
+boto3==1.42.94
     # via
     #   -r requirements/edx/kernel.in
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.93
+botocore==1.42.94
     # via
     #   -r requirements/edx/kernel.in
     #   boto3
@@ -252,7 +252,7 @@ django==5.2.13
     #   xss-utils
 django-appconf==1.2.0
     # via django-statici18n
-django-autocomplete-light==3.12.1
+django-autocomplete-light==4.0.0
     # via -r requirements/edx/kernel.in
 django-cache-memoize==0.2.1
     # via edx-enterprise
@@ -280,6 +280,7 @@ django-crum==0.7.9
     #   edx-proctoring
     #   edx-rbac
     #   edx-toggles
+    #   openedx-authz
     #   super-csv
 django-fernet-fields-v2==0.9
     # via
@@ -733,7 +734,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==11.0.0
+lti-consumer-xblock==11.0.1
     # via -r requirements/edx/kernel.in
 lxml[html-clean]==5.3.2
     # via
@@ -833,7 +834,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.12.0
+openedx-authz==1.13.0
     # via -r requirements/edx/kernel.in
 openedx-calc==5.0.0
     # via
@@ -849,7 +850,7 @@ openedx-django-require==3.0.0
     # via -r requirements/edx/kernel.in
 openedx-django-wiki==3.1.1
     # via -r requirements/edx/kernel.in
-openedx-events==11.1.1
+openedx-events==11.2.0
     # via
     #   -r requirements/edx/kernel.in
     #   edx-enterprise
@@ -857,6 +858,7 @@ openedx-events==11.1.1
     #   edx-event-bus-redis
     #   event-tracking
     #   lti-consumer-xblock
+    #   openedx-authz
     #   openedx-core
     #   ora2
 openedx-filters==3.1.0
@@ -1108,7 +1110,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.16.0
+s3transfer==0.16.1
     # via boto3
 sailthru-client==2.2.3
     # via edx-ace
@@ -1122,7 +1124,7 @@ shapely==2.1.2
     #   xblocks-contrib
 simpleeval==1.0.7
     # via pycasbin
-simplejson==4.0.1
+simplejson==4.1.0
     # via
     #   -r requirements/edx/kernel.in
     #   sailthru-client
@@ -1163,7 +1165,7 @@ social-auth-app-django==5.4.1
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==4.8.6
+social-auth-core==4.8.7
     # via
     #   -r requirements/edx/kernel.in
     #   edx-auth-backends

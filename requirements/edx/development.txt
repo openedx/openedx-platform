@@ -139,7 +139,7 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.93
+boto3==1.42.94
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -147,7 +147,7 @@ boto3==1.42.93
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.93
+botocore==1.42.94
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -163,7 +163,7 @@ bridgekeeper==0.9
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-build==1.4.3
+build==1.4.4
     # via
     #   -r requirements/pip-tools.txt
     #   pip-tools
@@ -429,7 +429,7 @@ django-appconf==1.2.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   django-statici18n
-django-autocomplete-light==3.12.1
+django-autocomplete-light==4.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -472,6 +472,7 @@ django-crum==0.7.9
     #   edx-proctoring
     #   edx-rbac
     #   edx-toggles
+    #   openedx-authz
     #   super-csv
 django-debug-toolbar==5.2.0
     # via
@@ -1213,7 +1214,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==11.0.0
+lti-consumer-xblock==11.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1384,7 +1385,7 @@ openedx-atlas==0.7.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-forum
-openedx-authz==1.12.0
+openedx-authz==1.13.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1411,7 +1412,7 @@ openedx-django-wiki==3.1.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-openedx-events==11.1.1
+openedx-events==11.2.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1420,6 +1421,7 @@ openedx-events==11.1.1
     #   edx-event-bus-redis
     #   event-tracking
     #   lti-consumer-xblock
+    #   openedx-authz
     #   openedx-core
     #   ora2
 openedx-filters==3.1.0
@@ -1480,7 +1482,7 @@ path-py==12.5.0
     #   edx-enterprise
     #   ora2
     #   staff-graded-xblock
-pathspec==1.0.4
+pathspec==1.1.0
     # via mypy
 pgpy==0.6.0
     # via
@@ -1917,7 +1919,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.16.0
+s3transfer==0.16.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1947,7 +1949,7 @@ simpleeval==1.0.7
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   pycasbin
-simplejson==4.0.1
+simplejson==4.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2008,7 +2010,7 @@ social-auth-app-django==5.4.1
     #   -r requirements/edx/testing.txt
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==4.8.6
+social-auth-core==4.8.7
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2243,7 +2245,7 @@ urllib3==2.6.3
     #   pact-python
     #   requests
     #   types-requests
-uvicorn==0.45.0
+uvicorn==0.46.0
     # via
     #   -r requirements/edx/testing.txt
     #   pact-python
