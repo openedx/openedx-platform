@@ -35,6 +35,7 @@ OPTIMISED_IS_SMALL_COURSE = WaffleFlag(f'{WAFFLE_FLAG_NAMESPACE}.optimised_is_sm
 # .. toggle_use_cases: opt_out, temporary
 # .. toggle_creation_date: 2026-04-20
 # .. toggle_target_removal_date: 2026-11-01
+# .. toggle_tickets: https://github.com/openedx/openedx-platform/issues/38432
 LEGACY_INSTRUCTOR_DASHBOARD = WaffleFlag(
     f'{WAFFLE_FLAG_NAMESPACE}.legacy_instructor_dashboard', __name__
 )
