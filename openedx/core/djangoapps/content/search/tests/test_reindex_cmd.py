@@ -39,25 +39,15 @@ class TestReindexStudioCommand(TestCase):
         with pytest.raises(CommandError, match="not enabled"):
             call_command("reindex_studio")
 
-    def test_reset_flag_removed(self):
-        """Passing --reset raises a clear error."""
-        with pytest.raises(CommandError, match="--reset flag has been removed"):
-            call_command("reindex_studio", "--reset")
-
-    def test_init_flag_removed(self):
-        """Passing --init raises a clear error."""
-        with pytest.raises(CommandError, match="--init flag has been removed"):
-            call_command("reindex_studio", "--init")
-
     @patch("openedx.core.djangoapps.content.search.tasks.rebuild_index_incremental.delay")
     @patch("openedx.core.djangoapps.content.search.management.commands.reindex_studio.log")
     def test_incremental_flag_accepted_with_warning(self, mock_log, mock_delay):
-        """Passing --incremental logs a warning but still enqueues the task."""
+        """Passing old flags logs a warning but still enqueues the task."""
         mock_delay.return_value = Mock(id="fake-task-id")
 
-        call_command("reindex_studio", "--incremental")
+        call_command("reindex_studio", "--incremental", "--init", "--experimental", "--reset")
 
-        mock_log.warning.assert_called_once()
+        assert mock_log.warning.call_count == 4
         mock_delay.assert_called_once_with()
 
 

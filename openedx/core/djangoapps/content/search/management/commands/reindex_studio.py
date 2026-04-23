@@ -73,14 +73,14 @@ class Command(BaseCommand):
             raise CommandError("Meilisearch is not enabled. Please set MEILISEARCH_ENABLED to True in your settings.")
 
         if options["reset"]:
-            raise CommandError(
+            log.warning(
                 "The --reset flag has been removed. "
                 "Index reset is now handled automatically by post_migrate reconciliation. "
                 "Run: ./manage.py cms migrate"
             )
 
         if options["init"]:
-            raise CommandError(
+            log.warning(
                 "The --init flag has been removed. "
                 "Index initialization is now handled automatically by post_migrate reconciliation. "
                 "Run: ./manage.py cms migrate"
