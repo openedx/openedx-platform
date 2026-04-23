@@ -27,8 +27,7 @@
             'js/factories/manage_users',
             'js/factories/outline',
             'js/factories/settings',
-            'js/factories/settings_advanced',
-            'js/factories/settings_graders'
+            'js/factories/settings_advanced'
         ]),
         /**
          * By default all the configuration for optimization happens from the command
