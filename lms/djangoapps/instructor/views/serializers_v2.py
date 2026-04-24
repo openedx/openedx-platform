@@ -483,7 +483,8 @@ class CourseInformationSerializerV2(serializers.Serializer):
             'ADMIN_CONSOLE_MICROFRONTEND_URL',
             getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
         )
-        if not mfe_base_url or not has_instructor_access:
+        has_permissions = request.user.is_staff or has_instructor_access
+        if not mfe_base_url or not has_permissions:
             return None
         return f'{mfe_base_url}/authz'
 
