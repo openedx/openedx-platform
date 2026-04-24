@@ -17,7 +17,10 @@ from opaque_keys.edx.keys import CourseKey, UsageKey
 from opaque_keys.edx.locator import LibraryContainerLocator
 from openedx_content.api import get_published_version
 from openedx_content.models_api import Component, Container
-from openedx_django_lib.fields import immutable_uuid_field, manual_date_time_field, ref_field
+try:
+    from openedx_django_lib.fields import immutable_uuid_field, manual_date_time_field, ref_field
+except Exception:  # pragma: no cover - runtime compatibility shim for different openedx_django_lib versions
+    from openedx_django_lib.fields import immutable_uuid_field, manual_date_time_field, key_field as ref_field
 
 logger = logging.getLogger(__name__)
 
