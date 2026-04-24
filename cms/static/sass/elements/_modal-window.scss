@@ -429,8 +429,14 @@
           }
 
           div.editor-with-buttons {
+            display: flex;
+            flex-direction: column;
             flex-grow: 1;
             margin-bottom: 0;
+
+            ul.settings-list {
+              flex-grow: 1;
+            }
           }
         }
       }
