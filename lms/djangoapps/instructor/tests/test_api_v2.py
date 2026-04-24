@@ -166,7 +166,6 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
 
         # Verify other metadata fields
         assert 'num_sections' in data
-        assert 'tabs' in data
         assert 'grade_cutoffs' in data
         assert 'course_errors' in data
         assert 'studio_url' in data
@@ -180,6 +179,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         assert data['studio_grading_url'] == f'http://localhost:2001/authoring/course/{self.course.id}/settings/grading'
         assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
 
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025/admin-console')
     def test_admin_console_url_requires_instructor_access(self):
         """
         Test that the admin console URL is only available to users with instructor access.

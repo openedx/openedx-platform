@@ -466,8 +466,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
     def get_studio_grading_url(self, data):
         """Get Studio MFE grading settings URL for the course."""
         course_key = data['course'].id
-        mfe_base_url = configuration_helpers.get_value_for_org(
-            course_key.org,
+        mfe_base_url = configuration_helpers.get_value(
             'MFE_CONFIG',
             getattr(settings, 'MFE_CONFIG', None)
         )
@@ -478,11 +477,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
 
     def get_admin_console_url(self, data):
         """Get admin console URL (requires instructor access and MFE configuration, null if not accessible)."""
-        course_key = data['course'].id
         request = data['request']
         has_instructor_access = has_access(request.user, 'instructor', data['course'])
-        mfe_base_url = configuration_helpers.get_value_for_org(
-            course_key.org,
+        mfe_base_url = configuration_helpers.get_value(
             'ADMIN_CONSOLE_MICROFRONTEND_URL',
             getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
         )
