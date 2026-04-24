@@ -437,14 +437,6 @@ body,
       line-height: $base-font-size;
     }
 
-    label,
-    .label.setting-label {
-      font-size: $base-font-size;
-      line-height: 28px;
-      color: $text-color;
-      font-weight: 400;
-    }
-
     .title.modal-window-title {
       color: $black;
       font-weight: 700;
@@ -553,6 +545,16 @@ body,
           background: $transparent;
           outline: none;
         }
+      }
+    }
+
+    &:not(:has(.unstyled-editor)) {
+      label,
+      .label.setting-label {
+        font-size: $base-font-size;
+        line-height: 28px;
+        color: $text-color;
+        font-weight: 400;
       }
     }
   }
