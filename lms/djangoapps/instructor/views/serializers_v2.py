@@ -169,16 +169,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 20,
                 },
                 {
-                    'tab_id': 'course_team',
-                    'title': _('Course Team'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'course_team'
-                    ),
-                    'sort_order': 30,
-                },
-                {
                     'tab_id': 'grading',
                     'title': _('Grading'),
                     'url': self._build_tab_url(
@@ -199,6 +189,18 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 90,
                 },
             ])
+
+        if access['instructor'] or access['forum_admin']:
+            tabs.append({
+                'tab_id': 'course_team',
+                'title': _('Course Team'),
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    course_key,
+                    'course_team'
+                ),
+                'sort_order': 30,
+            })
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
             tabs.append(

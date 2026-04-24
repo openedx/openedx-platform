@@ -327,9 +327,9 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         """Helper to test tabs visible to staff users."""
         tab_ids = [tab['tab_id'] for tab in tabs]
 
-        # Staff should see these basic tabs
-        expected_basic_tabs = ['course_info', 'enrollments', 'course_team', 'grading', 'cohorts']
-        self.assertListEqual(tab_ids, expected_basic_tabs)  # noqa: PT009
+        # Staff should see these basic tabs (course_team is restricted to instructor/forum_admin)
+        expected_basic_tabs = ['course_info', 'enrollments', 'grading', 'cohorts']
+        assert tab_ids == expected_basic_tabs
 
     def test_staff_sees_basic_tabs(self):
         """
@@ -343,7 +343,10 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         Test that instructors see all tabs that staff see.
         """
         instructor_tabs = self._get_tabs_from_response(self.instructor)
-        self._test_staff_tabs(instructor_tabs)
+        tab_ids = [tab['tab_id'] for tab in instructor_tabs]
+
+        expected_tabs = ['course_info', 'enrollments', 'course_team', 'grading', 'cohorts']
+        assert tab_ids == expected_tabs
 
     def test_researcher_sees_all_basic_tabs(self):
         """
@@ -3369,3 +3372,138 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         assert response.data['roles'] == ['Moderator']
         assert response.data['action'] == 'revoke'
         assert not role.users.filter(pk=target.pk).exists()
+
+
+class CourseTeamTabVisibilityTest(SharedModuleStoreTestCase):
+    """
+    Tests that the course_team tab is only visible to Admin (instructor role)
+    and Discussion Admin (forum Administrator role).
+
+    See: https://github.com/openedx/openedx-platform/issues/38439
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TabVis',
+            run='2024',
+            display_name='Tab Visibility Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.url = reverse('instructor_api_v2:course_metadata', kwargs={'course_id': str(self.course_key)})
+
+        # Instructor (Admin) — should see course_team tab
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+
+        # Discussion Admin (forum Administrator) — should see course_team tab
+        self.forum_admin = StaffFactory.create(course_key=self.course_key)
+        seed_permissions_roles(self.course_key)
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(self.forum_admin)
+
+        # Staff — should NOT see course_team tab
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+
+    def _get_tab_ids(self, user):
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        return [tab['tab_id'] for tab in response.data.get('tabs', [])]
+
+    def test_instructor_sees_course_team_tab(self):
+        """Admin (instructor role) should see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.instructor)
+        assert 'course_team' in tab_ids
+
+    def test_forum_admin_sees_course_team_tab(self):
+        """Discussion Admin (forum Administrator role) should see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.forum_admin)
+        assert 'course_team' in tab_ids
+
+    def test_staff_does_not_see_course_team_tab(self):
+        """Staff without instructor or forum admin role should NOT see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.staff_user)
+        assert 'course_team' not in tab_ids
+
+
+class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
+    """
+    Tests that Discussion Admin (forum Administrator role) can access
+    course team endpoints, not just the instructor role.
+
+    See: https://github.com/openedx/openedx-platform/issues/38439
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='ForumAccess',
+            run='2024',
+            display_name='Forum Admin Access Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        # Discussion Admin: staff + forum Administrator role
+        self.forum_admin = StaffFactory.create(course_key=self.course_key)
+        seed_permissions_roles(self.course_key)
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(self.forum_admin)
+
+        # Plain staff user (no forum admin, no instructor) — should be denied
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+
+    def test_forum_admin_can_list_team_roles(self):
+        """Discussion Admin should be able to GET /team/roles."""
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_list_team_members(self):
+        """Discussion Admin should be able to GET /team."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_grant_role(self):
+        """Discussion Admin should be able to POST /team to grant a role."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        target = UserFactory.create()
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.post(url, {
+            'identifiers': [target.username],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_revoke_role(self):
+        """Discussion Admin should be able to DELETE /team/{username}."""
+        target = StaffFactory.create(course_key=self.course_key)
+        url = reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': target.username},
+        )
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.delete(url, {'roles': ['staff']}, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_plain_staff_cannot_access_team_endpoints(self):
+        """Staff without instructor or forum admin role should get 403."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.staff_user)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN

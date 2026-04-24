@@ -2420,8 +2420,7 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         * 401: User is not authenticated
         * 403: User lacks instructor permissions
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def get(self, request, course_id):
         """Return the list of available course team roles for this course."""
@@ -2547,8 +2546,7 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         * 403: User lacks instructor permissions
         * 404: Course not found
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def get(self, request, course_id):
         """
@@ -2716,8 +2714,7 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         * 404: Course or user not found
         * 409: Cannot remove own instructor access
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def delete(self, request, course_id, email_or_username):
         """Revoke one or more course roles from a user."""
