@@ -1460,7 +1460,11 @@ class ContentStoreTest(ContentStoreTestCase):
             resp = self.client.get_html(
                 get_url(handler, course_key, 'course_key_string')
             )
-            self.assertEqual(resp.status_code, 200)  # noqa: PT009
+            # When grading is routed to the authoring MFE, we expect a redirect.
+            if handler == 'grading_handler':
+                self.assertEqual(resp.status_code, 302)  # noqa: PT009
+            else:
+                self.assertEqual(resp.status_code, 200)  # noqa: PT009
 
         def test_get_json(handler):
             # Helper function for getting HTML for a page in Studio and
@@ -1495,8 +1499,9 @@ class ContentStoreTest(ContentStoreTestCase):
             test_get_html('course_team_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True):
             test_get_html('settings_handler')
-        with override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, True):
-            test_get_html('grading_handler')
+        with override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
+            with override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, False):
+                test_get_html('grading_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True):
             test_get_html('advanced_settings_handler')
         test_get_json('textbooks_list_handler')

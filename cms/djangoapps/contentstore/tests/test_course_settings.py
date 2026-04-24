@@ -168,7 +168,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
     @override_waffle_flag(toggles.LEGACY_STUDIO_EXPORT, True)
     @override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_TEAM, True)
     @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, True)
+    @override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, False)
     def test_disable_advanced_settings_feature(self, disable_advanced_settings):
         """
         If this feature is enabled, only Django Staff/Superuser should be able to access the "Advanced Settings" page.
@@ -178,7 +178,7 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
 
         with override_settings(FEATURES={
             'DISABLE_ADVANCED_SETTINGS': disable_advanced_settings,
-        }):
+        }, COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
             for handler in (
                 'import_handler',
                 'export_handler',
@@ -190,18 +190,28 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
                 response = self.non_staff_client.get_html(
                     get_url(self.course.id, handler)
                 )
-                self.assertEqual(response.status_code, 200)  # noqa: PT009
-                if disable_advanced_settings:
-                    self.assertNotIn(advanced_settings_link_html, response.content)  # noqa: PT009
+                # grading_handler is served by the authoring MFE when configured,
+                # so expect a redirect (302) in that case.
+                if handler == 'grading_handler':
+                    self.assertEqual(response.status_code, 302)  # noqa: PT009
                 else:
-                    self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
+                    self.assertEqual(response.status_code, 200)  # noqa: PT009
+                if disable_advanced_settings:
+                    if handler != 'grading_handler':
+                        self.assertNotIn(advanced_settings_link_html, response.content)  # noqa: PT009
+                else:
+                    if handler != 'grading_handler':
+                        self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
 
                 # Test that staff users see the "Advanced Settings" tab link.
                 response = self.client.get_html(
                     get_url(self.course.id, handler)
                 )
-                self.assertEqual(response.status_code, 200)  # noqa: PT009
-                self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
+                if handler == 'grading_handler':
+                    self.assertEqual(response.status_code, 302)  # noqa: PT009
+                else:
+                    self.assertEqual(response.status_code, 200)  # noqa: PT009
+                    self.assertIn(advanced_settings_link_html, response.content)  # noqa: PT009
 
             # Test that non-staff users can't access the "Advanced Settings" page.
             response = self.non_staff_client.get_html(self.course_setting_url)

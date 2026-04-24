@@ -1423,7 +1423,12 @@ def grading_handler(request, course_key_string, grader_index=None):
             raise PermissionDenied()
 
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
-            return redirect(get_grading_url(course_key))
+            grading_url = get_grading_url(course_key)
+            if grading_url:
+                return redirect(grading_url)
+            # Fall back to legacy Studio page when MFE grading URL is not configured.
+            settings_context = get_course_settings(request, course_key, course_block)
+            return render_to_response('settings.html', settings_context)
         elif 'application/json' in request.META.get('HTTP_ACCEPT', ''):
             if request.method == 'GET':
                 if grader_index is None:
