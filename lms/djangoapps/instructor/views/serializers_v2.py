@@ -190,7 +190,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
                 },
             ])
 
-        if access['instructor'] or access['forum_admin']:
+        if access['instructor'] or (access['staff'] and access['forum_admin']):
             tabs.append({
                 'tab_id': 'course_team',
                 'title': _('Course Team'),

@@ -3507,3 +3507,14 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.staff_user)
         response = self.client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_non_staff_forum_admin_cannot_access_team_endpoints(self):
+        """Non-staff user with only forum Administrator role should get 403."""
+        non_staff_forum_admin = UserFactory.create()
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(non_staff_forum_admin)
+
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=non_staff_forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN

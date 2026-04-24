@@ -97,7 +97,7 @@ class InstructorPermission(BasePermission):
 class CourseTeamPermission(BasePermission):
     """
     Allow access to course team management endpoints for users with
-    instructor (Admin) access or the Discussion Admin (forum Administrator) role.
+    instructor (Admin) access or the Discussion Admin (staff + forum Administrator) role.
     """
     def has_permission(self, request, view):
         try:
@@ -107,7 +107,9 @@ class CourseTeamPermission(BasePermission):
         course = get_course_by_id(course_key)
         if has_access(request.user, 'instructor', course):
             return True
-        if has_forum_access(request.user, course_key, FORUM_ROLE_ADMINISTRATOR):
+        if has_access(request.user, 'staff', course) and has_forum_access(
+            request.user, course_key, FORUM_ROLE_ADMINISTRATOR
+        ):
             return True
         return False
 

@@ -2418,7 +2418,7 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
 
         * 200: OK
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
     """
     permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
@@ -2543,7 +2543,7 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         * 200: OK (GET, POST - role granted/revoked)
         * 400: Invalid parameters
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course not found
     """
     permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
@@ -2710,7 +2710,7 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         * 200: Role(s) revoked successfully
         * 400: Invalid parameters
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course or user not found
         * 409: Cannot remove own instructor access
     """
