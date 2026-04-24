@@ -245,9 +245,9 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
         response = self.client.get(self._url())
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        assert len(data) == 1
-        assert data[0]['exam_id'] == self.exam_id
-        assert data[0]['user']['username'] == 'student1'
+        assert data['count'] == 1
+        assert data['results'][0]['exam_id'] == self.exam_id
+        assert data['results'][0]['user']['username'] == 'student1'
 
     def test_list_attempts_filters_by_exam(self):
         """Only attempts for the requested exam_id are returned."""
@@ -264,8 +264,8 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
 
         response = self.client.get(self._url())
         data = response.json()
-        assert len(data) == 1
-        assert data[0]['exam_id'] == self.exam_id
+        assert data['count'] == 1
+        assert data['results'][0]['exam_id'] == self.exam_id
 
 
 @override_settings(**PROCTORING_SETTINGS)

@@ -3273,6 +3273,8 @@ class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
         return _build_async_response(
             instructor_task, course_id, usage_key, learner_scope=student.username
         )
+
+
 class SpecialExamsListView(DeveloperErrorViewMixin, APIView):
     """
     List all proctored/timed exams in a course.
@@ -3453,7 +3455,7 @@ class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
         )
 
 
-class SpecialExamAttemptsView(DeveloperErrorViewMixin, APIView):
+class SpecialExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
     """
     List all attempts for a specific proctored exam.
 
@@ -3464,34 +3466,17 @@ class SpecialExamAttemptsView(DeveloperErrorViewMixin, APIView):
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAttemptSerializer
 
-    @apidocs.schema(
-        parameters=[
-            apidocs.string_parameter(
-                'course_id',
-                apidocs.ParameterLocation.PATH,
-                description="Course key for the course.",
-            ),
-            apidocs.string_parameter(
-                'exam_id',
-                apidocs.ParameterLocation.PATH,
-                description="Exam identifier.",
-            ),
-        ],
-        responses={
-            200: ExamAttemptSerializer(many=True),
-            401: "The requesting user is not authenticated.",
-            403: "The requesting user lacks access.",
-        },
-    )
-    def get(self, request, course_id, exam_id):
-        """List all attempts for a specific proctored exam."""
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        exam_id = int(self.kwargs['exam_id'])
+        # TODO: replace with exam-level query from edx_proctoring once available
+        # (e.g. ProctoredExamStudentAttempt.objects.get_all_exam_attempts_by_exam_id)
         attempts = get_all_exam_attempts(course_id)
-        exam_attempts = [
-            a for a in attempts if a.get('proctored_exam', {}).get('id') == int(exam_id)
+        return [
+            a for a in attempts if a.get('proctored_exam', {}).get('id') == exam_id
         ]
-        serializer = ExamAttemptSerializer(exam_attempts, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
@@ -3558,12 +3543,7 @@ class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
             return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         course_key = CourseKey.from_string(course_id)
-        course = modulestore().get_course(course_key)
-        if course is None:
-            return Response(
-                {'error': 'Course not found'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        course = get_course_by_id(course_key)
 
         validated = update_serializer.validated_data
         updated = False
@@ -3709,14 +3689,11 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
         results = []
         for user_identifier in user_ids:
             try:
-                numeric_user_id = int(user_identifier)
-            except (ValueError, TypeError):
-                try:
-                    user = get_user_by_username_or_email(user_identifier)
-                    numeric_user_id = user.id
-                except get_user_model().DoesNotExist:
-                    results.append({'identifier': user_identifier, 'success': False, 'error': 'User not found'})
-                    continue
+                user = get_user_by_username_or_email(str(user_identifier))
+                numeric_user_id = user.id
+            except get_user_model().DoesNotExist:
+                results.append({'identifier': user_identifier, 'success': False, 'error': 'User not found'})
+                continue
 
             try:
                 remove_allowance_for_user(int(exam_id), numeric_user_id, allowance_type)

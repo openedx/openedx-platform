@@ -1010,6 +1010,8 @@ class ScoreOverrideRequestSerializer(serializers.Serializer):
         if "score" not in data and "new_score" in data:
             data = {**data, "score": data["new_score"]}
         return super().to_internal_value(data)
+
+
 class SpecialExamSerializer(serializers.Serializer):
     """Serializer for proctored/timed exam data from edx_proctoring."""
     id = serializers.IntegerField()
