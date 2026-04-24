@@ -81,6 +81,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.admin = AdminFactory.create()
         self.instructor = InstructorFactory.create(course_key=self.course_key)
         self.staff = StaffFactory.create(course_key=self.course_key)
+        self.django_staff_user = UserFactory.create(is_staff=True)
         self.data_researcher = UserFactory.create()
         CourseDataResearcherRole(self.course_key).add_users(self.data_researcher)
         CourseInstructorRole(self.proctored_course.id).add_users(self.instructor)
@@ -127,7 +128,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        assert response.status_code == status.HTTP_200_OK
         data = response.data
 
         # Verify basic course information
@@ -192,6 +193,19 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         assert 'admin_console_url' in response.data
         data = response.data
         assert data['admin_console_url'] is None
+
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025/admin-console')
+    def test_django_staff_user_without_instructor_access_can_see_admin_console_url(self):
+        """
+        Test that Django staff users without instructor access can see the admin console URL.
+        """
+        self.client.force_authenticate(user=self.django_staff_user)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'admin_console_url' in response.data
+        data = response.data
+        assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
 
     def test_get_course_metadata_as_staff(self):
         """
