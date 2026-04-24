@@ -1,0 +1,661 @@
+swagger: '2.0'
+info:
+  title: Instructor Dashboard Special Exams API v2
+  version: 2.0.0
+  description: |
+    REST API for managing proctored and timed exams in the Instructor Dashboard.
+    Designed to support the Instructor Dashboard Micro-Frontend (MFE).
+
+    **Design Principles:**
+    - RESTful resource-oriented URLs
+    - Course-scoped endpoints
+    - Delegation to edx_proctoring plugin
+    - Centralized permission checks
+    - Consistent error handling
+
+host: courses.example.com
+basePath: /
+schemes:
+  - https
+
+securityDefinitions:
+  JWTAuth:
+    type: apiKey
+    in: header
+    name: Authorization
+    description: JWT token authentication (e.g. `JWT <token>`).
+
+security:
+  - JWTAuth: []
+
+tags:
+  - name: Special Exams
+    description: Proctored and timed exam management
+  - name: Proctoring Settings
+    description: Course proctoring configuration
+
+paths:
+  /api/instructor/v2/courses/{course_id}/special_exams:
+    get:
+      tags:
+        - Special Exams
+      summary: List all special exams in a course
+      description: |
+        Retrieve all proctored and timed exams for the specified course.
+        Supports filtering by exam type.
+      operationId: listSpecialExams
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: exam_type
+          in: query
+          required: false
+          type: string
+          enum: [proctored, timed, practice]
+          description: Filter by exam type
+      responses:
+        200:
+          description: List of special exams
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/SpecialExam'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}:
+    get:
+      tags:
+        - Special Exams
+      summary: Get special exam details
+      description: |
+        Retrieve details for a specific proctored or timed exam.
+      operationId: getSpecialExam
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ExamId'
+      responses:
+        200:
+          description: Exam details
+          schema:
+            $ref: '#/definitions/SpecialExam'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/reset/{username}:
+    post:
+      tags:
+        - Special Exams
+      summary: Reset a student's exam attempt
+      description: |
+        Reset a student's proctored exam attempt, removing the attempt record
+        and clearing platform-side state.
+      operationId: resetExamAttempt
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ExamId'
+        - name: username
+          in: path
+          required: true
+          type: string
+          description: Student's username
+      responses:
+        200:
+          description: Attempt reset successfully
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/attempts:
+    get:
+      tags:
+        - Special Exams
+      summary: List exam attempts
+      description: |
+        List all attempts for a specific proctored exam with review status.
+      operationId: listExamAttempts
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ExamId'
+      responses:
+        200:
+          description: List of exam attempts
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ExamAttempt'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+  /api/instructor/v2/courses/{course_id}/proctoring_settings:
+    get:
+      tags:
+        - Proctoring Settings
+      summary: Get proctoring settings
+      description: |
+        Retrieve proctoring configuration for the course.
+      operationId: getProctoringSettings
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+      responses:
+        200:
+          description: Proctoring settings
+          schema:
+            $ref: '#/definitions/ProctoringSettings'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+    patch:
+      tags:
+        - Proctoring Settings
+      summary: Update proctoring settings
+      description: |
+        Update proctoring settings for the course.
+      operationId: updateProctoringSettings
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ProctoringSettingsUpdate'
+      responses:
+        200:
+          description: Settings updated
+          schema:
+            $ref: '#/definitions/ProctoringSettings'
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/allowance:
+    post:
+      tags:
+        - Special Exams
+      summary: Grant or update exam allowance
+      description: |
+        Grant or update a time extension or accommodation for a student on a proctored exam.
+        This is an upsert — if an allowance of the same type already exists for the user,
+        it will be updated with the new value.
+      operationId: grantExamAllowance
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ExamId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ExamAllowanceRequest'
+      responses:
+        200:
+          description: Allowance granted or updated
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+    delete:
+      tags:
+        - Special Exams
+      summary: Remove exam allowance
+      description: |
+        Remove an allowance for a student on a proctored exam.
+      operationId: removeExamAllowance
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/ExamId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/ExamAllowanceDeleteRequest'
+      responses:
+        200:
+          description: Allowance removed
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              message:
+                type: string
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+        404:
+          $ref: '#/responses/NotFound'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/allowances:
+    get:
+      tags:
+        - Special Exams
+      summary: List all exam allowances for a course
+      description: |
+        Retrieve all exam allowances granted across all exams in the course.
+        Supports search by username or email and pagination.
+      operationId: listCourseAllowances
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/Search'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/PageSize'
+      responses:
+        200:
+          description: Paginated list of exam allowances
+          schema:
+            $ref: '#/definitions/PaginatedExamAllowanceList'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+    post:
+      tags:
+        - Special Exams
+      summary: Bulk-create allowances across multiple exams and users
+      description: |
+        Grant allowances for multiple users across multiple exams in a single request.
+      operationId: bulkCreateAllowances
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/BulkAllowanceRequest'
+      responses:
+        200:
+          description: Bulk operation results
+          schema:
+            type: object
+            properties:
+              successes:
+                type: integer
+              failures:
+                type: integer
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    exam_id:
+                      type: integer
+                    user_id:
+                      type: string
+        400:
+          $ref: '#/responses/BadRequest'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+  /api/instructor/v2/courses/{course_id}/special_exams/attempts:
+    get:
+      tags:
+        - Special Exams
+      summary: List all exam attempts for a course
+      description: |
+        Retrieve all exam attempts across all exams in the course.
+        Supports search by username or email and pagination.
+      operationId: listCourseExamAttempts
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/CourseId'
+        - $ref: '#/parameters/Search'
+        - $ref: '#/parameters/Page'
+        - $ref: '#/parameters/PageSize'
+      responses:
+        200:
+          description: Paginated list of exam attempts
+          schema:
+            $ref: '#/definitions/PaginatedExamAttemptList'
+        401:
+          $ref: '#/responses/Unauthorized'
+        403:
+          $ref: '#/responses/Forbidden'
+
+parameters:
+  CourseId:
+    name: course_id
+    in: path
+    required: true
+    description: Course identifier in format `course-v1:{org}+{course}+{run}`
+    type: string
+    x-example: "course-v1:edX+DemoX+Demo_Course"
+
+  ExamId:
+    name: exam_id
+    in: path
+    required: true
+    description: Proctored exam identifier
+    type: integer
+    x-example: 1
+
+  Search:
+    name: search
+    in: query
+    required: false
+    description: Filter by username or email (case-insensitive partial match)
+    type: string
+    x-example: "student1"
+
+  Page:
+    name: page
+    in: query
+    required: false
+    description: Page number for pagination
+    type: integer
+    x-example: 1
+
+  PageSize:
+    name: page_size
+    in: query
+    required: false
+    description: Number of results per page
+    type: integer
+    x-example: 10
+
+responses:
+  BadRequest:
+    description: Bad request
+    schema:
+      $ref: '#/definitions/Error'
+
+  Unauthorized:
+    description: Authentication required
+    schema:
+      $ref: '#/definitions/Error'
+
+  Forbidden:
+    description: Insufficient permissions
+    schema:
+      $ref: '#/definitions/Error'
+
+  NotFound:
+    description: Resource not found
+    schema:
+      $ref: '#/definitions/Error'
+
+definitions:
+  SpecialExam:
+    type: object
+    properties:
+      id:
+        type: integer
+      course_id:
+        type: string
+      content_id:
+        type: string
+      exam_name:
+        type: string
+      time_limit_mins:
+        type: integer
+      due_date:
+        type: string
+        format: date-time
+        x-nullable: true
+      exam_type:
+        type: string
+      is_proctored:
+        type: boolean
+      is_practice_exam:
+        type: boolean
+      is_active:
+        type: boolean
+      hide_after_due:
+        type: boolean
+      backend:
+        type: string
+        x-nullable: true
+
+  ExamAttempt:
+    type: object
+    properties:
+      id:
+        type: integer
+      user:
+        type: object
+        properties:
+          id:
+            type: integer
+          username:
+            type: string
+          email:
+            type: string
+      exam_id:
+        type: integer
+      status:
+        type: string
+      start_time:
+        type: string
+        format: date-time
+        x-nullable: true
+      end_time:
+        type: string
+        format: date-time
+        x-nullable: true
+      allowed_time_limit_mins:
+        type: integer
+        x-nullable: true
+
+  ProctoringSettings:
+    type: object
+    properties:
+      proctoring_provider:
+        type: string
+        x-nullable: true
+      proctoring_escalation_email:
+        type: string
+        x-nullable: true
+      create_zendesk_tickets:
+        type: boolean
+      enable_proctored_exams:
+        type: boolean
+
+  ProctoringSettingsUpdate:
+    type: object
+    properties:
+      proctoring_escalation_email:
+        type: string
+      create_zendesk_tickets:
+        type: boolean
+      enable_proctored_exams:
+        type: boolean
+
+  ExamAllowanceRequest:
+    type: object
+    required:
+      - user_ids
+      - allowance_type
+      - value
+    properties:
+      user_ids:
+        type: array
+        items:
+          type: string
+        description: List of usernames or emails of the students
+      allowance_type:
+        type: string
+        description: Type of allowance (e.g. 'additional_time_granted')
+      value:
+        type: string
+        description: Allowance value
+
+  ExamAllowanceDeleteRequest:
+    type: object
+    required:
+      - user_ids
+      - allowance_type
+    properties:
+      user_ids:
+        type: array
+        items:
+          type: string
+        description: List of usernames, emails, or numeric user IDs
+      allowance_type:
+        type: string
+        description: Type of allowance to remove
+
+  BulkAllowanceRequest:
+    type: object
+    required:
+      - exam_ids
+      - user_ids
+      - allowance_type
+      - value
+    properties:
+      exam_ids:
+        type: array
+        items:
+          type: integer
+        description: List of exam IDs
+      user_ids:
+        type: array
+        items:
+          type: string
+        description: List of usernames or emails of the students
+      allowance_type:
+        type: string
+        description: Type of allowance (e.g. 'additional_time_granted')
+      value:
+        type: string
+        description: Allowance value
+
+  ExamAllowance:
+    type: object
+    properties:
+      id:
+        type: integer
+      created:
+        type: string
+        format: date-time
+      modified:
+        type: string
+        format: date-time
+      user:
+        type: object
+        properties:
+          id:
+            type: integer
+          username:
+            type: string
+          email:
+            type: string
+      key:
+        type: string
+        description: Allowance type key
+      value:
+        type: string
+        description: Allowance value
+      proctored_exam:
+        $ref: '#/definitions/SpecialExam'
+
+  PaginatedExamAllowanceList:
+    type: object
+    properties:
+      count:
+        type: integer
+      next:
+        type: string
+        format: uri
+        x-nullable: true
+      previous:
+        type: string
+        format: uri
+        x-nullable: true
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/ExamAllowance'
+
+  PaginatedExamAttemptList:
+    type: object
+    properties:
+      count:
+        type: integer
+      next:
+        type: string
+        format: uri
+        x-nullable: true
+      previous:
+        type: string
+        format: uri
+        x-nullable: true
+      results:
+        type: array
+        items:
+          $ref: '#/definitions/ExamAttempt'
+
+  Error:
+    type: object
+    properties:
+      error:
+        type: string
+      message:
+        type: string
+      status_code:
+        type: integer

@@ -157,6 +157,47 @@ v2_api_urls = [
         api_v2.ScoreOverrideView.as_view(),
         name='score_override'
     ),
+    # Special Exams endpoints
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams$',
+        api_v2.SpecialExamsListView.as_view(),
+        name='special_exams_list'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/allowances$',
+        api_v2.CourseAllowancesView.as_view(),
+        name='course_allowances'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/attempts$',
+        api_v2.CourseExamAttemptsView.as_view(),
+        name='course_exam_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)$',
+        api_v2.SpecialExamDetailView.as_view(),
+        name='special_exam_detail'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/reset/(?P<username>[^/]+)$',
+        api_v2.SpecialExamResetView.as_view(),
+        name='special_exam_reset'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/attempts$',
+        api_v2.SpecialExamAttemptsView.as_view(),
+        name='special_exam_attempts'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/special_exams/(?P<exam_id>\d+)/allowance$',
+        api_v2.ExamAllowanceView.as_view(),
+        name='exam_allowance'
+    ),
+    re_path(
+        rf'^courses/{COURSE_ID_PATTERN}/proctoring_settings$',
+        api_v2.ProctoringSettingsView.as_view(),
+        name='proctoring_settings'
+    ),
 ]
 
 urlpatterns = [

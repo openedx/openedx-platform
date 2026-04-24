@@ -28,6 +28,21 @@ from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django_filters.rest_framework import DjangoFilterBackend
+from edx_proctoring.api import (
+    add_allowance_for_user,
+    get_all_exam_attempts,
+    get_all_exams_for_course,
+    get_allowances_for_course,
+    get_exam_by_id,
+    get_filtered_exam_attempts,
+    get_user_attempts_by_exam_id,
+    remove_allowance_for_user,
+    remove_exam_attempt,
+)
+from edx_proctoring.exceptions import (
+    ProctoredBaseException,
+    ProctoredExamNotFoundException,
+)
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
@@ -114,6 +129,7 @@ from .serializers_v2 import (
     BetaTesterModifyRequestSerializerV2,
     BetaTesterModifyResponseSerializerV2,
     BlockDueDateSerializerV2,
+    BulkAllowanceRequestSerializer,
     CertificateGenerationHistorySerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
@@ -121,14 +137,20 @@ from .serializers_v2 import (
     CourseTeamRevokeSerializer,
     EnrollmentModifyRequestSerializerV2,
     EnrollmentModifyResponseSerializerV2,
+    ExamAllowanceRequestSerializer,
+    ExamAllowanceSerializer,
+    ExamAttemptSerializer,
     InstructorTaskListSerializer,
     IssuedCertificateSerializer,
     LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
     ProblemSerializer,
+    ProctoringSettingsSerializer,
+    ProctoringSettingsUpdateSerializer,
     RegenerateCertificatesSerializer,
     ScoreOverrideRequestSerializer,
+    SpecialExamSerializer,
     SyncOperationResultSerializer,
     TaskStatusSerializer,
     UnitExtensionSerializer,
@@ -3251,3 +3273,537 @@ class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
         return _build_async_response(
             instructor_task, course_id, usage_key, learner_scope=student.username
         )
+class SpecialExamsListView(DeveloperErrorViewMixin, APIView):
+    """
+    List all proctored/timed exams in a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams
+        GET /api/instructor/v2/courses/{course_id}/special_exams?exam_type=proctored
+
+    **Query Parameters**
+
+        exam_type (optional): Filter by exam type. Values: proctored, timed, practice.
+
+    **Response Values**
+
+        A JSON array of special exam objects.
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: SpecialExamSerializer(many=True),
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+        },
+    )
+    def get(self, request, course_id):
+        """List all proctored/timed exams in the course."""
+        # `get_all_exams_for_course()` Returns a list of dictionaries, so we have to filter manually
+        exams = get_all_exams_for_course(course_id)
+        exam_type_lower = request.query_params.get('exam_type', '').strip().lower()
+        if exam_type_lower == 'proctored':
+            exams = [e for e in exams if e.get('is_proctored') and not e.get('is_practice_exam')]
+        elif exam_type_lower == 'practice':
+            exams = [e for e in exams if e.get('is_practice_exam')]
+        elif exam_type_lower == 'timed':
+            exams = [e for e in exams if not e.get('is_proctored')]
+        serializer = SpecialExamSerializer(exams, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpecialExamDetailView(DeveloperErrorViewMixin, APIView):
+    """
+    Retrieve details for a specific special exam.
+
+    **Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: SpecialExamSerializer,
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def get(self, request, course_id, exam_id):
+        """Retrieve details for a specific special exam."""
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = SpecialExamSerializer(exam)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
+    """
+    Reset a student's proctored exam attempt.
+
+    **Example Request**
+
+        POST /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/reset/{username}
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+            apidocs.string_parameter(
+                'username',
+                apidocs.ParameterLocation.PATH,
+                description="Student's username.",
+            ),
+        ],
+        responses={
+            200: "Attempt reset successfully.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam or user not found.",
+        },
+    )
+    def post(self, request, course_id, exam_id, username):
+        """Reset a student's proctored exam attempt."""
+        UserModel = get_user_model()
+        try:
+            student = UserModel.objects.get(username=username)
+        except UserModel.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Find and remove the student's attempts for this exam
+        user_attempts = get_user_attempts_by_exam_id(student.id, int(exam_id))
+
+        if not user_attempts:
+            return Response(
+                {'error': 'No attempts found for this user on this exam'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        for attempt in user_attempts:
+            remove_exam_attempt(attempt['id'], requesting_user=request.user)
+
+        return Response(
+            {'success': True, 'message': f'Exam attempt reset for user {username}'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SpecialExamAttemptsView(DeveloperErrorViewMixin, APIView):
+    """
+    List all attempts for a specific proctored exam.
+
+    **Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/attempts
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: ExamAttemptSerializer(many=True),
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+        },
+    )
+    def get(self, request, course_id, exam_id):
+        """List all attempts for a specific proctored exam."""
+        attempts = get_all_exam_attempts(course_id)
+        exam_attempts = [
+            a for a in attempts if a.get('proctored_exam', {}).get('id') == int(exam_id)
+        ]
+        serializer = ExamAttemptSerializer(exam_attempts, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
+    """
+    Retrieve or update proctoring configuration for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/proctoring_settings
+        PATCH /api/instructor/v2/courses/{course_id}/proctoring_settings
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: ProctoringSettingsSerializer,
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Course not found.",
+        },
+    )
+    def get(self, request, course_id):
+        """Retrieve proctoring configuration for the course."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+        settings_data = {
+            'proctoring_provider': getattr(course, 'proctoring_provider', None),
+            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
+            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
+            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
+        }
+        serializer = ProctoringSettingsSerializer(settings_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: ProctoringSettingsSerializer,
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Course not found.",
+        },
+    )
+    def patch(self, request, course_id):
+        """Update proctoring settings for the course."""
+        update_serializer = ProctoringSettingsUpdateSerializer(data=request.data)
+        if not update_serializer.is_valid():
+            return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        course_key = CourseKey.from_string(course_id)
+        course = modulestore().get_course(course_key)
+        if course is None:
+            return Response(
+                {'error': 'Course not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        validated = update_serializer.validated_data
+        updated = False
+        for field in ('proctoring_escalation_email', 'create_zendesk_tickets', 'enable_proctored_exams'):
+            if field in validated:
+                setattr(course, field, validated[field])
+                updated = True
+
+        if updated:
+            modulestore().update_item(course, request.user.id)
+
+        settings_data = {
+            'proctoring_provider': getattr(course, 'proctoring_provider', None),
+            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
+            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
+            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
+        }
+        serializer = ProctoringSettingsSerializer(settings_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
+    """
+    Grant, update, or remove an allowance for a student on a proctored exam.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/allowance
+        DELETE /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/allowance
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: "Allowance granted successfully.",
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def post(self, request, course_id, exam_id):
+        """Grant an allowance for a student on a proctored exam."""
+        serializer = ExamAllowanceRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        validated = serializer.validated_data
+        results = []
+        for user_info in validated['user_ids']:
+            try:
+                add_allowance_for_user(
+                    int(exam_id),
+                    user_info,
+                    validated['allowance_type'],
+                    validated['value'],
+                )
+                results.append({'identifier': user_info, 'success': True})
+            except ProctoredBaseException as err:
+                results.append({'identifier': user_info, 'success': False, 'error': str(err)})
+
+        return Response(
+            {'allowance_type': validated['allowance_type'], 'results': results},
+            status=status.HTTP_200_OK,
+        )
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: "Allowance removed successfully.",
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def delete(self, request, course_id, exam_id):
+        """Remove allowances for one or more students on a proctored exam."""
+        user_ids = request.data.get('user_ids')
+        allowance_type = request.data.get('allowance_type')
+        if not user_ids or not allowance_type:
+            return Response(
+                {'error': 'user_ids and allowance_type are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if isinstance(user_ids, str):
+            user_ids = [user_ids]
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        results = []
+        for user_identifier in user_ids:
+            try:
+                numeric_user_id = int(user_identifier)
+            except (ValueError, TypeError):
+                try:
+                    user = get_user_by_username_or_email(user_identifier)
+                    numeric_user_id = user.id
+                except get_user_model().DoesNotExist:
+                    results.append({'identifier': user_identifier, 'success': False, 'error': 'User not found'})
+                    continue
+
+            try:
+                remove_allowance_for_user(int(exam_id), numeric_user_id, allowance_type)
+                results.append({'identifier': user_identifier, 'success': True})
+            except ProctoredBaseException as err:
+                results.append({'identifier': user_identifier, 'success': False, 'error': str(err)})
+
+        return Response(
+            {'allowance_type': allowance_type, 'results': results},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List or bulk-create exam allowances for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAllowanceSerializer
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        allowances = get_allowances_for_course(course_id)
+        search = self.request.query_params.get('search', '').strip().lower()
+        if search:
+            allowances = [
+                a for a in allowances
+                if search in a.get('user', {}).get('username', '').lower()
+                or search in a.get('user', {}).get('email', '').lower()
+            ]
+        return allowances
+
+    def post(self, request, course_id):
+        """Bulk-create allowances across multiple exams and users."""
+        serializer = BulkAllowanceRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated = serializer.validated_data
+        results = []
+        for exam_id in validated['exam_ids']:
+            for user_info in validated['user_ids']:
+                try:
+                    add_allowance_for_user(
+                        exam_id,
+                        user_info,
+                        validated['allowance_type'],
+                        validated['value'],
+                    )
+                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': True})
+                except ProctoredBaseException as err:
+                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': False, 'error': str(err)})
+
+        return Response({
+            'allowance_type': validated['allowance_type'],
+            'value': validated['value'],
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+
+class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List all exam attempts across all exams in a course with optional search and pagination.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAttemptSerializer
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            # get_filtered_exam_attempts does server-side filtering by username/email
+            return get_filtered_exam_attempts(course_id, search)
+        return get_all_exam_attempts(course_id)
