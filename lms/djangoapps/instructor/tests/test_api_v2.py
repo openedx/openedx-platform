@@ -3518,3 +3518,27 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=non_staff_forum_admin)
         response = self.client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_forum_admin_cannot_grant_instructor_role(self):
+        """Discussion Admin should not be able to grant the instructor role (privilege escalation)."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        target = UserFactory.create()
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.post(url, {
+            'identifiers': [target.username],
+            'role': 'instructor',
+            'action': 'allow',
+        }, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_forum_admin_cannot_revoke_instructor_role(self):
+        """Discussion Admin should not be able to revoke the instructor role."""
+        # Create an instructor to target
+        instructor = InstructorFactory.create(course_key=self.course_key)
+        url = reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': instructor.username},
+        )
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.delete(url, {'roles': ['instructor']}, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -2631,6 +2631,12 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
+        if rolename == 'instructor' and not has_access(request.user, 'instructor', course):
+            return Response(
+                {'error': _('Managing the instructor role requires instructor access.')},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         results = []
         for identifier in identifiers:
             error = False
@@ -2726,6 +2732,12 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
             return Response(revoke_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         roles = revoke_serializer.validated_data['roles']
+
+        if 'instructor' in roles and not has_access(request.user, 'instructor', course):
+            return Response(
+                {'error': _('Managing the instructor role requires instructor access.')},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
             user = get_student_from_identifier(email_or_username)
