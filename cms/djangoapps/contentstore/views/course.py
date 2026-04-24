@@ -1422,6 +1422,9 @@ def grading_handler(request, course_key_string, grader_index=None):
         if not has_studio_read_access(request.user, course_key):
             raise PermissionDenied()
 
+        # Load the course block for use in rendering or context helpers.
+        course_block = get_course_and_check_access(course_key, request.user)
+
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
             grading_url = get_grading_url(course_key)
             if grading_url:
