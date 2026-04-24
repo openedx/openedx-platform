@@ -335,7 +335,14 @@ body,
     textarea,
     select.setting-input,
     select.problem-mode {
-      @extend %input-styles;
+      &:not(select.setting-input) {
+        @extend %input-styles;
+      }
+      &select.setting-input {
+        // We don't want to set background-image: none; here because it
+        // hides the arrow icon in the select box.
+        @extend %input-styles-without-bg-prop;
+      }
 
       box-shadow: none;
       border-radius: $btn-border-radius !important;

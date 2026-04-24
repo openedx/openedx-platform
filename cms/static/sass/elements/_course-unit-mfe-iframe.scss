@@ -15,6 +15,16 @@
   transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
 
+%input-styles-without-bg-prop {
+  font-size: $base-font-size;
+  color: $text-color !important;
+  background-color: $white;
+  border: 1px solid $border-color !important;
+  border-radius: $input-border-radius !important;
+  padding: 10px 16px !important;
+  transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
 %modal-actions-button {
   font-size: $base-font-size;
   line-height: 20px;
