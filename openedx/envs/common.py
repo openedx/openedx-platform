@@ -1905,6 +1905,20 @@ ENABLE_DYNAMIC_REGISTRATION_FIELDS = False
 # .. setting_description: Base URL of the micro-frontend-based learner home page.
 LEARNER_HOME_MICROFRONTEND_URL = None
 
+# .. setting_name: COURSE_AUTHORING_MICROFRONTEND_URL
+# .. setting_default: http://apps.local.openedx.io:2001/authoring
+# .. setting_description: Base URL of the micro-frontend-based course authoring (Studio) page.
+#     Used by both LMS and CMS backend code to construct links into the authoring MFE.
+COURSE_AUTHORING_MICROFRONTEND_URL = "http://apps.local.openedx.io:2001/authoring"
+
+# .. setting_name: ADMIN_CONSOLE_MICROFRONTEND_URL
+# .. setting_default: None
+# .. setting_description: Base URL of the micro-frontend-based admin console page.
+#     Used by LMS backend code to construct links into the admin console MFE.
+#     Although the admin console is CMS-centric, this setting lives in the shared
+#     base so both LMS and CMS can reference it without duplication.
+ADMIN_CONSOLE_MICROFRONTEND_URL = None
+
 ################################## Swift ###################################
 
 SWIFT_USERNAME = None

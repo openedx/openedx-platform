@@ -467,10 +467,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get Studio MFE grading settings URL for the course."""
         course_key = data['course'].id
         mfe_base_url = configuration_helpers.get_value(
-            'MFE_CONFIG',
-            getattr(settings, 'MFE_CONFIG', None)
+            'COURSE_AUTHORING_MICROFRONTEND_URL',
+            getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
         )
-        mfe_base_url = mfe_base_url.get('COURSE_AUTHORING_MICROFRONTEND_URL') if mfe_base_url else None
         if not mfe_base_url:
             return None
         return f'{mfe_base_url}/course/{course_key}/settings/grading'
