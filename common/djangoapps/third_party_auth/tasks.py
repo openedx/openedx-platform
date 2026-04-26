@@ -16,8 +16,10 @@ from social_django.models import UserSocialAuth
 from common.djangoapps.third_party_auth.models import SAMLConfiguration, SAMLProviderConfig
 from common.djangoapps.third_party_auth.utils import (
     MetadataParseError,
+    SAMLMetadataURLError,
     create_or_update_bulk_saml_provider_data,
     parse_metadata_xml,
+    validate_saml_metadata_url,
 )
 
 log = logging.getLogger(__name__)
@@ -74,10 +76,9 @@ def fetch_saml_metadata():
     failure_messages = []  # We return the length of this array for num_failed
     for url, entity_ids in url_map.items():
         try:
+            validate_saml_metadata_url(url)
             log.info("Fetching %s", url)
-            if not url.lower().startswith('https'):
-                log.warning("This SAML metadata URL is not secure! It should use HTTPS. (%s)", url)
-            response = requests.get(url, verify=True)  # May raise HTTPError or SSLError or ConnectionError
+            response = requests.get(url, verify=True, timeout=30)  # May raise HTTPError or SSLError or ConnectionError
             response.raise_for_status()  # May raise an HTTPError
 
             try:
@@ -96,7 +97,13 @@ def fetch_saml_metadata():
                     num_updated += 1
                 else:
                     log.info(f"→ Updated existing SAMLProviderData. Nothing has changed for entityID {entity_id}")
-        except (exceptions.SSLError, exceptions.HTTPError, exceptions.RequestException, MetadataParseError) as error:
+        except (
+            exceptions.SSLError,
+            exceptions.HTTPError,
+            exceptions.RequestException,
+            MetadataParseError,
+            SAMLMetadataURLError,
+        ) as error:
             # Catch and process exception in case of errors during fetching and processing saml metadata.
             # Here is a description of each exception.
             # SSLError is raised in case of errors caused by SSL (e.g. SSL cer verification failure etc.)

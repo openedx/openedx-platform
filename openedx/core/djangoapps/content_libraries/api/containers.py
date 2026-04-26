@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from django.db import transaction
+from django.db.models import F
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
@@ -73,10 +74,13 @@ def get_container(
     """
     container = get_container_from_key(container_key)
     if include_collections:
+        # Temporarily alias collection_code to "key" so downstream consumers
+        # (search indexer, REST API) keep the same field name.  We will update
+        # downstream consumers later: https://github.com/openedx/openedx-platform/issues/38406
         associated_collections = content_api.get_entity_collections(
             container.publishable_entity.learning_package_id,
             container_key.container_id,
-        ).values("key", "title")
+        ).values("title", key=F("collection_code"))
     else:
         associated_collections = None
     container_meta = ContainerMetadata.from_container(
@@ -121,7 +125,7 @@ def create_container(
     # Then try creating the actual container:
     container, _initial_version = content_api.create_container_and_version(
         content_library.learning_package_id,
-        key=slug,
+        container_code=slug,
         title=title,
         container_cls=container_cls,
         entities=[],
@@ -226,7 +230,7 @@ def delete_container(
     # Fetch related collections and containers before soft-delete
     affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
-        container.key,
+        container.entity_ref,
     )
     affected_containers = get_containers_contains_item(container_key)
     # Get children containers or components to update their index data
@@ -249,7 +253,7 @@ def delete_container(
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )
@@ -291,7 +295,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
 
     affected_collections = content_api.get_entity_collections(
         container.publishable_entity.learning_package_id,
-        container.key,
+        container.entity_ref,
     )
 
     content_api.set_draft_version(container.id, container.versioning.latest.pk)
@@ -333,7 +337,7 @@ def restore_container(container_key: LibraryContainerLocator) -> None:
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
             )
         )

@@ -88,7 +88,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         Test retrieving a Content Library Collection
         """
         resp = self.client.get(
-            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
         )
 
         # Check that correct Content Library Collection data retrieved
@@ -103,7 +103,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         random_user = UserFactory.create(username="Random", email="random@example.com")
         with self.as_user(random_user):
             resp = self.client.get(
-                URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+                URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
             )
             assert resp.status_code == 403
 
@@ -113,7 +113,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         """
         # Fetch collection that belongs to a different library, it should fail
         resp = self.client.get(
-            URL_LIB_COLLECTION.format(lib_key=self.lib1.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION.format(lib_key=self.lib1.library_key, collection_key=self.col3.collection_code)
         )
 
         assert resp.status_code == 404
@@ -247,9 +247,9 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
 
         assert resp.status_code == 400
 
-        # Create collection with an existing collection.key; it should fail
+        # Create collection with an existing collection.collection_code; it should fail
         post_data_existing_key = {
-            "key": self.col1.key,
+            "key": self.col1.collection_code,
             "title": "Collection 4",
         }
         resp = self.client.post(
@@ -275,7 +275,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
             "title": "Collection 3 Updated",
         }
         resp = self.client.patch(
-            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key),
+            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code),
             patch_data,
             format="json"
         )
@@ -297,7 +297,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
                 "title": "Collection 3 should not update",
             }
             resp = self.client.patch(
-                URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key),
+                URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code),
                 patch_data,
                 format="json"
             )
@@ -313,7 +313,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         }
         # Update collection that belongs to a different library, it should fail
         resp = self.client.patch(
-            URL_LIB_COLLECTION.format(lib_key=self.lib1.library_key, collection_key=self.col3.key),
+            URL_LIB_COLLECTION.format(lib_key=self.lib1.library_key, collection_key=self.col3.collection_code),
             patch_data,
             format="json"
         )
@@ -331,7 +331,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
 
         # Update collection with invalid library_key provided, it should fail
         resp = self.client.patch(
-            URL_LIB_COLLECTION.format(lib_key=123, collection_key=self.col3.key),
+            URL_LIB_COLLECTION.format(lib_key=123, collection_key=self.col3.collection_code),
             patch_data,
             format="json"
         )
@@ -342,22 +342,22 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         Test soft-deleting and restoring a Content Library Collection
         """
         resp = self.client.delete(
-            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
         )
         assert resp.status_code == 204
 
         resp = self.client.get(
-            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
         )
         assert resp.status_code == 404
 
         resp = self.client.post(
-            URL_LIB_COLLECTION_RESTORE.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION_RESTORE.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
         )
         assert resp.status_code == 204
 
         resp = self.client.get(
-            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.key)
+            URL_LIB_COLLECTION.format(lib_key=self.lib2.library_key, collection_key=self.col3.collection_code)
         )
         # Check that correct Content Library Collection data retrieved
         expected_collection = {
@@ -375,7 +375,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = self.client.get(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib1.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
         )
         assert resp.status_code == 405
@@ -388,7 +388,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = self.client.patch(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib1.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -404,7 +404,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = self.client.delete(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib1.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -423,7 +423,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = self.client.patch(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib1.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -440,7 +440,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = self.client.delete(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib1.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -460,7 +460,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = getattr(self.client, method)(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib2.library_key,
-                collection_key=self.col1.key,
+                collection_key=self.col1.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -478,7 +478,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = getattr(self.client, method)(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib2.library_key,
-                collection_key=self.col3.key,
+                collection_key=self.col3.collection_code,
             ),
         )
         assert resp.status_code == 400
@@ -494,7 +494,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
         resp = getattr(self.client, method)(
             URL_LIB_COLLECTION_COMPONENTS.format(
                 lib_key=self.lib2.library_key,
-                collection_key=self.col3.key,
+                collection_key=self.col3.collection_code,
             ),
             data={
                 "usage_keys": [
@@ -515,7 +515,7 @@ class ContentLibraryCollectionsViewsTest(ContentLibrariesRestApiTest):
             resp = getattr(self.client, method)(
                 URL_LIB_COLLECTION_COMPONENTS.format(
                     lib_key=self.lib1.library_key,
-                    collection_key=self.col1.key,
+                    collection_key=self.col1.collection_code,
                 ),
             )
             assert resp.status_code == 403

@@ -21,12 +21,28 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import strip_tags
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_control
 from django_filters.rest_framework import DjangoFilterBackend
+from edx_proctoring.api import (
+    add_allowance_for_user,
+    get_all_exam_attempts,
+    get_all_exams_for_course,
+    get_allowances_for_course,
+    get_exam_by_id,
+    get_filtered_exam_attempts,
+    get_user_attempts_by_exam_id,
+    remove_allowance_for_user,
+    remove_exam_attempt,
+)
+from edx_proctoring.exceptions import (
+    ProctoredBaseException,
+    ProctoredExamNotFoundException,
+)
 from edx_rest_framework_extensions.paginators import DefaultPagination
 from edx_when import api as edx_when_api
 from opaque_keys import InvalidKeyError
@@ -38,6 +54,7 @@ from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from submissions import api as sub_api
 
 from common.djangoapps.student.api import is_user_enrolled_in_course
 from common.djangoapps.student.models import (
@@ -64,9 +81,11 @@ from lms.djangoapps.certificates.models import (
     GeneratedCertificate,
 )
 from lms.djangoapps.course_home_api.toggles import course_home_mfe_progress_tab_is_active
+from lms.djangoapps.courseware.access import has_access
+from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.models import StudentModule
 from lms.djangoapps.courseware.tabs import get_course_tab_list
-from lms.djangoapps.instructor import permissions
+from lms.djangoapps.instructor import enrollment, permissions
 from lms.djangoapps.instructor.access import (
     FORUM_ROLES,
     ROLE_DISPLAY_NAMES,
@@ -106,25 +125,40 @@ from xmodule.modulestore.exceptions import ItemNotFoundError
 
 from .filters_v2 import CourseEnrollmentFilter
 from .serializers_v2 import (
+    AsyncOperationResultSerializer,
     BetaTesterModifyRequestSerializerV2,
     BetaTesterModifyResponseSerializerV2,
     BlockDueDateSerializerV2,
+    BulkAllowanceRequestSerializer,
+    CertificateExceptionSerializer,
     CertificateGenerationHistorySerializer,
+    CertificateInvalidationSerializer,
     CourseEnrollmentSerializerV2,
     CourseInformationSerializerV2,
     CourseTeamModifySerializer,
     CourseTeamRevokeSerializer,
     EnrollmentModifyRequestSerializerV2,
     EnrollmentModifyResponseSerializerV2,
-    GradingConfigSerializer,
+    ExamAllowanceRequestSerializer,
+    ExamAllowanceSerializer,
+    ExamAttemptSerializer,
     InstructorTaskListSerializer,
     IssuedCertificateSerializer,
+    LearnerInputSerializer,
     LearnerSerializer,
     ORASerializer,
     ORASummarySerializer,
     ProblemSerializer,
+    ProctoringSettingsSerializer,
+    ProctoringSettingsUpdateSerializer,
     RegenerateCertificatesSerializer,
+    RemoveCertificateExceptionSerializer,
+    RemoveCertificateInvalidationSerializer,
+    ScoreOverrideRequestSerializer,
+    SpecialExamSerializer,
+    SyncOperationResultSerializer,
     TaskStatusSerializer,
+    ToggleCertificateGenerationSerializer,
     UnitExtensionSerializer,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
@@ -1246,6 +1280,148 @@ class IssuedCertificatesView(ListAPIView):
     permission_name = permissions.VIEW_ISSUED_CERTIFICATES
     serializer_class = IssuedCertificateSerializer
 
+    def _create_certificate_dict_for_allowlisted_user(self, allowlist_entry, enrollment_dict):
+        """
+        Create a dictionary representing certificate data for an allowlisted user
+        who may not have a GeneratedCertificate record yet.
+        """
+        user = allowlist_entry.user
+        enrollment_mode = enrollment_dict.get(user.id, '')
+
+        # Determine certificate status based on enrollment
+        if enrollment_mode == 'audit':
+            cert_status = 'audit_notpassing'
+        elif enrollment_mode == 'verified':
+            cert_status = 'downloadable'
+        else:
+            cert_status = 'notpassing'
+
+        return {
+            'username': user.username,
+            'email': user.email,
+            'enrollment_track': enrollment_mode,
+            'certificate_status': cert_status,
+            'special_case': 'Exception',
+            'exception_granted': allowlist_entry.created.isoformat(),
+            'exception_notes': allowlist_entry.notes or '',
+            'invalidated_by': None,
+            'invalidation_date': None,
+            'invalidation_note': '',
+        }
+
+    def list(self, request, *args, **kwargs):
+        """
+        Override list to handle granted_exceptions and invalidated filters specially.
+
+        For these filters, we need to show ALL relevant users,
+        even those without GeneratedCertificate records yet.
+        """
+        filter_type = request.query_params.get("filter", "all")
+
+        if filter_type == "granted_exceptions":
+            course_id = self.kwargs["course_id"]
+            course_key = CourseKey.from_string(course_id)
+            search = request.query_params.get("search", "").strip()
+
+            # Get enrollment data for context
+            enrollments = CourseEnrollment.objects.filter(
+                course_id=course_key
+            ).select_related('user')
+            enrollment_dict = {e.user_id: e.mode for e in enrollments}
+
+            # Get all allowlist entries
+            allowlist_qs = CertificateAllowlist.objects.filter(
+                course_id=course_key,
+                allowlist=True
+            ).select_related('user')
+
+            # Apply search filter
+            if search:
+                allowlist_qs = allowlist_qs.filter(
+                    Q(user__username__icontains=search) | Q(user__email__icontains=search)
+                )
+
+            # Get existing certificates for allowlisted users
+            allowlist_user_ids = list(allowlist_qs.values_list('user_id', flat=True))
+            existing_certs = GeneratedCertificate.objects.filter(
+                course_id=course_key,
+                user_id__in=allowlist_user_ids
+            ).select_related('user')
+            existing_cert_user_ids = set(existing_certs.values_list('user_id', flat=True))
+
+            # Build list of certificate data
+            certificate_data = []
+
+            # Add existing certificates
+            context = self.get_serializer_context()
+            for cert in existing_certs:
+                serializer = self.get_serializer(cert, context=context)
+                certificate_data.append(serializer.data)
+
+            # Add synthetic certificates for allowlisted users without GeneratedCertificate
+            for entry in allowlist_qs:
+                if entry.user_id not in existing_cert_user_ids:
+                    cert_dict = self._create_certificate_dict_for_allowlisted_user(entry, enrollment_dict)
+                    certificate_data.append(cert_dict)
+
+            # Sort by username
+            certificate_data.sort(key=lambda x: x['username'])
+
+            # Paginate manually
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(certificate_data, request)
+
+            return paginator.get_paginated_response(page if page is not None else certificate_data)
+
+        elif filter_type == "invalidated":
+            course_id = self.kwargs["course_id"]
+            course_key = CourseKey.from_string(course_id)
+            search = request.query_params.get("search", "").strip()
+
+            # Get enrollment data for context
+            enrollments = CourseEnrollment.objects.filter(
+                course_id=course_key
+            ).select_related('user')
+            enrollment_dict = {e.user_id: e.mode for e in enrollments}
+
+            # Get all invalidations
+            invalidations_qs = CertificateInvalidation.objects.filter(
+                generated_certificate__course_id=course_key,
+                active=True
+            ).select_related('generated_certificate__user', 'invalidated_by')
+
+            # Apply search filter
+            if search:
+                invalidations_qs = invalidations_qs.filter(
+                    Q(generated_certificate__user__username__icontains=search) |
+                    Q(generated_certificate__user__email__icontains=search)
+                )
+
+            # Get existing certificates for invalidated users
+            invalidated_cert_ids = list(invalidations_qs.values_list('generated_certificate_id', flat=True))
+            existing_certs = GeneratedCertificate.objects.filter(
+                id__in=invalidated_cert_ids
+            ).select_related('user')
+
+            # Build list of certificate data using existing certificates
+            certificate_data = []
+            context = self.get_serializer_context()
+            for cert in existing_certs:
+                serializer = self.get_serializer(cert, context=context)
+                certificate_data.append(serializer.data)
+
+            # Sort by username
+            certificate_data.sort(key=lambda x: x['username'])
+
+            # Paginate manually
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(certificate_data, request)
+
+            return paginator.get_paginated_response(page if page is not None else certificate_data)
+
+        # For other filters, use default behavior
+        return super().list(request, *args, **kwargs)
+
     def _apply_certificate_status_filter(self, certificates, filter_type, cert_statuses, course_key):
         """Apply status-based filters to certificate queryset."""
         if filter_type == "received":
@@ -1260,18 +1436,6 @@ class IssuedCertificatesView(ListAPIView):
             return certificates.filter(status=cert_statuses.audit_notpassing)
         elif filter_type == "error":
             return certificates.filter(status=cert_statuses.error)
-        elif filter_type == "granted_exceptions":
-            return certificates.filter(
-                user_id__in=CertificateAllowlist.objects.filter(
-                    course_id=course_key, allowlist=True
-                ).values_list('user_id', flat=True)
-            )
-        elif filter_type == "invalidated":
-            return certificates.filter(
-                user_id__in=CertificateInvalidation.objects.filter(
-                    generated_certificate__course_id=course_key, active=True
-                ).values_list('generated_certificate__user_id', flat=True)
-            )
         return certificates
 
     def get_serializer_context(self):
@@ -1309,7 +1473,8 @@ class IssuedCertificatesView(ListAPIView):
         context['invalidation_dict'] = {
             inv.generated_certificate.user_id: {
                 'invalidated_by': inv.invalidated_by.email,
-                'created': inv.created.isoformat()
+                'created': inv.created.isoformat(),
+                'notes': inv.notes or ''
             }
             for inv in invalidations
         }
@@ -1355,7 +1520,7 @@ class IssuedCertificatesView(ListAPIView):
             course_key, filter_type
         )
 
-        # Apply filter based on filter type (includes granted_exceptions and invalidated)
+        # Apply filter based on filter type (includes invalidated)
         certificates = self._apply_certificate_status_filter(
             certificates, filter_type, CertificateStatuses, course_key
         )
@@ -1600,6 +1765,527 @@ class CertificateConfigView(DeveloperErrorViewMixin, APIView):
         return Response({'enabled': enabled}, status=status.HTTP_200_OK)
 
 
+class ToggleCertificateGenerationView(DeveloperErrorViewMixin, APIView):
+    """
+    View to toggle certificate generation for a course.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/toggle_generation
+
+    **Request Body**
+
+        {
+            "enabled": true
+        }
+
+    **Response Values**
+
+        {
+            "enabled": true
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate generation toggled successfully
+        * 400: Bad Request - Invalid request body
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.ENABLE_CERTIFICATE_GENERATION
+
+    def post(self, request, course_id):
+        """Toggle certificate generation for a course."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists before updating certificate settings
+        get_course_by_id(course_key)
+
+        # Validate request body
+        serializer = ToggleCertificateGenerationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        enabled = serializer.validated_data['enabled']
+
+        try:
+            certs_api.set_cert_generation_enabled(course_key, enabled)
+            return Response({'enabled': enabled}, status=status.HTTP_200_OK)
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error toggling certificate generation for course %s", course_id)
+            return Response(
+                {'message': _('Unable to update certificate generation settings')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class CertificateExceptionsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to grant or remove certificate exceptions (allowlist).
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/exceptions
+        DELETE /api/instructor/v2/courses/{course_id}/certificates/exceptions
+
+    **POST Request Body**
+
+        {
+            "learners": ["username1", "username2"],
+            "notes": "Reason for granting exceptions"
+        }
+
+    **DELETE Request Body**
+
+        {
+            "username": "username1"
+        }
+
+    **Returns**
+
+        * 200: OK - Exception granted/removed successfully
+        * 400: Bad Request - Invalid request or user not found
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_EXCEPTION_VIEW
+
+    def post(self, request, course_id):
+        """Grant certificate exceptions (add to allowlist)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = CertificateExceptionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        learners = serializer.validated_data['learners']
+        notes = serializer.validated_data['notes']
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate learners for certificate exceptions
+        exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Create all exceptions using the certificates API to ensure idempotency
+        # and avoid race conditions with the unique_together constraint
+        for learner, user in exceptions_to_create:
+            try:
+                certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                log.info(
+                    "Certificate exception granted for user %s (%s) in course %s by %s",
+                    user.id, learner, course_key, request.user.username
+                )
+                results['success'].append(learner)
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error creating certificate exception for user %s in course %s",
+                    user.id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    def delete(self, request, course_id):
+        """Remove certificate exception (remove from allowlist)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = RemoveCertificateExceptionSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['username']
+
+        try:
+            # Remove exception via certificates API so any existing certificate
+            # is invalidated before the allowlist entry is removed
+            if not certs_api.get_allowlist_entry(user, course_key):
+                return Response(
+                    {'message': _('No certificate exception found for this user')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            certs_api.remove_allowlist_entry(user, course_key)
+
+            return Response(
+                {'message': _('Certificate exception removed successfully')},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception:  # pylint: disable=broad-except
+            log.exception("Error removing certificate exception for course %s", course_id)
+            return Response(
+                {'message': _('Unable to remove certificate exception')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+def _resolve_learners_to_users(learners):
+    """
+    Resolve a list of learner identifiers (usernames or emails) to User objects.
+
+    Args:
+        learners: List of learner identifiers (usernames or email addresses)
+
+    Returns:
+        tuple: (learner_to_user, errors) where:
+            - learner_to_user: Dictionary mapping learner identifiers to User objects
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    learner_to_user = {}
+    errors = []
+
+    for learner in learners:
+        try:
+            user = get_user_by_username_or_email(learner)
+            learner_to_user[learner] = user
+        except (User.DoesNotExist, User.MultipleObjectsReturned) as exc:
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return learner_to_user, errors
+
+
+def _validate_learners_for_certificate_exceptions(learner_to_user, course_key):
+    """
+    Validate learners to ensure they can receive certificate exceptions.
+
+    Args:
+        learner_to_user: Dictionary mapping learner identifiers to User objects
+        course_key: Course key for the course
+
+    Returns:
+        tuple: (exceptions_to_create, errors) where:
+            - exceptions_to_create: List of (learner, user) tuples ready for exception creation
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    errors = []
+    exceptions_to_create = []
+
+    if not learner_to_user:
+        return exceptions_to_create, errors
+
+    users = list(learner_to_user.values())
+    user_ids = [u.id for u in users]
+
+    # Bulk fetch active enrollments
+    enrollments = CourseEnrollment.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids,
+        is_active=True
+    ).values_list('user_id', flat=True)
+    enrolled_user_ids = set(enrollments)
+
+    # Bulk fetch existing active allowlist entries
+    existing_allowlist = CertificateAllowlist.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids,
+        allowlist=True
+    ).values_list('user_id', flat=True)
+    allowlisted_user_ids = set(existing_allowlist)
+
+    # Bulk fetch active invalidations
+    active_invalidations = CertificateInvalidation.objects.filter(
+        generated_certificate__course_id=course_key,
+        generated_certificate__user_id__in=user_ids,
+        active=True
+    ).values_list('generated_certificate__user_id', flat=True)
+    invalidated_user_ids = set(active_invalidations)
+
+    # Validate each learner
+    for learner, user in learner_to_user.items():
+        try:
+            # Check if user is enrolled
+            if user.id not in enrolled_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User is not enrolled in this course')
+                })
+                continue
+
+            # Check if user already has an exception
+            if user.id in allowlisted_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User already has a certificate exception')
+                })
+                continue
+
+            # Check if user has an active invalidation
+            if user.id in invalidated_user_ids:
+                errors.append({
+                    'learner': learner,
+                    'message': _('User has an active certificate invalidation')
+                })
+                continue
+
+            # Learner is ready for exception creation
+            exceptions_to_create.append((learner, user))
+
+        except Exception as exc:  # pylint: disable=broad-except
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return exceptions_to_create, errors
+
+
+def _validate_certificates_for_invalidation(learner_to_user, course_key):
+    """
+    Validate certificates for a set of users to ensure they can be invalidated.
+
+    Args:
+        learner_to_user: Dictionary mapping learner identifiers to User objects
+        course_key: Course key for the course
+
+    Returns:
+        tuple: (certificates_to_invalidate, errors) where:
+            - certificates_to_invalidate: List of (learner, certificate) tuples ready for invalidation
+            - errors: List of error dictionaries with 'learner' and 'message' keys
+    """
+    errors = []
+    certificates_to_invalidate = []
+
+    if not learner_to_user:
+        return certificates_to_invalidate, errors
+
+    users = list(learner_to_user.values())
+    user_ids = [u.id for u in users]
+
+    # Bulk fetch certificates (exclude deleted/deleting status)
+    certificates = GeneratedCertificate.objects.filter(
+        course_id=course_key,
+        user_id__in=user_ids
+    ).exclude(
+        status__in=[CertificateStatuses.deleted, CertificateStatuses.deleting]
+    ).select_related('user')
+    user_id_to_certificate = {cert.user_id: cert for cert in certificates}
+
+    # Validate each learner's certificate
+    for learner, user in learner_to_user.items():
+        try:
+            # Check if certificate exists
+            certificate = user_id_to_certificate.get(user.id)
+            if not certificate:
+                errors.append({
+                    'learner': learner,
+                    'message': _('Certificate not found for this user')
+                })
+                continue
+
+            # Verify that the certificate is valid before invalidating
+            if not certificate.is_valid():
+                errors.append({
+                    'learner': learner,
+                    'message': _('Certificate is already invalid')
+                })
+                continue
+
+            # Certificate is ready for invalidation
+            certificates_to_invalidate.append((learner, certificate))
+
+        except Exception as exc:  # pylint: disable=broad-except
+            errors.append({
+                'learner': learner,
+                'message': str(exc)
+            })
+
+    return certificates_to_invalidate, errors
+
+
+class CertificateInvalidationsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to invalidate or re-validate certificates.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/invalidations
+        DELETE /api/instructor/v2/courses/{course_id}/certificates/invalidations
+
+    **POST Request Body**
+
+        {
+            "learners": ["username1", "username2"],
+            "notes": "Reason for invalidation"
+        }
+
+    **DELETE Request Body**
+
+        {
+            "username": "username1"
+        }
+
+    **Returns**
+
+        * 200: OK - Certificate invalidated/re-validated successfully
+        * 400: Bad Request - Invalid request or certificate not found
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_INVALIDATION_VIEW
+
+    def post(self, request, course_id):
+        """Invalidate certificates."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = CertificateInvalidationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        learners = serializer.validated_data['learners']
+        notes = serializer.validated_data['notes']
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        # Resolve all usernames/emails to users upfront
+        learner_to_user, user_errors = _resolve_learners_to_users(learners)
+        results['errors'].extend(user_errors)
+
+        # Validate certificates for invalidation
+        certificates_to_invalidate, validation_errors = _validate_certificates_for_invalidation(
+            learner_to_user, course_key
+        )
+        results['errors'].extend(validation_errors)
+
+        # Invalidate certificates using the certificates API to ensure idempotency
+        # and consistency with v1 behavior
+        for learner, certificate in certificates_to_invalidate:
+            try:
+                with transaction.atomic():
+                    # Create invalidation entry (uses update_or_create for idempotency)
+                    certs_api.create_certificate_invalidation_entry(
+                        certificate,
+                        request.user,
+                        notes,
+                    )
+                    # Invalidate the certificate with explicit source for auditability
+                    certificate.invalidate(source='instructor_api_v2')
+                    log.info(
+                        "Certificate invalidated for user %s (%s) in course %s by %s",
+                        certificate.user_id, learner, course_key, request.user.username
+                    )
+                    results['success'].append(learner)
+            except AlreadyRunningError:
+                log.warning(
+                    "Certificate generation already running for user %s in course %s",
+                    certificate.user_id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': _('Cannot invalidate certificate while certificate generation is in progress. '
+                                 'Please wait for it to complete.')
+                })
+            except Exception as exc:  # pylint: disable=broad-except
+                log.exception(
+                    "Error invalidating certificate for user %s in course %s",
+                    certificate.user_id, course_key
+                )
+                results['errors'].append({
+                    'learner': learner,
+                    'message': str(exc)
+                })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    def delete(self, request, course_id):
+        """Re-validate certificate (remove invalidation)."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Validate request data
+        serializer = RemoveCertificateInvalidationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = serializer.validated_data['username']
+
+        try:
+            # Get the certificate (exclude deleted/deleting status)
+            try:
+                certificate = GeneratedCertificate.objects.exclude(
+                    status__in=[CertificateStatuses.deleted, CertificateStatuses.deleting]
+                ).get(
+                    course_id=course_key,
+                    user=user
+                )
+            except GeneratedCertificate.DoesNotExist:
+                return Response(
+                    {'message': _('Certificate not found for this user')},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Remove invalidation and restore certificate generation
+            with transaction.atomic():
+                updated_count = CertificateInvalidation.objects.filter(
+                    generated_certificate=certificate,
+                    active=True
+                ).update(active=False)
+
+                if updated_count == 0:
+                    return Response(
+                        {'message': _('No active invalidation found for this certificate')},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+
+            # Trigger certificate regeneration after transaction commits
+            log.info(
+                "Re-validating certificate for student %s in course %s - triggering regeneration",
+                user.id, course_key
+            )
+            try:
+                task_api.generate_certificates_for_students(
+                    request, course_key, student_set="specific_student", specific_student_id=user.id
+                )
+            except Exception as cert_gen_error:  # pylint: disable=broad-except
+                # Log but don't fail - the invalidation was already removed
+                log.warning(
+                    "Certificate regeneration failed for student %s in course %s: %s",
+                    user.id, course_key, str(cert_gen_error)
+                )
+
+            return Response(
+                {'message': _('Certificate invalidation removed successfully')},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as exc:  # pylint: disable=broad-except
+            log.exception("Error removing certificate invalidation for course %s: %s", course_id, str(exc))
+            return Response(
+                {'message': _('Unable to remove certificate invalidation')},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class CourseEnrollmentsView(DeveloperErrorViewMixin, ListAPIView):
     """
     List all active enrollments for a course with optional search, filtering, and pagination.
@@ -1726,19 +2412,12 @@ class LearnerView(DeveloperErrorViewMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        UserModel = get_user_model()
-        try:
-            student = get_user_by_username_or_email(email_or_username)
-        except UserModel.DoesNotExist:
-            return Response(
-                {'error': 'Learner not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except UserModel.MultipleObjectsReturned:
-            return Response(
-                {'error': 'Multiple learners found for the given identifier'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # Validate learner identifier
+        serializer = LearnerInputSerializer(data={'email_or_username': email_or_username})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        student = serializer.validated_data['email_or_username']
 
         # Build progress URL (MFE or legacy depending on feature flag)
         if course_home_mfe_progress_tab_is_active(course_key):
@@ -1875,19 +2554,12 @@ class ProblemView(DeveloperErrorViewMixin, APIView):
 
         learner_identifier = request.query_params.get('email_or_username')
         if learner_identifier:
-            UserModel = get_user_model()
-            try:
-                student = get_user_by_username_or_email(learner_identifier)
-            except UserModel.DoesNotExist:
-                return Response(
-                    {'error': 'Learner not found'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except UserModel.MultipleObjectsReturned:
-                return Response(
-                    {'error': 'Multiple learners found for the given identifier'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            # Validate learner identifier
+            serializer = LearnerInputSerializer(data={'email_or_username': learner_identifier})
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            student = serializer.validated_data['email_or_username']
 
             try:
                 student_module = StudentModule.objects.get(
@@ -2031,32 +2703,17 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
     """
     API view for retrieving course grading configuration.
 
-    **GET Example Response:**
-    ```json
-    {
-        "graders": [
-            {
-                "type": "Homework",
-                "short_label": "HW",
-                "min_count": 12,
-                "drop_count": 2,
-                "weight": 0.15
-            },
-            {
-                "type": "Final Exam",
-                "short_label": "Final",
-                "min_count": 1,
-                "drop_count": 0,
-                "weight": 0.40
-            }
-        ],
-        "grade_cutoffs": {
-            "A": 0.9,
-            "B": 0.8,
-            "C": 0.7
-        }
-    }
-    ```
+    Returns an HTML-formatted summary of the course grading context, including
+    the course grader type, graded sections with assignment types and weights,
+    and all graded blocks.
+
+    **GET** returns ``text/html`` content type.
+
+    Note: The response is a pre-formatted text string produced by
+    ``instructor_analytics_basic.dump_grading_context``, which is a debugging
+    utility carried over from the v1 instructor API.  It is served as
+    ``text/html`` so the MFE can render it directly inside a ``<pre>`` block
+    without additional parsing.
     """
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.VIEW_DASHBOARD
@@ -2070,7 +2727,7 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
             ),
         ],
         responses={
-            200: 'Grading configuration retrieved successfully',
+            200: 'HTML-formatted grading configuration summary',
             400: "Invalid parameters provided.",
             401: "The requesting user is not authenticated.",
             403: "The requesting user lacks instructor access to the course.",
@@ -2079,8 +2736,7 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
     )
     def get(self, request, course_id):
         """
-        Retrieve the grading configuration for a course, including assignment type
-        weights and grade cutoff thresholds.
+        Retrieve the grading configuration for a course as an HTML summary.
         """
         try:
             course_key = CourseKey.from_string(course_id)
@@ -2091,13 +2747,8 @@ class GradingConfigView(DeveloperErrorViewMixin, APIView):
             )
 
         course = get_course_by_id(course_key)
-        grading_policy = course.grading_policy
-        config_data = {
-            'graders': grading_policy.get('GRADER', []),
-            'grade_cutoffs': grading_policy.get('GRADE_CUTOFFS', {}),
-        }
-        serializer = GradingConfigSerializer(config_data)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        grading_config_summary = instructor_analytics_basic.dump_grading_context(course)
+        return HttpResponse(grading_config_summary, content_type='text/html')
 
 
 class EnrollmentModifyView(DeveloperErrorViewMixin, APIView):
@@ -2433,10 +3084,9 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
 
         * 200: OK
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def get(self, request, course_id):
         """Return the list of available course team roles for this course."""
@@ -2559,11 +3209,10 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         * 200: OK (GET, POST - role granted/revoked)
         * 400: Invalid parameters
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course not found
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def get(self, request, course_id):
         """
@@ -2648,6 +3297,12 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
+        if rolename == 'instructor' and not has_access(request.user, 'instructor', course):
+            return Response(
+                {'error': _('Managing the instructor role requires instructor access.')},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         results = []
         for identifier in identifiers:
             error = False
@@ -2727,12 +3382,11 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
         * 200: Role(s) revoked successfully
         * 400: Invalid parameters
         * 401: User is not authenticated
-        * 403: User lacks instructor permissions
+        * 403: User lacks course team management permissions (requires instructor or discussion Administrator role)
         * 404: Course or user not found
         * 409: Cannot remove own instructor access
     """
-    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
-    permission_name = permissions.EDIT_COURSE_ACCESS
+    permission_classes = (IsAuthenticated, permissions.CourseTeamPermission)
 
     def delete(self, request, course_id, email_or_username):
         """Revoke one or more course roles from a user."""
@@ -2744,6 +3398,12 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
             return Response(revoke_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         roles = revoke_serializer.validated_data['roles']
+
+        if 'instructor' in roles and not has_access(request.user, 'instructor', course):
+            return Response(
+                {'error': _('Managing the instructor role requires instructor access.')},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
             user = get_student_from_identifier(email_or_username)
@@ -2777,3 +3437,994 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
             'action': 'revoke',
             'success': True,
         }, status=status.HTTP_200_OK)
+
+
+def _get_learner_identifier(request):
+    """
+    Extract the learner identifier from query params or request body.
+    """
+    return request.query_params.get('learner') or request.data.get('learner')
+
+
+def _parse_course_and_problem(course_id, problem):
+    """
+    Parse and validate course_id and problem location strings.
+
+    Returns (course_key, usage_key) tuple on success.
+    Returns (None, Response) if validation fails — caller should return the Response.
+    """
+    try:
+        course_key = CourseKey.from_string(course_id)
+    except InvalidKeyError:
+        return None, Response(
+            {'error': 'Invalid course key'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        usage_key = UsageKey.from_string(problem).map_into_course(course_key)
+    except InvalidKeyError:
+        return None, Response(
+            {'error': 'Invalid problem location'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    return (course_key, usage_key), None
+
+
+def _resolve_learner(learner_identifier):
+    """
+    Resolve a learner identifier (username or email) to a User object.
+
+    Returns (User, None) on success, or (None, Response) on failure.
+    """
+    UserModel = get_user_model()
+    try:
+        return get_user_by_username_or_email(learner_identifier), None
+    except UserModel.DoesNotExist:
+        return None, Response(
+            {'error': 'Learner not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except UserModel.MultipleObjectsReturned:
+        return None, Response(
+            {'error': 'Multiple learners found for the given identifier'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+def _build_async_response(instructor_task, course_id, problem_location, learner_scope='all'):
+    """
+    Build a 202 Accepted response for an async task.
+    """
+    task_id = str(instructor_task.task_id)
+    status_url = reverse(
+        'instructor_api_v2:task_status',
+        kwargs={'course_id': course_id, 'task_id': task_id}
+    )
+    data = {
+        'task_id': task_id,
+        'status_url': status_url,
+        'scope': {
+            'learners': learner_scope,
+            'problem_location': str(problem_location),
+        }
+    }
+    serializer = AsyncOperationResultSerializer(data)
+    return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class ResetAttemptsView(DeveloperErrorViewMixin, APIView):
+    """
+    Reset problem attempts for a learner or all learners.
+
+    **POST** with `learner` query param: resets a single learner's attempts (synchronous).
+    **POST** without `learner`: queues a background task to reset all learners (asynchronous).
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.GIVE_STUDENT_EXTENSION
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'problem',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key.",
+            ),
+            apidocs.string_parameter(
+                'learner',
+                apidocs.ParameterLocation.QUERY,
+                description="Optional: Learner username or email. If omitted, resets all learners (async).",
+            ),
+        ],
+        responses={
+            200: SyncOperationResultSerializer,
+            202: AsyncOperationResultSerializer,
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks permission.",
+            404: "Learner not found.",
+        },
+    )
+    def post(self, request, course_id, problem):
+        """Reset problem attempts for one or all learners."""
+        parsed, error_response = _parse_course_and_problem(course_id, problem)
+        if error_response:
+            return error_response
+        course_key, usage_key = parsed
+
+        learner_identifier = _get_learner_identifier(request)
+
+        if learner_identifier:
+            student, error_response = _resolve_learner(learner_identifier)
+            if error_response:
+                return error_response
+
+            try:
+                enrollment.reset_student_attempts(
+                    course_key,
+                    student,
+                    usage_key,
+                    requesting_user=request.user,
+                    delete_module=False,
+                )
+            except StudentModule.DoesNotExist:
+                return Response(
+                    {'error': 'No state found for this learner and problem'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            except sub_api.SubmissionError:
+                return Response(
+                    {'error': 'An error occurred while resetting attempts'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+            data = {
+                'success': True,
+                'learner': student.username,
+                'problem_location': str(usage_key),
+                'message': 'Attempts reset successfully',
+            }
+            serializer = SyncOperationResultSerializer(data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        else:
+            course = get_course_with_access(request.user, 'staff', course_key, depth=None)
+            if not has_access(request.user, 'instructor', course):
+                return Response(
+                    {'error': 'Instructor access required for bulk operations'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            try:
+                instructor_task = task_api.submit_reset_problem_attempts_for_all_students(
+                    request, usage_key
+                )
+            except AlreadyRunningError:
+                return Response(
+                    {'error': 'A reset task is already running for this problem'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            except ItemNotFoundError:
+                return Response(
+                    {'error': 'Problem not found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            return _build_async_response(instructor_task, course_id, usage_key)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class DeleteStateView(DeveloperErrorViewMixin, APIView):
+    """
+    Delete a learner's problem state permanently.
+
+    The `learner` query parameter is required. This operation is destructive
+    and cannot be undone.
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.GIVE_STUDENT_EXTENSION
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'problem',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key.",
+            ),
+            apidocs.string_parameter(
+                'learner',
+                apidocs.ParameterLocation.QUERY,
+                description="Learner username or email (required).",
+            ),
+        ],
+        responses={
+            200: SyncOperationResultSerializer,
+            400: "Invalid parameters or missing learner.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks permission.",
+            404: "Learner not found.",
+        },
+    )
+    def delete(self, request, course_id, problem):
+        """Delete learner problem state."""
+        parsed, error_response = _parse_course_and_problem(course_id, problem)
+        if error_response:
+            return error_response
+        course_key, usage_key = parsed
+
+        learner_identifier = _get_learner_identifier(request)
+        if not learner_identifier:
+            return Response(
+                {'error': 'The learner parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student, error_response = _resolve_learner(learner_identifier)
+        if error_response:
+            return error_response
+
+        try:
+            enrollment.reset_student_attempts(
+                course_key,
+                student,
+                usage_key,
+                requesting_user=request.user,
+                delete_module=True,
+            )
+        except StudentModule.DoesNotExist:
+            return Response(
+                {'error': 'No state found for this learner and problem'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except sub_api.SubmissionError:
+            return Response(
+                {'error': 'An error occurred while deleting state'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        data = {
+            'success': True,
+            'learner': student.username,
+            'problem_location': str(usage_key),
+            'message': 'State deleted successfully',
+        }
+        serializer = SyncOperationResultSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class RescoreView(DeveloperErrorViewMixin, APIView):
+    """
+    Rescore problem submissions for a learner or all learners.
+
+    **POST** with `learner` query param: rescores a single learner (asynchronous task).
+    **POST** without `learner`: rescores all learners (asynchronous task).
+
+    Optionally accepts `only_if_higher=true` query param to only update if new score is higher.
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.OVERRIDE_GRADES
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'problem',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key.",
+            ),
+            apidocs.string_parameter(
+                'learner',
+                apidocs.ParameterLocation.QUERY,
+                description="Optional: Learner username or email. If omitted, rescores all learners.",
+            ),
+            apidocs.string_parameter(
+                'only_if_higher',
+                apidocs.ParameterLocation.QUERY,
+                description="Optional: If 'true', only update scores that are higher than current.",
+            ),
+        ],
+        responses={
+            202: AsyncOperationResultSerializer,
+            400: "Invalid parameters provided.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks permission.",
+            404: "Learner not found.",
+        },
+    )
+    def post(self, request, course_id, problem):
+        """Rescore problem submissions."""
+        parsed, error_response = _parse_course_and_problem(course_id, problem)
+        if error_response:
+            return error_response
+        course_key, usage_key = parsed
+
+        only_if_higher = request.query_params.get('only_if_higher', 'false').lower() == 'true'
+        learner_identifier = _get_learner_identifier(request)
+
+        if learner_identifier:
+            student, error_response = _resolve_learner(learner_identifier)
+            if error_response:
+                return error_response
+
+            try:
+                instructor_task = task_api.submit_rescore_problem_for_student(
+                    request, usage_key, student, only_if_higher,
+                )
+            except NotImplementedError as exc:
+                return Response(
+                    {'error': str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except ItemNotFoundError:
+                return Response(
+                    {'error': 'Problem not found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            except AlreadyRunningError:
+                return Response(
+                    {'error': 'A rescore task is already running for this learner and problem'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            return _build_async_response(
+                instructor_task, course_id, usage_key, learner_scope=student.username
+            )
+
+        else:
+            course = get_course_with_access(request.user, 'staff', course_key)
+            if not has_access(request.user, 'instructor', course):
+                return Response(
+                    {'error': 'Instructor access required for bulk operations'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            try:
+                instructor_task = task_api.submit_rescore_problem_for_all_students(
+                    request, usage_key, only_if_higher,
+                )
+            except NotImplementedError as exc:
+                return Response(
+                    {'error': str(exc)},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            except ItemNotFoundError:
+                return Response(
+                    {'error': 'Problem not found'},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            except AlreadyRunningError:
+                return Response(
+                    {'error': 'A rescore task is already running for this problem'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            return _build_async_response(instructor_task, course_id, usage_key)
+
+
+@method_decorator(transaction.non_atomic_requests, name='dispatch')
+class ScoreOverrideView(DeveloperErrorViewMixin, APIView):
+    """
+    Override a learner's score for a specific problem.
+
+    The `learner` query parameter is required. Accepts a JSON body with `score` field.
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.OVERRIDE_GRADES
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'problem',
+                apidocs.ParameterLocation.PATH,
+                description="Problem block usage key.",
+            ),
+            apidocs.string_parameter(
+                'learner',
+                apidocs.ParameterLocation.QUERY,
+                description="Learner username or email (required).",
+            ),
+        ],
+        responses={
+            202: AsyncOperationResultSerializer,
+            400: "Invalid parameters or invalid score.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks permission.",
+            404: "Learner not found.",
+        },
+    )
+    def put(self, request, course_id, problem):
+        """Override a learner's score."""
+        parsed, error_response = _parse_course_and_problem(course_id, problem)
+        if error_response:
+            return error_response
+        course_key, usage_key = parsed
+
+        learner_identifier = _get_learner_identifier(request)
+        if not learner_identifier:
+            return Response(
+                {'error': 'The learner parameter is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        student, error_response = _resolve_learner(learner_identifier)
+        if error_response:
+            return error_response
+
+        body_serializer = ScoreOverrideRequestSerializer(data=request.data)
+        if not body_serializer.is_valid():
+            return Response(
+                {'error': 'Invalid request body', 'field_errors': body_serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        score = body_serializer.validated_data['score']
+
+        try:
+            block = modulestore().get_item(usage_key)
+        except ItemNotFoundError:
+            return Response(
+                {'error': 'Problem not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not has_access(request.user, 'staff', block):
+            return Response(
+                {'error': 'You do not have permission to override scores for this problem'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            instructor_task = task_api.submit_override_score(
+                request, usage_key, student, score,
+            )
+        except NotImplementedError as exc:
+            return Response(
+                {'error': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except ValueError as exc:
+            return Response(
+                {'error': str(exc)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except AlreadyRunningError:
+            return Response(
+                {'error': 'A score override task is already running for this learner and problem'},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        return _build_async_response(
+            instructor_task, course_id, usage_key, learner_scope=student.username
+        )
+
+
+class SpecialExamsListView(DeveloperErrorViewMixin, APIView):
+    """
+    List all proctored/timed exams in a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams
+        GET /api/instructor/v2/courses/{course_id}/special_exams?exam_type=proctored
+
+    **Query Parameters**
+
+        exam_type (optional): Filter by exam type. Values: proctored, timed, practice.
+
+    **Response Values**
+
+        A JSON array of special exam objects.
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: SpecialExamSerializer(many=True),
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+        },
+    )
+    def get(self, request, course_id):
+        """List all proctored/timed exams in the course."""
+        # `get_all_exams_for_course()` Returns a list of dictionaries, so we have to filter manually
+        exams = get_all_exams_for_course(course_id)
+        exam_type_lower = request.query_params.get('exam_type', '').strip().lower()
+        if exam_type_lower == 'proctored':
+            exams = [e for e in exams if e.get('is_proctored') and not e.get('is_practice_exam')]
+        elif exam_type_lower == 'practice':
+            exams = [e for e in exams if e.get('is_practice_exam')]
+        elif exam_type_lower == 'timed':
+            exams = [e for e in exams if not e.get('is_proctored')]
+        serializer = SpecialExamSerializer(exams, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpecialExamDetailView(DeveloperErrorViewMixin, APIView):
+    """
+    Retrieve details for a specific special exam.
+
+    **Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: SpecialExamSerializer,
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def get(self, request, course_id, exam_id):
+        """Retrieve details for a specific special exam."""
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = SpecialExamSerializer(exam)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SpecialExamResetView(DeveloperErrorViewMixin, APIView):
+    """
+    Reset a student's proctored exam attempt.
+
+    **Example Request**
+
+        POST /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/reset/{username}
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+            apidocs.string_parameter(
+                'username',
+                apidocs.ParameterLocation.PATH,
+                description="Student's username.",
+            ),
+        ],
+        responses={
+            200: "Attempt reset successfully.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam or user not found.",
+        },
+    )
+    def post(self, request, course_id, exam_id, username):
+        """Reset a student's proctored exam attempt."""
+        UserModel = get_user_model()
+        try:
+            student = UserModel.objects.get(username=username)
+        except UserModel.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Find and remove the student's attempts for this exam
+        user_attempts = get_user_attempts_by_exam_id(student.id, int(exam_id))
+
+        if not user_attempts:
+            return Response(
+                {'error': 'No attempts found for this user on this exam'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        for attempt in user_attempts:
+            remove_exam_attempt(attempt['id'], requesting_user=request.user)
+
+        return Response(
+            {'success': True, 'message': f'Exam attempt reset for user {username}'},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SpecialExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List all attempts for a specific proctored exam.
+
+    **Example Request**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/attempts
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAttemptSerializer
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        exam_id = int(self.kwargs['exam_id'])
+        # TODO: replace with exam-level query from edx_proctoring once available
+        # (e.g. ProctoredExamStudentAttempt.objects.get_all_exam_attempts_by_exam_id)
+        attempts = get_all_exam_attempts(course_id)
+        return [
+            a for a in attempts if a.get('proctored_exam', {}).get('id') == exam_id
+        ]
+
+
+class ProctoringSettingsView(DeveloperErrorViewMixin, APIView):
+    """
+    Retrieve or update proctoring configuration for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/proctoring_settings
+        PATCH /api/instructor/v2/courses/{course_id}/proctoring_settings
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.VIEW_DASHBOARD
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: ProctoringSettingsSerializer,
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Course not found.",
+        },
+    )
+    def get(self, request, course_id):
+        """Retrieve proctoring configuration for the course."""
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+        settings_data = {
+            'proctoring_provider': getattr(course, 'proctoring_provider', None),
+            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
+            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
+            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
+        }
+        serializer = ProctoringSettingsSerializer(settings_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+        ],
+        responses={
+            200: ProctoringSettingsSerializer,
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Course not found.",
+        },
+    )
+    def patch(self, request, course_id):
+        """Update proctoring settings for the course."""
+        update_serializer = ProctoringSettingsUpdateSerializer(data=request.data)
+        if not update_serializer.is_valid():
+            return Response(update_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        course_key = CourseKey.from_string(course_id)
+        course = get_course_by_id(course_key)
+
+        validated = update_serializer.validated_data
+        updated = False
+        for field in ('proctoring_escalation_email', 'create_zendesk_tickets', 'enable_proctored_exams'):
+            if field in validated:
+                setattr(course, field, validated[field])
+                updated = True
+
+        if updated:
+            modulestore().update_item(course, request.user.id)
+
+        settings_data = {
+            'proctoring_provider': getattr(course, 'proctoring_provider', None),
+            'proctoring_escalation_email': getattr(course, 'proctoring_escalation_email', None),
+            'create_zendesk_tickets': getattr(course, 'create_zendesk_tickets', False),
+            'enable_proctored_exams': getattr(course, 'enable_proctored_exams', False),
+        }
+        serializer = ProctoringSettingsSerializer(settings_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
+    """
+    Grant, update, or remove an allowance for a student on a proctored exam.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/allowance
+        DELETE /api/instructor/v2/courses/{course_id}/special_exams/{exam_id}/allowance
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: "Allowance granted successfully.",
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def post(self, request, course_id, exam_id):
+        """Grant an allowance for a student on a proctored exam."""
+        serializer = ExamAllowanceRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        validated = serializer.validated_data
+        results = []
+        for user_info in validated['user_ids']:
+            try:
+                add_allowance_for_user(
+                    int(exam_id),
+                    user_info,
+                    validated['allowance_type'],
+                    validated['value'],
+                )
+                results.append({'identifier': user_info, 'success': True})
+            except ProctoredBaseException as err:
+                results.append({'identifier': user_info, 'success': False, 'error': str(err)})
+
+        return Response(
+            {'allowance_type': validated['allowance_type'], 'results': results},
+            status=status.HTTP_200_OK,
+        )
+
+    @apidocs.schema(
+        parameters=[
+            apidocs.string_parameter(
+                'course_id',
+                apidocs.ParameterLocation.PATH,
+                description="Course key for the course.",
+            ),
+            apidocs.string_parameter(
+                'exam_id',
+                apidocs.ParameterLocation.PATH,
+                description="Exam identifier.",
+            ),
+        ],
+        responses={
+            200: "Allowance removed successfully.",
+            400: "Invalid parameters.",
+            401: "The requesting user is not authenticated.",
+            403: "The requesting user lacks access.",
+            404: "Exam not found.",
+        },
+    )
+    def delete(self, request, course_id, exam_id):
+        """Remove allowances for one or more students on a proctored exam."""
+        user_ids = request.data.get('user_ids')
+        allowance_type = request.data.get('allowance_type')
+        if not user_ids or not allowance_type:
+            return Response(
+                {'error': 'user_ids and allowance_type are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if isinstance(user_ids, str):
+            user_ids = [user_ids]
+
+        try:
+            exam = get_exam_by_id(int(exam_id))
+        except ProctoredExamNotFoundException:
+            return Response(
+                {'error': 'Exam not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if exam.get('course_id') != course_id:
+            return Response(
+                {'error': 'Exam not found in this course'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        results = []
+        for user_identifier in user_ids:
+            try:
+                user = get_user_by_username_or_email(str(user_identifier))
+                numeric_user_id = user.id
+            except get_user_model().DoesNotExist:
+                results.append({'identifier': user_identifier, 'success': False, 'error': 'User not found'})
+                continue
+
+            try:
+                remove_allowance_for_user(int(exam_id), numeric_user_id, allowance_type)
+                results.append({'identifier': user_identifier, 'success': True})
+            except ProctoredBaseException as err:
+                results.append({'identifier': user_identifier, 'success': False, 'error': str(err)})
+
+        return Response(
+            {'allowance_type': allowance_type, 'results': results},
+            status=status.HTTP_200_OK,
+        )
+
+
+class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List or bulk-create exam allowances for a course.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAllowanceSerializer
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        allowances = get_allowances_for_course(course_id)
+        search = self.request.query_params.get('search', '').strip().lower()
+        if search:
+            allowances = [
+                a for a in allowances
+                if search in a.get('user', {}).get('username', '').lower()
+                or search in a.get('user', {}).get('email', '').lower()
+            ]
+        return allowances
+
+    def post(self, request, course_id):
+        """Bulk-create allowances across multiple exams and users."""
+        serializer = BulkAllowanceRequestSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        validated = serializer.validated_data
+        results = []
+        for exam_id in validated['exam_ids']:
+            for user_info in validated['user_ids']:
+                try:
+                    add_allowance_for_user(
+                        exam_id,
+                        user_info,
+                        validated['allowance_type'],
+                        validated['value'],
+                    )
+                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': True})
+                except ProctoredBaseException as err:
+                    results.append({'identifier': user_info, 'exam_id': exam_id, 'success': False, 'error': str(err)})
+
+        return Response({
+            'allowance_type': validated['allowance_type'],
+            'value': validated['value'],
+            'results': results,
+        }, status=status.HTTP_200_OK)
+
+
+class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
+    """
+    List all exam attempts across all exams in a course with optional search and pagination.
+
+    **Example Requests**
+
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+    """
+
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.EXAM_RESULTS
+    serializer_class = ExamAttemptSerializer
+
+    def get_queryset(self):
+        course_id = self.kwargs['course_id']
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            # get_filtered_exam_attempts does server-side filtering by username/email
+            return get_filtered_exam_attempts(course_id, search)
+        return get_all_exam_attempts(course_id)

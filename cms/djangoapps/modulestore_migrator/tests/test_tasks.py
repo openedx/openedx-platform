@@ -89,12 +89,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         )
         self.collection = Collection.objects.create(
             learning_package=self.learning_package,
-            key="test_collection",
+            collection_code="test_collection",
             title="Test Collection",
         )
         self.collection2 = Collection.objects.create(
             learning_package=self.learning_package,
-            key="test_collection2",
+            collection_code="test_collection2",
             title="Test Collection 2",
         )
 
@@ -426,7 +426,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
         self.assertIsNone(reason)  # noqa: PT009
 
         component_media = result.componentversion.componentversionmedia_set.filter(
-            key="static/test_image.png"
+            path="static/test_image.png"
         ).first()
         self.assertIsNotNone(component_media)  # noqa: PT009
         self.assertEqual(component_media.media.id, test_media.id)  # noqa: PT009
@@ -673,12 +673,12 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
 
         referenced_content_exists = (
             result.componentversion.componentversionmedia_set.filter(
-                key="static/referenced.png"
+                path="static/referenced.png"
             ).exists()
         )
         unreferenced_content_exists = (
             result.componentversion.componentversionmedia_set.filter(
-                key="static/unreferenced.png"
+                path="static/unreferenced.png"
             ).exists()
         )
 
@@ -718,7 +718,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
-            local_key="child_problem_1",
+            component_code="child_problem_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -734,7 +734,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
-            local_key="child_html_1",
+            component_code="child_html_1",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -906,7 +906,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
                 component_type=content_api.get_or_create_component_type(
                     "xblock.v1", "problem"
                 ),
-                local_key=f"child_problem_{i}",
+                component_code=f"child_problem_{i}",
                 created=timezone.now(),
                 created_by=self.user.id,
             )
@@ -946,7 +946,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "problem"
             ),
-            local_key="mixed_problem",
+            component_code="mixed_problem",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -962,7 +962,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "html"
             ),
-            local_key="mixed_html",
+            component_code="mixed_html",
             created=timezone.now(),
             created_by=self.user.id,
         )
@@ -978,7 +978,7 @@ class TestMigrateFromModulestore(ModuleStoreTestCase):
             component_type=content_api.get_or_create_component_type(
                 "xblock.v1", "video"
             ),
-            local_key="mixed_video",
+            component_code="mixed_video",
             created=timezone.now(),
             created_by=self.user.id,
         )

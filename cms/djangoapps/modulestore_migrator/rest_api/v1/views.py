@@ -540,7 +540,7 @@ class LibraryCourseMigrationViewSet(GenericViewSet, ListModelMixin):
             self.request.user,
             lib_api.permissions.CAN_VIEW_THIS_CONTENT_LIBRARY
         )
-        queryset = queryset.filter(target__key=library_key, source__key__startswith='course-v1')
+        queryset = queryset.filter(target__package_ref=str(library_key), source__key__startswith='course-v1')
 
         return queryset
 

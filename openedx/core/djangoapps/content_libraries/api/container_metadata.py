@@ -365,8 +365,9 @@ def library_container_locator(
     container_type_code = content_api.get_container_type_code_of(container)
     if container_type_code not in LIBRARY_ALLOWED_CONTAINER_TYPES:
         raise ValueError(f"Unsupported container type for content libraries: {container!r}")
-
-    return LibraryContainerLocator(library_key, container_type=container_type_code, container_id=container.key)
+    return LibraryContainerLocator(
+        library_key, container_type=container_type_code, container_id=container.container_code,
+    )
 
 
 def get_container_from_key(container_key: LibraryContainerLocator, include_deleted=False) -> Container:
@@ -379,7 +380,7 @@ def get_container_from_key(container_key: LibraryContainerLocator, include_delet
     content_library = ContentLibrary.objects.get_by_key(container_key.lib_key)
     learning_package = content_library.learning_package
     assert learning_package is not None
-    container = content_api.get_container_by_key(learning_package.id, key=container_key.container_id)
+    container = content_api.get_container_by_code(learning_package.id, container_code=container_key.container_id)
     assert content_api.get_container_type_code_of(container) in LIBRARY_ALLOWED_CONTAINER_TYPES
     # We only return the container if it exists and either:
     # 1. the container has a draft version (which means it is not soft-deleted) OR

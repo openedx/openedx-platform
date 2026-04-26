@@ -135,9 +135,9 @@ def get_migrations(
     if source_key:
         migrations = migrations.filter(source__key=source_key)
     if target_key:
-        migrations = migrations.filter(target__key=str(target_key))
+        migrations = migrations.filter(target__package_ref=str(target_key))
     if target_collection_slug:
-        migrations = migrations.filter(target_collection__key=target_collection_slug)
+        migrations = migrations.filter(target_collection__collection_code=target_collection_slug)
     if task_uuid:
         migrations = migrations.filter(task_status__uuid=task_uuid)
     if is_failed is not None:
@@ -176,9 +176,9 @@ def _migration(m: models.ModulestoreMigration) -> ModulestoreMigration:
     return ModulestoreMigration(
         pk=m.id,
         source_key=m.source.key,
-        target_key=LibraryLocatorV2.from_string(m.target.key),
+        target_key=LibraryLocatorV2.from_string(m.target.package_ref),
         target_title=m.target.title,
-        target_collection_slug=(m.target_collection.key if m.target_collection else None),
+        target_collection_slug=(m.target_collection.collection_code if m.target_collection else None),
         target_collection_title=(m.target_collection.title if m.target_collection else None),
         is_failed=m.is_failed,
         task_uuid=m.task_status.uuid,
@@ -209,7 +209,7 @@ def _block_migration_success(
     """
     Build an instance of the migration success dataclass
     """
-    target_library_key = LibraryLocatorV2.from_string(target.learning_package.key)
+    target_library_key = LibraryLocatorV2.from_string(target.learning_package.package_ref)
     target_key: LibraryUsageLocatorV2 | LibraryContainerLocator
     if hasattr(target, "component"):
         target_key = library_component_usage_key(target_library_key, target.component)

@@ -15,7 +15,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.validators import validate_unicode_slug
 from django.db import transaction
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.urls import reverse
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
@@ -176,10 +176,13 @@ def get_library_block(usage_key: LibraryUsageLocatorV2, include_collections=Fals
         raise ContentLibraryBlockNotFound(usage_key)
 
     if include_collections:
+        # Temporarily alias collection_code to "key" so downstream consumers
+        # (search indexer, REST API) keep the same field name.  We will update
+        # downstream consumers later: https://github.com/openedx/openedx-platform/issues/38406
         associated_collections = content_api.get_entity_collections(
             component.learning_package_id,
-            component.key,
-        ).values('key', 'title')
+            component.entity_ref,
+        ).values("title", key=F('collection_code'))
     else:
         associated_collections = None
     xblock_metadata = LibraryXBlockMetadata.from_component(
@@ -425,7 +428,7 @@ def _import_staged_block(
         component = content_api.create_component(  # noqa: F841
             learning_package.id,
             component_type=component_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
             created=now,
             created_by=user.id,
         )
@@ -490,7 +493,7 @@ def _import_staged_block(
             content_api.create_component_version_media(
                 component_version.pk,
                 content.id,
-                key=filename,
+                path=filename,
             )
 
     # Emit library block created event
@@ -725,7 +728,7 @@ def delete_library_block(
         send_block_deleted_signal()
         raise
 
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
     affected_containers = get_containers_contains_item(usage_key)
 
     content_api.soft_delete_draft(component.id, deleted_by=user_id)
@@ -743,7 +746,7 @@ def delete_library_block(
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )
@@ -770,7 +773,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     """
     component = get_component_from_usage_key(usage_key)
     library_key = usage_key.context_key
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.key)
+    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
 
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
@@ -809,7 +812,7 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )
@@ -852,7 +855,7 @@ def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> li
         component_version
         .componentversionmedia_set
         .filter(media__has_file=True)
-        .order_by('key')
+        .order_by('path')
         .select_related('media')
     )
 
@@ -860,13 +863,13 @@ def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> li
 
     return [
         LibraryXBlockStaticFile(
-            path=cvm.key,
+            path=cvm.path,
             size=cvm.media.size,
             url=site_root_url + reverse(
                 'content_libraries:library-assets',
                 kwargs={
                     'component_version_uuid': component_version.uuid,
-                    'asset_path': cvm.key,
+                    'asset_path': cvm.path,
                 }
             ),
         )
@@ -985,7 +988,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     learning_package = content_library.learning_package
     assert learning_package
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
-    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__key=component.key)
+    drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__entity_ref=component.entity_ref)
     # Publish the component and update anything that needs to be updated (e.g. search index):
     publish_log = content_api.publish_from_drafts(
         learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
@@ -1046,7 +1049,7 @@ def _create_component_for_block(
         component, component_version = content_api.create_component_and_version(
             learning_package.id,
             component_type=component_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
             title=display_name,
             created=now,
             created_by=user_id,
@@ -1061,7 +1064,7 @@ def _create_component_for_block(
         content_api.create_component_version_media(
             component_version.pk,
             content.id,
-            key="block.xml",
+            path="block.xml",
         )
 
         return component_version

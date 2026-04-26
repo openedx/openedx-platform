@@ -284,10 +284,13 @@ class ContentLibraryCollectionSerializer(serializers.ModelSerializer):
     """
     Serializer for a Content Library Collection
     """
+    # Expose Collection.collection_code as "key" to preserve the REST API field name.
+    # https://github.com/openedx/openedx-platform/issues/38406
+    key = serializers.CharField(source='collection_code')
 
     class Meta:
         model = Collection
-        fields = '__all__'
+        exclude = ['collection_code']
 
 
 class ContentLibraryCollectionUpdateSerializer(serializers.Serializer):
@@ -447,14 +450,16 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     """
     learning_package_id = serializers.IntegerField(source="lp_restored_data.id")
     title = serializers.CharField(source="lp_restored_data.title")
-    org = serializers.CharField(source="lp_restored_data.archive_org_key")
-    slug = serializers.CharField(source="lp_restored_data.archive_slug")
+    org = serializers.SerializerMethodField()
+    slug = serializers.SerializerMethodField()
 
-    # The `key` is a unique temporary key assigned to the learning package during the restore process,
-    # whereas the `archive_key` is the original key of the learning package from the backup.
-    # The temporary learning package key is replaced with a standard key once it is added to a content library.
-    key = serializers.CharField(source="lp_restored_data.key")
-    archive_key = serializers.CharField(source="lp_restored_data.archive_lp_key")
+    # The `package_ref` is a unique temporary key assigned to the learning
+    # package during the restore process, whereas the `archive_package_ref` is
+    # the original key of the learning package from the backup.  The temporary
+    # learning package_ref is replaced with a standard key once it is added to a
+    # content library.
+    key = serializers.CharField(source="lp_restored_data.package_ref")
+    archive_key = serializers.CharField(source="lp_restored_data.archive_package_ref")
 
     containers = serializers.IntegerField(source="lp_restored_data.num_containers")
     components = serializers.IntegerField(source="lp_restored_data.num_components")
@@ -466,6 +471,18 @@ class RestoreSuccessDataSerializer(serializers.Serializer):
     created_on_server = serializers.CharField(source="backup_metadata.original_server", required=False)
     created_at = serializers.DateTimeField(source="backup_metadata.created_at", format=DATETIME_FORMAT)
     created_by = serializers.SerializerMethodField()
+
+    def get_org(self, obj) -> str:
+        """
+        The org code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_org_code"] or "unknown"
+
+    def get_slug(self, obj) -> str:
+        """
+        The library code/slug, as parsed from archive_package_ref, or "unknown" if unparseable.
+        """
+        return obj["lp_restored_data"]["archive_package_code"] or "unknown"
 
     def get_created_by(self, obj):
         """

@@ -461,14 +461,14 @@ def create_library(
                 # and also update its title/description in case they differ.
                 content_api.update_learning_package(
                     learning_package.id,
-                    key=str(ref.library_key),
+                    package_ref=str(ref.library_key),
                     title=title,
                     description=description,
                 )
             else:
                 # We have to generate a new LearningPackage for this library.
                 learning_package = content_api.create_learning_package(
-                    key=str(ref.library_key),
+                    package_ref=str(ref.library_key),
                     title=title,
                     description=description,
                 )
@@ -718,7 +718,7 @@ def library_component_usage_key(
     return LibraryUsageLocatorV2(  # type: ignore[abstract]
         library_key,
         block_type=component.component_type.name,
-        usage_id=component.local_key,
+        usage_id=component.component_code,
     )
 
 

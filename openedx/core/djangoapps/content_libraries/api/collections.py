@@ -2,7 +2,6 @@
 Python API for library collections
 ==================================
 """
-from django.db import IntegrityError
 from opaque_keys import OpaqueKey
 from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
@@ -51,18 +50,18 @@ def create_library_collection(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    try:
-        collection = content_api.create_collection(
-            learning_package_id=content_library.learning_package_id,
-            key=collection_key,
-            title=title,
-            description=description,
-            created_by=created_by,
-        )
-    except IntegrityError as err:
-        raise LibraryCollectionAlreadyExists from err
-
-    return collection
+    if Collection.objects.filter(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+    ).exists():
+        raise LibraryCollectionAlreadyExists(f"Collection {collection_key} already exists in {library_key}")
+    return content_api.create_collection(
+        learning_package_id=content_library.learning_package_id,
+        collection_code=collection_key,
+        title=title,
+        description=description,
+        created_by=created_by,
+    )
 
 
 def update_library_collection(
@@ -86,7 +85,7 @@ def update_library_collection(
     try:
         collection = content_api.update_collection(
             learning_package_id=content_library.learning_package_id,
-            key=collection_key,
+            collection_code=collection_key,
             title=title,
             description=description,
         )
@@ -127,39 +126,39 @@ def update_library_collection_items(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    # Fetch the Component.key values for the provided UsageKeys.
-    item_keys = []
+    # Fetch the Component.entity_ref values for the provided UsageKeys.
+    item_refs = []
     for opaque_key in opaque_keys:
         if isinstance(opaque_key, LibraryContainerLocator):
             try:
-                container = content_api.get_container_by_key(
+                container = content_api.get_container_by_code(
                     content_library.learning_package_id,
-                    key=opaque_key.container_id,
+                    container_code=opaque_key.container_id,
                 )
             except Collection.DoesNotExist as exc:
                 raise ContentLibraryContainerNotFound(opaque_key) from exc
 
-            item_keys.append(container.key)
+            item_refs.append(container.entity_ref)
         elif isinstance(opaque_key, UsageKeyV2):
             # Parse the block_family from the key to use as namespace.
             block_type = BlockTypeKey.from_string(str(opaque_key))
             try:
-                component = content_api.get_component_by_key(
+                component = content_api.get_component_by_code(
                     content_library.learning_package_id,
                     namespace=block_type.block_family,
                     type_name=opaque_key.block_type,
-                    local_key=opaque_key.block_id,
+                    component_code=opaque_key.block_id,
                 )
             except Component.DoesNotExist as exc:
                 raise ContentLibraryBlockNotFound(opaque_key) from exc
 
-            item_keys.append(component.key)
+            item_refs.append(component.entity_ref)
         else:
             # This should never happen, but just in case.
             raise ValueError(f"Invalid opaque_key: {opaque_key}")
 
     entities_qset = PublishableEntity.objects.filter(
-        key__in=item_keys,
+        entity_ref__in=item_refs,
     )
 
     if remove:
@@ -181,7 +180,7 @@ def update_library_collection_items(
 
 def set_library_item_collections(
     library_key: LibraryLocatorV2,
-    entity_key: str,
+    entity_ref: str,
     *,
     collection_keys: list[str],
     created_by: int | None = None,
@@ -207,14 +206,14 @@ def set_library_item_collections(
     assert content_library.learning_package_id
     assert content_library.library_key == library_key
 
-    publishable_entity = content_api.get_publishable_entity_by_key(
+    publishable_entity = content_api.get_publishable_entity_by_ref(
         content_library.learning_package_id,
-        key=entity_key,
+        entity_ref=entity_ref,
     )
 
-    # Note: Component.key matches its PublishableEntity.key
+    # Note: Component.entity_ref matches its PublishableEntity.entity_ref
     collection_qs = content_api.get_collections(content_library.learning_package_id).filter(
-        key__in=collection_keys
+        collection_code__in=collection_keys
     )
 
     affected_collections = content_api.set_collections(
@@ -232,7 +231,7 @@ def set_library_item_collections(
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library_key,
-                    collection_key=collection.key,
+                    collection_key=collection.collection_code,
                 ),
                 background=True,
             )

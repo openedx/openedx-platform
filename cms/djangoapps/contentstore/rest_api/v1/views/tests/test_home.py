@@ -274,7 +274,7 @@ class HomePageLibrariesViewTest(LibraryTestCase):
         collection_key = "test-collection"
         content_api.create_collection(
             learning_package_id=learning_package.id,
-            key=collection_key,
+            collection_code=collection_key,
             title="Test Collection",
             created_by=self.user.id,
         )

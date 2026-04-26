@@ -43,7 +43,7 @@ def library_collection_saved(sender, instance, created, **kwargs):
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library.library_key,
-                    collection_key=instance.key,
+                    collection_key=instance.collection_code,
                 ),
             )
         )
@@ -54,7 +54,7 @@ def library_collection_saved(sender, instance, created, **kwargs):
             library_collection=LibraryCollectionData(
                 collection_key=library_collection_locator(
                     library_key=library.library_key,
-                    collection_key=instance.key,
+                    collection_key=instance.collection_code,
                 ),
             )
         )
@@ -77,7 +77,7 @@ def library_collection_deleted(sender, instance, **kwargs):
         library_collection=LibraryCollectionData(
             collection_key=library_collection_locator(
                 library_key=library.library_key,
-                collection_key=instance.key,
+                collection_key=instance.collection_code,
             ),
         )
     )

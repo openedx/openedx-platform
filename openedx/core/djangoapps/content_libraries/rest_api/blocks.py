@@ -272,7 +272,7 @@ class LibraryBlockCollectionsView(APIView):
         collection_keys = serializer.validated_data['collection_keys']
         api.set_library_item_collections(
             library_key=key.lib_key,
-            entity_key=component.publishable_entity.key,
+            entity_ref=component.publishable_entity.entity_ref,
             collection_keys=collection_keys,
             created_by=request.user.id,
             content_library=content_library,
@@ -379,7 +379,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
 
     # Permissions check...
     learning_package = component_version.component.learning_package
-    library_key = LibraryLocatorV2.from_string(learning_package.key)
+    library_key = LibraryLocatorV2.from_string(learning_package.package_ref)
     api.require_permission_for_library_key(
         library_key, request.user, permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
     )
@@ -402,7 +402,7 @@ def get_component_version_asset(request, component_version_uuid, asset_path):
         return redirect_response
 
     # If we got here, we know that the asset exists and it's okay to download.
-    cv_media = component_version.componentversionmedia_set.get(key=asset_path)
+    cv_media = component_version.componentversionmedia_set.get(path=asset_path)
     media = cv_media.media
 
     # Delete the re-direct part of the response headers. We'll copy the rest.

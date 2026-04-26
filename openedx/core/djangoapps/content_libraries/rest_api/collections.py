@@ -33,7 +33,10 @@ class LibraryCollectionsView(ModelViewSet):
     """
 
     serializer_class = ContentLibraryCollectionSerializer
-    lookup_field = 'key'
+    # URL kwarg is `key` for backwards compatibility.
+    # https://github.com/openedx/openedx-platform/issues/38406
+    lookup_field = 'collection_code'
+    lookup_url_kwarg = 'key'
 
     def __init__(self, *args, **kwargs) -> None:
         """
@@ -184,7 +187,7 @@ class LibraryCollectionsView(ModelViewSet):
         assert collection.learning_package_id
         content_api.delete_collection(
             collection.learning_package_id,
-            collection.key,
+            collection.collection_code,
             hard_delete=False,
         )
         return Response(None, status=HTTP_204_NO_CONTENT)

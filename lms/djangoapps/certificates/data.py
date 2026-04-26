@@ -57,11 +57,12 @@ class CertificateStatuses:
     requesting = 'requesting'
 
     readable_statuses = {
-        downloadable: "already received",
-        notpassing: "didn't receive",
-        error: "error states",
-        audit_passing: "audit passing states",
-        audit_notpassing: "audit not passing states",
+        downloadable: "Received",
+        notpassing: "Not Received",
+        unavailable: "Invalidated",
+        error: "Error State",
+        audit_passing: "Audit - Passing",
+        audit_notpassing: "Audit - Not Passing",
     }
 
     PASSED_STATUSES = (downloadable, generating)

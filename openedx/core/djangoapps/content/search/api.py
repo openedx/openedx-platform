@@ -641,7 +641,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
             docs = []
             for collection in batch:
                 try:
-                    collection_key = lib_api.library_collection_locator(library_key, collection.key)
+                    collection_key = lib_api.library_collection_locator(library_key, collection.collection_code)
                     doc = searchable_doc_for_collection(collection_key, collection=collection)
                     doc.update(searchable_doc_tags(collection_key))
                     docs.append(doc)
@@ -677,7 +677,7 @@ def rebuild_index(  # pylint: disable=too-many-statements
                             doc.update(searchable_doc_containers(container_key, "sections"))
                     docs.append(doc)
                 except Exception as err:  # pylint: disable=broad-except
-                    status_cb(f"Error indexing container {container.key}: {err}")
+                    status_cb(f"Error indexing container {container.entity_ref}: {err}")
                 num_done += 1
 
             if docs:
@@ -1032,7 +1032,7 @@ def upsert_content_library_index_docs(library_key: LibraryLocatorV2, full_index:
             docs.append(doc)
 
         for collection in lib_api.get_library_collections(library_key):
-            collection_key = lib_api.library_collection_locator(library_key, collection.key)
+            collection_key = lib_api.library_collection_locator(library_key, collection.collection_code)
             doc = searchable_doc_for_collection(collection_key, collection=collection)
             docs.append(doc)
 

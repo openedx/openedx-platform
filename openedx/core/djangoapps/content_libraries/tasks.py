@@ -142,8 +142,8 @@ def send_events_after_publish(publish_log_pk: int, library_key_str: str) -> None
                 pass
         else:
             log.warning(
-                f"PublishableEntity {record.entity.pk} / {record.entity.key} was modified during publish operation "
-                "but is of unknown type."
+                f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
+                "was modified during publish operation but is of unknown type."
             )
 
     for container_key in affected_containers:
@@ -246,17 +246,17 @@ def send_events_after_revert(draft_change_log_id: int, library_key_str: str) -> 
                 updated_container_keys.add(container_key)
         else:
             log.warning(
-                f"PublishableEntity {record.entity.pk} / {record.entity.key} was modified during publish operation "
-                "but is of unknown type."
+                f"PublishableEntity {record.entity.pk} / {record.entity.entity_ref} "
+                "was modified during publish operation but is of unknown type."
             )
         # If any collections contain this entity, their item count may need to be updated, e.g. if this was a
         # newly created component in the collection and is now deleted, or this was deleted and is now re-added.
         for parent_collection in content_api.get_entity_collections(
-            record.entity.learning_package_id, record.entity.key,
+            record.entity.learning_package_id, record.entity.entity_ref,
         ):
             collection_key = api.library_collection_locator(
                 library_key=library_key,
-                collection_key=parent_collection.key,
+                collection_key=parent_collection.collection_code,
             )
             affected_collection_keys.add(collection_key)
 
@@ -541,7 +541,7 @@ def backup_library(self, user_id: int, library_key_str: str) -> None:
         file_path = os.path.join(root_dir, filename)
         user = User.objects.get(id=user_id)
         origin_server = getattr(settings, 'CMS_BASE', None)
-        create_lib_zip_file(lp_key=str(library_key), path=file_path, user=user, origin_server=origin_server)
+        create_lib_zip_file(package_ref=str(library_key), path=file_path, user=user, origin_server=origin_server)
         set_custom_attribute("exporting_completed", str(library_key))
 
         with open(file_path, 'rb') as zipfile:
@@ -651,7 +651,7 @@ def restore_library(self, user_id, storage_path):
         TASK_LOGGER.info(
             'Restored learning package (id: %s) with key %s',
             learning_package_data.get('id'),
-            learning_package_data.get('key')
+            learning_package_data.get('package_ref')
         )
 
         # Save the restore details as an artifact in JSON format

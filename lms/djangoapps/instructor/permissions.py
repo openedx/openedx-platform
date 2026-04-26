@@ -94,6 +94,26 @@ class InstructorPermission(BasePermission):
         return request.user.has_perm(permission, course)
 
 
+class CourseTeamPermission(BasePermission):
+    """
+    Allow access to course team management endpoints for users with
+    instructor (Admin) access or the Discussion Admin (staff + forum Administrator) role.
+    """
+    def has_permission(self, request, view):
+        try:
+            course_key = CourseKey.from_string(view.kwargs.get('course_id'))
+        except InvalidKeyError as exc:
+            raise Http404('Invalid course key') from exc
+        course = get_course_by_id(course_key)
+        if has_access(request.user, 'instructor', course):
+            return True
+        if has_access(request.user, 'staff', course) and has_forum_access(
+            request.user, course_key, FORUM_ROLE_ADMINISTRATOR
+        ):
+            return True
+        return False
+
+
 class ForumAdminRequiresInstructorAccess(BasePermission):
     """
     default roles require either (staff & forum admin) or (instructor)

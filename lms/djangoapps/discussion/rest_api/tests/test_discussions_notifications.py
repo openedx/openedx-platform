@@ -217,3 +217,16 @@ class TestCleanThreadHtmlBody(unittest.TestCase):
         html_body = '<div><p></p><p>content</p><p></p></div>'
         result = clean_thread_html_body(html_body)
         self.assertEqual(result, '<p style="margin: 0"><p style="margin: 0">content</p></p>')  # noqa: PT009
+
+    def test_style_tag_removed_with_content(self):
+        """
+        Test that style tags and their CSS content are fully removed (CSS injection prevention).
+        """
+        html_body = (
+            '<p>Hello</p>'
+            '<style>body { background-image: url("https://evil.com/track"); }</style>'
+        )
+        result = clean_thread_html_body(html_body)
+        self.assertNotIn('<style>', result)  # noqa: PT009
+        self.assertNotIn('background-image', result)  # noqa: PT009
+        self.assertNotIn('evil.com', result)  # noqa: PT009

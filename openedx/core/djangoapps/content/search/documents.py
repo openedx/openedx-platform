@@ -7,6 +7,7 @@ import logging
 from hashlib import blake2b
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import F
 from django.utils.text import slugify
 from opaque_keys.edx.keys import ContainerKey, LearningContextKey, OpaqueKey, UsageKey
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator
@@ -33,7 +34,7 @@ class Fields:
     usage_key = "usage_key"
     type = "type"  # DocType.course_block or DocType.library_block (see below)
     # The block_id part of the usage key for course or library blocks.
-    # If it's a collection, the collection.key is stored here.
+    # If it's a collection, the collection.collection_code is stored here.
     # Sometimes human-readable, sometimes a random hex ID
     # Is only unique within the given context_key.
     block_id = "block_id"
@@ -64,7 +65,8 @@ class Fields:
     tags_level2 = "level2"
     tags_level3 = "level3"
     # Collections (dictionary) that this object belongs to.
-    # Similarly to tags above, we collect the collection.titles and collection.keys into hierarchical facets.
+    # Similarly to tags above, we collect the collection.titles and collection.collection_codes
+    # into hierarchical facets.
     collections = "collections"
     collections_display_name = "display_name"
     collections_key = "key"
@@ -448,10 +450,13 @@ def searchable_doc_collections(object_id: OpaqueKey) -> dict:
     try:
         if isinstance(object_id, UsageKey):
             component = lib_api.get_component_from_usage_key(object_id)
+            # Temporarily alias collection_code to "key" so downstream consumers
+            # (search indexer, REST API) keep the same field name.  We will update
+            # downstream consumers later: https://github.com/openedx/openedx-platform/issues/38406
             collections = content_api.get_entity_collections(
                 component.learning_package_id,
-                component.key,
-            ).values('key', 'title')
+                component.entity_ref,
+            ).values("title", key=F('collection_code'))
         elif isinstance(object_id, LibraryContainerLocator):
             container = lib_api.get_container(object_id, include_collections=True)
             collections = container.collections
@@ -543,7 +548,7 @@ def searchable_doc_for_collection(
         pass
 
     if collection:
-        assert collection.key == collection_key.collection_id
+        assert collection.collection_code == collection_key.collection_id
 
         draft_num_children = content_api.filter_publishable_entities(
             collection.entities,
@@ -558,7 +563,7 @@ def searchable_doc_for_collection(
             Fields.context_key: str(collection_key.context_key),
             Fields.org: str(collection_key.org),
             Fields.usage_key: str(collection_key),
-            Fields.block_id: collection.key,
+            Fields.block_id: collection.collection_code,
             Fields.type: DocType.collection,
             Fields.display_name: collection.title,
             Fields.description: collection.description,

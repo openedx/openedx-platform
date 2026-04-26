@@ -95,11 +95,11 @@ class LibraryContextImpl(LearningContext):
         if learning_package is None:
             return False
 
-        return content_api.component_exists_by_key(
+        return content_api.component_exists_by_code(
             learning_package.id,
             namespace='xblock.v1',
             type_name=usage_key.block_type,
-            local_key=usage_key.block_id,
+            component_code=usage_key.block_id,
         )
 
     def send_block_updated_event(self, usage_key: UsageKeyV2):

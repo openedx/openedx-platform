@@ -199,14 +199,14 @@ def get_component_from_usage_key(usage_key: UsageKeyV2) -> Component:
     This is a lower-level function that will return a Component even if there is
     no current draft version of that Component (because it's been soft-deleted).
     """
-    learning_package = content_api.get_learning_package_by_key(
+    learning_package = content_api.get_learning_package_by_ref(
         str(usage_key.context_key)
     )
-    return content_api.get_component_by_key(
+    return content_api.get_component_by_code(
         learning_package.id,
         namespace='xblock.v1',
         type_name=usage_key.block_type,
-        local_key=usage_key.block_id,
+        component_code=usage_key.block_id,
     )
 
 
@@ -232,9 +232,9 @@ def get_block_olx(
         raise NoSuchUsage(usage_key)
 
     # TODO: we should probably make a method on ComponentVersion that returns
-    # a content based on the name. Accessing by componentversionmedia__key is
+    # a content based on the name. Accessing by componentversionmedia__path is
     # awkward.
-    content = component_version.media.get(componentversionmedia__key="block.xml")
+    content = component_version.media.get(componentversionmedia__path="block.xml")
 
     return content.text
 
