@@ -66,7 +66,20 @@ jobs:
 
       - name: Run quality tests
         run: |
-          pylint ${{ matrix.path }}
+          # Pylint scope is intentionally limited to edx-lint and pylint-django checks.
+          # All standard pylint rules (correctness, style, refactoring) are now covered
+          # by ruff (rules E, W, I, F, PT, DJ, UP, B) in quality-checks.yml.
+          #
+          # edx-lint (C76xx/E76xx): Open edX-specific — toggle/setting annotations,
+          #   illegal waffle usage, i18n non-string, yaml safety, wrong assert type,
+          #   super() call enforcement, range simplification.
+          # pylint-django (E51xx/F51xx/R51xx/W51xx): Django-specific — auth user
+          #   import (use get_user_model()), JSON response patterns, migration
+          #   best practices, model __str__ enforcement.
+          pylint --disable=all \
+            --enable=C7620,C7630,C7657,C7690,E7601,E7602,E7603,E7610,E7650,E7651,E7652,E7653,E7654,E7655,E7660,E7661,E7662,E7663,E7664,E7665,E7670 \
+            --enable=E5101,E5110,E5141,E5142,F5101,F5110,R5101,R5102,R5103,W5101,W5102,W5103,W5104,W5199 \
+            ${{ matrix.path }}
 
   # This job aggregates test results. It's the required check for branch protection.
   # https://github.com/marketplace/actions/alls-green#why

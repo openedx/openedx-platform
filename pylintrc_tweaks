@@ -3,41 +3,6 @@
 ignore+ = ,.git,.tox,migrations,node_modules,.pycharm_helpers
 load-plugins = edx_lint.pylint,openedx.core.tests.pylint_django_settings,pylint_django,pylint_celery,pylint_pytest
 
-[MESSAGES CONTROL]
-disable+ =
-    # Disable new refactoring suggestions for now, we have more important things to fix first
-    import-outside-toplevel,
-    inconsistent-return-statements,
-    no-else-break,
-    no-else-continue,
-    useless-object-inheritance,
-    useless-suppression,
-    cyclic-import,
-    logging-format-interpolation,
-    wrong-import-order,
-    consider-using-dict-items,
-    unnecessary-dict-index-lookup,
-    arguments-renamed,
-    consider-using-from-import,
-    consider-using-enumerate,
-    no-member,
-    consider-using-with,
-    unspecified-encoding,
-    unused-variable,
-    unused-argument,
-    unsubscriptable-object,
-    abstract-method,
-    not-callable,
-    unsupported-binary-operation,
-    missing-timeout,
-    c-extension-no-member,
-    no-name-in-module,
-    unnecessary-lambda-assignment,
-    too-many-positional-arguments,
-    possibly-used-before-assignment,
-    use-dict-literal,
-    superfluous-parens
-
 [BASIC]
 attr-rgx = [a-z_][a-z0-9_]{2,40}$
 argument-rgx = [a-z_][a-z0-9_]{2,40}$
