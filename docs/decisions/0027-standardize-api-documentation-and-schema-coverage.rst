@@ -1,7 +1,7 @@
 Standardize API Documentation & Schema Coverage
 =================================================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-03-18
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - Documentation standardization for discoverability
@@ -16,7 +16,7 @@ developers, and leads to the emergence of duplicate or overlapping endpoints.
 
 Today, the documentation that does exist in the platform is largely produced
 through `api-doc-tools <https://github.com/openedx/api-doc-tools>`_, an Open
-edX-maintained shim over
+edX platform shim over
 `drf-yasg <https://github.com/axnsan12/drf-yasg>`_. ``api-doc-tools`` provides
 simplified decorators (``@schema``, ``@schema_for``) that wrap
 ``@swagger_auto_schema``, helper functions such as ``parameter()`` for
