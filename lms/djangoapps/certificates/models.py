@@ -588,7 +588,7 @@ class CertificateGenerationHistory(TimeStampedModel):
         if not task_input.strip():
             # if task input is empty, it means certificates were generated for all learners
             # Translators: This string represents task was executed for all learners.
-            return _("All learners")
+            return _("All Learners")
 
         task_input_json = json.loads(task_input)
 
@@ -607,9 +607,9 @@ class CertificateGenerationHistory(TimeStampedModel):
         # for backwards compatibility.
         if 'student_set' in task_input_json or 'students' in task_input_json:
             # Translators: This string represents task was executed for students having exceptions.
-            return _("For exceptions")
+            return _("Granted Exceptions")
         else:
-            return _("All learners")
+            return _("All Learners")
 
     class Meta:
         app_label = "certificates"

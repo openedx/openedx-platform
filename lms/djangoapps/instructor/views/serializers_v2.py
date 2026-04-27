@@ -9,6 +9,7 @@ import logging
 from urllib.parse import urlparse
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.utils.html import escape
 from django.utils.translation import gettext as _
 from edx_when.api import is_enabled_for_course
@@ -16,6 +17,7 @@ from rest_framework import serializers
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
+from common.djangoapps.student.models.user import get_user_by_username_or_email
 from common.djangoapps.student.roles import (
     CourseFinanceAdminRole,
     CourseInstructorRole,
@@ -36,6 +38,7 @@ from xmodule.modulestore.django import modulestore
 
 from .tools import DashboardError, get_student_from_identifier, parse_datetime
 
+User = get_user_model()
 log = logging.getLogger(__name__)
 
 
@@ -81,6 +84,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
     )
     analytics_dashboard_message = serializers.SerializerMethodField(
         help_text="Message about analytics dashboard availability"
+    )
+    certificates_enabled = serializers.SerializerMethodField(
+        help_text="Whether certificate management features are enabled for this course"
     )
 
     @staticmethod
@@ -169,16 +175,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 20,
                 },
                 {
-                    'tab_id': 'course_team',
-                    'title': _('Course Team'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'course_team'
-                    ),
-                    'sort_order': 30,
-                },
-                {
                     'tab_id': 'grading',
                     'title': _('Grading'),
                     'url': self._build_tab_url(
@@ -199,6 +195,18 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 90,
                 },
             ])
+
+        if access['instructor'] or (access['staff'] and access['forum_admin']):
+            tabs.append({
+                'tab_id': 'course_team',
+                'title': _('Course Team'),
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    course_key,
+                    'course_team'
+                ),
+                'sort_order': 30,
+            })
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
             tabs.append(
@@ -467,6 +475,14 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get analytics dashboard availability message."""
         return get_analytics_dashboard_message(data['course'].id)
 
+    def get_certificates_enabled(self, data):
+        """Check if certificate management features are enabled."""
+        from lms.djangoapps.certificates import api as certs_api
+
+        course_key = data['course'].id
+        # Check if certificate generation is enabled (not available for CCX courses)
+        return certs_api.is_certificate_generation_enabled() and not hasattr(course_key, 'ccx')
+
 
 class InstructorTaskSerializer(serializers.Serializer):
     """Serializer for instructor task details."""
@@ -624,6 +640,9 @@ class IssuedCertificateSerializer(serializers.Serializer):
         allow_null=True,
         help_text="Date when certificate was invalidated in ISO 8601 format"
     )
+    invalidation_note = serializers.SerializerMethodField(
+        help_text="Notes about the invalidation"
+    )
 
     def get_enrollment_track(self, obj):
         """Get enrollment track from context."""
@@ -665,6 +684,12 @@ class IssuedCertificateSerializer(serializers.Serializer):
         invalidation_info = invalidation_dict.get(obj.user_id)
         return invalidation_info['created'] if invalidation_info else None
 
+    def get_invalidation_note(self, obj):
+        """Get invalidation notes from invalidation data in context."""
+        invalidation_dict = self.context.get('invalidation_dict', {})
+        invalidation_info = invalidation_dict.get(obj.user_id)
+        return invalidation_info.get('notes', '') if invalidation_info else ''
+
 
 class CertificateGenerationHistorySerializer(serializers.Serializer):
     """
@@ -691,6 +716,94 @@ class CertificateGenerationHistorySerializer(serializers.Serializer):
         return str(obj.get_certificate_generation_candidates())
 
 
+class ToggleCertificateGenerationSerializer(serializers.Serializer):
+    """
+    Serializer for toggling certificate generation request.
+    """
+    enabled = serializers.BooleanField(
+        required=True,
+        help_text="Whether to enable or disable certificate generation"
+    )
+
+
+class CertificateExceptionSerializer(serializers.Serializer):
+    """
+    Serializer for granting certificate exceptions (bulk).
+    """
+    learners = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        max_length=1000,
+        help_text="List of usernames or email addresses of learners to grant exceptions"
+    )
+    notes = serializers.CharField(
+        max_length=1000,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Notes about why the exception is being granted"
+    )
+
+
+class CertificateInvalidationSerializer(serializers.Serializer):
+    """
+    Serializer for invalidating certificates (bulk).
+    """
+    learners = serializers.ListField(
+        child=serializers.CharField(max_length=255, allow_blank=False),
+        allow_empty=False,
+        max_length=1000,
+        help_text="List of usernames or email addresses of learners to invalidate certificates"
+    )
+    notes = serializers.CharField(
+        max_length=1000,
+        required=False,
+        allow_blank=True,
+        default='',
+        help_text="Notes about why the certificate is being invalidated"
+    )
+
+
+class RemoveCertificateExceptionSerializer(serializers.Serializer):
+    """
+    Serializer for removing a certificate exception.
+    """
+    username = serializers.CharField(
+        required=True,
+        max_length=255,
+        allow_blank=False,
+        help_text="Username or email address of the learner"
+    )
+
+    def validate_username(self, value):
+        """Validate and resolve username/email to user object."""
+        try:
+            user = get_user_by_username_or_email(value)
+            return user
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+
+class RemoveCertificateInvalidationSerializer(serializers.Serializer):
+    """
+    Serializer for re-validating a certificate (removing invalidation).
+    """
+    username = serializers.CharField(
+        required=True,
+        max_length=255,
+        allow_blank=False,
+        help_text="Username or email address of the learner"
+    )
+
+    def validate_username(self, value):
+        """Validate and resolve username/email to user object."""
+        try:
+            user = get_user_by_username_or_email(value)
+            return user
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+
+
 class RegenerateCertificatesSerializer(serializers.Serializer):
     """
     Serializer for regenerating certificates request.
@@ -713,6 +826,28 @@ class RegenerateCertificatesSerializer(serializers.Serializer):
         default='all',
         help_text="Student set filter"
     )
+
+
+class LearnerInputSerializer(serializers.Serializer):
+    """
+    Serializer for validating learner identifier (username or email).
+    """
+    email_or_username = serializers.CharField(
+        required=True,
+        max_length=255,
+        allow_blank=False,
+        help_text="Username or email address of the learner"
+    )
+
+    def validate_email_or_username(self, value):
+        """Validate and resolve username/email to user object."""
+        try:
+            user = get_user_by_username_or_email(value)
+            return user
+        except User.DoesNotExist as exc:
+            raise serializers.ValidationError(str(exc)) from exc
+        except User.MultipleObjectsReturned as exc:
+            raise serializers.ValidationError('Multiple learners found for the given identifier') from exc
 
 
 class CourseEnrollmentSerializerV2(serializers.Serializer):
@@ -1008,3 +1143,94 @@ class ScoreOverrideRequestSerializer(serializers.Serializer):
         if "score" not in data and "new_score" in data:
             data = {**data, "score": data["new_score"]}
         return super().to_internal_value(data)
+
+
+class SpecialExamSerializer(serializers.Serializer):
+    """Serializer for proctored/timed exam data from edx_proctoring."""
+    id = serializers.IntegerField()
+    course_id = serializers.CharField()
+    content_id = serializers.CharField()
+    exam_name = serializers.CharField()
+    time_limit_mins = serializers.IntegerField()
+    due_date = serializers.DateTimeField(allow_null=True, required=False)
+    exam_type = serializers.CharField(required=False, default='')
+    is_proctored = serializers.BooleanField()
+    is_practice_exam = serializers.BooleanField()
+    is_active = serializers.BooleanField()
+    hide_after_due = serializers.BooleanField()
+    backend = serializers.CharField(allow_null=True, required=False)
+
+
+class ExamAttemptUserSerializer(serializers.Serializer):
+    """Serializer for user info within an exam attempt."""
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.CharField()
+
+
+class ExamAttemptSerializer(serializers.Serializer):
+    """Serializer for proctored exam attempt data."""
+    id = serializers.IntegerField()
+    user = ExamAttemptUserSerializer()
+    exam_id = serializers.IntegerField(source='proctored_exam.id')
+    status = serializers.CharField()
+    start_time = serializers.DateTimeField(source='started_at', allow_null=True, required=False)
+    end_time = serializers.DateTimeField(source='completed_at', allow_null=True, required=False)
+    allowed_time_limit_mins = serializers.IntegerField(allow_null=True, required=False)
+
+
+class ProctoringSettingsSerializer(serializers.Serializer):
+    """Serializer for course proctoring configuration."""
+    proctoring_provider = serializers.CharField(allow_null=True, required=False)
+    proctoring_escalation_email = serializers.CharField(allow_null=True, required=False)
+    create_zendesk_tickets = serializers.BooleanField()
+    enable_proctored_exams = serializers.BooleanField()
+
+
+class ProctoringSettingsUpdateSerializer(serializers.Serializer):
+    """Serializer for validating proctoring settings update requests."""
+    proctoring_escalation_email = serializers.CharField(required=False, allow_blank=True)
+    create_zendesk_tickets = serializers.BooleanField(required=False)
+    enable_proctored_exams = serializers.BooleanField(required=False)
+
+
+class ExamAllowanceRequestSerializer(serializers.Serializer):
+    """Serializer for validating exam allowance grant requests."""
+    user_ids = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of usernames or emails of the students",
+    )
+    allowance_type = serializers.CharField(help_text="Type of allowance (e.g. 'additional_time_granted')")
+    value = serializers.CharField(help_text="Allowance value")
+
+
+class BulkAllowanceRequestSerializer(serializers.Serializer):
+    """Serializer for validating bulk allowance requests across multiple exams."""
+    exam_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        help_text="List of exam IDs",
+    )
+    user_ids = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of usernames or emails of the students",
+    )
+    allowance_type = serializers.CharField(help_text="Type of allowance (e.g. 'additional_time_granted')")
+    value = serializers.CharField(help_text="Allowance value")
+
+
+class AllowanceUserSerializer(serializers.Serializer):
+    """Serializer for user info within an allowance (uses 'id' directly)."""
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.CharField()
+
+
+class ExamAllowanceSerializer(serializers.Serializer):
+    """Serializer for exam allowance data from edx_proctoring."""
+    id = serializers.IntegerField()
+    created = serializers.DateTimeField()
+    modified = serializers.DateTimeField()
+    user = AllowanceUserSerializer()
+    key = serializers.CharField()
+    value = serializers.CharField()
+    proctored_exam = SpecialExamSerializer()

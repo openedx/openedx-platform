@@ -76,6 +76,17 @@ class InstructorDashboardTab(CourseTab):
     is_dynamic = True    # The "Instructor" tab is instead dynamically added when it is enabled
     priority = 300
 
+    def __init__(self, tab_dict):
+        # Customize link function to support both legacy dashboard and new MFE tab response based on feature flag
+        def link_func(course, reverse_func):
+            if not legacy_instructor_dashboard():
+                return get_instructor_dashboard_url(course.id)
+            else:
+                return reverse_func(self.view_name, args=[str(course.id)])
+
+        tab_dict['link_func'] = link_func
+        super().__init__(tab_dict)
+
     @classmethod
     def is_enabled(cls, course, user=None):
         """
@@ -832,4 +843,4 @@ def get_instructor_dashboard_url(course_key: CourseKey) -> str:
     Gets instructor microfrontend URL for the current course locator.
     """
     mfe_base_url = settings.INSTRUCTOR_MICROFRONTEND_URL
-    return f'{mfe_base_url}/{course_key}/course_info'
+    return f'{mfe_base_url}/{course_key}'
