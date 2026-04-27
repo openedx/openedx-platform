@@ -9,7 +9,6 @@ Platform-wide Python APIs should be added to an appropriate api.py file instead.
 
 from __future__ import annotations
 
-import json
 import logging
 import pathlib
 import re
@@ -509,8 +508,14 @@ def _fetch_and_set_upstream_link(
             # temp_xblock.display_name == temp_xblock.upstream_display_name
             # temp_xblock.data == temp_xblock.upstream_data   # for html blocks
             # Even then we want to set `downstream_customized` value to avoid overriding user customisations on sync
-            downstream_customized = temp_xblock.xml_attributes.get("downstream_customized", '[]')
-            temp_xblock.downstream_customized = json.loads(downstream_customized)
+            downstream_customized = getattr(temp_xblock, "downstream_customized", [])
+            # XmlMixin blocks expose raw XML attrs on `xml_attributes`; other blocks (e.g. DnD)
+            # may not have this attribute, but still have parsed downstream_customized field.
+            if hasattr(temp_xblock, 'xml_attributes'):
+                raw_downstream_customized = temp_xblock.xml_attributes.get("downstream_customized", [])
+                downstream_customized = raw_downstream_customized
+            if hasattr(temp_xblock, "downstream_customized"):
+                temp_xblock.downstream_customized = downstream_customized
 
 
 def _import_xml_node_to_parent(
