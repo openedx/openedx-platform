@@ -3577,7 +3577,7 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.forum_admin)
         response = self.client.delete(url, {'roles': ['staff']}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'You do not have permissions to change this role' in response.data['error']
+        assert 'You do not have permissions to change the requested roles' in response.data['error']
 
     def test_plain_staff_cannot_access_team_endpoints(self):
         """Staff without instructor or forum admin role should get 403."""
@@ -3620,7 +3620,7 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.forum_admin)
         response = self.client.delete(url, {'roles': ['instructor']}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
-        assert 'You do not have permissions to change this role' in response.data['error']
+        assert 'You do not have permissions to change the requested roles' in response.data['error']
 
     def test_roles_editable_param_filters_for_forum_admin(self):
         """GET /team/roles?editable=true returns only forum roles for Discussion Admin."""
