@@ -573,7 +573,7 @@ edx-drf-extensions==10.6.0
     #   enterprise-integrated-channels
     #   openedx-authz
     #   openedx-core
-edx-enterprise==7.0.7
+edx-enterprise==8.0.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
@@ -1412,7 +1412,6 @@ snowballstemmer==3.0.1
 snowflake-connector-python==4.3.0
     # via
     #   -r requirements/edx/base.txt
-    #   edx-enterprise
     #   enterprise-integrated-channels
 social-auth-app-django==5.4.1
     # via
