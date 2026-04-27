@@ -210,17 +210,3 @@ def can_take_action_on_spam(user, course_id):
     if CourseAccessRole.objects.filter(user=user, course_id__in=course_ids, role__in=["instructor", "staff"]).exists():
         return True
     return False
-
-
-class IsAllowedToBulkDelete(permissions.BasePermission):
-    """
-    Permission that checks if the user is staff or an admin.
-    """
-
-    def has_permission(self, request, view):
-        """Returns true if the user can bulk delete posts"""
-        if not request.user.is_authenticated:
-            return False
-
-        course_id = view.kwargs.get("course_id")
-        return can_take_action_on_spam(request.user, course_id)

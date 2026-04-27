@@ -1,10 +1,8 @@
 # pylint: disable=missing-docstring,protected-access
 import logging
-import time
 
 from bs4 import BeautifulSoup
 from forum import api as forum_api
-from forum.backends.mongodb.comments import Comment as ForumComment
 
 from openedx.core.djangoapps.django_comment_common.comment_client import models, settings
 
@@ -129,43 +127,6 @@ class Comment(models.Model):
             per_page=params.get('per_page', 10),
         )
 
-    @classmethod
-    def get_user_comment_count(cls, user_id, course_ids):
-        """
-        Returns comments and responses count of user in the given course_ids.
-        TODO: Add support for MySQL backend as well
-        """
-        query_params = {
-            "course_id": {"$in": course_ids},
-            "author_id": str(user_id),
-            "_type": "Comment"
-        }
-        return ForumComment()._collection.count_documents(query_params)  # pylint: disable=protected-access
-
-    @classmethod
-    def delete_user_comments(cls, user_id, course_ids):
-        """
-        Deletes comments and responses of user in the given course_ids.
-        TODO: Add support for MySQL backend as well
-        """
-        start_time = time.time()
-        query_params = {
-            "course_id": {"$in": course_ids},
-            "author_id": str(user_id),
-        }
-        comments_deleted = 0
-        comments = ForumComment().get_list(**query_params)
-        log.info(f"<<Bulk Delete>> Fetched comments for user {user_id} in {time.time() - start_time} seconds")
-        for comment in comments:
-            start_time = time.time()
-            comment_id = comment.get("_id")
-            course_id = comment.get("course_id")
-            if comment_id:
-                forum_api.delete_comment(comment_id, course_id=course_id)
-                comments_deleted += 1
-            log.info(f"<<Bulk Delete>> Deleted comment {comment_id} in {time.time() - start_time} seconds."
-                     f" Comment Found: {comment_id is not None}")
-        return comments_deleted
 
 
 def _url_for_thread_comments(thread_id):
