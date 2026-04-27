@@ -3529,8 +3529,33 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK
 
-    def test_forum_admin_can_grant_role(self):
-        """Discussion Admin should be able to POST /team to grant a role."""
+    def test_forum_admin_can_grant_forum_role(self):
+        """Discussion Admin should be able to grant a forum role."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        target = UserFactory.create()
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.post(url, {
+            'identifiers': [target.username],
+            'role': 'Moderator',
+            'action': 'allow',
+        }, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_revoke_forum_role(self):
+        """Discussion Admin should be able to revoke a forum role."""
+        target = UserFactory.create()
+        role = Role.objects.get(course_id=self.course_key, name='Moderator')
+        role.users.add(target)
+        url = reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': target.username},
+        )
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.delete(url, {'roles': ['Moderator']}, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_cannot_grant_course_role(self):
+        """Discussion Admin should not be able to grant a non-forum course role like staff."""
         url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
         target = UserFactory.create()
         self.client.force_authenticate(user=self.forum_admin)
@@ -3539,10 +3564,11 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
             'role': 'staff',
             'action': 'allow',
         }, format='json')
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert 'You do not have permissions to change this role' in response.data['error']
 
-    def test_forum_admin_can_revoke_role(self):
-        """Discussion Admin should be able to DELETE /team/{username}."""
+    def test_forum_admin_cannot_revoke_course_role(self):
+        """Discussion Admin should not be able to revoke a non-forum course role like staff."""
         target = StaffFactory.create(course_key=self.course_key)
         url = reverse(
             'instructor_api_v2:course_team_member',
@@ -3550,7 +3576,8 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         )
         self.client.force_authenticate(user=self.forum_admin)
         response = self.client.delete(url, {'roles': ['staff']}, format='json')
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert 'You do not have permissions to change this role' in response.data['error']
 
     def test_plain_staff_cannot_access_team_endpoints(self):
         """Staff without instructor or forum admin role should get 403."""
@@ -3581,10 +3608,10 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
             'action': 'allow',
         }, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert 'You do not have permissions to change this role' in response.data['error']
 
     def test_forum_admin_cannot_revoke_instructor_role(self):
         """Discussion Admin should not be able to revoke the instructor role."""
-        # Create an instructor to target
         instructor = InstructorFactory.create(course_key=self.course_key)
         url = reverse(
             'instructor_api_v2:course_team_member',
@@ -3593,3 +3620,38 @@ class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.forum_admin)
         response = self.client.delete(url, {'roles': ['instructor']}, format='json')
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert 'You do not have permissions to change this role' in response.data['error']
+
+    def test_roles_editable_param_filters_for_forum_admin(self):
+        """GET /team/roles?editable=true returns only forum roles for Discussion Admin."""
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url, {'editable': 'true'})
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = {r['role'] for r in response.data['results']}
+        assert returned_roles == {'Administrator', 'Moderator', 'Group Moderator', 'Community TA'}
+
+    def test_roles_editable_param_returns_all_for_instructor(self):
+        """GET /team/roles?editable=true returns all roles for an instructor."""
+        instructor = InstructorFactory.create(course_key=self.course_key)
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=instructor)
+        response = self.client.get(url, {'editable': 'true'})
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = {r['role'] for r in response.data['results']}
+        # Instructor should see both course roles and forum roles
+        assert 'instructor' in returned_roles
+        assert 'staff' in returned_roles
+        assert 'Administrator' in returned_roles
+
+    def test_roles_without_editable_param_returns_all(self):
+        """GET /team/roles without editable param returns all roles regardless of user."""
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = {r['role'] for r in response.data['results']}
+        # Without editable param, all roles are returned
+        assert 'instructor' in returned_roles
+        assert 'staff' in returned_roles
+        assert 'Administrator' in returned_roles

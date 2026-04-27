@@ -3099,6 +3099,9 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         if not ccx_enabled:
             roles.discard('ccx_coach')
 
+        if request.query_params.get('editable') == 'true' and not has_access(request.user, 'instructor', course):
+            roles = set(FORUM_ROLES)
+
         results = [
             {'role': rolename, 'display_name': str(ROLE_DISPLAY_NAMES[rolename])}
             for rolename in sorted(roles)
@@ -3297,9 +3300,9 @@ class CourseTeamView(DeveloperErrorViewMixin, APIView):
         rolename = serializer.validated_data['role']
         action = serializer.validated_data['action']
 
-        if rolename == 'instructor' and not has_access(request.user, 'instructor', course):
+        if not is_forum_role(rolename) and not has_access(request.user, 'instructor', course):
             return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
+                {'error': _('You do not have permissions to change this role.')},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -3399,11 +3402,13 @@ class CourseTeamMemberView(DeveloperErrorViewMixin, APIView):
 
         roles = revoke_serializer.validated_data['roles']
 
-        if 'instructor' in roles and not has_access(request.user, 'instructor', course):
-            return Response(
-                {'error': _('Managing the instructor role requires instructor access.')},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if not has_access(request.user, 'instructor', course):
+            non_forum_roles = [r for r in roles if not is_forum_role(r)]
+            if non_forum_roles:
+                return Response(
+                    {'error': _('You do not have permissions to change this role.')},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
 
         try:
             user = get_student_from_identifier(email_or_username)
