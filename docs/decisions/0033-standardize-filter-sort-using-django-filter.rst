@@ -2,7 +2,7 @@
 Standardize Filtering/Sorting Parameters
 ========================================
 
-:Status: Proposed
+:Status: Accepted
 :Date: 2026-04-08
 :Deciders: API Working Group
 :Technical Story: Open edX REST API Standards - Filtering/Sorting parameters standardization for consistency
@@ -11,14 +11,14 @@ Context
 =======
 
 Filtering and sorting syntax varies across Open edX APIs (e.g., inconsistent parameter names such as
-``course_id`` vs ``course``). This forces clients to hardcode endpoint-specific logic and prevents
+``course_key`` vs ``course``). This forces clients to hardcode endpoint-specific logic and prevents
 tooling/agents from reliably inferring query patterns.
 
 Decision
 ========
 
 1. Adopt ``django-filter`` for list endpoints requiring filtering.
-2. Standardize parameter naming conventions (e.g., use ``course_id`` consistently) and document them.
+2. Standardize parameter naming conventions (e.g., use ``course_key`` consistently) and document them.
 3. Provide consistent sorting conventions:
 
    * Use a standard ``ordering`` parameter (DRF convention), with documented allowed fields.
@@ -36,7 +36,7 @@ Relevance in edx-platform
   ``entitlements/rest_api/v1/filters.py`` (``CourseEntitlementFilter`` with
   ``uuid``, ``user__username``, ``course_uuid``, ``expired_at__isnull``).
 * **Inconsistency**: Parameter names and filter semantics vary across APIs
-  (e.g. ``course_id`` vs ``course``); standardizing on ``course_id`` and
+  (e.g. ``course_key`` vs ``course``); standardizing on ``course_key`` for course identifier strings (per `OEP-68`_) and
   a single ``ordering`` parameter aligns with this ADR.
 
 Code examples
@@ -104,11 +104,11 @@ To ensure smooth transition for existing API consumers:
 
    class CourseEntitlementFilter(filters.FilterSet):
        course = filters.CharFilter(field_name='course_uuid')  # old param
-       course_uuid = filters.UUIDFilter(field_name='course_uuid')  # new param
+       course_key = filters.CharFilter(field_name='course_uuid')  # new param
 
 2. **Deprecation Warnings**: Return HTTP headers warning about deprecated parameters:
 
-  * Deprecation: Parameter 'course' is deprecated. Use 'course_id' instead.
+  * Deprecation: Parameter 'course' is deprecated. Use 'course_key' instead.
   * Support will be removed in release 'quince'.
 
 3. **Gradual Migration**: 
@@ -130,4 +130,10 @@ To ensure smooth transition for existing API consumers:
 References
 ==========
 
-* “Missing Filter/Sort Consistency” recommendation in the Open edX REST API standardization notes.
+* `Open edX REST API Standardization Notes`_ — “Missing Filter/Sort Consistency” recommendation
+* `OEP-68`_ — Content Identifiers (defines ``course_key`` naming convention)
+* `django-filter documentation`_
+
+.. _Open edX REST API Standardization Notes: https://openedx.atlassian.net/wiki/spaces/AC/pages/18350757/Open+edX+REST+API+Conventions#Conventions
+.. _OEP-68: https://docs.openedx.org/projects/openedx-proposals/en/latest/best-practices/oep-0068-bp-content-identifiers.html#summary
+.. _django-filter documentation: https://django-filter.readthedocs.io/
