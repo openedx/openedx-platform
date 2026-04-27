@@ -26,7 +26,9 @@ from datetime import datetime
 from io import StringIO
 from tempfile import NamedTemporaryFile, mkdtemp
 
-from celery import shared_task
+from celery import Task, shared_task
+from celery.exceptions import TimeoutError as CeleryTimeout
+from celery.result import AsyncResult
 from celery.utils.log import get_task_logger
 from celery_utils.logged_task import LoggedTask
 from django.conf import settings
@@ -697,3 +699,50 @@ def restore_library(self, user_id, storage_path):
         # Make sure to clean up the uploaded file from storage
         course_import_export_storage.delete(storage_path)
         TASK_LOGGER.info('Deleted uploaded file %s after restore', storage_path)
+
+
+def dispatch_and_wait(task_fn: Task, wait_for_full_completion: bool = False, **kwargs) -> None:
+    """
+    Try to wait for the given celery task to complete before returning,
+    up to some reasonable timeout, and then finish anything remaining work
+    asynchonrously.
+
+    Note: we're not using async python, so this function will unfortunately
+    block the current CMS worker for a few seconds.
+
+    Usage example
+    -------------
+
+    Instead of::
+
+        tasks.send_change_events_for_modified_entities.delay(...)
+
+    Do::
+
+        dispatch_and_wait(
+            tasks.send_change_events_for_modified_entities,
+            ...
+        )
+
+    The ``wait_for_full_completion`` param is to simplify a common pattern. When
+    it's True, this will just call the function directly (not using celery) and
+    wait indefinitely for it to complete. When it's False, we'll dispatch the
+    task using celery and wait up to a given timeout. So you should set it True
+    if you are fairly certain the task will be able to complete quickly (e.g.
+    when processing a small number of changes).
+    """
+    if wait_for_full_completion:
+        task_fn(**kwargs)
+        return
+
+    result: AsyncResult = task_fn.delay(**kwargs)
+    # Try waiting a bit for the task to finish before we complete the request:
+    try:
+        result.get(timeout=10)
+    except CeleryTimeout:
+        pass
+        # This is fine! The search index is still being updated, and/or other
+        # event handlers are still following up on the results, but the action
+        # that let to this event handler being called already *did* succeed,
+        # and the events will continue to be processed in the background by the
+        # celery worker until everything is updated.

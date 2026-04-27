@@ -3,7 +3,6 @@ Content library signal handlers.
 """
 
 import logging
-from functools import partial
 
 from attrs import asdict
 from django.dispatch import receiver
@@ -50,29 +49,18 @@ def entities_updated(
     except ContentLibrary.DoesNotExist:
         return  # We don't care about non-library events.
 
-    # Which entities were _directly_ changed here?
-    direct_changes = [asdict(change) for change in change_log.changes if change.new_version != change.old_version]
-    # And which entities were indirectly affected (e.g. parent containers)?
-    indirect_changes = [asdict(change) for change in change_log.changes if change.new_version == change.old_version]
-
-    update_task_fn = tasks.send_change_events_for_modified_entities
-    update_sync = partial(update_task_fn, learning_package_id=learning_package.id)
-    update_async = partial(update_task_fn.delay, learning_package_id=learning_package.id)
-
-    if len(direct_changes) > 1:
-        # More than one entity was directly changed at once. Handle asynchronously:
-        update_async(change_list=[*direct_changes, *indirect_changes])
-        return
-
-    # We directly changed at most one entity.
-    # We'll update it synchronously so that the UI will reflect changes right away.
-    # How many other "indirect" changes do we also have?
-    if len(indirect_changes) <= 1:
-        # Update any other affected entity synchronously too; there's at most one. (More efficient, better UX.)
-        update_sync(change_list=[*direct_changes, *indirect_changes])
-    else:
-        update_sync(change_list=direct_changes)  # Update this one entity synchronously, and
-        update_async(change_list=indirect_changes)  # update the many other affects entities async.
+    # The list of entities changed, both directly changed and indirectly affected (e.g. ancestor containers)
+    change_list = [asdict(change) for change in change_log.changes]
+    tasks.dispatch_and_wait(
+        tasks.send_change_events_for_modified_entities,
+        learning_package_id=learning_package.id,
+        change_list=change_list,
+        # If there are only a few entities changed, we'll call the handler synchronously so that everything is up to
+        # date when the requests finishes. (This is important for the Authoring MFE which uses the search index for its
+        # main UI listing components, containers, and collections in the library.) If many entities have changed, we'll
+        # handle it asynchronously but _try_ waiting a bit in case it finishes quickly.
+        wait_for_full_completion=len(change_list) < 5,
+    )
 
 
 @receiver(content_signals.ENTITIES_PUBLISHED)
@@ -102,15 +90,14 @@ def entities_published(
     except ContentLibrary.DoesNotExist:
         return  # We don't care about non-library events.
 
-    # Note: it may be better to split this up to use the same "separate direct vs. indirect" logic as above, so we can
-    # call the handler synchronously for things directly published and asynchronously for side effects
-    if len(change_log.changes) == 1:
-        fn = tasks.send_events_after_publish
-    else:
-        # More than one entity was published at once. Handle asynchronously:
-        fn = tasks.send_events_after_publish.delay
-
-    fn(publish_log_id=change_log.publish_log_id, library_key_str=str(library.library_key))
+    tasks.dispatch_and_wait(
+        tasks.send_events_after_publish,
+        publish_log_id=change_log.publish_log_id,
+        library_key_str=str(library.library_key),
+        # If there are only a few entities published, we'll call the handler synchronously so that everything is up to
+        # date when the requests finishes:
+        wait_for_full_completion=len(change_log.changes) < 5,
+    )
 
 
 @receiver(content_signals.COLLECTION_CHANGED)
@@ -167,14 +154,11 @@ def collection_updated(
     # If the collection was re-enabled (un-deleted), this will already include all entities in the collection.
     # If the collection was renamed, we just now added all entities in the collection to this list of changed entities.
     if entities_changed:
-        if len(entities_changed) == 1:
-            # If there's only one changed entity, emit the event synchronously:
-            fn = tasks.send_collections_changed_events
-        else:
-            # If there are more than one changed entities, emit the events asynchronously:
-            fn = tasks.send_collections_changed_events.delay
-        fn(
+        tasks.dispatch_and_wait(
+            tasks.send_collections_changed_events,
             publishable_entity_ids=sorted(entities_changed),  # sorted() is mostly for test purposes
             learning_package_id=learning_package.id,
             library_key_str=str(library.library_key),
+            # If there's only one changed entity, emit the event synchronously:
+            wait_for_full_completion=len(entities_changed) == 1,
         )
