@@ -25,20 +25,8 @@ from opaque_keys.edx.keys import LearningContextKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection, Component, ComponentVersion, Container, LearningPackage, MediaType
-from openedx_events.content_authoring.data import (
-    ContentObjectChangedData,
-    LibraryBlockData,
-    LibraryCollectionData,
-    LibraryContainerData,
-)
-from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    LIBRARY_BLOCK_CREATED,
-    LIBRARY_BLOCK_DELETED,
-    LIBRARY_BLOCK_UPDATED,
-    LIBRARY_COLLECTION_UPDATED,
-    LIBRARY_CONTAINER_UPDATED,
-)
+from openedx_events.content_authoring.data import LibraryBlockData
+from openedx_events.content_authoring.signals import LIBRARY_BLOCK_DELETED
 from xblock.core import XBlock
 
 from openedx.core.djangoapps.content_staging.data import StagedContentID
@@ -49,16 +37,13 @@ from openedx.core.djangoapps.xblock.api import (
 )
 from openedx.core.types import User as UserType
 
-from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata, LibraryXBlockStaticFile
-from .collections import library_collection_locator
 from .container_metadata import container_subclass_for_olx_tag
 from .containers import (
     ContainerMetadata,
     create_container,
     get_container,
-    get_containers_contains_item,
     update_container_children,
 )
 from .exceptions import (
@@ -255,29 +240,6 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
             created=now,
         )
 
-    # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-    # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-    transaction.on_commit(lambda: LIBRARY_BLOCK_UPDATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=usage_key.context_key,
-            usage_key=usage_key
-        )
-    ))
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    affected_containers = get_containers_contains_item(usage_key)
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        container_key = container.container_key
-        transaction.on_commit(lambda ck=container_key: LIBRARY_CONTAINER_UPDATED.send_event(  # type: ignore[misc]
-            library_container=LibraryContainerData(
-                container_key=ck,
-                background=True,
-            )
-        ))
-
     return new_component_version
 
 
@@ -354,16 +316,6 @@ def create_library_block(
     _create_component_for_block(content_library, usage_key, user_id, can_stand_alone)
 
     # Now return the metadata about the new block:
-
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=content_library.library_key,
-            usage_key=usage_key
-        )
-    )
-
     return get_library_block(usage_key)
 
 
@@ -495,16 +447,6 @@ def _import_staged_block(
                 content.id,
                 path=filename,
             )
-
-    # Emit library block created event
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    transaction.on_commit(lambda: LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=content_library.library_key,
-            usage_key=usage_key
-        )
-    ))
 
     # Now return the metadata about the new block
     return get_library_block(usage_key)
@@ -707,16 +649,6 @@ def delete_library_block(
     """
     library_key = usage_key.context_key
 
-    def send_block_deleted_signal():
-        # .. event_implemented_name: LIBRARY_BLOCK_DELETED
-        # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
-        LIBRARY_BLOCK_DELETED.send_event(
-            library_block=LibraryBlockData(
-                library_key=library_key,
-                usage_key=usage_key
-            )
-        )
-
     try:
         component = get_component_from_usage_key(usage_key)
     except Component.DoesNotExist:
@@ -725,46 +657,15 @@ def delete_library_block(
         # (an intermediate error occurred).
         # In that case, we keep the index updated by removing the entry,
         # but still raise the error so the caller knows the component did not exist.
-        send_block_deleted_signal()
+
+        # .. event_implemented_name: LIBRARY_BLOCK_DELETED
+        # .. event_type: org.openedx.content_authoring.library_block.deleted.v1
+        LIBRARY_BLOCK_DELETED.send_event(
+            library_block=LibraryBlockData(library_key=library_key, usage_key=usage_key)
+        )
         raise
 
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
-    affected_containers = get_containers_contains_item(usage_key)
-
     content_api.soft_delete_draft(component.id, deleted_by=user_id)
-
-    send_block_deleted_signal()
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To delete the component on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    #
-    # To update the components count in containers
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=container.container_key,
-                background=True,
-            )
-        )
 
 
 def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None = None) -> None:
@@ -772,66 +673,12 @@ def restore_library_block(usage_key: LibraryUsageLocatorV2, user_id: int | None 
     Restore the specified library block.
     """
     component = get_component_from_usage_key(usage_key)
-    library_key = usage_key.context_key
-    affected_collections = content_api.get_entity_collections(component.learning_package_id, component.entity_ref)
-
     # Set draft version back to the latest available component version id.
     content_api.set_draft_version(
         component.id,
         component.versioning.latest.pk,
         set_by=user_id,
     )
-
-    # .. event_implemented_name: LIBRARY_BLOCK_CREATED
-    # .. event_type: org.openedx.content_authoring.library_block.created.v1
-    LIBRARY_BLOCK_CREATED.send_event(
-        library_block=LibraryBlockData(
-            library_key=library_key,
-            usage_key=usage_key
-        )
-    )
-
-    # Add tags and collections back to index
-    # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-    # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-        content_object=ContentObjectChangedData(
-            object_id=str(usage_key),
-            changes=["collections", "tags", "units"],
-        ),
-    )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To restore the component in the collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
-
-    # For each container, trigger LIBRARY_CONTAINER_UPDATED signal and set background=True to trigger
-    # container indexing asynchronously.
-    #
-    # To update the components count in containers
-    affected_containers = get_containers_contains_item(usage_key)
-    for container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=container.container_key,
-                background=True,
-            )
-        )
 
 
 def get_library_block_static_asset_files(usage_key: LibraryUsageLocatorV2) -> list[LibraryXBlockStaticFile]:
@@ -918,16 +765,6 @@ def add_library_block_static_asset_file(
             created=datetime.now(tz=timezone.utc),  # noqa: UP017
             created_by=user.id if user else None,
         )
-        transaction.on_commit(
-            # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-            # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-            lambda: LIBRARY_BLOCK_UPDATED.send_event(
-                library_block=LibraryBlockData(
-                    library_key=usage_key.context_key,
-                    usage_key=usage_key,
-                )
-            )
-        )
 
     # Now figure out the URL for the newly created asset...
     site_root_url = get_xblock_app_config().get_site_root_url()
@@ -966,16 +803,6 @@ def delete_library_block_static_asset_file(usage_key, file_path, user=None):
             created=now,
             created_by=user.id if user else None,
         )
-        transaction.on_commit(
-            # .. event_implemented_name: LIBRARY_BLOCK_UPDATED
-            # .. event_type: org.openedx.content_authoring.library_block.updated.v1
-            lambda: LIBRARY_BLOCK_UPDATED.send_event(
-                library_block=LibraryBlockData(
-                    library_key=usage_key.context_key,
-                    usage_key=usage_key,
-                )
-            )
-        )
 
 
 def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
@@ -990,13 +817,7 @@ def publish_component_changes(usage_key: LibraryUsageLocatorV2, user_id: int):
     # The core publishing API is based on draft objects, so find the draft that corresponds to this component:
     drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__entity_ref=component.entity_ref)
     # Publish the component and update anything that needs to be updated (e.g. search index):
-    publish_log = content_api.publish_from_drafts(
-        learning_package.id, draft_qset=drafts_to_publish, published_by=user_id,
-    )
-    # Since this is a single component, it should be safe to process synchronously and in-process:
-    tasks.send_events_after_publish(publish_log.pk, str(library_key))
-    # IF this is found to be a performance issue, we could instead make it async where necessary:
-    # tasks.wait_for_post_publish_events(publish_log, library_key=library_key)
+    content_api.publish_from_drafts(learning_package.id, draft_qset=drafts_to_publish, published_by=user_id)
 
 
 def _component_exists(usage_key: UsageKeyV2) -> bool:

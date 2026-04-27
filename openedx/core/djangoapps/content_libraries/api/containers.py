@@ -9,24 +9,14 @@ import typing
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from django.db import transaction
 from django.db.models import F
 from django.utils.text import slugify
 from opaque_keys.edx.locator import LibraryContainerLocator, LibraryLocatorV2, LibraryUsageLocatorV2
 from openedx_content import api as content_api
-from openedx_content.models_api import Container, Unit
-from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData, LibraryContainerData
-from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
-    LIBRARY_COLLECTION_UPDATED,
-    LIBRARY_CONTAINER_CREATED,
-    LIBRARY_CONTAINER_DELETED,
-    LIBRARY_CONTAINER_UPDATED,
-)
+from openedx_content.models_api import Container
+from openedx_events.content_authoring.data import LibraryContainerData
+from openedx_events.content_authoring.signals import LIBRARY_CONTAINER_DELETED
 
-from openedx.core.djangoapps.content_libraries.api.collections import library_collection_locator
-
-from .. import tasks
 from ..models import ContentLibrary
 from .block_metadata import LibraryXBlockMetadata
 from .container_metadata import (
@@ -113,7 +103,7 @@ def create_container(
         # Automatically generate a slug. Append a random suffix so it should be unique.
         slug = slugify(title, allow_unicode=True) + "-" + uuid4().hex[-6:]
     # Make sure the slug is valid by first creating a key for the new container:
-    container_key = LibraryContainerLocator(
+    _container_key = LibraryContainerLocator(
         library_key,
         container_type=container_cls.type_code,
         container_id=slug,
@@ -133,14 +123,6 @@ def create_container(
         created_by=user_id,
     )
 
-    # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
-    # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-    transaction.on_commit(lambda: LIBRARY_CONTAINER_CREATED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    ))
-
     return ContainerMetadata.from_container(library_key, container)
 
 
@@ -156,43 +138,12 @@ def update_container(
     library_key = container_key.lib_key
     created = datetime.now(tz=timezone.utc)  # noqa: UP017
 
-    # Get children containers or components to update their index data
-    children = get_container_children(container_key, published=False)
-
     version = content_api.create_next_container_version(
         container,
         title=display_name,
         created=created,
         created_by=user_id,
     )
-
-    # Send event related to the updated container
-    # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-    # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-    LIBRARY_CONTAINER_UPDATED.send_event(library_container=LibraryContainerData(container_key=container_key))
-
-    # Send events related to the containers that contains the updated container.
-    # This is to update the children display names used in the section/subsection previews.
-    affected_containers = get_containers_contains_item(container_key)
-    for affected_container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(container_key=affected_container.container_key)
-        )
-    # Update children components and containers index data, for example,
-    # All subsections under a section have section key in index that needs to be updated.
-    # So if parent section name has been changed, it needs to be reflected in sections key of children
-    is_unit = container_key.container_type == Unit.type_code
-    for child in children:
-        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-            content_object=ContentObjectChangedData(
-                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
-                changes=[container_key.container_type + "s"],  # e.g. "units"
-            ),
-        )
 
     return ContainerMetadata.from_container(library_key, version.container)
 
@@ -205,15 +156,6 @@ def delete_container(
 
     No-op if container doesn't exist or has already been soft-deleted.
     """
-    def send_container_deleted_signal():
-        # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
-        # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
-        LIBRARY_CONTAINER_DELETED.send_event(
-            library_container=LibraryContainerData(
-                container_key=container_key,
-            )
-        )
-
     try:
         container = get_container_from_key(container_key)
     except Container.DoesNotExist:
@@ -222,149 +164,20 @@ def delete_container(
         # (an intermediate error occurred).
         # In that case, we keep the index updated by removing the entry,
         # but still raise the error so the caller knows the container did not exist.
-        send_container_deleted_signal()
+        # .. event_implemented_name: LIBRARY_CONTAINER_DELETED
+        # .. event_type: org.openedx.content_authoring.content_library.container.deleted.v1
+        LIBRARY_CONTAINER_DELETED.send_event(library_container=LibraryContainerData(container_key=container_key))
         raise
 
-    library_key = container_key.lib_key
-
-    # Fetch related collections and containers before soft-delete
-    affected_collections = content_api.get_entity_collections(
-        container.publishable_entity.learning_package_id,
-        container.entity_ref,
-    )
-    affected_containers = get_containers_contains_item(container_key)
-    # Get children containers or components to update their index data
-    children = get_container_children(
-        container_key,
-        published=False,
-    )
     content_api.soft_delete_draft(container.id)
-
-    send_container_deleted_signal()
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To delete the container on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
-    # Send events related to the containers that contains the updated container.
-    # This is to update the children display names used in the section/subsection previews.
-    for affected_container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=affected_container.container_key,
-            )
-        )
-    key_name = "container_key"
-    if isinstance(container, Unit):
-        # Components have usage_key instead of container_key
-        key_name = "usage_key"
-    # Update children components and containers index data, for example,
-    # All subsections under a section have section key in index that needs to be updated.
-    # So if parent section is deleted, it needs to be removed from sections key of children
-    for child in children:
-        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-            content_object=ContentObjectChangedData(
-                object_id=str(getattr(child, key_name)),
-                changes=[container_key.container_type + "s"],
-            ),
-        )
 
 
 def restore_container(container_key: LibraryContainerLocator) -> None:
     """
     [ 🛑 UNSTABLE ] Restore the specified library container.
     """
-    library_key = container_key.lib_key
     container = get_container_from_key(container_key, include_deleted=True)
-
-    affected_collections = content_api.get_entity_collections(
-        container.publishable_entity.learning_package_id,
-        container.entity_ref,
-    )
-
     content_api.set_draft_version(container.id, container.versioning.latest.pk)
-    # Fetch related containers after restore
-    affected_containers = get_containers_contains_item(container_key)
-    # Get children containers or components to update their index data
-    children = get_container_children(container_key, published=False)
-
-    # .. event_implemented_name: LIBRARY_CONTAINER_CREATED
-    # .. event_type: org.openedx.content_authoring.content_library.container.created.v1
-    LIBRARY_CONTAINER_CREATED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    )
-
-    content_changes = ["collections", "tags"]
-    if affected_containers and len(affected_containers) > 0:
-        # Update parent key data in index. Eg. `sections` key in index for subsection
-        content_changes.append(str(affected_containers[0].container_type_code) + "s")
-    # Add tags, collections and parent data back to index
-    # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-    # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-        content_object=ContentObjectChangedData(
-            object_id=str(container_key),
-            changes=content_changes,
-        ),
-    )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    #
-    # To restore the container on collections
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-            )
-        )
-    # Send events related to the containers that contains the updated container.
-    # This is to update the children display names used in the section/subsection previews.
-    for affected_container in affected_containers:
-        # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-        LIBRARY_CONTAINER_UPDATED.send_event(
-            library_container=LibraryContainerData(
-                container_key=affected_container.container_key,
-            )
-        )
-
-    is_unit = container_key.container_type == Unit.type_code
-    # Update children components and containers index data, for example,
-    # All subsections under a section have section key in index that needs to be updated.
-    # Should restore removed parent section in sections key of children subsections
-    for child in children:
-        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-            content_object=ContentObjectChangedData(
-                object_id=str(child.usage_key if is_unit else child.container_key),  # type: ignore[union-attr]
-                changes=[container_key.container_type + "s"],
-            ),
-        )
 
 
 def get_container_children(
@@ -419,23 +232,6 @@ def update_container_children(
         entities=[get_entity_from_key(key) for key in children_keys],
         entities_action=entities_action,
     )
-    for key in children_keys:
-        # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-        # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-        CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-            content_object=ContentObjectChangedData(
-                object_id=str(key),
-                changes=[f"{container_key.container_type}s"],  # "units", "subsections", "sections"
-            ),
-        )
-
-    # .. event_implemented_name: LIBRARY_CONTAINER_UPDATED
-    # .. event_type: org.openedx.content_authoring.content_library.container.updated.v1
-    LIBRARY_CONTAINER_UPDATED.send_event(
-        library_container=LibraryContainerData(
-            container_key=container_key,
-        )
-    )
 
     return ContainerMetadata.from_container(container_key.lib_key, new_version.container)
 
@@ -452,7 +248,6 @@ def get_containers_contains_item(key: LibraryUsageLocatorV2 | LibraryContainerLo
 def publish_container_changes(
     container_key: LibraryContainerLocator,
     user_id: int | None,
-    call_post_publish_events_sync=False,
 ) -> None:
     """
     [ 🛑 UNSTABLE ] Publish all unpublished changes in a container and all its child
@@ -466,17 +261,7 @@ def publish_container_changes(
     # The core publishing API is based on draft objects, so find the draft that corresponds to this container:
     drafts_to_publish = content_api.get_all_drafts(learning_package.id).filter(entity__pk=container.id)
     # Publish the container, which will also auto-publish any unpublished child components:
-    publish_log = content_api.publish_from_drafts(
-        learning_package.id,
-        draft_qset=drafts_to_publish,
-        published_by=user_id,
-    )
-    # Update the search index (and anything else) for the affected container + blocks
-    # This is mostly synchronous but may complete some work asynchronously if there are a lot of changes.
-    if call_post_publish_events_sync:
-        tasks.send_events_after_publish(publish_log.pk, str(library_key))
-    else:
-        tasks.wait_for_post_publish_events(publish_log, library_key)
+    content_api.publish_from_drafts(learning_package.id, draft_qset=drafts_to_publish, published_by=user_id)
 
 
 def copy_container(container_key: LibraryContainerLocator, user_id: int) -> UserClipboardData:

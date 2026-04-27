@@ -7,8 +7,6 @@ from opaque_keys.edx.keys import BlockTypeKey, UsageKeyV2
 from opaque_keys.edx.locator import LibraryCollectionLocator, LibraryContainerLocator, LibraryLocatorV2
 from openedx_content import api as content_api
 from openedx_content.models_api import Collection, Component, PublishableEntity
-from openedx_events.content_authoring.data import LibraryCollectionData
-from openedx_events.content_authoring.signals import LIBRARY_COLLECTION_UPDATED
 
 from ..models import ContentLibrary
 from .exceptions import (
@@ -216,26 +214,11 @@ def set_library_item_collections(
         collection_code__in=collection_keys
     )
 
-    affected_collections = content_api.set_collections(
+    content_api.set_collections(
         publishable_entity,
         collection_qs,
         created_by=created_by,
     )
-
-    # For each collection, trigger LIBRARY_COLLECTION_UPDATED signal and set background=True to trigger
-    # collection indexing asynchronously.
-    for collection in affected_collections:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library_key,
-                    collection_key=collection.collection_code,
-                ),
-                background=True,
-            )
-        )
 
     return publishable_entity
 

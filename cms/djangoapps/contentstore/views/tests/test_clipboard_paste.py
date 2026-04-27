@@ -5,6 +5,7 @@ APIs.
 """
 import ddt
 from opaque_keys.edx.keys import UsageKey
+from openedx_content.api import signals as content_signals
 from openedx_events.content_authoring.signals import (
     LIBRARY_BLOCK_DELETED,
     XBLOCK_CREATED,
@@ -405,6 +406,7 @@ class ClipboardPasteFromV2LibraryTestCase(OpenEdxEventsTestMixin, ImmediateOnCom
     Test Clipboard Paste functionality with a "new" (as of Sumac) library
     """
     ENABLED_OPENEDX_EVENTS = [
+        content_signals.ENTITIES_DRAFT_CHANGED.event_type,  # Required for library events to work
         LIBRARY_BLOCK_DELETED.event_type,
         XBLOCK_CREATED.event_type,
         XBLOCK_DELETED.event_type,
@@ -491,7 +493,8 @@ class ClipboardPasteFromV2LibraryTestCase(OpenEdxEventsTestMixin, ImmediateOnCom
             assert object_tag.is_copied
 
         # If we delete the upstream library block...
-        library_api.delete_library_block(self.lib_block_key)
+        with self.captureOnCommitCallbacks(execute=True):  # make event handlers fire now, within TestCase transaction
+            library_api.delete_library_block(self.lib_block_key)
 
         # ...the copied tags remain, but should no longer be marked as "copied"
         object_tags = tagging_api.get_object_tags(new_block_key)
