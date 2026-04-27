@@ -34,9 +34,9 @@ Decision
 ========
 
 1. **JWT authentication via** ``JwtAuthentication`` **MUST be the standard
-   authentication mechanism for all API access** (external and internal), per `OEP-0042`_
+   authentication mechanism for all API(external and internal) access**, per `OEP-0042`_
 2. **Session authentication MAY be supported alongside** ``JwtAuthentication``
-   on any endpoint — this is the platform default and has no security implications
+   on any endpoint — this is the platform default and is acceptable.
 3. **``BearerAuthentication`` and ``BearerAuthenticationAllowInactiveUser`` are
    deprecated and MUST NOT be used in new code**
 4. **``OAuth2Authentication`` and ``OAuth2AuthenticationAllowInactiveUser`` are
