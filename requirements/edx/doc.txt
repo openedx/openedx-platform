@@ -1018,7 +1018,7 @@ openedx-calc==5.0.0
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
-openedx-core==0.44.0
+openedx-core==0.46.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
