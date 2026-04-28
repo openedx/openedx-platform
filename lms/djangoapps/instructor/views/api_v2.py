@@ -2173,7 +2173,7 @@ class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
             csv_reader = csv.reader(file_content.splitlines())
 
             learners_with_notes = []
-            for row_num, row in enumerate(csv_reader, start=1):
+            for _row_num, row in enumerate(csv_reader, start=1):
                 if not row or not row[0].strip():
                     continue  # Skip empty rows
 
