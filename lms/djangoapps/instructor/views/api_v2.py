@@ -2093,6 +2093,122 @@ def _validate_certificates_for_invalidation(learner_to_user, course_key):
     return certificates_to_invalidate, errors
 
 
+class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
+    """
+    View to grant certificate exceptions via CSV upload.
+
+    **Example Requests**
+
+        POST /api/instructor/v2/courses/{course_id}/certificates/exceptions/bulk
+
+    **POST Request Body**
+
+        Form data with CSV file uploaded as 'file' field.
+        CSV format: username_or_email,notes (optional second column)
+
+    **Returns**
+
+        * 200: OK - Bulk exceptions processed with success/error details
+        * 400: Bad Request - Invalid CSV file or format
+        * 401: Unauthorized - User is not authenticated
+        * 403: Forbidden - User lacks instructor permissions
+    """
+    permission_classes = (IsAuthenticated, permissions.InstructorPermission)
+    permission_name = permissions.CERTIFICATE_EXCEPTION_VIEW
+
+    def post(self, request, course_id):
+        """Grant certificate exceptions via CSV upload."""
+        course_key = CourseKey.from_string(course_id)
+        # Validate that the course exists
+        get_course_by_id(course_key)
+
+        # Check if file was uploaded
+        if 'file' not in request.FILES:
+            return Response(
+                {'message': _('No file uploaded')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        uploaded_file = request.FILES['file']
+
+        # Validate file type
+        if not uploaded_file.name.endswith('.csv'):
+            return Response(
+                {'message': _('File must be in CSV format')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        results = {
+            'success': [],
+            'errors': []
+        }
+
+        try:
+            # Read and parse CSV file
+            file_content = uploaded_file.read().decode('utf-8-sig')
+            csv_reader = csv.reader(file_content.splitlines())
+
+            learners_with_notes = []
+            for row_num, row in enumerate(csv_reader, start=1):
+                if not row or not row[0].strip():
+                    continue  # Skip empty rows
+
+                learner = row[0].strip()
+                notes = row[1].strip() if len(row) > 1 and row[1].strip() else ''
+
+                learners_with_notes.append((learner, notes))
+
+            if not learners_with_notes:
+                return Response(
+                    {'message': _('CSV file is empty or contains no valid entries')},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Extract just the learners for resolution
+            learners = [learner for learner, _ in learners_with_notes]
+
+            # Resolve all usernames/emails to users upfront
+            learner_to_user, user_errors = _resolve_learners_to_users(learners)
+            results['errors'].extend(user_errors)
+
+            # Validate learners for certificate exceptions
+            exceptions_to_create, validation_errors = _validate_learners_for_certificate_exceptions(
+                learner_to_user, course_key
+            )
+            results['errors'].extend(validation_errors)
+
+            # Create all exceptions using the certificates API
+            for learner, user in exceptions_to_create:
+                # Find the notes for this learner
+                notes = next((n for l, n in learners_with_notes if l == learner), '')
+
+                try:
+                    certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
+                    log.info(
+                        "Certificate exception granted for user %s (%s) in course %s by %s via CSV upload",
+                        user.id, learner, course_key, request.user.username
+                    )
+                    results['success'].append(learner)
+                except Exception as exc:  # pylint: disable=broad-except
+                    log.exception(
+                        "Error creating certificate exception for user %s in course %s",
+                        user.id, course_key
+                    )
+                    results['errors'].append({
+                        'learner': learner,
+                        'message': str(exc)
+                    })
+
+            return Response(results, status=status.HTTP_200_OK)
+
+        except Exception as exc:  # pylint: disable=broad-except
+            log.exception("Error processing CSV file for certificate exceptions")
+            return Response(
+                {'message': _('Error processing CSV file: {error}').format(error=str(exc))},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
 class CertificateInvalidationsView(DeveloperErrorViewMixin, APIView):
     """
     View to invalidate or re-validate certificates.
