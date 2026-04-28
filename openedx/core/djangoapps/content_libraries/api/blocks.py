@@ -399,7 +399,11 @@ def get_library_component_creation_entry(
     )
 
 
-def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) -> ComponentVersion:
+def set_library_block_olx(
+    usage_key: LibraryUsageLocatorV2,
+    new_olx_str: str,
+    paths_to_media: dict = None,
+) -> ComponentVersion:
     """
     Replace the OLX source of the given XBlock.
 
@@ -410,6 +414,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     Returns the version number of the newly created ComponentVersion.
     """
     assert isinstance(usage_key, LibraryUsageLocatorV2)
+    paths_to_media = paths_to_media or {}
 
     # HTMLBlock uses CDATA to preserve HTML inside the XML, so make sure we
     # don't strip that out.
@@ -446,7 +451,7 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
     now = datetime.now(tz=timezone.utc)  # noqa: UP017
 
     with transaction.atomic():
-        new_content = content_api.get_or_create_text_media(
+        new_olx_media = content_api.get_or_create_text_media(
             component.learning_package_id,
             get_or_create_olx_media_type(usage_key.block_type).id,
             text=new_olx_str,
@@ -456,7 +461,8 @@ def set_library_block_olx(usage_key: LibraryUsageLocatorV2, new_olx_str: str) ->
             component.id,
             title=new_title,
             media_to_replace={
-                'block.xml': new_content.pk,
+                **paths_to_media,
+                'block.xml': new_olx_media.pk,
             },
             created=now,
         )
@@ -606,11 +612,7 @@ def _import_staged_block(
             created_by=user.id,
         )
 
-        # This will create the first component version and set the OLX/title
-        # appropriately. It will not publish. Once we get the newly created
-        # ComponentVersion back from this, we can attach all our files to it.
-        component_version = set_library_block_olx(usage_key, olx_str)
-
+        paths_to_media = {}
         for staged_content_file_data in staged_content_files:
             # The ``data`` attribute is going to be None because the clipboard
             # is optimized to not do redundant file copying when copying/pasting
@@ -657,17 +659,18 @@ def _import_staged_block(
                 media_type_str = "application/octet-stream"
 
             media_type = content_api.get_or_create_media_type(media_type_str)
-            content = content_api.get_or_create_file_media(
+            media = content_api.get_or_create_file_media(
                 learning_package.id,
                 media_type.id,
                 data=file_data,
                 created=now,
             )
-            content_api.create_component_version_media(
-                component_version.pk,
-                content.id,
-                path=filename,
-            )
+            paths_to_media[filename] = media.id
+
+        # This will create the first component version and set the OLX/title
+        # appropriately. It will not publish. Once we get the newly created
+        # ComponentVersion back from this, we can attach all our files to it.
+        set_library_block_olx(usage_key, olx_str, paths_to_media)
 
     # Now return the metadata about the new block
     return get_library_block(usage_key)
@@ -1087,7 +1090,13 @@ def _create_component_for_block(
         component_type = content_api.get_or_create_component_type(
             "xblock.v1", usage_key.block_type
         )
-        component, component_version = content_api.create_component_and_version(
+        block_olx_media = content_api.get_or_create_text_media(
+            learning_package.id,
+            get_or_create_olx_media_type(usage_key.block_type).id,
+            text=xml_text,
+            created=now,
+        )
+        _component, component_version = content_api.create_component_and_version(
             learning_package.id,
             component_type=component_type,
             component_code=usage_key.block_id,
@@ -1095,17 +1104,9 @@ def _create_component_for_block(
             created=now,
             created_by=user_id,
             can_stand_alone=can_stand_alone,
-        )
-        content = content_api.get_or_create_text_media(
-            learning_package.id,
-            get_or_create_olx_media_type(usage_key.block_type).id,
-            text=xml_text,
-            created=now,
-        )
-        content_api.create_component_version_media(
-            component_version.pk,
-            content.id,
-            path="block.xml",
+            media={
+                'block.xml': block_olx_media
+            }
         )
 
         return component_version
