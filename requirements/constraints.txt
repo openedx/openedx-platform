@@ -125,17 +125,6 @@ xmlsec==1.3.14
 # Pin this back to the previous version until that bug is fixed.
 django-debug-toolbar<6.0.0
 
-# Date 2025-10-07
-# Cryptography 46.0.0 conflicts with system dependencies needed for snowflake-connector-python
-# snowflake-connector-python comes as a dependency of edx-enterprise so it can not be directly pinned here.
-# See issue https://github.com/openedx/edx-platform/issues/37417 for details on this.
-# This can be unpinned once snowflake-connector-python==4.0.0 is available (contains the fix).
-# pact-python==3.0.0 also removes cffi dependency and is causing the upgrade build to fail
-# This should also be removed together with cryptography constraint.
-# Issue: https://github.com/openedx/edx-platform/issues/37435
-cryptography<46.0.0
-pact-python<3.0.0
-
 # Date 2026-01-13
 # Sphinx-autoapi changed the version of astroid it needs
 # but the newer version is not compatible with the current pylint version
