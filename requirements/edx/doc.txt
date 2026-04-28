@@ -210,9 +210,8 @@ codejail-includes==2.0.0
     # via -r requirements/edx/base.txt
 crowdsourcehinter-xblock==1.0.0
     # via -r requirements/edx/base.txt
-cryptography==45.0.7
+cryptography==47.0.0
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
     #   django-fernet-fields-v2
     #   edx-enterprise
@@ -717,7 +716,7 @@ geoip2==5.2.0
     # via -r requirements/edx/base.txt
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.47
+gitpython==3.1.48
     # via -r requirements/edx/doc.in
 glob2==0.7
     # via -r requirements/edx/base.txt
@@ -1206,7 +1205,7 @@ pynacl==1.6.2
     #   paramiko
 pynliner==0.8.0
     # via -r requirements/edx/base.txt
-pyopenssl==25.3.0
+pyopenssl==26.1.0
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
@@ -1409,7 +1408,7 @@ smmap==5.0.3
     # via gitdb
 snowballstemmer==3.0.1
     # via sphinx
-snowflake-connector-python==4.3.0
+snowflake-connector-python==4.4.0
     # via
     #   -r requirements/edx/base.txt
     #   enterprise-integrated-channels

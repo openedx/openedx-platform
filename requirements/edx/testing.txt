@@ -29,8 +29,6 @@ aniso8601==10.0.1
     #   -r requirements/edx/base.txt
     #   edx-tincan-py35
     #   tincan
-annotated-doc==0.0.4
-    # via fastapi
 annotated-types==0.7.0
     # via
     #   -r requirements/edx/base.txt
@@ -39,7 +37,6 @@ anyio==4.13.0
     # via
     #   -r requirements/edx/base.txt
     #   httpx
-    #   starlette
 appdirs==1.4.4
     # via
     #   -r requirements/edx/base.txt
@@ -162,6 +159,7 @@ cffi==2.0.0
     # via
     #   -r requirements/edx/base.txt
     #   cryptography
+    #   pact-python-ffi
     #   pynacl
 chardet==7.4.3
     # via
@@ -192,8 +190,6 @@ click==8.3.3
     #   edx-lint
     #   import-linter
     #   nltk
-    #   pact-python
-    #   uvicorn
 click-didyoumean==0.3.1
     # via
     #   -r requirements/edx/base.txt
@@ -225,9 +221,8 @@ coverage[toml]==7.13.5
     #   pytest-cov
 crowdsourcehinter-xblock==1.0.0
     # via -r requirements/edx/base.txt
-cryptography==45.0.7
+cryptography==47.0.0
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/base.txt
     #   django-fernet-fields-v2
     #   edx-enterprise
@@ -713,8 +708,6 @@ factory-boy==3.3.3
     # via -r requirements/edx/testing.in
 faker==40.15.0
     # via factory-boy
-fastapi==0.136.1
-    # via pact-python
 fastavro==1.12.2
     # via
     #   -r requirements/edx/base.txt
@@ -811,7 +804,6 @@ h11==0.16.0
     # via
     #   -r requirements/edx/base.txt
     #   httpcore
-    #   uvicorn
 h2==4.3.0
     # via
     #   -r requirements/edx/base.txt
@@ -1111,10 +1103,10 @@ packaging==26.2
     #   snowflake-connector-python
     #   tox
     #   wheel
-pact-python==1.6.0
-    # via
-    #   -c requirements/constraints.txt
-    #   -r requirements/edx/testing.in
+pact-python==3.3.1
+    # via -r requirements/edx/testing.in
+pact-python-ffi==0.5.3.0
+    # via pact-python
 paramiko==4.0.0
     # via
     #   -r requirements/edx/base.txt
@@ -1190,7 +1182,6 @@ psutil==7.2.2
     # via
     #   -r requirements/edx/base.txt
     #   edx-django-utils
-    #   pact-python
     #   pytest-xdist
 psycopg2-binary==2.9.12
     # via -r requirements/edx/base.txt
@@ -1225,7 +1216,6 @@ pydantic==2.13.3
     # via
     #   -r requirements/edx/base.txt
     #   camel-converter
-    #   fastapi
 pydantic-core==2.46.3
     # via
     #   -r requirements/edx/base.txt
@@ -1288,7 +1278,7 @@ pynacl==1.6.2
     #   paramiko
 pynliner==0.8.0
     # via -r requirements/edx/base.txt
-pyopenssl==25.3.0
+pyopenssl==26.1.0
     # via
     #   -r requirements/edx/base.txt
     #   snowflake-connector-python
@@ -1442,7 +1432,6 @@ requests==2.33.1
     #   meilisearch
     #   openedx-forum
     #   optimizely-sdk
-    #   pact-python
     #   pylti1p3
     #   python-swiftclient
     #   requests-oauthlib
@@ -1522,7 +1511,6 @@ six==1.17.0
     #   fs
     #   fs-s3fs
     #   html5lib
-    #   pact-python
     #   python-dateutil
 slumber==0.7.1
     # via
@@ -1530,7 +1518,7 @@ slumber==0.7.1
     #   edx-bulk-grades
     #   edx-enterprise
     #   enterprise-integrated-channels
-snowflake-connector-python==4.3.0
+snowflake-connector-python==4.4.0
     # via
     #   -r requirements/edx/base.txt
     #   enterprise-integrated-channels
@@ -1563,8 +1551,6 @@ sqlparse==0.5.5
     #   django
 staff-graded-xblock==4.0.0
     # via -r requirements/edx/base.txt
-starlette==1.0.0
-    # via fastapi
 stevedore==5.7.0
     # via
     #   -r requirements/edx/base.txt
@@ -1626,25 +1612,23 @@ typing-extensions==4.15.0
     #   beautifulsoup4
     #   django-countries
     #   edx-opaque-keys
-    #   fastapi
     #   grimp
     #   grpcio
     #   icalendar
     #   import-linter
     #   jwcrypto
+    #   pact-python
     #   pydantic
     #   pydantic-core
     #   pylti1p3
     #   pyopenssl
     #   referencing
     #   snowflake-connector-python
-    #   starlette
     #   typesense
     #   typing-inspection
 typing-inspection==0.4.2
     # via
     #   -r requirements/edx/base.txt
-    #   fastapi
     #   pydantic
 tzdata==2026.2
     # via
@@ -1674,10 +1658,7 @@ urllib3==2.6.3
     #   -r requirements/edx/base.txt
     #   botocore
     #   elasticsearch
-    #   pact-python
     #   requests
-uvicorn==0.46.0
-    # via pact-python
 vine==5.1.0
     # via
     #   -r requirements/edx/base.txt
@@ -1770,6 +1751,7 @@ yarl==1.23.0
     # via
     #   -r requirements/edx/base.txt
     #   aiohttp
+    #   pact-python
 zipp==3.23.1
     # via
     #   -r requirements/edx/base.txt

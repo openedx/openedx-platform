@@ -28,9 +28,8 @@ click==8.3.3
     # via
     #   -r scripts/user_retirement/requirements/base.in
     #   edx-django-utils
-cryptography==45.0.7
+cryptography==47.0.0
     # via
-    #   -c requirements/constraints.txt
     #   google-auth
     #   pyjwt
 django==5.2.13

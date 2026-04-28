@@ -150,9 +150,8 @@ codejail-includes==2.0.0
     # via -r requirements/edx/kernel.in
 crowdsourcehinter-xblock==1.0.0
     # via -r requirements/edx/bundled.in
-cryptography==45.0.7
+cryptography==47.0.0
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/kernel.in
     #   django-fernet-fields-v2
     #   edx-enterprise
@@ -987,7 +986,7 @@ pynacl==1.6.2
     #   paramiko
 pynliner==0.8.0
     # via -r requirements/edx/kernel.in
-pyopenssl==25.3.0
+pyopenssl==26.1.0
     # via snowflake-connector-python
 pyparsing==3.3.2
     # via
@@ -1155,7 +1154,7 @@ slumber==0.7.1
     #   edx-bulk-grades
     #   edx-enterprise
     #   enterprise-integrated-channels
-snowflake-connector-python==4.3.0
+snowflake-connector-python==4.4.0
     # via enterprise-integrated-channels
 social-auth-app-django==5.4.1
     # via

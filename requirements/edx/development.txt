@@ -46,10 +46,6 @@ aniso8601==10.0.1
     #   -r requirements/edx/testing.txt
     #   edx-tincan-py35
     #   tincan
-annotated-doc==0.0.4
-    # via
-    #   -r requirements/edx/testing.txt
-    #   fastapi
 annotated-types==0.7.0
     # via
     #   -r requirements/edx/doc.txt
@@ -60,7 +56,6 @@ anyio==4.13.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   httpx
-    #   starlette
 appdirs==1.4.4
     # via
     #   -r requirements/edx/doc.txt
@@ -214,6 +209,7 @@ cffi==2.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   cryptography
+    #   pact-python-ffi
     #   pynacl
 chardet==7.4.3
     # via
@@ -250,9 +246,7 @@ click==8.3.3
     #   edx-lint
     #   import-linter
     #   nltk
-    #   pact-python
     #   pip-tools
-    #   uvicorn
 click-didyoumean==0.3.1
     # via
     #   -r requirements/edx/doc.txt
@@ -295,9 +289,8 @@ crowdsourcehinter-xblock==1.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-cryptography==45.0.7
+cryptography==47.0.0
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   django-fernet-fields-v2
@@ -916,10 +909,6 @@ faker==40.15.0
     # via
     #   -r requirements/edx/testing.txt
     #   factory-boy
-fastapi==0.136.1
-    # via
-    #   -r requirements/edx/testing.txt
-    #   pact-python
 fastavro==1.12.2
     # via
     #   -r requirements/edx/doc.txt
@@ -967,7 +956,7 @@ gitdb==4.0.12
     # via
     #   -r requirements/edx/doc.txt
     #   gitpython
-gitpython==3.1.47
+gitpython==3.1.48
     # via -r requirements/edx/doc.txt
 glob2==0.7
     # via
@@ -1047,7 +1036,6 @@ h11==0.16.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   httpcore
-    #   uvicorn
 h2==4.3.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1458,10 +1446,12 @@ packaging==26.2
     #   sphinx
     #   tox
     #   wheel
-pact-python==1.6.0
+pact-python==3.3.1
+    # via -r requirements/edx/testing.txt
+pact-python-ffi==0.5.3.0
     # via
-    #   -c requirements/constraints.txt
     #   -r requirements/edx/testing.txt
+    #   pact-python
 paramiko==4.0.0
     # via
     #   -r requirements/edx/doc.txt
@@ -1558,7 +1548,6 @@ psutil==7.2.2
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   edx-django-utils
-    #   pact-python
     #   pytest-xdist
 psycopg2-binary==2.9.12
     # via
@@ -1603,7 +1592,6 @@ pydantic==2.13.3
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   camel-converter
-    #   fastapi
 pydantic-core==2.46.3
     # via
     #   -r requirements/edx/doc.txt
@@ -1692,7 +1680,7 @@ pynliner==0.8.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-pyopenssl==25.3.0
+pyopenssl==26.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1880,7 +1868,6 @@ requests==2.33.1
     #   meilisearch
     #   openedx-forum
     #   optimizely-sdk
-    #   pact-python
     #   pylti1p3
     #   python-swiftclient
     #   requests-oauthlib
@@ -1980,7 +1967,6 @@ six==1.17.0
     #   fs-s3fs
     #   html5lib
     #   libsass
-    #   pact-python
     #   python-dateutil
 slumber==0.7.1
     # via
@@ -1997,7 +1983,7 @@ snowballstemmer==3.0.1
     # via
     #   -r requirements/edx/doc.txt
     #   sphinx
-snowflake-connector-python==4.3.0
+snowflake-connector-python==4.4.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2098,10 +2084,6 @@ staff-graded-xblock==4.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-starlette==1.0.0
-    # via
-    #   -r requirements/edx/testing.txt
-    #   fastapi
 stevedore==5.7.0
     # via
     #   -r requirements/edx/doc.txt
@@ -2184,13 +2166,13 @@ typing-extensions==4.15.0
     #   django-stubs-ext
     #   djangorestframework-stubs
     #   edx-opaque-keys
-    #   fastapi
     #   grimp
     #   grpcio
     #   icalendar
     #   import-linter
     #   jwcrypto
     #   mypy
+    #   pact-python
     #   pydantic
     #   pydantic-core
     #   pydata-sphinx-theme
@@ -2198,14 +2180,12 @@ typing-extensions==4.15.0
     #   pyopenssl
     #   referencing
     #   snowflake-connector-python
-    #   starlette
     #   typesense
     #   typing-inspection
 typing-inspection==0.4.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-    #   fastapi
     #   pydantic
 tzdata==2026.2
     # via
@@ -2242,13 +2222,8 @@ urllib3==2.6.3
     #   -r requirements/edx/testing.txt
     #   botocore
     #   elasticsearch
-    #   pact-python
     #   requests
     #   types-requests
-uvicorn==0.46.0
-    # via
-    #   -r requirements/edx/testing.txt
-    #   pact-python
 vine==5.1.0
     # via
     #   -r requirements/edx/doc.txt
@@ -2373,6 +2348,7 @@ yarl==1.23.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   aiohttp
+    #   pact-python
 zipp==3.23.1
     # via
     #   -r requirements/edx/doc.txt

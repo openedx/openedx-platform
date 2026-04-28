@@ -14,10 +14,8 @@ codejail-includes==2.0.0
     # via -r requirements/edx-sandbox/base.in
 contourpy==1.3.3
     # via matplotlib
-cryptography==45.0.7
-    # via
-    #   -c requirements/constraints.txt
-    #   -r requirements/edx-sandbox/base.in
+cryptography==47.0.0
+    # via -r requirements/edx-sandbox/base.in
 cycler==0.12.1
     # via matplotlib
 fonttools==4.62.1

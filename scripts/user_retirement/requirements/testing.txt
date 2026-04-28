@@ -41,7 +41,7 @@ click==8.3.3
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   edx-django-utils
-cryptography==45.0.7
+cryptography==47.0.0
     # via
     #   -r scripts/user_retirement/requirements/base.txt
     #   google-auth
