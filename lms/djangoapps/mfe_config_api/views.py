@@ -2,11 +2,14 @@
 MFE API Views for useful information related to mfes.
 """
 
+from configparser import Error as ConfigParserError
+
 import edx_api_doc_tools as apidocs
 from django.conf import settings
 from django.http import HttpResponseNotFound, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from help_tokens.core import HelpUrlExpert
 from rest_framework import status
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny
@@ -48,6 +51,7 @@ MFE_NAME_TO_APP_ID: dict[str, str] = {
     "course-authoring": "org.openedx.frontend.app.authoring",
     "discussions": "org.openedx.frontend.app.discussions",
     "gradebook": "org.openedx.frontend.app.gradebook",
+    "instructor-dashboard": "org.openedx.frontend.app.instructorDashboard",
     "learner-dashboard": "org.openedx.frontend.app.learnerDashboard",
     "learner-record": "org.openedx.frontend.app.learnerRecord",
     "learning": "org.openedx.frontend.app.learning",
@@ -93,27 +97,73 @@ def get_mfe_config() -> dict:
     return mfe_config
 
 
-def get_mfe_config_overrides() -> dict:
-    """Return all MFE-specific overrides from settings or site configuration.
+def resolve_help_token(token: str) -> str | None:
+    """Resolve a help-tokens token to a URL, returning None if the token cannot be resolved."""
+    try:
+        return HelpUrlExpert.the_one().url_for_token(token)
+    except (KeyError, ConfigParserError):
+        return None
+
+
+def get_legacy_config_overrides() -> dict:
+    """Return per-app legacy configuration overrides.
+
+    Same shape as get_explicit_mfe_config_overrides(): a dict keyed by MFE name,
+    where each value is a dict of config values.
+
+    This is a compatibility layer for per-app values that historically
+    came from legacy systems (e.g., help-tokens).
+    """
+    overrides: dict[str, dict] = {}
+
+    instructor_help_url = resolve_help_token("instructor")
+    if instructor_help_url:
+        overrides["instructor-dashboard"] = {"SUPPORT_URL": instructor_help_url}
+
+    return overrides
+
+
+def get_explicit_mfe_config_overrides() -> dict:
+    """Return MFE-specific overrides from settings or site configuration.
 
     Returns:
         A dictionary keyed by MFE name, where each value is a dict of
         per-MFE overrides.  Non-dict entries are filtered out.
     """
-    mfe_config_overrides = (
+    raw_overrides = (
         configuration_helpers.get_value(
             "MFE_CONFIG_OVERRIDES",
             settings.MFE_CONFIG_OVERRIDES,
         )
         or {}
     )
-    if not isinstance(mfe_config_overrides, dict):
+    if not isinstance(raw_overrides, dict):
         return {}
 
     return {
-        name: overrides
-        for name, overrides in mfe_config_overrides.items()
+        mfe_name: overrides
+        for mfe_name, overrides in raw_overrides.items()
         if isinstance(overrides, dict)
+    }
+
+
+def get_mfe_config_overrides() -> dict:
+    """Return all MFE-specific overrides, merging legacy fallbacks with explicit settings.
+
+    Legacy per-app fallbacks (e.g., from help-tokens) are included at the lowest
+    precedence; explicit MFE_CONFIG_OVERRIDES from settings or site configuration
+    take priority.
+
+    Returns:
+        A dictionary keyed by MFE name, where each value is a dict of
+        per-MFE overrides.
+    """
+    legacy_overrides = get_legacy_config_overrides()
+    explicit_overrides = get_explicit_mfe_config_overrides()
+    all_mfe_names = set(legacy_overrides) | set(explicit_overrides)
+    return {
+        mfe_name: legacy_overrides.get(mfe_name, {}) | explicit_overrides.get(mfe_name, {})
+        for mfe_name in all_mfe_names
     }
 
 

@@ -55,14 +55,15 @@ of execution for each environment. Each item is a list in the form of:
 
 #. Start state name
 #. End state name
-#. IDA to call against (LMS, ECOMMERCE, or CREDENTIALS currently)
+#. Service key to call against (for example, LMS or LICENSE_MANAGER)
 #. Method name to call in
    `edx_api.py <https://github.com/openedx/edx-platform/blob/master/scripts/user_retirement/utils/edx_api.py>`_
 
-For example: ``['RETIRING_CREDENTIALS', 'CREDENTIALS_COMPLETE', 'CREDENTIALS',
-'retire_learner']`` will set the user's state to ``RETIRING_CREDENTIALS``, call
-a pre-instantiated ``retire_learner`` method in the ``CredentialsApi``, then set
-the user's state to ``CREDENTIALS_COMPLETE``.
+For example: ``['RETIRING_ENROLLMENTS', 'ENROLLMENTS_COMPLETE', 'LMS',
+'retirement_unenroll']`` will set the user's state to
+``RETIRING_ENROLLMENTS``, call a pre-instantiated ``retirement_unenroll``
+method in the ``LmsApi``, then set the user's state to
+``ENROLLMENTS_COMPLETE``.
 
 Examples
 ********

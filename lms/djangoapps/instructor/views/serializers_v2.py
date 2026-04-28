@@ -34,6 +34,7 @@ from lms.djangoapps.instructor import permissions
 from lms.djangoapps.instructor.access import FORUM_ROLES, ROLES
 from lms.djangoapps.instructor.views.instructor_dashboard import get_analytics_dashboard_message
 from openedx.core.djangoapps.django_comment_common.models import FORUM_ROLE_ADMINISTRATOR
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from xmodule.modulestore.django import modulestore
 
 from .tools import DashboardError, get_student_from_identifier, parse_datetime
@@ -76,6 +77,9 @@ class CourseInformationSerializerV2(serializers.Serializer):
     )
     studio_grading_url = serializers.SerializerMethodField(
         help_text="URL to the Studio grading settings page for the course (null if not configured)"
+    )
+    admin_console_url = serializers.SerializerMethodField(
+        help_text="URL to the admin console (requires instructor access and MFE configuration, null if not accessible)"
     )
     permissions = serializers.SerializerMethodField(help_text="User permissions for instructor dashboard features")
     tabs = serializers.SerializerMethodField(help_text="List of course tabs with configuration and display information")
@@ -175,16 +179,6 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 20,
                 },
                 {
-                    'tab_id': 'course_team',
-                    'title': _('Course Team'),
-                    'url': self._build_tab_url(
-                        'INSTRUCTOR_MICROFRONTEND_URL',
-                        course_key,
-                        'course_team'
-                    ),
-                    'sort_order': 30,
-                },
-                {
                     'tab_id': 'grading',
                     'title': _('Grading'),
                     'url': self._build_tab_url(
@@ -205,6 +199,18 @@ class CourseInformationSerializerV2(serializers.Serializer):
                     'sort_order': 90,
                 },
             ])
+
+        if access['instructor'] or (access['staff'] and access['forum_admin']):
+            tabs.append({
+                'tab_id': 'course_team',
+                'title': _('Course Team'),
+                'url': self._build_tab_url(
+                    'INSTRUCTOR_MICROFRONTEND_URL',
+                    course_key,
+                    'course_team'
+                ),
+                'sort_order': 30,
+            })
 
         if access['staff'] and is_bulk_email_feature_enabled(course_key):
             tabs.append(
@@ -460,10 +466,27 @@ class CourseInformationSerializerV2(serializers.Serializer):
     def get_studio_grading_url(self, data):
         """Get Studio MFE grading settings URL for the course."""
         course_key = data['course'].id
-        mfe_base_url = getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
-        if mfe_base_url:
-            return f'{mfe_base_url}/course/{course_key}/settings/grading'
-        return None
+        mfe_base_url = configuration_helpers.get_value(
+            'COURSE_AUTHORING_MICROFRONTEND_URL',
+            getattr(settings, 'COURSE_AUTHORING_MICROFRONTEND_URL', None)
+        )
+        if not mfe_base_url:
+            return None
+        return f'{mfe_base_url}/course/{course_key}/settings/grading'
+
+    def get_admin_console_url(self, data):
+        """Get admin console URL (requires instructor access and MFE configuration, null if not accessible)."""
+        request = data['request']
+        has_instructor_access = has_access(request.user, 'instructor', data['course'])
+        mfe_base_url = configuration_helpers.get_value(
+            'ADMIN_CONSOLE_MICROFRONTEND_URL',
+            getattr(settings, 'ADMIN_CONSOLE_MICROFRONTEND_URL', None)
+        )
+
+        has_permissions = request.user.is_staff or has_instructor_access
+        if not mfe_base_url or not has_permissions:
+            return None
+        return f'{mfe_base_url}/authz'
 
     def get_disable_buttons(self, data):
         """Check if buttons should be disabled for large courses."""
@@ -1141,3 +1164,94 @@ class ScoreOverrideRequestSerializer(serializers.Serializer):
         if "score" not in data and "new_score" in data:
             data = {**data, "score": data["new_score"]}
         return super().to_internal_value(data)
+
+
+class SpecialExamSerializer(serializers.Serializer):
+    """Serializer for proctored/timed exam data from edx_proctoring."""
+    id = serializers.IntegerField()
+    course_id = serializers.CharField()
+    content_id = serializers.CharField()
+    exam_name = serializers.CharField()
+    time_limit_mins = serializers.IntegerField()
+    due_date = serializers.DateTimeField(allow_null=True, required=False)
+    exam_type = serializers.CharField(required=False, default='')
+    is_proctored = serializers.BooleanField()
+    is_practice_exam = serializers.BooleanField()
+    is_active = serializers.BooleanField()
+    hide_after_due = serializers.BooleanField()
+    backend = serializers.CharField(allow_null=True, required=False)
+
+
+class ExamAttemptUserSerializer(serializers.Serializer):
+    """Serializer for user info within an exam attempt."""
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.CharField()
+
+
+class ExamAttemptSerializer(serializers.Serializer):
+    """Serializer for proctored exam attempt data."""
+    id = serializers.IntegerField()
+    user = ExamAttemptUserSerializer()
+    exam_id = serializers.IntegerField(source='proctored_exam.id')
+    status = serializers.CharField()
+    start_time = serializers.DateTimeField(source='started_at', allow_null=True, required=False)
+    end_time = serializers.DateTimeField(source='completed_at', allow_null=True, required=False)
+    allowed_time_limit_mins = serializers.IntegerField(allow_null=True, required=False)
+
+
+class ProctoringSettingsSerializer(serializers.Serializer):
+    """Serializer for course proctoring configuration."""
+    proctoring_provider = serializers.CharField(allow_null=True, required=False)
+    proctoring_escalation_email = serializers.CharField(allow_null=True, required=False)
+    create_zendesk_tickets = serializers.BooleanField()
+    enable_proctored_exams = serializers.BooleanField()
+
+
+class ProctoringSettingsUpdateSerializer(serializers.Serializer):
+    """Serializer for validating proctoring settings update requests."""
+    proctoring_escalation_email = serializers.CharField(required=False, allow_blank=True)
+    create_zendesk_tickets = serializers.BooleanField(required=False)
+    enable_proctored_exams = serializers.BooleanField(required=False)
+
+
+class ExamAllowanceRequestSerializer(serializers.Serializer):
+    """Serializer for validating exam allowance grant requests."""
+    user_ids = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of usernames or emails of the students",
+    )
+    allowance_type = serializers.CharField(help_text="Type of allowance (e.g. 'additional_time_granted')")
+    value = serializers.CharField(help_text="Allowance value")
+
+
+class BulkAllowanceRequestSerializer(serializers.Serializer):
+    """Serializer for validating bulk allowance requests across multiple exams."""
+    exam_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        help_text="List of exam IDs",
+    )
+    user_ids = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of usernames or emails of the students",
+    )
+    allowance_type = serializers.CharField(help_text="Type of allowance (e.g. 'additional_time_granted')")
+    value = serializers.CharField(help_text="Allowance value")
+
+
+class AllowanceUserSerializer(serializers.Serializer):
+    """Serializer for user info within an allowance (uses 'id' directly)."""
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    email = serializers.CharField()
+
+
+class ExamAllowanceSerializer(serializers.Serializer):
+    """Serializer for exam allowance data from edx_proctoring."""
+    id = serializers.IntegerField()
+    created = serializers.DateTimeField()
+    modified = serializers.DateTimeField()
+    user = AllowanceUserSerializer()
+    key = serializers.CharField()
+    value = serializers.CharField()
+    proctored_exam = SpecialExamSerializer()

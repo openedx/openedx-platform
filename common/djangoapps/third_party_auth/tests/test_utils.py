@@ -6,12 +6,15 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import ddt
+import pytest
+from django.test import override_settings
 from lxml import etree
 
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.third_party_auth.models import SAMLProviderData
 from common.djangoapps.third_party_auth.tests.testutil import TestCase
 from common.djangoapps.third_party_auth.utils import (
+    SAMLMetadataURLError,
     create_or_update_bulk_saml_provider_data,
     get_associated_user_by_email_response,
     get_user_from_email,
@@ -19,6 +22,7 @@ from common.djangoapps.third_party_auth.utils import (
     is_oauth_provider,
     parse_metadata_xml,
     user_exists,
+    validate_saml_metadata_url,
 )
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from openedx.features.enterprise_support.tests.factories import (
@@ -272,3 +276,60 @@ class TestCreateOrUpdateBulkSAMLProviderData(TestCase):
             entity_id='http://entity1',
         ).count()
         assert count == 2
+
+
+@ddt.ddt
+@skip_unless_lms
+class TestValidateSAMLMetadataURL(TestCase):
+    """Tests for validate_saml_metadata_url."""
+
+    @ddt.data(
+        'https://idp.example.com/metadata',
+        'https://1.1.1.1/metadata',
+    )
+    def test_valid_urls_pass(self, url):
+        validate_saml_metadata_url(url)  # should not raise
+
+    @ddt.data(
+        ('http://idp.example.com/metadata', 'must use HTTPS'),
+        ('ftp://idp.example.com/metadata', 'must use HTTPS'),
+        ('https://', 'no hostname'),
+    )
+    @ddt.unpack
+    def test_invalid_scheme_or_missing_hostname(self, url, expected_fragment):
+        with pytest.raises(SAMLMetadataURLError, match=expected_fragment):
+            validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://127.0.0.1/metadata',       # IPv4 loopback
+        'https://[::1]/metadata',            # IPv6 loopback
+        'https://169.254.169.254/latest',    # AWS metadata endpoint
+        'https://169.254.0.1/metadata',      # other link-local
+        'https://[fe80::1]/metadata',        # IPv6 link-local
+        'https://240.0.0.1/metadata',        # reserved (Class E)
+    )
+    def test_always_blocked_regardless_of_setting(self, url):
+        for allow_private in (False, True):
+            with override_settings(SAML_METADATA_URL_ALLOW_PRIVATE_IPS=allow_private):
+                with pytest.raises(SAMLMetadataURLError):
+                    validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://10.0.0.1/metadata',
+        'https://172.16.0.1/metadata',
+        'https://192.168.1.1/metadata',
+        'https://[fc00::1]/metadata',        # IPv6 unique local
+    )
+    def test_private_ip_blocked_by_default(self, url):
+        with pytest.raises(SAMLMetadataURLError):
+            validate_saml_metadata_url(url)
+
+    @ddt.data(
+        'https://10.0.0.1/metadata',
+        'https://172.16.0.1/metadata',
+        'https://192.168.1.1/metadata',
+        'https://[fc00::1]/metadata',        # IPv6 unique local
+    )
+    @override_settings(SAML_METADATA_URL_ALLOW_PRIVATE_IPS=True)
+    def test_private_ip_allowed_when_setting_enabled(self, url):
+        validate_saml_metadata_url(url)  # should not raise

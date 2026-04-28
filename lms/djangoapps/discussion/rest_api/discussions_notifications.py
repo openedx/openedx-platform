@@ -465,6 +465,14 @@ def clean_thread_html_body(html_body):
     truncated_body = html.unescape(truncated_body)
     html_body = BeautifulSoup(truncated_body, 'html.parser')
 
+    # Remove tags including their content (decompose, not unwrap)
+    tags_to_decompose = [
+        "style",  # CSS injection
+    ]
+    for tag in tags_to_decompose:
+        for match in html_body.find_all(tag):
+            match.decompose()
+
     tags_to_remove = [
         "a", "link",  # Link Tags
         "img", "picture", "source",  # Image Tags

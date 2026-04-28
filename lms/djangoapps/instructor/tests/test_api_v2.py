@@ -81,6 +81,7 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.admin = AdminFactory.create()
         self.instructor = InstructorFactory.create(course_key=self.course_key)
         self.staff = StaffFactory.create(course_key=self.course_key)
+        self.django_staff_user = UserFactory.create(is_staff=True)
         self.data_researcher = UserFactory.create()
         CourseDataResearcherRole(self.course_key).add_users(self.data_researcher)
         CourseInstructorRole(self.proctored_course.id).add_users(self.instructor)
@@ -118,6 +119,8 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
             course_id = str(self.course_key)
         return reverse('instructor_api_v2:course_metadata', kwargs={'course_id': course_id})
 
+    @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='http://localhost:2001/authoring')
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025/admin-console')
     def test_get_course_metadata_as_instructor(self):
         """
         Test that an instructor can retrieve comprehensive course metadata.
@@ -125,53 +128,84 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         self.client.force_authenticate(user=self.instructor)
         response = self.client.get(self._get_url())
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
+        assert response.status_code == status.HTTP_200_OK
         data = response.data
 
         # Verify basic course information
-        self.assertEqual(data['course_id'], str(self.course_key))  # noqa: PT009
-        self.assertEqual(data['display_name'], 'Demonstration Course')  # noqa: PT009
-        self.assertEqual(data['org'], 'edX')  # noqa: PT009
-        self.assertEqual(data['course_number'], 'DemoX')  # noqa: PT009
-        self.assertEqual(data['course_run'], 'Demo_Course')  # noqa: PT009
-        self.assertEqual(data['pacing'], 'instructor')  # noqa: PT009
+        assert data['course_id'] == str(self.course_key)
+        assert data['display_name'] == 'Demonstration Course'
+        assert data['org'] == 'edX'
+        assert data['course_number'] == 'DemoX'
+        assert data['course_run'] == 'Demo_Course'
+        assert data['pacing'] == 'instructor'
 
         # Verify enrollment counts structure
-        self.assertIn('enrollment_counts', data)  # noqa: PT009
-        self.assertIn('total', data['enrollment_counts'])  # noqa: PT009
-        self.assertIn('total_enrollment', data)  # noqa: PT009
-        self.assertGreaterEqual(data['total_enrollment'], 3)  # noqa: PT009
+        assert 'enrollment_counts' in data
+        assert 'total' in data['enrollment_counts']
+        assert 'total_enrollment' in data
+        assert data['total_enrollment'] >= 3
 
         # Verify role-based enrollment counts are present
-        self.assertIn('learner_count', data)  # noqa: PT009
-        self.assertIn('staff_count', data)  # noqa: PT009
-        self.assertEqual(data['total_enrollment'], data['learner_count'] + data['staff_count'])  # noqa: PT009
+        assert 'learner_count' in data
+        assert 'staff_count' in data
+        assert data['total_enrollment'] == data['learner_count'] + data['staff_count']
 
         # Verify permissions structure
-        self.assertIn('permissions', data)  # noqa: PT009
+        assert 'permissions' in data
         permissions_data = data['permissions']
-        self.assertIn('admin', permissions_data)  # noqa: PT009
-        self.assertIn('instructor', permissions_data)  # noqa: PT009
-        self.assertIn('staff', permissions_data)  # noqa: PT009
-        self.assertIn('forum_admin', permissions_data)  # noqa: PT009
-        self.assertIn('finance_admin', permissions_data)  # noqa: PT009
-        self.assertIn('sales_admin', permissions_data)  # noqa: PT009
-        self.assertIn('data_researcher', permissions_data)  # noqa: PT009
+        assert 'admin' in permissions_data
+        assert 'instructor' in permissions_data
+        assert 'staff' in permissions_data
+        assert 'forum_admin' in permissions_data
+        assert 'finance_admin' in permissions_data
+        assert 'sales_admin' in permissions_data
+        assert 'data_researcher' in permissions_data
 
         # Verify sections structure
-        self.assertIn('tabs', data)  # noqa: PT009
-        self.assertIsInstance(data['tabs'], list)  # noqa: PT009
+        assert 'tabs' in data
+        assert isinstance(data['tabs'], list)
 
         # Verify other metadata fields
-        self.assertIn('num_sections', data)  # noqa: PT009
-        self.assertIn('tabs', data)  # noqa: PT009
-        self.assertIn('grade_cutoffs', data)  # noqa: PT009
-        self.assertIn('course_errors', data)  # noqa: PT009
-        self.assertIn('studio_url', data)  # noqa: PT009
-        self.assertIn('disable_buttons', data)  # noqa: PT009
-        self.assertIn('has_started', data)  # noqa: PT009
-        self.assertIn('has_ended', data)  # noqa: PT009
-        self.assertIn('analytics_dashboard_message', data)  # noqa: PT009
+        assert 'num_sections' in data
+        assert 'grade_cutoffs' in data
+        assert 'course_errors' in data
+        assert 'studio_url' in data
+        assert 'disable_buttons' in data
+        assert 'has_started' in data
+        assert 'has_ended' in data
+        assert 'analytics_dashboard_message' in data
+        assert 'studio_grading_url' in data
+        assert 'admin_console_url' in data
+
+        assert data['studio_grading_url'] == f'http://localhost:2001/authoring/course/{self.course.id}/settings/grading'
+        assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
+
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025/admin-console')
+    def test_admin_console_url_requires_instructor_access(self):
+        """
+        Test that the admin console URL is only available to users with instructor access.
+        """
+        # data researcher has access to course but is not an instructor
+        self.client.force_authenticate(user=self.data_researcher)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'admin_console_url' in response.data
+        data = response.data
+        assert data['admin_console_url'] is None
+
+    @override_settings(ADMIN_CONSOLE_MICROFRONTEND_URL='http://localhost:2025/admin-console')
+    def test_django_staff_user_without_instructor_access_can_see_admin_console_url(self):
+        """
+        Test that Django staff users without instructor access can see the admin console URL.
+        """
+        self.client.force_authenticate(user=self.django_staff_user)
+        response = self.client.get(self._get_url())
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'admin_console_url' in response.data
+        data = response.data
+        assert data['admin_console_url'] == 'http://localhost:2025/admin-console/authz'
 
     def test_get_course_metadata_as_staff(self):
         """
@@ -327,9 +361,9 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         """Helper to test tabs visible to staff users."""
         tab_ids = [tab['tab_id'] for tab in tabs]
 
-        # Staff should see these basic tabs
-        expected_basic_tabs = ['course_info', 'enrollments', 'course_team', 'grading', 'cohorts']
-        self.assertListEqual(tab_ids, expected_basic_tabs)  # noqa: PT009
+        # Staff should see these basic tabs (course_team is restricted to instructor/forum_admin)
+        expected_basic_tabs = ['course_info', 'enrollments', 'grading', 'cohorts']
+        assert tab_ids == expected_basic_tabs
 
     def test_staff_sees_basic_tabs(self):
         """
@@ -343,7 +377,10 @@ class CourseMetadataViewTest(SharedModuleStoreTestCase):
         Test that instructors see all tabs that staff see.
         """
         instructor_tabs = self._get_tabs_from_response(self.instructor)
-        self._test_staff_tabs(instructor_tabs)
+        tab_ids = [tab['tab_id'] for tab in instructor_tabs]
+
+        expected_tabs = ['course_info', 'enrollments', 'course_team', 'grading', 'cohorts']
+        assert tab_ids == expected_tabs
 
     def test_researcher_sees_all_basic_tabs(self):
         """
@@ -3420,3 +3457,173 @@ class CourseTeamMemberViewTest(SharedModuleStoreTestCase):
         assert response.data['roles'] == ['Moderator']
         assert response.data['action'] == 'revoke'
         assert not role.users.filter(pk=target.pk).exists()
+
+
+class CourseTeamTabVisibilityTest(SharedModuleStoreTestCase):
+    """
+    Tests that the course_team tab is only visible to Admin (instructor role)
+    and Discussion Admin (forum Administrator role).
+
+    See: https://github.com/openedx/openedx-platform/issues/38439
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='TabVis',
+            run='2024',
+            display_name='Tab Visibility Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.url = reverse('instructor_api_v2:course_metadata', kwargs={'course_id': str(self.course_key)})
+
+        # Instructor (Admin) — should see course_team tab
+        self.instructor = InstructorFactory.create(course_key=self.course_key)
+
+        # Discussion Admin (forum Administrator) — should see course_team tab
+        self.forum_admin = StaffFactory.create(course_key=self.course_key)
+        seed_permissions_roles(self.course_key)
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(self.forum_admin)
+
+        # Staff — should NOT see course_team tab
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+
+    def _get_tab_ids(self, user):
+        self.client.force_authenticate(user=user)
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        return [tab['tab_id'] for tab in response.data.get('tabs', [])]
+
+    def test_instructor_sees_course_team_tab(self):
+        """Admin (instructor role) should see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.instructor)
+        assert 'course_team' in tab_ids
+
+    def test_forum_admin_sees_course_team_tab(self):
+        """Discussion Admin (forum Administrator role) should see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.forum_admin)
+        assert 'course_team' in tab_ids
+
+    def test_staff_does_not_see_course_team_tab(self):
+        """Staff without instructor or forum admin role should NOT see the course_team tab."""
+        tab_ids = self._get_tab_ids(self.staff_user)
+        assert 'course_team' not in tab_ids
+
+
+class CourseTeamEndpointForumAdminAccessTest(SharedModuleStoreTestCase):
+    """
+    Tests that Discussion Admin (forum Administrator role) can access
+    course team endpoints, not just the instructor role.
+
+    See: https://github.com/openedx/openedx-platform/issues/38439
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.course = CourseFactory.create(
+            org='edX',
+            number='ForumAccess',
+            run='2024',
+            display_name='Forum Admin Access Test Course',
+        )
+        cls.course_key = cls.course.id
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+
+        # Discussion Admin: staff + forum Administrator role
+        self.forum_admin = StaffFactory.create(course_key=self.course_key)
+        seed_permissions_roles(self.course_key)
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(self.forum_admin)
+
+        # Plain staff user (no forum admin, no instructor) — should be denied
+        self.staff_user = StaffFactory.create(course_key=self.course_key)
+
+    def test_forum_admin_can_list_team_roles(self):
+        """Discussion Admin should be able to GET /team/roles."""
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_list_team_members(self):
+        """Discussion Admin should be able to GET /team."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_grant_role(self):
+        """Discussion Admin should be able to POST /team to grant a role."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        target = UserFactory.create()
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.post(url, {
+            'identifiers': [target.username],
+            'role': 'staff',
+            'action': 'allow',
+        }, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_forum_admin_can_revoke_role(self):
+        """Discussion Admin should be able to DELETE /team/{username}."""
+        target = StaffFactory.create(course_key=self.course_key)
+        url = reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': target.username},
+        )
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.delete(url, {'roles': ['staff']}, format='json')
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_plain_staff_cannot_access_team_endpoints(self):
+        """Staff without instructor or forum admin role should get 403."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=self.staff_user)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_non_staff_forum_admin_cannot_access_team_endpoints(self):
+        """Non-staff user with only forum Administrator role should get 403."""
+        non_staff_forum_admin = UserFactory.create()
+        admin_role = Role.objects.get(course_id=self.course_key, name='Administrator')
+        admin_role.users.add(non_staff_forum_admin)
+
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        self.client.force_authenticate(user=non_staff_forum_admin)
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_forum_admin_cannot_grant_instructor_role(self):
+        """Discussion Admin should not be able to grant the instructor role (privilege escalation)."""
+        url = reverse('instructor_api_v2:course_team', kwargs={'course_id': str(self.course_key)})
+        target = UserFactory.create()
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.post(url, {
+            'identifiers': [target.username],
+            'role': 'instructor',
+            'action': 'allow',
+        }, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_forum_admin_cannot_revoke_instructor_role(self):
+        """Discussion Admin should not be able to revoke the instructor role."""
+        # Create an instructor to target
+        instructor = InstructorFactory.create(course_key=self.course_key)
+        url = reverse(
+            'instructor_api_v2:course_team_member',
+            kwargs={'course_id': str(self.course_key), 'email_or_username': instructor.username},
+        )
+        self.client.force_authenticate(user=self.forum_admin)
+        response = self.client.delete(url, {'roles': ['instructor']}, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN

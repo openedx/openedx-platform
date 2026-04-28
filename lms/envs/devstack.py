@@ -400,6 +400,8 @@ AUTHN_MICROFRONTEND_DOMAIN = 'localhost:1999'
 EXAMS_DASHBOARD_MICROFRONTEND_URL = 'http://localhost:2020'
 INSTRUCTOR_MICROFRONTEND_URL = 'http://localhost:2003/instructor-dashboard'
 CATALOG_MICROFRONTEND_URL = 'http://localhost:1998/catalog'
+COURSE_AUTHORING_MICROFRONTEND_URL = 'http://localhost:2001/authoring'
+ADMIN_CONSOLE_MICROFRONTEND_URL = 'http://localhost:2025/admin-console'
 
 ################### FRONTEND APPLICATION DISCUSSIONS ###################
 DISCUSSIONS_MICROFRONTEND_URL = 'http://localhost:2002'

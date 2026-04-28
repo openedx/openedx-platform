@@ -3,9 +3,12 @@ Utility functions for third_party_auth
 """
 
 import datetime
+import ipaddress
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import dateutil.parser
+from django.conf import settings
 from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
 from django.utils.timezone import now
 from enterprise.models import EnterpriseCustomerIdentityProvider, EnterpriseCustomerUser
@@ -25,6 +28,67 @@ SAML_XML_NS = 'urn:oasis:names:tc:SAML:2.0:metadata'  # The SAML Metadata XML na
 class MetadataParseError(Exception):
     """ An error occurred while parsing the SAML metadata from an IdP """
     pass  # lint-amnesty, pylint: disable=unnecessary-pass
+
+
+class SAMLMetadataURLError(Exception):
+    """ A SAML metadata URL failed security validation """
+    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+
+
+def validate_saml_metadata_url(url):
+    """
+    Validate that a SAML metadata URL is safe to fetch.
+
+    Enforces HTTPS and blocks requests to loopback, link-local, and reserved IP
+    addresses. Link-local specifically covers cloud instance metadata endpoints
+    (169.254.0.0/16, e.g. the AWS metadata service at 169.254.169.254).
+    Reserved addresses (e.g. 240.0.0.0/4) are IETF-assigned ranges that are
+    never routable on real networks.
+
+    Private IP ranges (RFC 1918: 10.x, 172.16.x, 192.168.x) are also blocked by
+    default, since most Open edX deployments fetch SAML metadata from public IdPs.
+    Operators running in a private network where the SAML IdP has a private IP can
+    opt out by setting SAML_METADATA_URL_ALLOW_PRIVATE_IPS = True in Django settings.
+
+    Limitation: IP address checks only apply to literal IPs in the URL. Hostname-
+    based URLs are not validated against the IP blocklists. Operators are encouraged
+    to complement this with network-level egress filtering that blocks outbound
+    connections from the Open edX server to link-local (169.254.0.0/16) and RFC
+    1918 private address ranges.
+
+    Raises SAMLMetadataURLError if the URL fails validation.
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme != 'https':
+        raise SAMLMetadataURLError(
+            f"SAML metadata URL must use HTTPS, got scheme: {parsed.scheme!r}"
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise SAMLMetadataURLError("SAML metadata URL has no hostname")
+
+    try:
+        addr = ipaddress.ip_address(hostname)
+    except ValueError:
+        # hostname is a domain name, not a numeric IP literal — pass through.
+        return
+
+    # Loopback, link-local, and reserved ranges are never legitimate SAML IdP
+    # addresses regardless of deployment topology.
+    if addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        raise SAMLMetadataURLError(
+            f"SAML metadata URL hostname is a forbidden IP address: {addr}"
+        )
+
+    # Private ranges are blocked by default but can be allowed via Django settings
+    # for deployments where the SAML IdP lives on the same private network.
+    if addr.is_private and not settings.SAML_METADATA_URL_ALLOW_PRIVATE_IPS:
+        raise SAMLMetadataURLError(
+            f"SAML metadata URL hostname is a private IP address: {addr}. "
+            "Set SAML_METADATA_URL_ALLOW_PRIVATE_IPS = True in Django settings to allow this."
+        )
 
 
 def parse_metadata_xml(xml, entity_id):

@@ -11,8 +11,6 @@ base_urls:
     ecommerce: http://localhost:18130/
     credentials: http://localhost:18150/
 retirement_pipeline:
-    - ['RETIRING_CREDENTIALS', 'CREDENTIALS_COMPLETE', 'CREDENTIALS', 'retire_learner']
-    - ['RETIRING_ECOM', 'ECOM_COMPLETE', 'ECOMMERCE', 'retire_learner']
     - ['RETIRING_LICENSE_MANAGER', 'LICENSE_MANAGER_COMPLETE', 'LICENSE_MANAGER', 'retire_learner']
     - ['RETIRING_FORUMS', 'FORUMS_COMPLETE', 'LMS', 'retirement_retire_forum']
     - ['RETIRING_EMAIL_LISTS', 'EMAIL_LISTS_COMPLETE', 'LMS', 'retirement_retire_mailings']
@@ -129,21 +127,6 @@ def _get_learner_and_state_index_or_exit(config, username):
         FAIL_EXCEPTION(ERR_SETUP_FAILED, 'Unexpected error fetching user state!', str(exc))
 
 
-def _get_ecom_segment_id(config, learner):
-    """
-    Calls Ecommerce to get the ecom-specific Segment tracking id that we need to retire.
-    This is only available from Ecommerce, unfortunately, and makes more sense to handle
-    here than to pass all of the config down to SegmentApi.
-    """
-    try:
-        return config['ECOMMERCE'].get_tracking_key(learner)
-    except HttpDoesNotExistException:
-        LOG('Learner {} not found in Ecommerce. Setting Ecommerce Segment ID to None'.format(learner))  # noqa: UP032
-        return None
-    except Exception as exc:  # pylint: disable=broad-except
-        FAIL_EXCEPTION(ERR_SETUP_FAILED, 'Unexpected error fetching Ecommerce tracking id!', str(exc))
-
-
 @click.command("retire_learner")
 @click.option(
     '--username',
@@ -171,9 +154,6 @@ def retire_learner(
     SETUP_ALL_APIS_OR_EXIT(config)
 
     learner, learner_state_index = _get_learner_and_state_index_or_exit(config, username)
-
-    if config.get('fetch_ecommerce_segment_id', False):
-        learner['ecommerce_segment_id'] = _get_ecom_segment_id(config, learner)
 
     start_state = None
     try:
