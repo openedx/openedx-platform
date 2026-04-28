@@ -105,14 +105,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.94
+boto3==1.42.97
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.94
+botocore==1.42.97
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -223,7 +223,7 @@ cryptography==45.0.7
     #   pyjwt
     #   pyopenssl
     #   snowflake-connector-python
-cssutils==2.14.0
+cssutils==2.15.0
     # via
     #   -r requirements/edx/base.txt
     #   pynliner
@@ -685,7 +685,7 @@ event-tracking==4.0.0
     #   edx-completion
     #   edx-proctoring
     #   edx-search
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/edx/base.txt
     #   openedx-events
@@ -976,7 +976,7 @@ mysqlclient==2.2.8
     # via
     #   -r requirements/edx/base.txt
     #   openedx-forum
-nh3==0.3.4
+nh3==0.3.5
     # via
     #   -r requirements/edx/base.txt
     #   xblocks-contrib
@@ -1047,13 +1047,13 @@ openedx-filters==3.1.0
     #   edx-enterprise
     #   lti-consumer-xblock
     #   ora2
-openedx-forum==0.4.1
+openedx-forum==0.4.2
     # via -r requirements/edx/base.txt
 optimizely-sdk==5.4.0
     # via -r requirements/edx/base.txt
 ora2==7.0.0
     # via -r requirements/edx/base.txt
-packaging==26.1
+packaging==26.2
     # via
     #   -r requirements/edx/base.txt
     #   drf-yasg
@@ -1374,7 +1374,7 @@ simpleeval==1.0.7
     # via
     #   -r requirements/edx/base.txt
     #   pycasbin
-simplejson==4.1.0
+simplejson==4.1.1
     # via
     #   -r requirements/edx/base.txt
     #   sailthru-client
@@ -1554,7 +1554,7 @@ typing-inspection==0.4.2
     # via
     #   -r requirements/edx/base.txt
     #   pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via
     #   -r requirements/edx/base.txt
     #   icalendar

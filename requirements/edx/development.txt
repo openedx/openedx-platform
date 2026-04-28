@@ -139,7 +139,7 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.94
+boto3==1.42.97
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -147,7 +147,7 @@ boto3==1.42.94
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.94
+botocore==1.42.97
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -313,7 +313,7 @@ cssselect==1.4.0
     # via
     #   -r requirements/edx/testing.txt
     #   pyquery
-cssutils==2.14.0
+cssutils==2.15.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -780,7 +780,7 @@ edx-i18n-tools==2.0.0
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   ora2
-edx-lint==6.0.0
+edx-lint==6.1.0
     # via -r requirements/edx/testing.txt
 edx-milestones==2.0.0
     # via
@@ -920,7 +920,7 @@ fastapi==0.136.1
     # via
     #   -r requirements/edx/testing.txt
     #   pact-python
-fastavro==1.12.1
+fastavro==1.12.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1339,7 +1339,7 @@ mysqlclient==2.2.8
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   openedx-forum
-nh3==0.3.4
+nh3==0.3.5
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1431,7 +1431,7 @@ openedx-filters==3.1.0
     #   edx-enterprise
     #   lti-consumer-xblock
     #   ora2
-openedx-forum==0.4.1
+openedx-forum==0.4.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1443,7 +1443,7 @@ ora2==7.0.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-packaging==26.1
+packaging==26.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1482,7 +1482,7 @@ path-py==12.5.0
     #   edx-enterprise
     #   ora2
     #   staff-graded-xblock
-pathspec==1.1.0
+pathspec==1.1.1
     # via mypy
 pgpy==0.6.0
     # via
@@ -1910,7 +1910,7 @@ rpds-py==0.30.0
     #   -r requirements/edx/testing.txt
     #   jsonschema
     #   referencing
-ruff==0.15.11
+ruff==0.15.12
     # via -r requirements/edx/testing.txt
 rules==3.5
     # via
@@ -1949,7 +1949,7 @@ simpleeval==1.0.7
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
     #   pycasbin
-simplejson==4.1.0
+simplejson==4.1.1
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2149,6 +2149,7 @@ tomlkit==0.14.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
+    #   edx-lint
     #   openedx-core
     #   pylint
     #   snowflake-connector-python
@@ -2206,7 +2207,7 @@ typing-inspection==0.4.2
     #   -r requirements/edx/testing.txt
     #   fastapi
     #   pydantic
-tzdata==2026.1
+tzdata==2026.2
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2255,7 +2256,7 @@ vine==5.1.0
     #   amqp
     #   celery
     #   kombu
-virtualenv==21.2.4
+virtualenv==21.3.0
     # via
     #   -r requirements/edx/testing.txt
     #   tox
