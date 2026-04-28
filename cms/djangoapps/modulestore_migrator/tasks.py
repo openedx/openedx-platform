@@ -895,13 +895,9 @@ def _migrate_container(
     ).publishable_entity_version
 
     # Publish the container
-    # Call post publish events synchronously to avoid
-    # an error when calling `wait_for_post_publish_events`
-    # inside a celery task.
     libraries_api.publish_container_changes(
         container.container_key,
         context.created_by,
-        call_post_publish_events_sync=True,
     )
     context.used_container_slugs.add(container.container_key.container_id)
     return container_publishable_entity_version, None

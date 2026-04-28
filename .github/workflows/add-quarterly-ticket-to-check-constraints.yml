@@ -1,0 +1,26 @@
+name: Create quarterly issues for GitHub audit
+on:
+  schedule:
+    - cron: 0 0 1 1,4,7,10 *
+  workflow_dispatch: {}
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  create_issue:
+    name: Create quarterly constraint check issue
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - run: |
+          # Platform constraints audit
+          new_issue_url=$(gh issue create --repo "openedx/openedx-platform" \
+            --title "Quarterly audit of openedx-platform constraints" \
+            --label "code health" \
+            --body "It is time to perform the quartely audit of constrained dependencies in \`openedx-platform\`. The goal is to remove any constraints that are no longer necessary to proactively prevent version conflicts and keep us up to date with security patches. The playbook for performing the audit can be found [here](https://openedx.atlassian.net/wiki/spaces/AC/pages/6340968449/Quarterly+Platform+Constraints+Audit).")
+            echo "NEW_ISSUE_URL=$new_issue_url" >> $GITHUB_ENV
+
+      - name: Comment on issue
+        run: gh issue comment $NEW_ISSUE_URL --body "@openedx/wg-maintenance-openedx-platform-oncall heads up on this request"

@@ -329,7 +329,7 @@ class HomePageLibrariesViewTest(LibraryTestCase):
                     'can_edit': True,
                     'is_migrated': True,
                     'migrated_to_title': 'Test Library',
-                    'migrated_to_key': 'lib:name0:test-key',
+                    'migrated_to_key': str(self.lib_key_v2),
                     'migrated_to_collection_key': 'test-collection',
                     'migrated_to_collection_title': 'Test Collection',
                 },
@@ -364,7 +364,7 @@ class HomePageLibrariesViewTest(LibraryTestCase):
                     'can_edit': True,
                     'is_migrated': True,
                     'migrated_to_title': 'Test Library',
-                    'migrated_to_key': 'lib:name0:test-key',
+                    'migrated_to_key': str(self.lib_key_v2),
                     'migrated_to_collection_key': 'test-collection',
                     'migrated_to_collection_title': 'Test Collection',
                 }

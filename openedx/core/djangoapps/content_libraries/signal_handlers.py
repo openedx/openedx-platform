@@ -4,179 +4,161 @@ Content library signal handlers.
 
 import logging
 
-from django.db.models.signals import m2m_changed, post_delete, post_save
+from attrs import asdict
 from django.dispatch import receiver
-from opaque_keys import OpaqueKey
-from opaque_keys.edx.locator import LibraryLocatorV2
-from openedx_content.api import get_components, get_containers
-from openedx_content.models_api import Collection, CollectionPublishableEntity, PublishableEntity
-from openedx_events.content_authoring.data import ContentObjectChangedData, LibraryCollectionData
+from openedx_content import api as content_api
+from openedx_content.api import signals as content_signals
+from openedx_events.content_authoring.data import LibraryCollectionData
 from openedx_events.content_authoring.signals import (
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED,
     LIBRARY_COLLECTION_CREATED,
     LIBRARY_COLLECTION_DELETED,
     LIBRARY_COLLECTION_UPDATED,
 )
 
-from .api import library_collection_locator, library_component_usage_key, library_container_locator
+from . import tasks
+from .api import library_collection_locator
 from .models import ContentLibrary
 
 log = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender=Collection, dispatch_uid="library_collection_saved")
-def library_collection_saved(sender, instance, created, **kwargs):
-    """
-    Raises LIBRARY_COLLECTION_CREATED if the Collection is new,
-    or LIBRARY_COLLECTION_UPDATED if updated an existing Collection.
-    """
-    try:
-        library = ContentLibrary.objects.get(learning_package_id=instance.learning_package_id)
-    except ContentLibrary.DoesNotExist:
-        log.error("{instance} is not associated with a content library.")
-        return
-
-    if created:
-        # .. event_implemented_name: LIBRARY_COLLECTION_CREATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.created.v1
-        LIBRARY_COLLECTION_CREATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library.library_key,
-                    collection_key=instance.collection_code,
-                ),
-            )
-        )
-    else:
-        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
-        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
-        LIBRARY_COLLECTION_UPDATED.send_event(
-            library_collection=LibraryCollectionData(
-                collection_key=library_collection_locator(
-                    library_key=library.library_key,
-                    collection_key=instance.collection_code,
-                ),
-            )
-        )
-
-
-@receiver(post_delete, sender=Collection, dispatch_uid="library_collection_deleted")
-def library_collection_deleted(sender, instance, **kwargs):
-    """
-    Raises LIBRARY_COLLECTION_DELETED for the deleted Collection.
-    """
-    try:
-        library = ContentLibrary.objects.get(learning_package_id=instance.learning_package_id)
-    except ContentLibrary.DoesNotExist:
-        log.error("{instance} is not associated with a content library.")
-        return
-
-    # .. event_implemented_name: LIBRARY_COLLECTION_DELETED
-    # .. event_type: org.openedx.content_authoring.content_library.collection.deleted.v1
-    LIBRARY_COLLECTION_DELETED.send_event(
-        library_collection=LibraryCollectionData(
-            collection_key=library_collection_locator(
-                library_key=library.library_key,
-                collection_key=instance.collection_code,
-            ),
-        )
-    )
-
-
-def _library_collection_entity_changed(
-    publishable_entity: PublishableEntity,
-    library_key: LibraryLocatorV2 | None = None,
+@receiver(content_signals.ENTITIES_DRAFT_CHANGED)
+def entities_updated(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.DraftChangeLogEventData,
+    **kwargs,
 ) -> None:
     """
-    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for the entity.
+    Entities (containers/components) have been changed - handle that as needed.
+
+    We receive this low-level event from `openedx_content`, and check if it
+    happened in a library. If so, we emit more detailed library-specific events.
+
+    This event change log includes entities that were directly edited as well as
+    their dependencies which may be only indirectly affected.
+
+    💾 This event is only received after the transaction has committed.
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously. If multiple entities were changed, we need to dispatch an
+       asynchronous handler to deal with them to avoid slowdowns. If only one
+       entity is changed, we want to deal with that synchronously so that we
+       can show the user correct data when the current requests completes.
     """
-    if not library_key:
-        try:
-            library = ContentLibrary.objects.get(
-                learning_package_id=publishable_entity.learning_package_id,
-            )
-        except ContentLibrary.DoesNotExist:
-            log.error("{publishable_entity} is not associated with a content library.")
-            return
+    try:
+        ContentLibrary.objects.get(learning_package_id=learning_package.id)
+    except ContentLibrary.DoesNotExist:
+        return  # We don't care about non-library events.
 
-        library_key = library.library_key
-
-    assert library_key
-
-    opaque_key: OpaqueKey
-
-    if hasattr(publishable_entity, 'component'):
-        opaque_key = library_component_usage_key(
-            library_key,
-            publishable_entity.component,
-        )
-    elif hasattr(publishable_entity, 'container'):
-        opaque_key = library_container_locator(
-            library_key,
-            publishable_entity.container,
-        )
-    else:
-        log.error("Unknown publishable entity type: %s", publishable_entity)
-        return
-
-    # .. event_implemented_name: CONTENT_OBJECT_ASSOCIATIONS_CHANGED
-    # .. event_type: org.openedx.content_authoring.content.object.associations.changed.v1
-    CONTENT_OBJECT_ASSOCIATIONS_CHANGED.send_event(
-        content_object=ContentObjectChangedData(
-            object_id=str(opaque_key),
-            changes=["collections"],
-        ),
+    # The list of entities changed, both directly changed and indirectly affected (e.g. ancestor containers)
+    change_list = [asdict(change) for change in change_log.changes]
+    tasks.dispatch_and_wait(
+        tasks.send_change_events_for_modified_entities,
+        learning_package_id=learning_package.id,
+        change_list=change_list,
+        # If there are only a few entities changed, we'll call the handler synchronously so that everything is up to
+        # date when the requests finishes. (This is important for the Authoring MFE which uses the search index for its
+        # main UI listing components, containers, and collections in the library.) If many entities have changed, we'll
+        # handle it asynchronously but _try_ waiting a bit in case it finishes quickly.
+        wait_for_full_completion=len(change_list) < 5,
     )
 
 
-@receiver(post_save, sender=CollectionPublishableEntity, dispatch_uid="library_collection_entity_saved")
-def library_collection_entity_saved(sender, instance, created, **kwargs):
+@receiver(content_signals.ENTITIES_PUBLISHED)
+def entities_published(
+    learning_package: content_signals.LearningPackageEventData,
+    change_log: content_signals.PublishLogEventData,
+    **kwargs,
+) -> None:
     """
-    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for components added to a collection.
-    """
-    if created:
-        _library_collection_entity_changed(instance.entity)
+    Entities (containers/components) have been published - handle that as needed.
 
+    We receive this low-level event from `openedx_content`, and check if it
+    happened in a library. If so, we emit more detailed library-specific events.
 
-@receiver(post_delete, sender=CollectionPublishableEntity, dispatch_uid="library_collection_entity_deleted")
-def library_collection_entity_deleted(sender, instance, **kwargs):
-    """
-    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for components removed from a collection.
-    """
-    # Only trigger component updates if CollectionPublishableEntity was cascade deleted due to deletion of a collection.
-    if isinstance(kwargs.get('origin'), Collection):
-        _library_collection_entity_changed(instance.entity)
+    This event change log includes entities that were directly published as well
+    as other things that are affected as publish "side effects".
 
-
-@receiver(m2m_changed, sender=CollectionPublishableEntity, dispatch_uid="library_collection_entities_changed")
-def library_collection_entities_changed(sender, instance, action, pk_set, **kwargs):
+    💾 This event is only received after the transaction has committed.
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously. If multiple entities were published, we need to dispatch
+       an asynchronous handler to deal with them to avoid slowdowns. If only one
+       entity was published, we want to deal with that synchronously so that we
+       can show the user correct data when the current requests completes.
     """
-    Sends a CONTENT_OBJECT_ASSOCIATIONS_CHANGED event for components added/removed/cleared from a collection.
-    """
-    if action not in ["post_add", "post_remove", "post_clear"]:
-        return
-
     try:
-        library = ContentLibrary.objects.get(
-            learning_package_id=instance.learning_package_id,
-        )
+        library = ContentLibrary.objects.get(learning_package_id=learning_package.id)
     except ContentLibrary.DoesNotExist:
-        log.error("{instance} is not associated with a content library.")
-        return
+        return  # We don't care about non-library events.
 
-    if isinstance(instance, PublishableEntity):
-        _library_collection_entity_changed(instance, library.library_key)
-        return
+    tasks.dispatch_and_wait(
+        tasks.send_events_after_publish,
+        publish_log_id=change_log.publish_log_id,
+        library_key_str=str(library.library_key),
+        # If there are only a few entities published, we'll call the handler synchronously so that everything is up to
+        # date when the requests finishes:
+        wait_for_full_completion=len(change_log.changes) < 5,
+    )
 
-    # When action=="post_clear", pk_set==None
-    # Since the collection instance now has an empty entities set,
-    # we don't know which ones were removed, so we need to update associations for all library
-    # components and containers.
-    components = get_components(instance.learning_package_id)
-    containers = get_containers(instance.learning_package_id)
-    if pk_set:
-        components = components.filter(pk__in=pk_set)
-        containers = containers.filter(pk__in=pk_set)
 
-    for entity in list(components.all()) + list(containers.all()):
-        _library_collection_entity_changed(entity.publishable_entity, library.library_key)
+@receiver(content_signals.COLLECTION_CHANGED)
+def collection_updated(
+    learning_package: content_signals.LearningPackageEventData,
+    change: content_signals.CollectionChangeData,
+    **kwargs,
+) -> None:
+    """
+    A Collection has been updated - handle that as needed.
+
+    We receive this low-level event from `openedx_content`, and check if it
+    happened in a library. If so, we emit more detailed library-specific events.
+
+    ⏳ This event is emitted synchronously and this handler is called
+       synchronously. If multiple entities were changed, we need to dispatch an
+       asynchronous handler to deal with them to avoid slowdowns.
+    """
+    try:
+        library = ContentLibrary.objects.get(learning_package_id=learning_package.id)
+    except ContentLibrary.DoesNotExist:
+        return  # We don't care about non-library events.
+
+    collection_key = library_collection_locator(library_key=library.library_key, collection_key=change.collection_code)
+    entities_changed = change.entities_added + change.entities_removed
+
+    if change.created:  # This is a newly-created collection, or was "un-deleted":
+        # .. event_implemented_name: LIBRARY_COLLECTION_CREATED
+        # .. event_type: org.openedx.content_authoring.content_library.collection.created.v1
+        LIBRARY_COLLECTION_CREATED.send_event(library_collection=LibraryCollectionData(collection_key=collection_key))
+        # As an example of what this event triggers,  Collections are listed in the Meilisearch index as items in the
+        # library. So the handler will add this Collection as an entry in the Meilisearch index.
+    elif change.metadata_modified or entities_changed:
+        # The collection was renamed or its items were changed.
+        # This event is ambiguous but because the search index of the collection itself may have something like
+        # "contains 15 items", we _do_ need to emit it even when only the items have changed and not the metadata.
+        # .. event_implemented_name: LIBRARY_COLLECTION_UPDATED
+        # .. event_type: org.openedx.content_authoring.content_library.collection.updated.v1
+        LIBRARY_COLLECTION_UPDATED.send_event(library_collection=LibraryCollectionData(collection_key=collection_key))
+    elif change.deleted:
+        # .. event_implemented_name: LIBRARY_COLLECTION_DELETED
+        # .. event_type: org.openedx.content_authoring.content_library.collection.deleted.v1
+        LIBRARY_COLLECTION_DELETED.send_event(library_collection=LibraryCollectionData(collection_key=collection_key))
+
+    if change.metadata_modified:
+        # If the collection was renamed, then in addition to LIBRARY_COLLECTION_UPDATED we need to send out a
+        # CONTENT_OBJECT_ASSOCIATIONS_CHANGED notice to update the "collections=..." field in the search index on all
+        # entities that are in the collection.
+        current_collection_entities = content_api.get_collection_entities(learning_package.id, change.collection_code)
+        # We also need to process any entities that happened to be removed as part of this same event (if any)
+        entities_changed = change.entities_removed + list(current_collection_entities.values_list("id", flat=True))
+
+    # Update any entities that were added/removed to this collection.
+    # If the collection was re-enabled (un-deleted), this will already include all entities in the collection.
+    # If the collection was renamed, we just now added all entities in the collection to this list of changed entities.
+    if entities_changed:
+        tasks.dispatch_and_wait(
+            tasks.send_collections_changed_events,
+            publishable_entity_ids=sorted(entities_changed),  # sorted() is mostly for test purposes
+            learning_package_id=learning_package.id,
+            library_key_str=str(library.library_key),
+            # If there's only one changed entity, emit the event synchronously:
+            wait_for_full_completion=len(entities_changed) == 1,
+        )

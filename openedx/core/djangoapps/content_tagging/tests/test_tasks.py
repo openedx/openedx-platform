@@ -288,7 +288,8 @@ class TestAutoTagging(  # type: ignore[misc]
 
         fake_request = HttpRequest()
         fake_request.LANGUAGE_CODE = "pt-br"
-        with patch('crum.get_current_request', return_value=fake_request):
+        # Note: self.captureOnCommitCallbacks(execute=True) is required for the library events to fire here.
+        with patch('crum.get_current_request', return_value=fake_request), self.captureOnCommitCallbacks(execute=True):
             # Create Library Block
             library_block = create_library_block(library.key, "problem", "Problem1")
 

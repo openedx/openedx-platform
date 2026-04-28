@@ -617,7 +617,22 @@ class ImmediateOnCommitMixin:
     Mixin for tests that want `on_commit` callbacks to run immediately,
     even under TestCase (which normally wraps tests in a transaction
     that never commits).
-    Especially useful when the test needs to execute an event that occurs after an `on_commit`
+    Especially useful when the test needs to execute an event that occurs after an `on_commit`.
+
+    Note: this _may_ not work if code imports `from django.db.transaction import on_commit`
+    instead of using `from django.db import transaction` and `transaction.on_commit`.
+
+    🛑 For more realistic behavior, it's better to use Django's built-in helper
+    for this, as it still defers the callbacks until the end of the current
+    context block instead of running them immediately.
+
+    ```
+    with self.captureOnCommitCallbacks(execute=True):
+        do_something()
+        # on_commit hooks will run after this block ends.
+    ```
+
+    https://docs.djangoproject.com/en/6.0/topics/testing/tools/#django.test.TestCase.captureOnCommitCallbacks
     """
 
     @classmethod

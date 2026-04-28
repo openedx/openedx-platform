@@ -53,7 +53,7 @@ def flatten_partner_list(partner_list):
     return [partner for sublist in partner_list for partner in sublist]
 
 
-def fake_config_file(f, orgs=None, fetch_ecom_segment_id=False):
+def fake_config_file(f, orgs=None):
     """
     Create a config file for a single test. Combined with CliRunner.isolated_filesystem() to
     ensure the file lifetime is limited to the test. See _call_script for usage.
@@ -84,9 +84,6 @@ def fake_config_file(f, orgs=None, fetch_ecom_segment_id=False):
         'segment_workspace_slug': 'test_slug',
         'segment_auth_token': 'fakeauthtoken',
     }
-
-    if fetch_ecom_segment_id:
-        config['fetch_ecommerce_segment_id'] = True
 
     yaml.safe_dump(config, f)
 
