@@ -3081,11 +3081,11 @@ class CourseTeamRolesView(DeveloperErrorViewMixin, APIView):
         {
             "course_id": "course-v1:edX+DemoX+Demo_Course",
             "results": [
-                {"role": "beta", "display_name": "Beta Tester"},
-                {"role": "data_researcher", "display_name": "Data Researcher"},
-                {"role": "instructor", "display_name": "Admin"},
+                {"role": "staff", "display_name": "Staff"},
                 {"role": "limited_staff", "display_name": "Limited Staff"},
-                {"role": "staff", "display_name": "Staff"}
+                {"role": "instructor", "display_name": "Admin"},
+                {"role": "beta", "display_name": "Beta Tester"},
+                {"role": "data_researcher", "display_name": "Data Researcher"}
             ]
         }
 
