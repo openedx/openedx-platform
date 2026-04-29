@@ -402,7 +402,7 @@ def get_library_component_creation_entry(
 def set_library_block_olx(
     usage_key: LibraryUsageLocatorV2,
     new_olx_str: str,
-    paths_to_media: dict = None,
+    paths_to_media: dict | None = None,
 ) -> ComponentVersion:
     """
     Replace the OLX source of the given XBlock.
