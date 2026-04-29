@@ -53,6 +53,11 @@ FORUM_ROLES = (
     FORUM_ROLE_COMMUNITY_TA,
 )
 
+INSTRUCTOR_DASHBOARD_ROLE_SORT_ORDER = (
+    'staff', 'limited_staff', 'instructor', 'beta', 'data_researcher',
+    *FORUM_ROLES, 'ccx_coach',
+)
+
 ROLE_DISPLAY_NAMES = {
     'instructor': _('Admin'),
     'staff': _('Staff'),

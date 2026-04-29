@@ -2885,6 +2885,29 @@ class CourseTeamRolesViewTest(SharedModuleStoreTestCase):
         ccx_entry = next(r for r in response.data['results'] if r['role'] == 'ccx_coach')
         assert ccx_entry['display_name'] == 'CCX Coach'
 
+    @override_settings(FEATURES={**settings.FEATURES, 'CUSTOM_COURSES_EDX': True})
+    def test_roles_sort_order(self):
+        """Roles are returned in the expected display order, with ccx_coach last."""
+        ccx_course = CourseFactory.create(
+            org='edX',
+            number='SortX',
+            run='2024',
+            display_name='Sort Order Test Course',
+            enable_ccx=True,
+        )
+        url = reverse('instructor_api_v2:course_team_roles', kwargs={'course_id': str(ccx_course.id)})
+        instructor = InstructorFactory.create(course_key=ccx_course.id)
+        self.client.force_authenticate(user=instructor)
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        returned_roles = [r['role'] for r in response.data['results']]
+        assert returned_roles == [
+            'staff', 'limited_staff', 'instructor', 'beta', 'data_researcher',
+            'Administrator', 'Moderator', 'Group Moderator', 'Community TA',
+            'ccx_coach',
+        ]
+
     def test_list_roles_unauthenticated(self):
         """Unauthenticated request returns 401."""
         response = self.client.get(self.url)
