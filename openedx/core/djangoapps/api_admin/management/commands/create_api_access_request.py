@@ -105,7 +105,7 @@ class Command(BaseCommand):
         try:
             return User.objects.get(username=username)
         except User.DoesNotExist:
-            raise CommandError(f'User {username} not found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'User {username} not found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     def create_api_access_request(self, user, status, reason, website):
         """

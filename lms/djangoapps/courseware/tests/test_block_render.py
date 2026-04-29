@@ -532,7 +532,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         # check that block.runtime.service(block, 'field-data-unbound') is the same as the original
         # _field_data, but now _field_data as been reset.
         assert block.runtime.service(block, 'field-data-unbound') is original_field_data
-        assert block.runtime.service(block, 'field-data-unbound') is not block._field_data  # pylint: disable=protected-access, line-too-long
+        assert block.runtime.service(block, 'field-data-unbound') is not block._field_data  # pylint: disable=protected-access
 
         # now bind this block to a few other students
         for user in [UserFactory(), UserFactory(), self.mock_user]:
@@ -550,10 +550,10 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         assert isinstance(block._field_data, LmsFieldData)  # lint-amnesty, pylint: disable=no-member
 
         # the LmsFieldData should now wrap OverrideFieldData
-        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # pylint: disable=no-member
 
         # the OverrideFieldData should point to the date FieldData
-        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # pylint: disable=no-member
         assert block._field_data._authored_data._source.fallback._defaults \
             is block.runtime.service(block, 'field-data-unbound')
 
@@ -686,7 +686,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
             data={'file_id': (self._mock_file(), ) * (settings.MAX_FILEUPLOADS_PER_INPUT + 1)}
         )
         request.user = self.mock_user
-        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': (f'Submission aborted! Maximum {settings.MAX_FILEUPLOADS_PER_INPUT:d} files may be submitted at once')}, indent=2)  # pylint: disable=line-too-long
+        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': (f'Submission aborted! Maximum {settings.MAX_FILEUPLOADS_PER_INPUT:d} files may be submitted at once')}, indent=2)  # noqa: E501
 
     def test_too_large_file(self):
         inputfile = self._mock_file(size=1 + settings.STUDENT_FILEUPLOAD_MAX_SIZE)
@@ -695,7 +695,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
             data={'file_id': inputfile}
         )
         request.user = self.mock_user
-        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # pylint: disable=line-too-long  # noqa: UP031
+        assert render.handle_xblock_callback(request, str(self.course_key), quote_slashes(str(self.location)), 'dummy_handler').content.decode('utf-8') == json.dumps({'success': ('Submission aborted! Your file "%s" is too large (max size: %d MB)' % (inputfile.name, (settings.STUDENT_FILEUPLOAD_MAX_SIZE / (1000 ** 2))))}, indent=2)  # noqa: E501, UP031
 
     def test_xblock_dispatch(self):
         request = self.request_factory.post('dummy_url', data={'position': 1})
@@ -1068,7 +1068,7 @@ class TestTOC(ModuleStoreTestCase):
         with self.modulestore.bulk_operations(self.course_key):
             with check_mongo_calls(num_finds, num_sends):
                 self.toy_course = self.store.get_course(self.course_key, depth=2)  # pylint: disable=attribute-defined-outside-init
-                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # pylint: disable=attribute-defined-outside-init
                     self.course_key, self.request.user, self.toy_course, depth=2
                 )
 
@@ -1803,7 +1803,7 @@ class TestStaffDebugInfo(SharedModuleStoreTestCase):
               </optioninput>
             </optionresponse>
         </problem>
-        """
+        """  # noqa: E501
         problem_block = BlockFactory.create(
             category='problem',
             data=problem_xml
@@ -1933,7 +1933,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
         self.user = UserFactory()
 
     @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
-    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # pylint: disable=missing-function-docstring
         location = course_id.make_usage_key('dummy_category', 'dummy_name')
         mixed_class = Mixologist(settings.XBLOCK_MIXINS).mix(xblock_class)
         block = Mock(
@@ -2515,7 +2515,7 @@ class TestFilteredChildren(SharedModuleStoreTestCase):
 
         # Create a child for each user
         self.children_for_user = {
-            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # lint-amnesty, pylint: disable=no-member
+            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # pylint: disable=no-member
             for user in self.users.values()
         }
 

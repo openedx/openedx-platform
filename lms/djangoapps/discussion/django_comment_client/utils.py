@@ -192,7 +192,7 @@ def get_discussion_id_map_entry(xblock):
         xblock.discussion_id,
         {
             "location": xblock.location,
-            "title": xblock.discussion_category.split("/")[-1].strip() + (" / " + xblock.discussion_target if xblock.discussion_target else "")
+            "title": xblock.discussion_category.split("/")[-1].strip() + (" / " + xblock.discussion_target if xblock.discussion_target else "")  # noqa: E501
         }
     )
 
@@ -1086,8 +1086,7 @@ def convert_img_to_markdown(text):
         return f"![{alt_text}]({url} \"{title}\")"
 
     # Use a regular expression to match each <img> tag and call replace_image on each match
-    # pylint: disable=line-too-long
-    regex_exp = r'<img(?: [^>]+)? src="([^"]+)"(?: [^>]+)?(?: alt="([^"]+)")?(?: [^>]+)?(?: title="([^"]+)")?(?: [^>]+)?/>'
+    regex_exp = r'<img(?: [^>]+)? src="([^"]+)"(?: [^>]+)?(?: alt="([^"]+)")?(?: [^>]+)?(?: title="([^"]+)")?(?: [^>]+)?/>'  # noqa: E501
 
     return re.sub(regex_exp, replace_image, text)
 

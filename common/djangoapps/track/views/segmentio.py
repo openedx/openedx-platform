@@ -202,9 +202,9 @@ def track_segmentio_event(request):  # pylint: disable=too-many-statements
     try:
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        raise EventValidationError(ERROR_USER_NOT_EXIST)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EventValidationError(ERROR_USER_NOT_EXIST)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
     except ValueError:
-        raise EventValidationError(ERROR_INVALID_USER_ID)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EventValidationError(ERROR_INVALID_USER_ID)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
     context['user_id'] = user.id
     context['username'] = user.username
 

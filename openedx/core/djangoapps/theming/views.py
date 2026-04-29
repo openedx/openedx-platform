@@ -92,7 +92,7 @@ class ThemingAdministrationFragmentView(EdxFragmentView):
     Fragment view to allow a user to administer theming.
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Renders the theming administration view as a fragment.
         """

@@ -75,7 +75,7 @@ def user_track(request):
     """
     try:
         username = request.user.username
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # noqa: E722
         username = "anonymous"
 
     name = _get_request_value(request, 'event_type')
@@ -123,7 +123,7 @@ def server_track(request, event_type, event, page=None):
 
     try:
         username = request.user.username
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # noqa: E722
         username = "anonymous"
 
     context_override = _get_course_context(page)

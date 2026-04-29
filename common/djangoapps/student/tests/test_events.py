@@ -187,7 +187,7 @@ class TestUserEvents(UserSettingsEventTestMixin, TestCase):
         """
         Test that when a user's email changes, the user is enrolled in pending courses.
         """
-        pending_enrollment = CourseEnrollmentAllowedFactory(auto_enroll=True)  # lint-amnesty, pylint: disable=unused-variable
+        pending_enrollment = CourseEnrollmentAllowedFactory(auto_enroll=True)  # pylint: disable=unused-variable
 
         # Create a CourseOverview for the enrollment course
         course_overview = CourseOverviewFactory.create(id=pending_enrollment.course_id)

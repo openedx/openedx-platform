@@ -106,7 +106,7 @@ class Role(models.Model):
             self.add_permission(per)
 
     def add_permission(self, permission):
-        self.permissions.add(Permission.objects.get_or_create(name=permission)[0])  # lint-amnesty, pylint: disable=no-member
+        self.permissions.add(Permission.objects.get_or_create(name=permission)[0])  # pylint: disable=no-member
 
     def has_permission(self, permission):
         """
@@ -272,7 +272,7 @@ class CourseDiscussionSettings(models.Model):  # noqa: DJ008
     )
     always_divide_inline_discussions = models.BooleanField(default=False)
     reported_content_email_notifications = models.BooleanField(default=False)
-    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001  # pylint: disable=line-too-long
+    _divided_discussions = models.TextField(db_column='divided_discussions', null=True, blank=True)  # JSON list  # noqa: DJ001, E501
 
     COHORT = 'cohort'
     ENROLLMENT_TRACK = 'enrollment_track'

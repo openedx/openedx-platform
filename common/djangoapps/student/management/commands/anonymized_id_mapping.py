@@ -58,4 +58,4 @@ class Command(BaseCommand):
                         anonymous_id_for_user(student, course_key)
                     ))
         except OSError:
-            raise CommandError("Error writing to file: %s" % output_filename)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError("Error writing to file: %s" % output_filename)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031

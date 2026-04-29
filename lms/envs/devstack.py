@@ -1,4 +1,4 @@
-# ruff: noqa: I001 - settings file: star-import order is semantically significant
+
 """
 Specific overrides to the base prod settings to make development easier.
 """
@@ -238,7 +238,7 @@ ENABLE_ENROLLMENT_RESET = True
 if ENABLE_THIRD_PARTY_AUTH and (  # noqa: F405
         'common.djangoapps.third_party_auth.dummy.DummyBackend' not in AUTHENTICATION_BACKENDS  # noqa: F405
 ):
-    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)  # noqa: F405  # pylint: disable=line-too-long
+    AUTHENTICATION_BACKENDS = ['common.djangoapps.third_party_auth.dummy.DummyBackend'] + list(AUTHENTICATION_BACKENDS)  # noqa: F405
 
 ########################## Authn MFE Context API #######################
 ENABLE_DYNAMIC_REGISTRATION_FIELDS = True
@@ -290,9 +290,8 @@ ORA_MICROFRONTEND_URL = 'http://localhost:1992'
 LEARNER_HOME_MICROFRONTEND_URL = 'http://localhost:1996'
 
 ########################## LEARNING MFE ##############################
-# pylint: disable=line-too-long
 LEARNING_MICROFRONTEND_URL = os.environ.get("LEARNING_MICROFRONTEND_URL", "http://localhost:2000")  # noqa: F405
-LEARNING_MICROFRONTEND_NETLOC = os.environ.get("LEARNING_MICROFRONTEND_NETLOC", urlparse(LEARNING_MICROFRONTEND_URL).netloc)  # noqa: F405
+LEARNING_MICROFRONTEND_NETLOC = os.environ.get("LEARNING_MICROFRONTEND_NETLOC", urlparse(LEARNING_MICROFRONTEND_URL).netloc)  # noqa: E501, F405
 
 ###################### Cross-domain requests ######################
 ENABLE_CORS_HEADERS = True
@@ -350,7 +349,7 @@ JWT_AUTH.update({  # noqa: F405
             "dq": "m03j7GkGSWRxMGNCeEBtvvBR4vDS9Her7AtjbNSWnRxDMQrKSdRMaiu-m7tOT3n6D9cM7Cr7wZUtzBOENskprHBu47FgzfXakMWfYhv0TV0voxZERKAN_H7cWt4oLsprEzH9r6THsxFPdKxMYBGeoAOe2l9nlk26m6LaX7_rwqE",
             "qi": "jnJ0nfARyAcHsezENNrXKnDM-LrMJWMHPh_70ZM_pF5iRMOLojHkTVsUIzYi6Uj2ohX9Jz1zsV207kCuPqQXURbhlt1xEaktwCmySeWU4qkMTptWp4ya2jEwGn8EKJ1iEc0GhDkRyLrgm4ol-sq9DMaKEkhTGy4Y3-8mMCBVqeQ"
         }
-""",
+""",  # noqa: E501
     'JWT_PUBLIC_SIGNING_JWK_SET': (
         '{"keys": [{"kid": "devstack_key", "e": "AQAB", "kty": "RSA", "n": "smKFSYowG6nNUAdeqH1jQQnH1PmIHphzBmwJ5vRf1vu'
         '48BUI5VcVtUWIPqzRK_LDSlZYh9D0YFL0ZTxIrlb6Tn3Xz7pYvpIAeYuQv3_H5p8tbz7Fb8r63c1828wXPITVTv8f7oxx5W3lFFgpFAyYMmROC'

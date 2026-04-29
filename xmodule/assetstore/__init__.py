@@ -177,7 +177,7 @@ class AssetMetadata:
                     continue
                 elif tag == 'locked':
                     # Boolean.
-                    value = True if value == "true" else False  # lint-amnesty, pylint: disable=simplifiable-if-expression
+                    value = True if value == "true" else False  # pylint: disable=simplifiable-if-expression
                 elif value == 'None':
                     # None.
                     value = None

@@ -245,7 +245,7 @@ class TestJavaScriptLinter(TestLinter):
         },
         {'template': '  // var m = "<p>" + commentedOutMessage + "</p>"', 'rule': None},
         {'template': 'var m = " <p> " + message + " </p> "', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_concat_html},
-        {'template': 'var m = " <p> " + message + " broken string', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_concat_html},
+        {'template': 'var m = " <p> " + message + " broken string', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_concat_html},  # noqa: E501
     )
     def test_concat_with_html(self, data):
         """
@@ -273,8 +273,8 @@ class TestJavaScriptLinter(TestLinter):
         {'template': 'test.append($("<div/>"))', 'rule': None},
         {'template': 'test.append(HtmlUtils.ensureHtml(htmlSnippet).toString())', 'rule': None},
         {'template': 'HtmlUtils.append($el, someHtml)', 'rule': None},
-        {'template': 'test.append("fail on concat" + test.render().el)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_append},
-        {'template': 'test.append("fail on concat" + testEl)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_append},
+        {'template': 'test.append("fail on concat" + test.render().el)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_append},  # noqa: E501
+        {'template': 'test.append("fail on concat" + testEl)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_append},  # noqa: E501
         {'template': 'test.append(message)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_append},
     )
     def test_jquery_append(self, data):
@@ -301,8 +301,8 @@ class TestJavaScriptLinter(TestLinter):
         {'template': 'test.prepend(HtmlUtils.ensureHtml(htmlSnippet).toString())', 'rule': None},
         {'template': 'HtmlUtils.prepend($el, someHtml)', 'rule': None},
         {'template': 'test.prepend("broken string)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},
-        {'template': 'test.prepend("fail on concat" + test.render().el)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},
-        {'template': 'test.prepend("fail on concat" + testEl)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},
+        {'template': 'test.prepend("fail on concat" + test.render().el)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},  # noqa: E501
+        {'template': 'test.prepend("fail on concat" + testEl)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},  # noqa: E501
         {'template': 'test.prepend(message)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_prepend},
     )
     def test_jquery_prepend(self, data):
@@ -360,11 +360,11 @@ class TestJavaScriptLinter(TestLinter):
         {'template': 'testEl.prependTo(target);', 'rule': None},
         {'template': 'testEl.insertAfter(target);', 'rule': None},
         {'template': 'testEl.insertBefore(target);', 'rule': None},
-        {'template': 'anycall().appendTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},
-        {'template': 'anything.appendTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},
-        {'template': 'anything.prependTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},
-        {'template': 'anything.insertAfter(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},
-        {'template': 'anything.insertBefore(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},
+        {'template': 'anycall().appendTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},  # noqa: E501
+        {'template': 'anything.appendTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},  # noqa: E501
+        {'template': 'anything.prependTo(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},  # noqa: E501
+        {'template': 'anything.insertAfter(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},  # noqa: E501
+        {'template': 'anything.insertBefore(target)', 'rule': JAVASCRIPT_LINTER_RULESET.javascript_jquery_insert_into_target},  # noqa: E501
     )
     def test_jquery_insert_to_target(self, data):
         """
@@ -436,8 +436,8 @@ class TestPythonLinter(TestLinter):
         {'template': 'm = "Plain text " + message + "plain text"', 'rule': None},
         {'template': 'm = "檌檒濦 " + message + "plain text"', 'rule': None},
         {'template': '  # m = "<p>" + commentedOutMessage + "</p>"', 'rule': None},
-        {'template': 'm = "<p>" + message + "</p>"', 'rule': [PYTHON_LINTER_RULESET.python_concat_html, PYTHON_LINTER_RULESET.python_concat_html]},
-        {'template': 'm = " <p> " + message + " </p> "', 'rule': [PYTHON_LINTER_RULESET.python_concat_html, PYTHON_LINTER_RULESET.python_concat_html]},
+        {'template': 'm = "<p>" + message + "</p>"', 'rule': [PYTHON_LINTER_RULESET.python_concat_html, PYTHON_LINTER_RULESET.python_concat_html]},  # noqa: E501
+        {'template': 'm = " <p> " + message + " </p> "', 'rule': [PYTHON_LINTER_RULESET.python_concat_html, PYTHON_LINTER_RULESET.python_concat_html]},  # noqa: E501
         {'template': 'm = " <p> " + message + " broken string', 'rule': PYTHON_LINTER_RULESET.python_parse_error},
     )
     def test_concat_with_html(self, data):
@@ -526,7 +526,7 @@ class TestPythonLinter(TestLinter):
                         link_end=HTML("</a>"),
                     ))
                 """),
-            'rule': [PYTHON_LINTER_RULESET.python_close_before_format, PYTHON_LINTER_RULESET.python_requires_html_or_text]
+            'rule': [PYTHON_LINTER_RULESET.python_close_before_format, PYTHON_LINTER_RULESET.python_requires_html_or_text]  # noqa: E501
         },
         {
             'python':
@@ -879,7 +879,7 @@ class TestMakoTemplateLinter(TestLinter):
                         text = _("Introductions, prerequisites, FAQs that are used on %s (formatted in HTML)") % a_link
                     %>
                 """),
-            'rule': [MAKO_LINTER_RULESET.python_wrap_html, MAKO_LINTER_RULESET.python_concat_html, MAKO_LINTER_RULESET.python_wrap_html]
+            'rule': [MAKO_LINTER_RULESET.python_wrap_html, MAKO_LINTER_RULESET.python_concat_html, MAKO_LINTER_RULESET.python_wrap_html]  # noqa: E501
         },
         {
             'expression':
@@ -1475,7 +1475,7 @@ class TestDjangoTemplateLinter(TestLinter):
         {'expression': """
             {% trans "{span_start} whatever {span_end}" as tmsg %}
             {% interpolate_html %}
-            """, 'rule': [DJANGO_LINTER_RULESET.django_html_interpolation_missing, DJANGO_LINTER_RULESET.django_html_interpolation_invalid_tag]},
+            """, 'rule': [DJANGO_LINTER_RULESET.django_html_interpolation_missing, DJANGO_LINTER_RULESET.django_html_interpolation_invalid_tag]},  # noqa: E501
 
         {'expression': """
             {% trans "{span_start} whatever {span_end}" as tmsg %}

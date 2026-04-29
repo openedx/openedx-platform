@@ -14,7 +14,7 @@ from django.urls import reverse
 from opaque_keys.edx.keys import CourseKey
 from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
 
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.models import (
     ENROLLED_TO_UNENROLLED,
     UNENROLLED_TO_ENROLLED,
     CourseEnrollment,

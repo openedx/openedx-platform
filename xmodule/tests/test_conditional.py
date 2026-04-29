@@ -93,7 +93,7 @@ class ConditionalFactory:
         # construct other blocks:
         child_block = Mock(name='child_block')
         child_block.visible_to_staff_only = False
-        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # lint-amnesty, pylint: disable=protected-access
+        child_block._xmodule.student_view.return_value = Fragment(content='<p>This is a secret</p>')  # pylint: disable=protected-access
         child_block.student_view = child_block._xmodule.student_view  # lint-amnesty, pylint: disable=protected-access
         child_block.runtime = system
         child_block.render = lambda view, context=None: system.render(child_block, view, context)
@@ -158,7 +158,7 @@ class ConditionalBlockBasicTest(unittest.TestCase):
         for attempted in ["false", "true"]:
             for icon_class in ['other', 'problem', 'video']:
                 blocks['source_block'].is_attempted = attempted
-                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop  # noqa: B023
+                blocks['child_block'].get_icon_class = lambda: icon_class  # lint-amnesty, pylint: disable=cell-var-from-loop  # noqa: B023, E501
                 assert blocks['cond_block'].get_icon_class() == icon_class
 
     def test_get_html(self):
@@ -304,7 +304,7 @@ class ConditionalBlockXmlTest(unittest.TestCase):
         dummy_scope_ids = ScopeIds(None, None, dummy_location, dummy_location)
         dummy_field_data = DictFieldData({
             'data': '<conditional/>',
-            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},  # lint-amnesty, pylint: disable=line-too-long
+            'xml_attributes': {'sources': 'i4x://HarvardX/ER22x/poll_question/T15_poll;i4x://HarvardX/ER22x/poll_question/T16_poll'},
             'children': None,
         })
         conditional = ConditionalBlock(

@@ -50,7 +50,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         self._add_boolean_flag(parser, 'grants', True)
         self._add_boolean_flag(parser, 'revoked-tokens', True)
 
-    def clear_table_data(self, query_set, batch_size, model, sleep_time):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def clear_table_data(self, query_set, batch_size, model, sleep_time):  # pylint: disable=missing-function-docstring
         total_deletions = 0
         deletion_count = 1  # we expect to delete at least one row to start out with
         while deletion_count:

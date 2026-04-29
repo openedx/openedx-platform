@@ -41,7 +41,7 @@ class TestLongUsernameEmail(TestCase):  # lint-amnesty, pylint: disable=missing-
         """
         Test name cannot contain html.
         """
-        self.url_params['name'] = '<p style="font-size:300px; color:green;"></br>Name<input type="text"></br>Content spoof'  # lint-amnesty, pylint: disable=line-too-long
+        self.url_params['name'] = '<p style="font-size:300px; color:green;"></br>Name<input type="text"></br>Content spoof'  # noqa: E501
         response = self.client.post(self.url, self.url_params)
         assert response.status_code == 400
 

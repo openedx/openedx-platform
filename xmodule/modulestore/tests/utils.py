@@ -376,7 +376,7 @@ class MixedModulestoreBuilder(StoreBuilderBase):
         names, generators = list(zip(*self.store_builders))  # noqa: B905
 
         with ExitStack() as stack:
-            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # lint-amnesty, pylint: disable=line-too-long
+            modulestores = [stack.enter_context(gen.build_with_contentstore(contentstore, **kwargs)) for gen in generators]  # noqa: E501
             # Make the modulestore creation function just return the already-created modulestores
             store_iterator = iter(modulestores)
             next_modulestore = lambda *args, **kwargs: next(store_iterator)

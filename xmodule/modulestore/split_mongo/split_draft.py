@@ -21,7 +21,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
     A subclass of Split that supports a dual-branch fall-back versioning framework
         with a Draft branch that falls back to a Published branch.
     """
-    def create_course(self, org, course, run, user_id, skip_auto_publish=False, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_course(self, org, course, run, user_id, skip_auto_publish=False, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and returns the course.
 
@@ -68,7 +68,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
         library_id = self._map_revision_to_branch(library_id)
         return super().get_library(library_id, depth=depth, **kwargs)
 
-    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, revision=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, revision=None, **kwargs):  # pylint: disable=arguments-differ
         """
         See :py:meth: xmodule.modulestore.split_mongo.split.SplitMongoModuleStore.clone_course
         """
@@ -116,7 +116,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
             # version_agnostic b/c of above assumption in docstring
             self.publish(location.version_agnostic(), user_id, blacklist=EXCLUDE_ALL, **kwargs)
 
-    def copy_from_template(self, source_keys, dest_key, user_id, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def copy_from_template(self, source_keys, dest_key, user_id, **kwargs):  # pylint: disable=arguments-differ
         """
         See :py:meth `SplitMongoModuleStore.copy_from_template`
         """
@@ -140,7 +140,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
                         keys_to_check.extend(children)
         return new_keys
 
-    def update_item(self, block, user_id, allow_not_found=False, force=False, asides=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def update_item(self, block, user_id, allow_not_found=False, force=False, asides=None, **kwargs):  # pylint: disable=arguments-differ
         old_block_locn = block.location
         block.location = self._map_revision_to_branch(old_block_locn)
         emit_signals = block.location.branch == ModuleStoreEnum.BranchName.published \
@@ -192,7 +192,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
             self._auto_publish_no_children(parent_usage_key, item.location.block_type, user_id, **kwargs)
             return item
 
-    def delete_item(self, location, user_id, revision=None, skip_auto_publish=False, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def delete_item(self, location, user_id, revision=None, skip_auto_publish=False, **kwargs):  # pylint: disable=arguments-differ
         """
         Delete the given item from persistence. kwargs allow modulestore specific parameters.
 
@@ -217,7 +217,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
         autopublish_parent = False
         with self.bulk_operations(location.course_key):
             if isinstance(location, LibraryUsageLocator):
-                branches_to_delete = [ModuleStoreEnum.BranchName.library]  # Libraries don't yet have draft/publish support  # lint-amnesty, pylint: disable=line-too-long
+                branches_to_delete = [ModuleStoreEnum.BranchName.library]  # Libraries don't yet have draft/publish support  # noqa: E501
             elif location.block_type in DIRECT_ONLY_CATEGORIES:
                 branches_to_delete = [ModuleStoreEnum.BranchName.published, ModuleStoreEnum.BranchName.draft]
             elif revision == ModuleStoreEnum.RevisionOption.all:
@@ -491,7 +491,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
                 old_parent_location = original_parent_location.course_key.make_usage_key(block_key.type, block_key.id)
                 self.update_item_parent(item_location, original_parent_location, old_parent_location, user_id)
 
-    def force_publish_course(self, course_locator, user_id, commit=False):  # lint-amnesty, pylint: disable=unused-argument
+    def force_publish_course(self, course_locator, user_id, commit=False):  # pylint: disable=unused-argument
         """
         Helper method to forcefully publish a course,
         making the published branch point to the same structure as the draft branch.
@@ -575,7 +575,7 @@ class DraftVersioningModuleStore(SplitMongoModuleStore, ModuleStoreDraftAndPubli
                     # Importing the block and publishing the block links the draft & published blocks' version history.
                     draft_block = self.import_xblock(user_id, draft_course, block_type, block_id, fields,
                                                      runtime, **kwargs)
-                    return self.publish(draft_block.location.version_agnostic(), user_id, blacklist=EXCLUDE_ALL, **kwargs)  # lint-amnesty, pylint: disable=line-too-long
+                    return self.publish(draft_block.location.version_agnostic(), user_id, blacklist=EXCLUDE_ALL, **kwargs)  # noqa: E501
 
             # do the import
             partitioned_fields = self.partition_fields_by_scope(block_type, fields)

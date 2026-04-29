@@ -56,7 +56,7 @@ class CourseAuthorizationFormTest(ModuleStoreTestCase):
         form = CourseAuthorizationAdminForm(data=form_data)
         # Validation should not work because course_id field is unique
         assert not form.is_valid()
-        assert 'Course authorization with this Course id already exists.' == form._errors['course_id'][0]  # pylint: disable=protected-access, line-too-long
+        assert 'Course authorization with this Course id already exists.' == form._errors['course_id'][0]  # pylint: disable=protected-access
 
         with self.assertRaisesRegex(  # noqa: PT027
             ValueError,

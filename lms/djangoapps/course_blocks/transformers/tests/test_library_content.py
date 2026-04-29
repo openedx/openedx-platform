@@ -175,7 +175,7 @@ class ContentLibraryTransformerTestCase(CourseStructureTestCase):
                                                                                          'vertical1',
                                                                                          f'{block_type}1',
                                                                                          selected_vertical,
-                                                                                         selected_child), f"Expected 'selected' equality failed in iteration {i}."  # pylint: disable=line-too-long
+                                                                                         selected_child), f"Expected 'selected' equality failed in iteration {i}."  # noqa: E501
 
 
 @ddt

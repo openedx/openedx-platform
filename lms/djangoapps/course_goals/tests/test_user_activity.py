@@ -177,7 +177,7 @@ class UserActivityTests(UrlResetMixin, ModuleStoreTestCase):
         with patch.object(UserActivity, 'record_user_activity') as record_user_activity_mock:
             try:
                 self.client.get(reverse("thread-list"), {'course_id': str(self.course.id)})
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 pass
             record_user_activity_mock.assert_called_once()
 
@@ -192,6 +192,6 @@ class UserActivityTests(UrlResetMixin, ModuleStoreTestCase):
             url = '/xblock/' + str(self.course.scope_ids.usage_id)
             try:
                 self.client.get(url)
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 pass
             record_user_activity_mock.assert_called_once()

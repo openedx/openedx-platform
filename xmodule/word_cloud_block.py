@@ -66,7 +66,7 @@ class _BuiltInWordCloudBlock(  # pylint: disable=abstract-method
     )
     instructions = String(
         display_name=_("Instructions"),
-        help=_("Add instructions to help learners understand how to use the word cloud. Clear instructions are important, especially for learners who have accessibility requirements."),  # nopep8 pylint: disable=C0301
+        help=_("Add instructions to help learners understand how to use the word cloud. Clear instructions are important, especially for learners who have accessibility requirements."),  # nopep8 pylint: disable=C0301  # noqa: E501
         scope=Scope.settings,
     )
     num_inputs = Integer(

@@ -29,7 +29,7 @@ class CourseUpdatesView(CourseTabView):
         """
         return super().get(request, course_id, 'courseware', **kwargs)
 
-    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         course_id = str(course.id)
         updates_fragment_view = CourseUpdatesFragmentView()
         return updates_fragment_view.render_to_fragment(request, course_id=course_id, **kwargs)

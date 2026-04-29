@@ -54,7 +54,7 @@ class CourseDataTest(ModuleStoreTestCase):
             course_data = CourseData(self.user, **kwargs)
             for arg in self.expected_results:
                 # No point validating the data we used as input, and c_b_s is input-only
-                if arg != kwarg and arg != "collected_block_structure":  # lint-amnesty, pylint: disable=consider-using-in
+                if arg != kwarg and arg != "collected_block_structure":  # pylint: disable=consider-using-in
                     expected = self.expected_results[arg]
                     actual = getattr(course_data, arg)
                     if arg == 'course':

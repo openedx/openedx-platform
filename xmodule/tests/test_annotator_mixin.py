@@ -22,10 +22,8 @@ class HelperFunctionTest(unittest.TestCase):
     sample_sourceurl = "http://video-js.zencoder.com/oceans-clip.mp4"
     sample_youtubeurl = "http://www.youtube.com/watch?v=yxLIu-scR9Y"
     sample_html = '<p><b>Testing here</b> and not bolded here</p>'
-    # pylint: disable=line-too-long
-    sample_html_with_image_alt = '''<p>Testing here with image: </p><p><img src="/static/image.jpg" alt="the alt text" width="560" height="315" /></p>'''
-    # pylint: disable=line-too-long
-    sample_html_with_no_image_alt = '''<p>Testing here with image: </p><p><img src="/static/image.jpg" width="560" height="315" /></p>'''
+    sample_html_with_image_alt = '''<p>Testing here with image: </p><p><img src="/static/image.jpg" alt="the alt text" width="560" height="315" /></p>'''  # noqa: E501
+    sample_html_with_no_image_alt = '''<p>Testing here with image: </p><p><img src="/static/image.jpg" width="560" height="315" /></p>'''  # noqa: E501
 
     def test_get_instructions(self):
         """

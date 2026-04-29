@@ -217,7 +217,7 @@ class AboutTestCase(LoginEnrollmentTestCase, SharedModuleStoreTestCase, EventTra
             with override_waffle_flag(COURSE_ENABLE_UNENROLLED_ACCESS_FLAG, active=True):
                 url = reverse('about_course', args=[str(self.course.id)])
                 resp = self.client.get(url)
-        if course_visibility == COURSE_VISIBILITY_PUBLIC or course_visibility == COURSE_VISIBILITY_PUBLIC_OUTLINE:  # lint-amnesty, pylint: disable=consider-using-in
+        if course_visibility == COURSE_VISIBILITY_PUBLIC or course_visibility == COURSE_VISIBILITY_PUBLIC_OUTLINE:  # pylint: disable=consider-using-in
             self.assertContains(resp, "View Course")
         else:
             self.assertContains(resp, "Enroll Now")

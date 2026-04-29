@@ -90,7 +90,7 @@ def parse_datetime(datestr):
     try:
         return dateutil.parser.parse(datestr).replace(tzinfo=UTC)
     except ValueError:
-        raise DashboardError(_("Unable to parse date: ") + datestr)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise DashboardError(_("Unable to parse date: ") + datestr)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def find_unit(course, url):

@@ -37,8 +37,8 @@ class SandboxingTest(TestCase):
 
     def test_courselikes_with_unsafe_code_default(self):
         """
-        Test that the default setting for COURSES_WITH_UNSAFE_CODE is an empty setting, e.g. we don't use @override_settings in these tests  # lint-amnesty, pylint: disable=line-too-long
-        """
+        Test that the default setting for COURSES_WITH_UNSAFE_CODE is an empty setting, e.g. we don't use @override_settings in these tests
+        """  # noqa: E501
         assert not can_execute_unsafe_code(CourseLocator('edX', 'full', '2012_Fall'))
         assert not can_execute_unsafe_code(CourseLocator('edX', 'full', '2013_Spring'))
         assert not can_execute_unsafe_code(LibraryLocator('edX', 'test_bank'))

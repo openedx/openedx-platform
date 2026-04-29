@@ -65,7 +65,7 @@ def expire_old_entitlements(self, start, end, logid='...'):
         # The call above is idempotent, so retry at will
         raise self.retry(exc=exc, countdown=countdown, max_retries=MAX_RETRIES)  # noqa: B904
 
-    LOGGER.info('Successfully completed the task expire_old_entitlements after examining %d entries [%s]', entitlements.count(), logid)  # lint-amnesty, pylint: disable=line-too-long
+    LOGGER.info('Successfully completed the task expire_old_entitlements after examining %d entries [%s]', entitlements.count(), logid)  # noqa: E501
 
 
 @shared_task(bind=True)

@@ -53,9 +53,9 @@ class SegmentTrackTestCase(TestCase):
         ({'ip': sentinel.ip}, {'ip': sentinel.provided_ip}, {'ip': sentinel.ip}),
         ({'agent': sentinel.agent}, {'userAgent': sentinel.provided_agent}, {'userAgent': sentinel.agent}),
         ({'path': sentinel.path}, {'page': {'path': sentinel.provided_path}}, {'page': {'path': sentinel.path}}),
-        ({'referer': sentinel.referer}, {'page': {'referrer': sentinel.provided_referer}}, {'page': {'referrer': sentinel.referer}}),  # lint-amnesty, pylint: disable=line-too-long
+        ({'referer': sentinel.referer}, {'page': {'referrer': sentinel.provided_referer}}, {'page': {'referrer': sentinel.referer}}),  # noqa: E501
         ({'page': sentinel.page}, {'page': {'url': sentinel.provided_page}}, {'page': {'url': sentinel.page}}),
-        ({'client_id': sentinel.client_id}, {'Google Analytics': {'clientId': sentinel.provided_client_id}}, {'Google Analytics': {'clientId': sentinel.client_id}}),  # lint-amnesty, pylint: disable=line-too-long
+        ({'client_id': sentinel.client_id}, {'Google Analytics': {'clientId': sentinel.provided_client_id}}, {'Google Analytics': {'clientId': sentinel.client_id}}),  # noqa: E501
     )
     @override_settings(LMS_SEGMENT_KEY="testkey")
     def test_track_context_with_stuff(self, tracking_context, provided_context, expected_segment_context):

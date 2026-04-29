@@ -67,7 +67,7 @@ class GroupConfiguration:
         try:
             configuration = json.loads(json_string.decode("utf-8"))
         except ValueError:
-            raise GroupConfigurationsValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise GroupConfigurationsValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         configuration["version"] = UserPartition.VERSION
         return configuration
 
@@ -116,7 +116,7 @@ class GroupConfiguration:
         try:
             return UserPartition.from_json(self.configuration)
         except ReadOnlyUserPartitionError:
-            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     @staticmethod
     def _get_usage_dict(course, unit, block, scheme_name=None):

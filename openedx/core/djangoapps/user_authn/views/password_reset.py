@@ -238,7 +238,7 @@ class PasswordResetView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
-        return HttpResponse(get_password_reset_form().to_json(), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(get_password_reset_form().to_json(), content_type="application/json")  # pylint: disable=http-response-with-content-type-json
 
 
 @helpers.intercept_errors(errors.UserAPIInternalError, ignore_errors=[errors.UserAPIRequestError])
@@ -369,7 +369,7 @@ class PasswordResetConfirmWrapper(PasswordResetConfirmView):
         self.uidb64 = ''
         self.uid_int = -1
 
-    def _process_password_reset_success(self, request, token, uidb64, extra_context):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _process_password_reset_success(self, request, token, uidb64, extra_context):  # pylint: disable=missing-function-docstring
         self.user = self.get_user(uidb64)
         form = SetPasswordForm(self.user, request.POST)
         if self.token_generator.check_token(self.user, token) and form.is_valid():
@@ -460,7 +460,7 @@ class PasswordResetConfirmWrapper(PasswordResetConfirmView):
                 }
             )
         except ObjectDoesNotExist:
-            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'  # noqa: UP032  # pylint: disable=line-too-long
+            log.error('Account recovery process initiated without AccountRecovery instance for user {username}'  # noqa: UP032
                       .format(username=updated_user.username))
 
     def _handle_password_creation(self, request, updated_user):

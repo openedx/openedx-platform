@@ -44,7 +44,7 @@ def export(course, export_dir):
             root.write(f)
 
         return True
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # noqa: E722
         print('Export failed!')
         traceback.print_exc()
 

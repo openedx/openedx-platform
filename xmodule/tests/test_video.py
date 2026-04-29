@@ -854,7 +854,7 @@ class VideoExportTestCase(VideoBlockTestBase):
            <source src="http://www.example.com/source.ogg"/>
            <track src="http://www.example.com/track"/>
          </video>
-        '''
+        '''  # noqa: E501
         expected = etree.XML(xml_string, parser=parser)
         self.assertXmlEqual(expected, xml)
 

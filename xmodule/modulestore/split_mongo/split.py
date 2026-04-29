@@ -232,7 +232,7 @@ class SplitBulkWriteMixin(BulkOperationsMixin):
                 course_key.replace(org=None, course=None, run=None, branch=None)
             ]
 
-    def _start_outermost_bulk_operation(self, bulk_write_record, course_key, ignore_case=False):  # lint-amnesty, pylint: disable=arguments-differ
+    def _start_outermost_bulk_operation(self, bulk_write_record, course_key, ignore_case=False):  # pylint: disable=arguments-differ
         """
         Begin a bulk write operation on course_key.
         """
@@ -241,7 +241,7 @@ class SplitBulkWriteMixin(BulkOperationsMixin):
         bulk_write_record.index = copy.deepcopy(bulk_write_record.initial_index)
         bulk_write_record.course_key = course_key
 
-    def _end_outermost_bulk_operation(self, bulk_write_record, structure_key):  # lint-amnesty, pylint: disable=arguments-differ
+    def _end_outermost_bulk_operation(self, bulk_write_record, structure_key):  # pylint: disable=arguments-differ
         """
         End the active bulk write operation on structure_key (course or library key).
         """
@@ -996,7 +996,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             if len(course_block) > 1:
                 raise MultipleCourseBlocksFound(
-                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))  # noqa: UP032  # pylint: disable=line-too-long
+                    "Expected 1 course block to be found in the course, but found {}".format(len(course_block))  # noqa: UP032
                 )
             course_summary = extract_course_summary(course_block[0])
             courses_summaries.append(
@@ -1118,7 +1118,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             return False
 
         course_index = self.get_course_index(course_id, ignore_case)
-        return CourseLocator(course_index['org'], course_index['course'], course_index['run'], course_id.branch) if course_index else None  # lint-amnesty, pylint: disable=line-too-long
+        return CourseLocator(course_index['org'], course_index['course'], course_index['run'], course_id.branch) if course_index else None  # noqa: E501
 
     def has_library(self, library_id, ignore_case=False, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
         """
@@ -1177,7 +1177,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                 log.debug(f"Found more than one item for '{usage_key}'")
             return items[0]
 
-    def get_items(self, course_locator, settings=None, content=None, qualifiers=None, include_orphans=True, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_items(self, course_locator, settings=None, content=None, qualifiers=None, include_orphans=True, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns:
             list of XModuleDescriptor instances for the matching items within the course with
@@ -1566,7 +1566,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                 return potential_key
             serial += 1
 
-    def create_item(self, user_id, course_key, block_type, block_id=None, definition_locator=None, fields=None,  # lint-amnesty, pylint: disable=arguments-differ
+    def create_item(self, user_id, course_key, block_type, block_id=None, definition_locator=None, fields=None,  # pylint: disable=arguments-differ
                     asides=None, force=False, **kwargs):
         """
         Add a block to persistence as an element
@@ -1604,12 +1604,12 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
           specify version_guid or the one it specifies == the current head of the branch,
           it progresses the course to point
           to the new head and sets the active version to point to the new head
-        * If the locator has a org and course and run but its version_guid != current head, it raises VersionConflictError.  # lint-amnesty, pylint: disable=line-too-long
+        * If the locator has a org and course and run but its version_guid != current head, it raises VersionConflictError.
 
         NOTE: using a version_guid will end up creating a new version of the course. Your new item won't be in
         the course id'd by version_guid but instead in one w/ a new version_guid. Ensure in this case that you get
         the new version_guid from the locator in the returned object!
-        """
+        """  # noqa: E501
         with self.bulk_operations(course_key):
             # split handles all the fields in one dict not separated by scope
             fields = fields or {}
@@ -1630,7 +1630,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             if definition_locator is None or isinstance(definition_locator.definition_id, LocalId):
                 definition_locator = self.create_definition_from_data(course_key, new_def_data, block_type, user_id)
             elif new_def_data:
-                definition_locator, _ = self.update_definition_from_data(course_key, definition_locator, new_def_data, user_id)  # lint-amnesty, pylint: disable=line-too-long
+                definition_locator, _ = self.update_definition_from_data(course_key, definition_locator, new_def_data, user_id)  # noqa: E501
 
             # copy the structure and modify the new one
             new_structure = self.version_structure(course_key, structure, user_id)
@@ -1683,7 +1683,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             # reconstruct the new_item from the cache
             return self.get_item(item_loc)
 
-    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, fields=None, asides=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, fields=None, asides=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and saves a new xblock that as a child of the specified block
 
@@ -1847,7 +1847,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         # if building a wholly new structure
         if versions_dict is None or master_branch not in versions_dict:
             # create new definition and structure
-            definition_id = self.create_definition_from_data(locator, definition_fields, root_category, user_id).definition_id  # lint-amnesty, pylint: disable=line-too-long
+            definition_id = self.create_definition_from_data(locator, definition_fields, root_category, user_id).definition_id  # noqa: E501
 
             draft_structure = self._new_structure(
                 user_id,
@@ -1927,14 +1927,14 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         locator = LibraryLocator(org=org, library=library, branch=kwargs["master_branch"])
         return self._create_courselike(locator, user_id, **kwargs)
 
-    def update_item(self, block, user_id, allow_not_found=False, force=False, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def update_item(self, block, user_id, allow_not_found=False, force=False, **kwargs):  # pylint: disable=arguments-differ
         """
         Save the block's fields. it doesn't descend the course dag to save the children.
         Return the new block (updated location).
 
         raises ItemNotFoundError if the location does not exist.
 
-        Creates a new course version. If the block's location has a org and course and run, it moves the course head  # lint-amnesty, pylint: disable=line-too-long
+        Creates a new course version. If the block's location has a org and course and run, it moves the course head
         pointer. If the version_guid of the block points to a non-head version and there's been an intervening
         change to this item, it raises a VersionConflictError unless force is True. In the force case, it forks
         the course but leaves the head pointer where it is (this change will not be in the course head).
@@ -1997,7 +1997,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
 
             # check children
             if partitioned_fields.get(Scope.children, {}):  # purposely not 'is not None'
-                serialized_children = [BlockKey.from_usage_key(child) for child in partitioned_fields[Scope.children]['children']]  # lint-amnesty, pylint: disable=line-too-long
+                serialized_children = [BlockKey.from_usage_key(child) for child in partitioned_fields[Scope.children]['children']]  # noqa: E501
                 is_updated = is_updated or original_entry.fields.get('children', []) != serialized_children
                 if is_updated:
                     settings['children'] = serialized_children
@@ -2151,7 +2151,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             else:
                 return xblock
 
-    def _persist_subdag(self, course_key, xblock, user_id, structure_blocks, new_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _persist_subdag(self, course_key, xblock, user_id, structure_blocks, new_id):  # pylint: disable=missing-function-docstring
         # persist the definition if persisted != passed
         partitioned_fields = self.partition_xblock_fields_by_scope(xblock)
         new_def_data = self._serialize_fields(xblock.category, partitioned_fields[Scope.content])
@@ -2187,7 +2187,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             for child in xblock.children:
                 if isinstance(child.block_id, LocalId):
                     child_block = xblock.runtime.get_block(child)
-                    is_updated = self._persist_subdag(course_key, child_block, user_id, structure_blocks, new_id) or is_updated  # lint-amnesty, pylint: disable=line-too-long
+                    is_updated = self._persist_subdag(course_key, child_block, user_id, structure_blocks, new_id) or is_updated  # noqa: E501
                     children.append(BlockKey.from_usage_key(child_block.location))
                 else:
                     children.append(BlockKey.from_usage_key(child))
@@ -2508,7 +2508,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         raises ItemNotFoundError if the location does not exist.
         raises ValueError if usage_locator points to the structure root
 
-        Creates a new course version. If the block's location has a org, a course, and a run, it moves the course head  # lint-amnesty, pylint: disable=line-too-long
+        Creates a new course version. If the block's location has a org, a course, and a run, it moves the course head
         pointer. If the version_guid of the block points to a non-head version and there's been an intervening
         change to this item, it raises a VersionConflictError unless force is True. In the force case, it forks
         the course but leaves the head pointer where it is (this change will not be in the course head).
@@ -2670,7 +2670,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         for child in block_fields.get('children', []):
             try:
                 if child in inherited_from:
-                    raise Exception(f'Infinite loop detected when inheriting to {child}, having already inherited from {inherited_from}')  # lint-amnesty, pylint: disable=line-too-long
+                    raise Exception(f'Infinite loop detected when inheriting to {child}, having already inherited from {inherited_from}')  # noqa: E501
                 self.inherit_settings(
                     block_map,
                     BlockKey(*child),
@@ -2719,7 +2719,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         """
         try:
             course_assets = self._lookup_course(course_key).structure.get('assets', {})
-        except (InsufficientSpecificationError, VersionConflictError) as err:  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        except (InsufficientSpecificationError, VersionConflictError) as err:  # pylint: disable=unused-variable  # noqa: F841
             log.warning('Error finding assets for org "%s" course "%s" on asset '
                         'request. Either version of course_key is None or invalid.',
                         course_key.org, course_key.course)
@@ -2894,7 +2894,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
             # update the index entry if appropriate
             self._update_head(course_locator, index_entry, course_locator.branch, new_structure['_id'])
 
-    def convert_references_to_keys(self, course_key, xblock_class, jsonfields, blocks):  # lint-amnesty, pylint: disable=unused-argument
+    def convert_references_to_keys(self, course_key, xblock_class, jsonfields, blocks):  # pylint: disable=unused-argument
         """
         Convert the given serialized fields to the deserialized values by finding all references
         and converting them.
@@ -2969,7 +2969,7 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
                     index_entry['versions'][course_key.branch]
                 )
 
-    def _find_local_root(self, element_to_find, possibility, tree):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _find_local_root(self, element_to_find, possibility, tree):  # pylint: disable=missing-function-docstring
         if possibility not in tree:
             return False
         if element_to_find in tree[possibility]:

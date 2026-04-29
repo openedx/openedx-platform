@@ -1224,9 +1224,7 @@ INACTIVE_USER_URL = f'http://{CMS_BASE}'
 DISCUSSIONS_INCONTEXT_FEEDBACK_URL = ''
 
 # Learn More link in upgraded discussion notification alert
-# pylint: disable=line-too-long
 DISCUSSIONS_INCONTEXT_LEARNMORE_URL = "https://docs.openedx.org/en/latest/educators/concepts/communication/about_course_discussions.html"
-# pylint: enable=line-too-long
 
 #### Event bus producing ####
 

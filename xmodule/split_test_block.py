@@ -88,7 +88,7 @@ class SplitTestFields:
     )
 
     user_partition_id = Integer(
-        help=_("The configuration defines how users are grouped for this content experiment. Caution: Changing the group configuration of a student-visible experiment will impact the experiment data."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("The configuration defines how users are grouped for this content experiment. Caution: Changing the group configuration of a student-visible experiment will impact the experiment data."),  # noqa: E501
         scope=Scope.content,
         display_name=_("Group Configuration"),
         default=no_partition_selected["value"],
@@ -248,7 +248,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
             child_block = self.get_child_block_by_location(child_location)
         else:
             # Oops.  Config error.
-            log.debug("configuration error in split test block: invalid group_id %r (not one of %r).  Showing error", str_group_id, list(self.group_id_to_child.keys()))  # lint-amnesty, pylint: disable=line-too-long
+            log.debug("configuration error in split test block: invalid group_id %r (not one of %r).  Showing error", str_group_id, list(self.group_id_to_child.keys()))  # noqa: E501
 
         if child_block is None:
             # Peak confusion is great.  Now that we set child_block,
@@ -638,7 +638,7 @@ class SplitTestBlock(  # lint-amnesty, pylint: disable=abstract-method
                 split_validation.add(
                     StudioValidationMessage(
                         StudioValidationMessage.ERROR,
-                        _("The experiment uses a deleted group configuration. Select a valid group configuration or delete this experiment.")  # lint-amnesty, pylint: disable=line-too-long
+                        _("The experiment uses a deleted group configuration. Select a valid group configuration or delete this experiment.")  # noqa: E501
                     )
                 )
             else:

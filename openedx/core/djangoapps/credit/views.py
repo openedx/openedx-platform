@@ -162,7 +162,7 @@ class CreditEligibilityView(generics.ListAPIView):
         try:
             course_key = CourseKey.from_string(course_key)
         except InvalidKeyError:
-            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError({'detail': f'[{course_key}] is not a valid course key.'})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         return queryset.filter(
             username=username,
             course__course_key=course_key,

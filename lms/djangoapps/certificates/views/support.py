@@ -210,7 +210,7 @@ def regenerate_certificate_for_user(request):
             course_key,
         )
         return HttpResponseBadRequest(str(e))
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         # We are pessimistic about the kinds of errors that might get thrown by the
         # certificates API.  This may be overkill, but we're logging everything so we can
         # track down unexpected errors.

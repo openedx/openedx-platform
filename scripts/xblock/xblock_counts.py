@@ -299,7 +299,7 @@ def write_course_block_detail_report(course_data):
             quotechar='"',
             quoting=csv.QUOTE_ALL
         )
-        detail_writer.writerow(['XBLOCK_TYPE_NAME', 'COURSE_NAME', 'COURSE_ID', 'COURSE_START', 'COURSE_END', 'NUM_XBLOCK_INSTANCES'])
+        detail_writer.writerow(['XBLOCK_TYPE_NAME', 'COURSE_NAME', 'COURSE_ID', 'COURSE_START', 'COURSE_END', 'NUM_XBLOCK_INSTANCES'])  # noqa: E501
         for course in course_data:
             for block_type, count in course.get(BLOCK_COUNTS_KEY, []).items():
                 if count > 0:

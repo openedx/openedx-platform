@@ -103,7 +103,7 @@ class InvalidBranchSetting(Exception):
     Raised when the process' branch setting did not match the required setting for the attempted operation on a store.
     """
     def __init__(self, expected_setting, actual_setting):
-        super().__init__(f"Invalid branch: expected {expected_setting} but got {actual_setting}")  # lint-amnesty, pylint: disable=line-too-long, super-with-arguments
+        super().__init__(f"Invalid branch: expected {expected_setting} but got {actual_setting}")  # pylint: disable=super-with-arguments
         self.expected_setting = expected_setting
         self.actual_setting = actual_setting
 

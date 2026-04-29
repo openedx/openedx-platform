@@ -2212,7 +2212,7 @@ class TestEditItem(TestEditItemSetup):
         published = modulestore().get_item(
             self.problem_usage_key,
             revision=ModuleStoreEnum.RevisionOption.published_only,
-        )  # lint-amnesty, pylint: disable=line-too-long
+        )
 
         # Update the draft version and check that published is different.
         self.client.ajax_post(
@@ -2940,7 +2940,7 @@ class TestComponentTemplates(CourseTestCase):
         # Now fully disable done through XBlockConfiguration
         XBlockConfiguration.objects.create(name="done", enabled=False)
         self.templates = get_component_templates(self.course)
-        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034  # pylint: disable=line-too-long
+        self.assertTrue((not any(item.get("category") == "done" for item in self.get_templates_of_type("advanced"))))  # noqa: PT009, UP034
 
     def test_deprecated_no_advance_component_button(self):
         """
@@ -4613,5 +4613,5 @@ class TestXblockEditView(CourseTestCase):
         resource_links = [link["href"] for link in soup.find_all("link", {"rel": "stylesheet"})]
         script_sources = [script["src"] for script in soup.find_all("script") if script.get("src")]
 
-        self.assertGreater(len(resource_links), 0, f"No CSS resources found in HTML. Found: {resource_links}")  # noqa: PT009  # pylint: disable=line-too-long
-        self.assertGreater(len(script_sources), 0, f"No JS resources found in HTML. Found: {script_sources}")  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertGreater(len(resource_links), 0, f"No CSS resources found in HTML. Found: {resource_links}")  # noqa: PT009
+        self.assertGreater(len(script_sources), 0, f"No JS resources found in HTML. Found: {script_sources}")  # noqa: PT009

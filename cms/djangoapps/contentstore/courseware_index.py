@@ -114,7 +114,7 @@ class SearchIndexerBase(metaclass=ABCMeta):
         searcher.remove(result_ids)
 
     @classmethod
-    def index(cls, modulestore, structure_key, triggered_at=None, reindex_age=REINDEX_AGE, timeout=INDEXING_REQUEST_TIMEOUT):  # lint-amnesty, pylint: disable=line-too-long, too-many-statements
+    def index(cls, modulestore, structure_key, triggered_at=None, reindex_age=REINDEX_AGE, timeout=INDEXING_REQUEST_TIMEOUT):  # pylint: disable=too-many-statements  # noqa: E501
         """
         Process course for indexing
 
@@ -630,7 +630,7 @@ class CourseAboutSearchIndexer(CoursewareSearchIndexer):
             # Broad exception handler so that a single bad property does not scupper the collection of others
             try:
                 section_content = about_information.get_value(**about_context)
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 section_content = None
                 log.warning(
                     "Course discovery could not collect property %s for course %s",

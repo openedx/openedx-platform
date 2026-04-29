@@ -8,7 +8,7 @@ def load_unit_test_shards(shard_name):
     with open(unit_tests_json) as file:
         unit_test_workflow_shards = json.load(file)
     if shard_name not in unit_test_workflow_shards:
-        sys.stdout.write("Error, invalid shard name provided. please provide a valid shard name as specified in unit-test-shards.json")
+        sys.stdout.write("Error, invalid shard name provided. please provide a valid shard name as specified in unit-test-shards.json")  # noqa: E501
     return unit_test_workflow_shards
 
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     argument = parser.parse_args()
 
     if not argument.shard_name:
-        sys.exit("Error, no shard name provided. please provide a valid shard name as specified in unit-test-shards.json")
+        sys.exit("Error, no shard name provided. please provide a valid shard name as specified in unit-test-shards.json")  # noqa: E501
 
     output = get_output(argument.shard_name, argument.output)
     print(output)

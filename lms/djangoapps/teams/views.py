@@ -1711,7 +1711,7 @@ class MembershipBulkManagementView(GenericAPIView):
         try:
             course_id = CourseKey.from_string(course_id_string)
         except InvalidKeyError:
-            raise Http404(f'Invalid course key: {course_id_string}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404(f'Invalid course key: {course_id_string}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         course_block = modulestore().get_course(course_id)
         if not course_block:
             raise Http404(f'Course not found: {course_id}')

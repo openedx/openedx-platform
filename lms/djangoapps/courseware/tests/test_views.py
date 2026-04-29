@@ -621,7 +621,7 @@ class ViewsTestCase(BaseViewsTestCase):
 
     def _email_opt_in_checkbox(self, response, org_name_string=None):
         """Check if the email opt-in checkbox appears in the response content."""
-        checkbox_html = '<input id="email-opt-in" type="checkbox" name="opt-in" class="email-opt-in" value="true" checked>'  # lint-amnesty, pylint: disable=line-too-long
+        checkbox_html = '<input id="email-opt-in" type="checkbox" name="opt-in" class="email-opt-in" value="true" checked>'  # noqa: E501
         if org_name_string:
             # Verify that the email opt-in checkbox appears, and that the expected
             # organization name is displayed.
@@ -748,7 +748,7 @@ class ViewsTestCase(BaseViewsTestCase):
         assert additional_info['Certify work diligently to receive a certificate'] == 'No'
         assert additional_info['Certify abide by the honor code'] == 'No'
 
-        assert ticket_subject == f'Financial assistance request for learner {username} in course {self.course.display_name}'  # pylint: disable=line-too-long
+        assert ticket_subject == f'Financial assistance request for learner {username} in course {self.course.display_name}'  # noqa: E501
         self.assertEqual([{'id': 'custom_123', 'value': course}], custom_fields)  # noqa: PT009
         assert 'Client IP' in additional_info
         assert group_name == 'Financial Assistance'
@@ -1670,7 +1670,7 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
         super().setUp()
         self.staff_user = UserFactory.create(is_staff=True)
 
-    def setup_course(self, show_correctness='', due_date=None, graded=False, **course_options):  # lint-amnesty, pylint: disable=arguments-differ
+    def setup_course(self, show_correctness='', due_date=None, graded=False, **course_options):  # pylint: disable=arguments-differ
         """
         Set up course with a subsection with the given show_correctness, due_date, and graded settings.
         """
@@ -1717,10 +1717,10 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
             choices=[True, False],
             choice_names=['choice_0', 'choice_1']
         )
-        self.problem = BlockFactory.create(category='problem', parent_location=self.vertical.location,  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.problem = BlockFactory.create(category='problem', parent_location=self.vertical.location,  # pylint: disable=attribute-defined-outside-init
                                            data=problem_xml, display_name='Problem 1')
         # Re-fetch the course from the database
-        self.course = self.store.get_course(self.course.id)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = self.store.get_course(self.course.id)  # pylint: disable=attribute-defined-outside-init
 
     def answer_problem(self, value=1, max_value=1):
         """
@@ -1746,7 +1746,7 @@ class ProgressPageShowCorrectnessTests(ProgressPageBaseTests):
         block.runtime.publish(self.problem, 'grade', grade_dict)
 
     def assert_progress_page_show_grades(self, response, show_correctness, due_date, graded,
-                                         show_grades, score, max_score, avg):  # lint-amnesty, pylint: disable=unused-argument
+                                         show_grades, score, max_score, avg):  # pylint: disable=unused-argument
         """
         Ensures that grades and scores are shown or not shown on the progress page as required.
         """
@@ -2753,7 +2753,7 @@ class AccessUtilsTestCase(ModuleStoreTestCase):
         request.user = staff_user
         request.session = {}
         if setup_enterprise_enrollment:
-            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841  # pylint: disable=line-too-long
+            course_enrollment = CourseEnrollmentFactory(mode=CourseMode.VERIFIED, user=staff_user, course_id=course.id)  # noqa: F841
             enterprise_customer = EnterpriseCustomerFactory(enable_learner_portal=True)
             add_enterprise_customer_to_session(request, EnterpriseCustomerSerializer(enterprise_customer).data)
             enterprise_customer_user = EnterpriseCustomerUserFactory(
@@ -3356,6 +3356,6 @@ class CourseAboutViewTests(ModuleStoreTestCase):
             response = self.client.get(reverse('about_course', args=[str(self.course.id)]))
             if expected_redirect:
                 assert response.status_code == 301
-                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032  # pylint: disable=line-too-long
+                assert response.url == "http://example.com/catalog/courses/{}/about".format(self.course.id)  # noqa: UP032
             else:
                 assert response.status_code == 200

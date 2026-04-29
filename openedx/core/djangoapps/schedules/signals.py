@@ -50,7 +50,7 @@ def create_schedule(sender, **kwargs):  # pylint: disable=unused-argument
     except Exception:  # pylint: disable=broad-except
         # We do not want to block the creation of a CourseEnrollment because of an error in creating a Schedule.
         # No Schedule is acceptable, but no CourseEnrollment is not.
-        log.exception('Encountered error in creating a Schedule for CourseEnrollment for user {} in course {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
+        log.exception('Encountered error in creating a Schedule for CourseEnrollment for user {} in course {}'.format(  # noqa: UP032
             enrollment.user.id if (enrollment and enrollment.user) else None,
             enrollment.course_id if enrollment else None
         ))
@@ -87,7 +87,7 @@ def reset_schedule_on_mode_change(sender, user, course_key, mode, **kwargs):  # 
     reset_self_paced_schedule(user, course_key, use_enrollment_date=use_enrollment_date)
 
 
-def _calculate_upgrade_deadline(course_id, content_availability_date):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _calculate_upgrade_deadline(course_id, content_availability_date):  # pylint: disable=missing-function-docstring
     upgrade_deadline = None
 
     delta = _get_upgrade_deadline_delta_setting(course_id)

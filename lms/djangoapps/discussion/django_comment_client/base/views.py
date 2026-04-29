@@ -1036,7 +1036,7 @@ def un_pin_thread(request, course_id, thread_id):
 @require_POST
 @login_required
 @permitted
-def follow_thread(request, course_id, thread_id):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+def follow_thread(request, course_id, thread_id):  # pylint: disable=missing-function-docstring, unused-argument
     user = cc.User.from_django_user(request.user)
     course_key = CourseKey.from_string(course_id)
     course = get_course_by_id(course_key)
@@ -1101,7 +1101,7 @@ def unfollow_commentable(request, course_id, commentable_id):  # lint-amnesty, p
 @login_required
 @csrf.csrf_exempt
 @xframe_options_exempt
-def upload(request, course_id):  # ajax upload file to a question or answer  # lint-amnesty, pylint: disable=unused-argument
+def upload(request, course_id):  # ajax upload file to a question or answer  # pylint: disable=unused-argument  # noqa: E501
     """view that handles file upload via Ajax
     """
 

@@ -98,7 +98,7 @@ class StringOrDate(Date):  # lint-amnesty, pylint: disable=missing-class-docstri
         """
         try:
             result = super().to_json(value)
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # noqa: E722
             return value
         if result is None:
             return value
@@ -204,7 +204,7 @@ class TextbookList(List):  # lint-amnesty, pylint: disable=missing-class-docstri
         for title, book_url in values:
             try:
                 textbooks.append(Textbook(title, book_url))
-            except:  # lint-amnesty, pylint: disable=bare-except
+            except:  # noqa: E722
                 # If we can't get to S3 (e.g. on a train with no internet), don't break
                 # the rest of the courseware.
                 log.exception(f"Couldn't load textbook ({title}, {book_url})")
@@ -1128,7 +1128,7 @@ class CourseBlock(
             if not getattr(self, "tabs", []):
                 CourseTabList.initialize_default(self)
         except InvalidTabsException as err:
-            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # lint-amnesty, pylint: disable=line-too-long  # noqa: B904
+            raise type(err)(f'{str(err)} For course: {str(self.id)}')  # noqa: B904
 
     def set_grading_policy(self, course_policy):
         """
@@ -1637,7 +1637,7 @@ class CourseSummary:
             return course_metadata_utils.has_course_ended(self.end)
         except TypeError as e:
             log.warning(
-                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
+                "Course '{course_id}' has an improperly formatted end date '{end_date}'. Error: '{err}'.".format(  # noqa: UP032
                     course_id=str(self.id), end_date=self.end, err=e
                 )
             )

@@ -73,7 +73,7 @@ class Command(BaseCommand):
         try:
             parsed_program_uuid = UUID(program_uuid)
         except ValueError:
-            raise CommandError("supplied program_uuid '{}' is not a valid UUID")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError("supplied program_uuid '{}' is not a valid UUID")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         ext_keys_to_usernames = self.parse_user_items(user_items)
         try:
             link_program_enrollments(

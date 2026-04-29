@@ -53,7 +53,7 @@ class PipelineRenderTest(TestCase):
         (True,),
         (False,),
     )
-    def test_compressed_css(self, pipeline_enabled, mock_staticfiles_lookup):  # lint-amnesty, pylint: disable=unused-argument
+    def test_compressed_css(self, pipeline_enabled, mock_staticfiles_lookup):  # pylint: disable=unused-argument
         """
         Verify the behavior of compressed_css, with the pipeline
         both enabled and disabled.
@@ -71,7 +71,7 @@ class PipelineRenderTest(TestCase):
 
     @patch('django.contrib.staticfiles.storage.staticfiles_storage.exists', return_value=True)
     @patch('common.djangoapps.static_replace.try_staticfiles_lookup', side_effect=mock_staticfiles_lookup)
-    def test_compressed_js(self, mock_staticfiles_lookup, mock_staticfiles_exists):  # lint-amnesty, pylint: disable=unused-argument
+    def test_compressed_js(self, mock_staticfiles_lookup, mock_staticfiles_exists):  # pylint: disable=unused-argument
         """
         Verify the behavior of compressed_css, with the pipeline
         both enabled and disabled.

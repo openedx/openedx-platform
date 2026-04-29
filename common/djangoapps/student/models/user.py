@@ -437,7 +437,7 @@ class UserProfile(models.Model):  # noqa: DJ008
     # CRITICAL TODO/SECURITY
     # Sanitize all fields.
     # This is not visible to other users, but could introduce holes later
-    user = models.OneToOneField(User, unique=True, db_index=True, related_name='profile', on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
+    user = models.OneToOneField(User, unique=True, db_index=True, related_name='profile', on_delete=models.CASCADE)  # noqa: DJ012
     name = models.CharField(blank=True, max_length=255, db_index=True)
 
     # How meta field works: meta will only store those fields which are available in extended_profile configuration,
@@ -700,7 +700,7 @@ def user_profile_pre_save_callback(sender, **kwargs):
     # Cache "old" field values on the model instance so that they can be
     # retrieved in the post_save callback when we emit an event with new and
     # old field values.
-    user_profile._changed_fields = get_changed_fields_dict(user_profile, sender)  # lint-amnesty, pylint: disable=protected-access
+    user_profile._changed_fields = get_changed_fields_dict(user_profile, sender)  # pylint: disable=protected-access
 
 
 @receiver(post_save, sender=UserProfile)
@@ -1089,7 +1089,7 @@ class CourseAccessRole(models.Model):
         Overriding eq b/c the django impl relies on the primary key which requires fetch. sometimes we
         just want to compare roles w/o doing another fetch.
         """
-        return type(self) == type(other) and self._key == other._key  # lint-amnesty, pylint: disable=protected-access, unidiomatic-typecheck
+        return type(self) == type(other) and self._key == other._key  # pylint: disable=protected-access, unidiomatic-typecheck
 
     def __hash__(self):
         return hash(self._key)
@@ -1101,7 +1101,7 @@ class CourseAccessRole(models.Model):
         return self._key < other._key
 
     def __str__(self):
-        return f"[CourseAccessRole] user: {self.user.username}   role: {self.role}   org: {self.org}   course: {self.course_id}"  # lint-amnesty, pylint: disable=line-too-long
+        return f"[CourseAccessRole] user: {self.user.username}   role: {self.role}   org: {self.org}   course: {self.course_id}"  # noqa: E501
 
 
 class CourseAccessRoleHistory(TimeStampedModel):

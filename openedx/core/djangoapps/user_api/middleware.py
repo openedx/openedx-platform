@@ -55,7 +55,7 @@ class UserTagsEventContextMiddleware(MiddlewareMixin):
         """Exit the context if it exists."""
         try:
             tracker.get_tracker().exit_context(self.CONTEXT_NAME)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             pass
 
         return response

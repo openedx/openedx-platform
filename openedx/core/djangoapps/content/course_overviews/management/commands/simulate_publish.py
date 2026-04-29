@@ -245,7 +245,7 @@ class Command(BaseCommand):
         log.info("%d receivers specified: %s", len(receiver_names), ", ".join(receiver_names))
         receiver_names_set = set(receiver_names)
         for receiver_fn in get_receiver_fns():
-            if receiver_fn == ccx_receiver_fn and not skip_ccx:  # lint-amnesty, pylint: disable=comparison-with-callable
+            if receiver_fn == ccx_receiver_fn and not skip_ccx:  # pylint: disable=comparison-with-callable
                 continue
             fn_name = name_from_fn(receiver_fn)
             if fn_name not in receiver_names_set:

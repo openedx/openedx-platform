@@ -228,4 +228,4 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
                 (reverse('course_wiki', kwargs={'course_id': course_id}), 302),
                 (f'/courses/{course_id}/wiki/', 200),
         ):
-            self.verify_consent_required(self.client, url, status_code=status_code)  # lint-amnesty, pylint: disable=no-value-for-parameter
+            self.verify_consent_required(self.client, url, status_code=status_code)  # pylint: disable=no-value-for-parameter

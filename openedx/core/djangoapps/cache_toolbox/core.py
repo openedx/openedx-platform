@@ -54,7 +54,7 @@ def get_instance(model, instance_or_pk, timeout=None, using=None):
             instance._state.db = using or DEFAULT_DB_ALIAS  # pylint: disable=protected-access
 
             return instance
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             # Error when deserialising - remove from the cache; we will
             # fallback and return the underlying instance
             cache.delete(key)

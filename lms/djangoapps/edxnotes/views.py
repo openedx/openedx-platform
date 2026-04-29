@@ -175,7 +175,7 @@ def notes(request, course_id):
     except (EdxNotesParseError, EdxNotesServiceUnavailable) as err:
         return JsonResponseBadRequest({"error": str(err)}, status=500)
 
-    return HttpResponse(json.dumps(notes_info, cls=NoteJSONEncoder), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(notes_info, cls=NoteJSONEncoder), content_type="application/json")  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
 
 
 @login_required

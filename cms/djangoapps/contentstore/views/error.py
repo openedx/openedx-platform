@@ -20,7 +20,7 @@ def jsonable_error(status=500, message="The Studio servers encountered an error"
         def inner(request, *args, **kwargs):
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 content = dump_js_escaped_json({"error": message})
-                return HttpResponse(content, content_type="application/json",  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+                return HttpResponse(content, content_type="application/json",  # pylint: disable=http-response-with-content-type-json
                                     status=status)
             else:
                 return func(request, *args, **kwargs)

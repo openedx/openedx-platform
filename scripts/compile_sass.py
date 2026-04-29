@@ -290,7 +290,7 @@ def main(
     if skip_lms and skip_cms:
         click.secho("WARNING: You are skipping both LMS and CMS... nothing will be compiled!", fg="yellow")
     if skip_default and skip_themes:
-        click.secho("WARNING: You are skipped both default Sass and themed Sass... nothing will be compiled!", fg="yellow")
+        click.secho("WARNING: You are skipped both default Sass and themed Sass... nothing will be compiled!", fg="yellow")  # noqa: E501
     click.echo()
 
     # Build a list of theme paths:

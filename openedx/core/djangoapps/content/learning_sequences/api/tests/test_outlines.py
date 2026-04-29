@@ -102,7 +102,7 @@ class CourseOutlineTestCase(CacheIsolationTestCase):
     def test_simple_roundtrip(self):
         """Happy path for writing/reading-back a course outline."""
         with pytest.raises(CourseOutlineData.DoesNotExist):
-            course_outline = get_course_outline(self.course_key)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            course_outline = get_course_outline(self.course_key)  # pylint: disable=unused-variable  # noqa: F841
 
         replace_course_outline(self.course_outline)
         outline = get_course_outline(self.course_key)
@@ -153,7 +153,7 @@ class CourseOutlineTestCase(CacheIsolationTestCase):
         # Make sure this new outline is returned instead of the previously
         # cached one.
         with self.assertNumQueries(5):
-            uncached_new_version_outline = get_course_outline(self.course_key)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            uncached_new_version_outline = get_course_outline(self.course_key)  # pylint: disable=unused-variable  # noqa: F841
             assert new_version_outline == new_version_outline  # lint-amnesty, pylint: disable=comparison-with-itself
 
 
@@ -382,8 +382,8 @@ class ContentGatingTestCase(OutlineProcessorTestCase):
     This logic matches the existing transformer. Is this right?
     """
 
-    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.EntranceExamConfiguration.user_can_skip_entrance_exam')  # lint-amnesty, pylint: disable=line-too-long
-    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.milestones_helpers.get_required_content')  # lint-amnesty, pylint: disable=line-too-long
+    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.EntranceExamConfiguration.user_can_skip_entrance_exam')
+    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.milestones_helpers.get_required_content')
     def test_user_can_skip_entrance_exam(self, required_content_mock, user_can_skip_entrance_exam_mock):
         required_content_mock.return_value = [str(self.entrance_exam_section_key)]
         user_can_skip_entrance_exam_mock.return_value = True
@@ -397,8 +397,8 @@ class ContentGatingTestCase(OutlineProcessorTestCase):
         # Student can access all sequences
         assert len(student_details.outline.accessible_sequences) == 3
 
-    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.EntranceExamConfiguration.user_can_skip_entrance_exam')  # lint-amnesty, pylint: disable=line-too-long
-    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.milestones_helpers.get_required_content')  # lint-amnesty, pylint: disable=line-too-long
+    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.EntranceExamConfiguration.user_can_skip_entrance_exam')
+    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.content_gating.milestones_helpers.get_required_content')
     def test_user_can_not_skip_entrance_exam(self, required_content_mock, user_can_skip_entrance_exam_mock):
         required_content_mock.return_value = [str(self.entrance_exam_section_key)]
         user_can_skip_entrance_exam_mock.return_value = False
@@ -494,7 +494,7 @@ class MilestonesTestCase(OutlineProcessorTestCase):
         # Enroll student in the course
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
-    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.milestones.milestones_helpers.get_course_content_milestones')  # lint-amnesty, pylint: disable=line-too-long
+    @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.milestones.milestones_helpers.get_course_content_milestones')
     def test_user_can_skip_entrance_exam(self, get_course_content_milestones_mock):
         # Only return that there are milestones required for the
         # milestones_required_seq_key usage key
@@ -878,7 +878,7 @@ class SelfPacedTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disa
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
     def test_sequences_accessible_after_due(self):
-        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
         staff_details, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017
@@ -998,7 +998,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
 
     @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
     def test_special_exams_enabled_all_sequences_visible(self):
-        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
         staff_details, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017
@@ -1014,7 +1014,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
 
     @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
     def test_special_exams_disabled_preserves_exam_sequences(self):
-        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
         staff_details, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017
@@ -1034,7 +1034,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
     @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.special_exams.get_attempt_status_summary')
     def test_special_exam_attempt_data_in_details(self, mock_get_attempt_status_summary):
-        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
         def get_attempt_status_side_effect(user_id, _course_key, usage_key):
             """
@@ -1045,7 +1045,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
 
             for sequence_key in self.get_sequence_keys(exclude=[self.seq_normal_key]):
                 if usage_key == str(sequence_key):
-                    num_fake_attempts = mock_get_attempt_status_summary.call_count % len(self.all_seq_keys)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+                    num_fake_attempts = mock_get_attempt_status_summary.call_count % len(self.all_seq_keys)  # pylint: disable=unused-variable  # noqa: F841
                     return {
                         "summary": {
                             "usage_key": usage_key
@@ -1068,7 +1068,7 @@ class SpecialExamsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: d
     @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': False})
     @patch('openedx.core.djangoapps.content.learning_sequences.api.processors.special_exams.get_attempt_status_summary')
     def test_special_exam_attempt_data_empty_when_disabled(self, mock_get_attempt_status_summary):
-        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 22, tzinfo=timezone.utc)  # pylint: disable=unused-variable  # noqa: F841, UP017
 
         _, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017
@@ -1188,7 +1188,7 @@ class VisbilityTestCase(OutlineProcessorTestCase):
         cls.student.courseenrollment_set.create(course_id=cls.course_key, is_active=True, mode="audit")
 
     def test_visibility(self):
-        at_time = datetime(2020, 5, 21, tzinfo=timezone.utc)  # Exact value doesn't matter  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841, UP017
+        at_time = datetime(2020, 5, 21, tzinfo=timezone.utc)  # Exact value doesn't matter  # pylint: disable=unused-variable  # noqa: E501, F841, UP017
 
         staff_details, student_details, _ = self.get_details(
             datetime(2020, 5, 25, tzinfo=timezone.utc)  # noqa: UP017
@@ -1259,7 +1259,7 @@ class SequentialVisibilityTestCase(CacheIsolationTestCase):
 
                 assert len(user_course_outline.sections) == 3
                 assert len(user_course_outline.sequences) == 6
-                assert all([(seq.usage_key in user_course_outline.accessible_sequences) for seq in  # lint-amnesty, pylint: disable=use-a-generator
+                assert all([(seq.usage_key in user_course_outline.accessible_sequences) for seq in  # pylint: disable=use-a-generator
                             user_course_outline.sequences.values()]),\
                     'Sequences should be accessible to all users for a public course'
 
@@ -1322,7 +1322,7 @@ class SequentialVisibilityTestCase(CacheIsolationTestCase):
 
 
 @ddt.ddt
-class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class EnrollmentTrackPartitionGroupsTestCase(OutlineProcessorTestCase):  # pylint: disable=missing-class-docstring
     """Tests for enrollment track partitions outline processor that affect outlines"""
 
     @classmethod
@@ -1968,7 +1968,7 @@ class ContentErrorTestCase(CacheIsolationTestCase):
 
 
 @patch(
-    "openedx.core.djangoapps.content.learning_sequences.api.processors.team_partition_groups.CONTENT_GROUPS_FOR_TEAMS.is_enabled",  # lint-amnesty, pylint: disable=line-too-long
+    "openedx.core.djangoapps.content.learning_sequences.api.processors.team_partition_groups.CONTENT_GROUPS_FOR_TEAMS.is_enabled",
     lambda _: True
 )
 @skip_unless_lms

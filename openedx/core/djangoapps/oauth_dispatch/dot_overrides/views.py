@@ -23,7 +23,6 @@ class EdxOAuth2AuthorizationView(AuthorizationView):
     Restricted Applications support and custom filters.
     """
     def get(self, request, *args, **kwargs):
-        # pylint: disable=line-too-long
         # Note: This code is copied from https://github.com/evonove/django-oauth-toolkit/blob/34f3b7b3511c15686039079026165feaadb1b87d/oauth2_provider/views/base.py#L111
         # Places that we have changed are noted with ***.
         application = None
@@ -46,7 +45,7 @@ class EdxOAuth2AuthorizationView(AuthorizationView):
             # at this point we know an Application instance with such client_id exists in the database
             application = get_application_model().objects.get(client_id=credentials['client_id'])
             try:
-                content_orgs = list(ApplicationAccess.get_filter_values(application, ApplicationAccess.CONTENT_ORG_FILTER_NAME))
+                content_orgs = list(ApplicationAccess.get_filter_values(application, ApplicationAccess.CONTENT_ORG_FILTER_NAME))  # noqa: E501
             except ApplicationAccess.DoesNotExist:
                 # No application access policy for this application exists.
                 # so we have no content orgs.
@@ -69,7 +68,7 @@ class EdxOAuth2AuthorizationView(AuthorizationView):
             # This is useful for in-house applications-> assume an in-house applications
             # are already approved.
             if application.skip_authorization:
-                uri, headers, body, status = self.create_authorization_response(  # lint-amnesty, pylint: disable=unused-variable
+                uri, headers, body, status = self.create_authorization_response(  # pylint: disable=unused-variable
                     request=self.request, scopes=" ".join(scopes),
                     credentials=credentials, allow=True)
                 return OAuth2ResponseRedirect(uri, application.get_allowed_schemes())

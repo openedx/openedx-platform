@@ -13,7 +13,7 @@ from .utils import send_email_with_attachment
 
 
 @receiver(post_save, sender=UserCalendarSyncConfig)
-def handle_calendar_sync_email(sender, instance, created, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+def handle_calendar_sync_email(sender, instance, created, **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
     if (
         CALENDAR_SYNC_FLAG.is_enabled(instance.course_key) and
         RELATIVE_DATES_FLAG.is_enabled(instance.course_key) and

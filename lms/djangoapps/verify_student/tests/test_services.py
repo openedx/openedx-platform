@@ -207,10 +207,10 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user_a = UserFactory.create()
 
         SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
+            user=user_a, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         )
         newer_record = SSOVerification.objects.create(
-            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
+            user=user_a, status='approved', expiration_date=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user_a, ['approved'])
@@ -224,10 +224,10 @@ class TestIDVerificationService(ModuleStoreTestCase):
         user = UserFactory.create()
 
         SoftwareSecurePhotoVerification.objects.create(
-            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
+            user=user, status='approved', expiration_date=datetime(2021, 11, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         )
         newest = VerificationAttempt.objects.create(
-            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017  # pylint: disable=line-too-long
+            user=user, status='approved', expiration_datetime=datetime(2022, 1, 12, 0, 0, tzinfo=timezone.utc)  # noqa: UP017
         )
 
         expiration_datetime = IDVerificationService.get_expiration_datetime(user, ['approved'])

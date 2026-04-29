@@ -377,7 +377,7 @@ class TestRescoringTask(TestIntegrationTask):
                 InstructorTaskModuleTestCase.problem_location(problem_url_name)
             )
             block.data = problem_xml
-            with self.module_store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, block.location.course_key):  # lint-amnesty, pylint: disable=line-too-long
+            with self.module_store.branch_setting(ModuleStoreEnum.Branch.draft_preferred, block.location.course_key):
                 self.module_store.update_item(block, self.user.id)
                 self.module_store.publish(block.location, self.user.id)
         else:
@@ -609,7 +609,7 @@ class TestGradeReportConditionalContent(TestReportMixin, TestConditionalContent,
             Arguments:
                 dicts: tuple of dicts
             """
-            return dict([item for d in dicts for item in d.items()])  # lint-amnesty, pylint: disable=consider-using-dict-comprehension
+            return dict([item for d in dicts for item in d.items()])  # pylint: disable=consider-using-dict-comprehension
 
         def user_partition_group(user):
             """Return a dict having single key with value equals to students group in partition"""

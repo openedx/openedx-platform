@@ -270,7 +270,7 @@ class _BuiltInVideoBlock(
         fragment.initialize_js('Video')
         return fragment
 
-    def get_html(self, view=STUDENT_VIEW, context=None):  # lint-amnesty, pylint: disable=arguments-differ, too-many-statements
+    def get_html(self, view=STUDENT_VIEW, context=None):  # pylint: disable=arguments-differ, too-many-statements
         """
         Return html for a given view of this block.
         """
@@ -371,7 +371,7 @@ class _BuiltInVideoBlock(
         else:
             self.youtube_streams = youtube_streams or create_youtube_string(self)  # pylint: disable=W0201
 
-        settings_service = self.runtime.service(self, 'settings')  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        settings_service = self.runtime.service(self, 'settings')  # pylint: disable=unused-variable  # noqa: F841
 
         poster = self._poster()
         completion_service = self.runtime.service(self, 'completion')
@@ -480,7 +480,7 @@ class _BuiltInVideoBlock(
             'poster': json.dumps(get_poster(self)),
             'track': track_url,
             'transcript_download_format': transcript_download_format,
-            'transcript_download_formats_list': self.fields['transcript_download_format'].values,  # lint-amnesty, pylint: disable=unsubscriptable-object
+            'transcript_download_formats_list': self.fields['transcript_download_format'].values,  # pylint: disable=unsubscriptable-object
             'transcript_feedback_enabled': self.is_transcript_feedback_enabled(),
         }
         video_config_service = self.runtime.service(self, 'video_config')
@@ -587,7 +587,7 @@ class _BuiltInVideoBlock(
         editable_fields.pop('sub')
 
         languages = [{'label': label, 'code': lang} for lang, label in settings.ALL_LANGUAGES]
-        languages.sort(key=lambda l: l['label'])
+        languages.sort(key=lambda lang: lang['label'])
         editable_fields['transcripts']['custom'] = True
         editable_fields['transcripts']['languages'] = languages
         editable_fields['transcripts']['type'] = 'VideoTranslations'
@@ -639,7 +639,7 @@ class _BuiltInVideoBlock(
         for key, val in field_data.items():
             if key not in cls.fields:  # lint-amnesty, pylint: disable=unsupported-membership-test
                 continue  # parse_video_xml returns some old non-fields like 'source'
-            setattr(video_block, key, cls.fields[key].from_json(val))  # lint-amnesty, pylint: disable=unsubscriptable-object
+            setattr(video_block, key, cls.fields[key].from_json(val))  # pylint: disable=unsubscriptable-object
         # Don't use VAL in the new runtime:
         video_block.edx_video_id = None
         return video_block
@@ -706,7 +706,7 @@ class _BuiltInVideoBlock(
             # Mild workaround to ensure that tests pass -- if a field
             # is set to its default value, we don't write it out.
             if value:
-                if key in self.fields and self.fields[key].is_set_on(self):  # lint-amnesty, pylint: disable=unsubscriptable-object, unsupported-membership-test
+                if key in self.fields and self.fields[key].is_set_on(self):  # pylint: disable=unsubscriptable-object, unsupported-membership-test
                     try:
                         xml.set(key, str(value))
                     except UnicodeDecodeError:
@@ -971,7 +971,7 @@ class _BuiltInVideoBlock(
             else:
                 # We export values with json.dumps (well, except for Strings, but
                 # for about a month we did it for Strings also).
-                field_data[attr] = deserialize_field(cls.fields[attr], value)  # lint-amnesty, pylint: disable=unsubscriptable-object
+                field_data[attr] = deserialize_field(cls.fields[attr], value)  # pylint: disable=unsubscriptable-object
 
         course_id = getattr(id_generator, 'target_course_id', None)
         # Update the handout location with current course_id
@@ -1087,7 +1087,7 @@ class _BuiltInVideoBlock(
     @request_cached(
         request_cache_getter=lambda args, kwargs: args[1],
     )
-    def get_cached_val_data_for_course(cls, request_cache, video_profile_names, course_id):  # lint-amnesty, pylint: disable=unused-argument
+    def get_cached_val_data_for_course(cls, request_cache, video_profile_names, course_id):  # pylint: disable=unused-argument
         """
         Returns the VAL data for the requested video profiles for the given course.
         """

@@ -311,7 +311,7 @@ class SafeCookieData:
         if not session_id or session_id == str(None):
             # The session ID should always be valid in the cookie.
             raise SafeCookieError(
-                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(  # noqa: UP032  # pylint: disable=line-too-long
+                "SafeCookieData not created due to invalid value for session_id '{}' for user_id '{}'.".format(  # noqa: UP032
                     session_id,
                     user_id,
                 ))
@@ -371,7 +371,7 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
                 'safe_sessions.session_cookie_count',
                 request.headers.get('Cookie', '').count(settings.SESSION_COOKIE_NAME + '=')
             )
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             pass
 
         cookie_data_string = request.COOKIES.get(settings.SESSION_COOKIE_NAME)
@@ -391,7 +391,7 @@ class SafeSessionMiddleware(SessionMiddleware, MiddlewareMixin):
                 # Save off for debugging and logging in _verify_user_and_log_mismatch
                 request.cookie_session_field = safe_cookie_data.session_id
 
-        process_request_response = super().process_request(request)  # Step 3  # lint-amnesty, pylint: disable=assignment-from-no-return, super-with-arguments
+        process_request_response = super().process_request(request)  # Step 3  # pylint: disable=assignment-from-no-return, super-with-arguments  # noqa: E501
         if process_request_response:
             # The process_request pipeline has been short circuited so
             # return the response.

@@ -613,7 +613,7 @@ class CourseOverviewTestCase(CatalogIntegrationMixin, ModuleStoreTestCase, Cache
         """
         Tests that course_overview can be generated for old Mongo course.
         """
-        store = modulestore()._get_modulestore_by_type(ModuleStoreEnum.Type.mongo)  # lint-amnesty, pylint: disable=protected-access
+        store = modulestore()._get_modulestore_by_type(ModuleStoreEnum.Type.mongo)  # pylint: disable=protected-access
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/mongo_course.json')
         with open(file_path) as file:
             course_structure = json.load(file)

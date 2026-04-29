@@ -80,7 +80,7 @@ class OrderView(APIView):
         # anonymous user object attached to the request with the actual user object (if it exists)
         if not request.user.is_authenticated and is_account_activation_requirement_disabled():
             try:
-                request.user = User.objects.get(id=request.session._session_cache['_auth_user_id'])  # lint-amnesty, pylint: disable=protected-access
+                request.user = User.objects.get(id=request.session._session_cache['_auth_user_id'])  # pylint: disable=protected-access
             except User.DoesNotExist:
                 return JsonResponse(status=403)
         try:

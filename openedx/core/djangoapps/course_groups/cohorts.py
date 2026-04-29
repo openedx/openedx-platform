@@ -439,7 +439,7 @@ def remove_user_from_cohort(cohort, username_or_email):
         membership.delete()
         COHORT_MEMBERSHIP_UPDATED.send(sender=None, user=user, course_key=course_key)
     except CohortMembership.DoesNotExist:
-        raise ValueError(f"User {username_or_email} was not present in cohort {cohort}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(f"User {username_or_email} was not present in cohort {cohort}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def add_user_to_cohort(cohort, username_or_email_or_user):

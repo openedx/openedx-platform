@@ -11,7 +11,7 @@ class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-
         migrations.AddField(
             model_name='courseentitlementpolicy',
             name='mode',
-            field=models.CharField(max_length=32, null=True, choices=[(None, '---------'), ('verified', 'verified'), ('professional', 'professional')]),  # lint-amnesty, pylint: disable=line-too-long
+            field=models.CharField(max_length=32, null=True, choices=[(None, '---------'), ('verified', 'verified'), ('professional', 'professional')]),
         ),
         migrations.AlterField(
             model_name='courseentitlementpolicy',

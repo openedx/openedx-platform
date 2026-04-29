@@ -18,7 +18,7 @@ LOGGER_NAME = 'lms.djangoapps.verify_student.tasks'
 
 @patch.dict(settings.VERIFY_STUDENT, FAKE_SETTINGS)
 @ddt.ddt
-class TestPhotoVerificationTasks(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestPhotoVerificationTasks(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     @mock.patch('lms.djangoapps.verify_student.tasks.log')
     def test_logs_for_retry_until_failure(self, mock_log):

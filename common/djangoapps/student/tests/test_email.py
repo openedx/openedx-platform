@@ -352,7 +352,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         assert self.user.email_user.called is False
 
     @patch('common.djangoapps.student.views.management.render_to_string',
-           Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+           Mock(side_effect=mock_render_to_string, autospec=True))
     def test_duplicate_activation_key(self):
         """
         Assert that if two users change Email address simultaneously, no error is thrown
@@ -389,7 +389,7 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027
             self.do_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()
@@ -442,9 +442,9 @@ class EmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, CacheIsolat
 
 @ddt.ddt
 @patch('common.djangoapps.student.views.management.render_to_response',
-       Mock(side_effect=mock_render_to_response, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_response, autospec=True))
 @patch('common.djangoapps.student.views.management.render_to_string',
-       Mock(side_effect=mock_render_to_string, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_string, autospec=True))
 class EmailChangeConfirmationTests(EmailTestMixin, EmailTemplateTagMixin, CacheIsolationMixin, TransactionTestCase):
     """
     Test that confirmation of email change requests function even in the face of exceptions thrown while sending email
@@ -679,7 +679,7 @@ class SecondaryEmailChangeRequestTests(EventTestMixin, EmailTemplateTagMixin, Ca
         Test the return value if sending the email for the user to click fails.
         """
         send_mail.side_effect = [Exception, None]
-        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027  # pylint: disable=line-too-long
+        with self.assertRaisesRegex(ValueError, 'Unable to send email activation link. Please try again later.'):  # noqa: PT027
             self.do_secondary_email_change(self.user, "valid@email.com")
 
         self.assert_no_events_were_emitted()

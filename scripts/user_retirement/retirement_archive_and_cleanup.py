@@ -203,7 +203,7 @@ def _cleanup_retirements_or_exit(config, learners, redacted_username='redacted',
     """
     LOG('Cleaning up retirements for {} learners'.format(len(learners)))  # noqa: UP032
     try:
-        usernames = [l['original_username'] for l in learners]
+        usernames = [learner['original_username'] for learner in learners]
         config['LMS'].bulk_cleanup_retirements(
             usernames, redacted_username, redacted_email, redacted_name
         )

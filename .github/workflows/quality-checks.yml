@@ -6,11 +6,40 @@ on:
   push:
     branches:
       - master
-      - open-release/lilac.master
+      - release/**
 
 jobs:
-  run_tests:
-    name: Quality Others
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Get pip cache dir
+        id: pip-cache-dir
+        run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/testing.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install quality requirements
+        run: pip install -r requirements/edx/testing.txt
+
+      - name: Run ruff
+        run: ruff check --output-format=github .
+
+  policy-checks:
+    name: Policy & Security Checks
+    needs: [ruff]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -73,12 +102,11 @@ jobs:
         run: |
             pip install -e .
 
-      - name: Run Quality Tests
+      - name: Run Policy Checks
         env:
           PIP_SRC: ${{ runner.temp }}
           TARGET_BRANCH: ${{ github.base_ref }}
         run: |
-            ruff check --output-format=github .
             make xsslint
             make pii_check
             make check_keywords
@@ -93,3 +121,82 @@ jobs:
             test_root/log/**/*.log
             *.log
           overwrite: true
+
+  run-pylint:
+    needs: [ruff]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module-name: lms-1
+            path: "lms/djangoapps/badges/ lms/djangoapps/branding/ lms/djangoapps/bulk_email/ lms/djangoapps/bulk_enroll/ lms/djangoapps/bulk_user_retirement/ lms/djangoapps/ccx/ lms/djangoapps/certificates/ lms/djangoapps/commerce/ lms/djangoapps/course_api/ lms/djangoapps/course_blocks/ lms/djangoapps/course_home_api/ lms/djangoapps/course_wiki/ lms/djangoapps/coursewarehistoryextended/ lms/djangoapps/debug/ lms/djangoapps/courseware/ lms/djangoapps/course_goals/ lms/djangoapps/rss_proxy/"
+          - module-name: lms-2
+            path: "lms/djangoapps/gating/ lms/djangoapps/grades/ lms/djangoapps/instructor/ lms/djangoapps/instructor_analytics/ lms/djangoapps/discussion/ lms/djangoapps/edxnotes/ lms/djangoapps/experiments/ lms/djangoapps/instructor_task/ lms/djangoapps/learner_dashboard/ lms/djangoapps/learner_home/ lms/djangoapps/lms_initialization/ lms/djangoapps/lms_xblock/ lms/djangoapps/lti_provider/ lms/djangoapps/mailing/ lms/djangoapps/mobile_api/ lms/djangoapps/monitoring/ lms/djangoapps/ora_staff_grader/ lms/djangoapps/program_enrollments/ lms/djangoapps/rss_proxy lms/djangoapps/static_template_view/ lms/djangoapps/staticbook/ lms/djangoapps/support/ lms/djangoapps/survey/ lms/djangoapps/teams/ lms/djangoapps/tests/ lms/djangoapps/user_tours/ lms/djangoapps/verify_student/ lms/djangoapps/mfe_config_api/ lms/envs/ lms/lib/ lms/tests.py"
+          - module-name: openedx-1
+            path: "openedx/core/types/ openedx/core/djangoapps/ace_common/ openedx/core/djangoapps/agreements/ openedx/core/djangoapps/api_admin/ openedx/core/djangoapps/auth_exchange/ openedx/core/djangoapps/bookmarks/ openedx/core/djangoapps/cache_toolbox/ openedx/core/djangoapps/catalog/ openedx/core/djangoapps/ccxcon/ openedx/core/djangoapps/commerce/ openedx/core/djangoapps/common_initialization/ openedx/core/djangoapps/common_views/ openedx/core/djangoapps/config_model_utils/ openedx/core/djangoapps/content/ openedx/core/djangoapps/content_libraries/ openedx/core/djangoapps/content_staging/ openedx/core/djangoapps/contentserver/ openedx/core/djangoapps/cookie_metadata/ openedx/core/djangoapps/cors_csrf/ openedx/core/djangoapps/course_apps/ openedx/core/djangoapps/course_date_signals/ openedx/core/djangoapps/course_groups/ openedx/core/djangoapps/courseware_api/ openedx/core/djangoapps/crawlers/ openedx/core/djangoapps/credentials/ openedx/core/djangoapps/credit/ openedx/core/djangoapps/dark_lang/ openedx/core/djangoapps/debug/ openedx/core/djangoapps/discussions/ openedx/core/djangoapps/django_comment_common/ openedx/core/djangoapps/embargo/ openedx/core/djangoapps/enrollments/ openedx/core/djangoapps/external_user_ids/ openedx/core/djangoapps/zendesk_proxy/ openedx/core/djangolib/ openedx/core/lib/ openedx/core/djangoapps/course_live/"
+          - module-name: openedx-2
+            path: "openedx/core/djangoapps/geoinfo/ openedx/core/djangoapps/header_control/ openedx/core/djangoapps/heartbeat/ openedx/core/djangoapps/lang_pref/ openedx/core/djangoapps/models/ openedx/core/djangoapps/monkey_patch/ openedx/core/djangoapps/oauth_dispatch/ openedx/core/djangoapps/olx_rest_api/ openedx/core/djangoapps/password_policy/ openedx/core/djangoapps/plugin_api/ openedx/core/djangoapps/plugins/ openedx/core/djangoapps/profile_images/ openedx/core/djangoapps/programs/ openedx/core/djangoapps/safe_sessions/ openedx/core/djangoapps/schedules/ openedx/core/djangoapps/service_status/ openedx/core/djangoapps/session_inactivity_timeout/ openedx/core/djangoapps/signals/ openedx/core/djangoapps/site_configuration/ openedx/core/djangoapps/system_wide_roles/ openedx/core/djangoapps/theming/ openedx/core/djangoapps/user_api/ openedx/core/djangoapps/user_authn/ openedx/core/djangoapps/util/ openedx/core/djangoapps/verified_track_content/ openedx/core/djangoapps/video_config/ openedx/core/djangoapps/video_pipeline/ openedx/core/djangoapps/waffle_utils/ openedx/core/djangoapps/xblock/ openedx/core/djangoapps/xmodule_django/ openedx/core/tests/ openedx/features/ openedx/testing/ openedx/tests/ openedx/envs/ openedx/core/djangoapps/notifications/ openedx/core/djangoapps/staticfiles/ openedx/core/djangoapps/content_tagging/ openedx/core/djangoapps/authz/"
+          - module-name: common
+            path: "common"
+          - module-name: cms
+            path: "cms"
+          - module-name: xmodule
+            path: "xmodule"
+
+    name: pylint ${{ matrix.module-name }}
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v6
+
+      - name: Install required system packages
+        run: sudo apt-get update && sudo apt-get install libxmlsec1-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Get pip cache dir
+        id: pip-cache-dir
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        id: cache-dependencies
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.pip-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements/edx/development.txt') }}
+          restore-keys: ${{ runner.os }}-pip-
+
+      - name: Install required Python dependencies
+        run: |
+          # dev-requirements is needed because the linter will otherwise
+          # trip over some dev-only things like django-debug-toolbar
+          # (import debug_toolbar) that aren't in testing.txt.
+          make dev-requirements
+          # After all requirements are installed, check that they're consistent with each other
+          pip check
+
+      - name: Run quality tests
+        run: |
+          pylint ${{ matrix.path }}
+
+  # This job aggregates test results. It's the required check for branch protection.
+  # https://github.com/marketplace/actions/alls-green#why
+  # https://github.com/orgs/community/discussions/33579
+  success:
+    name: Quality checks successful
+    if: always()
+    needs:
+      - ruff
+      - policy-checks
+      - run-pylint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        # uses: re-actors/alls-green@v1.2.1
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}

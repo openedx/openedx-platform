@@ -13,7 +13,7 @@ class CollapsedReferenceSerializer(serializers.HyperlinkedModelSerializer):
     """Serializes arbitrary models in a collapsed format, with just an id and url."""
     url = serializers.HyperlinkedIdentityField(view_name='')
 
-    def __init__(self, model_class, view_name, id_source='id', lookup_field=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def __init__(self, model_class, view_name, id_source='id', lookup_field=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         """Configures the serializer.
 
         Args:

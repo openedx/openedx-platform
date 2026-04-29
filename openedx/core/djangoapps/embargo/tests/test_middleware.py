@@ -53,7 +53,7 @@ class EmbargoMiddlewareAccessTests(UrlResetMixin, ModuleStoreTestCase):
     @patch.dict(settings.FEATURES, {'EMBARGO': True})
     @ddt.data(True, False)
     def test_blocked(self, disable_access_check):
-        with restrict_course(self.course.id, access_point='courseware', disable_access_check=disable_access_check) as redirect_url:  # pylint: disable=line-too-long
+        with restrict_course(self.course.id, access_point='courseware', disable_access_check=disable_access_check) as redirect_url:  # noqa: E501
             response = self.client.get(self.courseware_url)
             if disable_access_check:
                 assert response.status_code == 200

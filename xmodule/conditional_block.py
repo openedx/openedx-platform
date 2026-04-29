@@ -329,7 +329,7 @@ class ConditionalBlock(
                 try:
                     block = system.process_xml(etree.tostring(child, encoding='unicode'))
                     children.append(block.scope_ids.usage_id)
-                except:  # lint-amnesty, pylint: disable=bare-except
+                except:  # noqa: E722
                     msg = "Unable to load child when parsing Conditional."
                     log.exception(msg)
                     system.error_tracker(msg)

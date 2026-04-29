@@ -313,7 +313,7 @@ def add_users_to_cohort(request, course_key_string, cohort_id):
     try:
         cohort = cohorts.get_cohort_by_id(course_key, cohort_id)
     except CourseUserGroup.DoesNotExist:
-        raise Http404("Cohort (ID {cohort_id}) not found for {course_key_string}".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP032
+        raise Http404("Cohort (ID {cohort_id}) not found for {course_key_string}".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP032
             cohort_id=cohort_id,
             course_key_string=course_key_string
         ))
@@ -774,7 +774,7 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
                 cohort_id=cohort_id,
                 course_key_string=course_key_string
             )
-            raise self.api_error(status.HTTP_404_NOT_FOUND, msg, 'cohort-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(status.HTTP_404_NOT_FOUND, msg, 'cohort-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         return course_key, cohort
 
     def get(self, request, course_key_string, cohort_id, username=None):  # pylint: disable=unused-argument
@@ -807,7 +807,7 @@ class CohortUsers(DeveloperErrorViewMixin, APIPermissions):
         try:
             api.remove_user_from_cohort(course_key, username, cohort.id)
         except User.DoesNotExist:
-            raise self.api_error(status.HTTP_404_NOT_FOUND, 'User does not exist.', 'user-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise self.api_error(status.HTTP_404_NOT_FOUND, 'User does not exist.', 'user-not-found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         except CohortMembership.DoesNotExist:  # pylint: disable=duplicate-except
             raise self.api_error(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
                 status.HTTP_400_BAD_REQUEST,

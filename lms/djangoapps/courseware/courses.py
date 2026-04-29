@@ -246,7 +246,7 @@ def check_course_access_with_redirect(
     request = get_current_request()
     check_content_start_date_for_masquerade_user(course.id, user, request, course.start)
 
-    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # lint-amnesty, pylint: disable=line-too-long
+    access_response = check_course_access(course, user, action, check_if_enrolled, check_survey_complete, check_if_authenticated)  # noqa: E501
 
     if not access_response:
         # StartDateError should be ignored
@@ -636,7 +636,7 @@ def get_course_blocks_completion_summary(course_key, user):
 
 
 @request_cached()
-def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # lint-amnesty, pylint: disable=too-many-statements
+def get_course_assignments(course_key, user, include_access=False, include_without_due=False,):  # pylint: disable=too-many-statements
     """
     Returns a list of assignment (at the subsection/sequential level) due dates for the given course.
 
@@ -652,7 +652,7 @@ def get_course_assignments(course_key, user, include_access=False, include_witho
 
     now = datetime.now(pytz.UTC)
     assignments = []
-    for section_key in block_data.get_children(course_usage_key):  # lint-amnesty, pylint: disable=too-many-nested-blocks
+    for section_key in block_data.get_children(course_usage_key):  # pylint: disable=too-many-nested-blocks
         for subsection_key in block_data.get_children(section_key):
             due = block_data.get_xblock_field(subsection_key, 'due')
             graded = block_data.get_xblock_field(subsection_key, 'graded', False)

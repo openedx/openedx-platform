@@ -394,7 +394,7 @@ class JavaScriptLinter(BaseLinter):
         )
         self._check_jquery_function(
             file_contents, "appendTo|prependTo|insertAfter|insertBefore",
-            self.ruleset.javascript_jquery_insert_into_target, self._is_jquery_insert_caller_safe, no_argument_check, results
+            self.ruleset.javascript_jquery_insert_into_target, self._is_jquery_insert_caller_safe, no_argument_check, results  # noqa: E501
         )
         self._check_jquery_function(
             file_contents, "html", self.ruleset.javascript_jquery_html, no_caller_check,
@@ -1361,7 +1361,7 @@ class MakoTemplateLinter(BaseLinter):
                 </%static:webpack> | # webpack script tag end
                 <%block[ ]*name=['"]requirejs['"]\w*(?<!/)> |  # require js tag start
                 </%block>  # require js tag end
-            """,
+            """,  # noqa: E501
             re.VERBOSE | re.IGNORECASE
         )
         media_type_re = re.compile(r"""type=['"].*?['"]""", re.IGNORECASE)

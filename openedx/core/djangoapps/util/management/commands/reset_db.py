@@ -93,9 +93,9 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
 
         elif engine in ('postgresql', 'postgresql_psycopg2', 'postgis'):
             if engine == 'postgresql' and django.VERSION < (1, 9):
-                import psycopg as Database  # NOQA  # lint-amnesty, pylint: disable=import-error
+                import psycopg as Database  # lint-amnesty, pylint: disable=import-error
             elif engine in ('postgresql', 'postgresql_psycopg2', 'postgis'):
-                import psycopg2 as Database  # NOQA  # lint-amnesty, pylint: disable=import-error
+                import psycopg2 as Database  # lint-amnesty, pylint: disable=import-error
 
             conn_params = {'database': 'template1'}
             if user:

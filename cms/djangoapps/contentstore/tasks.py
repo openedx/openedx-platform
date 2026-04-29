@@ -437,7 +437,7 @@ def create_export_tarball(course_block, course_key, context, status=None):
 
             if parent_loc is not None:
                 parent = modulestore().get_item(parent_loc)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             # if we have a nested exception, then we'll show the more generic error message
             pass
 
@@ -525,7 +525,7 @@ def sync_discussion_settings(course_key, user):
 
         fields = ["enable_graded_units", "unit_level_visibility", "enable_in_context", "posting_restrictions"]
         # Plugin configuration is stored in the course settings under the provider name.
-        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905  # pylint: disable=line-too-long
+        field_mappings = dict(zip(fields, fields)) | {"plugin_configuration": discussion_config.provider_type}  # noqa: B905
 
         for attr_name, settings_key in field_mappings.items():
             if settings_key in discussion_settings:
@@ -1007,7 +1007,7 @@ def validate_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v2 value from the map.
 
@@ -1066,7 +1066,7 @@ def replace_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2
 
 @shared_task(time_limit=30)
 @set_code_owner_attribute
-def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # lint-amnesty, pylint: disable=useless-return
+def undo_all_library_source_blocks_ids_for_course(course_key_string, v1_to_v2_lib_map):  # pylint: disable=useless-return
     """Search a Modulestore for all library source blocks in a course by querying mongo.
         replace all source_library_ids with the corresponding v1 value from the inverted map.
         This is exists to undo changes made previously.

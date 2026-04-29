@@ -62,7 +62,7 @@ class Command(BaseCommand):
     def validate(self, v1_to_v2_lib_map):
         """ Validate that replace_all_library_source_blocks_ids was successful"""
         course_id_strings = list(CourseOverview.get_all_course_keys())
-        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # lint-amnesty, pylint: disable=line-too-long
+        tasks = group(validate_all_library_source_blocks_ids_for_course.s(course_id, v1_to_v2_lib_map) for course_id in course_id_strings)  # noqa: E501
         results = tasks.apply_async()
 
         validation = set()

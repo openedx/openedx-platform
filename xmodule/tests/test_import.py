@@ -343,7 +343,7 @@ class ImportTestCase(BaseCourseTestCase):  # lint-amnesty, pylint: disable=missi
         assert block.due == ImportTestCase.date.from_json(course_due)
         assert child.due == ImportTestCase.date.from_json(child_due)
         # Test inherited metadata. Due does not appear here (because explicitly set on child).
-        assert ImportTestCase.date.to_json(ImportTestCase.date.from_json(course_due)) == child.xblock_kvs.inherited_settings['due']  # pylint: disable=line-too-long
+        assert ImportTestCase.date.to_json(ImportTestCase.date.from_json(course_due)) == child.xblock_kvs.inherited_settings['due']  # noqa: E501
 
     def test_metadata_override_default(self):
         """

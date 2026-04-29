@@ -35,7 +35,7 @@ class Command(BaseCommand):
         except ValueError:
             raise CommandError("Invalid JSON object")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
         except KeyError:
-            raise CommandError("JSON object is missing courses list")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError("JSON object is missing courses list")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         for course_settings in courses:
             # Validate course
@@ -112,7 +112,7 @@ class Command(BaseCommand):
                     fields[field] = Date().from_json(date_json)
                     logger.info(field + " has been set to " + date_json)
                 except Exception:  # pylint: disable=broad-except
-                    logger.info("The date string could not be parsed for " + field)  # lint-amnesty, pylint: disable=logging-not-lazy
+                    logger.info("The date string could not be parsed for " + field)  # pylint: disable=logging-not-lazy
                     del fields[field]
             elif field in course_tab_list_fields:
                 # Generate CourseTabList object from the json value
@@ -121,11 +121,11 @@ class Command(BaseCommand):
                     fields[field] = CourseTabList().from_json(course_tab_list_json)
                     logger.info(field + " has been set to " + course_tab_list_json)
                 except Exception:  # pylint: disable=broad-except
-                    logger.info("The course tab list string could not be parsed for " + field)  # lint-amnesty, pylint: disable=logging-not-lazy
+                    logger.info("The course tab list string could not be parsed for " + field)  # pylint: disable=logging-not-lazy
                     del fields[field]
             else:
                 # CourseField is valid and has been set
-                logger.info(field + " has been set to " + str(fields[field]))  # lint-amnesty, pylint: disable=logging-not-lazy
+                logger.info(field + " has been set to " + str(fields[field]))  # pylint: disable=logging-not-lazy
 
         for field in all_fields:
             if field not in fields:
@@ -156,7 +156,7 @@ class Command(BaseCommand):
         if "fields" in course:
             for setting in required_field_settings:
                 if setting not in course["fields"]:
-                    logger.warning("Fields json is missing " + setting)  # lint-amnesty, pylint: disable=logging-not-lazy
+                    logger.warning("Fields json is missing " + setting)  # pylint: disable=logging-not-lazy
                     is_valid = False
 
         return is_valid

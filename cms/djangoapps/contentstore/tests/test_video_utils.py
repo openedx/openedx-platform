@@ -49,7 +49,7 @@ class ValidateVideoImageTestCase(TestCase):
                 size=settings.VIDEO_IMAGE_SETTINGS['VIDEO_IMAGE_MIN_BYTES']
             )
             error = validate_video_image(uploaded_image_file)
-            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')  # noqa: PT009  # pylint: disable=line-too-long
+            self.assertEqual(error, 'There is a problem with this image file. Try to upload a different file.')  # noqa: PT009
 
 
 @ddt.ddt
@@ -214,7 +214,7 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
             mocked_responses = []
             for resolution in YOUTUBE_THUMBNAIL_SIZES:
                 mocked_content = resolutions.get(resolution, '')
-                error_response = False if mocked_content else True  # lint-amnesty, pylint: disable=simplifiable-if-expression
+                error_response = False if mocked_content else True  # pylint: disable=simplifiable-if-expression
                 mocked_responses.append(self.mocked_youtube_thumbnail_response(mocked_content, error_response))
             return mocked_responses
 
@@ -320,14 +320,14 @@ class ScrapeVideoThumbnailsTestCase(CourseTestCase):
         (
             b'dummy-content',
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),
         (
             None,
             None,
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),

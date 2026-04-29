@@ -74,8 +74,8 @@ class ModuleStoreEnum:
     class Branch:
         """
         Branch constants to use for stores, such as Mongo, that have only 2 branches: DRAFT and PUBLISHED
-        Note: These values are taken from server configuration settings, so should not be changed without alerting DevOps  # lint-amnesty, pylint: disable=line-too-long
-        """
+        Note: These values are taken from server configuration settings, so should not be changed without alerting DevOps
+        """  # noqa: E501
         draft_preferred = 'draft-preferred'
         published_only = 'published-only'
 
@@ -299,7 +299,7 @@ class BulkOperationsMixin:
         if bulk_ops_record.active:
             return
 
-        dirty = self._end_outermost_bulk_operation(bulk_ops_record, structure_key)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        dirty = self._end_outermost_bulk_operation(bulk_ops_record, structure_key)  # pylint: disable=assignment-from-no-return
 
         # The bulk op has ended. However, the signal tasks below still need to use the
         # built-up bulk op information (if the signals trigger tasks in the same thread).
@@ -627,7 +627,7 @@ class ModuleStoreAssetBase:
         mdata.from_storable(all_assets[asset_idx])
         return mdata
 
-    def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get_all_asset_metadata(self, course_key, asset_type, start=0, maxresults=-1, sort=None, **kwargs):  # pylint: disable=unused-argument
         """
         Returns a list of asset metadata for all assets of the given asset_type in the course.
 
@@ -658,7 +658,7 @@ class ModuleStoreAssetBase:
         if asset_type is None:
             # Add assets of all types to the sorted list.
             all_assets = SortedAssetList(iterable=[], key=key_func)
-            for asset_type, val in course_assets.items():  # lint-amnesty, pylint: disable=redefined-argument-from-local  # noqa: B007
+            for asset_type, val in course_assets.items():  # lint-amnesty, pylint: disable=redefined-argument-from-local  # noqa: B007, E501
                 all_assets.update(val)
         else:
             # Add assets of a single type to the sorted list.
@@ -714,7 +714,7 @@ class ModuleStoreAssetWriteInterface(ModuleStoreAssetBase):
         for asset_md in asset_metadata_list:
             if asset_md.asset_id.course_key != course_key:
                 # pylint: disable=logging-format-interpolation
-                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(  # noqa: UP032  # pylint: disable=line-too-long
+                log.warning("Asset's course {} does not match other assets for course {} - not saved.".format(  # noqa: UP032
                     asset_md.asset_id.course_key, course_key
                 ))
                 continue
@@ -1317,7 +1317,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             result[field.scope][field_name] = value
         return result
 
-    def create_course(self, org, course, run, user_id, fields=None, runtime=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_course(self, org, course, run, user_id, fields=None, runtime=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates any necessary other things for the course as a side effect and doesn't return
         anything useful. The real subclass should call this before it returns the course.
@@ -1338,7 +1338,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             continue_version=True,
         )
 
-    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def clone_course(self, source_course_id, dest_course_id, user_id, fields=None, **kwargs):  # pylint: disable=unused-argument
         """
         This base method just copies the assets. The lower level impls must do the actual cloning of
         content.
@@ -1391,7 +1391,7 @@ class ModuleStoreWriteBase(ModuleStoreReadBase, ModuleStoreWrite):
             fields (dict): A dictionary specifying initial values for some or all fields
                 in the newly created block
         """
-        item = self.create_item(user_id, parent_usage_key.course_key, block_type, block_id=block_id, fields=fields, **kwargs)  # lint-amnesty, pylint: disable=line-too-long
+        item = self.create_item(user_id, parent_usage_key.course_key, block_type, block_id=block_id, fields=fields, **kwargs)  # noqa: E501
         parent = self.get_item(parent_usage_key)
         parent.children.append(item.location)
         self.update_item(parent, user_id)

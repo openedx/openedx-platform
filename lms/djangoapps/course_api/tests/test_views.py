@@ -218,7 +218,7 @@ class CourseListViewTestCaseMultipleCourses(CourseApiTestViewMixin, ModuleStoreT
             if filter_:
                 params.update(filter_)
             response = self.verify_response(params=params)
-            assert {course['course_id'] for course in response.data['results']} == {str(course.id) for course in expected_courses}, f'testing course_api.views.CourseListView with filter_={filter_}'  # pylint: disable=line-too-long
+            assert {course['course_id'] for course in response.data['results']} == {str(course.id) for course in expected_courses}, f'testing course_api.views.CourseListView with filter_={filter_}'  # noqa: E501
 
     def test_get_when_no_permission_then_filters_correctly(self):
         """

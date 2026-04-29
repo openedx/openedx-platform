@@ -110,7 +110,7 @@ class EdxNotesDecoratorTest(ModuleStoreTestCase):
         ApplicationFactory(name="edx-notes")
         self.course = CourseFactory(edxnotes=True, default_store=ModuleStoreEnum.Type.split)
         self.user = UserFactory()
-        self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+        self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
         self.problem = TestProblem(self.course, self.user)
 
     @patch.dict("django.conf.settings.FEATURES", {'ENABLE_EDXNOTES': True})
@@ -238,7 +238,7 @@ class EdxNotesHelpersTest(ModuleStoreTestCase):
             self.child_html_block = self.store.get_item(self.child_html_block.location)
 
             self.user = UserFactory()
-            self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+            self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
 
         self.request = RequestFactory().request()
         self.request.user = self.user
@@ -956,19 +956,19 @@ class EdxNotesViewsTest(ModuleStoreTestCase):
         self.course = CourseFactory(edxnotes=True)
         self.user = UserFactory()
         CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # lint-amnesty, pylint: disable=no-member
-        self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+        self.client.login(username=self.user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
         self.notes_page_url = reverse("edxnotes", args=[str(self.course.id)])  # lint-amnesty, pylint: disable=no-member
         self.notes_url = reverse("notes", args=[str(self.course.id)])  # lint-amnesty, pylint: disable=no-member
         self.get_token_url = reverse("get_token", args=[str(self.course.id)])  # lint-amnesty, pylint: disable=no-member
-        self.visibility_url = reverse("edxnotes_visibility", args=[str(self.course.id)])  # lint-amnesty, pylint: disable=no-member
+        self.visibility_url = reverse("edxnotes_visibility", args=[str(self.course.id)])  # pylint: disable=no-member
 
     def _get_course_block(self):
         """
         Returns the course block.
         """
-        field_data_cache = FieldDataCache([self.course], self.course.id, self.user)  # lint-amnesty, pylint: disable=no-member
+        field_data_cache = FieldDataCache([self.course], self.course.id, self.user)  # pylint: disable=no-member
         return get_block_for_descriptor(
-            self.user, MagicMock(), self.course, field_data_cache, self.course.id, course=self.course  # lint-amnesty, pylint: disable=no-member
+            self.user, MagicMock(), self.course, field_data_cache, self.course.id, course=self.course  # pylint: disable=no-member
         )
 
     def test_edxnotes_tab(self):

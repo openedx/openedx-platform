@@ -334,7 +334,7 @@ class TestOverrideScoreInstructorTask(TestInstructorTasks):
         Tests score override for a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'override_problem_score').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
+        getattr(mock_instance, 'override_problem_score').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009, E501
 
         num_students = 10
         self._create_students_with_state(num_students)
@@ -427,7 +427,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         mock_instance = MagicMock()
         del mock_instance.rescore_problem
         del mock_instance.rescore
-        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor') as mock_get_block:  # lint-amnesty, pylint: disable=line-too-long
+        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor') as mock_get_block:  # noqa: E501
             mock_get_block.return_value = mock_instance
             with pytest.raises(UpdateProblemModuleStateError):
                 self._run_task_with_mock_celery(rescore_problem, task_entry.id, task_entry.task_id)
@@ -449,7 +449,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         num_students = 1
         self._create_students_with_state(num_students, input_state)
         task_entry = self._create_input_entry()
-        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor', return_value=None):  # lint-amnesty, pylint: disable=line-too-long
+        with patch('lms.djangoapps.instructor_task.tasks_helper.module_state.get_block_for_descriptor', return_value=None):  # noqa: E501
             self._run_task_with_mock_celery(rescore_problem, task_entry.id, task_entry.task_id)
 
         self.assert_task_output(
@@ -467,7 +467,7 @@ class TestRescoreInstructorTask(TestInstructorTasks):
         Tests rescores a problem in a course, for all students succeeds.
         """
         mock_instance = MagicMock()
-        getattr(mock_instance, 'rescore').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009
+        getattr(mock_instance, 'rescore').return_value = None  # lint-amnesty, pylint: disable=literal-used-as-attribute  # noqa: B009, E501
         mock_instance.has_submitted_answer.return_value = True
         del mock_instance.done  # old CAPA code used to use this value so we delete it here to be sure
 

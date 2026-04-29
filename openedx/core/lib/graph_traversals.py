@@ -161,7 +161,7 @@ def traverse_topologically(
     )
 
 
-def traverse_pre_order(start_node, get_children, filter_func=None):  # lint-amnesty, pylint: disable=redefined-outer-name
+def traverse_pre_order(start_node, get_children, filter_func=None):  # pylint: disable=redefined-outer-name
     """
     Generator for yielding nodes of a tree (or directed acyclic graph)
     in a pre-order sort.
@@ -178,7 +178,7 @@ def traverse_pre_order(start_node, get_children, filter_func=None):  # lint-amne
     )
 
 
-def traverse_post_order(start_node, get_children, filter_func=None):  # lint-amnesty, pylint: disable=redefined-outer-name
+def traverse_post_order(start_node, get_children, filter_func=None):  # pylint: disable=redefined-outer-name
     """
     Generator for yielding nodes of a tree (or directed acyclic graph)
     in a post-order sort.

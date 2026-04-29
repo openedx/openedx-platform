@@ -289,7 +289,7 @@ class OldModuleStoreRuntime(ModuleStoreRuntime, EditInfoRuntimeMixin):  # pylint
         key = UsageKey.from_string(ref_string)
         return key.replace(run=self.modulestore.fill_in_run(key.course_key).run)
 
-    def _convert_reference_fields_to_keys(self, class_, course_key, jsonfields):  # lint-amnesty, pylint: disable=unused-argument
+    def _convert_reference_fields_to_keys(self, class_, course_key, jsonfields):  # pylint: disable=unused-argument
         """
         Find all fields of type reference and convert the payload into UsageKeys
         :param class_: the XBlock class
@@ -907,7 +907,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         except ItemNotFoundError:
             return False
 
-    def get_item(self, usage_key, using_descriptor_system=None, for_parent=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_item(self, usage_key, using_descriptor_system=None, for_parent=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns an XModuleDescriptor instance for the item at location.
 
@@ -1025,7 +1025,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         )
         return blocks
 
-    def create_course(self, org, course, run, user_id, fields=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_course(self, org, course, run, user_id, fields=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and returns the course.
 
@@ -1135,7 +1135,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
         xblock.save()
         return xblock
 
-    def create_item(self, user_id, course_key, block_type, block_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_item(self, user_id, course_key, block_type, block_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and saves a new item in a course.
 
@@ -1161,7 +1161,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
 
         return xblock
 
-    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_child(self, user_id, parent_usage_key, block_type, block_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Creates and saves a new xblock that as a child of the specified block
 
@@ -1497,7 +1497,7 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
             self.database.client.admin.command('ismaster')
             return {ModuleStoreEnum.Type.mongo: True}
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     def ensure_indexes(self):
         """
@@ -1552,6 +1552,6 @@ class MongoModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase, Mongo
     def unpublish(self, location, user_id):
         raise NotImplementedError()
 
-    def update_item(self, xblock, user_id, allow_not_found=False, force=False, isPublish=False,  # lint-amnesty, pylint: disable=arguments-differ
+    def update_item(self, xblock, user_id, allow_not_found=False, force=False, isPublish=False,  # pylint: disable=arguments-differ
                     is_publish_root=True):
         raise NotImplementedError

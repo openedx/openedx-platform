@@ -344,7 +344,7 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
         user = UserFactory()
         role = 'instructor'
         run = '3T2017'
-        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(original_course_run.id)})  # lint-amnesty, pylint: disable=no-member
+        url = reverse('api:v1:course_run-rerun', kwargs={'pk': str(original_course_run.id)})  # pylint: disable=no-member
         data = {
             'run': run,
             'schedule': {
@@ -383,7 +383,7 @@ class CourseRunViewSetTests(ModuleStoreTestCase):
         self.assert_course_access_role_count(course_run, 1)
         course_orgs = get_course_organizations(course_run_key)
         self.assertEqual(len(course_orgs), 1)  # noqa: PT009
-        self.assertEqual(course_orgs[0]['short_name'], original_course_run.id.org)  # lint-amnesty, pylint: disable=no-member  # noqa: PT009
+        self.assertEqual(course_orgs[0]['short_name'], original_course_run.id.org)  # pylint: disable=no-member  # noqa: PT009
 
     def test_rerun_duplicate_run(self):
         course_run = ToyCourseFactory()

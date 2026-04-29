@@ -1451,7 +1451,7 @@ class CourseEnrollment(models.Model):
                                               user.id, course_key, enrollment_state)
 
     @classmethod
-    def _update_enrollment_state_in_cache(cls, cache, user_id, course_key, enrollment_state):  # lint-amnesty, pylint: disable=redefined-outer-name
+    def _update_enrollment_state_in_cache(cls, cache, user_id, course_key, enrollment_state):  # pylint: disable=redefined-outer-name
         """
         Updates the cached value for the user's enrollment in the
         given cache.

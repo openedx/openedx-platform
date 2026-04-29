@@ -53,7 +53,7 @@ class CourseRunViewSet(viewsets.GenericViewSet):  # lint-amnesty, pylint: disabl
         serializer = self.get_serializer(course_run)
         return Response(serializer.data)
 
-    def update(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+    def update(self, request, *args, **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
         course_run = self.get_object()
 
         partial = kwargs.pop('partial', False)
@@ -77,7 +77,7 @@ class CourseRunViewSet(viewsets.GenericViewSet):  # lint-amnesty, pylint: disabl
         methods=['post', 'put'],
         parser_classes=(parsers.FormParser, parsers.MultiPartParser,),
         serializer_class=CourseRunImageSerializer)
-    def images(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+    def images(self, request, *args, **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
         course_run = self.get_object()
         serializer = CourseRunImageSerializer(course_run, data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)
@@ -85,7 +85,7 @@ class CourseRunViewSet(viewsets.GenericViewSet):  # lint-amnesty, pylint: disabl
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def rerun(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+    def rerun(self, request, *args, **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
         course_run = self.get_object()
         serializer = CourseRunRerunSerializer(course_run, data=request.data, context=self.get_serializer_context())
         serializer.is_valid(raise_exception=True)

@@ -24,22 +24,22 @@ class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-
             name='HistoricalCourseEntitlement',
             fields=[
                 ('id', models.IntegerField(auto_created=True, blank=True, db_index=True, verbose_name='ID')),
-                ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),  # lint-amnesty, pylint: disable=line-too-long
-                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),  # lint-amnesty, pylint: disable=line-too-long
+                ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),
+                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
                 ('uuid', models.UUIDField(db_index=True, default=uuid.uuid4, editable=False)),
                 ('course_uuid', models.UUIDField(help_text='UUID for the Course, not the Course Run')),
-                ('expired_at', models.DateTimeField(blank=True, help_text='The date that an entitlement expired, if NULL the entitlement has not expired.', null=True)),  # lint-amnesty, pylint: disable=line-too-long
-                ('mode', models.CharField(help_text='The mode of the Course that will be applied on enroll.', max_length=100)),  # lint-amnesty, pylint: disable=line-too-long
+                ('expired_at', models.DateTimeField(blank=True, help_text='The date that an entitlement expired, if NULL the entitlement has not expired.', null=True)),
+                ('mode', models.CharField(help_text='The mode of the Course that will be applied on enroll.', max_length=100)),
                 ('order_number', models.CharField(max_length=128, null=True)),
                 ('refund_locked', models.BooleanField(default=False)),
                 ('history_id', models.AutoField(primary_key=True, serialize=False)),
                 ('history_date', models.DateTimeField()),
                 ('history_change_reason', models.CharField(max_length=100, null=True)),
-                ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),  # lint-amnesty, pylint: disable=line-too-long
-                ('_policy', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='entitlements.CourseEntitlementPolicy')),  # lint-amnesty, pylint: disable=line-too-long
-                ('enrollment_course_run', models.ForeignKey(blank=True, db_constraint=False, help_text='The current Course enrollment for this entitlement. If NULL the Learner has not enrolled.', null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='student.CourseEnrollment')),  # lint-amnesty, pylint: disable=line-too-long
-                ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),  # lint-amnesty, pylint: disable=line-too-long
-                ('user', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),  # lint-amnesty, pylint: disable=line-too-long
+                ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),
+                ('_policy', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='entitlements.CourseEntitlementPolicy')),
+                ('enrollment_course_run', models.ForeignKey(blank=True, db_constraint=False, help_text='The current Course enrollment for this entitlement. If NULL the Learner has not enrolled.', null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='student.CourseEnrollment')),
+                ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('user', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),
             ],
             options={
                 'ordering': ('-history_date', '-history_id'),

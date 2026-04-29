@@ -452,7 +452,7 @@ def _detect_index_drift(index_name: str) -> IndexDrift:
 
 def reconcile_index(
     status_cb: Callable[[str], None] | None = None, warn_cb: Callable[[str], None] | None = None
-) -> None:  # noqa: E501
+) -> None:
     """
     Reconcile the Meilisearch index state.
 

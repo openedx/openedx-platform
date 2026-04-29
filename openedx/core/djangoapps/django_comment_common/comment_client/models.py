@@ -34,7 +34,7 @@ class Model:
             return self.attributes[name]
         except KeyError:
             if self.retrieved or self.id is None:
-                raise AttributeError(f"Field {name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise AttributeError(f"Field {name} does not exist")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
             self.retrieve()
             return self.__getattr__(name)
 
@@ -177,7 +177,7 @@ class Model:
             try:
                 return cls.url_with_id(params)
             except KeyError:
-                raise CommentClientRequestError(f"Cannot perform action {action} without id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise CommentClientRequestError(f"Cannot perform action {action} without id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         else:   # action must be in DEFAULT_ACTIONS_WITHOUT_ID now
             return cls.url_without_id()
 

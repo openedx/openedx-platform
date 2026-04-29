@@ -133,7 +133,6 @@ account_get_me_return_schema = openapi.Schema(
 )
 
 
-# pylint: disable=line-too-long
 class AccountViewSet(ViewSet):
     """View or update a user's account information."""
 
@@ -182,7 +181,7 @@ class AccountViewSet(ViewSet):
         If the user makes the request for her own account, or makes a request for another account and has "is_staff" access, an HTTP 200 "OK" response is returned.
 
         The response consists of a list of one or more  user objects, in the same format as is returned for `GET /user/v1/accounts/{username}`.
-        """
+        """  # noqa: E501
         usernames = request.GET.get("username")
         user_email = request.GET.get("email")
         lms_user_id = request.GET.get("lms_user_id")
@@ -194,7 +193,7 @@ class AccountViewSet(ViewSet):
             if is_email_retired(user_email):
                 can_cancel_retirement = True
                 retirement_id = None
-                earliest_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=settings.COOL_OFF_DAYS)
+                earliest_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=settings.COOL_OFF_DAYS)  # noqa: E501
                 try:
                     retirement_status = UserRetirementStatus.objects.get(
                         created__gt=earliest_datetime,
@@ -262,7 +261,7 @@ class AccountViewSet(ViewSet):
                     "id": 8,
                 }
             ]
-        """
+        """  # noqa: E501
         if not request.user.is_staff:
             return Response(
                 {"developer_message": "not_found", "user_message": "Not Found"}, status=status.HTTP_404_NOT_FOUND
@@ -342,7 +341,7 @@ class AccountViewSet(ViewSet):
         If a user who does not have "is_staff" access requests account information for a different user, only a subset of these fields is returned. The returned fields depend on the `ACCOUNT_VISIBILITY_CONFIGURATION` configuration setting and the visibility preference of the user for whom data is requested.
 
         A user can view which account fields they have shared with other users by requesting their own username and providing the "view=shared" URL parameter.
-        """
+        """  # noqa: E501
         try:
             account_settings = get_account_settings(request, [username], view=request.query_params.get("view"))
         except UserNotFound:
@@ -388,7 +387,7 @@ class AccountViewSet(ViewSet):
         If a failure at the time of the update prevents the update, a 400 "Bad Request" error is returned. The JSON collection contains specific errors.
 
         If the update is successful, updated user account data is returned.
-        """
+        """  # noqa: E501
         if request.content_type != MergePatchParser.media_type:
             raise UnsupportedMediaType(request.content_type)
 
@@ -422,7 +421,6 @@ class AccountViewSet(ViewSet):
         return Response(account_settings)
 
 
-# pylint: enable=line-too-long
 
 
 class NameChangeView(ViewSet):

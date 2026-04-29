@@ -63,7 +63,7 @@ from common.djangoapps.student.helpers import (
     get_next_url_for_login_page,
     get_redirect_url_with_host,
 )
-from common.djangoapps.student.message_types import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.message_types import (
     AccountActivation,
     EmailChange,
     EmailChangeConfirmation,
@@ -754,7 +754,7 @@ def validate_new_email(user, new_email):
     try:
         validate_email(new_email)
     except ValidationError:
-        raise ValueError(_('Valid e-mail address required.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Valid e-mail address required.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     if new_email == user.email:
         raise ValueError(_('Old email is the same as the new email.'))
@@ -850,7 +850,7 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
     except Exception:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

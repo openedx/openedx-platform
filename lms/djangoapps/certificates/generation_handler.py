@@ -113,7 +113,7 @@ def _generate_certificate_task(user, course_key, enrollment_mode, course_grade, 
     try:
         # .. filter_implemented_name: CertificateCreationRequested
         # .. filter_type: org.openedx.learning.certificate.creation.requested.v1
-        user, course_key, enrollment_mode, status, course_grade, generation_mode = CertificateCreationRequested.run_filter(  # pylint: disable=line-too-long
+        user, course_key, enrollment_mode, status, course_grade, generation_mode = CertificateCreationRequested.run_filter(  # noqa: E501
             user=user,
             course_key=course_key,
             mode=enrollment_mode,

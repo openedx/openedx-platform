@@ -684,7 +684,7 @@ def _section_data_download(course, access):
         'list_report_downloads_url': reverse('list_report_downloads', kwargs={'course_id': str(course_key)}),
         'calculate_grades_csv_url': reverse('calculate_grades_csv', kwargs={'course_id': str(course_key)}),
         'problem_grade_report_url': reverse('problem_grade_report', kwargs={'course_id': str(course_key)}),
-        'course_has_survey': True if course.course_survey_name else False,  # lint-amnesty, pylint: disable=simplifiable-if-expression
+        'course_has_survey': True if course.course_survey_name else False,  # pylint: disable=simplifiable-if-expression
         'course_survey_results_url': reverse(
             'get_course_survey_results', kwargs={'course_id': str(course_key)}
         ),

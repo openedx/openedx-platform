@@ -42,7 +42,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
 
             return json.loads(resp.content.decode('utf-8'))
 
-        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # lint-amnesty, pylint: disable=line-too-long
+        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # noqa: E501
         content = init_content + '</iframe>'
         payload = get_response(content, 'January 8, 2013')
         self.assertHTMLEqual(payload['content'], content)
@@ -172,13 +172,13 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         )
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
         # course_updates 'data' field should not update automatically
         self.assertEqual(course_updates.data, '')  # noqa: PT009
 
         # test delete course update item (soft delete)
         course_updates = modulestore().get_item(location)
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 1}])  # noqa: PT009
         # now try to delete first update item
         resp = self.client.delete(course_update_url + '1')
         self.assertEqual(json.loads(resp.content.decode('utf-8')), [])  # noqa: PT009
@@ -220,7 +220,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         course_updates.data = 'bad news'
         modulestore().update_item(course_updates, self.user.id)
 
-        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # lint-amnesty, pylint: disable=line-too-long
+        init_content = '<iframe width="560" height="315" src="http://www.youtube.com/embed/RocY-Jd93XU" frameborder="0">'  # noqa: E501
         content = init_content + '</iframe>'
         payload = {'content': content, 'date': 'January 8, 2013'}
 
@@ -316,7 +316,7 @@ class CourseUpdateTest(CourseTestCase):  # lint-amnesty, pylint: disable=missing
         self.assertHTMLEqual(update_content, json.loads(resp.content.decode('utf-8'))['content'])
         course_updates = modulestore().get_item(updates_location)
         del course_updates.items[0]["status"]
-        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(course_updates.items, [{'date': update_date, 'content': update_content, 'id': 2}])  # noqa: PT009
 
 
 class CourseUpdateAuthzTest(CourseAuthzTestMixin, CourseTestCase):

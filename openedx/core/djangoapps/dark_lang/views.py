@@ -29,7 +29,7 @@ class PreviewLanguageFragmentView(EdxFragmentView):
     POST - updates or clears the setting to the given dark language
     """
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ, unused-argument
         """
         Renders the language preview view as a fragment.
         """

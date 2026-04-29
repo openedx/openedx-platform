@@ -12,7 +12,7 @@ import pytest
 
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.models import (
     AlreadyEnrolledError,
     CourseEnrollment,
     CourseFullError,

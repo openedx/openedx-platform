@@ -79,7 +79,7 @@ def requires_pillow_jpeg(func):
         try:
             from PIL import Image
         except ImportError:
-            raise SkipTest("Pillow is not installed (or not found)")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise SkipTest("Pillow is not installed (or not found)")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         if not getattr(Image.core, "jpeg_decoder", False):
             raise SkipTest("Pillow cannot open JPEG files")
         return func(*args, **kwargs)
@@ -301,7 +301,7 @@ class ImportRequiredTestCases(ContentStoreTestCase):
         html_block = self.store.get_item(html_block_location)
         self.assertIn('/jump_to_id/nonportable_link', html_block.data)  # noqa: PT009
 
-    def verify_content_existence(self, store, root_dir, course_id, dirname, category_name, filename_suffix=''):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def verify_content_existence(self, store, root_dir, course_id, dirname, category_name, filename_suffix=''):  # pylint: disable=missing-function-docstring
         filesystem = OSFS(root_dir / 'test_export')
         self.assertTrue(filesystem.exists(dirname))  # noqa: PT009
 
@@ -441,7 +441,7 @@ class ImportRequiredTestCases(ContentStoreTestCase):
 
         # get the sample HTML with styling information
         html_block = self.store.get_item(course_id.make_usage_key('html', 'with_styling'))
-        self.assertIn('<p style="font:italic bold 72px/30px Georgia, serif; color: red; ">', html_block.data)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertIn('<p style="font:italic bold 72px/30px Georgia, serif; color: red; ">', html_block.data)  # noqa: PT009
 
         # get the sample HTML with just a simple <img> tag information
         html_block = self.store.get_item(course_id.make_usage_key('html', 'just_img'))
@@ -1447,7 +1447,7 @@ class ContentStoreTest(ContentStoreTestCase):
         problem_loc = UsageKey.from_string(payload['locator'])
         problem = self.store.get_item(problem_loc)
         self.assertIsInstance(problem, ProblemBlock, "New problem is not a ProblemBlock")  # noqa: PT009
-        self.assertNotIn('markdown', problem.editable_metadata_fields, "Markdown slipped into the editable metadata fields")  # lint-amnesty, pylint: disable=line-too-long  # noqa: PT009
+        self.assertNotIn('markdown', problem.editable_metadata_fields, "Markdown slipped into the editable metadata fields")  # noqa: E501, PT009
 
     def test_cms_imported_course_walkthrough(self):
         """
@@ -1921,7 +1921,7 @@ class RerunCourseTest(ContentStoreTestCase):
         # Verify video upload pipeline is empty.
         source_course = self.store.get_course(source_course.id)
         new_course = self.store.get_course(destination_course_key)
-        self.assertDictEqual(source_course.video_upload_pipeline, {"course_video_upload_token": 'test-token'})  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertDictEqual(source_course.video_upload_pipeline, {"course_video_upload_token": 'test-token'})  # noqa: PT009
         self.assertEqual(new_course.video_upload_pipeline, {})  # noqa: PT009
 
     def test_rerun_course_success(self):

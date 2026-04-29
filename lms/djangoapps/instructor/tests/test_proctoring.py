@@ -35,7 +35,7 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        button = '<button type="button" class="btn-link special_exams" data-section="special_exams">Special Exams</button>'  # lint-amnesty, pylint: disable=line-too-long
+        button = '<button type="button" class="btn-link special_exams" data-section="special_exams">Special Exams</button>'  # noqa: E501
         cls.proctoring_link = button
 
     def setUp(self):
@@ -49,13 +49,13 @@ class TestProctoringDashboardViews(SharedModuleStoreTestCase):
         """
         Create URL for instructor dashboard
         """
-        self.url = reverse('instructor_dashboard', kwargs={'course_id': str(course.id)})  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.url = reverse('instructor_dashboard', kwargs={'course_id': str(course.id)})  # pylint: disable=attribute-defined-outside-init
 
     def setup_course(self, enable_proctored_exams, enable_timed_exams):
         """
         Create course based on proctored exams and timed exams values
         """
-        self.course = CourseFactory.create(enable_proctored_exams=enable_proctored_exams,  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = CourseFactory.create(enable_proctored_exams=enable_proctored_exams,  # pylint: disable=attribute-defined-outside-init
                                            enable_timed_exams=enable_timed_exams)
         self.setup_course_url(self.course)
 

@@ -168,7 +168,7 @@ def update_user_preferences(requesting_user, update, user=None):
                 if serializer_is_dirty(serializer):
                     serializer.save()
             except Exception as error:
-                raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         else:
             delete_user_preference(requesting_user, preference_key)
 
@@ -208,7 +208,7 @@ def set_user_preference(requesting_user, preference_key, preference_value, usern
         try:
             serializer.save()
         except Exception as error:
-            raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise _create_preference_update_error(preference_key, preference_value, error)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 @intercept_errors(UserAPIInternalError, ignore_errors=[UserAPIRequestError])
@@ -403,7 +403,7 @@ def validate_user_preference_serializer(serializer, preference_key, preference_v
         raise PreferenceValidationError({
             preference_key: {
                 "developer_message": format_string.format(preference_key=preference_key),
-                "user_message": _(format_string).format(preference_key=preference_key)  # lint-amnesty, pylint: disable=translation-of-non-string
+                "user_message": _(format_string).format(preference_key=preference_key)  # pylint: disable=translation-of-non-string
             }
         })
     if not serializer.is_valid():
@@ -412,7 +412,7 @@ def validate_user_preference_serializer(serializer, preference_key, preference_v
         # messages into the strings only.
         for key in errors:
             errors[key] = [str(el) for el in errors[key]]
-        developer_message = "Value '{preference_value}' not valid for preference '{preference_key}': {error}".format(  # noqa: UP032  # pylint: disable=line-too-long
+        developer_message = "Value '{preference_value}' not valid for preference '{preference_key}': {error}".format(  # noqa: UP032
             preference_key=preference_key, preference_value=preference_value, error=errors
         )
         if "key" in serializer.errors:
@@ -430,7 +430,7 @@ def validate_user_preference_serializer(serializer, preference_key, preference_v
             }
         })
     if preference_key == "time_zone" and preference_value not in common_timezones_set:
-        developer_message = gettext_noop("Value '{preference_value}' not valid for preference '{preference_key}': Not in timezone set.")  # pylint: disable=line-too-long
+        developer_message = gettext_noop("Value '{preference_value}' not valid for preference '{preference_key}': Not in timezone set.")  # noqa: E501
         user_message = gettext_noop("Value '{preference_value}' is not a valid time zone selection.")
         raise PreferenceValidationError({
             preference_key: {

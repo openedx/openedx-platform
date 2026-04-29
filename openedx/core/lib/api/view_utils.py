@@ -156,7 +156,7 @@ def add_serializer_errors(serializer, data, field_errors):
         for key, error in errors.items():
             error = clean_errors(error)
             if key == 'bio':
-                user_message = _(f"The about me field must be at most {BIO_MAX_LENGTH} characters long.")  # lint-amnesty, pylint: disable=translation-of-non-string
+                user_message = _(f"The about me field must be at most {BIO_MAX_LENGTH} characters long.")  # pylint: disable=translation-of-non-string
             else:
                 user_message = _("This value is invalid.")
 
@@ -291,7 +291,7 @@ class LazySequence(Sequence):
                     self._data.append(next(self.iterable))
                 except StopIteration:
                     self._exhausted = True
-                    raise IndexError("Underlying sequence exhausted")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise IndexError("Underlying sequence exhausted")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
             return self._data[index]
         elif isinstance(index, slice):

@@ -80,8 +80,8 @@ class TestApplicability(ModuleStoreTestCase):
         assert applicability is False
 
         disabled_course = CourseFactory()
-        CourseModeFactory.create(course_id=disabled_course.id, mode_slug='verified')  # lint-amnesty, pylint: disable=no-member
-        disabled_course_overview = CourseOverview.get_from_id(disabled_course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseModeFactory.create(course_id=disabled_course.id, mode_slug='verified')  # pylint: disable=no-member
+        disabled_course_overview = CourseOverview.get_from_id(disabled_course.id)  # pylint: disable=no-member
         DiscountRestrictionConfig.objects.create(disabled=True, course=disabled_course_overview)
         applicability = can_receive_discount(user=self.user, course=disabled_course)
         assert applicability is False

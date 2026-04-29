@@ -93,7 +93,7 @@ def get_user_timezone_or_last_seen_timezone_or_utc(user):
     # We have seen non-printable characters (i.e. \x00) showing up in the
     # user_timezone (I believe via the get_last_seen_courseware_timezone method).
     # This sanitizes the user_timezone before passing it in.
-    user_timezone = filter(lambda l: l in string.printable, user_timezone)
+    user_timezone = filter(lambda char: char in string.printable, user_timezone)
     user_timezone = ''.join(user_timezone)
     try:
         return timezone(user_timezone)

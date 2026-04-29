@@ -41,7 +41,7 @@ def register_special_exams(course_key):
 
     course = modulestore().get_course(course_key)
     if course is None:
-        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # lint-amnesty, pylint: disable=raising-format-tuple
+        raise ItemNotFoundError("Course {} does not exist", str(course_key))  # pylint: disable=raising-format-tuple
 
     if not course.enable_proctored_exams and not course.enable_timed_exams:
         # likewise if course does not have these features turned on

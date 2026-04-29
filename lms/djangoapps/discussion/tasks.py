@@ -245,7 +245,7 @@ def _get_course_language(course_id):
     return language
 
 
-def _build_message_context(context, notification_type='forum_comment'):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _build_message_context(context, notification_type='forum_comment'):  # pylint: disable=missing-function-docstring
     message_context = get_base_template_context(context['site'])
     message_context.update(context)
     thread_author = User.objects.get(id=context['thread_author_id'])
@@ -273,7 +273,7 @@ def _build_message_context(context, notification_type='forum_comment'):  # lint-
     return message_context
 
 
-def _build_message_context_for_reported_content(context, moderator):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _build_message_context_for_reported_content(context, moderator):  # pylint: disable=missing-function-docstring
     message_context = get_base_template_context(context['site'])
     message_context.update(context)
     use_mfe_url = ENABLE_DISCUSSIONS_MFE.is_enabled(context['course_id'])

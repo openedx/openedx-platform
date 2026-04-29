@@ -82,7 +82,7 @@ class CreateAccountMixin:  # lint-amnesty, pylint: disable=missing-class-docstri
 @skip_unless_lms
 @ddt.ddt
 @patch('common.djangoapps.student.views.management.render_to_response',
-       Mock(side_effect=mock_render_to_response, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_response, autospec=True))
 class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAccountMixin, RetirementTestCase):
     """
     These tests specifically cover the parts of the API methods that are not covered by test_views.py.

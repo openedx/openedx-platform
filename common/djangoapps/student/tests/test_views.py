@@ -310,8 +310,8 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         Verify that the course sharing icons show up if course is starting in future and
         any of marketing or social sharing urls are set.
         """
-        self.course = CourseFactory.create(start=TOMORROW, emit_signals=True)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
-        self.course_enrollment = CourseEnrollmentFactory(course_id=self.course.id, user=self.user)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = CourseFactory.create(start=TOMORROW, emit_signals=True)  # pylint: disable=attribute-defined-outside-init
+        self.course_enrollment = CourseEnrollmentFactory(course_id=self.course.id, user=self.user)  # pylint: disable=attribute-defined-outside-init
         self.set_course_sharing_urls(set_marketing, set_social_sharing)
 
         # Assert course sharing icons
@@ -326,14 +326,14 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         If we remove the prerequisite and access the dashboard again, the prerequisite
         should not appear.
         """
-        self.pre_requisite_course = CourseFactory.create(org='edx', number='999', display_name='Pre requisite Course')  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.pre_requisite_course = CourseFactory.create(org='edx', number='999', display_name='Pre requisite Course')  # pylint: disable=attribute-defined-outside-init
         self.course = CourseFactory.create(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
             org='edx',
             number='998',
             display_name='Test Course',
             pre_requisite_courses=[str(self.pre_requisite_course.id)]
         )
-        self.course_enrollment = CourseEnrollmentFactory(course_id=self.course.id, user=self.user)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course_enrollment = CourseEnrollmentFactory(course_id=self.course.id, user=self.user)  # pylint: disable=attribute-defined-outside-init
 
         set_prerequisite_courses(self.course.id, [str(self.pre_requisite_course.id)])
         response = self.client.get(reverse('dashboard'))
@@ -547,7 +547,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
             start=TOMORROW, self_paced=True, enrollment_end=TOMORROW
         )
         mock_course_overview.return_value = mocked_course_overview
-        course_enrollment = CourseEnrollmentFactory(user=self.user, course_id=str(mocked_course_overview.id), created=THREE_YEARS_AGO)  # lint-amnesty, pylint: disable=line-too-long
+        course_enrollment = CourseEnrollmentFactory(user=self.user, course_id=str(mocked_course_overview.id), created=THREE_YEARS_AGO)  # noqa: E501
         mock_course_runs.return_value = [
             {
                 'key': str(mocked_course_overview.id),
@@ -557,7 +557,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
                 'status': 'published'
             }
         ]
-        entitlement = CourseEntitlementFactory(user=self.user, enrollment_course_run=course_enrollment, created=THREE_YEARS_AGO)  # lint-amnesty, pylint: disable=line-too-long
+        entitlement = CourseEntitlementFactory(user=self.user, enrollment_course_run=course_enrollment, created=THREE_YEARS_AGO)  # noqa: E501
         program = ProgramFactory()
         program['courses'][0]['course_runs'] = [{'key': str(mocked_course_overview.id)}]
         program['courses'][0]['uuid'] = entitlement.course_uuid
@@ -660,7 +660,7 @@ class StudentDashboardTests(SharedModuleStoreTestCase, MilestonesTestCaseMixin, 
         return ''.join(response.content.decode('utf-8').split())
 
     @staticmethod
-    def _pull_course_run_from_course_key(course_key: CourseKey):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _pull_course_run_from_course_key(course_key: CourseKey):  # pylint: disable=missing-function-docstring
         return course_key.run.replace('_', ' ')
 
     @staticmethod

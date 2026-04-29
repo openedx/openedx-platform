@@ -67,7 +67,7 @@ def _instantiate_backend_from_name(name, options):
         module_name = '.'.join(parts[:-1])
         class_name = parts[-1]
     except IndexError:
-        raise ValueError('Invalid event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+        raise ValueError('Invalid event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031
 
     # Get and verify the backend class
 
@@ -77,7 +77,7 @@ def _instantiate_backend_from_name(name, options):
         if not inspect.isclass(cls) or not issubclass(cls, BaseBackend):
             raise TypeError
     except (ValueError, AttributeError, TypeError, ImportError):
-        raise ValueError('Cannot find event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+        raise ValueError('Cannot find event track backend %s' % name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031
 
     backend = cls(**options)
 

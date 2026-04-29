@@ -63,7 +63,7 @@ def intercept_errors(api_error, ignore_errors=None):
                             func_name=func.__name__,
                             args=args,
                             kwargs=kwargs,
-                            exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex)  # lint-amnesty, pylint: disable=no-member
+                            exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex)  # pylint: disable=no-member
                         )
                         LOGGER.warning(msg)
                         raise
@@ -79,7 +79,7 @@ def intercept_errors(api_error, ignore_errors=None):
                     func_name=func.__name__,
                     args=args,
                     kwargs=kwargs,
-                    exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex),  # lint-amnesty, pylint: disable=no-member
+                    exception=ex.developer_message if hasattr(ex, 'developer_message') else repr(ex),  # pylint: disable=no-member
                     caller=caller.strip(),
                 )
                 LOGGER.exception(msg)

@@ -25,7 +25,7 @@ def celery_status(_):
     A view that returns Celery stats
     """
     stats = celery.control.inspect().stats() or {}
-    return HttpResponse(json.dumps(stats, indent=4),  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(stats, indent=4),  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
                         content_type="application/json")
 
 
@@ -52,5 +52,5 @@ def celery_ping(_):
         'time': time.time() - start,
     }
 
-    return HttpResponse(json.dumps(output, indent=4),  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(output, indent=4),  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
                         content_type="application/json")

@@ -275,7 +275,7 @@ class CourseGradingModel:
         }
 
     @staticmethod
-    def update_section_grader_type(block, grader_type, user):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def update_section_grader_type(block, grader_type, user):  # pylint: disable=missing-function-docstring
         if grader_type is not None and grader_type != 'notgraded':
             block.format = grader_type
             block.graded = True

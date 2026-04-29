@@ -166,7 +166,7 @@ class StudentModule(models.Model):
         return module_states
 
     @classmethod
-    def save_state(cls, student, course_id, module_state_key, defaults):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def save_state(cls, student, course_id, module_state_key, defaults):  # pylint: disable=missing-function-docstring
         if not student.is_authenticated:
             return
         else:
@@ -284,7 +284,7 @@ class StudentModuleHistory(BaseStudentModuleHistory):
         app_label = "courseware"
         get_latest_by = "created"
 
-    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
+    student_module = models.ForeignKey(StudentModule, db_index=True, db_constraint=False, on_delete=models.CASCADE)  # noqa: DJ012
 
     def __repr__(self):
         student_dict = {

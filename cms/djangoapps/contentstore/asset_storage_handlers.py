@@ -269,7 +269,7 @@ def _assets_json(request, course_key):
 
     assets_usage_locations_map = _get_asset_usage_path(course_key, assets)
 
-    if request_options['requested_page'] > 0 and first_asset_to_display_index >= total_count and total_count > 0:  # lint-amnesty, pylint: disable=chained-comparison
+    if request_options['requested_page'] > 0 and first_asset_to_display_index >= total_count and total_count > 0:  # pylint: disable=chained-comparison
         _update_options_to_requery_final_page(query_options, total_count)
         current_page = query_options['current_page']
         first_asset_to_display_index = _get_first_asset_index(current_page, requested_page_size)
@@ -735,7 +735,7 @@ def _check_existence_and_get_asset_content(asset_key):  # lint-amnesty, pylint: 
         raise AssetNotFoundException  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
 
-def _delete_thumbnail(thumbnail_location, course_key, asset_key):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _delete_thumbnail(thumbnail_location, course_key, asset_key):  # pylint: disable=missing-function-docstring
     if thumbnail_location is not None:
 
         # We are ignoring the value of the thumbnail_location-- we only care whether

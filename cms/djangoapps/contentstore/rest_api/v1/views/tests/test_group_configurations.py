@@ -38,7 +38,7 @@ class CourseGroupConfigurationsViewTest(CourseTestCase, PermissionAccessMixin):
                 "First name",
                 "First description",
                 [Group(0, "Group A"), Group(1, "Group B"), Group(2, "Group C")],
-            ),  # lint-amnesty, pylint: disable=line-too-long
+            ),
         ]
         self.save_course()
 

@@ -46,7 +46,7 @@ LOG = logging.getLogger(__name__)
 )
 @click.option(
     '--max_user_batch_size',
-    help="This setting will only get at most X number of users. If this number is lower than the user_count_error_threshold"
+    help="This setting will only get at most X number of users. If this number is lower than the user_count_error_threshold"  # noqa: E501
          "setting then it will not error.",
     default=200
 )

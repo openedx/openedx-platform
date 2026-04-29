@@ -339,7 +339,7 @@ def get_block(user, request, usage_key, field_data_cache, position=None, log_if_
             log.debug("Error in get_block: ItemNotFoundError")
         return None
 
-    except:  # pylint: disable=W0702
+    except:  # noqa: E722
         # Something has gone terribly wrong, but still not letting it turn into a 500.
         log.exception("Error in get_block")
         return None
@@ -806,13 +806,13 @@ def handle_xblock_callback(request, course_id, usage_id, handler, suffix=None):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404(f'{course_id} is not a valid course key')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     with modulestore().bulk_operations(course_key):
         try:
             course = modulestore().get_course(course_key)
         except ItemNotFoundError:
-            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise Http404(f'{course_id} does not exist in the modulestore')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         return _invoke_xblock_handler(request, course_id, usage_id, handler, suffix, course=course)
 

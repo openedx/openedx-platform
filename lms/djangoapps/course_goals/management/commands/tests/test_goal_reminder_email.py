@@ -68,7 +68,7 @@ class TestGoalReminderEmailCommand(TestCase):
 
     def call_command(self, day=TUESDAY, expect_sent=None, expect_send_count=None, time=None):
         """Calls the management command with a frozen time and optionally checks whether we sent an email"""
-        with mock.patch('lms.djangoapps.course_goals.management.commands.goal_reminder_email.send_ace_message') as mock_send:  # pylint: disable=line-too-long
+        with mock.patch('lms.djangoapps.course_goals.management.commands.goal_reminder_email.send_ace_message') as mock_send:  # noqa: E501
             with freeze_time(time or f'2021-03-0{day + 1} 10:00:00'):  # March 2021 starts on a Monday
                 call_command('goal_reminder_email')
 

@@ -36,7 +36,14 @@ disable+ =
     too-many-positional-arguments,
     possibly-used-before-assignment,
     use-dict-literal,
-    superfluous-parens
+    superfluous-parens,
+    # Covered by ruff F rules
+    unused-import,
+    undefined-variable,
+    # Covered by ruff E722
+    bare-except,
+    # Covered by ruff E501
+    line-too-long
 
 [BASIC]
 attr-rgx = [a-z_][a-z0-9_]{2,40}$

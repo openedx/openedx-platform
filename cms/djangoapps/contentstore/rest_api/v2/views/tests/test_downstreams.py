@@ -127,7 +127,7 @@ class _BaseDownstreamViewTestMixin:
         self._publish_container(self.top_level_unit_id_2)
         self._publish_container(self.top_level_subsection_id)
         self._publish_container(self.top_level_section_id)
-        self.mock_upstream_link = f"{settings.COURSE_AUTHORING_MICROFRONTEND_URL}/library/{self.library_id}/components?usageKey={self.video_lib_id}"  # pylint: disable=line-too-long  # noqa: E501
+        self.mock_upstream_link = f"{settings.COURSE_AUTHORING_MICROFRONTEND_URL}/library/{self.library_id}/components?usageKey={self.video_lib_id}"  # noqa: E501
         self.course = CourseFactory.create()
         add_users(self.superuser, CourseStaffRole(self.course.id), self.course_user)
         chapter = BlockFactory.create(category='chapter', parent=self.course)

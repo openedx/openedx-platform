@@ -348,7 +348,7 @@ class CourseDetails:
         if keystring_matcher:
             return keystring_matcher.group(0)
         else:
-            logging.warn("ignoring the content because it doesn't not conform to expected pattern: " + raw_video)  # lint-amnesty, pylint: disable=deprecated-method, logging-not-lazy
+            logging.warn("ignoring the content because it doesn't not conform to expected pattern: " + raw_video)  # pylint: disable=deprecated-method, logging-not-lazy
             return None
 
     @staticmethod

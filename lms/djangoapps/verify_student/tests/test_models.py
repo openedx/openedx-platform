@@ -79,7 +79,7 @@ def mock_software_secure_post(url, headers=None, data=None, **kwargs):  # lint-a
     return response
 
 
-def mock_software_secure_post_error(url, headers=None, data=None, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def mock_software_secure_post_error(url, headers=None, data=None, **kwargs):  # pylint: disable=unused-argument
     """
     Simulates what happens if our post to Software Secure is rejected, for
     whatever reason.
@@ -98,7 +98,7 @@ def mock_software_secure_post_unavailable(url, headers=None, data=None, **kwargs
 @patch.dict(settings.VERIFY_STUDENT, FAKE_SETTINGS)
 @patch('lms.djangoapps.verify_student.models.requests.post', new=mock_software_secure_post)
 @ddt.ddt
-class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def test_state_transitions(self):
         """
@@ -228,14 +228,13 @@ class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreT
         attempt = self.create_upload_and_submit_attempt_for_user()
         assert attempt.photo_id_key == 'fake-photo-id-key'
 
-    # pylint: disable=line-too-long
     def test_parse_error_msg_success(self):
         user = UserFactory.create()
         attempt = SoftwareSecurePhotoVerification(user=user)
         attempt.status = PhotoVerification.STATUS.denied
-        attempt.error_msg = '[{"userPhotoReasons": ["Face out of view"]}, {"photoIdReasons": ["Photo hidden/No photo", "ID name not provided"]}]'
+        attempt.error_msg = '[{"userPhotoReasons": ["Face out of view"]}, {"photoIdReasons": ["Photo hidden/No photo", "ID name not provided"]}]'  # noqa: E501
         parsed_error_msg = attempt.parsed_error_msg()
-        assert sorted(parsed_error_msg) == sorted(['id_image_missing_name', 'user_image_not_clear', 'id_image_not_clear'])
+        assert sorted(parsed_error_msg) == sorted(['id_image_missing_name', 'user_image_not_clear', 'id_image_not_clear'])  # noqa: E501
 
     @ddt.data(
         'Not Provided',
@@ -406,7 +405,7 @@ class TestPhotoVerification(TestVerificationBase, MockS3Boto3Mixin, ModuleStoreT
         verification.expiration_date = None
         verification.save()
 
-        assert verification.expiration_datetime == (verification.created_at + timedelta(days=FAKE_SETTINGS['DAYS_GOOD_FOR']))
+        assert verification.expiration_datetime == (verification.created_at + timedelta(days=FAKE_SETTINGS['DAYS_GOOD_FOR']))  # noqa: E501
 
     def test_get_verification_from_receipt(self):
         result = SoftwareSecurePhotoVerification.get_verification_from_receipt('')

@@ -20,7 +20,7 @@ class ExperimentDataFactory(factory.django.DjangoModelFactory):  # lint-amnesty,
     value = factory.Faker('word')
 
 
-class ExperimentKeyValueFactory(factory.django.DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ExperimentKeyValueFactory(factory.django.DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = ExperimentKeyValue
 

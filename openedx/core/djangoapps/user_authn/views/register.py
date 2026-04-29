@@ -362,7 +362,7 @@ def _track_user_registration(user, profile, params, third_party_provider, regist
         anonymous_id = ""
         try:
             anonymous_id = request.COOKIES.get('ajs_anonymous_id', "")
-        except:       # pylint: disable=bare-except
+        except:       # noqa: E722
             pass
         traits = {
             'email': user.email,
@@ -554,7 +554,7 @@ class RegistrationView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
-        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # pylint: disable=http-response-with-content-type-json
                             content_type="application/json")
 
     @method_decorator(csrf_exempt)
@@ -727,7 +727,6 @@ class RegistrationView(APIView):
         return JsonResponse(response_dict, status=status_code)
 
 
-# pylint: disable=line-too-long
 class RegistrationValidationView(APIView):
     """
         **Use Cases**
@@ -812,7 +811,7 @@ class RegistrationValidationView(APIView):
                 decision with the username is made if it exists in the input.
             "country":
                 A handler to check whether the validity of country fields.
-    """
+    """  # noqa: E501
 
     # This end-point is available to anonymous users, so no authentication is needed.
     authentication_classes = []

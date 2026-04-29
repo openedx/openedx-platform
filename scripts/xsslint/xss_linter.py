@@ -257,7 +257,6 @@ def main():
     epilog = "For more help using the xss linter, including details on how to\n"
     epilog += "understand and fix any violations, read the docs here:\n"
     epilog += "\n"
-    # pylint: disable=line-too-long
     epilog += "  https://docs.openedx.org/en/latest/developers/references/developer_guide/preventing_xss/preventing_xss.html#xss-linter\n"
 
     parser = argparse.ArgumentParser(

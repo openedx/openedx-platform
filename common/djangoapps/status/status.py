@@ -24,6 +24,6 @@ def get_site_status_msg(course_key):
         return GlobalStatusMessage.current().full_message(course_key)
     # Make as general as possible, because something broken here should not
     # bring down the whole site.
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         log.exception("Error while getting a status message.")
         return None

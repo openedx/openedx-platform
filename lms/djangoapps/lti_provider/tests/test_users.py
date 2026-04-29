@@ -163,7 +163,7 @@ class AuthenticateLtiUserTest(TestCase):
             "full_name": "",
         })
 
-    def test_auto_linking_of_users_using_lis_person_contact_email_primary_case_insensitive(self, create_user, switch_user):  # pylint: disable=line-too-long
+    def test_auto_linking_of_users_using_lis_person_contact_email_primary_case_insensitive(self, create_user, switch_user):  # noqa: E501
         request = RequestFactory().post("/", {"lis_person_contact_email_primary": self.old_user.email.upper()})
         request.user = self.old_user
 

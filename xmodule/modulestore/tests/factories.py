@@ -332,7 +332,7 @@ class BlockFactory(XModuleFactory):
 
     @classmethod
     @strip_key
-    def _create(cls, target_class, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ, too-many-statements, unused-argument
+    def _create(cls, target_class, **kwargs):  # pylint: disable=arguments-differ, too-many-statements, unused-argument
         """
         Uses ``**kwargs``:
 

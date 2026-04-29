@@ -289,8 +289,8 @@ class ChangePlan(namedtuple('ChangePlan', 'delete update_parents')):
                 save = sid in structure_ids_to_save
                 active = sid in active_structure_ids
                 relink = sid in set_parent_to_original
-                prev_misssing = structures[sid].previous_id is not None and structures[sid].previous_id not in structures
-                LOG.info(f"DUMP id: {sid}, original_id: {structures[sid].original_id}, previous_id: {structures[sid].previous_id}, save: {save}, active: {active}, prev_missing: {prev_misssing}, rewrite_previous_to_original: {relink}")
+                prev_misssing = structures[sid].previous_id is not None and structures[sid].previous_id not in structures  # noqa: E501
+                LOG.info(f"DUMP id: {sid}, original_id: {structures[sid].original_id}, previous_id: {structures[sid].previous_id}, save: {save}, active: {active}, prev_missing: {prev_misssing}, rewrite_previous_to_original: {relink}")  # noqa: E501
 
         for missing_structure_id in missing_structure_ids:
             active_structure_ids = {branch.structure_id for branch in branches}
@@ -333,8 +333,8 @@ class ChangePlan(namedtuple('ChangePlan', 'delete update_parents')):
                         save = sid in structure_ids_to_save
                         active = sid in active_structure_ids
                         relink = sid in set_parent_to_original
-                        prev_misssing = structures[sid].previous_id is not None and structures[sid].previous_id not in structures
-                        LOG.info(f"id: {sid}, original_id: {structures[sid].original_id}, previous_id: {structures[sid].previous_id}, save: {save}, active: {active}, prev_missing: {prev_misssing}, rewrite_previous_to_original: {relink}")
+                        prev_misssing = structures[sid].previous_id is not None and structures[sid].previous_id not in structures  # noqa: E501
+                        LOG.info(f"id: {sid}, original_id: {structures[sid].original_id}, previous_id: {structures[sid].previous_id}, save: {save}, active: {active}, prev_missing: {prev_misssing}, rewrite_previous_to_original: {relink}")  # noqa: E501
 
         return change_plan
 

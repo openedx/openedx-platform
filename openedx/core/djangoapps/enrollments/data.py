@@ -160,7 +160,7 @@ def create_course_enrollment(username, course_id, mode, is_active, enterprise_uu
         raise CourseEnrollmentFullError(str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
     except AlreadyEnrolledError as err:
         enrollment = get_course_enrollment(username, course_id)
-        raise CourseEnrollmentExistsError(str(err), enrollment)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseEnrollmentExistsError(str(err), enrollment)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def update_course_enrollment(username, course_id, mode=None, is_active=None):
@@ -260,7 +260,7 @@ def unenroll_user_from_all_courses(username):
         for enrollment in enrollments:
             _update_enrollment(enrollment, is_active=False)
 
-    return {str(enrollment.course_id.org) for enrollment in enrollments}  # lint-amnesty, pylint: disable=consider-using-set-comprehension
+    return {str(enrollment.course_id.org) for enrollment in enrollments}  # pylint: disable=consider-using-set-comprehension
 
 
 def _get_user(username):

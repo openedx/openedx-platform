@@ -574,7 +574,7 @@ class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
         Check that beta-test access works for content.
         """
         # student user shouldn't see it
-        assert not has_access(self.normal_student, 'load', self.content, self.course.id)  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert not has_access(self.normal_student, 'load', self.content, self.course.id)  # pylint: disable=no-member
 
         # now the student should see it
-        assert has_access(self.beta_tester, 'load', self.content, self.course.id)  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert has_access(self.beta_tester, 'load', self.content, self.course.id)  # pylint: disable=no-member

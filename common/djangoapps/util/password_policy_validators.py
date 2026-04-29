@@ -70,7 +70,7 @@ def password_validators_instruction_texts():
             complexity_instructions=' & '.join(complexity_instructions)
         )
     else:
-        return _(f'Your password must contain {length_instruction}.')  # lint-amnesty, pylint: disable=translation-of-non-string
+        return _(f'Your password must contain {length_instruction}.')  # pylint: disable=translation-of-non-string
 
 
 def password_validators_restrictions():
@@ -98,7 +98,7 @@ def normalize_password(password):
             password = str(password, encoding='utf8')
         except UnicodeDecodeError:
             # no reason to get into weeds
-            raise ValidationError([_('Invalid password.')])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError([_('Invalid password.')])  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
     return unicodedata.normalize('NFKC', password)
 
 

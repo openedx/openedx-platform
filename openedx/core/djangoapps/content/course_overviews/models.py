@@ -239,7 +239,7 @@ class CourseOverview(TimeStampedModel):
         course_overview.days_early_for_beta = course.days_early_for_beta
         course_overview.mobile_available = course.mobile_available
         course_overview.visible_to_staff_only = course.visible_to_staff_only
-        course_overview._pre_requisite_courses_json = json.dumps(course.pre_requisite_courses)  # lint-amnesty, pylint: disable=protected-access
+        course_overview._pre_requisite_courses_json = json.dumps(course.pre_requisite_courses)  # pylint: disable=protected-access
 
         course_overview.enrollment_start = course.enrollment_start
         course_overview.enrollment_end = course.enrollment_end
@@ -535,8 +535,7 @@ class CourseOverview(TimeStampedModel):
         migrate and test switching to display_name_with_default, which is no
         longer escaped.
         """
-        # pylint: disable=line-too-long
-        return block_metadata_utils.display_name_with_default_escaped(self)  # xss-lint: disable=python-deprecated-display-name
+        return block_metadata_utils.display_name_with_default_escaped(self)  # xss-lint: disable=python-deprecated-display-name  # noqa: E501
 
     @property
     def dashboard_start_display(self):

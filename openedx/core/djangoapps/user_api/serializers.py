@@ -97,7 +97,7 @@ class CountryTimeZoneSerializer(serializers.Serializer):  # pylint: disable=abst
     description = serializers.CharField()
 
 
-class IDVerificationDetailsSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class IDVerificationDetailsSerializer(serializers.Serializer):  # pylint: disable=abstract-method, missing-class-docstring
     type = serializers.SerializerMethodField()
     status = serializers.CharField()
     expiration_datetime = serializers.DateTimeField()

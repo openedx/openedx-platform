@@ -251,7 +251,7 @@ def override_score_module_state(xblock_instance_args, block, student_module, tas
             raise UpdateProblemModuleStateError(msg)
 
         weighted_override_score = float(task_input['score'])
-        if not (0 <= weighted_override_score <= instance.max_score()):  # lint-amnesty, pylint: disable=superfluous-parens
+        if not (0 <= weighted_override_score <= instance.max_score()):  # pylint: disable=superfluous-parens
             msg = "Score must be between 0 and the maximum points available for the problem."
             raise UpdateProblemModuleStateError(msg)
 

@@ -67,7 +67,7 @@ And it shouldn't matter if we use entities or numeric codes &mdash; &Omega; &ne;
     youtube_id_1_0="1bK-WdDi6Qw"
   />
 </sequential>
-"""
+"""  # noqa: E501
 
 
 @skip_unless_cms

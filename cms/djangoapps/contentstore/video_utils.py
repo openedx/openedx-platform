@@ -87,7 +87,7 @@ def download_youtube_video_thumbnail(youtube_id):
     thumbnail_content = thumbnail_content_type = None
     # Download highest resolution thumbnail available.
     for thumbnail_quality in YOUTUBE_THUMBNAIL_SIZES:
-        thumbnail_url = urljoin('https://img.youtube.com', '/vi/{youtube_id}/{thumbnail_quality}.jpg'.format(  # noqa: UP032  # pylint: disable=line-too-long
+        thumbnail_url = urljoin('https://img.youtube.com', '/vi/{youtube_id}/{thumbnail_quality}.jpg'.format(  # noqa: UP032
             youtube_id=youtube_id, thumbnail_quality=thumbnail_quality
         ))
         response = requests.get(thumbnail_url)
@@ -115,7 +115,7 @@ def validate_and_update_video_image(course_key_string, edx_video_id, image_file,
 
     update_video_image(edx_video_id, course_key_string, image_file, image_filename)
     LOGGER.info(
-        'VIDEOS: Scraping youtube video thumbnail for edx_video_id [%s] in course [%s]', edx_video_id, course_key_string  # lint-amnesty, pylint: disable=line-too-long
+        'VIDEOS: Scraping youtube video thumbnail for edx_video_id [%s] in course [%s]', edx_video_id, course_key_string
     )
 
 

@@ -1596,7 +1596,7 @@ def add_container_page_publishing_info(xblock, xblock_info):
         if user_id:
             try:
                 return User.objects.get(id=user_id).username
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 pass
 
         return None

@@ -40,7 +40,7 @@ MODULE_DIR = path(__file__).dirname()
 DATA_DIR = MODULE_DIR.parent.parent / "common" / "test" / "data"
 
 
-def handler_url(block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
+def handler_url(block, handler, suffix='', query='', thirdparty=False):  # pylint: disable=arguments-differ
     return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
         usage_id=str(block.scope_ids.usage_id),
         handler=handler,
@@ -70,7 +70,7 @@ class TestModuleStoreRuntime(ModuleStoreRuntime):  # pylint: disable=abstract-me
     """
     ModuleStore-based XBlock Runtime for testing
     """
-    def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=arguments-differ
+    def handler_url(self, block, handler, suffix='', query='', thirdparty=False):  # pylint: disable=arguments-differ
         return '{usage_id}/{handler}{suffix}?{query}'.format(  # noqa: UP032
             usage_id=str(block.scope_ids.usage_id),
             handler=handler,
@@ -164,7 +164,7 @@ def get_test_system(
         'xqueue': XQueueService,
     }
 
-    descriptor_system.get_block_for_descriptor = get_block  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+    descriptor_system.get_block_for_descriptor = get_block  # pylint: disable=attribute-defined-outside-init
     descriptor_system._services.update(services)  # lint-amnesty, pylint: disable=protected-access
 
     return descriptor_system
@@ -406,8 +406,8 @@ class CourseComparisonTest(TransactionTestCase):
         # compare published
         with expected_store.branch_setting(ModuleStoreEnum.Branch.published_only, expected_course_key):
             with actual_store.branch_setting(ModuleStoreEnum.Branch.published_only, actual_course_key):
-                expected_items = expected_store.get_items(expected_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # lint-amnesty, pylint: disable=line-too-long
-                actual_items = actual_store.get_items(actual_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # lint-amnesty, pylint: disable=line-too-long
+                expected_items = expected_store.get_items(expected_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # noqa: E501
+                actual_items = actual_store.get_items(actual_course_key, revision=ModuleStoreEnum.RevisionOption.published_only)  # noqa: E501
                 assert len(expected_items) > 0
                 self._assertCoursesEqual(expected_items, actual_items, actual_course_key)
 
@@ -428,7 +428,7 @@ class CourseComparisonTest(TransactionTestCase):
                     actual_items = actual_store.get_items(actual_course_key, revision=revision)
                     self._assertCoursesEqual(expected_items, actual_items, actual_course_key, expect_drafts=True)
 
-    def _assertCoursesEqual(self, expected_items, actual_items, actual_course_key, expect_drafts=False):  # lint-amnesty, pylint: disable=unused-argument
+    def _assertCoursesEqual(self, expected_items, actual_items, actual_course_key, expect_drafts=False):  # pylint: disable=unused-argument
         """
         Actual algorithm to compare courses.
         """
@@ -448,7 +448,7 @@ class CourseComparisonTest(TransactionTestCase):
             [key for key in actual_item_map.keys() if key[0] != 'course'],
         )
         for expected_item in expected_items:
-            actual_item_location = actual_course_key.make_usage_key(expected_item.category, expected_item.location.block_id)  # lint-amnesty, pylint: disable=line-too-long
+            actual_item_location = actual_course_key.make_usage_key(expected_item.category, expected_item.location.block_id)  # noqa: E501
             # split and old mongo use different names for the course root but we don't know which
             # modulestore actual's come from here; so, assume old mongo and if that fails, assume split
             if expected_item.location.block_type == 'course':
@@ -535,7 +535,7 @@ class CourseComparisonTest(TransactionTestCase):
         actual_thumbs = actual_store.get_all_content_thumbnails_for_course(actual_course_key)
         self._assertAssetsEqual(expected_course_key, expected_thumbs, actual_course_key, actual_thumbs)
 
-    def assertAssetsMetadataEqual(self, expected_modulestore, expected_course_key, actual_modulestore, actual_course_key):  # lint-amnesty, pylint: disable=line-too-long
+    def assertAssetsMetadataEqual(self, expected_modulestore, expected_course_key, actual_modulestore, actual_course_key):  # noqa: E501
         """
         Assert that the modulestore asset metdata for the ``expected_course_key`` and the ``actual_course_key``
         are equivalent.

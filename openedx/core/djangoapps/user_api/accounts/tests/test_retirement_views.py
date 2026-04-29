@@ -602,7 +602,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
         Basic test to make sure that users in two different orgs are returned.
         """
         user_dicts, users = self.create_partner_reporting_statuses()  # lint-amnesty, pylint: disable=unused-variable
-        additional_dicts, additional_users = self.create_partner_reporting_statuses(courses=(self.course_awesome_org,))  # lint-amnesty, pylint: disable=unused-variable
+        additional_dicts, additional_users = self.create_partner_reporting_statuses(courses=(self.course_awesome_org,))  # pylint: disable=unused-variable
         user_dicts += additional_dicts
 
         self.assert_status_and_user_list(user_dicts)
@@ -1617,14 +1617,14 @@ class TestLMSAccountRetirementPost(RetirementTestCase, ModuleStoreTestCase):
         ArticleRevision.objects.create(ip_address="ipaddresss", user=self.test_user, article=article)
 
         # ManualEnrollmentAudit setup
-        course_enrollment = CourseEnrollment.enroll(user=self.test_user, course_key=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        course_enrollment = CourseEnrollment.enroll(user=self.test_user, course_key=self.course.id)  # pylint: disable=no-member
         ManualEnrollmentAudit.objects.create(
             enrollment=course_enrollment, reason=self.pii_standin, enrolled_email=self.pii_standin
         )
 
         # CreditRequest and CreditRequirementStatus setup
         provider = CreditProvider.objects.create(provider_id="Hogwarts")
-        credit_course = CreditCourse.objects.create(course_key=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        credit_course = CreditCourse.objects.create(course_key=self.course.id)  # pylint: disable=no-member
         CreditRequest.objects.create(
             username=self.test_user.username,
             course=credit_course,

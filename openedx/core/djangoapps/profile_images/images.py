@@ -226,7 +226,7 @@ def _get_valid_file_types():
     """
     Return comma separated string of valid file types.
     """
-    return ', '.join([', '.join(IMAGE_TYPES[ft].extensions) for ft in IMAGE_TYPES.keys()])  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    return ', '.join([', '.join(IMAGE_TYPES[ft].extensions) for ft in IMAGE_TYPES.keys()])  # pylint: disable=consider-iterating-dictionary
 
 
 def _user_friendly_size(size):

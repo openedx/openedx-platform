@@ -117,7 +117,7 @@ class Command(BaseCommand):
                             """.format(  # noqa: UP032
                                 historical_table=historical_table,
                                 ids=ids
-                            )  # noqa
+                            )
                         cursor.execute(query)
                         count = cursor.fetchone()[0]
 
@@ -163,7 +163,7 @@ class Command(BaseCommand):
                                     historical_table=historical_table,
                                     insert_columns=','.join(quoted_columns),
                                     placeholder=','.join(['%s'] * (len(columns) + 4))
-                                )  # noqa
+                                )
                             cursor.executemany(query, values)
 
                     log.info("Sleeping %s seconds...", sleep_between)

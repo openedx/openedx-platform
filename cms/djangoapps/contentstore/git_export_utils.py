@@ -136,7 +136,7 @@ def export_to_git(course_id, repo, user='', rdir=None):
                              root_dir, course_dir)
     except (OSError, AttributeError):
         log.exception('Failed export to xml')
-        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise GitExportError(GitExportError.XML_EXPORT_FAIL)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     # Get current branch if not already set
     if not branch:

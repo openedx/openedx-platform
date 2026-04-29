@@ -32,6 +32,6 @@ ENABLE_CHECKLISTS_QUALITY = CourseWaffleFlag(  # lint-amnesty, pylint: disable=t
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2021-07-12
 # .. toggle_target_removal_date: 2021-12-31
-# .. toggle_warning: Flag course_experience.relative_dates should also be active for relative dates functionalities to work.
+# .. toggle_warning: Flag course_experience.relative_dates should also be active for relative dates functionalities to work.  # noqa: E501
 # .. toggle_tickets: https://openedx.atlassian.net/browse/AA-844
 CUSTOM_RELATIVE_DATES = CourseWaffleFlag(f'{WAFFLE_NAMESPACE}.custom_relative_dates', __name__)

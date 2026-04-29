@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 
 # Entitlements is not in CMS' INSTALLED_APPS so these imports will error during test collection
 if settings.ROOT_URLCONF == 'lms.urls':
-    from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
+    from common.djangoapps.entitlements.models import (
         CourseEntitlement,
         CourseEntitlementPolicy,
         CourseEntitlementSupportDetail,
@@ -658,7 +658,7 @@ class EntitlementViewSetTest(ModuleStoreTestCase):
         assert response.status_code == 200
 
         results = response.data
-        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None  # noqa: PT018  # pylint: disable=line-too-long
+        assert results == CourseEntitlementSerializer(entitlement).data and results.get('expired_at') is None  # noqa: PT018
 
     def test_get_expired_entitlement_by_uuid(self):
         past_datetime = now() - timedelta(days=365 * 2)
@@ -1148,7 +1148,7 @@ class EntitlementEnrollmentViewSetTest(ModuleStoreTestCase):
         assert course_entitlement.enrollment_course_run is None
         assert course_entitlement.expired_at is not None
 
-    @patch('common.djangoapps.entitlements.rest_api.v1.views.CourseEntitlement.is_entitlement_refundable', return_value=False)  # lint-amnesty, pylint: disable=line-too-long
+    @patch('common.djangoapps.entitlements.rest_api.v1.views.CourseEntitlement.is_entitlement_refundable', return_value=False)  # noqa: E501
     @patch('common.djangoapps.entitlements.models.refund_entitlement', return_value=True)
     @patch('common.djangoapps.entitlements.rest_api.v1.views.get_course_runs_for_course')
     def test_user_can_revoke_and_no_refund_available(
@@ -1192,7 +1192,7 @@ class EntitlementEnrollmentViewSetTest(ModuleStoreTestCase):
         assert course_entitlement.enrollment_course_run is not None
         assert course_entitlement.expired_at is None
 
-    @patch('common.djangoapps.entitlements.rest_api.v1.views.CourseEntitlement.is_entitlement_refundable', return_value=True)  # lint-amnesty, pylint: disable=line-too-long
+    @patch('common.djangoapps.entitlements.rest_api.v1.views.CourseEntitlement.is_entitlement_refundable', return_value=True)  # noqa: E501
     @patch('common.djangoapps.entitlements.models.refund_entitlement', return_value=False)
     @patch("common.djangoapps.entitlements.rest_api.v1.views.get_course_runs_for_course")
     def test_user_is_not_unenrolled_on_failed_refund(

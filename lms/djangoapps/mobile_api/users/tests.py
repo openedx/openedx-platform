@@ -347,7 +347,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
 
         return result
 
-    def _assert_enrollment_results(self, api_version, courses, num_courses_returned, gating_enabled=True):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _assert_enrollment_results(self, api_version, courses, num_courses_returned, gating_enabled=True):  # pylint: disable=missing-function-docstring
         assert len(courses) == num_courses_returned
 
         if api_version == API_V05:
@@ -508,7 +508,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         self.assertEqual(response.status_code, status.HTTP_200_OK)  # noqa: PT009
         self.assertEqual(len(response.data['enrollments']['results']), 1)  # noqa: PT009
         self.assertEqual(response.data['enrollments']['count'], 1)  # noqa: PT009
-        self.assertEqual(response.data['enrollments']['results'][0]['course']['id'], str(course_first.id))  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(response.data['enrollments']['results'][0]['course']['id'], str(course_first.id))  # noqa: PT009
         self.assertIn('primary', response.data)  # noqa: PT009
         self.assertEqual(response.data['primary']['course']['id'], str(course_second.id))  # noqa: PT009
 
@@ -1050,7 +1050,7 @@ class TestUserEnrollmentApi(UrlResetMixin, MobileAPITestCase, MobileAuthUserTest
         self.assertIn('course_progress', response.data['primary'])  # noqa: PT009
         self.assertDictEqual(response.data['primary']['course_progress'], expected_course_progress)  # noqa: PT009
         self.assertIn('course_progress', response.data['enrollments']['results'][0])  # noqa: PT009
-        self.assertDictEqual(response.data['enrollments']['results'][0]['course_progress'], expected_course_progress)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertDictEqual(response.data['enrollments']['results'][0]['course_progress'], expected_course_progress)  # noqa: PT009
 
 
 @override_settings(MKTG_URLS={'ROOT': 'dummy-root'})
@@ -1353,8 +1353,8 @@ class TestCourseEnrollmentSerializer(MobileAPITestCase, MilestonesTestCaseMixin)
         qstwitter = parse_qs('utm_campaign=social-sharing-db&utm_medium=social&utm_source=twitter')
         qsfacebook = parse_qs('utm_campaign=social-sharing-db&utm_medium=social&utm_source=facebook')
 
-        self.assertDictEqual(qsfacebook, parse_qs(serialized['course']['course_sharing_utm_parameters']['facebook']))  # noqa: PT009  # pylint: disable=line-too-long
-        self.assertDictEqual(qstwitter, parse_qs(serialized['course']['course_sharing_utm_parameters']['twitter']))  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertDictEqual(qsfacebook, parse_qs(serialized['course']['course_sharing_utm_parameters']['facebook']))  # noqa: PT009
+        self.assertDictEqual(qstwitter, parse_qs(serialized['course']['course_sharing_utm_parameters']['twitter']))  # noqa: PT009
 
     @ddt.data(API_V05, API_V1)
     def test_with_display_overrides(self, api_version):

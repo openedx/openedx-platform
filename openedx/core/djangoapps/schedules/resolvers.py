@@ -85,7 +85,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
 
     def __attrs_post_init__(self):
         # TODO: in the next refactor of this task, pass in current_datetime instead of reproducing it here
-        self.current_datetime = self.target_datetime - datetime.timedelta(days=self.day_offset)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.current_datetime = self.target_datetime - datetime.timedelta(days=self.day_offset)  # pylint: disable=attribute-defined-outside-init
 
     def send(self, msg_type):  # lint-amnesty, pylint: disable=arguments-differ
         for (user, language, context) in self.schedules_for_bin():
@@ -119,7 +119,7 @@ class BinnedSchedulesBaseResolver(PrefixedDebugLoggerMixin, RecipientResolver):
         target_day = _get_datetime_beginning_of_day(self.target_datetime)
         schedule_day_equals_target_day_filter = {
             f'courseenrollment__schedule__{self.schedule_date_field}__gte': target_day,
-            f'courseenrollment__schedule__{self.schedule_date_field}__lt': target_day + datetime.timedelta(days=1),  # lint-amnesty, pylint: disable=line-too-long
+            f'courseenrollment__schedule__{self.schedule_date_field}__lt': target_day + datetime.timedelta(days=1),
         }
         users = User.objects.filter(
             courseenrollment__is_active=True,
@@ -384,7 +384,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 context,
             )
             LOG.info(
-                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
+                'Sending email to user: {} for Instructor-paced course with course-key: {} and language: {}'.format(  # noqa: UP032
                     user.username,
                     self.course_id,
                     language
@@ -414,7 +414,7 @@ class CourseUpdateResolver(BinnedSchedulesBaseResolver):
                 week_highlights = get_week_highlights(user, enrollment.course_id, week_num)
             except CourseUpdateDoesNotExist:
                 LOG.warning(
-                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(  # noqa: UP032  # pylint: disable=line-too-long
+                    'Weekly highlights for user {} in week {} of course {} does not exist or is disabled'.format(  # noqa: UP032
                         user, week_num, enrollment.course_id
                     )
                 )
@@ -478,7 +478,7 @@ class CourseNextSectionUpdate(PrefixedDebugLoggerMixin, RecipientResolver):
                 )
             )
             LOG.info(
-                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
+                'Sending email to user: {} for Self-paced course with course-key: {} and language: {}'.format(  # noqa: UP032
                     user.username,
                     self.course_id,
                     language

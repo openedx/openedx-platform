@@ -172,7 +172,7 @@ class BasketsView(APIView):
                     HTTP_403_FORBIDDEN
                 )
 
-            mode = CourseMode.AUDIT if audit_mode else CourseMode.HONOR  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            mode = CourseMode.AUDIT if audit_mode else CourseMode.HONOR  # pylint: disable=unused-variable  # noqa: F841
             self._handle_marketing_opt_in(request, course_key, user)
             return DetailResponse(msg)
         else:
@@ -194,7 +194,7 @@ class BasketsView(APIView):
             DetailResponse: The response with the error message and status code.
         """
         log.exception(log_message, str(exception))
-        error_msg = f"{log_message.format(str(exception))} for user {user.username} in course {course_id}: {str(exception)}"  # lint-amnesty, pylint: disable=line-too-long
+        error_msg = f"{log_message.format(str(exception))} for user {user.username} in course {course_id}: {str(exception)}"  # noqa: E501
         return DetailResponse(error_msg, status=status_code)
 
 

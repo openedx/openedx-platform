@@ -117,7 +117,7 @@ def _listen_for_course_delete(sender, course_key, **kwargs):  # pylint: disable=
 
 
 @receiver(post_save, sender=CourseOverview)
-def trigger_import_course_details_signal(sender, instance, created, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def trigger_import_course_details_signal(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
     """
     Triggers the `IMPORT_COURSE_DETAILS` signal which will be handled in `federated_content_connector` plugin
     """

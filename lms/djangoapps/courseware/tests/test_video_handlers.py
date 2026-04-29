@@ -100,7 +100,7 @@ def _create_file(content=''):
     """
     Create temporary subs_somevalue.srt.sjson file.
     """
-    sjson_file = tempfile.NamedTemporaryFile(prefix="subs_", suffix=".srt.sjson")  # lint-amnesty, pylint: disable=consider-using-with
+    sjson_file = tempfile.NamedTemporaryFile(prefix="subs_", suffix=".srt.sjson")  # pylint: disable=consider-using-with
     sjson_file.content_type = 'application/json'
     sjson_file.write(textwrap.dedent(content).encode('utf-8'))
     sjson_file.seek(0)

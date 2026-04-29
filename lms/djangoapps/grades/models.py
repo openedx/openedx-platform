@@ -747,7 +747,7 @@ class PersistentSubsectionGradeOverride(models.Model):
     class Meta:
         app_label = "grades"
 
-    grade = models.OneToOneField(PersistentSubsectionGrade, related_name='override', on_delete=models.CASCADE)  # noqa: DJ012  # pylint: disable=line-too-long
+    grade = models.OneToOneField(PersistentSubsectionGrade, related_name='override', on_delete=models.CASCADE)  # noqa: DJ012
 
     # Created/modified timestamps prevent race-conditions when using with async rescoring tasks
     created = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -809,7 +809,7 @@ class PersistentSubsectionGradeOverride(models.Model):
 
     @classmethod
     def update_or_create_override(
-        cls, requesting_user, subsection_grade_model, feature=None, action=None, **override_data  # lint-amnesty, pylint: disable=unused-argument
+        cls, requesting_user, subsection_grade_model, feature=None, action=None, **override_data  # pylint: disable=unused-argument
     ):
         """
         Creates or updates an override object for the given PersistentSubsectionGrade.

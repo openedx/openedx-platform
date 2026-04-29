@@ -60,7 +60,7 @@ def retirement_status(retirement_user):  # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
-def two_users_same_username_different_case(retirement_status):  # lint-amnesty, pylint: disable=missing-function-docstring, redefined-outer-name, unused-argument
+def two_users_same_username_different_case(retirement_status):  # pylint: disable=missing-function-docstring, redefined-outer-name, unused-argument
     user1 = UserFactory.create(username='TestUser')
     user2 = UserFactory.create(username='testuser')
     UserRetirementStatus = apps.get_model('user_api', 'UserRetirementStatus')
@@ -181,27 +181,27 @@ def test_get_retired_email_status_exists(retirement_user, retirement_status):  #
     assert retirement_status.retired_email == hashed_email
 
 
-def test_get_correct_user_varying_by_case_only(two_users_same_username_different_case):  # lint-amnesty, pylint: disable=redefined-outer-name
+def test_get_correct_user_varying_by_case_only(two_users_same_username_different_case):  # pylint: disable=redefined-outer-name
     """
     Check that two users - one retired, one active - with the same username except for case can be found.
     """
-    retired_status, retired_user, active_user = two_users_same_username_different_case  # lint-amnesty, pylint: disable=unused-variable
+    retired_status, retired_user, active_user = two_users_same_username_different_case  # pylint: disable=unused-variable
     first_user = get_potentially_retired_user_by_username(retired_status.original_username)
     second_user = get_potentially_retired_user_by_username(active_user.username)
     assert first_user.username != second_user.username
     assert second_user.username == active_user.username
 
 
-def test_get_potentially_retired_user_username_match(retirement_user):  # lint-amnesty, pylint: disable=redefined-outer-name
+def test_get_potentially_retired_user_username_match(retirement_user):  # pylint: disable=redefined-outer-name
     """
     Check that we can pass in an un-retired username and get the
     user-to-be-retired back.
     """
     hashed_username = get_retired_username_by_username(retirement_user.username)
-    assert get_potentially_retired_user_by_username_and_hash(retirement_user.username, hashed_username) == retirement_user  # lint-amnesty, pylint: disable=line-too-long
+    assert get_potentially_retired_user_by_username_and_hash(retirement_user.username, hashed_username) == retirement_user  # noqa: E501
 
 
-def test_get_potentially_retired_user_hashed_match(retirement_user):  # lint-amnesty, pylint: disable=redefined-outer-name
+def test_get_potentially_retired_user_hashed_match(retirement_user):  # pylint: disable=redefined-outer-name
     """
     Check that we can pass in a hashed username and get the
     user-to-be-retired back.

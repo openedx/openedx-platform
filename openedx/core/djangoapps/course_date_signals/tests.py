@@ -37,7 +37,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
             (3, 'Section 3', timedelta(days=28)),
         ]
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=4)):
-            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # lint-amnesty, pylint: disable=line-too-long
+            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # noqa: E501
 
         assert actual == expected_sections
 
@@ -51,7 +51,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
             (3, 'Section 3', timedelta(days=28)),
         ]
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=4)):
-            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # lint-amnesty, pylint: disable=line-too-long
+            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # noqa: E501
 
         assert actual == expected_sections
 

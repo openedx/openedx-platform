@@ -1482,9 +1482,8 @@ class TestVideoBlockInitialization(BaseTestVideoXBlock):
         """
         with patch('xmodule.video_block.video_block.edxval_api.get_urls_for_profiles') as get_urls_for_profiles:
             get_urls_for_profiles.return_value = val_video_encodings
-            # pylint: disable=line-too-long
             self.initialize_block(
-                data='<video display_name="Video" youtube_id_1_0="" download_video="true" edx_video_id="12345-67890">[]</video>'
+                data='<video display_name="Video" youtube_id_1_0="" download_video="true" edx_video_id="12345-67890">[]</video>'  # noqa: E501
             )
             context = self.block.get_context()
         assert context['transcripts_basic_tab_metadata']['video_url']['value'] == video_url
@@ -2031,7 +2030,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                     </transcripts>
                 </video_asset>
             </video>
-        """.format(  # noqa: UP032
+        """.format(  # noqa: E501, UP032
             edx_video_id=edx_video_id,
             sub_id=sub_id,
             transcripts=json.dumps(external_transcripts),
@@ -2121,7 +2120,7 @@ class VideoBlockTest(TestCase, VideoBlockTestBase):
                 </transcripts>
             </video_asset>
         </video>
-        """.format(  # noqa: UP032
+        """.format(  # noqa: E501, UP032
             edx_video_id=edx_video_id,
             val_transcript_language_code=val_transcript_language_code,
             val_transcript_provider=val_transcript_provider

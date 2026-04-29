@@ -30,7 +30,7 @@ def _listen_for_lms_retire(sender, **kwargs):  # pylint: disable=unused-argument
 
 
 @receiver(post_save, sender=UserSocialAuth)
-def listen_for_social_auth_creation(sender, instance, created, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def listen_for_social_auth_creation(sender, instance, created, **kwargs):  # pylint: disable=unused-argument
     """
     Post-save signal that will attempt to link a social auth entry with waiting enrollments
     """

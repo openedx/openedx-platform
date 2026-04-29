@@ -113,7 +113,7 @@ class TestCourseListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreT
         self.assert_error('course_keys', "'invalid_course_key' is not a valid course key.")
 
 
-class TestCourseIdListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestCourseIdListGetForm(FormTestMixin, UsernameTestMixin, SharedModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     FORM_CLASS = CourseIdListGetForm
 
     @classmethod

@@ -93,7 +93,7 @@ def preview_handler(request, usage_key_string, handler, suffix=''):
     return webob_to_django_response(resp)
 
 
-def handler_url(block, handler_name, suffix='', query='', thirdparty=False):  # lint-amnesty, pylint: disable=unused-argument
+def handler_url(block, handler_name, suffix='', query='', thirdparty=False):  # pylint: disable=unused-argument
     """
     Handler URL function for Preview
     """
@@ -312,7 +312,7 @@ def _studio_wrap_xblock(xblock, view, frag, context, display_name_only=False):
         is_reorderable = _is_xblock_reorderable(xblock, context)
         selected_groups_label = get_visibility_partition_info(xblock)['selected_groups_label']
         if selected_groups_label:
-            selected_groups_label = _('Access restricted to: {list_of_groups}').format(list_of_groups=selected_groups_label)  # lint-amnesty, pylint: disable=line-too-long
+            selected_groups_label = _('Access restricted to: {list_of_groups}').format(list_of_groups=selected_groups_label)  # noqa: E501
         course = modulestore().get_course(xblock.location.course_key)
 
         can_edit = context.get('can_edit', True)

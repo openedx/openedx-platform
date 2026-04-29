@@ -78,7 +78,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
         assert CourseEnrollment.generate_enrollment_status_hash(AnonymousUser()) is None
 
         # No enrollments
-        expected = hashlib.md5(self.user.username.encode('utf-8')).hexdigest()  # lint-amnesty, pylint: disable=no-member
+        expected = hashlib.md5(self.user.username.encode('utf-8')).hexdigest()  # pylint: disable=no-member
         assert CourseEnrollment.generate_enrollment_status_hash(self.user) == expected
         self.assert_enrollment_status_hash_cached(self.user, expected)
 
@@ -127,20 +127,20 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
     def test_users_enrolled_in_active_only(self):
         """CourseEnrollment.users_enrolled_in should return only Users with active enrollments when
         `include_inactive` has its default value (False)."""
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # lint-amnesty, pylint: disable=no-member
-        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # pylint: disable=no-member
 
-        active_enrolled_users = list(CourseEnrollment.objects.users_enrolled_in(self.course.id))  # lint-amnesty, pylint: disable=no-member
+        active_enrolled_users = list(CourseEnrollment.objects.users_enrolled_in(self.course.id))  # pylint: disable=no-member
         assert [self.user] == active_enrolled_users
 
     def test_users_enrolled_in_all(self):
         """CourseEnrollment.users_enrolled_in should return active and inactive users when
         `include_inactive` is True."""
-        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # lint-amnesty, pylint: disable=no-member
-        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user, course_id=self.course.id, is_active=True)  # pylint: disable=no-member
+        CourseEnrollmentFactory.create(user=self.user_2, course_id=self.course.id, is_active=False)  # pylint: disable=no-member
 
         all_enrolled_users = list(
-            CourseEnrollment.objects.users_enrolled_in(self.course.id, include_inactive=True)  # lint-amnesty, pylint: disable=no-member
+            CourseEnrollment.objects.users_enrolled_in(self.course.id, include_inactive=True)  # pylint: disable=no-member
         )
         self.assertListEqual([self.user, self.user_2], all_enrolled_users)  # noqa: PT009
 
@@ -185,7 +185,7 @@ class CourseEnrollmentTests(SharedModuleStoreTestCase):  # lint-amnesty, pylint:
     @ddt.data(*(set(CourseMode.ALL_MODES) - set(CourseMode.AUDIT_MODES)))
     def test_upgrade_deadline_for_non_upgradeable_enrollment(self, mode):
         """ The property should return None if an upgrade cannot be upgraded. """
-        enrollment = CourseEnrollmentFactory(course_id=self.course.id, mode=mode)  # lint-amnesty, pylint: disable=no-member
+        enrollment = CourseEnrollmentFactory(course_id=self.course.id, mode=mode)  # pylint: disable=no-member
         assert enrollment.upgrade_deadline is None
 
     @skip_unless_lms
@@ -287,7 +287,6 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         assert self.user.celebration.last_day_of_streak == today
         assert STREAK_LENGTH_TO_CELEBRATE is None
 
-    # pylint: disable=line-too-long
     def test_celebrate_only_once_in_continuous_streak(self):
         """
         Sample run for a 3 day streak and 1 day break. See last column for explanation.
@@ -301,14 +300,13 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/8/21  | 5                   | 2/8/21             | None                    | Day 5 of Streak                     |
         | 2/9/21  | 6                   | 2/9/21             | None                    | Day 6 of Streak                     |
         +---------+---------------------+--------------------+-------------------------+------------------+------------------+
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, (self.STREAK_LENGTH_TO_CELEBRATE * 2) + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 STREAK_LENGTH_TO_CELEBRATE = UserCelebration.perform_streak_updates(self.user, self.course_key)
                 assert bool(STREAK_LENGTH_TO_CELEBRATE) == (i == self.STREAK_LENGTH_TO_CELEBRATE)
 
-    # pylint: disable=line-too-long
     def test_longest_streak_updates_correctly(self):
         """
         Sample run for a 3 day streak and 1 day break. See last column for explanation.
@@ -322,14 +320,13 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/8/21  | 5                   | 2/8/21             | None                    | longest_streak_ever is 5               |
         | 2/9/21  | 6                   | 2/9/21             | None                    | longest_streak_ever is 6               |
         +---------+---------------------+--------------------+-------------------------+------------------+---------------------+
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, (self.STREAK_LENGTH_TO_CELEBRATE * 2) + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
                 UserCelebration.perform_streak_updates(self.user, self.course_key)
                 assert self.user.celebration.longest_ever_streak == i
 
-    # pylint: disable=line-too-long
     def test_celebrate_only_once_with_multiple_calls_on_the_same_day(self):
         """
         Sample run for a 3 day streak and 1 day break. See last column for explanation.
@@ -343,7 +340,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/6/21  | 3                   | 2/6/21             | 3                       | Completed 3 Day Streak so we should celebrate |
         | 2/6/21  | 3                   | 2/6/21             | None                    | Already celebrated this streak.               |
         +---------+---------------------+--------------------+-------------------------+------------------+----------------------------+
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE + 1):
             with freeze_time(now + datetime.timedelta(days=i)):
@@ -368,7 +365,6 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         now = UserCelebration._get_now('America/New_York')  # pylint: disable=protected-access
         assert str(now.tzinfo) == 'Asia/Tokyo'
 
-    # pylint: disable=line-too-long
     def test_celebrate_twice_with_broken_streak_in_between(self):
         """
         Sample run for a 3 day streak and 1 day break. See last column for explanation.
@@ -383,9 +379,9 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
         | 2/9/21  | 2                   | 2/9/21             | None                    | Day 2 of Streak                               |
         | 2/10/21 | 3                   | 2/10/21            | 3                       | Completed 3 Day Streak so we should celebrate |
         +---------+---------------------+--------------------+-------------------------+------------------+-----------------------------------------------+
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(ZoneInfo("UTC"))
-        for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH + self.STREAK_LENGTH_TO_CELEBRATE + 1):
+        for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH + self.STREAK_LENGTH_TO_CELEBRATE + 1):  # noqa: E501
             with freeze_time(now + datetime.timedelta(days=i)):
                 if self.STREAK_LENGTH_TO_CELEBRATE < i <= self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH:
                     # Don't make any checks during the break
@@ -394,9 +390,8 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
                 if i <= self.STREAK_LENGTH_TO_CELEBRATE:
                     assert bool(streak_length_to_celebrate) == (i == self.STREAK_LENGTH_TO_CELEBRATE)
                 else:
-                    assert bool(streak_length_to_celebrate) == (i == self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH + self.STREAK_LENGTH_TO_CELEBRATE)
+                    assert bool(streak_length_to_celebrate) == (i == self.STREAK_LENGTH_TO_CELEBRATE + self.STREAK_BREAK_LENGTH + self.STREAK_LENGTH_TO_CELEBRATE)  # noqa: E501
 
-    # pylint: disable=line-too-long
     def test_streak_resets_if_day_is_missed(self):
         """
         Sample run for a 3 day streak and 1 day break with the learner coming back every other day.
@@ -414,7 +409,7 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
           No Accesses on 2/11/21
         | 2/12/21 | 1                   | 2/12/21            | None                    | Day 2 of streak was missed, so streak resets  |
         +---------+---------------------+--------------------+-------------------------+------------------+-----------------------------------------------+
-        """
+        """  # noqa: E501
         now = datetime.datetime.now(ZoneInfo("UTC"))
         for i in range(1, self.STREAK_LENGTH_TO_CELEBRATE * 3 + 1, 2):
             with freeze_time(now + datetime.timedelta(days=i)):
@@ -422,7 +417,6 @@ class UserCelebrationTests(SharedModuleStoreTestCase):
                 assert self.user.celebration.last_day_of_streak == (now + datetime.timedelta(days=i)).date()
                 assert streak_length_to_celebrate is None
 
-    # pylint: disable=line-too-long
     def test_streak_does_not_reset_if_day_is_missed_with_longer_break(self):
         """
         Sample run for a 3 day streak with the learner coming back every other day.
@@ -701,7 +695,7 @@ class TestManualEnrollmentAudit(SharedModuleStoreTestCase):
         enrollment.
         """
         enrollment = CourseEnrollment.enroll(self.user, self.course.id)  # lint-amnesty, pylint: disable=no-member
-        other_enrollment = CourseEnrollment.enroll(self.user, self.other_course.id)  # lint-amnesty, pylint: disable=no-member
+        other_enrollment = CourseEnrollment.enroll(self.user, self.other_course.id)  # pylint: disable=no-member
         ManualEnrollmentAudit.create_manual_enrollment_audit(
             self.instructor, self.user.email, ALLOWEDTOENROLL_TO_ENROLLED,
             'manually enrolling unenrolled user', enrollment

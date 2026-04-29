@@ -16,7 +16,7 @@ from django.utils.decorators import method_decorator  # lint-amnesty, pylint: di
 from edx_rest_framework_extensions.auth.jwt.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
     JwtAuthentication,
 )
-from edx_rest_framework_extensions.auth.session.authentication import (  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_rest_framework_extensions.auth.session.authentication import (  # pylint: disable=wrong-import-order
     SessionAuthenticationAllowInactiveUser,
 )
 from opaque_keys import InvalidKeyError  # lint-amnesty, pylint: disable=wrong-import-order
@@ -384,7 +384,7 @@ class EnrollmentCourseDetailView(APIView):
         except CourseNotFoundError:
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
-                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032  # pylint: disable=line-too-long
+                data={"message": ("No course found for course ID '{course_id}'").format(course_id=course_id)},  # noqa: UP032
             )
 
 
@@ -662,7 +662,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032  # pylint: disable=line-too-long
+                    "message": ("An error occurred while retrieving enrollments for user '{username}'").format(  # noqa: UP032
                         username=username
                     )
                 },
@@ -746,7 +746,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             return Response(
                 status=status.HTTP_403_FORBIDDEN,
                 data={
-                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032  # pylint: disable=line-too-long
+                    "message": "User does not have permission to create enrollment with mode [{mode}].".format(  # noqa: UP032
                         mode=mode
                     )
                 },
@@ -771,7 +771,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
             if is_active is not None and not isinstance(is_active, bool):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
-                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032  # pylint: disable=line-too-long
+                    data={"message": ("'{value}' is an invalid enrollment activation status.").format(value=is_active)},  # noqa: UP032
                 )
 
             explicit_linked_enterprise = request.data.get("linked_enterprise_customer")
@@ -787,7 +787,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                         username,
                         course_id,
                     )
-                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise CourseEnrollmentError(str(error))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
                 kwargs = {
                     "username": username,
                     "course_id": str(course_id),
@@ -802,7 +802,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                 return Response(
                     status=status.HTTP_400_BAD_REQUEST,
                     data={
-                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032  # pylint: disable=line-too-long
+                        "message": ("'{value}' is an invalid force enrollment status.").format(value=force_enrollment)  # noqa: UP032
                     },
                 )
             # Only a staff user role can enroll a user forcefully
@@ -826,7 +826,7 @@ class EnrollmentListView(APIView, ApiKeyPermissionMixIn):
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"message": msg})
 
                 if missing_attrs:
-                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032  # pylint: disable=line-too-long
+                    msg = "Missing enrollment attributes: requested mode={} required attributes={}".format(  # noqa: UP032
                         mode, REQUIRED_ATTRIBUTES.get(mode)
                     )
                     log.warning(msg)

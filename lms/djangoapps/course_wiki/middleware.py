@@ -36,7 +36,7 @@ class WikiAccessMiddleware(MiddlewareMixin):
             # See if we are able to view the course. If we are, redirect to it
             try:
                 get_course_overview_with_access(request.user, 'load', course_id)
-                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")  # lint-amnesty, pylint: disable=line-too-long
+                return redirect(f"/courses/{str(course_id)}/wiki/{wiki_path}")
             except Http404:
                 # Even though we came from the course, we can't see it. So don't worry about it.
                 pass

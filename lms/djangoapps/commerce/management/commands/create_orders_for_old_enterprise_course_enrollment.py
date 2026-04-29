@@ -229,7 +229,7 @@ class Command(BaseCommand):
             offset += enrollments_query_batch_size
 
         self.stdout.write(
-            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            '[Final Summary] Enrollments Success: {}, New: {}, Failed: {}, Invalid: {} , Non-Paid: {}'.format(  # noqa: UP032
                 successfully_synced_enrollments, new_created_orders, failed_to_synced_enrollments, invalid_enrollments,
                 non_paid_enrollments
             )
@@ -286,4 +286,4 @@ class Command(BaseCommand):
 
         except Exception as ex:
             traceback.print_exc()
-            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031

@@ -145,7 +145,7 @@ class Command(BaseCommand):
             response.raise_for_status()
             return len(contacts)
         except HTTPError as ex:
-            message = 'An error occurred while syncing batch of contacts for site {domain}, {message}'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            message = 'An error occurred while syncing batch of contacts for site {domain}, {message}'.format(  # noqa: UP032
                 domain=site_conf.site.domain, message=str(ex)
             )
             self.stderr.write(message)
@@ -227,4 +227,4 @@ class Command(BaseCommand):
 
         except Exception as ex:
             traceback.print_exc()
-            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError('Command failed with traceback %s' % str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031

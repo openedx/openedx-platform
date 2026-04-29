@@ -118,7 +118,7 @@ class Command(BaseCommand):
                         "date range {} - {}".format(start_date.date(), now().date()))
             return
 
-        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"  # noqa: UP032  # pylint: disable=line-too-long
+        logger.info("For the date range {} - {}, total Software Secure Photo verification filtered are {}"  # noqa: UP032
                     .format(start_date.date(), now().date(), total_verification))
 
         batch_verifications = []

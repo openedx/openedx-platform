@@ -594,7 +594,7 @@ class SequenceBlock(
         self._update_position(context, len(children))
 
         fragment = Fragment()
-        params = self._get_render_metadata(context, children, prereq_met, prereq_meta_info, banner_text, view, fragment)  # lint-amnesty, pylint: disable=line-too-long
+        params = self._get_render_metadata(context, children, prereq_met, prereq_meta_info, banner_text, view, fragment)
         if SHOW_PROGRESS_BAR.is_enabled() and getattr(settings, 'COMPLETION_AGGREGATOR_URL', ''):
             parent_block_id = self.get_parent().scope_ids.usage_id.block_id
             params['chapter_completion_aggregator_url'] = '/'.join(
@@ -794,7 +794,7 @@ class SequenceBlock(
             content_type_gating_service = self.runtime.service(self, 'content_type_gating')
             contains_content_type_gated_content = False
             if content_type_gating_service:
-                contains_content_type_gated_content = content_type_gating_service.check_children_for_content_type_gating_paywall(  # pylint:disable=line-too-long
+                contains_content_type_gated_content = content_type_gating_service.check_children_for_content_type_gating_paywall(  # noqa: E501
                     block, self.scope_ids.usage_id.context_key
                 ) is not None
             block_info = {

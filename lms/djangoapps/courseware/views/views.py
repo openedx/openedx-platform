@@ -496,13 +496,13 @@ class StaticCourseTabView(EdxFragmentView):
 
         return super().get(request, course=course, tab=tab, **kwargs)
 
-    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the static tab to a fragment.
         """
         return get_static_tab_fragment(request, course, tab)
 
-    def render_standalone_response(self, request, fragment, course=None, tab=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_standalone_response(self, request, fragment, course=None, tab=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders this static tab's fragment to HTML for a standalone page.
         """
@@ -623,7 +623,7 @@ class CourseTabView(EdxFragmentView):
         """
         Handle exceptions raised when rendering a view.
         """
-        if isinstance(exception, Redirect) or isinstance(exception, Http404):  # lint-amnesty, pylint: disable=consider-merging-isinstance
+        if isinstance(exception, Redirect) or isinstance(exception, Http404):  # pylint: disable=consider-merging-isinstance
             raise  # lint-amnesty, pylint: disable=misplaced-bare-raise
         if settings.DEBUG:
             raise  # lint-amnesty, pylint: disable=misplaced-bare-raise
@@ -689,14 +689,14 @@ class CourseTabView(EdxFragmentView):
         )
         return context
 
-    def render_to_fragment(self, request, course=None, page_context=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course=None, page_context=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders the course tab to a fragment.
         """
         tab = page_context['tab']
         return tab.render_to_fragment(request, course, **kwargs)
 
-    def render_standalone_response(self, request, fragment, course=None, tab=None, page_context=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_standalone_response(self, request, fragment, course=None, tab=None, page_context=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Renders this course tab's fragment to HTML for a standalone page.
         """
@@ -1075,7 +1075,7 @@ def _progress(request, course_key, student_id):
     return response
 
 
-def _downloadable_certificate_message(course, cert_downloadable_status):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _downloadable_certificate_message(course, cert_downloadable_status):  # pylint: disable=missing-function-docstring
     if certs_api.has_html_certificates_enabled(course):
         if certs_api.get_active_web_certificate(course) is not None:
             return _downloadable_cert_data(
@@ -1388,7 +1388,7 @@ def get_course_lti_endpoints(request, course_id):
         for block in lti_noauth_blocks
     ]
 
-    return HttpResponse(json.dumps(endpoints), content_type='application/json')  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps(endpoints), content_type='application/json')  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
 
 
 @login_required
@@ -1556,7 +1556,7 @@ def _check_sequence_exam_access(request, location):
             # unpack will validate both expiration and the requesting user matches the
             # token user
             exam_access_unpacked = unpack_jwt(exam_access_token, request.user.id)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             log.exception(f"Failed to validate exam access token. user_id={request.user.id} location={location}")
             return False
 
@@ -1593,7 +1593,7 @@ def render_xblock(request, usage_key_string, check_if_enrolled=True, disable_sta
         set_custom_attribute('block_extracted', is_extracted)
 
     requested_view = request.GET.get('view', 'student_view')
-    if requested_view != 'student_view' and requested_view != 'public_view':  # lint-amnesty, pylint: disable=consider-using-in
+    if requested_view != 'student_view' and requested_view != 'public_view':  # pylint: disable=consider-using-in
         return HttpResponseBadRequest(
             f"Rendering of the xblock view '{nh3.clean(requested_view)}' is not supported."
         )

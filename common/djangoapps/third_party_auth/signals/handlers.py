@@ -42,7 +42,7 @@ def update_saml_provider_configs_on_configuration_change(sender, instance, creat
             updated_count += 1
 
         # .. custom_attribute_name: saml_config_signal.updated_count
-        # .. custom_attribute_description: The number of SAMLProviderConfig records updated to point to the new configuration.
+        # .. custom_attribute_description: The number of SAMLProviderConfig records updated to point to the new configuration.  # noqa: E501
         set_custom_attribute('saml_config_signal.updated_count', updated_count)
 
     except Exception as e:  # pylint: disable=broad-except

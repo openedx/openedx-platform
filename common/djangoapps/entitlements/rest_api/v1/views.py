@@ -17,7 +17,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.entitlements.models import (
     CourseEntitlement,
     CourseEntitlementPolicy,
     CourseEntitlementSupportDetail,
@@ -300,12 +300,12 @@ class EntitlementViewSet(viewsets.ModelViewSet):
                     support_detail['unenrolled_run'] = CourseOverview.objects.get(id=unenrolled_run_course_key)
                 except (InvalidKeyError, CourseOverview.DoesNotExist) as error:
                     return HttpResponseBadRequest(
-                        'Error raised while trying to unenroll user {user} from course run {course_id}: {error}'  # noqa: UP032  # pylint: disable=line-too-long
+                        'Error raised while trying to unenroll user {user} from course run {course_id}: {error}'  # noqa: UP032
                         .format(user=entitlement.user.username, course_id=unenrolled_run_id, error=error)
                     )
             CourseEntitlementSupportDetail.objects.create(**support_detail)
 
-        return super().partial_update(request, *args, **kwargs)  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        return super().partial_update(request, *args, **kwargs)  # pylint: disable=no-member, super-with-arguments
 
 
 class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
@@ -430,7 +430,7 @@ class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):
             return Response(
                 status=status.HTTP_400_BAD_REQUEST,
                 data={
-                    'message': 'The User is unable to enroll in Course Run {course_id}, it is not available.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+                    'message': 'The User is unable to enroll in Course Run {course_id}, it is not available.'.format(  # noqa: UP032
                         course_id=course_run_id
                     )
                 }

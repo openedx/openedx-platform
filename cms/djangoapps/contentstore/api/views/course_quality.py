@@ -135,7 +135,7 @@ class CourseQualityView(DeveloperErrorViewMixin, GenericAPIView):
 
         return Response(response)
 
-    def _required_course_depth(self, request, all_requested):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _required_course_depth(self, request, all_requested):  # pylint: disable=missing-function-docstring
         if get_bool_param(request, 'units', all_requested):
             # The num_blocks metric for "units" requires retrieving all blocks in the graph.
             return None

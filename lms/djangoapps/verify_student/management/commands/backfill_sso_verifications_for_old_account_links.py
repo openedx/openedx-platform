@@ -49,7 +49,7 @@ class Command(BaseCommand):
         try:
             provider = Registry.get(provider_slug)
         except ValueError as e:  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
-            raise CommandError(f'provider slug {provider_slug} does not exist')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'provider slug {provider_slug} does not exist')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         query_set = UserSocialAuth.objects.select_related('user__profile')
         query_set = filter_user_social_auth_queryset_by_provider(query_set, provider)

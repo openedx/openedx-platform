@@ -37,7 +37,7 @@ class Command(BaseCommand):
         mailchimp = MailSnake(key)
 
         lists = mailchimp.lists()['data']
-        by_web_id = {l['web_id']: l for l in lists}
+        by_web_id = {mailing_list['web_id']: mailing_list for mailing_list in lists}
 
         list_with_id = by_web_id.get(web_id, None)
 

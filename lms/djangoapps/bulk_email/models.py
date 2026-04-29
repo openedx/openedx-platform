@@ -139,7 +139,7 @@ class Target(models.Model):
                 enrollment_qset.exclude(id__in=staff_instructor_qset)
             )
         elif self.target_type == SEND_TO_COHORT:
-            return self.cohorttarget.cohort.users.filter(id__in=enrollment_qset)  # lint-amnesty, pylint: disable=no-member
+            return self.cohorttarget.cohort.users.filter(id__in=enrollment_qset)  # pylint: disable=no-member
         elif self.target_type == SEND_TO_TRACK:
             return use_read_replica_if_available(
                 User.objects.filter(

@@ -18,7 +18,7 @@ from django.urls import reverse
 from django.utils.timezone import now
 from edx_toggles.toggles.testutils import override_waffle_switch
 
-from common.djangoapps.student.admin import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.admin import (
     COURSE_ENROLLMENT_ADMIN_SWITCH,
     AllowedAuthUserForm,
     CourseEnrollmentForm,

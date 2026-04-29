@@ -19,7 +19,7 @@ class ScheduleExperienceAdminInline(admin.StackedInline):
     model = models.ScheduleExperience
 
 
-def _set_experience(db_name, human_name, modeladmin, request, queryset):  # lint-amnesty, pylint: disable=redefined-outer-name
+def _set_experience(db_name, human_name, modeladmin, request, queryset):  # pylint: disable=redefined-outer-name
     """
     A django action which will set all selected schedules to the supplied experience.
     The intended usage is with functools.partial to generate the action for each experience type

@@ -57,7 +57,7 @@ class SurveyForm(TimeStampedModel):
             fields = cls.get_field_names_from_html(html)
         except Exception as ex:
             log.exception(f"Cannot parse SurveyForm html: {ex}")
-            raise ValidationError(f"Cannot parse SurveyForm as HTML: {ex}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"Cannot parse SurveyForm as HTML: {ex}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         if not len(fields):  # lint-amnesty, pylint: disable=len-as-condition
             raise ValidationError("SurveyForms must contain at least one form input field")
@@ -171,7 +171,7 @@ class SurveyAnswer(TimeStampedModel):
     .. pii: These are free-form questions asked by course authors. Types below are current as of Feb 2019, new ones could be added. "other" PII currently includes "company", "job title", and "work experience".
     .. pii_types: name, location, other
     .. pii_retirement: retained
-    """
+    """  # noqa: E501
     user = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)
     form = models.ForeignKey(SurveyForm, db_index=True, on_delete=models.CASCADE)
     field_name = models.CharField(max_length=255, db_index=True)

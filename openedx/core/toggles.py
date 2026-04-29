@@ -22,7 +22,7 @@ ENTRANCE_EXAMS = SettingToggle(
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
 # .. toggle_description: This toggle will enable the new openedx-authz authorization engine for course authoring.
-# .. toggle_warning: Enabling this toggle will trigger a data migration to move role assignations between the legacy and the openedx-authz system.
+# .. toggle_warning: Enabling this toggle will trigger a data migration to move role assignations between the legacy and the openedx-authz system.  # noqa: E501
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2026-02-05
 # .. toggle_target_removal_date: 2027-06-09

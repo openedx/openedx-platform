@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 QUERY_COUNT_TABLE_IGNORELIST = WAFFLE_TABLES
 
 
-class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ViewsExceptionTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
@@ -301,7 +301,7 @@ class AllowPlusOrMinusOneInt(int):
 
 
 @patch('requests.request', autospec=True)
-class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     CREATE_USER = False
 
@@ -331,7 +331,7 @@ class CommentsServiceRequestHeadersTestCase(UrlResetMixin, ModuleStoreTestCase):
 
         self.addCleanup(translation.deactivate)
 
-    def assert_all_calls_have_header(self, mock_request, key, value):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_all_calls_have_header(self, mock_request, key, value):  # pylint: disable=missing-function-docstring
         expected = call(
             ANY,  # method
             ANY,  # url

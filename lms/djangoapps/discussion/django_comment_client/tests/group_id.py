@@ -122,7 +122,7 @@ class CohortedTopicGroupIdTestMixin(GroupIdAssertionMixin):
 
     def test_cohorted_topic_moderator_with_invalid_group_id(self, mock_request):
         invalid_id = self.student_cohort.id + self.moderator_cohort.id
-        response = self.call_view(mock_request, "cohorted_topic", self.moderator, invalid_id)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        response = self.call_view(mock_request, "cohorted_topic", self.moderator, invalid_id)  # pylint: disable=assignment-from-no-return
         assert response.status_code == 500
 
     def test_cohorted_topic_enrollment_track_invalid_group_id(self, mock_request):
@@ -136,7 +136,7 @@ class CohortedTopicGroupIdTestMixin(GroupIdAssertionMixin):
         })
 
         invalid_id = -1000
-        response = self.call_view(mock_request, "cohorted_topic", self.moderator, invalid_id)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        response = self.call_view(mock_request, "cohorted_topic", self.moderator, invalid_id)  # pylint: disable=assignment-from-no-return
         assert response.status_code == 500
 
 
@@ -346,7 +346,7 @@ class CohortedTopicGroupIdTestMixinV2(GroupIdAssertionMixinV2):
 
     def test_cohorted_topic_moderator_with_invalid_group_id(self):
         invalid_id = self.student_cohort.id + self.moderator_cohort.id
-        response = self.call_view("cohorted_topic", self.moderator, invalid_id)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        response = self.call_view("cohorted_topic", self.moderator, invalid_id)  # pylint: disable=assignment-from-no-return
         assert response.status_code == 500
 
     def test_cohorted_topic_enrollment_track_invalid_group_id(self):
@@ -360,7 +360,7 @@ class CohortedTopicGroupIdTestMixinV2(GroupIdAssertionMixinV2):
         })
 
         invalid_id = -1000
-        response = self.call_view("cohorted_topic", self.moderator, invalid_id)  # lint-amnesty, pylint: disable=assignment-from-no-return
+        response = self.call_view("cohorted_topic", self.moderator, invalid_id)  # pylint: disable=assignment-from-no-return
         assert response.status_code == 500
 
 

@@ -198,7 +198,7 @@ class ModuleStoreSettingsMigration(TestCase):
     def test_no_conversion(self):
         # make sure there is no migration done on an already updated config
         old_mixed_setting = self.ALREADY_UPDATED_MIXED_CONFIG
-        new_mixed_setting, new_default_store_setting = self.assertMigrated(old_mixed_setting)  # lint-amnesty, pylint: disable=unused-variable
+        new_mixed_setting, new_default_store_setting = self.assertMigrated(old_mixed_setting)  # pylint: disable=unused-variable
         assert self.is_split_configured(new_mixed_setting)
         assert old_mixed_setting == new_mixed_setting
 

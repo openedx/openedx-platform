@@ -145,7 +145,6 @@ class Theme:
         return hash((self.theme_dir_name, self.path))
 
     def __str__(self):
-        # pylint: disable=line-too-long
         return f"<Theme: {self.name} at '{self.path}'>"  # xss-lint: disable=python-wrap-html
 
     def __repr__(self):

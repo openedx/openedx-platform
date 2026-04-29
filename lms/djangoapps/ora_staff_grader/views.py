@@ -98,7 +98,7 @@ class InitializeView(StaffGraderBaseView):
         # This toggle is documented on the edx-ora2 repo in openassessment/xblock/config_mixin.py
         # Note: Do not copy this practice of directly using a toggle from a library.
         #  Instead, see docs for exposing a wrapper api:
-        #  https://docs.openedx.org/projects/edx-toggles/en/latest/how_to/implement_the_right_toggle_type.html#using-other-toggles pylint: disable=line-too-long
+        #  https://docs.openedx.org/projects/edx-toggles/en/latest/how_to/implement_the_right_toggle_type.html#using-other-toggles  # noqa: E501
         # pylint: disable=toggle-missing-annotation
         enhanced_staff_grader_flag = CourseWaffleFlag(
             f"{WAFFLE_NAMESPACE}.{ENHANCED_STAFF_GRADER}",

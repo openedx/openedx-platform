@@ -13,7 +13,7 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from social_django.models import Partial
 
-from common.djangoapps.third_party_auth.tests.utils import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.third_party_auth.tests.utils import (
     ThirdPartyOAuthTestMixinFacebook,
     ThirdPartyOAuthTestMixinGoogle,
 )
@@ -40,7 +40,7 @@ class AccessTokenExchangeFormTest(AccessTokenExchangeTestMixin):
         super().tearDown()
         Partial.objects.all().delete()
 
-    def _assert_error(self, data, expected_error, expected_error_description):  # lint-amnesty, pylint: disable=arguments-differ
+    def _assert_error(self, data, expected_error, expected_error_description):  # pylint: disable=arguments-differ
         form = AccessTokenExchangeForm(request=self.request, oauth2_adapter=self.oauth2_adapter, data=data)
         assert form.errors == {'error': expected_error, 'error_description': expected_error_description}
 

@@ -121,8 +121,8 @@ class MongoContentStore(ContentStore):
         # the location as the _id, we must delete before adding (there's no replace method in gridFS)
         self.delete(content_id)  # delete is a noop if the entry doesn't exist; so, don't waste time checking
 
-        thumbnail_location = content.thumbnail_location.to_deprecated_list_repr() if content.thumbnail_location else None  # lint-amnesty, pylint: disable=line-too-long
-        with self.fs.new_file(_id=content_id, filename=str(content.location), content_type=content.content_type,  # lint-amnesty, pylint: disable=line-too-long
+        thumbnail_location = content.thumbnail_location.to_deprecated_list_repr() if content.thumbnail_location else None  # noqa: E501
+        with self.fs.new_file(_id=content_id, filename=str(content.location), content_type=content.content_type,
                               displayname=content.name, content_son=content_son,
                               thumbnail_location=thumbnail_location,
                               import_path=content.import_path,
@@ -161,7 +161,7 @@ class MongoContentStore(ContentStore):
         # Deletes of non-existent files are considered successful
         self.fs.delete(location_or_id)
 
-    def find(self, location, throw_on_not_found=True, as_stream=False):  # lint-amnesty, pylint: disable=arguments-differ
+    def find(self, location, throw_on_not_found=True, as_stream=False):  # pylint: disable=arguments-differ
         content_id, __ = self.asset_db_key(location)
 
         try:

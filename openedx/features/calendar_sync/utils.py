@@ -59,7 +59,7 @@ def prepare_attachments(attachment_data, file_ext=''):
     return attachments
 
 
-def send_email_with_attachment(to_emails, attachment_data, course_name, is_initial):  # lint-amnesty, pylint: disable=missing-function-docstring
+def send_email_with_attachment(to_emails, attachment_data, course_name, is_initial):  # pylint: disable=missing-function-docstring
     # connect to SES
     client = boto3.client('ses', region_name=settings.AWS_SES_REGION_NAME)
 

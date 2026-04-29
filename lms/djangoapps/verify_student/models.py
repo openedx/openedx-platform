@@ -1061,7 +1061,7 @@ class SoftwareSecurePhotoVerification(PhotoVerification):
 
         verification = SoftwareSecurePhotoVerification.get_recent_verification(user)
 
-        if verification and verification.expiration_datetime < recently_expired_date and not verification.expiry_email_date:  # lint-amnesty, pylint: disable=line-too-long
+        if verification and verification.expiration_datetime < recently_expired_date and not verification.expiry_email_date:  # noqa: E501
             expiry_email_date = today - timedelta(days=email_config['RESEND_DAYS'])
             SoftwareSecurePhotoVerification.objects.filter(pk=verification.pk).update(
                 expiry_email_date=expiry_email_date)

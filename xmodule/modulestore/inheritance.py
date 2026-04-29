@@ -132,19 +132,19 @@ class InheritanceMixin(XBlockMixin):
     )
     static_asset_path = String(
         display_name=_("Static Asset Path"),
-        help=_("Enter the path to use for files on the Files & Uploads page. This value overrides the Studio default, c4x://."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter the path to use for files on the Files & Uploads page. This value overrides the Studio default, c4x://."),
         scope=Scope.settings,
         default='',
     )
     use_latex_compiler = Boolean(
         display_name=_("Enable LaTeX Compiler"),
-        help=_("Enter true or false. If true, you can use the LaTeX templates for HTML components and advanced Problem components."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter true or false. If true, you can use the LaTeX templates for HTML components and advanced Problem components."),  # noqa: E501
         default=False,
         scope=Scope.settings
     )
     max_attempts = Integer(
         display_name=_("Maximum Attempts"),
-        help=_("Enter the maximum number of times a student can try to answer problems. By default, Maximum Attempts is set to null, meaning that students have an unlimited number of attempts for problems. You can override this course-wide setting for individual problems. However, if the course-wide setting is a specific number, you cannot set the Maximum Attempts for individual problems to unlimited."),  # lint-amnesty, pylint: disable=line-too-long
+        help=_("Enter the maximum number of times a student can try to answer problems. By default, Maximum Attempts is set to null, meaning that students have an unlimited number of attempts for problems. You can override this course-wide setting for individual problems. However, if the course-wide setting is a specific number, you cannot set the Maximum Attempts for individual problems to unlimited."),  # noqa: E501
         values={"min": 0}, scope=Scope.settings
     )
     matlab_api_key = String(
@@ -173,7 +173,7 @@ class InheritanceMixin(XBlockMixin):
     video_auto_advance = Boolean(
         display_name=_("Enable video auto-advance"),
         help=_(
-            "Specify whether to show an auto-advance button in videos. If the student clicks it, when the last video in a unit finishes it will automatically move to the next unit and autoplay the first video."  # lint-amnesty, pylint: disable=line-too-long
+            "Specify whether to show an auto-advance button in videos. If the student clicks it, when the last video in a unit finishes it will automatically move to the next unit and autoplay the first video."  # noqa: E501
         ),
         scope=Scope.settings,
         default=False

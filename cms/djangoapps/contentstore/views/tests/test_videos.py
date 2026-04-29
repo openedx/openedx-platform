@@ -318,7 +318,7 @@ class VideoUploadPostTestsMixin:
             # Ensure response is correct
             response_file = response_obj['files'][i]
             self.assertEqual(response_file['file_name'], file_info['file_name'])  # noqa: PT009
-            self.assertEqual(response_file['upload_url'], f'http://example.com/url_{file_info["file_name"]}')  # noqa: PT009  # pylint: disable=line-too-long
+            self.assertEqual(response_file['upload_url'], f'http://example.com/url_{file_info["file_name"]}')  # noqa: PT009
 
     def test_post_non_json(self):
         response = self.client.post(self.url, {"files": []})
@@ -559,7 +559,7 @@ class VideosHandlerTestCase(
         )
         self.assertEqual(response.status_code, 400)  # noqa: PT009
         response = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response['error'], 'The file name for %s must contain only ASCII characters.' % file_name)  # noqa: PT009, UP031  # pylint: disable=line-too-long
+        self.assertEqual(response['error'], 'The file name for %s must contain only ASCII characters.' % file_name)  # noqa: PT009, UP031
 
     @override_settings(AWS_ACCESS_KEY_ID='test_key_id', AWS_SECRET_ACCESS_KEY='test_secret', AWS_SECURITY_TOKEN='token')
     @patch('cms.djangoapps.contentstore.video_storage_handlers.boto3.resource')
@@ -1031,7 +1031,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
             {
                 'extension': '.tiff'
             },
-            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            'This image file type is not supported. Supported file types are {supported_file_formats}.'.format(  # noqa: UP032
                 supported_file_formats=list(settings.VIDEO_IMAGE_SUPPORTED_FILE_FORMATS.keys())
             )
         ),
@@ -1058,7 +1058,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
                 'width': 16,  # 16x9
                 'height': 9
             },
-            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # noqa: E501, UP032
                 image_file_max_width=settings.VIDEO_IMAGE_MAX_WIDTH,
                 image_file_max_height=settings.VIDEO_IMAGE_MAX_HEIGHT,
                 image_file_min_width=settings.VIDEO_IMAGE_MIN_WIDTH,
@@ -1070,7 +1070,7 @@ class VideoImageTestCase(VideoUploadTestBase, CourseTestCase):
                 'width': settings.VIDEO_IMAGE_MIN_WIDTH - 10,
                 'height': settings.VIDEO_IMAGE_MIN_HEIGHT
             },
-            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # lint-amnesty, pylint: disable=line-too-long  # noqa: UP032
+            'Recommended image resolution is {image_file_max_width}x{image_file_max_height}. The minimum resolution is {image_file_min_width}x{image_file_min_height}.'.format(  # noqa: E501, UP032
                 image_file_max_width=settings.VIDEO_IMAGE_MAX_WIDTH,
                 image_file_max_height=settings.VIDEO_IMAGE_MAX_HEIGHT,
                 image_file_min_width=settings.VIDEO_IMAGE_MIN_WIDTH,

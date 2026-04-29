@@ -144,12 +144,12 @@ class IgnoredErrorMiddleware:
 #      defined here, the middleware will add the custom attributes ``error_ignored_class`` and ``error_ignored_message``
 #.     to help diagnose issues with ignored errors, since this data is not otherwise available.
 #      For an example of ignoring errors in New Relic, see:
-#      https://docs.newrelic.com/docs/agents/manage-apm-agents/agent-data/manage-errors-apm-collect-ignore-or-mark-expected/#ignore  pylint: disable=line-too-long,useless-suppression
+#      https://docs.newrelic.com/docs/agents/manage-apm-agents/agent-data/manage-errors-apm-collect-ignore-or-mark-expected/#ignore  pylint: disable=useless-suppression  # noqa: E501
 #      To query for ignored errors, you would use ``error_ignored_class IS NOT NULL``.
-# .. setting_warning: At this time, an error that matches won't actually be ignored. These settings should be set to match
-#     the ignored error configuration found elsewhere, like in New Relic. When monitoring, no errors should ever have the attribute
+# .. setting_warning: At this time, an error that matches won't actually be ignored. These settings should be set to match  # noqa: E501
+#     the ignored error configuration found elsewhere, like in New Relic. When monitoring, no errors should ever have the attribute  # noqa: E501
 #     ``error_ignored_class``. Only Transactions should have this custom attribute. If found for an error, it means we
-#     are stating an error should be ignored when it is not actually configured as such, or the (New Relic) configuration is not
+#     are stating an error should be ignored when it is not actually configured as such, or the (New Relic) configuration is not  # noqa: E501
 #     working.
 
 # .. toggle_name: IGNORED_ERRORS[N]['LOG_ERROR']
@@ -303,7 +303,7 @@ def _log_and_monitor_ignored_errors(request, exception, caller):
             set_custom_attribute('checked_error_ignored_from', 'multiple')
             return
 
-        # We have confirmed using monitoring that it is very rare that middleware and drf handle different uncaught exceptions.
+        # We have confirmed using monitoring that it is very rare that middleware and drf handle different uncaught exceptions.  # noqa: E501
         # We will leave this attribute in place, but it is not worth investing in a workaround.
         set_custom_attribute('unexpected_multiple_exceptions', cached_module_and_class)
         log.warning(

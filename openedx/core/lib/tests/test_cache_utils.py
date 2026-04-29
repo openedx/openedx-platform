@@ -242,7 +242,7 @@ class TestRequestCachedDecorator(TestCase):
             return to_be_wrapped(*args, **kwargs)
 
         request_cache_getter = lambda args, kwargs: RequestCache('test')
-        wrapped = request_cached(request_cache_getter=request_cache_getter)(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached(request_cache_getter=request_cache_getter)(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)
@@ -277,7 +277,7 @@ class TestRequestCachedDecorator(TestCase):
             return to_be_wrapped(*args, **kwargs)
 
         arg_map_function = lambda arg: str(arg == 1)
-        wrapped = request_cached(arg_map_function=arg_map_function)(mock_wrapper)  # lint-amnesty, pylint: disable=no-value-for-parameter
+        wrapped = request_cached(arg_map_function=arg_map_function)(mock_wrapper)  # pylint: disable=no-value-for-parameter
 
         # This will be a miss, and make an underlying call.
         result = wrapped(1)

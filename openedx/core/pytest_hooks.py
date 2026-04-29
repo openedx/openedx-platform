@@ -56,7 +56,7 @@ def pytest_sessionfinish(session):
     ):
         num += 1
 
-    report = session.config._json_report.report  # noqa pylint: disable=protected-access
+    report = session.config._json_report.report
 
     with open(create_file_name(dir_path, file_name_postfix, num), "w") as outfile:
         json.dump(report, outfile)

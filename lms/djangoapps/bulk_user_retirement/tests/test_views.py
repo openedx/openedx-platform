@@ -89,7 +89,7 @@ class BulkUserRetirementViewTests(APITestCase):
             })
 
             assert response.status_code == 200
-            assert sorted(response.data['successful_user_retirements']) == sorted(expected_response['successful_user_retirements'])  # pylint: disable=line-too-long
+            assert sorted(response.data['successful_user_retirements']) == sorted(expected_response['successful_user_retirements'])  # noqa: E501
 
             retirement_status_1 = UserRetirementStatus.objects.get(user__username=self.user3.username)
             assert retirement_status_1.current_state == self.pending_state
@@ -113,7 +113,7 @@ class BulkUserRetirementViewTests(APITestCase):
             })
             assert response.status_code == 200
 
-            assert sorted(response.data['successful_user_retirements']) == sorted(expected_response['successful_user_retirements'])  # pylint: disable=line-too-long
+            assert sorted(response.data['successful_user_retirements']) == sorted(expected_response['successful_user_retirements'])  # noqa: E501
 
             retirement_status_1 = UserRetirementStatus.objects.get(user__username=self.user3.username)
             assert retirement_status_1.current_state == self.pending_state

@@ -196,7 +196,7 @@ def get_transcript_link_from_youtube(youtube_id):
         return None
 
 
-def get_transcript_links_from_youtube(youtube_id, settings, i18n, youtube_transcript_name=''):  # lint-amnesty, pylint: disable=redefined-outer-name
+def get_transcript_links_from_youtube(youtube_id, settings, i18n, youtube_transcript_name=''):  # pylint: disable=redefined-outer-name
     """
     Gets transcripts from youtube for youtube_id.
 
@@ -491,7 +491,7 @@ def generate_sjson_for_all_speeds(block, user_filename, result_subs_dict, lang):
     try:
         srt_transcripts = contentstore().find(Transcript.asset_location(block.location, user_filename))
     except NotFoundError as ex:
-        raise TranscriptException(_("{exception_message}: Can't find uploaded transcripts: {user_filename}").format(  # noqa: B904  # pylint: disable=raise-missing-from,line-too-long
+        raise TranscriptException(_("{exception_message}: Can't find uploaded transcripts: {user_filename}").format(  # noqa: B904  # pylint: disable=raise-missing-from
             exception_message=str(ex),
             user_filename=user_filename
         ))

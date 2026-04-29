@@ -69,4 +69,4 @@ class TestSendEmailBaseCommand(CacheIsolationTestCase):  # lint-amnesty, pylint:
             assert not kwarg.called
 
             for offset in self.command.offsets:
-                self.command.enqueue.assert_any_call(offset, arg, kwarg=kwarg)  # lint-amnesty, pylint: disable=no-member
+                self.command.enqueue.assert_any_call(offset, arg, kwarg=kwarg)  # pylint: disable=no-member

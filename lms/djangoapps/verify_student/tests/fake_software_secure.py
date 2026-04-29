@@ -43,7 +43,7 @@ class SoftwareSecureFakeView(View):
         try:
             most_recent = SoftwareSecurePhotoVerification.objects.filter(user=user).order_by("-updated_at")[0]
             context["receipt_id"] = most_recent.receipt_id
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             pass
 
         return context

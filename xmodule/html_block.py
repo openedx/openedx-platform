@@ -221,7 +221,7 @@ class _BuiltinHtmlBlockMixin(  # lint-amnesty, pylint: disable=abstract-method
     # snippets that will be included in the middle of pages.
 
     @classmethod
-    def load_definition(cls, xml_object, system, location, id_generator):  # lint-amnesty, pylint: disable=arguments-differ
+    def load_definition(cls, xml_object, system, location, id_generator):  # pylint: disable=arguments-differ
         '''Load a descriptor from the specified xml_object:
 
         If there is a filename attribute, load it as a string, and

@@ -59,7 +59,7 @@ class AccessTokenExchangeBase(APIView):
         """
         Handle POST requests to get a first-party access token.
         """
-        form = AccessTokenExchangeForm(request=request, oauth2_adapter=self.oauth2_adapter, data=request.POST)  # lint-amnesty, pylint: disable=no-member
+        form = AccessTokenExchangeForm(request=request, oauth2_adapter=self.oauth2_adapter, data=request.POST)  # pylint: disable=no-member
         if not form.is_valid():
             error_response = self.error_response(form.errors)  # pylint: disable=no-member
             return error_response

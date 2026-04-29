@@ -1266,7 +1266,7 @@ class IsCommentableDividedTestCase(ModuleStoreTestCase):
         assert not utils.is_commentable_divided(course.id, to_id(
             'random')), 'Non-top-level discussion is not cohorted if always_divide_inline_discussions is False.'
         assert utils.is_commentable_divided(course.id, to_id(
-            'random_inline')), 'If always_divide_inline_discussions set to False, Non-top-level discussion is cohorted if explicitly set in cohorted_discussions.'
+            'random_inline')), 'If always_divide_inline_discussions set to False, Non-top-level discussion is cohorted if explicitly set in cohorted_discussions.'  # noqa: E501
         assert utils.is_commentable_divided(course.id, to_id(
             'Feedback')), 'If always_divide_inline_discussions set to False, top-level discussion are not affected.'
 
@@ -1779,6 +1779,5 @@ class TestConvertHtmlToMarkdown(unittest.TestCase):
         """
         input_text = '<a href="https://example.com">Example</a><p>Paragraph text</p> ' \
                      '<img src="https://example.com/Full-form-of-URL-1-1024x824.jpg" width="1024" height="824" />'
-        # pylint: disable=line-too-long
-        expected_output = '[Example](https://example.com)\n\nParagraph text\n\n ![](https://example.com/Full-form-of-URL-1-1024x824.jpg "")'
+        expected_output = '[Example](https://example.com)\n\nParagraph text\n\n ![](https://example.com/Full-form-of-URL-1-1024x824.jpg "")'  # noqa: E501
         self.assertEqual(utils.convert_html_to_markdown(input_text), expected_output)  # noqa: PT009

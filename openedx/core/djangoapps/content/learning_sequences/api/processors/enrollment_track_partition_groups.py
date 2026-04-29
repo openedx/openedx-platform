@@ -6,7 +6,7 @@ from typing import Dict  # noqa: UP035
 from opaque_keys.edx.keys import CourseKey
 
 from openedx.core import types
-from xmodule.partitions.enrollment_track_partition_generator import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.enrollment_track_partition_generator import (  # pylint: disable=wrong-import-order
     create_enrollment_track_partition_with_course_id,
 )
 from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order

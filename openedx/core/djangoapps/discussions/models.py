@@ -266,7 +266,7 @@ AVAILABLE_PROVIDER_MAP = {
         'supports_lti': True,
         'external_links': ProviderExternalLinks(
             learn_more='https://piazza.com/product/overview',
-            configuration='https://support.piazza.com/support/solutions/articles/48001065447-configure-piazza-within-edx',  # pylint: disable=line-too-long
+            configuration='https://support.piazza.com/support/solutions/articles/48001065447-configure-piazza-within-edx',
             general='https://support.piazza.com/',
             accessibility='https://piazza.com/product/accessibility',
             contact_email='team@piazza.com',
@@ -480,7 +480,7 @@ class DiscussionsConfiguration(TimeStampedModel):
             raise ValidationError('Context Key should be an existing learning context.')
 
     def __str__(self):
-        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(  # noqa: UP032  # pylint: disable=line-too-long
+        return "DiscussionsConfiguration(context_key='{context_key}', provider='{provider}', enabled={enabled})".format(  # noqa: UP032
             context_key=self.context_key,
             provider=self.provider_type,
             enabled=self.enabled,

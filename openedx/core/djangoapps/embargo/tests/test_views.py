@@ -107,7 +107,7 @@ class CheckCourseAccessViewTest(CourseApiFactoryMixin, ModuleStoreTestCase):
         super().setUp()
         self.url = reverse('api_embargo:v1_course_access')
         user = UserFactory(is_staff=True)
-        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
         self.course_id = str(CourseFactory().id)  # lint-amnesty, pylint: disable=no-member
         self.request_data = {
             'course_ids': [self.course_id],
@@ -161,7 +161,7 @@ class CheckCourseAccessViewTest(CourseApiFactoryMixin, ModuleStoreTestCase):
 
     def test_course_access_endpoint_with_non_staff_user(self):
         user = UserFactory(is_staff=False)
-        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # lint-amnesty, pylint: disable=protected-access
+        self.client.login(username=user.username, password=UserFactory._DEFAULT_PASSWORD)  # pylint: disable=protected-access
 
         response = self.client.get(self.url, data=self.request_data)
         assert response.status_code == 403

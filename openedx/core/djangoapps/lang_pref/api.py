@@ -79,7 +79,7 @@ def all_languages():
         alphabetically.
 
     """
-    languages = [(lang[0], _(lang[1])) for lang in settings.ALL_LANGUAGES]  # lint-amnesty, pylint: disable=translation-of-non-string
+    languages = [(lang[0], _(lang[1])) for lang in settings.ALL_LANGUAGES]  # pylint: disable=translation-of-non-string
     return sorted(languages, key=lambda lang: lang[1])
 
 

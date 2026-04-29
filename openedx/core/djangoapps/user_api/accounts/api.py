@@ -180,7 +180,7 @@ def update_account_settings(requesting_user, update, username=None):
         _update_state_if_needed(update, user_profile)
 
     except PreferenceValidationError as err:
-        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
     except (AccountUpdateError, AccountValidationError) as err:
         raise err
     except Exception as err:
@@ -741,7 +741,7 @@ def _validate_email_doesnt_exist(email):
     error_message = accounts.AUTHN_EMAIL_CONFLICT_MSG
 
     if email is not None and email_exists_or_retired(email):
-        raise errors.AccountEmailAlreadyExists(_(error_message))  # lint-amnesty, pylint: disable=translation-of-non-string
+        raise errors.AccountEmailAlreadyExists(_(error_message))  # pylint: disable=translation-of-non-string
 
 
 def _validate_secondary_email_doesnt_exist(email):
@@ -775,7 +775,7 @@ def _validate_password_works_with_username(password, username=None):
     :raises: errors.AccountPasswordInvalid
     """
     if password == username:
-        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # lint-amnesty, pylint: disable=no-member
+        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # pylint: disable=no-member
 
 
 def _validate_type(data, type, err):  # lint-amnesty, pylint: disable=redefined-builtin

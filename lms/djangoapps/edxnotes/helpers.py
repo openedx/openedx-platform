@@ -114,7 +114,7 @@ def send_request(user, course_id, page, page_size, path="", text=None):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(params))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # pylint: disable=raise-missing-from  # noqa: B904
 
     return response
 
@@ -145,7 +145,7 @@ def delete_all_notes_for_user(user):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(headers))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # pylint: disable=raise-missing-from  # noqa: B904
 
     return response
 
@@ -203,7 +203,7 @@ def preprocess_collection(user, course, collection):
                 if not section:
                     log.debug("Section not found: %s", usage_key)
                     continue
-                if section.location in list(cache.keys()):   # lint-amnesty, pylint: disable=consider-iterating-dictionary
+                if section.location in list(cache.keys()):   # pylint: disable=consider-iterating-dictionary
                     usage_context = cache[section.location]
                     usage_context.update({
                         "unit": get_block_context(course, unit),
@@ -217,7 +217,7 @@ def preprocess_collection(user, course, collection):
                 if not chapter:
                     log.debug("Chapter not found: %s", usage_key)
                     continue
-                if chapter.location in list(cache.keys()):  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+                if chapter.location in list(cache.keys()):  # pylint: disable=consider-iterating-dictionary
                     usage_context = cache[chapter.location]
                     usage_context.update({
                         "unit": get_block_context(course, unit),
@@ -338,7 +338,7 @@ def get_notes(request, course, page=DEFAULT_PAGE, page_size=DEFAULT_PAGE_SIZE, t
         collection = json.loads(response.content.decode('utf-8'))
     except ValueError:
         log.error("Invalid JSON response received from notes api: response_content=%s", response.content)
-        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     # Verify response dict structure
     expected_keys = ['total', 'rows', 'num_pages', 'start', 'next', 'previous', 'current_page']
@@ -388,7 +388,7 @@ def get_endpoint(api_url, path=""):
 
         return api_url + path
     except (AttributeError, KeyError):
-        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def get_public_endpoint(path=""):

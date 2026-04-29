@@ -116,7 +116,7 @@ def dump_block(block, destination=None, inherited=False, defaults=False):
             else:
                 return field.values != field.default
 
-        inherited_metadata = {field.name: field.read_json(block) for field in block.fields.values() if is_inherited(field)}  # lint-amnesty, pylint: disable=line-too-long
+        inherited_metadata = {field.name: field.read_json(block) for field in block.fields.values() if is_inherited(field)}  # noqa: E501
         destination[str(block.location)]['inherited_metadata'] = inherited_metadata
 
     for child in block.get_children():

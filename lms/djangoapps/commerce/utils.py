@@ -362,7 +362,7 @@ def _process_refund(refund_ids, api_client, mode, user, always_notify=False):
                 response = api_client.put(api_url, json={'action': 'approve_payment_only'})
                 response.raise_for_status()
                 log.info('Refund [%d] successfully approved.', refund_id)
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 # Push the refund to Support to process
                 log.exception('Failed to automatically approve refund [%d]!', refund_id)
                 refunds_requiring_approval.append(refund_id)
@@ -386,7 +386,7 @@ def _process_refund(refund_ids, api_client, mode, user, always_notify=False):
         else:
             try:
                 return _send_refund_notification(user, refunds_requiring_approval)
-            except:  # pylint: disable=bare-except
+            except:  # noqa: E722
                 # Unable to send notification to Support, do not break as this method is used by Signals
                 log.warning('Could not send support notification for refund.', exc_info=True)
                 return False

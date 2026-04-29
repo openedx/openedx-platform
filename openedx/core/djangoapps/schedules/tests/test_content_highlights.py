@@ -87,7 +87,7 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
             self._create_chapter(display_name="Week 1")
             self._create_chapter(display_name="Week 2")
 
-        self.course = self.store.get_course(self.course_key)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = self.store.get_course(self.course_key)  # pylint: disable=attribute-defined-outside-init
         assert len(self.course.get_children()) == 2
 
         assert not course_has_highlights_from_store(self.course_key)
@@ -157,7 +157,7 @@ class TestContentHighlights(ModuleStoreTestCase):  # lint-amnesty, pylint: disab
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, three_days.date()) == (None, None)
         assert get_next_section_highlights(self.user, self.course_key, two_days_ago, four_days.date()) ==\
                (['final week!'], 4)
-        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'  # noqa: F841  # pylint: disable=line-too-long
+        exception_message = f'Last section was reached. There are no more highlights for {self.course_key}'  # noqa: F841
         with pytest.raises(CourseUpdateDoesNotExist):
             get_next_section_highlights(self.user, self.course_key, two_days_ago, six_days.date())
 

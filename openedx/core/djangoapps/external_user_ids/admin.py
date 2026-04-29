@@ -47,7 +47,7 @@ class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missin
             f'External IDs already exist for: {existing_id}\n'
         )
 
-    def process_generate_ids_request(self, user_id_list, id_type, request, redirect_url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def process_generate_ids_request(self, user_id_list, id_type, request, redirect_url):  # pylint: disable=missing-function-docstring
         created_id_list = []
         existing_id = []
 
@@ -55,7 +55,7 @@ class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missin
             id__in=user_id_list
         )
         for user in user_list:
-            new_external_id, created = ExternalId.objects.get_or_create(  # lint-amnesty, pylint: disable=unused-variable
+            new_external_id, created = ExternalId.objects.get_or_create(  # pylint: disable=unused-variable
                 user=user,
                 external_id_type=id_type,
             )

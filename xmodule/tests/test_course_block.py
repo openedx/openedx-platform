@@ -104,7 +104,7 @@ def get_dummy_course(
                 <html url_name="h" display_name="H">Two houses, ...</html>
             </chapter>
          </course>
-     '''.format(  # noqa: UP032
+     '''.format(  # noqa: E501, UP032
         org=ORG,
         course=COURSE,
         start=start,
@@ -123,7 +123,7 @@ class HasEndedMayCertifyTestCase(unittest.TestCase):
     def setUp(self):
         super().setUp()
 
-        system = DummyModuleStoreRuntime(load_error_blocks=True)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        system = DummyModuleStoreRuntime(load_error_blocks=True)  # pylint: disable=unused-variable  # noqa: F841
 
         past_end = (datetime.now() - timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")
         future_end = (datetime.now() + timedelta(days=12)).strftime("%Y-%m-%dT%H:%M:00")

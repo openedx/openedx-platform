@@ -125,7 +125,7 @@ def use_new_pdf_editor():
 # .. toggle_name: new_core_editors.use_video_gallery_flow
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
-# .. toggle_description: This flag enables the use the video selection gallery on the flow of the new core video xblock editor
+# .. toggle_description: This flag enables the use the video selection gallery on the flow of the new core video xblock editor  # noqa: E501
 # .. toggle_use_cases: temporary
 # .. toggle_creation_date: 2023-04-03
 # .. toggle_target_removal_date: 2023-6-01
@@ -163,7 +163,7 @@ def individualize_anonymous_user_id(course_id):
 # .. toggle_name: contentstore.use_react_markdown_editor
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
-# .. toggle_description: This flag enables the use of the Markdown editor when creating or editing problems in the authoring MFE
+# .. toggle_description: This flag enables the use of the Markdown editor when creating or editing problems in the authoring MFE  # noqa: E501
 # .. toggle_use_cases: opt_in
 # .. toggle_creation_date: 2025-4-11
 # .. toggle_tickets: https://openedx.atlassian.net/wiki/spaces/OEPM/pages/4517232656/Re-enable+Markdown+editing+of+CAPA+problems+to+meet+various+use+cases
@@ -387,7 +387,7 @@ def use_new_group_configurations_page(course_key):
 # .. toggle_name: contentstore.mock_video_uploads
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
-# .. toggle_description: This flag mocks contentstore video uploads for local development, if you don't have access to AWS
+# .. toggle_description: This flag mocks contentstore video uploads for local development, if you don't have access to AWS  # noqa: E501
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2023-7-25
 # .. toggle_tickets: TNL-10897
@@ -544,7 +544,7 @@ def use_legacy_logged_out_home():
 # .. toggle_name: contentstore.enable_course_optimizer_check_prev_run_links
 # .. toggle_implementation: CourseWaffleFlag
 # .. toggle_default: False
-# .. toggle_description: When enabled, allows the Course Optimizer to detect and update links pointing to previous course runs.
+# .. toggle_description: When enabled, allows the Course Optimizer to detect and update links pointing to previous course runs.  # noqa: E501
 #   This feature enables instructors to fix internal course links that still point to old course runs
 #   after creating a course rerun.
 # .. toggle_use_cases: temporary

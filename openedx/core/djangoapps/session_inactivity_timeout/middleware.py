@@ -42,7 +42,7 @@ class SessionInactivityTimeout(MiddlewareMixin):
         # .. setting_name: SESSION_INACTIVITY_TIMEOUT_IN_SECONDS
         # .. setting_default: None
         # .. setting_description: If set, this is used to end the session when there is no activity for N seconds.
-        # .. setting_warning:  Keep in sync with SESSION_COOKIE_AGE and must be larger than SESSION_ACTIVITY_SAVE_DELAY_SECONDS.
+        # .. setting_warning:  Keep in sync with SESSION_COOKIE_AGE and must be larger than SESSION_ACTIVITY_SAVE_DELAY_SECONDS.  # noqa: E501
         timeout_in_seconds = getattr(settings, "SESSION_INACTIVITY_TIMEOUT_IN_SECONDS", None)
 
         current_time = datetime.utcnow()
@@ -89,13 +89,13 @@ class SessionInactivityTimeout(MiddlewareMixin):
                     # If parsing fails, log warning and then treat as if no timestamp exists
                     log.warning("Parsing last touch time failed: %s", e)
                     # .. custom_attribute_name: session_inactivity.last_touch_error
-                    # .. custom_attribute_description: Boolean. True if parsing the last activity timestamp failed for this request, indicating a session data error.
+                    # .. custom_attribute_description: Boolean. True if parsing the last activity timestamp failed for this request, indicating a session data error.  # noqa: E501
                     monitoring_utils.set_custom_attribute('session_inactivity.last_touch_error', str(e))
                     monitoring_utils.record_exception()
 
             else:
                 # .. custom_attribute_name: session_inactivity.first_login
-                # .. custom_attribute_description: Boolean. True if the user has no stored activity timestamp for this request.
+                # .. custom_attribute_description: Boolean. True if the user has no stored activity timestamp for this request.  # noqa: E501
                 monitoring_utils.set_custom_attribute('session_inactivity.first_login', True)
                 log.debug("No previous activity timestamp found (first login)")
 

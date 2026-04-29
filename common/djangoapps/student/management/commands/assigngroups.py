@@ -74,7 +74,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         for group in dict(groups):
             utg = UserTestGroup()
             utg.name = group
-            utg.description = json.dumps({"description": options['description']},  # lint-amnesty, pylint: disable=too-many-function-args
+            utg.description = json.dumps({"description": options['description']},  # pylint: disable=too-many-function-args
                                          {"time": datetime.datetime.now(ZoneInfo("UTC")).isoformat()})
             group_objects[group] = utg
             group_objects[group].save()

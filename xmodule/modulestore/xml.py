@@ -532,7 +532,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         '''
         String representation - for debugging
         '''
-        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html  # noqa: UP031  # pylint: disable=line-too-long
+        return '<%s data_dir=%r, %d courselikes, %d modules>' % (  # xss-lint: disable=python-interpolate-html  # noqa: E501, UP031
             self.__class__.__name__, self.data_dir, len(self.courses), len(self.modules)
         )
 
@@ -717,7 +717,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         # always used, preventing duplicate keys.
         return CourseKey.from_string('/'.join([org, course, url_name]))
 
-    def load_extra_content(self, system, course_block, category, base_dir, course_dir, url_name):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def load_extra_content(self, system, course_block, category, base_dir, course_dir, url_name):  # pylint: disable=missing-function-docstring
         self._load_extra_content(system, course_block, category, base_dir, course_dir)
 
         # then look in a override folder based on the course run
@@ -800,7 +800,7 @@ class XMLModuleStore(ModuleStoreReadBase):
                             DictFieldData(data_content),
                         )
                         # VS[compat]:
-                        # Hack because we need to pull in the 'display_name' for static tabs (because we need to edit them)  # lint-amnesty, pylint: disable=line-too-long
+                        # Hack because we need to pull in the 'display_name' for static tabs (because we need to edit them)  # noqa: E501
                         # from the course policy
                         if category == "static_tab":
                             tab = CourseTabList.get_tab_by_slug(tab_list=course_block.tabs, url_slug=slug)
@@ -839,7 +839,7 @@ class XMLModuleStore(ModuleStoreReadBase):
         except KeyError:
             raise ItemNotFoundError(usage_key)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
 
-    def get_items(self, course_id, settings=None, content=None, revision=None, qualifiers=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_items(self, course_id, settings=None, content=None, revision=None, qualifiers=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns:
             list of XBlock instances for the matching items within the course with

@@ -184,7 +184,7 @@ def block_indent(text, spaces=4):
 
     If `text` is not a string it is formatted using pprint.pformat.
     """
-    return '\n'.join([(' ' * spaces) + l for l in pprint.pformat(text).splitlines()])
+    return '\n'.join([(' ' * spaces) + line for line in pprint.pformat(text).splitlines()])
 
 
 def parse_event_payload(event):

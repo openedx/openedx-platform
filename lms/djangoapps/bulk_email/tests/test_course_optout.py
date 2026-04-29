@@ -27,7 +27,7 @@ from xmodule.modulestore.tests.django_utils import (
 from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 # Tests for legacy views. When DEPR-38432 is picked up, these tests will require the following changes:
 # Either remove or leave the specific parts that reference the legacy instructor dashboard,
 # and remove the override_waffle_flag for LEGACY_INSTRUCTOR_DASHBOARD.
@@ -149,7 +149,7 @@ class TestOptoutCourseEmails(ModuleStoreTestCase):
         assert self.instructor.email in sent_addresses
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 class TestACEOptoutCourseEmails(ModuleStoreTestCase):
     """
     Test that optouts are referenced in sending course email.

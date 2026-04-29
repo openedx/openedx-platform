@@ -29,7 +29,7 @@ class StaticContent:  # lint-amnesty, pylint: disable=missing-class-docstring
     def __init__(self, loc, name, content_type, data, last_modified_at=None, thumbnail_location=None, import_path=None,
                  length=None, locked=False, content_digest=None):
         self.location = loc
-        self.name = name  # a display string which can be edited, and thus not part of the location which needs to be fixed  # lint-amnesty, pylint: disable=line-too-long
+        self.name = name  # a display string which can be edited, and thus not part of the location which needs to be fixed  # noqa: E501
         self.content_type = content_type
         self._data = data
         self.length = length
@@ -69,7 +69,7 @@ class StaticContent:  # lint-amnesty, pylint: disable=missing-class-docstring
         )
 
     @staticmethod
-    def compute_location(course_key, path, revision=None, is_thumbnail=False):  # lint-amnesty, pylint: disable=unused-argument
+    def compute_location(course_key, path, revision=None, is_thumbnail=False):  # pylint: disable=unused-argument
         """
         Constructs a location object for static content.
 
@@ -110,12 +110,12 @@ class StaticContent:  # lint-amnesty, pylint: disable=missing-class-docstring
     @staticmethod
     def get_static_path_from_location(location):
         """
-        This utility static method will take a location identifier and create a 'durable' /static/.. URL representation of it.  # lint-amnesty, pylint: disable=line-too-long
-        This link is 'durable' as it can maintain integrity across cloning of courseware across course-ids, e.g. reruns of  # lint-amnesty, pylint: disable=line-too-long
+        This utility static method will take a location identifier and create a 'durable' /static/.. URL representation of it.
+        This link is 'durable' as it can maintain integrity across cloning of courseware across course-ids, e.g. reruns of
         courses.
-        In the LMS/CMS, we have runtime link-rewriting, so at render time, this /static/... format will get translated into  # lint-amnesty, pylint: disable=line-too-long
+        In the LMS/CMS, we have runtime link-rewriting, so at render time, this /static/... format will get translated into
         the actual /c4x/... path which the client needs to reference static content
-        """
+        """  # noqa: E501
         if location is not None:
             return f"/static/{location.block_id}"
         else:
@@ -307,7 +307,7 @@ class StaticContent:  # lint-amnesty, pylint: disable=missing-class-docstring
 
 
 class StaticContentStream(StaticContent):  # lint-amnesty, pylint: disable=missing-class-docstring
-    def __init__(self, loc, name, content_type, stream, last_modified_at=None, thumbnail_location=None, import_path=None,  # lint-amnesty, pylint: disable=line-too-long
+    def __init__(self, loc, name, content_type, stream, last_modified_at=None, thumbnail_location=None, import_path=None,  # noqa: E501
                  length=None, locked=False, content_digest=None):
         super().__init__(loc, name, content_type, None, last_modified_at=last_modified_at,
                          thumbnail_location=thumbnail_location, import_path=import_path,

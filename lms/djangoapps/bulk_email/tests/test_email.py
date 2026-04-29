@@ -300,7 +300,7 @@ class LocalizedFromAddressCourseLangTestCase(SendEmailWithMockedUgettextMixin, E
         self.assertRegex(message.from_email, 'AR .* Course Staff')  # noqa: PT009
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase):
     """
     Tests email sending with mocked html_to_text.
@@ -321,7 +321,7 @@ class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase)
         self.assertContains(response, "Email is not enabled for this course.", status_code=403)
 
     @override_settings(EMAIL_USE_COURSE_ID_FROM_FOR_BULK=True)
-    @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+    @patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
     def test_send_to_self(self):
         """
         Make sure email send to myself goes to myself.
@@ -360,7 +360,7 @@ class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase)
         assert len(mail.outbox) == (1 + len(self.staff))
         assert len([e.to[0] for e in mail.outbox]) == len([self.instructor.email] + [s.email for s in self.staff])
 
-    @override_settings(DEFAULT_FROM_EMAIL='test@example.com', BULK_EMAIL_DEFAULT_FROM_EMAIL=None, EMAIL_USE_COURSE_ID_FROM_FOR_BULK=False)  # lint-amnesty, pylint: disable=line-too-long
+    @override_settings(DEFAULT_FROM_EMAIL='test@example.com', BULK_EMAIL_DEFAULT_FROM_EMAIL=None, EMAIL_USE_COURSE_ID_FROM_FOR_BULK=False)  # noqa: E501
     def test_email_from_address(self):
         """
         Make sure the from_address should be the DEFAULT_FROM_EMAIL when corresponding flag is enabled.
@@ -570,7 +570,7 @@ class TestEmailSendFromDashboardMockedHtmlToText(EmailSendFromDashboardTestCase)
         assert len([e.to[0] for e in mail.outbox]) ==\
                len([self.instructor.email] + [s.email for s in self.staff] + [s.email for s in self.students])
 
-    @override_settings(BULK_EMAIL_DEFAULT_FROM_EMAIL="no-reply@courseupdates.edx.org", EMAIL_USE_COURSE_ID_FROM_FOR_BULK=True)  # lint-amnesty, pylint: disable=line-too-long
+    @override_settings(BULK_EMAIL_DEFAULT_FROM_EMAIL="no-reply@courseupdates.edx.org", EMAIL_USE_COURSE_ID_FROM_FOR_BULK=True)  # noqa: E501
     def test_long_course_display_name(self):
         """
         This test tests that courses with exorbitantly large display names

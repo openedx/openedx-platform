@@ -96,7 +96,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
                     source_course_key = source_store.make_course_key('a', 'course', 'course')
                     dest_course_key = dest_store.make_course_key('a', 'course', 'course')
 
-                    with CodeBlockTimer("initial_import"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+                    with CodeBlockTimer("initial_import"):  # pylint: disable=undefined-variable  # noqa: F821
                         import_course_from_xml(
                             source_store,
                             'test_user',
@@ -117,7 +117,7 @@ class CrossStoreXMLRoundtrip(unittest.TestCase):
                             'exported_source_course',
                         )
 
-                    with CodeBlockTimer("second_import"):  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+                    with CodeBlockTimer("second_import"):  # pylint: disable=undefined-variable  # noqa: F821
                         import_course_from_xml(
                             dest_store,
                             'test_user',

@@ -365,7 +365,6 @@ class GraderTest(unittest.TestCase):
         (
             # no drop_count
             {'type': "Homework", 'min_count': 0},
-            # pylint: disable=line-too-long
             "__init__() missing 1 required positional argument: 'drop_count'"
         ),
     )

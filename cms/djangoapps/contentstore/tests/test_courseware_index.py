@@ -387,7 +387,7 @@ class TestCoursewareSearchIndexer(MixedWithOptionsTestCase):
             field_dictionary={"course": str(self.course.id)}
         )
         self.assertEqual(response["total"], 1)  # noqa: PT009
-        self.assertEqual(response["results"][0]["data"]["content"]["short_description"], short_description)  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(response["results"][0]["data"]["content"]["short_description"], short_description)  # noqa: PT009
 
     def _test_course_about_mode_index(self, store):
         """
@@ -459,7 +459,7 @@ class TestCoursewareSearchIndexer(MixedWithOptionsTestCase):
 
         result = response["results"][0]["data"]
         self.assertEqual(result["course_name"], "Search Index Test Course")  # noqa: PT009
-        self.assertEqual(result["location"], ["Week 1", CoursewareSearchIndexer.UNNAMED_MODULE_NAME, "Subsection 2"])  # noqa: PT009  # pylint: disable=line-too-long
+        self.assertEqual(result["location"], ["Week 1", CoursewareSearchIndexer.UNNAMED_MODULE_NAME, "Subsection 2"])  # noqa: PT009
 
     @patch('django.conf.settings.SEARCH_ENGINE', 'search.tests.utils.ErroringIndexEngine')
     def _test_exception(self, store):
@@ -584,7 +584,7 @@ class TestLargeCourseDeletions(MixedWithOptionsTestCase):
         load_factor = 6
         try:
             self._do_test_large_course_deletion(store, load_factor)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             # Catch any exception here to see when we fail
             print(f"Failed with load_factor of {load_factor}")
 
@@ -1199,7 +1199,7 @@ class GroupConfigurationSearchSplit(CourseTestCase, MixedWithOptionsTestCase):
             self.assertIn(self._html_experiment_group_result(self.html_unit4, [str(2)]), indexed_content)  # noqa: PT009
             self.assertIn(self._html_experiment_group_result(self.html_unit5, [str(3)]), indexed_content)  # noqa: PT009
             self.assertIn(self._html_experiment_group_result(self.html_unit6, [str(4)]), indexed_content)  # noqa: PT009
-            self.assertNotIn(self._html_experiment_group_result(self.html_unit6, [str(5)]), indexed_content)  # noqa: PT009  # pylint: disable=line-too-long
+            self.assertNotIn(self._html_experiment_group_result(self.html_unit6, [str(5)]), indexed_content)  # noqa: PT009
             self.assertIn(  # noqa: PT009
                 self._vertical_experiment_group_result(self.condition_0_vertical, [str(2)]),
                 indexed_content

@@ -18,5 +18,5 @@ class ContentSearchConfig(AppConfig):
         # No sender= argument here; the handler filters by sender.label internally.
         from django.db.models.signals import post_migrate  # pylint: disable=import-outside-toplevel
 
-        from . import handlers  # pylint: disable=unused-import  # noqa: F401
+        from . import handlers  # pylint: disable=unused-import
         post_migrate.connect(handlers.handle_post_migrate)

@@ -44,7 +44,7 @@ class SendMessageHandlerTestCase(TestCase):  # lint-amnesty, pylint: disable=mis
 
     @mock.patch('lms.djangoapps.discussion.signals.handlers.get_current_site', return_value=None)
     @mock.patch('lms.djangoapps.discussion.signals.handlers.send_message')
-    def test_comment_created_signal_message_not_sent_without_site(self, mock_send_message, mock_get_current_site):  # lint-amnesty, pylint: disable=unused-argument
+    def test_comment_created_signal_message_not_sent_without_site(self, mock_send_message, mock_get_current_site):  # pylint: disable=unused-argument
         with mock.patch('lms.djangoapps.discussion.rest_api.tasks.send_response_notifications.apply_async'):
             signals.comment_created.send(sender=self.sender, user=self.user, post=self.post)
 

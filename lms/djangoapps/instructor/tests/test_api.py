@@ -361,7 +361,7 @@ class TestEndpointHttpMethods(SharedModuleStoreTestCase, LoginEnrollmentTestCase
             f"Endpoint {data} returned status code 405 where it shouldn't, since it should allow GET."
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 class TestInstructorAPIDenyLevels(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
     Ensure that users cannot access endpoints they shouldn't be able to.
@@ -820,7 +820,7 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         assert response.status_code == 200
         data = json.loads(response.content.decode('utf-8'))
         warning_message = 'An account with email {email} exists but the provided username {username} ' \
-                          'is different. Enrolling anyway with {email}.'.format(email='test_student@example.com', username='test_student_2')  # lint-amnesty, pylint: disable=line-too-long
+                          'is different. Enrolling anyway with {email}.'.format(email='test_student@example.com', username='test_student_2')  # noqa: E501
         assert len(data['warnings']) != 0
         assert data['warnings'][0]['response'] == warning_message
         user = User.objects.get(email='test_student@example.com')
@@ -871,7 +871,7 @@ class TestInstructorAPIBulkAccountCreationAndEnrollment(SharedModuleStoreTestCas
         data = json.loads(response.content.decode('utf-8'))
         assert len(data['row_errors']) != 0
         assert data['row_errors'][0]['response'] == 'Username {user} already exists.'.format(user='test_student_1')
-        # lint-amnesty, pylint: disable=line-too-long
+
 
     def test_csv_file_not_attached(self):
         """
@@ -1093,7 +1093,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
 
     def test_invalid_email(self):
         url = reverse('students_update_enrollment', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': 'percivaloctavius@', 'action': 'enroll', 'email_students': False})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': 'percivaloctavius@', 'action': 'enroll', 'email_students': False})  # noqa: E501
         assert response.status_code == 200
 
         # test the response data
@@ -1295,7 +1295,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {course} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 course=self.course.display_name
             ) in body
 
@@ -1333,7 +1333,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'Please finish your registration and fill' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name
             ) in body
 
@@ -1384,7 +1384,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert register_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name
             ) in body
 
@@ -1492,7 +1492,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Enrolled Student')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been unenrolled from {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1545,7 +1545,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear Student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been unenrolled from the course {display_name} by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1582,7 +1582,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert course_url in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1607,7 +1607,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert text_body.startswith('Dear student,')
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1642,7 +1642,7 @@ class TestInstructorAPIEnrollment(SharedModuleStoreTestCase, LoginEnrollmentTest
         assert 'To access this course click on the button below and login:' in html_body
 
         for body in [text_body, html_body]:
-            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032  # pylint: disable=line-too-long
+            assert 'You have been invited to join {display_name} at edx.org by a member of the course staff.'.format(  # noqa: UP032
                 display_name=self.course.display_name,
             ) in body
 
@@ -1972,25 +1972,25 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
 
     def test_add_notenrolled_email(self):
         url = reverse('bulk_beta_modify_access', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': False})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': False})  # noqa: E501
         self.add_notenrolled(response, self.notenrolled_student.email)
         assert not CourseEnrollment.is_enrolled(self.notenrolled_student, self.course.id)
 
     def test_add_notenrolled_email_autoenroll(self):
         url = reverse('bulk_beta_modify_access', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # noqa: E501
         self.add_notenrolled(response, self.notenrolled_student.email)
         assert CourseEnrollment.is_enrolled(self.notenrolled_student, self.course.id)
 
     def test_add_notenrolled_username(self):
         url = reverse('bulk_beta_modify_access', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': self.notenrolled_student.username, 'action': 'add', 'email_students': False})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': self.notenrolled_student.username, 'action': 'add', 'email_students': False})  # noqa: E501
         self.add_notenrolled(response, self.notenrolled_student.username)
         assert not CourseEnrollment.is_enrolled(self.notenrolled_student, self.course.id)
 
     def test_add_notenrolled_username_autoenroll(self):
         url = reverse('bulk_beta_modify_access', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': self.notenrolled_student.username, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': self.notenrolled_student.username, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # noqa: E501
         self.add_notenrolled(response, self.notenrolled_student.username)
         assert CourseEnrollment.is_enrolled(self.notenrolled_student, self.course.id)
 
@@ -2000,7 +2000,7 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
                        f"sit@amet.consectetur\nadipiscing@elit.Aenean\r convallis@at.lacus\r, ut@lacinia.Sed, "
                        f"{self.notenrolled_student.username}"
                        )
-        response = self.client.post(url, {'identifiers': identifiers, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': identifiers, 'action': 'add', 'email_students': False, 'auto_enroll': True})  # noqa: E501
         assert 6, len(json.loads(response.content.decode())['results'])
 
     @ddt.data('http', 'https')
@@ -2111,7 +2111,7 @@ class TestInstructorAPIBulkBetaEnrollment(SharedModuleStoreTestCase, LoginEnroll
     def test_add_notenrolled_email_mktgsite(self):
         # Try with marketing site enabled
         url = reverse('bulk_beta_modify_access', kwargs={'course_id': str(self.course.id)})
-        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': True})  # lint-amnesty, pylint: disable=line-too-long
+        response = self.client.post(url, {'identifiers': self.notenrolled_student.email, 'action': 'add', 'email_students': True})  # noqa: E501
 
         assert response.status_code == 200
 
@@ -3683,7 +3683,7 @@ class TestEntranceExamInstructorAPIRegradeTask(SharedModuleStoreTestCase, LoginE
         self.assertContains(response, message)
 
 
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 class TestInstructorSendEmail(SiteMixin, SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
     Checks that only instructors have access to email endpoints, and that

@@ -151,7 +151,7 @@ class CourseOutlineView(APIView):
                 **schedule_item_dict,
             }
 
-    def get(self, request, course_key_str, format=None):  # lint-amnesty, pylint: disable=redefined-builtin, unused-argument
+    def get(self, request, course_key_str, format=None):  # pylint: disable=redefined-builtin, unused-argument
         """
         The CourseOutline, customized for a given user.
 

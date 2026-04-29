@@ -126,7 +126,7 @@ class CacheBackedAuthenticationMiddleware(AuthenticationMiddleware, MiddlewareMi
                 # Raise an exception to fall through to the except clause below.
                 raise Exception
             self._verify_session_auth(request)
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722
             # Fallback to constructing the User from the database.
             super().process_request(request)
 

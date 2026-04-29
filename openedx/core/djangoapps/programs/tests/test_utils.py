@@ -1380,7 +1380,7 @@ class TestGetCertificates(TestCase):
             # Give all course runs a certificate URL, but only expect one to come
             # back. This verifies the break in the function under test that ensures
             # only one certificate per course comes back.
-            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
+            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007, E501
                 course_run['certificate_url'] = self.course_certificate_url
                 course_run['may_certify'] = True
 
@@ -1423,7 +1423,7 @@ class TestGetCertificates(TestCase):
         """
         # make the first course have no certification, the second have no url...
         for course_index, course in enumerate(self.program['courses']):
-            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007
+            for index, course_run in enumerate(course['course_runs']):  # lint-amnesty, pylint: disable=unused-variable  # noqa: B007, E501
                 if course_index == 0:
                     course_run['may_certify'] = False
                 elif course_index == 1:
@@ -1590,7 +1590,7 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
         data = ProgramMarketingDataExtender(self.program, self.user).extend()
         self._update_discount_data(mock_discount_data)
 
-        assert httpretty.last_request().querystring.get('username')[0] == self.user.username  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert httpretty.last_request().querystring.get('username')[0] == self.user.username  # pylint: disable=no-member
         assert data['skus'] == [course['course_runs'][0]['seats'][0]['sku'] for course in self.program['courses']]
         assert data['discount_data'] == mock_discount_data
 
@@ -1614,7 +1614,7 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
             content_type='application/json'
         )
         ProgramMarketingDataExtender(self.program, self.user).extend()
-        assert httpretty.last_request().querystring.get('is_anonymous')[0] == 'True'  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert httpretty.last_request().querystring.get('is_anonymous')[0] == 'True'  # pylint: disable=no-member
 
     @httpretty.activate
     def test_fetching_program_discounted_price_as_anonymous_user(self):
@@ -1639,7 +1639,7 @@ class TestProgramMarketingDataExtender(ModuleStoreTestCase):
         data = ProgramMarketingDataExtender(self.program, user).extend()
         self._update_discount_data(mock_discount_data)
 
-        assert httpretty.last_request().querystring.get('is_anonymous', None) is not None  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert httpretty.last_request().querystring.get('is_anonymous', None) is not None  # pylint: disable=no-member
         assert data['skus'] == [course['course_runs'][0]['seats'][0]['sku'] for course in self.program['courses']]
         assert data['discount_data'] == mock_discount_data
 
@@ -1737,16 +1737,16 @@ class TestProgramEnrollment(SharedModuleStoreTestCase):
         mock_get_programs_by_type.return_value = [self.program, second_program]
 
         # While most of a programs courses would likely come with a paid mode, if the course in question is now expired,
-        # then get_paid_modes_for_course would return an empty list. Even with no paid modes, if we request paid modes only  # lint-amnesty, pylint: disable=line-too-long
+        # then get_paid_modes_for_course would return an empty list. Even with no paid modes, if we request paid modes only  # noqa: E501
         # we should return False
         mock_get_paid_modes_for_course.return_value = []
         # raise Exception((mock_get_programs_by_type, mock_get_paid_modes_for_course))
-        assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)
+        assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)  # noqa: E501
 
         # We should continue to return false even if they do contain paid modes
         Mode = namedtuple('Mode', ['slug'])  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
         # mock_get_paid_modes_for_course.return_value = [Mode(CourseMode.VERIFIED)]
-        assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)
+        assert not is_user_enrolled_in_program_type(user=self.user, program_type_slug=self.MICROBACHELORS, paid_modes_only=True)  # noqa: E501
 
     def test_user_with_entitlement_no_enrollment(self, mock_get_programs_by_type):
         CourseEntitlementFactory.create(

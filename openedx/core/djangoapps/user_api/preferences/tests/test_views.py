@@ -230,7 +230,7 @@ class TestPreferencesAPI(UserAPITestCase):
         )
         assert response.data.get('field_errors', None)
         field_errors = response.data["field_errors"]
-        assert field_errors == {TOO_LONG_PREFERENCE_KEY: {'developer_message': get_expected_validation_developer_message(TOO_LONG_PREFERENCE_KEY, 'new_value'), 'user_message': get_expected_key_error_user_message(TOO_LONG_PREFERENCE_KEY, 'new_value')}, 'empty_pref_ȻħȺɍłɇs': {'developer_message': "Preference 'empty_pref_ȻħȺɍłɇs' cannot be set to an empty value.", 'user_message': "Preference 'empty_pref_ȻħȺɍłɇs' cannot be set to an empty value."}, 'time_zone': {'developer_message': "Value 'Asia/Africa' not valid for preference 'time_zone': Not in timezone set.", 'user_message': "Value 'Asia/Africa' is not a valid time zone selection."}}  # pylint: disable=line-too-long
+        assert field_errors == {TOO_LONG_PREFERENCE_KEY: {'developer_message': get_expected_validation_developer_message(TOO_LONG_PREFERENCE_KEY, 'new_value'), 'user_message': get_expected_key_error_user_message(TOO_LONG_PREFERENCE_KEY, 'new_value')}, 'empty_pref_ȻħȺɍłɇs': {'developer_message': "Preference 'empty_pref_ȻħȺɍłɇs' cannot be set to an empty value.", 'user_message': "Preference 'empty_pref_ȻħȺɍłɇs' cannot be set to an empty value."}, 'time_zone': {'developer_message': "Value 'Asia/Africa' not valid for preference 'time_zone': Not in timezone set.", 'user_message': "Value 'Asia/Africa' is not a valid time zone selection."}}  # noqa: E501
 
         # Verify that GET returns the original preferences
         response = self.send_get(self.client)

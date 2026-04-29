@@ -107,7 +107,7 @@ class UserFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-
             return None
 
     @factory.post_generation
-    def groups(self, create, extracted, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+    def groups(self, create, extracted, **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
         if extracted is None:
             return
 
@@ -115,7 +115,7 @@ class UserFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-
             extracted = [extracted]
 
         for group_name in extracted:
-            self.groups.add(GroupFactory.simple_generate(create, name=group_name))  # lint-amnesty, pylint: disable=no-member
+            self.groups.add(GroupFactory.simple_generate(create, name=group_name))  # pylint: disable=no-member
 
 
 class UserAttributeFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring

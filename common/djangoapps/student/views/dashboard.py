@@ -115,7 +115,7 @@ def _get_recently_enrolled_courses(course_enrollments):
     ]
 
 
-def _create_recent_enrollment_message(course_enrollments, course_modes):  # lint-amnesty, pylint: disable=unused-argument
+def _create_recent_enrollment_message(course_enrollments, course_modes):  # pylint: disable=unused-argument
     """
     Builds a recent course enrollment message.
 
@@ -624,10 +624,10 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     recovery_email_message = recovery_email_activation_message = None
     if is_secondary_email_feature_enabled():
         try:
-            pending_email = PendingSecondaryEmailChange.objects.get(user=user)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            pending_email = PendingSecondaryEmailChange.objects.get(user=user)  # pylint: disable=unused-variable  # noqa: F841
         except PendingSecondaryEmailChange.DoesNotExist:
             try:
-                account_recovery_obj = AccountRecovery.objects.get(user=user)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+                account_recovery_obj = AccountRecovery.objects.get(user=user)  # pylint: disable=unused-variable  # noqa: F841
             except AccountRecovery.DoesNotExist:
                 recovery_email_message = Text(
                     _(
@@ -677,7 +677,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
     inverted_programs = meter.invert_programs()
 
     urls, programs_data = {}, {}
-    bundles_on_dashboard_flag = WaffleFlag(f'{EXPERIMENTS_NAMESPACE}.bundles_on_dashboard', __name__)  # lint-amnesty, pylint: disable=toggle-missing-annotation
+    bundles_on_dashboard_flag = WaffleFlag(f'{EXPERIMENTS_NAMESPACE}.bundles_on_dashboard', __name__)  # pylint: disable=toggle-missing-annotation
 
     # TODO: Delete this code and the relevant HTML code after testing LEARNER-3072 is complete
     if bundles_on_dashboard_flag.is_enabled() and inverted_programs and list(inverted_programs.items()):
@@ -691,7 +691,7 @@ def student_dashboard(request):  # lint-amnesty, pylint: disable=too-many-statem
                     checkout_page_url = ecommerce_service.get_checkout_page_url(*skus)
                     program_data['completeProgramURL'] = checkout_page_url + '&bundle=' + program_data.get('uuid')
                     programs_data[program_uuid] = program_data
-                except:  # pylint: disable=bare-except
+                except:  # noqa: E722
                     pass
 
     # Construct a dictionary of course mode information

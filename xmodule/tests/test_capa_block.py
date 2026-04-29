@@ -2413,7 +2413,7 @@ class ProblemBlockTest(unittest.TestCase):  # pylint: disable=too-many-public-me
                 <img src="/static/7b1d74b2383b7d25a70ae4991190c222_28-collection-of-dark-souls-bonfire-clipart-high-quality-free-_1200-1386.jpeg"> </img>
                 You can add an optional hint like this. Problems that have a hint include a hint button, and this text appears the first time learners select the button.</hint>
             </demandhint>
-            </problem>"""
+            </problem>"""  # noqa: E501
         render_template.return_value = "<div>Test Template HTML</div>"
         block = CapaFactory.create(xml=test_xml)
         block.get_problem_html()  # ignoring html result

@@ -12,7 +12,7 @@ import re
 from collections import Counter
 from xml.sax.saxutils import escape
 
-from write_to_html import HtmlOutlineWriter  # noqa pylint: disable=import-error,useless-suppression
+from write_to_html import HtmlOutlineWriter
 
 columns = [
     "message",
@@ -35,11 +35,11 @@ def separate_warnings_by_location(warnings_data):
 
     # first create regex for each n file location
     warnings_locations = {
-        r".*/python\d\.\d/site-packages/.*\.py": "python",  # noqa pylint: disable=W1401
-        r".*/edx-platform/lms/.*\.py": "lms",  # noqa pylint: disable=W1401
-        r".*/edx-platform/openedx/.*\.py": "openedx",  # noqa pylint: disable=W1401
-        r".*/edx-platform/cms/.*\.py": "cms",  # noqa pylint: disable=W1401
-        r".*/edx-platform/common/.*\.py": "common",  # noqa pylint: disable=W1401
+        r".*/python\d\.\d/site-packages/.*\.py": "python",
+        r".*/edx-platform/lms/.*\.py": "lms",
+        r".*/edx-platform/openedx/.*\.py": "openedx",
+        r".*/edx-platform/cms/.*\.py": "cms",
+        r".*/edx-platform/common/.*\.py": "common",
     }
 
     # separate into locations flow:
@@ -91,7 +91,7 @@ def read_warning_data(dir_path):
     # TODO(jinder): currently this is hard-coded in, maybe create a constants file with info
     # THINK(jinder): but creating file for one constant seems overkill
     warnings_file_name_regex = (
-        r"pytest_warnings_?[\w.-]*\.json"  # noqa pylint: disable=W1401
+        r"pytest_warnings_?[\w.-]*\.json"
     )
 
     # iterate through files_in_dir and see if they match our know file name pattern
@@ -167,7 +167,7 @@ def process_warnings_json(dir_path):
         warnings_object[columns_index_dict["deprecated"]] = bool(
             "deprecated" in warnings_object[columns_index_dict["message"]]
         )
-        warnings_object[columns_index_dict["message"]] = canonical_message(warnings_object[columns_index_dict["message"]])
+        warnings_object[columns_index_dict["message"]] = canonical_message(warnings_object[columns_index_dict["message"]])  # noqa: E501
     warnings_data = separate_warnings_by_location(warnings_data)
     compressed_warnings_data = compress_similar_warnings(warnings_data)
     return compressed_warnings_data

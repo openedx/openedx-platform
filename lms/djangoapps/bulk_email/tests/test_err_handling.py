@@ -42,7 +42,7 @@ class EmailTestException(Exception):
 
 
 @ddt.ddt
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # noqa: E501
 class TestEmailErrors(ModuleStoreTestCase):
     """
     Test that errors from sending email are handled properly.
@@ -208,7 +208,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         """
         Tests exception when the to_option in the email doesn't exist
         """
-        with self.assertRaisesRegex(ValueError, "Course email being sent to an unrecognized target: 'IDONTEXIST' *"):  # noqa: PT027  # pylint: disable=line-too-long
+        with self.assertRaisesRegex(ValueError, "Course email being sent to an unrecognized target: 'IDONTEXIST' *"):  # noqa: PT027
             CourseEmail.create(
                 self.course.id,
                 self.instructor,
@@ -272,7 +272,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         subtask_id = "subtask-id-value"
         subtask_status = SubtaskStatus.create(subtask_id)
         email_id = 1001
-        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find subtasks of instructor task'):  # noqa: PT027  # pylint: disable=line-too-long
+        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find subtasks of instructor task'):  # noqa: PT027
             send_course_email(entry_id, email_id, to_list, global_email_context, subtask_status.to_dict())
 
     def test_send_email_missing_subtask(self):
@@ -286,7 +286,7 @@ class TestEmailErrors(ModuleStoreTestCase):
         different_subtask_id = "bogus-subtask-id-value"
         subtask_status = SubtaskStatus.create(different_subtask_id)
         bogus_email_id = 1001
-        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find status for subtask of instructor task'):  # noqa: PT027  # pylint: disable=line-too-long
+        with self.assertRaisesRegex(DuplicateTaskException, 'unable to find status for subtask of instructor task'):  # noqa: PT027
             send_course_email(entry_id, bogus_email_id, to_list, global_email_context, subtask_status.to_dict())
 
     def test_send_email_completed_subtask(self):

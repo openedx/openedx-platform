@@ -217,13 +217,10 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "W", "I", "F", "PT", "DJ", "UP", "B"]
+select = ["E", "W", "I", "F", "PT", "DJ", "UP", "B", "RUF100"]
 ignore = [
     "E402",  # module level import not at top of file
-    "E501",  # line too long (pylint enforces this at 120 chars while ignoring trailing comments)
-    "E722",  # do not use bare 'except'
     "E731",  # do not assign a lambda expression
-    "E741",  # ambiguous variable name. TODO: fix the ~9 issues and re-enable this.
     # The rules below were added in pycodestyle 2.9.x but we were pinned to 2.8.x,
     # so they represent new findings. Keeping them ignored here to make this an
     # equivalent swap; they can be cleaned up in a follow-up.

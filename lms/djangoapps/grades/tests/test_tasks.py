@@ -638,7 +638,7 @@ class FreezeGradingAfterCourseEndTest(HasCourseWithProblemsMixin, ModuleStoreTes
             CourseEnrollment.enroll(user, self.course.id)
 
         with override_waffle_flag(self.freeze_grade_flag, active=freeze_flag_value):
-            modified_datetime = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=1)  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            modified_datetime = datetime.utcnow().replace(tzinfo=pytz.UTC) - timedelta(days=1)  # pylint: disable=unused-variable  # noqa: F841
             with patch('lms.djangoapps.grades.tasks._has_db_updated_with_new_score') as mock_has_db_updated:
                 result = recalculate_subsection_grade_v3.apply_async(kwargs=self.recalculate_subsection_grade_kwargs)
                 self._assert_for_freeze_grade_flag(

@@ -438,7 +438,7 @@ def get_expected_validation_developer_message(preference_key, preference_value):
     )
 
 
-def get_expected_key_error_user_message(preference_key, preference_value):  # lint-amnesty, pylint: disable=unused-argument
+def get_expected_key_error_user_message(preference_key, preference_value):  # pylint: disable=unused-argument
     """
     Returns the expected user message for an invalid key.
     """

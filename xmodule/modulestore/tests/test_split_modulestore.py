@@ -480,7 +480,7 @@ class SplitModuleTest(unittest.TestCase):
                     elif spec['parent'] == course.location.block_id:
                         parent = course
                     else:
-                        block_usage = BlockUsageLocator.make_relative(course.location, spec['parent_type'], spec['parent'])  # lint-amnesty, pylint: disable=line-too-long
+                        block_usage = BlockUsageLocator.make_relative(course.location, spec['parent_type'], spec['parent'])  # noqa: E501
                         parent = split_store.get_item(block_usage)
                     block_id = LocalId(spec['id'])
                     child = split_store.create_xblock(
@@ -693,9 +693,9 @@ class SplitModuleCourseTests(SplitModuleTest):
         with pytest.raises(InsufficientSpecificationError):
             modulestore().get_course(CourseLocator(org='edu', course='meh', run='blah'))
         with pytest.raises(ItemNotFoundError):
-            modulestore().get_course(CourseLocator(org='edu', course='nosuchthing', run="run", branch=BRANCH_NAME_DRAFT))  # lint-amnesty, pylint: disable=line-too-long
+            modulestore().get_course(CourseLocator(org='edu', course='nosuchthing', run="run", branch=BRANCH_NAME_DRAFT))  # noqa: E501
         with pytest.raises(ItemNotFoundError):
-            modulestore().get_course(CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_PUBLISHED))  # lint-amnesty, pylint: disable=line-too-long
+            modulestore().get_course(CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_PUBLISHED))  # noqa: E501
 
     def test_cache(self):
         """
@@ -987,14 +987,14 @@ class SplitModuleItemTests(SplitModuleTest):
 
         # in published course
         locator = BlockUsageLocator(
-            CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED), 'course', 'head23456'  # lint-amnesty, pylint: disable=line-too-long
+            CourseLocator(org='testx', course='wonderful', run="run", branch=BRANCH_NAME_PUBLISHED), 'course', 'head23456'  # noqa: E501
         )
         assert isinstance(modulestore().get_item(locator), CourseBlock)
 
         # negative tests--not found
         # no such course or block
         locator = BlockUsageLocator(
-            CourseLocator(org='doesnotexist', course='doesnotexist', run="run", branch=BRANCH_NAME_DRAFT), 'course', 'head23456'  # lint-amnesty, pylint: disable=line-too-long
+            CourseLocator(org='doesnotexist', course='doesnotexist', run="run", branch=BRANCH_NAME_DRAFT), 'course', 'head23456'  # noqa: E501
         )
         with pytest.raises(ItemNotFoundError):
             modulestore().get_item(locator)
@@ -1286,7 +1286,7 @@ class TestItemCrud(SplitModuleTest):
         user = random.getrandbits(32)
         course_key = CourseLocator('test_org', 'test_transaction', 'test_run')
         with modulestore().bulk_operations(course_key):
-            new_course = modulestore().create_course('test_org', 'test_transaction', 'test_run', user, BRANCH_NAME_DRAFT)  # lint-amnesty, pylint: disable=line-too-long
+            new_course = modulestore().create_course('test_org', 'test_transaction', 'test_run', user, BRANCH_NAME_DRAFT)  # noqa: E501
             new_course_locator = new_course.id
             index_history_info = modulestore().get_course_history_info(new_course.location.course_key)
             course_block_prev_version = new_course.previous_version
@@ -1836,12 +1836,12 @@ class TestInheritance(SplitModuleTest):
         # set on parent, retrieve child, verify setting
         chapter = modulestore().get_item(
             BlockUsageLocator(
-                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'chapter', 'chapter3'  # lint-amnesty, pylint: disable=line-too-long
+                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'chapter', 'chapter3'  # noqa: E501
             )
         )
         problem = modulestore().get_item(
             BlockUsageLocator(
-                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'problem', 'problem3_2'  # lint-amnesty, pylint: disable=line-too-long
+                CourseLocator(org='testx', course='GreekHero', run="run", branch=BRANCH_NAME_DRAFT), 'problem', 'problem3_2'  # noqa: E501
             )
         )
         assert not problem.visible_to_staff_only
@@ -1869,13 +1869,13 @@ class TestInheritance(SplitModuleTest):
         chapter.visible_to_staff_only = True
         orphan_problem = modulestore().create_item(self.user_id, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_child(self.user_id, chapter.location.version_agnostic(), 'problem')  # lint-amnesty, pylint: disable=unused-variable
+        parented_problem = modulestore().create_child(self.user_id, chapter.location.version_agnostic(), 'problem')  # pylint: disable=unused-variable
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 
         orphan_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem')
         assert not orphan_problem.visible_to_staff_only
-        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841  # pylint: disable=line-too-long
+        parented_problem = modulestore().create_xblock(chapter.runtime, course_key, 'problem', parent_xblock=chapter)  # noqa: F841
         # FIXME LMS-11376
 #         self.assertTrue(parented_problem.visible_to_staff_only)
 
@@ -1982,7 +1982,7 @@ class TestPublish(SplitModuleTest):
             BlockKey("chapter", "chapter3"),
             BlockKey("problem", "problem1")
         ]
-        self._check_course(source_course, dest_course, expected, [BlockKey("chapter", "chapter2"), BlockKey("problem", "problem3_2")])  # lint-amnesty, pylint: disable=line-too-long
+        self._check_course(source_course, dest_course, expected, [BlockKey("chapter", "chapter2"), BlockKey("problem", "problem3_2")])  # noqa: E501
 
     def _check_course(self, source_course_loc, dest_course_loc, expected_blocks, unexpected_blocks):
         """

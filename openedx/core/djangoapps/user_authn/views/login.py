@@ -101,7 +101,7 @@ def _do_third_party_auth(request):
             register_label_strong=HTML("<strong>{register_text}</strong>").format(register_text=_("Register")),
         )
 
-        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AuthFailedError(message, error_code="third-party-auth-with-no-linked-account")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def _get_user_by_email(email):
@@ -210,7 +210,7 @@ def _enforce_password_policy_compliance(request, user):  # lint-amnesty, pylint:
         send_password_reset_email_for_user(user, request)
 
         # Prevent the login attempt.
-        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AuthFailedError(HTML(str(e)), error_code=e.__class__.__name__)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def _log_and_raise_inactive_user_auth_error(unauthenticated_user):
@@ -357,7 +357,7 @@ def _track_user_login(user, request):
     anonymous_id = ""
     try:
         anonymous_id = request.COOKIES.get('ajs_anonymous_id', "")
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         pass
     segment.identify(
         user.id,
@@ -753,7 +753,7 @@ class LoginSessionView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request, *args, **kwargs):
-        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(get_login_session_form(request).to_json(), content_type="application/json")  # pylint: disable=http-response-with-content-type-json
 
     @swagger_auto_schema(
         request_body=login_user_schema,
@@ -800,4 +800,4 @@ def _parse_analytics_param_for_course_id(request):
                 modified_request["course_id"] = analytics.get("enroll_course_id")
         except (ValueError, TypeError):
             set_custom_attribute("shim_analytics_course_id", "parse-error")
-            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032  # pylint: disable=line-too-long
+            log.error("Could not parse analytics object sent to user API: {analytics}".format(analytics=analytics))  # noqa: UP032

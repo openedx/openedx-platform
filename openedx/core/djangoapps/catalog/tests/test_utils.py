@@ -426,7 +426,7 @@ class TestGetCourseRuns(CatalogIntegrationMixin, CacheIsolationTestCase):
 
         assert (
             kwargs["base_api_url"] == self.catalog_integration.get_internal_api_url()
-        )  # pylint: disable=protected-access, line-too-long
+        )  # pylint: disable=protected-access
 
         querystring = {
             "page_size": 20,

@@ -147,7 +147,7 @@ class TestUtils(TestCase):
                     <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp/SSOService.php"/>
                 </md:IDPSSODescriptor>
             </md:EntityDescriptor>
-        '''
+        '''  # noqa: E501
         xml = etree.fromstring(xml_text, parser)
         public_keys, sso_url, _ = parse_metadata_xml(xml, entity_id)
         assert public_keys == ['abc+hkIuUktxkg=']
@@ -183,7 +183,7 @@ class TestUtils(TestCase):
                     <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp/SSOService.php"/>
                 </md:IDPSSODescriptor>
             </md:EntityDescriptor>
-        '''
+        '''  # noqa: E501
         xml = etree.fromstring(xml_text, parser)
         public_keys, sso_url, _ = parse_metadata_xml(xml, entity_id)
         assert public_keys == ['abc+hkIuUktxkg=', 'xyz+ayylmao=']
@@ -205,7 +205,7 @@ class TestUtils(TestCase):
                     <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://idp/SSOService.php"/>
                 </md:IDPSSODescriptor>
             </md:EntityDescriptor>
-        '''
+        '''  # noqa: E501
         xml = etree.fromstring(xml_text, parser)
         public_keys, sso_url, _ = parse_metadata_xml(xml, entity_id)
         assert public_keys == ['abc+hkIuUktxkg=']

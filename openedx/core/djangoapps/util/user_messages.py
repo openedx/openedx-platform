@@ -127,28 +127,28 @@ class UserMessageCollection():  # noqa: UP039
             messages.add_message(request, message_type.value, Text(message), extra_tags=cls.get_namespace())
 
     @classmethod
-    def register_info_message(self, request, message, **kwargs):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def register_info_message(self, request, message, **kwargs):  # pylint: disable=bad-classmethod-argument
         """
         Registers an information message to be shown to the user.
         """
         self.register_user_message(request, UserMessageType.INFO, message, **kwargs)
 
     @classmethod
-    def register_success_message(self, request, message, **kwargs):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def register_success_message(self, request, message, **kwargs):  # pylint: disable=bad-classmethod-argument
         """
         Registers a success message to be shown to the user.
         """
         self.register_user_message(request, UserMessageType.SUCCESS, message, **kwargs)
 
     @classmethod
-    def register_warning_message(self, request, message, **kwargs):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def register_warning_message(self, request, message, **kwargs):  # pylint: disable=bad-classmethod-argument
         """
         Registers a warning message to be shown to the user.
         """
         self.register_user_message(request, UserMessageType.WARNING, message, **kwargs)
 
     @classmethod
-    def register_error_message(self, request, message, **kwargs):  # lint-amnesty, pylint: disable=bad-classmethod-argument
+    def register_error_message(self, request, message, **kwargs):  # pylint: disable=bad-classmethod-argument
         """
         Registers an error message to be shown to the user.
         """
@@ -166,7 +166,7 @@ class UserMessageCollection():  # noqa: UP039
             """
             Returns the user message type associated with a level.
             """
-            for __, type in UserMessageType.__members__.items():  # lint-amnesty, pylint: disable=redefined-builtin, no-member
+            for __, type in UserMessageType.__members__.items():  # pylint: disable=redefined-builtin, no-member
                 if type.value is level:
                     return type
             raise Exception(f'Unable to find UserMessageType for level {level}')

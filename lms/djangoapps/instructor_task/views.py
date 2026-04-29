@@ -152,19 +152,19 @@ def get_task_completion_info(instructor_task):  # lint-amnesty, pylint: disable=
 
     if instructor_task.task_state == PROGRESS:
         # special message for providing progress updates:
-        # Translators: {action} is a past-tense verb that is localized separately. {attempted} and {succeeded} are counts.  # lint-amnesty, pylint: disable=line-too-long
+        # Translators: {action} is a past-tense verb that is localized separately. {attempted} and {succeeded} are counts.  # noqa: E501
         msg_format = _("Progress: {action} {succeeded} of {attempted} so far")
     elif student is not None and problem_url is not None:
         # this reports on actions on problems for a particular student:
         if num_attempted == 0:
-            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # lint-amnesty, pylint: disable=line-too-long
+            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # noqa: E501
             msg_format = _("Unable to find submission to be {action} for student '{student}'")
         elif num_succeeded == 0:
-            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # lint-amnesty, pylint: disable=line-too-long
+            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # noqa: E501
             msg_format = _("Problem failed to be {action} for student '{student}'")
         else:
             succeeded = True
-            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # lint-amnesty, pylint: disable=line-too-long
+            # Translators: {action} is a past-tense verb that is localized separately. {student} is a student identifier.  # noqa: E501
             msg_format = _("Problem successfully {action} for student '{student}'")
     elif student is not None and entrance_exam_url is not None:
         # this reports on actions on entrance exam for a particular student:
@@ -190,7 +190,7 @@ def get_task_completion_info(instructor_task):  # lint-amnesty, pylint: disable=
             # Translators: {action} is a past-tense verb that is localized separately. {attempted} is a count.
             msg_format = _("Problem successfully {action} for {attempted} students")
         else:  # num_succeeded < num_attempted
-            # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # lint-amnesty, pylint: disable=line-too-long
+            # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # noqa: E501
             msg_format = _("Problem {action} for {succeeded} of {attempted} students")
     elif email_id is not None:
         # this reports on actions on bulk emails
@@ -205,11 +205,11 @@ def get_task_completion_info(instructor_task):  # lint-amnesty, pylint: disable=
             # Translators: {action} is a past-tense verb that is localized separately. {attempted} is a count.
             msg_format = _("Message successfully {action} for {attempted} recipients")
         else:  # num_succeeded < num_attempted
-            # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # lint-amnesty, pylint: disable=line-too-long
+            # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # noqa: E501
             msg_format = _("Message {action} for {succeeded} of {attempted} recipients")
     else:
         # provide a default:
-        # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # lint-amnesty, pylint: disable=line-too-long
+        # Translators: {action} is a past-tense verb that is localized separately. {succeeded} and {attempted} are counts.  # noqa: E501
         msg_format = _("Status: {action} {succeeded} of {attempted}")
 
     if num_skipped > 0:

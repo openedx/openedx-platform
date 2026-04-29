@@ -111,7 +111,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
             mock_datetime.utcnow.return_value = current_time
             mock_datetime.fromisoformat = datetime.fromisoformat
 
-            response = self.middleware.process_request(self.request)  # lint-amnesty, pylint: disable=assignment-from-none
+            response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
 
             assert response is None
 
@@ -154,7 +154,7 @@ class SessionInactivityTimeoutTestCase(TestCase):
             mock_datetime.utcnow.return_value = current_time
             mock_datetime.fromisoformat = datetime.fromisoformat
 
-            response = self.middleware.process_request(self.request)  # lint-amnesty, pylint: disable=assignment-from-none
+            response = self.middleware.process_request(self.request)  # pylint: disable=assignment-from-none
 
             assert response is None
             assert self.request.user.is_authenticated

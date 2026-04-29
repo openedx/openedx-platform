@@ -127,7 +127,6 @@ class TestFooter(TestCase):
             ],
             'connect_links': [
                 {'url': 'https://edx.org/edx-blog', 'name': 'blog', 'title': 'Blog'},
-                # pylint: disable=line-too-long
                 {'url': f'{settings.LMS_ROOT_URL}/support/contact_us', 'name': 'contact', 'title': 'Contact Us'},
                 {'url': 'https://example.support.edx.org/hc/en-us', 'name': 'help-center', 'title': 'Help Center'},
                 {'url': 'https://edx.org/media-kit', 'name': 'media_kit', 'title': 'Media Kit'},
@@ -182,8 +181,8 @@ class TestFooter(TestCase):
         Test retrieving the footer with disabled contact form.
         """
         actual_footer = get_footer(is_secure=True)
-        assert any((l['name'] == 'contact') for l in actual_footer['connect_links']) is False
-        assert any((l['name'] == 'contact') for l in actual_footer['navigation_links']) is False
+        assert any((link['name'] == 'contact') for link in actual_footer['connect_links']) is False
+        assert any((link['name'] == 'contact') for link in actual_footer['navigation_links']) is False
 
     @with_site_configuration(configuration=test_config_custom_url_contact_us)
     def test_get_footer_custom_contact_url(self):
@@ -191,8 +190,8 @@ class TestFooter(TestCase):
         Test retrieving the footer with custom contact form url.
         """
         actual_footer = get_footer(is_secure=True)
-        contact_us_link = [l for l in actual_footer['connect_links'] if l['name'] == 'contact'][0]
+        contact_us_link = [link for link in actual_footer['connect_links'] if link['name'] == 'contact'][0]
         assert contact_us_link['url'] == test_config_custom_url_contact_us['CONTACT_US_CUSTOM_LINK']
 
-        navigation_link_contact_us = [l for l in actual_footer['navigation_links'] if l['name'] == 'contact'][0]
+        navigation_link_contact_us = [link for link in actual_footer['navigation_links'] if link['name'] == 'contact'][0]  # noqa: E501
         assert navigation_link_contact_us['url'] == test_config_custom_url_contact_us['CONTACT_US_CUSTOM_LINK']

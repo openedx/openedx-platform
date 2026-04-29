@@ -2,7 +2,6 @@
 Mock implementation of the Learner Home.
 Returns statically authored JSON data
 """
-# pylint: disable=line-too-long
 
 import json
 from os import path

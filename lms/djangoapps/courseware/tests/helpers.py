@@ -84,7 +84,7 @@ class BaseTestXmodule(ModuleStoreTestCase):
         runtime.get_block = modulestore().get_item
         return runtime
 
-    def initialize_module(self, runtime_kwargs=None, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def initialize_module(self, runtime_kwargs=None, **kwargs):  # pylint: disable=missing-function-docstring
         kwargs.update({
             'parent_location': self.section.location,
             'category': self.CATEGORY
@@ -97,7 +97,7 @@ class BaseTestXmodule(ModuleStoreTestCase):
         field_data = {}
         field_data.update(self.MODEL_DATA)
         student_data = DictFieldData(field_data)
-        self.block._field_data = LmsFieldData(self.block._field_data, student_data)  # lint-amnesty, pylint: disable=protected-access
+        self.block._field_data = LmsFieldData(self.block._field_data, student_data)  # pylint: disable=protected-access
 
         if runtime_kwargs is None:
             runtime_kwargs = {}
@@ -197,10 +197,10 @@ class LoginEnrollmentTestCase(TestCase):
         """
         make_request = getattr(self.client, method.lower())
         response = make_request(url, **kwargs)
-        assert response.status_code == status_code, f'{method} request to {url} returned status code {response.status_code}, expected status code {status_code}'  # pylint: disable=line-too-long
+        assert response.status_code == status_code, f'{method} request to {url} returned status code {response.status_code}, expected status code {status_code}'  # noqa: E501
         return response
 
-    def assert_account_activated(self, url, method="GET", **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def assert_account_activated(self, url, method="GET", **kwargs):  # pylint: disable=missing-function-docstring
         make_request = getattr(self.client, method.lower())
         response = make_request(url, **kwargs)
         message_list = list(messages.get_messages(response.wsgi_request))
@@ -434,11 +434,14 @@ def get_expiration_banner_text(user, course, language='en'):  # lint-amnesty, py
         formatted_upgrade_deadline = strftime_localized_html(upgrade_deadline, 'SHORT_DATE')
 
         # ruff: disable[UP032]
-        bannerText = '<strong>Audit Access Expires {expiration_date}</strong><br>\
-                     You lose all access to this course, including your progress, on {expiration_date}.\
-                     <br>Upgrade by {upgrade_deadline} to get unlimited access to the course as long as it exists\
-                     on the site. <a id="FBE_banner" href="{upgrade_link}">Upgrade now<span class="sr-only"> to retain access past\
-                     {expiration_date}</span></a>'.format(
+        bannerText = (
+            '<strong>Audit Access Expires {expiration_date}</strong><br>'
+            '                     You lose all access to this course, including your progress, on {expiration_date}.'
+            '                     <br>Upgrade by {upgrade_deadline} to get unlimited access to the course as long as it exists'  # noqa: E501
+            '                     on the site. <a id="FBE_banner" href="{upgrade_link}">'
+            'Upgrade now<span class="sr-only"> to retain access past'
+            '                     {expiration_date}</span></a>'
+        ).format(
             expiration_date=formatted_expiration_date,
             upgrade_link=upgrade_link,
             upgrade_deadline=formatted_upgrade_deadline

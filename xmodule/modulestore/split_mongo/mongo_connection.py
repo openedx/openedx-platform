@@ -317,7 +317,7 @@ class MongoPersistenceBackend:
             self.database.client.admin.command('ismaster')
             return True
         except pymongo.errors.ConnectionFailure:
-            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise HeartbeatFailure(f"Can't connect to {self.database.name}", 'mongo')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     def check_connection(self):
         """

@@ -8,11 +8,11 @@ from openedx.core.djangoapps.waffle_utils import CourseWaffleFlag
 WAFFLE_NAMESPACE = 'instructor_task'
 
 # Course override flags
-GENERATE_PROBLEM_GRADE_REPORT_VERIFIED_ONLY = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+GENERATE_PROBLEM_GRADE_REPORT_VERIFIED_ONLY = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.generate_problem_grade_report_verified_only', __name__
 )
 
-GENERATE_COURSE_GRADE_REPORT_VERIFIED_ONLY = CourseWaffleFlag(  # lint-amnesty, pylint: disable=toggle-missing-annotation
+GENERATE_COURSE_GRADE_REPORT_VERIFIED_ONLY = CourseWaffleFlag(  # pylint: disable=toggle-missing-annotation
     f'{WAFFLE_NAMESPACE}.generate_course_grade_report_verified_only', __name__
 )
 

@@ -599,7 +599,7 @@ def is_currently_visible_to_students(xblock):
         return False
 
     # Check start date
-    if 'detached' not in published._class_tags and published.start is not None:  # lint-amnesty, pylint: disable=protected-access
+    if 'detached' not in published._class_tags and published.start is not None:  # pylint: disable=protected-access
         return datetime.now(UTC) > published.start
 
     # No start date, so it's always visible
@@ -996,7 +996,7 @@ def get_sibling_urls(subsection, unit_location):    # pylint: disable=too-many-s
             section_subsections = section.get_children()
             return section_subsections
         except AttributeError:
-            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032  # pylint: disable=line-too-long
+            log.error("URL Retrieval Error: subsection {subsection} included in section {section}".format(  # noqa: UP032
                 section=section.location,
                 subsection=subsection.location
             ))
@@ -1494,7 +1494,7 @@ def get_course_settings(request, course_key, course_block):
 
             # if 'minimum_grade_credit' of a course is not set or 0 then
             # show warning message to course author.
-            show_min_grade_warning = False if course_block.minimum_grade_credit > 0 else True  # lint-amnesty, pylint: disable=simplifiable-if-expression
+            show_min_grade_warning = False if course_block.minimum_grade_credit > 0 else True  # pylint: disable=simplifiable-if-expression
             settings_context.update(
                 {
                     'is_credit_course': True,
@@ -1950,7 +1950,7 @@ def _get_course_index_context(request, course_key, course_block):
         'lms_link': lms_link,
         'sections': sections,
         'course_structure': course_structure,
-        'initial_state': course_outline_initial_state(locator_to_show, course_structure) if locator_to_show else None,  # lint-amnesty, pylint: disable=line-too-long
+        'initial_state': course_outline_initial_state(locator_to_show, course_structure) if locator_to_show else None,
         'initial_user_clipboard': user_clipboard,
         'rerun_notification_id': current_action.id if current_action else None,
         'course_release_date': course_release_date,

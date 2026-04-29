@@ -337,7 +337,7 @@ def save_ccx(request, course, ccx=None):  # lint-amnesty, pylint: disable=too-ma
     for rec, response in responses:
         log.info('Signal fired when course is published. Receiver: %s. Response: %s', rec, response)
 
-    return HttpResponse(  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
         json.dumps({
             'schedule': get_ccx_schedule(course, ccx),
             'grading_policy': json.dumps(policy, indent=4)}),
@@ -452,7 +452,7 @@ def ccx_schedule(request, course, ccx=None):
 
     schedule = get_ccx_schedule(course, ccx)
     json_schedule = json.dumps(schedule, indent=4)
-    return HttpResponse(json_schedule, content_type='application/json')  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+    return HttpResponse(json_schedule, content_type='application/json')  # pylint: disable=http-response-with-content-type-json
 
 
 @ensure_csrf_cookie

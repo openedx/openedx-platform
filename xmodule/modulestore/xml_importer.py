@@ -137,7 +137,7 @@ class StaticContentImporter:  # lint-amnesty, pylint: disable=missing-class-docs
         mimetypes.add_type('application/octet-stream', '.srt')
         self.mimetypes_list = list(mimetypes.types_map.values())
 
-    def import_static_content_directory(self, content_subdir=DEFAULT_STATIC_CONTENT_SUBDIR, verbose=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def import_static_content_directory(self, content_subdir=DEFAULT_STATIC_CONTENT_SUBDIR, verbose=False):  # pylint: disable=missing-function-docstring
         remap_dict = {}
 
         static_dir = self.course_data_path / content_subdir
@@ -1191,7 +1191,7 @@ def create_xml_attributes(block, xml):
     block.xml_attributes = xml_attrs
 
 
-def validate_no_non_editable_metadata(module_store, course_id, category):  # lint-amnesty, pylint: disable=missing-function-docstring
+def validate_no_non_editable_metadata(module_store, course_id, category):  # pylint: disable=missing-function-docstring
     err_cnt = 0
     for block_loc in module_store.modules[course_id]:
         block = module_store.modules[course_id][block_loc]
@@ -1227,7 +1227,7 @@ def validate_category_hierarchy(  # lint-amnesty, pylint: disable=missing-functi
     return err_cnt
 
 
-def validate_data_source_path_existence(path, is_err=True, extra_msg=None):  # lint-amnesty, pylint: disable=missing-function-docstring, redefined-outer-name
+def validate_data_source_path_existence(path, is_err=True, extra_msg=None):  # pylint: disable=missing-function-docstring, redefined-outer-name
     _cnt = 0
     if not os.path.exists(path):
         print(

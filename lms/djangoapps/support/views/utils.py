@@ -75,7 +75,7 @@ def validate_and_link_program_enrollments(program_uuid_string, linkage_text):
         (item.get('external_key') or '').strip(): (item['username'] or '').strip()
         for item in reader
     }
-    if not (all(ext_key_to_username.keys()) and all(ext_key_to_username.values())):  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    if not (all(ext_key_to_username.keys()) and all(ext_key_to_username.values())):  # pylint: disable=consider-iterating-dictionary
         return [], [
             "All linking lines must be in the format 'external_user_key,lms_username'"
         ]

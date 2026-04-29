@@ -1587,7 +1587,7 @@ class MockDefaultStorage:
 
     def open(self, file_name):
         """Mock out DefaultStorage.open with standard python open"""
-        return open(file_name)  # lint-amnesty, pylint: disable=bad-option-value, open-builtin  # lint-amnesty, pylint: disable=consider-using-with
+        return open(file_name)  # pylint: disable=bad-option-value, open-builtin  # pylint: disable=consider-using-with
 
 
 @patch('lms.djangoapps.instructor_task.tasks_helper.misc.DefaultStorage', new=MockDefaultStorage)
@@ -1725,7 +1725,7 @@ class TestCohortStudents(TestReportMixin, InstructorTaskCourseTestCase):
         )
         self.verify_rows_in_csv(
             [
-                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),  # noqa: B905  # pylint: disable=line-too-long
+                dict(list(zip(self.csv_header_row, ['Cohort 1', 'True', '0', '', '', 'example_email@example.com']))),  # noqa: B905
             ],
             verify_order=False
         )

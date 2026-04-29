@@ -32,7 +32,7 @@ def should_redirect_to_authn_microfrontend():
 # .. toggle_description: Set to True to enable auto-generation of usernames.
 # .. toggle_use_cases: open_edx
 # .. toggle_creation_date: 2024-02-20
-# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.
+# .. toggle_warning: Changing this setting may affect user authentication, account management and discussions experience.  # noqa: E501
 
 
 def is_auto_generated_username_enabled():

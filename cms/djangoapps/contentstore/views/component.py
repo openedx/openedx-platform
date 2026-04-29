@@ -350,7 +350,7 @@ def get_component_templates(courselike, library=False):  # lint-amnesty, pylint:
 
                         templates_for_category.append(
                             create_template_dict(
-                                _(template['metadata'].get('display_name')),  # lint-amnesty, pylint: disable=translation-of-non-string
+                                _(template['metadata'].get('display_name')),  # pylint: disable=translation-of-non-string
                                 category,
                                 support_level_with_template,
                                 template_id,

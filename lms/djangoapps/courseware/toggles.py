@@ -144,7 +144,7 @@ ENABLE_COURSE_DISCOVERY_DEFAULT_LANGUAGE_FILTER = WaffleSwitch(
 # .. toggle_name: courseware.unify_site_and_translation_language
 # .. toggle_implementation: WaffleFlag
 # .. toggle_default: False
-# .. toggle_description: Update LMS to use site language for xpert unit translations and enable new header site language switcher.
+# .. toggle_description: Update LMS to use site language for xpert unit translations and enable new header site language switcher.  # noqa: E501
 # .. toggle_use_cases: opt_in
 # .. toggle_creation_date: 2026-01-08
 # .. toggle_target_removal_date: None

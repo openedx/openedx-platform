@@ -159,7 +159,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         assert "'prev_url': 'PrevSequential'" in html
         assert 'fa fa-check-circle check-circle is-hidden' not in html
 
-    # pylint: disable=line-too-long
     @patch('xmodule.seq_block.SequenceBlock.gate_entire_sequence_if_it_is_a_timed_exam_and_contains_content_type_gated_problems')
     def test_timed_exam_gating_waffle_flag(self, mocked_function):  # pylint: disable=unused-argument
         """
@@ -296,7 +295,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         """
         assert 'seq_block.html' in html
         html = self.get_context_dict_from_string(html)
-        assert 'This section is a prerequisite. You must complete this section in order to unlock additional content.' == html['banner_text']
+        assert 'This section is a prerequisite. You must complete this section in order to unlock additional content.' == html['banner_text']  # noqa: E501
         assert not html['gated_content']['gated']
         assert str(sequence.location) == html['item_id']
         assert html['gated_content']['prereq_url'] is None

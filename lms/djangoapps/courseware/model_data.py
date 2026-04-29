@@ -228,7 +228,7 @@ class DjangoOrmFieldCache(metaclass=ABCMeta):
 
             except DatabaseError:
                 log.exception("Saving field %r failed", kvs_key.field_name)
-                raise KeyValueMultiSaveError(saved_fields)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise KeyValueMultiSaveError(saved_fields)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
             finally:
                 saved_fields.append(kvs_key.field_name)
@@ -841,7 +841,7 @@ class FieldDataCache:
                 saved_fields.extend(key.field_name for key in set_many_data)
             except KeyValueMultiSaveError as exc:
                 log.exception('Error saving fields %r', [key.field_name for key in set_many_data])
-                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise KeyValueMultiSaveError(saved_fields + exc.saved_field_names)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
     def delete(self, key):
         """

@@ -232,7 +232,7 @@ class CourseMetadata:
                     else:
                         key_values[key] = block.fields[key].from_json(val)
             except (TypeError, ValueError) as err:
-                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ValueError(_("Incorrect format for field '{name}'. {detailed_message}").format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
                     name=model['display_name'], detailed_message=str(err)))
 
         return cls.update_from_dict(key_values, block, user)

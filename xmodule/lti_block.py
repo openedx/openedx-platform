@@ -220,7 +220,7 @@ class LTIFields:
     )
 
     # Users will be presented with a message indicating that their e-mail/username would be sent to a third
-    # party application. When "Open in New Page" is not selected, the tool automatically appears without any user action.  # lint-amnesty, pylint: disable=line-too-long
+    # party application. When "Open in New Page" is not selected, the tool automatically appears without any user action.  # noqa: E501
     ask_to_send_username = Boolean(
         display_name=_("Request user's username"),
         # Translators: This is used to request the user's username for a third party service.
@@ -239,7 +239,7 @@ class LTIFields:
     description = String(
         display_name=_("LTI Application Information"),
         help=_(
-            "Enter a description of the third party application. If requesting username and/or email, use this text box to inform users "  # lint-amnesty, pylint: disable=line-too-long
+            "Enter a description of the third party application. If requesting username and/or email, use this text box to inform users "  # noqa: E501
             "why their username and/or email will be forwarded to a third party application."
         ),
         default="",
@@ -691,7 +691,7 @@ class _BuiltInLTIBlock(
         except AttributeError:
             self.user_email = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
         try:
-            self.user_username = real_user_object.username  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.user_username = real_user_object.username  # pylint: disable=attribute-defined-outside-init
         except AttributeError:
             self.user_username = ""  # lint-amnesty, pylint: disable=attribute-defined-outside-init
 
@@ -740,7 +740,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         # so '='' becomes '%3D'.
         # We send form via browser, so browser will encode it again,
         # So we need to decode signature back:
-        params['oauth_signature'] = parse.unquote(params['oauth_signature']).encode('utf-8').decode('utf8')  # lint-amnesty, pylint: disable=line-too-long
+        params['oauth_signature'] = parse.unquote(params['oauth_signature']).encode('utf-8').decode('utf8')
 
         # Add LTI parameters to OAuth parameters for sending in form.
         params.update(body)
@@ -887,7 +887,7 @@ oauth_consumer_key="", oauth_signature="frVp4JuvT1mVXlxktiAUjQ7%2F1cw%3D"'}
         imsx_messageIdentifier = root.xpath("//def:imsx_messageIdentifier", namespaces=namespaces)[0].text or ''
         sourcedId = root.xpath("//def:sourcedId", namespaces=namespaces)[0].text
         score = root.xpath("//def:textString", namespaces=namespaces)[0].text
-        action = root.xpath("//def:imsx_POXBody", namespaces=namespaces)[0].getchildren()[0].tag.replace('{' + lti_spec_namespace + '}', '')  # lint-amnesty, pylint: disable=line-too-long
+        action = root.xpath("//def:imsx_POXBody", namespaces=namespaces)[0].getchildren()[0].tag.replace('{' + lti_spec_namespace + '}', '')  # noqa: E501
         # Raise exception if score is not float or not in range 0.0-1.0 regarding spec.
         score = float(score)
         if not 0 <= score <= 1:

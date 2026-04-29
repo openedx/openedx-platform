@@ -104,9 +104,9 @@ class BinnedScheduleMessageBaseTask(ScheduleMessageBaseTask):
     task_instance = None
 
     @classmethod
-    def enqueue(cls, site, current_date, day_offset, override_recipient_email=None, override_middlewares=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def enqueue(cls, site, current_date, day_offset, override_recipient_email=None, override_middlewares=None):  # pylint: disable=missing-function-docstring
         set_code_owner_attribute_from_module(__name__)
-        current_date = resolvers._get_datetime_beginning_of_day(current_date)  # lint-amnesty, pylint: disable=protected-access
+        current_date = resolvers._get_datetime_beginning_of_day(current_date)  # pylint: disable=protected-access
 
         if not cls.is_enqueue_enabled(site):
             cls.log_info('Message queuing disabled for site %s', site.domain)
@@ -239,7 +239,7 @@ class ScheduleCourseNextSectionUpdate(ScheduleMessageBaseTask):  # lint-amnesty,
     task_instance = None
 
     @classmethod
-    def enqueue(cls, site, current_date, day_offset, override_recipient_email=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def enqueue(cls, site, current_date, day_offset, override_recipient_email=None):  # pylint: disable=missing-function-docstring
         set_code_owner_attribute_from_module(__name__)
         target_datetime = (current_date - datetime.timedelta(days=day_offset))
 
@@ -261,7 +261,7 @@ class ScheduleCourseNextSectionUpdate(ScheduleMessageBaseTask):  # lint-amnesty,
                 retry=False,
             )
 
-    def run(self, site_id, target_day_str, course_key, override_recipient_email=None):  # lint-amnesty, pylint: disable=arguments-differ
+    def run(self, site_id, target_day_str, course_key, override_recipient_email=None):  # pylint: disable=arguments-differ
         set_code_owner_attribute_from_module(__name__)
         site = Site.objects.select_related('configuration').get(id=site_id)
         with emulate_http_request(site=site):
@@ -278,7 +278,7 @@ ScheduleCourseNextSectionUpdate.task_instance = current_app.register_task(Schedu
 ScheduleCourseNextSectionUpdate = ScheduleCourseNextSectionUpdate.task_instance
 
 
-def _schedule_send(msg_str, site_id, delivery_config_var, log_prefix):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _schedule_send(msg_str, site_id, delivery_config_var, log_prefix):  # pylint: disable=missing-function-docstring
     site = Site.objects.select_related('configuration').get(pk=site_id)
     if _is_delivery_enabled(site, delivery_config_var, log_prefix):
         msg = Message.from_string(msg_str)
@@ -338,7 +338,7 @@ def _is_delivery_enabled(site, delivery_config_var, log_prefix):
         LOG.info('%s: Message delivery disabled for site %s', log_prefix, site.domain)
 
 
-def _annotate_for_monitoring(message_type, site, bin_num=None, target_day_str=None, day_offset=None, course_key=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _annotate_for_monitoring(message_type, site, bin_num=None, target_day_str=None, day_offset=None, course_key=None):  # pylint: disable=missing-function-docstring
     # This identifies the type of message being sent, for example: schedules.recurring_nudge3.
     set_custom_attribute('message_name', f'{message_type.app_label}.{message_type.name}')
     # The domain name of the site we are sending the message for.

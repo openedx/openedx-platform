@@ -91,7 +91,7 @@ class TestSendCourseUpdate(ScheduleUpsellTestMixin, ScheduleSendEmailTestMixin, 
 
     @ddt.data(
         ExperienceTest(experience=ScheduleExperience.EXPERIENCES.default, offset=expected_offsets[0], email_sent=False),
-        ExperienceTest(experience=ScheduleExperience.EXPERIENCES.course_updates, offset=expected_offsets[0], email_sent=True),  # lint-amnesty, pylint: disable=line-too-long
+        ExperienceTest(experience=ScheduleExperience.EXPERIENCES.course_updates, offset=expected_offsets[0], email_sent=True),  # noqa: E501
         ExperienceTest(experience=None, offset=expected_offsets[0], email_sent=False),
     )
     def test_schedule_in_different_experience(self, test_config):

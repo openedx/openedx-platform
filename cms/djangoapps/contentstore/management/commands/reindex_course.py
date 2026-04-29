@@ -60,7 +60,7 @@ class Command(BaseCommand):
         try:
             result = CourseKey.from_string(raw_value)
         except InvalidKeyError:
-            raise CommandError("Invalid course_key: '%s'." % raw_value)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP031
+            raise CommandError("Invalid course_key: '%s'." % raw_value)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP031
 
         if not isinstance(result, CourseLocator):
             raise CommandError(f"Argument {raw_value} is not a course key")

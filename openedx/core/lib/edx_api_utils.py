@@ -110,7 +110,7 @@ def get_api_data(
         else:
             results = response
 
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         log.exception("Failed to retrieve data from the %s API.", api_config.API_NAME)
         if raise_on_error:
             raise

@@ -252,7 +252,7 @@ class LibraryRootView(GenericAPIView):
                 # users can then manage roles for others.
                 api.assign_library_role_to_user(result.key, request.user, api.AccessLevel.ADMIN_LEVEL)
         except api.LibraryAlreadyExists:
-            raise ValidationError(detail={"slug": "A library with that ID already exists."})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail={"slug": "A library with that ID already exists."})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         return Response(ContentLibraryMetadataSerializer(result).data)
 
@@ -336,7 +336,7 @@ class LibraryTeamView(APIView):
         try:
             user = User.objects.get(email=serializer.validated_data.get('email'))
         except User.DoesNotExist:
-            raise ValidationError({'email': _('We could not find a user with that email address.')})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError({'email': _('We could not find a user with that email address.')})  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         grant = api.get_library_user_permissions(key, user)
         if grant:
             return Response(

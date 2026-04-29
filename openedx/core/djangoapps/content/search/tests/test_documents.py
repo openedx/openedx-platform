@@ -268,7 +268,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ],
             "content": {
                 "html_content": (
-                    "This is a link to another page and some Chinese 四節比分和七年前 Some more Chinese 四節比分和七年前 "
+                    "This is a link to another page and some Chinese 四節比分和七年前 Some more Chinese 四節比分和七年前 "  # noqa: E501
                 ),
             },
             "tags": {
@@ -721,7 +721,6 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
         """
         Test how an HTML block with mathjax equations gets converted to plain text in search description.
         """
-        # pylint: disable=line-too-long
         eqns = [
             # (input, expected output)
             ('Simple addition: \\( 2 + 3 \\)', 'Simple addition:  2 + 3'),
@@ -745,15 +744,15 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
                 'Converting decimals to mixed fractions:  2.5 = 5/2',
             ),
             (
-                'Trig identities: [mathjaxinline] \\sin(x + y) = \\sin(x)  \\cos(y) + \\cos(x)  \\sin(y) [/mathjaxinline]',
+                'Trig identities: [mathjaxinline] \\sin(x + y) = \\sin(x)  \\cos(y) + \\cos(x)  \\sin(y) [/mathjaxinline]',  # noqa: E501
                 'Trig identities:  sin(x + y) = sin(x) cos(y) + cos(x) sin(y)',
             ),
             (
-                'Sine, cosine, and tangent: [mathjaxinline] \\sin(x) [/mathjaxinline] [mathjaxinline] \\cos(x) [/mathjaxinline] [mathjaxinline] \\tan(x) [/mathjaxinline]',
+                'Sine, cosine, and tangent: [mathjaxinline] \\sin(x) [/mathjaxinline] [mathjaxinline] \\cos(x) [/mathjaxinline] [mathjaxinline] \\tan(x) [/mathjaxinline]',  # noqa: E501
                 'Sine, cosine, and tangent:  sin(x)   cos(x)   tan(x)',
             ),
             (
-                'Hyperbolic trig functions: [mathjaxinline] \\sinh(x) [/mathjaxinline] [mathjaxinline] \\cosh(x) [/mathjaxinline]',
+                'Hyperbolic trig functions: [mathjaxinline] \\sinh(x) [/mathjaxinline] [mathjaxinline] \\cosh(x) [/mathjaxinline]',  # noqa: E501
                 'Hyperbolic trig functions:  sinh(x)   cosh(x)',
             ),
             (
@@ -762,7 +761,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ),
             ('Double integral: [mathjax] int\\int (x + y) dxdy [/mathjax]', 'Double integral:  int∫ (x + y) dxdy'),
             (
-                'Partial derivatives: [mathjax] f(x,y) = xy, \\frac{\\partial f}{\\partial x} = y [/mathjax] [mathjax] \\frac{\\partial f}{\\partial y} = x [/mathjax]',
+                'Partial derivatives: [mathjax] f(x,y) = xy, \\frac{\\partial f}{\\partial x} = y [/mathjax] [mathjax] \\frac{\\partial f}{\\partial y} = x [/mathjax]',  # noqa: E501
                 'Partial derivatives:  f(x,y) = xy, (∂ f/∂ x) = y   (∂ f/∂ y) = x',
             ),
             (
@@ -775,7 +774,7 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ),
             ('Gaussian distribution: [mathjax] N(\\mu, \\sigma^2) [/mathjax]', 'Gaussian distribution:  N(μ, σ²)'),
             (
-                'Greek letters: [mathjaxinline] \\alpha [/mathjaxinline] [mathjaxinline] \\beta [/mathjaxinline] [mathjaxinline] \\gamma [/mathjaxinline]',
+                'Greek letters: [mathjaxinline] \\alpha [/mathjaxinline] [mathjaxinline] \\beta [/mathjaxinline] [mathjaxinline] \\gamma [/mathjaxinline]',  # noqa: E501
                 'Greek letters:  α   β   γ',
             ),
             (
@@ -819,7 +818,6 @@ class StudioDocumentsTest(SharedModuleStoreTestCase):
             ),
             ('No equation: normal text', 'No equation: normal text'),
         ]
-        # pylint: enable=line-too-long
         block = BlockFactory.create(
             parent_location=self.toy_course.location,
             category="html",

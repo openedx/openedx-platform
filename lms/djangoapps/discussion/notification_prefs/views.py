@@ -73,7 +73,7 @@ class UsernameCipher:
         try:
             base64_decoded = urlsafe_b64decode(token)
         except (TypeError, Error):
-            raise UsernameDecryptionException("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise UsernameDecryptionException("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         if len(base64_decoded) < AES_BLOCK_SIZE_BYTES:
             raise UsernameDecryptionException("initialization_vector")
@@ -95,7 +95,7 @@ class UsernameCipher:
                 raise UsernameDecryptionException("padding")
             return unpadded
         except ValueError:
-            raise UsernameDecryptionException("padding")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise UsernameDecryptionException("padding")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
 
 def enable_notifications(user):
@@ -164,7 +164,7 @@ def ajax_status(request):
         key=NOTIFICATION_PREF_KEY
     )
 
-    return HttpResponse(json.dumps({"status": len(qs)}), content_type="application/json")  # lint-amnesty, pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
+    return HttpResponse(json.dumps({"status": len(qs)}), content_type="application/json")  # pylint: disable=http-response-with-content-type-json, http-response-with-json-dumps
 
 
 @require_GET

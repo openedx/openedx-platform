@@ -148,7 +148,7 @@ def course_info_to_ccxcon(course_key):
     )
 
     if resp.status_code >= 500:
-        raise CCXConnServerError('Server returned error Status: %s, Content: %s', resp.status_code, resp.content)  # lint-amnesty, pylint: disable=raising-format-tuple
+        raise CCXConnServerError('Server returned error Status: %s, Content: %s', resp.status_code, resp.content)  # pylint: disable=raising-format-tuple
     if resp.status_code >= 400:
         log.error("Error creating course on ccxcon. Status: %s, Content: %s", resp.status_code, resp.content)
     # this API performs a POST request both for POST and PATCH, but the POST returns 201 and the PATCH returns 200

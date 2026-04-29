@@ -86,7 +86,7 @@ def are_permissions_roles_seeded(course_id):
         moderator_role = Role.objects.get(name=FORUM_ROLE_MODERATOR, course_id=course_id)
         group_moderator_role = Role.objects.get(name=FORUM_ROLE_GROUP_MODERATOR, course_id=course_id)
         student_role = Role.objects.get(name=FORUM_ROLE_STUDENT, course_id=course_id)
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         return False
 
     for per in STUDENT_ROLE_PERMISSIONS:

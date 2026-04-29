@@ -56,7 +56,7 @@ class BaseVisitor(ast.NodeVisitor):
             if node.col_offset == -1:
                 triple_quote_regex = re.compile("""['"]{3}""")
                 end_triple_quote_match = triple_quote_regex.search(self.file_contents, line_start_index)
-                open_quote_index = self.file_contents.rfind(end_triple_quote_match.group(), 0, end_triple_quote_match.start())
+                open_quote_index = self.file_contents.rfind(end_triple_quote_match.group(), 0, end_triple_quote_match.start())  # noqa: E501
                 if open_quote_index > 0:
                     start_index = open_quote_index
                 else:

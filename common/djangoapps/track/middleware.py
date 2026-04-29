@@ -81,7 +81,7 @@ class TrackMiddleware(MiddlewareMixin):
             event = event[:512]
 
             views.server_track(request, request.META['PATH_INFO'], event)
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # noqa: E722
             ## Why do we have the overly broad except?
             ##
             ## I added instrumentation so if we drop events on the
@@ -93,7 +93,7 @@ class TrackMiddleware(MiddlewareMixin):
             event = {'event-type': 'exception', 'exception': repr(sys.exc_info()[0])}
             try:
                 views.server_track(request, request.META['PATH_INFO'], event)
-            except:  # lint-amnesty, pylint: disable=bare-except
+            except:  # noqa: E722
                 # At this point, things are really broken. We really
                 # should fail return a 500 to the user here.  However,
                 # the interim decision is to just fail in order to be

@@ -128,7 +128,7 @@ class DateSummary:
         # 'absolute'. For example, 'absolute' might be "Jan 01, 2020",
         # and if today were December 5th, 2020, 'relative' would be "1
         # month".
-        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # lint-amnesty, pylint: disable=redefined-outer-name
+        date_format = _("{relative} ago - {absolute}") if date_has_passed else _("in {relative} - {absolute}")  # pylint: disable=redefined-outer-name
         return date_format.format(
             relative=relative_date,
             absolute='{date}',

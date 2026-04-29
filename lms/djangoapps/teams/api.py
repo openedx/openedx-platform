@@ -349,7 +349,7 @@ def get_team_for_user_course_topic(user, course_id, topic_id):
     try:
         course_key = CourseKey.from_string(course_id)
     except InvalidKeyError:
-        raise ValueError("The supplied course id {course_id} is not valid.".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, UP032
+        raise ValueError("The supplied course id {course_id} is not valid.".format(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501, UP032
             course_id=course_id
         ))
     try:

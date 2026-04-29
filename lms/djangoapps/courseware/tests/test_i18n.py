@@ -35,7 +35,7 @@ class BaseI18nTestCase(CacheIsolationTestCase):
 
     def assert_tag_has_attr(self, content, tag, attname, value):
         """Assert that a tag in `content` has a certain value in a certain attribute."""
-        regex_string = r"""<{tag} [^>]*\b{attname}=['"]([\w\d\- ]+)['"][^>]*>"""  # noqa: W605,E501
+        regex_string = r"""<{tag} [^>]*\b{attname}=['"]([\w\d\- ]+)['"][^>]*>"""
         regex = regex_string.format(tag=tag, attname=attname)
         match = re.search(regex, content)
         assert match, (f"Couldn't find desired tag '{tag}' with attr '{attname}' in {content!r}")

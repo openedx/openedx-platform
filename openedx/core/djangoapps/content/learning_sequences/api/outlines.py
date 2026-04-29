@@ -302,7 +302,7 @@ def get_user_course_outline_details(course_key: CourseKey,
     )
 
 
-def _get_user_course_outline_and_processors(course_key: CourseKey,  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_user_course_outline_and_processors(course_key: CourseKey,  # pylint: disable=missing-function-docstring
                                             user: types.User,
                                             at_time: datetime):
     """

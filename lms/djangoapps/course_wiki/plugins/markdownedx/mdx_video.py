@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # TODO: Is this file still used? If so it should be refactored and tests added.
-# pylint: disable=line-too-long, invalid-name
+# pylint: disable=invalid-name
 """
 Embeds web videos using URLs.  For instance, if a URL to an youtube video is
 found in the text submitted to markdown and it isn't enclosed in parenthesis
@@ -126,7 +126,7 @@ Test Gametrailers
 >>> s = "http://www.gametrailers.com/video/console-comparison-borderlands/58079"
 >>> markdown.markdown(s, ['video'])
 u'<p><object data="http://www.gametrailers.com/remote_wrap.php?mid=58079" height="392" type="application/x-shockwave-flash" width="480"><param name="movie" value="http://www.gametrailers.com/remote_wrap.php?mid=58079" /><param name="allowFullScreen" value="true" /></object></p>'
-"""
+"""  # noqa: E501
 from xml.etree import ElementTree
 
 import markdown

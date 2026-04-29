@@ -143,7 +143,7 @@ AUTH_ENTRY_CUSTOM = getattr(settings, 'THIRD_PARTY_AUTH_CUSTOM_AUTH_FORMS', {})
 
 def is_api(auth_entry):
     """Returns whether the auth entry point is via an API call."""
-    return (auth_entry == AUTH_ENTRY_LOGIN_API) or (auth_entry == AUTH_ENTRY_REGISTER_API)  # lint-amnesty, pylint: disable=consider-using-in
+    return (auth_entry == AUTH_ENTRY_LOGIN_API) or (auth_entry == AUTH_ENTRY_REGISTER_API)  # pylint: disable=consider-using-in
 
 # URLs associated with auth entry points
 # These are used to request additional user information
@@ -558,7 +558,7 @@ def redirect_to_custom_form(request, auth_entry, details, kwargs):
 
 
 @partial.partial
-def ensure_user_information(strategy, auth_entry, backend=None, user=None, social=None, current_partial=None,  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def ensure_user_information(strategy, auth_entry, backend=None, user=None, social=None, current_partial=None,  # pylint: disable=keyword-arg-before-vararg
                             allow_inactive_user=False, details=None, *args, **kwargs):
     """
     Ensure that we have the necessary information about a user (either an
@@ -656,13 +656,13 @@ def ensure_user_information(strategy, auth_entry, backend=None, user=None, socia
             # register anew via SSO. See SOL-1324 in JIRA.
             # However, we will log a warning for this case:
             logger.warning(
-                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032  # pylint: disable=line-too-long
+                '[THIRD_PARTY_AUTH] User is using third_party_auth to login but has not yet activated their account. '  # noqa: UP032
                 'Username: {username}'.format(username=user.username)
             )
 
 
 @partial.partial
-def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=None, current_partial=None,  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=None, current_partial=None,  # pylint: disable=keyword-arg-before-vararg
                           *args, **kwargs):
     """This pipeline step sets the "logged in" cookie for authenticated users.
 
@@ -714,7 +714,7 @@ def set_logged_in_cookies(backend=None, user=None, strategy=None, auth_entry=Non
 
 
 @partial.partial
-def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """ Sends login info to Segment """
 
     event_name = None
@@ -724,7 +724,7 @@ def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs)
     try:
         request = kwargs['request']
         anonymous_id = request.COOKIES.get('ajs_anonymous_id', "")
-    except:  # pylint: disable=bare-except
+    except:  # noqa: E722
         pass
 
     if auth_entry == AUTH_ENTRY_LOGIN:
@@ -743,7 +743,7 @@ def login_analytics(strategy, auth_entry, current_partial=None, *args, **kwargs)
 
 
 @partial.partial
-def associate_by_email_if_login_api(auth_entry, backend, details, user, current_partial=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def associate_by_email_if_login_api(auth_entry, backend, details, user, current_partial=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     This pipeline step associates the current social auth with the user with the
     same email address in the database.  It defers to the social library's associate_by_email
@@ -826,7 +826,7 @@ def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *ar
 
                 if not user_is_active:
                     logger.info(
-                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032  # pylint: disable=line-too-long
+                        '[Multiple_SSO_SAML_Accounts_Association_to_User] User association account is not'  # noqa: UP032
                         ' active: User Email: {email}, User ID: {user_id}, Provider ID: {provider_id},'
                         ' is_enterprise_customer_user: {enterprise_customer_user}'.format(
                             email=current_user.email,
@@ -857,7 +857,7 @@ def associate_by_email_if_saml(auth_entry, backend, details, user, strategy, *ar
             return associate_response
 
 
-def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Update normally protected user details using data from provider.
 
@@ -940,11 +940,11 @@ def user_details_force_sync(auth_entry, strategy, details, user=None, *args, **k
                 try:
                     email.send()
                 except SMTPException:
-                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032  # pylint: disable=line-too-long
+                    logger.exception('[THIRD_PARTY_AUTH] Error sending IdP learner data sync-initiated email change '  # noqa: UP032
                                      'notification email. Username: {username}'.format(username=user.username))
 
 
-def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def set_id_verification_status(auth_entry, strategy, details, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Use the user's authentication with the provider, if configured, as evidence of their identity being verified.
     """
@@ -972,7 +972,7 @@ def set_id_verification_status(auth_entry, strategy, details, user=None, *args, 
             verification.send_approval_signal(current_provider.slug)
 
 
-def get_username(strategy, details, backend, user=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+def get_username(strategy, details, backend, user=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """
     Copy of social_core.pipeline.user.get_username to achieve
     1. additional logging

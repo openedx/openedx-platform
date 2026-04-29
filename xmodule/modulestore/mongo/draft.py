@@ -47,7 +47,7 @@ class DraftModuleStore(MongoModuleStore):
     This module store also includes functionality to promote DRAFT blocks (and their children)
     to published blocks.
     """
-    def get_item(self, usage_key, revision=None, using_descriptor_system=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def get_item(self, usage_key, revision=None, using_descriptor_system=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Returns an XModuleDescriptor instance for the item at usage_key.
 
@@ -81,13 +81,13 @@ class DraftModuleStore(MongoModuleStore):
             is found at that usage_key
         """
         def get_published():
-            return wrap_draft(super(DraftModuleStore, self).get_item(  # lint-amnesty, pylint: disable=super-with-arguments
+            return wrap_draft(super(DraftModuleStore, self).get_item(  # pylint: disable=super-with-arguments
                 usage_key, using_descriptor_system=using_descriptor_system,
                 for_parent=kwargs.get('for_parent'),
             ))
 
         def get_draft():
-            return wrap_draft(super(DraftModuleStore, self).get_item(  # lint-amnesty, pylint: disable=super-with-arguments
+            return wrap_draft(super(DraftModuleStore, self).get_item(  # pylint: disable=super-with-arguments
                 as_draft(usage_key), using_descriptor_system=using_descriptor_system,
                 for_parent=kwargs.get('for_parent')
             ))
@@ -130,13 +130,13 @@ class DraftModuleStore(MongoModuleStore):
                 ModuleStoreEnum.RevisionOption.draft_only - checks for the draft item only
                 None - uses the branch setting, as follows:
                     if branch setting is ModuleStoreEnum.Branch.published_only, checks for the published item only
-                    if branch setting is ModuleStoreEnum.Branch.draft_preferred, checks whether draft or published item exists  # lint-amnesty, pylint: disable=line-too-long
-        """
+                    if branch setting is ModuleStoreEnum.Branch.draft_preferred, checks whether draft or published item exists
+        """  # noqa: E501
         def has_published():
-            return super(DraftModuleStore, self).has_item(usage_key)  # lint-amnesty, pylint: disable=super-with-arguments
+            return super(DraftModuleStore, self).has_item(usage_key)  # pylint: disable=super-with-arguments
 
         def has_draft():
-            return super(DraftModuleStore, self).has_item(as_draft(usage_key))  # lint-amnesty, pylint: disable=super-with-arguments
+            return super(DraftModuleStore, self).has_item(as_draft(usage_key))  # pylint: disable=super-with-arguments
 
         if revision == ModuleStoreEnum.RevisionOption.draft_only:
             return has_draft()
@@ -200,7 +200,7 @@ class DraftModuleStore(MongoModuleStore):
 
         # return only the parent(s) that satisfy the request
         return [
-            BlockUsageLocator._from_deprecated_son(parent['_id'], location.course_key.run)  # lint-amnesty, pylint: disable=protected-access
+            BlockUsageLocator._from_deprecated_son(parent['_id'], location.course_key.run)  # pylint: disable=protected-access
             for parent in parents
             if (
                 # return all versions of the parent if revision is ModuleStoreEnum.RevisionOption.all
@@ -237,9 +237,9 @@ class DraftModuleStore(MongoModuleStore):
             revision = ModuleStoreEnum.RevisionOption.published_only \
                 if self.get_branch_setting() == ModuleStoreEnum.Branch.published_only \
                 else ModuleStoreEnum.RevisionOption.draft_preferred
-        return super().get_parent_location(location, revision, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+        return super().get_parent_location(location, revision, **kwargs)  # pylint: disable=super-with-arguments
 
-    def create_xblock(self, runtime, course_key, block_type, block_id=None, fields=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def create_xblock(self, runtime, course_key, block_type, block_id=None, fields=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Create the new xblock but don't save it. Returns the new block with a draft locator if
         the category allows drafts. If the category does not allow drafts, just creates a published block.
@@ -278,7 +278,7 @@ class DraftModuleStore(MongoModuleStore):
                         returns either Draft or Published, preferring Draft items.
         """
         def base_get_items(key_revision):
-            return super(DraftModuleStore, self).get_items(course_key, key_revision=key_revision, **kwargs)  # lint-amnesty, pylint: disable=super-with-arguments
+            return super(DraftModuleStore, self).get_items(course_key, key_revision=key_revision, **kwargs)  # pylint: disable=super-with-arguments
 
         def draft_items():
             return [wrap_draft(item) for item in base_get_items(MongoRevisionKey.draft)]

@@ -88,7 +88,7 @@ class CertificateManager:
         try:
             certificate = json.loads(json_string)
         except ValueError:
-            raise CertificateValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CertificateValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
         # Include the data contract version
         certificate["version"] = CERTIFICATE_SCHEMA_VERSION
         # Ensure a signatories list is always returned

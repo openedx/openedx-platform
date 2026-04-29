@@ -1346,7 +1346,7 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
     elif request.method == 'DELETE':
         try:
             return JsonResponse(delete_course_update(usage_key, request.json, provided_id, request.user))
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # noqa: E722
             return HttpResponseBadRequest(
                 "Failed to delete",
                 content_type="text/plain"
@@ -1357,7 +1357,7 @@ def course_info_update_handler(request, course_key_string, provided_id=None):
             return JsonResponse(update_course_updates(
                 usage_key, request.json, provided_id, request.user, request.method
             ))
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # noqa: E722
             return HttpResponseBadRequest(
                 "Failed to save",
                 content_type="text/plain"
@@ -1639,7 +1639,7 @@ def validate_textbook_json(textbook):
         try:
             textbook = json.loads(textbook)
         except ValueError:
-            raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise TextbookValidationError("invalid JSON")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
     if not isinstance(textbook, dict):
         raise TextbookValidationError("must be JSON object")
     if not textbook.get("tab_title"):
@@ -1923,7 +1923,7 @@ def group_configurations_detail_handler(request, course_key_string, group_config
 
         if request.method in ('POST', 'PUT'):  # can be either and sometimes django is rewriting one to the other
             try:
-                new_configuration = GroupConfiguration(request.body, course, group_configuration_id).get_user_partition()  # lint-amnesty, pylint: disable=line-too-long
+                new_configuration = GroupConfiguration(request.body, course, group_configuration_id).get_user_partition()  # noqa: E501
             except GroupConfigurationsValidationError as err:
                 return JsonResponse({"error": str(err)}, status=400)
 

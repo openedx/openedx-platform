@@ -141,7 +141,7 @@ class CourseAccessRoleForm(forms.ModelForm):
         fields = '__all__'  # noqa: DJ007
 
     email = forms.EmailField(required=True)
-    COURSE_ACCESS_ROLES = [(role_name, role_name) for role_name in REGISTERED_ACCESS_ROLES.keys()]  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    COURSE_ACCESS_ROLES = [(role_name, role_name) for role_name in REGISTERED_ACCESS_ROLES.keys()]  # pylint: disable=consider-iterating-dictionary
     role = forms.ChoiceField(choices=COURSE_ACCESS_ROLES)
 
     def clean_course_id(self):
@@ -373,7 +373,7 @@ class CourseEnrollmentForm(forms.ModelForm):
             try:
                 args_copy['course'] = CourseKey.from_string(args_copy['course'])
             except InvalidKeyError:
-                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+                raise forms.ValidationError("Cannot make a valid CourseKey from id {}!".format(args_copy['course']))  # pylint: disable=raise-missing-from  # noqa: B904
             args = [args_copy]
 
         super().__init__(*args, **kwargs)
@@ -392,7 +392,7 @@ class CourseEnrollmentForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904, E501
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(f"Cannot find course with id {course_id} in the modulestore")
@@ -438,7 +438,7 @@ class CourseEnrollmentAdmin(DisableEnrollmentAdminMixin, admin.ModelAdmin):
         return qs, use_distinct
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user')  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        return super().get_queryset(request).select_related('user')  # pylint: disable=no-member, super-with-arguments
 
 
 @method_decorator(login_required, name='dispatch')
@@ -556,8 +556,8 @@ class UserAdmin(BaseUserAdmin):
     def get_readonly_fields(self, request, obj=None):
         """
         Allows editing the users while skipping the username check, so we can have Unicode username with no problems.
-        The username is marked read-only when editing existing users regardless of `ENABLE_UNICODE_USERNAME`, to simplify the bokchoy tests.  # lint-amnesty, pylint: disable=line-too-long
-        """
+        The username is marked read-only when editing existing users regardless of `ENABLE_UNICODE_USERNAME`, to simplify the bokchoy tests.
+        """  # noqa: E501
         django_readonly = super().get_readonly_fields(request, obj)
         if obj:
             return django_readonly + ('username',)
@@ -716,7 +716,7 @@ class AllowedAuthUserForm(forms.ModelForm):
             )
         elif email_domain != allowed_site_email_domain:
             raise forms.ValidationError(
-                _(f"Email doesn't have {allowed_site_email_domain} domain name.")  # lint-amnesty, pylint: disable=translation-of-non-string
+                _(f"Email doesn't have {allowed_site_email_domain} domain name.")  # pylint: disable=translation-of-non-string
             )
         elif not User.objects.filter(email=email).exists():
             raise forms.ValidationError(_("User with this email doesn't exist in system."))

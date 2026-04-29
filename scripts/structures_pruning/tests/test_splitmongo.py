@@ -178,7 +178,6 @@ class TestCourseChangePlan(unittest.TestCase):
         plan = ChangePlan.create(graph, 0, False, False, buff)
         details_txt = buff.getvalue()
 
-        # pylint: disable=line-too-long
         expected_output = textwrap.dedent(
             """
             == Summary ==
@@ -201,9 +200,8 @@ class TestCourseChangePlan(unittest.TestCase):
             - 5
             + 4 (original)
 
-            """
+            """  # noqa: E501
         ).lstrip()
-        # pylint: enable=line-too-long
         self.assertEqual(expected_output, details_txt)  # noqa: PT009
         self.assertEqual(  # noqa: PT009
             plan,

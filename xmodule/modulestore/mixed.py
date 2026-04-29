@@ -826,7 +826,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
         return store.import_xblock(user_id, course_key, block_type, block_id, fields, runtime, **kwargs)
 
     @strip_key
-    def copy_from_template(self, source_keys, dest_key, user_id, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def copy_from_template(self, source_keys, dest_key, user_id, **kwargs):  # pylint: disable=unused-argument
         """
         See :py:meth `SplitMongoModuleStore.copy_from_template`
         """
@@ -835,7 +835,7 @@ class MixedModuleStore(ModuleStoreDraftAndPublished, ModuleStoreWriteBase):
 
     @strip_key
     @prepare_asides
-    def update_item(self, xblock, user_id, allow_not_found=False, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def update_item(self, xblock, user_id, allow_not_found=False, **kwargs):  # pylint: disable=arguments-differ
         """
         Update the xblock persisted to be the same as the given for all types of fields
         (content, children, and metadata) attribute the change to the given user.

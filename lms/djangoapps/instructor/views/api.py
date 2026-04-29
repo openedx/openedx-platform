@@ -514,7 +514,7 @@ class RegisterAndEnrollStudents(APIView):
                             'email': email,
                             'response': _('Invalid email {email_address}.').format(email_address=email),
                         })
-                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # lint-amnesty, pylint: disable=logging-not-lazy
+                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # pylint: disable=logging-not-lazy
                                     'blocked.', email)
                     else:
                         # This email does not yet exist, so we need to create a new account
@@ -1689,7 +1689,7 @@ class GetStudentsFeatures(DeveloperErrorViewMixin, APIView):
                 )
                 success_status = SUCCESS_MESSAGE_TEMPLATE.format(report_type=report_type)
             except Exception as e:
-                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904  # pylint: disable=line-too-long
+                raise self.api_error(status.HTTP_400_BAD_REQUEST, str(e), 'Requested task is already running')  # noqa: B904
 
             return JsonResponse({"status": success_status})
 
@@ -2870,7 +2870,7 @@ class ReportDownloads(DeveloperErrorViewMixin, APIView):
         problem responses report for an entire course might be called:
 
             edX_DemoX_Demo_Course_student_state_from_block-v1_edX+DemoX+Demo_Course+type@course+block@course_2021-04-30-0918.csv
-        """  # pylint: disable=line-too-long
+        """
         return _list_report_downloads(request=request, course_id=course_id)
 
 
@@ -4007,7 +4007,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # pylint: disable=raise-missing-from  # noqa: B904
 
     return data
 
@@ -4024,7 +4024,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # pylint: disable=raise-missing-from  # noqa: B904
             user=username_or_email
         ))
 
@@ -4343,7 +4343,7 @@ def re_validate_certificate(request, course_key, generated_certificate, student)
 
     certificate_invalidation = certs_api.get_certificate_invalidation_entry(generated_certificate)
     if not certificate_invalidation:
-        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # pylint: disable=raise-missing-from
 
     certificate_invalidation.deactivate()
 

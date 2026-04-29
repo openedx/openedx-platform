@@ -3208,7 +3208,7 @@ class TestBulkMembershipManagement(TeamAPITestCase):
             user='staff'
         )
         response_text = json.loads(response.content.decode('utf-8'))
-        expected_message = "Team {} cannot have Master’s track users mixed with users in other tracks.".format(  # noqa: UP032  # pylint: disable=line-too-long
+        expected_message = "Team {} cannot have Master’s track users mixed with users in other tracks.".format(  # noqa: UP032
             team.name
         )
         assert response_text['errors'][0] == expected_message

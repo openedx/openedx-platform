@@ -2295,7 +2295,7 @@ class UserProgramCourseEnrollmentViewGetTests(ProgramCourseEnrollmentOverviewGet
         and the sizes of the each request.
         """
 
-        def mock_get_enrollment_overviews(user, program, enrollments, request):  # lint-amnesty, pylint: disable=unused-argument
+        def mock_get_enrollment_overviews(user, program, enrollments, request):  # pylint: disable=unused-argument
             """
             Mock implementation of `utils.get_enrollments_overviews`
             that returns a dict with the correct `course_run_id`

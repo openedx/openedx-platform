@@ -37,8 +37,8 @@ class TestBlockStructureTransformers(ChildrenMapTestMixin, TestCase):
 
     def test_add_registered(self):
         self.add_mock_transformer()
-        assert self.registered_transformers[0] in self.transformers._transformers['no_filter']  # pylint: disable=protected-access, line-too-long
-        assert self.registered_transformers[1] in self.transformers._transformers['supports_filter']  # pylint: disable=protected-access, line-too-long
+        assert self.registered_transformers[0] in self.transformers._transformers['no_filter']  # pylint: disable=protected-access
+        assert self.registered_transformers[1] in self.transformers._transformers['supports_filter']  # pylint: disable=protected-access
 
     def test_add_unregistered(self):
         with pytest.raises(TransformerException):

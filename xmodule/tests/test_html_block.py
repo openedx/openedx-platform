@@ -208,7 +208,7 @@ class _HtmlBlockIndexingTestCaseBase(TestCase):
             </html>
         '''
         block = self.instantiate_block(data=sample_xml_comment)
-        assert block.index_dictionary() == {'content': {'html_content': ' This has HTML comment in it. ', 'display_name': 'Text'}, 'content_type': 'Text'}  # pylint: disable=line-too-long
+        assert block.index_dictionary() == {'content': {'html_content': ' This has HTML comment in it. ', 'display_name': 'Text'}, 'content_type': 'Text'}  # noqa: E501
 
     def test_index_dictionary_html_block_with_both_comments_and_cdata(self):
         sample_xml_mix_comment_cdata = '''

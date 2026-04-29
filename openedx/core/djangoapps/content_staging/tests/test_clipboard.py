@@ -162,7 +162,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
             <html url_name="toyhtml" display_name="Text" copied_from_block="block-v1:edX+toy+2012_Fall+type@html+block@toyhtml"><![CDATA[
             <a href='/static/handouts/sample_handout.txt'>Sample</a>
             ]]></html>
-        """).replace("\n", "") + "\n"  # No newlines, expect one trailing newline.
+        """).replace("\n", "") + "\n"  # No newlines, expect one trailing newline.  # noqa: E501
 
         # Now if we GET the clipboard again, the GET response should exactly equal the last POST response:
         assert client.get(CLIPBOARD_ENDPOINT).json() == response_data
@@ -238,7 +238,7 @@ class ClipboardTestCase(ModuleStoreTestCase):
                     <answer id="no">No</answer>
                 </poll_question>
             </vertical>
-        """)
+        """)  # noqa: E501
 
         # Now if we GET the clipboard again, the GET response should exactly equal the last POST response:
         assert client.get(CLIPBOARD_ENDPOINT).json() == response_data
