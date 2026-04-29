@@ -1500,8 +1500,7 @@ class ContentStoreTest(ContentStoreTestCase):
         with override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True):
             test_get_html('settings_handler')
         with override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example'):
-            with override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, False):
-                test_get_html('grading_handler')
+            test_get_html('grading_handler')
         with override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True):
             test_get_html('advanced_settings_handler')
         test_get_json('textbooks_list_handler')

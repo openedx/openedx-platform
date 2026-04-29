@@ -168,7 +168,6 @@ class CourseAdvanceSettingViewTest(CourseTestCase, MilestonesTestCaseMixin):
     @override_waffle_flag(toggles.LEGACY_STUDIO_EXPORT, True)
     @override_waffle_flag(toggles.LEGACY_STUDIO_COURSE_TEAM, True)
     @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
-    @override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, False)
     def test_disable_advanced_settings_feature(self, disable_advanced_settings):
         """
         If this feature is enabled, only Django Staff/Superuser should be able to access the "Advanced Settings" page.

@@ -38,7 +38,6 @@
             course_info_url = reverse('course_info_handler', kwargs={'course_key_string': str(course_key)})
             export_url = reverse('export_handler', kwargs={'course_key_string': str(course_key)})
             settings_url = reverse('settings_handler', kwargs={'course_key_string': str(course_key)})
-            grading_url = reverse('grading_handler', kwargs={'course_key_string': str(course_key)})
             advanced_settings_url = reverse('advanced_settings_handler', kwargs={'course_key_string': str(course_key)})
             tabs_url = reverse('tabs_handler', kwargs={'course_key_string': str(course_key)})
             certificates_url = ''
@@ -47,7 +46,6 @@
             checklists_url = reverse('checklists_handler', kwargs={'course_key_string': str(course_key)})
             pages_and_resources_mfe_enabled = ENABLE_PAGES_AND_RESOURCES_MICROFRONTEND.is_enabled(context_course.id)
             schedule_details_mfe_enabled = toggles.use_new_schedule_details_page(context_course.id)
-            grading_mfe_enabled = toggles.use_new_grading_page(context_course.id)
             course_team_mfe_enabled = toggles.use_new_course_team_page(context_course.id)
             advanced_settings_mfe_enabled = toggles.use_new_advanced_settings_page(context_course.id)
             import_mfe_enabled = toggles.use_new_import_page(context_course.id)
@@ -128,16 +126,9 @@
                     <a href="${get_schedule_details_url(course_key)}">${_("Schedule & Details")}</a>
                   </li>
                   % endif
-                  % if not grading_mfe_enabled:
-                  <li class="nav-item nav-course-settings-grading">
-                    <a href="${grading_url}">${_("Grading")}</a>
-                  </li>
-                  % endif
-                  % if grading_mfe_enabled:
                   <li class="nav-item nav-course-settings-grading">
                     <a href="${get_grading_url(course_key)}">${_("Grading")}</a>
                   </li>
-                  % endif
                   % if not course_team_mfe_enabled:
                   <li class="nav-item nav-course-settings-team">
                     <a href="${course_team_url}">${_("Course Team")}</a>

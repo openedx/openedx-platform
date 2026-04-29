@@ -27,7 +27,6 @@ from common.djangoapps.util.testing import UrlResetMixin
 @override_waffle_flag(toggles.LEGACY_STUDIO_CERTIFICATES, True)
 @override_waffle_flag(toggles.LEGACY_STUDIO_SCHEDULE_DETAILS, True)
 @override_waffle_flag(toggles.LEGACY_STUDIO_CONFIGURATIONS, True)
-@override_waffle_flag(toggles.LEGACY_STUDIO_GRADING, False)
 @override_waffle_flag(toggles.LEGACY_STUDIO_ADVANCED_SETTINGS, True)
 @override_settings(COURSE_AUTHORING_MICROFRONTEND_URL='https://mfe.example')
 class TestExamSettingsView(CourseTestCase, UrlResetMixin):
