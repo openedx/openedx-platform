@@ -411,6 +411,15 @@ def set_library_block_olx(
     very little validation is done and this can easily result in a broken XBlock
     that won't load.
 
+    The optional ``paths_to_media`` parameter can be used to attach
+    openedx_content Media to this XBlock. A common use case for this would be to
+    add images or other static assets to a text block::
+
+      figure_a_media = content_api.get_or_create_file_media(...)
+      paths_to_media={
+          'static/figure_a.png': figure_a_media,
+      }
+
     Returns the version number of the newly created ComponentVersion.
     """
     assert isinstance(usage_key, LibraryUsageLocatorV2)
