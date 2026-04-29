@@ -5,7 +5,7 @@ Asynchronous tasks for the LTI provider app.
 
 import logging
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from edx_django_utils.monitoring import set_code_owner_attribute
 from opaque_keys.edx.keys import CourseKey
 
@@ -13,7 +13,7 @@ import lms.djangoapps.lti_provider.outcomes as outcomes
 from lms import CELERY_APP
 from lms.djangoapps.grades.api import CourseGradeFactory
 from lms.djangoapps.lti_provider.models import GradedAssignment
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

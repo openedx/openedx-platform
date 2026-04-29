@@ -12,7 +12,7 @@ from .models import CourseEntitlement, CourseEntitlementPolicy, CourseEntitlemen
 
 
 @admin.register(CourseEntitlement)
-class CourseEntitlementAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEntitlementAdmin(admin.ModelAdmin):  # pylint: disable=missing-class-docstring
     list_display = ('user',
                     'uuid',
                     'course_uuid',
@@ -36,7 +36,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
             try:
                 self.data['unenrolled_run'] = CourseKey.from_string(self.data['unenrolled_run'])
             except InvalidKeyError:
-                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+                raise forms.ValidationError("No valid CourseKey for id {}!".format(self.data['unenrolled_run']))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     def clean_course_id(self):
         """Cleans course id and attempts to make course key from string version of key"""
@@ -44,7 +44,7 @@ class CourseEntitlementSupportDetailForm(forms.ModelForm):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise forms.ValidationError(f"Cannot make a valid CourseKey from id {course_id}!")  # pylint: disable=raise-missing-from  # noqa: B904
 
         if not modulestore().has_course(course_key):
             raise forms.ValidationError(f"Cannot find course with id {course_id} in the modulestore")

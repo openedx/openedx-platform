@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 class Creator:
     """
     A placeholder class that provides a way to set the attribute on the model.
@@ -6,7 +6,7 @@ class Creator:
     def __init__(self, field):
         self.field = field
 
-    def __get__(self, obj, type=None):  # lint-amnesty, pylint: disable=redefined-builtin
+    def __get__(self, obj, type=None):  # pylint: disable=redefined-builtin
         if obj is None:
             return self
         return obj.__dict__[self.field.name]
@@ -24,5 +24,5 @@ class CreatorMixin:
         super().contribute_to_class(cls, name, *args, **kwargs)
         setattr(cls, name, Creator(self))
 
-    def from_db_value(self, value, expression, connection):  # lint-amnesty, pylint: disable=unused-argument
+    def from_db_value(self, value, expression, connection):  # pylint: disable=unused-argument
         return self.to_python(value)

@@ -149,7 +149,7 @@ class IdPRedirectView(View):
         GET auth/idp_redirect/saml-default
 
     """
-    def get(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Return either a redirect to the login page of an identity provider that
         corresponds to the provider_slug keyword argument or a 404 if the

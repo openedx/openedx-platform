@@ -66,7 +66,7 @@ class CourseUpdatesList(generics.ListAPIView):
     """
 
     @mobile_course_access()
-    def list(self, request, course, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def list(self, request, course, *args, **kwargs):  # pylint: disable=arguments-differ
         course_updates_block = get_course_info_section_block(request, request.user, course, 'updates')
         update_items = get_course_update_items(course_updates_block)
 
@@ -101,7 +101,7 @@ class CourseHandoutsList(generics.ListAPIView):
     """
 
     @mobile_course_access()
-    def list(self, request, course, *args, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def list(self, request, course, *args, **kwargs):  # pylint: disable=arguments-differ
         course_handouts_block = get_course_info_section_block(request, request.user, course, 'handouts')
         if course_handouts_block:
             if course_handouts_block.data == "<ol></ol>":

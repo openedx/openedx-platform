@@ -13,7 +13,7 @@ from cms.djangoapps.contentstore.utils import reverse_course_url
 from openedx.core.djangoapps.credit.api import get_credit_requirements
 from openedx.core.djangoapps.credit.models import CreditCourse
 from openedx.core.djangoapps.credit.signals.handlers import on_course_publish
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class CreditEligibilityTest(CourseTestCase):

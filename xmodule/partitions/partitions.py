@@ -31,28 +31,28 @@ class UserPartitionError(Exception):
     """
     Base Exception for when an error was found regarding user partitions.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NoSuchUserPartitionError(UserPartitionError):
     """
     Exception to be raised when looking up a UserPartition by its ID fails.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class NoSuchUserPartitionGroupError(UserPartitionError):
     """
     Exception to be raised when looking up a UserPartition Group by its ID fails.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class ReadOnlyUserPartitionError(UserPartitionError):
     """
     Exception to be raised when attempting to modify a read only partition.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class Group(namedtuple("Group", "id name")):
@@ -152,9 +152,9 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
         if not UserPartition.scheme_extensions:
             UserPartition.scheme_extensions = ExtensionManager(namespace=USER_PARTITION_SCHEME_NAMESPACE)
         try:
-            scheme = UserPartition.scheme_extensions[name].plugin  # lint-amnesty, pylint: disable=unsubscriptable-object
+            scheme = UserPartition.scheme_extensions[name].plugin  # pylint: disable=unsubscriptable-object
         except KeyError:
-            raise UserPartitionError(f"Unrecognized scheme '{name}'")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise UserPartitionError(f"Unrecognized scheme '{name}'")  # pylint: disable=raise-missing-from  # noqa: B904
         scheme.name = name
         return scheme
 
@@ -216,7 +216,7 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
             raise TypeError(f"UserPartition dict {value} has unrecognized scheme {scheme_id}")
 
         if getattr(scheme, 'read_only', False):
-            raise ReadOnlyUserPartitionError(f"UserPartition dict {value} uses scheme {scheme_id} which is read only")  # lint-amnesty, pylint: disable=line-too-long
+            raise ReadOnlyUserPartitionError(f"UserPartition dict {value} uses scheme {scheme_id} which is read only")  # pylint: disable=line-too-long
 
         if hasattr(scheme, "create_user_partition"):
             return scheme.create_user_partition(
@@ -259,7 +259,7 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
             )
         )
 
-    def access_denied_message(self, block_key, user, user_group, allowed_groups):  # lint-amnesty, pylint: disable=unused-argument
+    def access_denied_message(self, block_key, user, user_group, allowed_groups):  # pylint: disable=unused-argument
         """
         Return a message that should be displayed to the user when they are not allowed to access
         content managed by this partition, or None if there is no applicable message.
@@ -274,7 +274,7 @@ class UserPartition(namedtuple("UserPartition", "id name description groups sche
         """
         return None
 
-    def access_denied_fragment(self, block, user, user_group, allowed_groups):  # lint-amnesty, pylint: disable=unused-argument
+    def access_denied_fragment(self, block, user, user_group, allowed_groups):  # pylint: disable=unused-argument
         """
         Return an html fragment that should be displayed to the user when they are not allowed to access
         content managed by this partition, or None if there is no applicable message.

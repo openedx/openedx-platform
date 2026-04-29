@@ -158,7 +158,7 @@ def send_user_notification_callback(sender, **kwargs):  # pylint: disable=unused
 
     try:
         user.email_user(subject, message, studio_request_email)
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         log.warning("Unable to send course creator status e-mail to %s", user.email)
 
 

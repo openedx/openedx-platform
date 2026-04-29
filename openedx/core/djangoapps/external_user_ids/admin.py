@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 import csv
 from logging import getLogger
 
@@ -25,7 +25,7 @@ class CsvImportForm(forms.Form):
 
 
 @admin.register(ExternalId)
-class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ExternalIdAdmin(admin.ModelAdmin):  # pylint: disable=missing-class-docstring
     change_list_template = 'admin/external_user_ids/generate_external_user_ids.html'
     list_display = ('user', 'external_user_id', 'external_id_type')
     template = 'openedx/core/djangoapps/external_user_ids/templates/admin/generate_external_ids_template.html'
@@ -47,7 +47,7 @@ class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missin
             f'External IDs already exist for: {existing_id}\n'
         )
 
-    def process_generate_ids_request(self, user_id_list, id_type, request, redirect_url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def process_generate_ids_request(self, user_id_list, id_type, request, redirect_url):  # pylint: disable=missing-function-docstring
         created_id_list = []
         existing_id = []
 
@@ -55,7 +55,7 @@ class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missin
             id__in=user_id_list
         )
         for user in user_list:
-            new_external_id, created = ExternalId.objects.get_or_create(  # lint-amnesty, pylint: disable=unused-variable
+            new_external_id, created = ExternalId.objects.get_or_create(  # pylint: disable=unused-variable
                 user=user,
                 external_id_type=id_type,
             )
@@ -83,7 +83,7 @@ class ExternalIdAdmin(admin.ModelAdmin):  # lint-amnesty, pylint: disable=missin
             context
         )
 
-    def generate_ids_form(self, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def generate_ids_form(self, request):  # pylint: disable=missing-function-docstring
         if request.method == 'POST':
             redirect_url = reverse(
                 'admin:external_user_ids_externalid_changelist',

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import unittest
 from unittest.mock import Mock
@@ -90,7 +90,7 @@ class _HtmlBlockCourseApiTestCaseBase(TestCase):
         assert html in rendered
 
 
-class _HtmlBlockSubstitutionTestCaseBase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class _HtmlBlockSubstitutionTestCaseBase(TestCase):  # pylint: disable=missing-class-docstring
 
     __test__ = False
 

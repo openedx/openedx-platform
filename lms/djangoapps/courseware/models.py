@@ -20,7 +20,7 @@ import logging
 from config_models.models import ConfigurationModel
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from django.db.models.signals import post_save
 from django.utils.translation import gettext_lazy as _
@@ -166,7 +166,7 @@ class StudentModule(models.Model):
         return module_states
 
     @classmethod
-    def save_state(cls, student, course_id, module_state_key, defaults):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def save_state(cls, student, course_id, module_state_key, defaults):  # pylint: disable=missing-function-docstring
         if not student.is_authenticated:
             return
         else:
@@ -339,7 +339,7 @@ class XBlockFieldBase(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     modified = models.DateTimeField(auto_now=True, db_index=True)
 
-    def __str__(self):  # lint-amnesty, pylint: disable=invalid-str-returned
+    def __str__(self):  # pylint: disable=invalid-str-returned
         keys = [field.name for field in self._meta.get_fields() if field.name not in ('created', 'modified')]
         return HTML('{}<{!r}').format(
             HTML(self.__class__.__name__),
@@ -347,7 +347,7 @@ class XBlockFieldBase(models.Model):
         )
 
 
-class XModuleUserStateSummaryField(XBlockFieldBase):  # lint-amnesty, pylint: disable=model-no-explicit-unicode
+class XModuleUserStateSummaryField(XBlockFieldBase):  # pylint: disable=model-no-explicit-unicode
     """
     Stores data set in the Scope.user_state_summary scope by an xblock field
     """
@@ -360,7 +360,7 @@ class XModuleUserStateSummaryField(XBlockFieldBase):  # lint-amnesty, pylint: di
     usage_id = UsageKeyField(max_length=255, db_index=True)
 
 
-class XModuleStudentPrefsField(XBlockFieldBase):  # lint-amnesty, pylint: disable=model-no-explicit-unicode
+class XModuleStudentPrefsField(XBlockFieldBase):  # pylint: disable=model-no-explicit-unicode
     """
     Stores data set in the Scope.preferences scope by an xmodule field
     """
@@ -375,7 +375,7 @@ class XModuleStudentPrefsField(XBlockFieldBase):  # lint-amnesty, pylint: disabl
     student = models.ForeignKey(User, db_index=True, on_delete=models.CASCADE)  # noqa: DJ012
 
 
-class XModuleStudentInfoField(XBlockFieldBase):  # lint-amnesty, pylint: disable=model-no-explicit-unicode
+class XModuleStudentInfoField(XBlockFieldBase):  # pylint: disable=model-no-explicit-unicode
     """
     Stores data set in the Scope.preferences scope by an xmodule field
     """

@@ -49,7 +49,7 @@ class LTIAuthBackend(BaseAuth):
         # Set a auth_entry here so we don't have to receive that as a custom parameter
         self.strategy.session_setdefault('auth_entry', 'login')
 
-        if not validated_lti_params:  # lint-amnesty, pylint: disable=no-else-raise
+        if not validated_lti_params:  # pylint: disable=no-else-raise
             self.strategy.session_set(LTI_PARAMS_KEY, None)
             raise AuthFailed(self, "LTI parameters could not be validated.")
         else:

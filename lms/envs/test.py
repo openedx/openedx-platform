@@ -23,7 +23,7 @@ from openedx.core.lib.derived import derive_settings
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
 from openedx.core.lib.tempdir import mkdtemp_clean
 from xmodule.modulestore.modulestore_settings import (
-    update_module_store_settings,  # lint-amnesty, pylint: disable=wrong-import-order
+    update_module_store_settings,  # pylint: disable=wrong-import-order
 )
 
 from .common import *  # noqa: F403

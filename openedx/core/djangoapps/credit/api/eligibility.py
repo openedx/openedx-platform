@@ -80,7 +80,7 @@ def set_credit_requirements(course_key, requirements):
     try:
         credit_course = CreditCourse.get_credit_course(course_key=course_key)
     except CreditCourse.DoesNotExist:
-        raise InvalidCreditCourse()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise InvalidCreditCourse()  # pylint: disable=raise-missing-from  # noqa: B904
 
     old_requirements = CreditRequirement.get_course_requirements(course_key=course_key)
     requirements_to_disable = _get_requirements_to_disable(old_requirements, requirements)

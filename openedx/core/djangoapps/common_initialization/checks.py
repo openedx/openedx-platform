@@ -12,7 +12,7 @@ from django.core.checks import Error, Tags, register
 
 
 @register(Tags.compatibility)
-def validate_lms_root_url_setting(app_configs, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def validate_lms_root_url_setting(app_configs, **kwargs):  # pylint: disable=unused-argument
     """
     Validates the LMS_ROOT_URL setting.
     """
@@ -28,7 +28,7 @@ def validate_lms_root_url_setting(app_configs, **kwargs):  # lint-amnesty, pylin
 
 
 @register(Tags.compatibility)
-def validate_marketing_site_setting(app_configs, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def validate_marketing_site_setting(app_configs, **kwargs):  # pylint: disable=unused-argument
     """
     Validates marketing site related settings.
     """

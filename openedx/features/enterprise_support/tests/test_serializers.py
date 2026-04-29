@@ -19,7 +19,7 @@ class EnterpriseCourseEnrollmentSerializerTests(TestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         enterprise_customer_user = EnterpriseCustomerUserFactory()
         enterprise_course_enrollment = EnterpriseCourseEnrollmentFactory(
             enterprise_customer_user=enterprise_customer_user

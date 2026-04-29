@@ -1,7 +1,7 @@
 """
 Module to put all pytest hooks that modify pytest behaviour
 """
-import io  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import io  # pylint: disable=unused-import  # noqa: F401
 import json
 import os
 

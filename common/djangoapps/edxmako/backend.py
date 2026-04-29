@@ -45,7 +45,7 @@ class Mako(BaseEngine):
             return Template(template_code)
         except MakoException:
             message = text_error_template().render()
-            raise TemplateSyntaxError(message)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise TemplateSyntaxError(message)  # pylint: disable=raise-missing-from  # noqa: B904
 
     def get_template(self, template_name):
         """
@@ -55,7 +55,7 @@ class Mako(BaseEngine):
         try:
             return Template(lookup_template(self.namespace, template_name), engine=self)
         except TopLevelLookupException:
-            raise TemplateDoesNotExist(template_name)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise TemplateDoesNotExist(template_name)  # pylint: disable=raise-missing-from  # noqa: B904
 
     @cached_property
     def template_context_processors(self):

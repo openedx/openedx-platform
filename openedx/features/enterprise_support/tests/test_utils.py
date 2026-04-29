@@ -48,9 +48,9 @@ from openedx.features.enterprise_support.utils import (
     update_third_party_auth_context_for_enterprise,
 )
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -612,7 +612,7 @@ class TestCourseAccessed(SharedModuleStoreTestCase, CompletionWaffleTestMixin):
             cls.course = cls.create_test_course()
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         """Set up and enroll our fake user in the course."""
         cls.user = UserFactory(password=TEST_PASSWORD)
         CourseEnrollment.enroll(cls.user, cls.course.id)

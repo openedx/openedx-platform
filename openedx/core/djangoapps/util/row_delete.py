@@ -62,7 +62,7 @@ def delete_rows(model_mgr,
     # The "as id" below fools Django raw query into thinking the primary key is being queried.
     # It's necessary because Django will throw an exception if the raw SQL does not query the primary key.
     min_max_ids = model_mgr.raw(
-        f'SELECT MIN({primary_id_name}) as id, MAX({primary_id_name}) as max_id FROM {table_name}'  # lint-amnesty, pylint: disable=duplicate-string-formatting-argument
+        f'SELECT MIN({primary_id_name}) as id, MAX({primary_id_name}) as max_id FROM {table_name}'  # pylint: disable=duplicate-string-formatting-argument
     )[0]
     min_id = min_max_ids.id
     max_id = min_max_ids.max_id
@@ -81,7 +81,7 @@ def delete_rows(model_mgr,
         log.info("Deleting around %s rows between ids %s and %s...", deletions_now, lower_id, upper_id)
         with transaction.atomic():
             # xss-lint: disable=python-wrap-html
-            delete_sql = 'DELETE FROM {} WHERE {} >= {} AND {} < {}'.format(  # lint-amnesty, pylint: disable=duplicate-string-formatting-argument  # noqa: UP032
+            delete_sql = 'DELETE FROM {} WHERE {} >= {} AND {} < {}'.format(  # pylint: disable=duplicate-string-formatting-argument  # noqa: UP032
                 table_name, primary_id_name, lower_id, primary_id_name, upper_id
             )
             log.info(delete_sql)
@@ -113,7 +113,7 @@ class BaseDeletionCommand(BaseCommand):
             '--chunk_size',
             default=self.DEFAULT_CHUNK_SIZE,
             type=int,
-            help='Maximum number of rows to delete in each DB transaction. Choose this value carefully to avoid DB outages!'  # lint-amnesty, pylint: disable=line-too-long
+            help='Maximum number of rows to delete in each DB transaction. Choose this value carefully to avoid DB outages!'  # pylint: disable=line-too-long
         )
         parser.add_argument(
             '--sleep_between',

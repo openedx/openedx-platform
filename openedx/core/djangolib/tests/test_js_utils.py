@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=bad-option-value, unicode-format-string
+# pylint: disable=bad-option-value, unicode-format-string
 """
 Tests for js_utils.py
 """
@@ -30,7 +30,7 @@ class TestJSUtils(TestCase):
         A test encoder that is used to prove that the encoder does its job before the escaping.
         """
         # pylint: disable=method-hidden
-        def default(self, noDefaultEncodingObj):  # lint-amnesty, pylint: disable=arguments-differ
+        def default(self, noDefaultEncodingObj):  # pylint: disable=arguments-differ
             return noDefaultEncodingObj.value.replace("<script>", "sample-encoder-was-here")
 
     def test_dump_js_escaped_json_escapes_unsafe_html(self):

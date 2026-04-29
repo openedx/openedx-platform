@@ -101,7 +101,7 @@ class ExperimentUtilsTests(ModuleStoreTestCase, TestCase):
     def test_price_and_sku_from_course(self):
         entitlements = [self.entitlement_a]
         course_a = {'key': 'UQx+ENGYCAPx', 'entitlements': entitlements}
-        courses = [course_a]  # lint-amnesty, pylint: disable=redefined-outer-name
+        courses = [course_a]  # pylint: disable=redefined-outer-name
 
         price, skus = get_program_price_and_skus(courses)
         expected_price = '$199.23'
@@ -114,7 +114,7 @@ class ExperimentUtilsTests(ModuleStoreTestCase, TestCase):
         course_runs = [self.course_run_a]
         course_a = {'key': 'UQx+ENGY1x', 'course_runs': course_runs}
         course_b = {'key': 'UQx+ENGYCAPx', 'entitlements': entitlements}
-        courses = [course_a, course_b]  # lint-amnesty, pylint: disable=redefined-outer-name
+        courses = [course_a, course_b]  # pylint: disable=redefined-outer-name
 
         price, skus = get_program_price_and_skus(courses)
         expected_price = '$285.23'

@@ -26,9 +26,9 @@ class TestMobilePlatform(TestCase):
         ("edX/org.test-domain.mobile (2.26.3; OS Version 9.2 (Build 13C75))", "iOS", "2.26.3"),
         ("Dalvik/2.1.0 (Linux; U; Android 5.1; Nexus 5 Build/LMY47I) edX/org.edx.mobile/1.1.1", "Android", "1.1.1"),
         ("Dalvik/2.1.0 (Linux; U; Android 5.1; Nexus 5 Build/LMY47I) edX/org.edx.mobile/3.3.3.X", "Android", "3.3.3.X"),
-        ("Dalvik/2.1.0 (Linux; U; Android 9; MI 6 MIUI/V11.0.3.0.PCAMIXM) edX/org.edx.mobile/2.17.1", "Android", "2.17.1"),  # lint-amnesty, pylint: disable=line-too-long
-        ("Dalvik/2.1.0 (Linux; U; Android 9; JKM-AL00a Build/HUAWEIJKM-AL00a) edX/org.edx.mobile/2.8.1", "Android", "2.8.1"),  # lint-amnesty, pylint: disable=line-too-long
-        ("Dalvik/2.1.0 (Linux; U; Android 8.1.0; CPH1803 Build/OPM1.171019.026) edX/org.edx.mobile/2.18.1", "Android", "2.18.1"),  # lint-amnesty, pylint: disable=line-too-long
+        ("Dalvik/2.1.0 (Linux; U; Android 9; MI 6 MIUI/V11.0.3.0.PCAMIXM) edX/org.edx.mobile/2.17.1", "Android", "2.17.1"),  # pylint: disable=line-too-long
+        ("Dalvik/2.1.0 (Linux; U; Android 9; JKM-AL00a Build/HUAWEIJKM-AL00a) edX/org.edx.mobile/2.8.1", "Android", "2.8.1"),  # pylint: disable=line-too-long
+        ("Dalvik/2.1.0 (Linux; U; Android 8.1.0; CPH1803 Build/OPM1.171019.026) edX/org.edx.mobile/2.18.1", "Android", "2.18.1"),  # pylint: disable=line-too-long
     )
     @ddt.unpack
     def test_platform_instance(self, user_agent, platform_name, version):

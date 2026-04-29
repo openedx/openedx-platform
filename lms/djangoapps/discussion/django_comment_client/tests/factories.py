@@ -1,10 +1,10 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from factory.django import DjangoModelFactory
 
 from openedx.core.djangoapps.django_comment_common.models import Permission, Role
 
 
-class RoleFactory(DjangoModelFactory):  # lint-amnesty, pylint: disable=missing-class-docstring
+class RoleFactory(DjangoModelFactory):  # pylint: disable=missing-class-docstring
     class Meta:
         model = Role
 

@@ -8,7 +8,7 @@ from opaque_keys.edx.keys import CourseKey
 from lms.djangoapps.bulk_email.models import Optout
 
 
-class CourseEmailOptout(Policy):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEmailOptout(Policy):  # pylint: disable=missing-class-docstring
 
     def check(self, message):
         course_ids = message.context.get('course_ids')

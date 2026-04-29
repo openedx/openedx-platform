@@ -12,7 +12,7 @@ import ddt
 import pytest
 from celery import Task
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db import models
 from django.test.utils import override_settings
 from edx_toggles.toggles.testutils import override_waffle_flag
@@ -31,9 +31,9 @@ from openedx.core.djangoapps.discussions.config.waffle import ENABLE_NEW_STRUCTU
 from openedx.core.djangoapps.discussions.models import DiscussionsConfiguration, Provider
 from openedx.core.djangoapps.embargo.models import Country, CountryAccessRule, RestrictedCourse
 from xmodule.modulestore import ModuleStoreEnum
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import TEST_DATA_SPLIT_MODULESTORE, ModuleStoreTestCase
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -147,7 +147,7 @@ class ExportLibraryTestCase(LibraryTestCase):
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
-class RerunCourseTaskTestCase(CourseTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class RerunCourseTaskTestCase(CourseTestCase):  # pylint: disable=missing-class-docstring
 
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
@@ -261,7 +261,7 @@ class CheckBrokenLinksTaskTest(ModuleStoreTestCase):
     """Tests for CheckBrokenLinksTask"""
     def setUp(self):
         super().setUp()
-        self.store = modulestore()._get_modulestore_by_type(ModuleStoreEnum.Type.mongo)  # lint-amnesty, pylint: disable=protected-access
+        self.store = modulestore()._get_modulestore_by_type(ModuleStoreEnum.Type.mongo)  # pylint: disable=protected-access
         self.test_course = CourseFactory.create(
             org="test", course="course1", display_name="run1"
         )

@@ -19,7 +19,7 @@ class TestXBlock(XBlock):
     """
     An empty Xblock, to be used, when creating a block with mixins.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @ddt.ddt

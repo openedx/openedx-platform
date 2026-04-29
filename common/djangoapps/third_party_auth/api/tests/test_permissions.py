@@ -26,7 +26,7 @@ class ThirdPartyAuthPermissionTest(TestCase):
         permission_classes = (TPA_PERMISSIONS,)
         required_scopes = ['tpa:read']
 
-        def get(self, request, provider_id=None):  # lint-amnesty, pylint: disable=unused-argument
+        def get(self, request, provider_id=None):  # pylint: disable=unused-argument
             return Response(data="Success")
 
     def _create_user(self, is_superuser=False, is_staff=False):

@@ -476,7 +476,7 @@ def create_library(
             ref.learning_package = learning_package
             ref.save()
     except IntegrityError:
-        raise LibraryAlreadyExists(slug)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise LibraryAlreadyExists(slug)  # pylint: disable=raise-missing-from  # noqa: B904
 
     # .. event_implemented_name: CONTENT_LIBRARY_CREATED
     # .. event_type: org.openedx.content_authoring.content_library.created.v1

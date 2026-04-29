@@ -30,9 +30,9 @@ from lms.djangoapps.certificates.tests.factories import (
 )
 from lms.djangoapps.grades.api import CourseGradeFactory
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

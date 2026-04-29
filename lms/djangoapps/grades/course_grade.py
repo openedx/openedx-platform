@@ -11,7 +11,7 @@ from django.conf import settings
 from lazy import lazy
 
 from openedx.core.lib.grade_utils import round_away_from_zero
-from xmodule import block_metadata_utils  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import block_metadata_utils  # pylint: disable=wrong-import-order
 
 from .scores import compute_percent
 from .subsection_grade import ZeroSubsectionGrade
@@ -299,7 +299,7 @@ class CourseGrade(CourseGradeBase):
         return self
 
     @lazy
-    def attempted(self):  # lint-amnesty, pylint: disable=invalid-overridden-method
+    def attempted(self):  # pylint: disable=invalid-overridden-method
         """
         Returns whether any of the subsections in this course
         have been attempted by the student.

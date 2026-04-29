@@ -46,4 +46,4 @@ def parse_course_keys(course_key_strings):
     try:
         return [CourseKey.from_string(course_key_string) for course_key_string in course_key_strings]
     except InvalidKeyError as error:
-        raise CommandError(f'Invalid key specified: {str(error)}')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CommandError(f'Invalid key specified: {str(error)}')  # pylint: disable=raise-missing-from  # noqa: B904

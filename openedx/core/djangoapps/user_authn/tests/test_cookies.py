@@ -35,7 +35,7 @@ class CookieTests(TestCase):
         self.user = UserFactory.create()
         self.user.profile = UserProfileFactory.create(user=self.user)
         self.user.profile.profile_image_uploaded_at = TEST_PROFILE_IMAGE_UPLOAD_DT
-        self.user.profile.save()  # lint-amnesty, pylint: disable=no-member
+        self.user.profile.save()  # pylint: disable=no-member
         self.request = RequestFactory().get('/')
         self.request.user = self.user
         self.request.session = self._get_stub_session()

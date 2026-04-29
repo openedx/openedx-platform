@@ -22,21 +22,21 @@ from xblock.django.request import DjangoWebobRequest
 from common.djangoapps.student.tests.factories import UserFactory
 from common.test.utils import normalize_repr
 from openedx.core.djangoapps.contentserver.caching import del_cached_content
-from openedx.core.djangoapps.video_config.transcripts_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.video_config.transcripts_utils import (  # pylint: disable=wrong-import-order
     Transcript,
     edxval_api,
     get_transcript,
     subs_filename,
 )
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 # noinspection PyUnresolvedReferences
 from xmodule.tests.helpers import override_descriptor_system  # pylint: disable=unused-import  # noqa: F401
-from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
 from xmodule.x_module import STUDENT_VIEW
 
 from .helpers import BaseTestXmodule
@@ -56,7 +56,7 @@ def _create_srt_file(content=None):
     """
     content = content or SRT_content
 
-    srt_file = tempfile.NamedTemporaryFile(suffix=".srt")  # lint-amnesty, pylint: disable=consider-using-with
+    srt_file = tempfile.NamedTemporaryFile(suffix=".srt")  # pylint: disable=consider-using-with
     srt_file.content_type = 'application/x-subrip; charset=utf-8'
     srt_file.write(content.encode('utf-8'))
     srt_file.seek(0)
@@ -100,7 +100,7 @@ def _create_file(content=''):
     """
     Create temporary subs_somevalue.srt.sjson file.
     """
-    sjson_file = tempfile.NamedTemporaryFile(prefix="subs_", suffix=".srt.sjson")  # lint-amnesty, pylint: disable=consider-using-with
+    sjson_file = tempfile.NamedTemporaryFile(prefix="subs_", suffix=".srt.sjson")  # pylint: disable=consider-using-with
     sjson_file.content_type = 'application/json'
     sjson_file.write(textwrap.dedent(content).encode('utf-8'))
     sjson_file.seek(0)
@@ -112,7 +112,7 @@ def _upload_sjson_file(subs_file, location, default_filename='subs_{}.srt.sjson'
     _upload_file(subs_file, location, filename)
 
 
-def _upload_file(subs_file, location, filename):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _upload_file(subs_file, location, filename):  # pylint: disable=missing-function-docstring
     mime_type = subs_file.content_type
     content_location = StaticContent.compute_location(
         location.course_key, filename
@@ -259,7 +259,7 @@ class TestVideo(BaseTestVideoXBlock):
 
 
 @ddt.ddt
-class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test video handler that provide available translations info.
 
@@ -416,7 +416,7 @@ class TestTranscriptAvailableTranslationsDispatch(TestVideo):  # lint-amnesty, p
 
 
 @ddt.ddt
-class TestTranscriptAvailableTranslationsBumperDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestTranscriptAvailableTranslationsBumperDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test video handler that provide available translations info.
 
@@ -480,7 +480,7 @@ class TestTranscriptAvailableTranslationsBumperDispatch(TestVideo):  # lint-amne
 
 
 @ddt.ddt
-class TestTranscriptDownloadDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestTranscriptDownloadDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test video handler that provide translation transcripts.
 
@@ -596,7 +596,7 @@ def _create_djangowebobrequest_object_for_url(url: str) -> DjangoWebobRequest:
 
 
 @ddt.ddt
-class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test video handler that provide translation transcripts.
 
@@ -868,7 +868,7 @@ class TestTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: 
         assert response.status_code == 404
 
 
-class TestStudioTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestStudioTranscriptTranslationGetDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test Studio video handler that provide translation transcripts.
 
@@ -924,7 +924,7 @@ class TestStudioTranscriptTranslationGetDispatch(TestVideo):  # lint-amnesty, py
 
 
 @ddt.ddt
-class TestStudioTranscriptTranslationPostDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestStudioTranscriptTranslationPostDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test Studio video handler that provide translation transcripts.
 
@@ -1030,7 +1030,7 @@ class TestStudioTranscriptTranslationPostDispatch(TestVideo):  # lint-amnesty, p
 
 
 @ddt.ddt
-class TestStudioTranscriptTranslationDeleteDispatch(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestStudioTranscriptTranslationDeleteDispatch(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Test studio video handler that provide translation transcripts.
 
@@ -1146,7 +1146,7 @@ class TestStudioTranscriptTranslationDeleteDispatch(TestVideo):  # lint-amnesty,
 
         # sub should not be empy
         assert not self.block.sub == ''
-        # lint-amnesty, pylint: disable=wrong-assert-type
+        # pylint: disable=wrong-assert-type
 
         # upload and verify that srt file exists in assets
         _upload_file(self.SRT_FILE, self.block.location, sub_file_name)
@@ -1158,11 +1158,11 @@ class TestStudioTranscriptTranslationDeleteDispatch(TestVideo):  # lint-amnesty,
 
         # verify that sub is empty and transcript is deleted also
         assert self.block.sub == ''
-        # lint-amnesty, pylint: disable=wrong-assert-type
+        # pylint: disable=wrong-assert-type
         assert not _check_asset(self.block.location, sub_file_name)
 
 
-class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestGetTranscript(TestVideo):  # pylint: disable=test-inherits-tests
     """
     Make sure that `get_transcript` method works correctly
     """
@@ -1311,7 +1311,7 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         self.srt_file.seek(0)
         _upload_file(self.srt_file, self.block.location, "塞.srt")
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        transcripts = self.block.get_transcripts_info()  # pylint: disable=unused-variable  # noqa: F841
         text, filename, mime_type = get_transcript(self.block)
         expected_text = textwrap.dedent("""
         0
@@ -1328,7 +1328,7 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         _upload_sjson_file(good_sjson, self.block.location)
         self.block.sub = _get_subs_id(good_sjson.name)
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        transcripts = self.block.get_transcripts_info()  # pylint: disable=unused-variable  # noqa: F841
         error_transcript = {"start": [], "end": [], "text": ["An error occured obtaining the transcript."]}
         content, _, _ = get_transcript(self.block)
         assert error_transcript["text"][0] in content
@@ -1350,6 +1350,6 @@ class TestGetTranscript(TestVideo):  # lint-amnesty, pylint: disable=test-inheri
         _upload_sjson_file(good_sjson, self.block.location)
         self.block.sub = _get_subs_id(good_sjson.name)
 
-        transcripts = self.block.get_transcripts_info()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        transcripts = self.block.get_transcripts_info()  # pylint: disable=unused-variable  # noqa: F841
         with pytest.raises(KeyError):
             get_transcript(self.block)

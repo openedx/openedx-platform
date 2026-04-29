@@ -22,15 +22,15 @@ from openedx.core.djangoapps.course_groups.constants import (  # pylint: disable
     RANDOM_SCHEME,
 )
 from openedx.core.djangoapps.course_groups.partition_scheme import get_cohorted_user_partition
-from xmodule.partitions.partitions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import (  # pylint: disable=wrong-import-order
     MINIMUM_UNUSED_PARTITION_ID,
     ReadOnlyUserPartitionError,
     UserPartition,
 )
 from xmodule.partitions.partitions_service import (
-    get_all_partitions_for_course,  # lint-amnesty, pylint: disable=wrong-import-order
+    get_all_partitions_for_course,  # pylint: disable=wrong-import-order
 )
-from xmodule.split_test_block import get_split_user_partitions  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.split_test_block import get_split_user_partitions  # pylint: disable=wrong-import-order
 
 MINIMUM_GROUP_ID = MINIMUM_UNUSED_PARTITION_ID
 
@@ -41,7 +41,7 @@ class GroupConfigurationsValidationError(Exception):
     """
     An error thrown when a group configurations input is invalid.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class GroupConfiguration:
@@ -67,7 +67,7 @@ class GroupConfiguration:
         try:
             configuration = json.loads(json_string.decode("utf-8"))
         except ValueError:
-            raise GroupConfigurationsValidationError(_("invalid JSON"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise GroupConfigurationsValidationError(_("invalid JSON"))  # pylint: disable=raise-missing-from  # noqa: B904
         configuration["version"] = UserPartition.VERSION
         return configuration
 
@@ -116,7 +116,7 @@ class GroupConfiguration:
         try:
             return UserPartition.from_json(self.configuration)
         except ReadOnlyUserPartitionError:
-            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise GroupConfigurationsValidationError(_("unable to load this type of group configuration"))  # pylint: disable=raise-missing-from  # noqa: B904
 
     @staticmethod
     def _get_usage_dict(course, unit, block, scheme_name=None):

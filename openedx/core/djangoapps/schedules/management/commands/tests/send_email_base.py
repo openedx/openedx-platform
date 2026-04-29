@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 import attr
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Max
 from edx_ace.channel import ChannelMap, ChannelType
 from edx_ace.test_utils import StubPolicy, patch_policies
@@ -82,7 +82,7 @@ ExperienceTest = namedtuple('ExperienceTest', 'experience offset email_sent')
 
 @ddt.ddt
 @freeze_time('2017-08-01 00:00:00', tz_offset=0, tick=True)
-class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # pylint: disable=missing-class-docstring
 
     __test__ = False
 
@@ -118,7 +118,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
         num_bins = self.task.num_bins
         return max_user_id + num_bins - (max_user_id % num_bins)
 
-    def _get_dates(self, offset=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_dates(self, offset=None):  # pylint: disable=missing-function-docstring
         current_day = _get_datetime_beginning_of_day(datetime.datetime.now(ZoneInfo("UTC")))
         offset = offset or self.expected_offsets[0]
         target_day = current_day + datetime.timedelta(days=offset)
@@ -133,7 +133,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
         templates_override[0]['OPTIONS']['string_if_invalid'] = "TEMPLATE WARNING - MISSING VARIABLE [%s]"
         return templates_override
 
-    def _schedule_factory(self, offset=None, **factory_kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _schedule_factory(self, offset=None, **factory_kwargs):  # pylint: disable=missing-function-docstring
         _, _, target_day, upgrade_deadline = self._get_dates(offset=offset)
         factory_kwargs.setdefault('start_date', target_day)
         factory_kwargs.setdefault('upgrade_deadline', upgrade_deadline)
@@ -198,7 +198,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
     @patch.object(resolvers, 'set_custom_attribute')
     def test_schedule_bin(self, schedule_count, mock_attribute, mock_ace):
         with patch.object(self.task, 'async_send_task') as mock_schedule_send:
-            current_day, offset, target_day, upgrade_deadline = self._get_dates()  # lint-amnesty, pylint: disable=unused-variable
+            current_day, offset, target_day, upgrade_deadline = self._get_dates()  # pylint: disable=unused-variable
             schedules = [
                 self._schedule_factory() for _ in range(schedule_count)
             ]
@@ -235,7 +235,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
             assert not mock_ace.send.called
 
     def test_no_course_overview(self):
-        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # lint-amnesty, pylint: disable=unused-variable
+        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # pylint: disable=unused-variable
         # Don't use CourseEnrollmentFactory since it creates a course overview
         enrollment = CourseEnrollment.objects.create(
             course_id=CourseKey.from_string('edX/toy/Not_2012_Fall'),
@@ -317,7 +317,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
 
         user1 = UserFactory.create(id=self._next_user_id())
         user2 = UserFactory.create(id=user1.id + self.task.num_bins)
-        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # lint-amnesty, pylint: disable=unused-variable
+        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # pylint: disable=unused-variable
 
         self._schedule_factory(
             enrollment__course__org=filtered_org,
@@ -343,7 +343,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
     @ddt.data(True, False)
     def test_course_end(self, has_course_ended):
         user1 = UserFactory.create(id=self._next_user_id())
-        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # lint-amnesty, pylint: disable=unused-variable
+        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # pylint: disable=unused-variable
 
         end_date_offset = -2 if has_course_ended else 2
         self._schedule_factory(
@@ -365,7 +365,7 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
     @patch.object(tasks, 'ace')
     def test_multiple_target_schedules(self, mock_ace):
         user = UserFactory.create()
-        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # lint-amnesty, pylint: disable=unused-variable
+        current_day, offset, target_day, upgrade_deadline = self._get_dates()  # pylint: disable=unused-variable
         num_courses = 3
         for course_index in range(num_courses):
             self._schedule_factory(
@@ -396,8 +396,8 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
             self._assert_template_for_offset(offset, message_count)
             self.clear_caches()
 
-    def _assert_template_for_offset(self, offset, message_count):  # lint-amnesty, pylint: disable=missing-function-docstring
-        current_day, offset, target_day, upgrade_deadline = self._get_dates(offset)  # lint-amnesty, pylint: disable=unused-variable
+    def _assert_template_for_offset(self, offset, message_count):  # pylint: disable=missing-function-docstring
+        current_day, offset, target_day, upgrade_deadline = self._get_dates(offset)  # pylint: disable=unused-variable
 
         user = UserFactory.create()
         for course_index in range(message_count):
@@ -454,8 +454,8 @@ class ScheduleSendEmailTestMixin(FilteredQueryCountMixin):  # lint-amnesty, pyli
 
             return mock_channel.deliver.mock_calls
 
-    def _check_if_email_sent_for_experience(self, test_config):  # lint-amnesty, pylint: disable=missing-function-docstring
-        current_day, offset, target_day, _ = self._get_dates(offset=test_config.offset)  # lint-amnesty, pylint: disable=unused-variable
+    def _check_if_email_sent_for_experience(self, test_config):  # pylint: disable=missing-function-docstring
+        current_day, offset, target_day, _ = self._get_dates(offset=test_config.offset)  # pylint: disable=unused-variable
 
         kwargs = {
             'offset': offset

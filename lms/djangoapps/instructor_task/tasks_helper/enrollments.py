@@ -9,7 +9,7 @@ from time import time
 
 from pytz import UTC
 
-from common.djangoapps.student.models import CourseEnrollment  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.models import CourseEnrollment  # pylint: disable=unused-import
 from lms.djangoapps.instructor_analytics.basic import (
     enrolled_students_features,
     list_inactive_enrolled_students,
@@ -18,7 +18,7 @@ from lms.djangoapps.instructor_analytics.basic import (
 from lms.djangoapps.instructor_analytics.csvs import format_dictlist
 
 from .runner import TaskProgress
-from .utils import upload_csv_to_report_store  # lint-amnesty, pylint: disable=unused-import
+from .utils import upload_csv_to_report_store  # pylint: disable=unused-import
 
 TASK_LOG = logging.getLogger('edx.celery.task')
 FILTERED_OUT_ROLES = ['staff', 'instructor', 'finance_admin', 'sales_admin']

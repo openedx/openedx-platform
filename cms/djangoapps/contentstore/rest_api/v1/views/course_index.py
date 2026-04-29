@@ -25,8 +25,8 @@ from cms.djangoapps.contentstore.xblock_storage_handlers.view_handlers import ge
 from cms.lib.xblock.upstream_sync import UpstreamLink
 from openedx.core.djangoapps.authz.decorators import LegacyAuthoringPermission, user_has_course_permission
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, verify_course_exists, view_auth_classes
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 
 @view_auth_classes(is_authenticated=True)

@@ -67,7 +67,7 @@ class CoursesTest(ModuleStoreTestCase):
         """
         Tests that get_cms_course_link_by_id and get_cms_block_link_by_id return the right thing
         """
-        self.course = CourseFactory.create(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.course = CourseFactory.create(  # pylint: disable=attribute-defined-outside-init
             org='org', number='num', display_name='name'
         )
 
@@ -328,7 +328,7 @@ class CoursesRenderTest(ModuleStoreTestCase):
             assert 'this module is temporarily unavailable' in course_about
 
 
-class CourseEnrollmentOpenTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CourseEnrollmentOpenTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self.now = datetime.datetime.now().replace(tzinfo=pytz.UTC)

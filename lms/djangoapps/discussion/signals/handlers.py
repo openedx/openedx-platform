@@ -48,7 +48,7 @@ def update_discussions_on_course_publish(sender, course_key, **kwargs):  # pylin
 
 @receiver(signals.comment_created)
 def send_discussion_email_notification(sender, user, post,
-                                       **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring, unused-argument
+                                       **kwargs):  # pylint: disable=missing-function-docstring, unused-argument
     current_site = get_current_site()
     if current_site is None:
         log.info('Discussion: No current site, not sending notification about post: %s.', post.id)
@@ -148,13 +148,13 @@ def create_message_context_for_reported_content(user, post, site, sender):
     return context
 
 
-def send_message(comment, site):  # lint-amnesty, pylint: disable=missing-function-docstring
+def send_message(comment, site):  # pylint: disable=missing-function-docstring
     context = create_message_context(comment, site)
     tasks.send_ace_message.apply_async(args=[context])
 
 
 def send_message_for_reported_content(user, post, site,
-                                      sender):  # lint-amnesty, pylint: disable=missing-function-docstring
+                                      sender):  # pylint: disable=missing-function-docstring
     context = create_message_context_for_reported_content(user, post, site, sender)
     tasks.send_ace_message_for_reported_content.apply_async(args=[context], countdown=120)
 

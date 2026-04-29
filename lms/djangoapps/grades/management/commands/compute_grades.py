@@ -11,7 +11,7 @@ from django.core.management.base import BaseCommand
 from lms.djangoapps.grades import tasks
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from openedx.core.lib.command_utils import get_mutually_exclusive_required_option, parse_course_keys
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             # This is a tuple to reduce memory consumption.
             # The dictionaries with their extra overhead will be created
             # and consumed one at a time.
-            for task_arg_tuple in tasks._course_task_args(course_key, **options):  # lint-amnesty, pylint: disable=protected-access
+            for task_arg_tuple in tasks._course_task_args(course_key, **options):  # pylint: disable=protected-access
                 all_args.append(task_arg_tuple)
 
         all_args.sort(key=lambda x: hashlib.md5(f'{x!r}'.encode('utf-8')).digest())  # noqa: UP012

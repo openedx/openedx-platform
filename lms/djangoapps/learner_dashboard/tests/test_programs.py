@@ -62,7 +62,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         super().setUpClass()
 
         cls.course = ModuleStoreCourseFactory()
-        course_run = CourseRunFactory(key=str(cls.course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(cls.course.id))  # pylint: disable=no-member
         course = CourseFactory(course_runs=[course_run])
 
         cls.first_program = ProgramFactory(courses=[course])
@@ -136,7 +136,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         self.create_programs_config()
         mock_get_programs.return_value = self.data
 
-        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # pylint: disable=no-member
 
         response = self.client.get(self.url)
         actual = load_serialized_data(response, 'programsData')
@@ -177,7 +177,7 @@ class TestProgramListing(ProgramsApiConfigMixin, SharedModuleStoreTestCase):
         self.create_programs_config()
         mock_get_programs.return_value = self.data
 
-        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        CourseEnrollmentFactory(user=self.user, course_id=self.course.id)  # pylint: disable=no-member
 
         response = self.client.get(self.url)
         actual = load_serialized_data(response, 'programsData')
@@ -204,14 +204,14 @@ class TestProgramDetails(ProgramsApiConfigMixin, CatalogIntegrationMixin, Shared
         super().setUpClass()
 
         modulestore_course = ModuleStoreCourseFactory()
-        course_run = CourseRunFactory(key=str(modulestore_course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(modulestore_course.id))  # pylint: disable=no-member
         course = CourseFactory(course_runs=[course_run])
 
         cls.program_data = ProgramFactory(uuid=cls.program_uuid, courses=[course])
         cls.pathway_data = PathwayFactory()
         cls.program_data['pathway_ids'] = [cls.pathway_data['id']]
         cls.pathway_data['program_uuids'] = [cls.program_data['uuid']]
-        del cls.pathway_data['programs']  # lint-amnesty, pylint: disable=unsupported-delete-operation
+        del cls.pathway_data['programs']  # pylint: disable=unsupported-delete-operation
 
     def setUp(self):
         super().setUp()

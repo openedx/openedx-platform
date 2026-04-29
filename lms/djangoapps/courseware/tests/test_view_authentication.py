@@ -167,7 +167,7 @@ class TestViewAuth(EnterpriseTestConsentRequired, ModuleStoreTestCase, LoginEnro
         )
         self.assert_request_status_code(302, url)
 
-    def login(self, user):  # lint-amnesty, pylint: disable=arguments-differ
+    def login(self, user):  # pylint: disable=arguments-differ
         return super().login(user.email, self.TEST_PASSWORD)
 
     def setUp(self):
@@ -557,14 +557,14 @@ class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
         self.content = BlockFactory(parent=self.course)
 
         self.normal_student = UserFactory()
-        self.beta_tester = BetaTesterFactory(course_key=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        self.beta_tester = BetaTesterFactory(course_key=self.course.id)  # pylint: disable=no-member
 
     @patch.dict('lms.djangoapps.courseware.access.settings.FEATURES', {'DISABLE_START_DATES': False})
     def test_course_beta_period(self):
         """
         Check that beta-test access works for courses.
         """
-        assert not self.course.has_started()  # lint-amnesty, pylint: disable=no-member
+        assert not self.course.has_started()  # pylint: disable=no-member
         self.assertCannotAccessCourse(self.normal_student, 'load', self.course)
         self.assertCanAccessCourse(self.beta_tester, 'load', self.course)
 
@@ -574,7 +574,7 @@ class TestBetatesterAccess(ModuleStoreTestCase, CourseAccessTestMixin):
         Check that beta-test access works for content.
         """
         # student user shouldn't see it
-        assert not has_access(self.normal_student, 'load', self.content, self.course.id)  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert not has_access(self.normal_student, 'load', self.content, self.course.id)  # pylint: disable=no-member, line-too-long
 
         # now the student should see it
-        assert has_access(self.beta_tester, 'load', self.content, self.course.id)  # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert has_access(self.beta_tester, 'load', self.content, self.course.id)  # pylint: disable=no-member, line-too-long

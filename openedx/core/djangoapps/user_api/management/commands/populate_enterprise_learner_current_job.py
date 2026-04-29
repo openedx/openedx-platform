@@ -67,7 +67,7 @@ class Command(BaseCommand):
         try:
             existing_user = User.objects.get(username=username)
         except ObjectDoesNotExist:
-            raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise errors.UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 
         existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
         return existing_user_profile
@@ -88,7 +88,7 @@ class Command(BaseCommand):
             user_profile.save()
 
             self.TOTAL_USERS_UPDATED += 1
-        except Exception:  # lint-amnesty, pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             LOGGER.exception('Could not update profile of user %s as %s.', username, current_job)
 
     def _populate_learner_current_job(self, response):
@@ -140,5 +140,5 @@ class Command(BaseCommand):
             self._populate_learner_profiles()
             LOGGER.info('Successfully populated current job of %s learner(s) from %s total learners.',
                         self.TOTAL_USERS_UPDATED, self.TOTAL_USERS_COUNT)
-        except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+        except Exception as err:  # pylint: disable=broad-except
             LOGGER.exception('Could not populate current job of learners. %s', err)

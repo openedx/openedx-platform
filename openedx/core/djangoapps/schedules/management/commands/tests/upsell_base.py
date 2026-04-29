@@ -18,7 +18,7 @@ from lms.djangoapps.courseware.models import DynamicUpgradeDeadlineConfiguration
 
 @ddt.ddt
 @freeze_time('2017-08-01 00:00:00', tz_offset=0, tick=True)
-class ScheduleUpsellTestMixin:  # lint-amnesty, pylint: disable=missing-class-docstring
+class ScheduleUpsellTestMixin:  # pylint: disable=missing-class-docstring
     UpsellTestCase = namedtuple('UpsellTestCase', 'set_deadline, deadline_offset, expect_upsell')
 
     def _setup_schedule_and_dates(self, set_deadline=True, deadline_offset=7):

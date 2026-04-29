@@ -7,7 +7,7 @@ import uuid
 from zoneinfo import ZoneInfo
 
 import factory
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from factory.fuzzy import FuzzyText
 
 from common.djangoapps.util.date_utils import to_timestamp

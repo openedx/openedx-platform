@@ -379,8 +379,8 @@ class TestInstructorEnrollmentStudentModule(SharedModuleStoreTestCase):
             org='course',
             run='id',
         )
-        cls.course_key = cls.course.location.course_key  # lint-amnesty, pylint: disable=no-member
-        with cls.store.bulk_operations(cls.course.id, emit_signals=False):  # lint-amnesty, pylint: disable=no-member
+        cls.course_key = cls.course.location.course_key  # pylint: disable=no-member
+        with cls.store.bulk_operations(cls.course.id, emit_signals=False):  # pylint: disable=no-member
             cls.chapter = BlockFactory.create(
                 category='chapter',
                 parent=cls.course,

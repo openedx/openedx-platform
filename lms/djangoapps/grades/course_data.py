@@ -5,7 +5,7 @@ Code used to get and cache the requested course-data
 
 from lms.djangoapps.course_blocks.api import get_course_blocks
 from openedx.core.djangoapps.content.block_structure.api import get_block_structure_manager
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .transformer import GradesTransformer
 
@@ -32,7 +32,7 @@ class CourseData:
         self._location = None
 
     @property
-    def course_key(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def course_key(self):  # pylint: disable=missing-function-docstring
         if not self._course_key:
             if self._course:
                 self._course_key = self._course.id
@@ -42,7 +42,7 @@ class CourseData:
         return self._course_key
 
     @property
-    def location(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def location(self):  # pylint: disable=missing-function-docstring
         if not self._location:
             structure = self.effective_structure
             if structure:
@@ -54,7 +54,7 @@ class CourseData:
         return self._location
 
     @property
-    def structure(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def structure(self):  # pylint: disable=missing-function-docstring
         if self._structure is None:
             self._structure = get_course_blocks(
                 self.user,
@@ -76,7 +76,7 @@ class CourseData:
         return self._course
 
     @property
-    def grading_policy_hash(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def grading_policy_hash(self):  # pylint: disable=missing-function-docstring
         structure = self.effective_structure
         if structure:
             return structure.get_transformer_block_field(
@@ -94,7 +94,7 @@ class CourseData:
         return getattr(course_block, 'course_version', None)
 
     @property
-    def edited_on(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def edited_on(self):  # pylint: disable=missing-function-docstring
         # get course block from structure only; subtree_edited_on field on modulestore's course block isn't optimized.
         structure = self.effective_structure
         if structure:
@@ -107,7 +107,7 @@ class CourseData:
         """
         return f'Course: course_key: {self.course_key}'
 
-    def full_string(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def full_string(self):  # pylint: disable=missing-function-docstring
         if self.effective_structure:
             return 'Course: course_key: {}, version: {}, edited_on: {}, grading_policy: {}'.format(  # noqa: UP032
                 self.course_key, self.version, self.edited_on, self.grading_policy_hash,

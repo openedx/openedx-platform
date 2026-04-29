@@ -65,7 +65,7 @@ def test_get_time_display_coerce():
     assert get_time_display(test_time_daylight, '%b %d %H:%M', coerce_tz="US/Pacific") == "Jul 12 08:03"
 
 
-class NamelessTZ(tzinfo):  # lint-amnesty, pylint: disable=abstract-method
+class NamelessTZ(tzinfo):  # pylint: disable=abstract-method
     """Static timezone for testing"""
 
     def utcoffset(self, _dt):

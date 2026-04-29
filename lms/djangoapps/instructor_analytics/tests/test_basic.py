@@ -4,7 +4,7 @@ Tests for instructor.basic
 
 
 import datetime
-import json  # lint-amnesty, pylint: disable=wrong-import-order
+import json  # pylint: disable=wrong-import-order
 import random
 from unittest.mock import MagicMock, Mock, patch
 
@@ -17,7 +17,7 @@ from opaque_keys.edx.locator import UsageKey
 from common.djangoapps.student.models import CourseEnrollment, CourseEnrollmentAllowed
 from common.djangoapps.student.tests.factories import InstructorFactory, UserFactory
 from lms.djangoapps.certificates.api import create_generated_certificate
-from lms.djangoapps.instructor_analytics.basic import (  # lint-amnesty, pylint: disable=unused-import
+from lms.djangoapps.instructor_analytics.basic import (  # pylint: disable=unused-import
     AVAILABLE_FEATURES,
     ENROLLMENT_FEATURES,
     PROFILE_FEATURES,
@@ -37,9 +37,9 @@ from lms.djangoapps.program_enrollments.tests.factories import ProgramEnrollment
 from openedx.core.djangoapps.course_groups.tests.helpers import CohortFactory
 from openedx.core.djangoapps.site_configuration.tests.factories import SiteConfigurationFactory
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 User = get_user_model()
 

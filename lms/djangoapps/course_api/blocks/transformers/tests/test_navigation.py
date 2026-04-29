@@ -13,11 +13,11 @@ from lms.djangoapps.course_api.blocks.transformers.navigation import BlockNaviga
 from openedx.core.djangoapps.content.block_structure.block_structure import BlockStructureModulestoreData
 from openedx.core.djangoapps.content.block_structure.factory import BlockStructureFactory
 from openedx.core.djangoapps.content.block_structure.tests.helpers import ChildrenMapTestMixin
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import SampleCourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import SampleCourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt

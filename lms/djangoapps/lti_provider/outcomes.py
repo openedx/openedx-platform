@@ -71,23 +71,23 @@ def generate_replace_result_xml(result_sourcedid, score):
     """
     # Pylint doesn't recognize members in the LXML module
     elem = ElementMaker(nsmap={None: 'http://www.imsglobal.org/services/ltiv1p1/xsd/imsoms_v1p0'})
-    xml = elem.imsx_POXEnvelopeRequest(  # lint-amnesty, pylint: disable=no-member
-        elem.imsx_POXHeader(  # lint-amnesty, pylint: disable=no-member
-            elem.imsx_POXRequestHeaderInfo(  # lint-amnesty, pylint: disable=no-member
-                elem.imsx_version('V1.0'),  # lint-amnesty, pylint: disable=no-member
-                elem.imsx_messageIdentifier(str(uuid.uuid4()))  # lint-amnesty, pylint: disable=no-member
+    xml = elem.imsx_POXEnvelopeRequest(  # pylint: disable=no-member
+        elem.imsx_POXHeader(  # pylint: disable=no-member
+            elem.imsx_POXRequestHeaderInfo(  # pylint: disable=no-member
+                elem.imsx_version('V1.0'),  # pylint: disable=no-member
+                elem.imsx_messageIdentifier(str(uuid.uuid4()))  # pylint: disable=no-member
             )
         ),
-        elem.imsx_POXBody(  # lint-amnesty, pylint: disable=no-member
-            elem.replaceResultRequest(  # lint-amnesty, pylint: disable=no-member
-                elem.resultRecord(  # lint-amnesty, pylint: disable=no-member
-                    elem.sourcedGUID(  # lint-amnesty, pylint: disable=no-member
-                        elem.sourcedId(result_sourcedid)  # lint-amnesty, pylint: disable=no-member
+        elem.imsx_POXBody(  # pylint: disable=no-member
+            elem.replaceResultRequest(  # pylint: disable=no-member
+                elem.resultRecord(  # pylint: disable=no-member
+                    elem.sourcedGUID(  # pylint: disable=no-member
+                        elem.sourcedId(result_sourcedid)  # pylint: disable=no-member
                     ),
-                    elem.result(  # lint-amnesty, pylint: disable=no-member
-                        elem.resultScore(  # lint-amnesty, pylint: disable=no-member
-                            elem.language('en'),  # lint-amnesty, pylint: disable=no-member
-                            elem.textString(str(score))  # lint-amnesty, pylint: disable=no-member
+                    elem.result(  # pylint: disable=no-member
+                        elem.resultScore(  # pylint: disable=no-member
+                            elem.language('en'),  # pylint: disable=no-member
+                            elem.textString(str(score))  # pylint: disable=no-member
                         )
                     )
                 )

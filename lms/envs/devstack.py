@@ -9,7 +9,7 @@ import logging
 from os.path import abspath, dirname, join
 from urllib.parse import urlparse
 
-# pylint: enable=unicode-format-string  # lint-amnesty, pylint: disable=bad-option-value
+# pylint: enable=unicode-format-string  # pylint: disable=bad-option-value
 #####################################################################
 from edx_django_utils.plugins import add_plugins
 
@@ -116,7 +116,7 @@ DEBUG_TOOLBAR_CONFIG = {
 }
 
 
-def should_show_debug_toolbar(request):  # lint-amnesty, pylint: disable=missing-function-docstring
+def should_show_debug_toolbar(request):  # pylint: disable=missing-function-docstring
     # We always want the toolbar on devstack unless running tests from another Docker container
     hostname = request.get_host()
     if hostname.startswith('edx.devstack.lms:') or hostname.startswith('lms.devstack.edx:'):

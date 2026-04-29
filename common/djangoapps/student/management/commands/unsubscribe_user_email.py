@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 reader = list(csv.DictReader(csv_file))
                 emails = [row.get('email') for row in reader]
         except FileNotFoundError as exc:
-            raise CommandError(f"Error: File not found due to exception - {exc}")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f"Error: File not found due to exception - {exc}")  # pylint: disable=raise-missing-from  # noqa: B904
         except csv.Error as exc:
             logger.exception(f"CSV error: {exc}")
         else:

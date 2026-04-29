@@ -571,7 +571,7 @@ def index_course(course_key: CourseKey, index_name: str | None = None) -> list:
 
 def rebuild_index(  # pylint: disable=too-many-statements
     status_cb: Callable[[str], None] | None = None, incremental=False
-) -> None:  # lint-amnesty
+) -> None:
     """
     Rebuild the Meilisearch index from scratch
     """

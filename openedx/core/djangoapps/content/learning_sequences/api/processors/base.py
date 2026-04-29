@@ -5,7 +5,7 @@ of adding new logic that manipulates the Course Outline for a given student.
 import logging
 from datetime import datetime
 
-from opaque_keys.edx.keys import CourseKey  # lint-amnesty, pylint: disable=unused-import
+from opaque_keys.edx.keys import CourseKey  # pylint: disable=unused-import
 
 from openedx.core import types
 
@@ -60,7 +60,7 @@ class OutlineProcessor:
         tens of milliseconds, even on courses with hundreds of learning
         sequences.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     def inaccessible_sequences(self, full_course_outline: CourseOutlineData):  # pylint: disable=unused-argument
         """

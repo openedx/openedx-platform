@@ -1,4 +1,4 @@
-"""  # lint-amnesty, pylint: disable=cyclic-import
+"""  # pylint: disable=cyclic-import
 Tests for the course grading API view
 """
 
@@ -1088,7 +1088,7 @@ class GradebookViewTest(GradebookViewTestBase):
                 assert status.HTTP_200_OK == resp.status_code
                 actual_data = dict(resp.data)
                 expected_page_size = page_size or CourseEnrollmentPagination.page_size
-                if expected_page_size > user_size:  # lint-amnesty, pylint: disable=consider-using-min-builtin
+                if expected_page_size > user_size:  # pylint: disable=consider-using-min-builtin
                     expected_page_size = user_size
                 assert len(actual_data['results']) == expected_page_size
 

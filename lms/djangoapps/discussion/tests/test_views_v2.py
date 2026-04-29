@@ -292,7 +292,7 @@ class ForumViewsUtilsMixin(MockForumApiMixin):
         self.set_mock_side_effect("get_user", make_user_callback())
 
 
-class SingleThreadTestCase(ModuleStoreTestCase, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleThreadTestCase(ModuleStoreTestCase, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     CREATE_USER = False
 
@@ -473,7 +473,7 @@ class SingleThreadTestCase(ModuleStoreTestCase, ForumViewsUtilsMixin):  # lint-a
             assert 'This is a private discussion. You do not have permissions to view this discussion' in html
 
 
-class SingleCohortedThreadTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleCohortedThreadTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):
@@ -485,7 +485,7 @@ class SingleCohortedThreadTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # l
         super().tearDownClass()
         super().disposeForumMocks()
 
-    def _create_mock_cohorted_thread(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _create_mock_cohorted_thread(self):  # pylint: disable=missing-function-docstring
         mock_text = "dummy content"
         mock_thread_id = "test_thread_id"
         self._configure_mock_responses(
@@ -544,7 +544,7 @@ class SingleCohortedThreadTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # l
         self.assertRegex(html, r'"group_name": "student_cohort"')  # noqa: PT009
 
 
-class SingleThreadAccessTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleThreadAccessTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):
@@ -556,7 +556,7 @@ class SingleThreadAccessTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # lin
         super().tearDownClass()
         super().disposeForumMocks()
 
-    def call_view(self, commentable_id, user, group_id, thread_group_id=None, pass_group_id=True):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def call_view(self, commentable_id, user, group_id, thread_group_id=None, pass_group_id=True):  # pylint: disable=missing-function-docstring
         thread_id = "test_thread_id"
         self._configure_mock_responses(
             course=self.course, text="dummy context", thread_id=thread_id, group_id=thread_group_id
@@ -648,7 +648,7 @@ class SingleThreadAccessTestCase(CohortedTestCase, ForumViewsUtilsMixin):  # lin
             assert views.TEAM_PERMISSION_MESSAGE == response.content.decode('utf-8')
 
 
-class SingleThreadGroupIdTestCase(CohortedTestCase, GroupIdAssertionMixinV2, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleThreadGroupIdTestCase(CohortedTestCase, GroupIdAssertionMixinV2, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
     function_name = "get_thread"
 
     @classmethod
@@ -661,7 +661,7 @@ class SingleThreadGroupIdTestCase(CohortedTestCase, GroupIdAssertionMixinV2, For
         super().tearDownClass()
         super().disposeForumMocks()
 
-    def call_view(self, commentable_id, user, group_id, pass_group_id=True, is_ajax=False):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def call_view(self, commentable_id, user, group_id, pass_group_id=True, is_ajax=False):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(
             course=self.course, text="dummy context", group_id=self.student_cohort.id
         )
@@ -702,7 +702,7 @@ class SingleThreadGroupIdTestCase(CohortedTestCase, GroupIdAssertionMixinV2, For
         )
 
 
-class SingleThreadContentGroupTestCase(UrlResetMixin, ContentGroupTestCase, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleThreadContentGroupTestCase(UrlResetMixin, ContentGroupTestCase, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
@@ -821,7 +821,7 @@ class SingleThreadContentGroupTestCase(UrlResetMixin, ContentGroupTestCase, Foru
         self.assert_can_access(self.beta_user, self.alpha_block.discussion_id, thread_id, True)
 
 
-class FollowedThreadsDiscussionGroupIdTestCase(CohortedTestCase, CohortedTopicGroupIdTestMixinV2, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class FollowedThreadsDiscussionGroupIdTestCase(CohortedTestCase, CohortedTopicGroupIdTestMixinV2, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
     function_name = "get_user_subscriptions"
 
     @classmethod
@@ -872,7 +872,7 @@ class FollowedThreadsDiscussionGroupIdTestCase(CohortedTestCase, CohortedTopicGr
         )
 
 
-class SingleThreadUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SingleThreadUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):  # pylint: disable=super-method-not-called
@@ -893,7 +893,7 @@ class SingleThreadUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, F
         CourseEnrollmentFactory(user=cls.student, course_id=cls.course.id)
 
     @patch('openedx.core.djangoapps.django_comment_common.comment_client.utils.requests.request', autospec=True)
-    def _test_unicode_data(self, text, mock_request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _test_unicode_data(self, text, mock_request):  # pylint: disable=missing-function-docstring
         thread_id = "test_thread_id"
         self._configure_mock_responses(course=self.course, text=text, thread_id=thread_id)
         request = RequestFactory().get("dummy_url")
@@ -961,7 +961,7 @@ class ForumFormDiscussionContentGroupTestCase(
 
     def call_view(
         self, user
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(
             course=self.course, text="dummy content", thread_list=self.thread_list
         )
@@ -1034,7 +1034,7 @@ class ForumFormDiscussionUnicodeTestCase(
 
     def _test_unicode_data(
         self, text
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(course=self.course, text=text)
         request = RequestFactory().get("dummy_url")
         request.user = self.student
@@ -1117,7 +1117,7 @@ class EnterpriseConsentTestCase(
             )
 
 
-class InlineDiscussionGroupIdTestCase(  # lint-amnesty, pylint: disable=missing-class-docstring
+class InlineDiscussionGroupIdTestCase(  # pylint: disable=missing-class-docstring
     CohortedTestCase,
     CohortedTopicGroupIdTestMixinV2,
     NonCohortedTopicGroupIdTestMixinV2,
@@ -1172,7 +1172,7 @@ class InlineDiscussionGroupIdTestCase(  # lint-amnesty, pylint: disable=missing-
 
 class InlineDiscussionContextTestCase(
         ModuleStoreTestCase, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()
@@ -1247,7 +1247,7 @@ class InlineDiscussionContextTestCase(
 
 class UserProfileDiscussionGroupIdTestCase(
     CohortedTestCase, CohortedTopicGroupIdTestMixinV2, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
     function_name = "get_user_active_threads"
 
     @classmethod
@@ -1429,7 +1429,7 @@ class UserProfileDiscussionGroupIdTestCase(
 @ddt.ddt
 class ForumDiscussionXSSTestCase(
         UrlResetMixin, ModuleStoreTestCase, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     @patch.dict("django.conf.settings.FEATURES", {"ENABLE_DISCUSSION_SERVICE": True})
     def setUp(self):
@@ -1509,7 +1509,7 @@ class ForumDiscussionXSSTestCase(
 
 class InlineDiscussionTestCase(
         ModuleStoreTestCase, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     def setUp(self):
         super().setUp()
@@ -1584,7 +1584,7 @@ class InlineDiscussionTestCase(
 
 class ForumDiscussionSearchUnicodeTestCase(
         SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):  # pylint: disable=super-method-not-called
@@ -1606,7 +1606,7 @@ class ForumDiscussionSearchUnicodeTestCase(
 
     def _test_unicode_data(
         self, text
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(course=self.course, text=text)
         data = {
             "ajax": 1,
@@ -1626,7 +1626,7 @@ class ForumDiscussionSearchUnicodeTestCase(
 
 class InlineDiscussionUnicodeTestCase(
         SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):  # pylint: disable=super-method-not-called
@@ -1649,7 +1649,7 @@ class InlineDiscussionUnicodeTestCase(
 
     def _test_unicode_data(
         self, text
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(course=self.course, text=text)
         request = RequestFactory().get("dummy_url")
         request.user = self.student
@@ -1665,7 +1665,7 @@ class InlineDiscussionUnicodeTestCase(
 
 class ForumFormDiscussionGroupIdTestCase(
     CohortedTestCase, CohortedTopicGroupIdTestMixinV2, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
     function_name = "get_user_threads"
 
     def call_view(
@@ -1717,7 +1717,7 @@ class ForumFormDiscussionGroupIdTestCase(
 
 class UserProfileTestCase(
         UrlResetMixin, ModuleStoreTestCase, ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     TEST_THREAD_TEXT = "userprofile-test-text"
     TEST_THREAD_ID = "userprofile-test-thread-id"
@@ -1746,7 +1746,7 @@ class UserProfileTestCase(
 
     def get_response(
         self, params, **headers
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(
             course=self.course,
             text=self.TEST_THREAD_TEXT,
@@ -1775,7 +1775,7 @@ class UserProfileTestCase(
 
     def check_html(
         self, **params
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         response = self.get_response(params)
         assert response.status_code == 200
         assert response["Content-Type"] == "text/html; charset=utf-8"
@@ -1793,7 +1793,7 @@ class UserProfileTestCase(
 
     def check_ajax(
         self, **params
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         response = self.get_response(params, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
         assert response.status_code == 200
         assert response["Content-Type"] == "application/json; charset=utf-8"
@@ -1955,7 +1955,7 @@ class FollowedThreadsUnicodeTestCase(
     SharedModuleStoreTestCase,
     UnicodeTestMixin,
     ForumViewsUtilsMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):
@@ -1976,7 +1976,7 @@ class FollowedThreadsUnicodeTestCase(
         cls.student = UserFactory.create()
         CourseEnrollmentFactory(user=cls.student, course_id=cls.course.id)
 
-    def _test_unicode_data(self, text):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _test_unicode_data(self, text):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(
             course=self.course,
             text=text,
@@ -1996,7 +1996,7 @@ class FollowedThreadsUnicodeTestCase(
         assert response_data['discussion_data'][0]['body'] == text
 
 
-class UserProfileUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UserProfileUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, ForumViewsUtilsMixin):  # pylint: disable=missing-class-docstring
 
     @classmethod
     def setUpClass(cls):
@@ -2017,7 +2017,7 @@ class UserProfileUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, Fo
         cls.student = UserFactory.create()
         CourseEnrollmentFactory(user=cls.student, course_id=cls.course.id)
 
-    def _test_unicode_data(self, text):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _test_unicode_data(self, text):  # pylint: disable=missing-function-docstring
         self._configure_mock_responses(course=self.course, text=text)
         request = RequestFactory().get("dummy_url")
         request.user = self.student
@@ -2031,7 +2031,7 @@ class UserProfileUnicodeTestCase(SharedModuleStoreTestCase, UnicodeTestMixin, Fo
         assert response_data['discussion_data'][0]['body'] == text
 
 
-class ForumMFETestCase(SharedModuleStoreTestCase, ModuleStoreTestCase, MockForumApiMixin):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ForumMFETestCase(SharedModuleStoreTestCase, ModuleStoreTestCase, MockForumApiMixin):  # pylint: disable=missing-class-docstring
     """
     Tests that the MFE upgrade banner and MFE is shown in the correct situation with the correct UI
     """

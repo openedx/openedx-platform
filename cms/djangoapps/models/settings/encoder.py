@@ -20,7 +20,7 @@ class CourseSettingsEncoder(json.JSONEncoder):
     Serialize CourseDetails, CourseGradingModel, datetime, and old
     Locations
     """
-    def default(self, obj):  # lint-amnesty, pylint: disable=arguments-differ, method-hidden
+    def default(self, obj):  # pylint: disable=arguments-differ, method-hidden
         if isinstance(obj, (CourseDetails, CourseGradingModel)):
             return obj.__dict__
         elif isinstance(obj, Location):

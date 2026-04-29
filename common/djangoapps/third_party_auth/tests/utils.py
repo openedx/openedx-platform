@@ -33,7 +33,7 @@ class ThirdPartyOAuthTestMixin(ThirdPartyAuthTestMixin):
 
     CREATE_USER = True
 
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp()
         if self.CREATE_USER:
             self.user = UserFactory.create(password='secret')

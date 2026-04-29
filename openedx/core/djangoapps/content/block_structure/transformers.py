@@ -97,7 +97,7 @@ class BlockStructureTransformers:
                 outdated_transformers.append(transformer)
 
         if outdated_transformers:
-            raise TransformerDataIncompatible(  # lint-amnesty, pylint: disable=raising-format-tuple
+            raise TransformerDataIncompatible(  # pylint: disable=raising-format-tuple
                 "Collected Block Structure data for the following transformers is outdated: '%s'.",
                 [(transformer.name(), transformer.READ_VERSION) for transformer in outdated_transformers],
             )

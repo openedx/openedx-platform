@@ -221,7 +221,7 @@ class CourseOutlineData:
         sequences = {}
         for section in self.sections:
             for seq in section.sequences:
-                if seq.usage_key in sequences:  # lint-amnesty, pylint: disable=no-else-raise
+                if seq.usage_key in sequences:  # pylint: disable=no-else-raise
                     raise ValueError(
                         "Sequence {} appears in more than one Section."  # noqa: UP032
                         .format(seq.usage_key)
@@ -279,7 +279,7 @@ class CourseOutlineData:
         )
 
     @days_early_for_beta.validator
-    def validate_days_early_for_beta(self, attribute, value):  # lint-amnesty, pylint: disable=unused-argument
+    def validate_days_early_for_beta(self, attribute, value):  # pylint: disable=unused-argument
         """
         Ensure that days_early_for_beta isn't negative.
         """

@@ -28,11 +28,11 @@ from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.lang_pref.api import get_closest_released_language
 from openedx.core.djangoapps.models.course_details import CourseDetails
 from openedx.core.lib.cache_utils import RequestCache, request_cached
-from xmodule import block_metadata_utils, course_metadata_utils  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.course_block import DEFAULT_START_DATE, CourseBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.error_block import ErrorBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import CourseTab  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import block_metadata_utils, course_metadata_utils  # pylint: disable=wrong-import-order
+from xmodule.course_block import DEFAULT_START_DATE, CourseBlock  # pylint: disable=wrong-import-order
+from xmodule.error_block import ErrorBlock  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.tabs import CourseTab  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ class CourseOverview(TimeStampedModel):
     history = HistoricalRecords()
 
     @classmethod
-    def _create_or_update(cls, course):  # lint-amnesty, pylint: disable=too-many-statements
+    def _create_or_update(cls, course):  # pylint: disable=too-many-statements
         """
         Creates or updates a CourseOverview object from a CourseBlock.
 
@@ -206,7 +206,7 @@ class CourseOverview(TimeStampedModel):
 
         course_overview.version = cls.VERSION
         course_overview.id = course.id
-        course_overview._location = course.location  # lint-amnesty, pylint: disable=protected-access
+        course_overview._location = course.location  # pylint: disable=protected-access
         course_overview.org = course.location.org
         course_overview.display_name = display_name
         course_overview.display_number_with_default = course.display_number_with_default
@@ -239,7 +239,7 @@ class CourseOverview(TimeStampedModel):
         course_overview.days_early_for_beta = course.days_early_for_beta
         course_overview.mobile_available = course.mobile_available
         course_overview.visible_to_staff_only = course.visible_to_staff_only
-        course_overview._pre_requisite_courses_json = json.dumps(course.pre_requisite_courses)  # lint-amnesty, pylint: disable=protected-access
+        course_overview._pre_requisite_courses_json = json.dumps(course.pre_requisite_courses)  # pylint: disable=protected-access
 
         course_overview.enrollment_start = course.enrollment_start
         course_overview.enrollment_end = course.enrollment_end
@@ -359,7 +359,7 @@ class CourseOverview(TimeStampedModel):
 
                 return course_overview
             elif course is not None:
-                raise OSError(  # lint-amnesty, pylint: disable=raising-format-tuple
+                raise OSError(  # pylint: disable=raising-format-tuple
                     "Error while loading CourseOverview for course {} "
                     "from the module store: {}",
                     str(course_id),
@@ -645,7 +645,7 @@ class CourseOverview(TimeStampedModel):
         cause a lot of issues. These should not be mutable after
         construction, so for now we just eat this.
         """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @classmethod
     def update_select_courses(cls, course_keys, force_update=False):

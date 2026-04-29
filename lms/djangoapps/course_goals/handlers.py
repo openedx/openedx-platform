@@ -12,7 +12,7 @@ from lms.djangoapps.course_goals.models import CourseGoal
 
 
 @receiver(post_save, sender=CourseGoal, dispatch_uid="emit_course_goals_event")
-def emit_course_goal_event(sender, instance, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def emit_course_goal_event(sender, instance, **kwargs):  # pylint: disable=unused-argument
     """Emit events for both tracking logs and for Segment."""
     name = 'edx.course.goal.added' if kwargs.get('created', False) else 'edx.course.goal.updated'
     properties = {

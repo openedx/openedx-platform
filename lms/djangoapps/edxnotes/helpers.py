@@ -30,8 +30,8 @@ from lms.lib.utils import get_parent_unit
 from openedx.core.djangoapps.oauth_dispatch.jwt import create_jwt_for_user
 from openedx.core.djangolib.markup import Text
 from openedx.features.course_experience.url_helpers import get_courseware_url
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class NoteJSONEncoder(JSONEncoder):
     Custom JSON encoder that encode datetime objects to appropriate time strings.
     """
     # pylint: disable=method-hidden
-    def default(self, obj):  # lint-amnesty, pylint: disable=arguments-differ
+    def default(self, obj):  # pylint: disable=arguments-differ
         if isinstance(obj, datetime):
             return get_default_time_display(obj)
         return json.JSONEncoder.default(self, obj)
@@ -57,7 +57,7 @@ def get_edxnotes_id_token(user):
     try:
         notes_application = Application.objects.get(name=settings.EDXNOTES_CLIENT_NAME)
     except Application.DoesNotExist:
-        raise ImproperlyConfigured(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ImproperlyConfigured(  # pylint: disable=raise-missing-from  # noqa: B904
             f'OAuth2 Client with name [{settings.EDXNOTES_CLIENT_NAME}] does not exist.'
         )
     return create_jwt_for_user(
@@ -114,7 +114,7 @@ def send_request(user, course_id, page, page_size, path="", text=None):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(params))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return response
 
@@ -145,7 +145,7 @@ def delete_all_notes_for_user(user):
         )
     except RequestException:
         log.error("Failed to connect to edx-notes-api: url=%s, params=%s", url, str(headers))
-        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise EdxNotesServiceUnavailable(_("EdxNotes Service is unavailable. Please try again in a few minutes."))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return response
 
@@ -174,7 +174,7 @@ def preprocess_collection(user, course, collection):
 
             model.update(update)
             usage_id = model["usage_id"]
-            if usage_id in list(cache.keys()):  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+            if usage_id in list(cache.keys()):  # pylint: disable=consider-iterating-dictionary
                 model.update(cache[usage_id])
                 filtered_collection.append(model)
                 continue
@@ -203,7 +203,7 @@ def preprocess_collection(user, course, collection):
                 if not section:
                     log.debug("Section not found: %s", usage_key)
                     continue
-                if section.location in list(cache.keys()):   # lint-amnesty, pylint: disable=consider-iterating-dictionary
+                if section.location in list(cache.keys()):   # pylint: disable=consider-iterating-dictionary
                     usage_context = cache[section.location]
                     usage_context.update({
                         "unit": get_block_context(course, unit),
@@ -217,7 +217,7 @@ def preprocess_collection(user, course, collection):
                 if not chapter:
                     log.debug("Chapter not found: %s", usage_key)
                     continue
-                if chapter.location in list(cache.keys()):  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+                if chapter.location in list(cache.keys()):  # pylint: disable=consider-iterating-dictionary
                     usage_context = cache[chapter.location]
                     usage_context.update({
                         "unit": get_block_context(course, unit),
@@ -338,11 +338,11 @@ def get_notes(request, course, page=DEFAULT_PAGE, page_size=DEFAULT_PAGE_SIZE, t
         collection = json.loads(response.content.decode('utf-8'))
     except ValueError:
         log.error("Invalid JSON response received from notes api: response_content=%s", response.content)
-        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise EdxNotesParseError(_("Invalid JSON response received from notes api."))  # pylint: disable=raise-missing-from  # noqa: B904
 
     # Verify response dict structure
     expected_keys = ['total', 'rows', 'num_pages', 'start', 'next', 'previous', 'current_page']
-    keys = list(collection.keys())   # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    keys = list(collection.keys())   # pylint: disable=consider-iterating-dictionary
     if not keys or not all(key in expected_keys for key in keys):
         log.error("Incorrect data received from notes api: collection_data=%s", str(collection))
         raise EdxNotesParseError(_("Incorrect data received from notes api."))
@@ -388,7 +388,7 @@ def get_endpoint(api_url, path=""):
 
         return api_url + path
     except (AttributeError, KeyError):
-        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ImproperlyConfigured(_("No endpoint was provided for EdxNotes."))  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 def get_public_endpoint(path=""):

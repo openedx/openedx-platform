@@ -27,7 +27,7 @@ def mock_get(status_code=200):
     Returns:
         returns a function that can be used as a mock function for requests.get.
     """
-    def _(url=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg, unused-argument
+    def _(url=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg, unused-argument
         """
         mock method for requests.get, this method will read xml file, form a Response object from the
         contents of this file, set status code and return the Response object.

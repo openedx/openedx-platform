@@ -6,7 +6,7 @@ from logging import getLogger
 from celery import shared_task
 from celery_utils.persist_on_failure import LoggedPersistOnFailureTask
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.db.utils import DatabaseError
 from edx_django_utils.monitoring import (
@@ -26,10 +26,10 @@ from lms.djangoapps.courseware.model_data import get_score
 from lms.djangoapps.grades.config.models import ComputeGradesSetting
 from openedx.core.djangoapps.content.block_structure.api import clear_course_from_cache
 from openedx.core.djangoapps.content.block_structure.exceptions import UsageKeyNotInBlockStructure
-from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # pylint: disable=unused-import
     CourseOverview,  # noqa: F401
 )
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .config.waffle import DISABLE_REGRADE_ON_POLICY_CHANGE
 from .constants import ScoreDatabaseTableEnum

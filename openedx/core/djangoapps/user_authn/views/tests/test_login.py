@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 import ddt
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core import mail
 from django.core.cache import cache
 from django.http import HttpResponse
@@ -21,7 +21,7 @@ from django.test.utils import override_settings
 from django.urls import NoReverseMatch, reverse
 from edx_toggles.toggles.testutils import override_waffle_switch
 from freezegun import freeze_time
-from openedx_events.testing import OpenEdxEventsTestMixin  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.testing import OpenEdxEventsTestMixin  # pylint: disable=wrong-import-order
 
 from common.djangoapps.student.models import LoginFailures
 from common.djangoapps.student.tests.factories import RegistrationFactory, UserFactory, UserProfileFactory

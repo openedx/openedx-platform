@@ -15,11 +15,11 @@ from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from lms.djangoapps.courseware.utils import is_mode_upsellable
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
     check_mongo_calls,
@@ -77,7 +77,7 @@ class RenderXBlockTestMixin(MasqueradeMixin, metaclass=ABCMeta):
             usage_key: The course block usage key. This ensures that the positive and negative tests stay in sync.
             url_encoded_params: URL encoded parameters that should be appended to the requested URL.
         """
-        pass  # pragma: no cover  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pragma: no cover  # pylint: disable=unnecessary-pass
 
     def login(self):
         """

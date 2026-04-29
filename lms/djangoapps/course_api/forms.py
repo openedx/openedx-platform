@@ -42,7 +42,7 @@ class CourseDetailGetForm(UsernameValidatorMixin, Form):
         try:
             return CourseKey.from_string(course_key_string)
         except InvalidKeyError:
-            raise ValidationError(f"'{str(course_key_string)}' is not a valid course key.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(f"'{str(course_key_string)}' is not a valid course key.")  # pylint: disable=raise-missing-from  # noqa: B904
 
 
 class CourseListGetForm(UsernameValidatorMixin, Form):
@@ -89,7 +89,7 @@ class CourseListGetForm(UsernameValidatorMixin, Form):
                 try:
                     CourseKey.from_string(course_key)
                 except InvalidKeyError:
-                    raise ValidationError(f"'{str(course_key)}' is not a valid course key.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                    raise ValidationError(f"'{str(course_key)}' is not a valid course key.")  # pylint: disable=raise-missing-from  # noqa: B904
 
         return course_keys
 

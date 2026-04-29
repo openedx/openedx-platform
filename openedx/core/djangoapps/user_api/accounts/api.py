@@ -192,11 +192,11 @@ def update_account_settings(requesting_user, update, username=None):
         _update_state_if_needed(update, user_profile)
 
     except PreferenceValidationError as err:
-        raise AccountValidationError(err.preference_errors)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AccountValidationError(err.preference_errors)  # pylint: disable=raise-missing-from  # noqa: B904
     except (AccountUpdateError, AccountValidationError) as err:
         raise err
     except Exception as err:
-        raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
             f"Error thrown when saving account updates: '{str(err)}'"
         )
 
@@ -469,7 +469,7 @@ def _send_email_change_requests_if_needed(data, user):
         try:
             student_views.do_email_change_request(user, new_email)
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -483,7 +483,7 @@ def _send_email_change_requests_if_needed(data, user):
                 secondary_email_change_request=True,
             )
         except ValueError as err:
-            raise AccountUpdateError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise AccountUpdateError(  # pylint: disable=raise-missing-from  # noqa: B904
                 f"Error thrown from do_email_change_request: '{str(err)}'",
                 user_message=str(err)
             )
@@ -645,7 +645,7 @@ def _get_user_and_profile(username):
     try:
         existing_user = User.objects.get(username=username)
     except ObjectDoesNotExist:
-        raise errors.UserNotFound()  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise errors.UserNotFound()  # pylint: disable=raise-missing-from  # noqa: B904
 
     existing_user_profile, _ = UserProfile.objects.get_or_create(user=existing_user)
 
@@ -791,7 +791,7 @@ def _validate_country(country):
     :return: None
 
     """
-    if country == '' or country == '--':  # lint-amnesty, pylint: disable=consider-using-in
+    if country == '' or country == '--':  # pylint: disable=consider-using-in
         raise errors.AccountCountryInvalid(accounts.REQUIRED_FIELD_COUNTRY_MSG)
 
 
@@ -803,7 +803,7 @@ def _validate_username_doesnt_exist(username):
     :raises: errors.AccountUsernameAlreadyExists
     """
     if username is not None and username_exists_or_retired(username):
-        # lint-amnesty, pylint: disable=translation-of-non-string
+        # pylint: disable=translation-of-non-string
         raise errors.AccountUsernameAlreadyExists(_(accounts.AUTHN_USERNAME_CONFLICT_MSG))
 
 
@@ -817,7 +817,7 @@ def _validate_email_doesnt_exist(email):
     error_message = accounts.AUTHN_EMAIL_CONFLICT_MSG
 
     if email is not None and email_exists_or_retired(email):
-        raise errors.AccountEmailAlreadyExists(_(error_message))  # lint-amnesty, pylint: disable=translation-of-non-string
+        raise errors.AccountEmailAlreadyExists(_(error_message))  # pylint: disable=translation-of-non-string
 
 
 def _validate_secondary_email_doesnt_exist(email):
@@ -851,10 +851,10 @@ def _validate_password_works_with_username(password, username=None):
     :raises: errors.AccountPasswordInvalid
     """
     if password == username:
-        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # lint-amnesty, pylint: disable=no-member
+        raise errors.AccountPasswordInvalid(accounts.PASSWORD_CANT_EQUAL_USERNAME_MSG)  # pylint: disable=no-member
 
 
-def _validate_type(data, type, err):  # lint-amnesty, pylint: disable=redefined-builtin
+def _validate_type(data, type, err):  # pylint: disable=redefined-builtin
     """Checks whether the input data is of type. If not,
     throws a generic error message.
 
@@ -869,7 +869,7 @@ def _validate_type(data, type, err):  # lint-amnesty, pylint: disable=redefined-
         raise errors.AccountDataBadType(err)
 
 
-def _validate_length(data, min, max, err):  # lint-amnesty, pylint: disable=redefined-builtin
+def _validate_length(data, min, max, err):  # pylint: disable=redefined-builtin
     """Validate that the data's length is less than or equal to max,
     and greater than or equal to min.
 
@@ -900,4 +900,4 @@ def _validate_unicode(data, err="Input not valid unicode"):
         # In some cases we pass the above, but it's still inappropriate utf-8.
         str(data)
     except UnicodeError:
-        raise UnicodeError(err)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise UnicodeError(err)  # pylint: disable=raise-missing-from  # noqa: B904

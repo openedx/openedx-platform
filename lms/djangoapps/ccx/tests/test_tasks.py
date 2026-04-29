@@ -19,7 +19,7 @@ from xmodule.modulestore.tests.factories import CourseFactory
 
 
 @contextlib.contextmanager
-def mock_signal_receiver(signal):  # lint-amnesty, pylint: disable=missing-function-docstring
+def mock_signal_receiver(signal):  # pylint: disable=missing-function-docstring
     receiver = mock.Mock()
     signal.connect(receiver)
     yield receiver

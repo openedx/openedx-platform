@@ -4,7 +4,7 @@
 import logging
 from contextlib import contextmanager
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models.signals import post_save, pre_save
@@ -105,7 +105,7 @@ class Command(BaseCommand):
         try:
             return User.objects.get(username=username)
         except User.DoesNotExist:
-            raise CommandError(f'User {username} not found')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f'User {username} not found')  # pylint: disable=raise-missing-from  # noqa: B904
 
     def create_api_access_request(self, user, status, reason, website):
         """
@@ -126,14 +126,14 @@ class Command(BaseCommand):
             if 'Permission denied' in error_msg and 'mako_lms' in error_msg:
                 logger.warning(f'Error sending email about access request: {error_msg}')
             else:
-                raise CommandError(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise CommandError(error_msg)  # pylint: disable=raise-missing-from  # noqa: B904
         except Exception as e:
             msg = 'Unable to create ApiAccessRequest for {}. Exception is {}: {}'.format(  # noqa: UP032
                 user.username,
                 type(e).__name__,
                 e
             )
-            raise CommandError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         logger.info(f'Created ApiAccessRequest for user {user.username}')
 
@@ -145,7 +145,7 @@ class Command(BaseCommand):
             _, created = ApiAccessConfig.objects.get_or_create(enabled=True)
         except Exception as e:
             msg = f'Unable to create ApiAccessConfig. Exception is {type(e).__name__}: {e}'
-            raise CommandError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         if created:
             logger.info('Created ApiAccessConfig')

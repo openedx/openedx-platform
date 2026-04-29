@@ -48,7 +48,7 @@ from lms.djangoapps.instructor import access
 from lms.djangoapps.utils import _get_key
 from openedx.core.djangoapps.content.course_overviews.api import get_course_overview_or_none
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.data import CertificatesDisplayBehaviors  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.data import CertificatesDisplayBehaviors  # pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.certificate")
 User = get_user_model()

@@ -15,21 +15,21 @@ class TestTransformer1(MockTransformer):
     """
     1st test instance of the MockTransformer that is registered.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class TestTransformer2(MockTransformer):
     """
     2nd test instance of the MockTransformer that is registered.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class UnregisteredTestTransformer3(MockTransformer):
     """
     3rd test instance of the MockTransformer that is not registered.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 @ddt.ddt

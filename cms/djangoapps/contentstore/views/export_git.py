@@ -15,7 +15,7 @@ from opaque_keys.edx.keys import CourseKey
 import cms.djangoapps.contentstore.git_export_utils as git_export_utils
 from common.djangoapps.edxmako.shortcuts import render_to_response
 from common.djangoapps.student.auth import has_course_author_access
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

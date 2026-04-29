@@ -3,7 +3,7 @@
 
 from logging import getLogger
 
-from common.djangoapps.student.roles import GlobalStaff  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from common.djangoapps.student.roles import GlobalStaff  # pylint: disable=unused-import  # noqa: F401
 from lms.djangoapps.courseware.access import has_access
 from lms.djangoapps.courseware.masquerade import MASQUERADE_SETTINGS_KEY
 
@@ -152,7 +152,7 @@ def get_child_locations(section_desc, request, course_id):
         """
         Return True if child is appendable based on request and request's user type.
         """
-        return (request and is_user_staff_and_not_masquerading_learner()) or not child_instance.visible_to_staff_only  # lint-amnesty, pylint: disable=consider-using-ternary
+        return (request and is_user_staff_and_not_masquerading_learner()) or not child_instance.visible_to_staff_only  # pylint: disable=consider-using-ternary
 
     child_locs = []
     for child in section_desc.get_children():

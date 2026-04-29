@@ -18,7 +18,7 @@ from django.utils.translation import get_language
 
 try:
     cache = cache.caches['general']         # pylint: disable=invalid-name
-except Exception:  # lint-amnesty, pylint: disable=broad-except
+except Exception:  # pylint: disable=broad-except
     cache = cache.cache
 
 

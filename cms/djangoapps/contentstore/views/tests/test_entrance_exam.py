@@ -19,7 +19,7 @@ from cms.djangoapps.models.settings.course_grading import CourseGradingModel
 from cms.djangoapps.models.settings.course_metadata import CourseMetadata
 from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import milestones_helpers
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from ..entrance_exam import (
     add_entrance_exam_milestone,

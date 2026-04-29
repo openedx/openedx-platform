@@ -23,11 +23,11 @@ from openedx_events.event_bus import merge_producer_configs
 from path import Path as path
 
 from openedx.core.djangoapps.plugins.constants import ProjectType, SettingsType
-from openedx.core.lib.derived import derive_settings  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.lib.derived import derive_settings  # pylint: disable=wrong-import-order
 from openedx.core.lib.features_setting_proxy import FeaturesProxy
-from openedx.core.lib.logsettings import get_logger_config  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.lib.logsettings import get_logger_config  # pylint: disable=wrong-import-order
 from xmodule.modulestore.modulestore_settings import \
-    convert_module_store_setting_if_needed  # lint-amnesty, pylint: disable=wrong-import-order
+    convert_module_store_setting_if_needed  # pylint: disable=wrong-import-order
 
 from .common import *  # noqa: F403
 
@@ -41,7 +41,7 @@ def get_env_setting(setting):
         return os.environ[setting]
     except KeyError:
         error_msg = "Set the %s env variable" % setting  # noqa: UP031
-        raise ImproperlyConfigured(error_msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ImproperlyConfigured(error_msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
 #######################################################################################################################
 #### YAML LOADING

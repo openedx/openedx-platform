@@ -73,7 +73,7 @@ class GradeViewTestMixin(SharedModuleStoreTestCase):
                 created=self.date,
             )
 
-    def _create_user_program_enrollments(self, *users, **kwargs):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _create_user_program_enrollments(self, *users, **kwargs):  # pylint: disable=missing-function-docstring
         # supply mode for enrollment. Use 'masters' to create a masters track enrollment
         for index, user in enumerate(users):
             course_enrollment = CourseEnrollmentFactory(

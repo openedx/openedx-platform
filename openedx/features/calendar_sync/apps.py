@@ -8,7 +8,7 @@ Define the calendar_sync Django App.
 from django.apps import AppConfig
 
 
-class UserCalendarSyncConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UserCalendarSyncConfig(AppConfig):  # pylint: disable=missing-class-docstring
     name = 'openedx.features.calendar_sync'
 
     def ready(self):

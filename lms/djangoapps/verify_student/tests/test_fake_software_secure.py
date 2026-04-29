@@ -35,7 +35,7 @@ class SoftwareSecureFakeViewDisabledTest(SoftwareSecureFakeViewTest):
     'ENABLE_SOFTWARE_SECURE_FAKE' is not enabled.
     """
 
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp(enable_software_secure_fake=False)
 
     def test_get_method_without_enable_feature_flag(self):
@@ -56,7 +56,7 @@ class SoftwareSecureFakeViewEnabledTest(SoftwareSecureFakeViewTest):
     'ENABLE_SOFTWARE_SECURE_FAKE' is enabled.
     """
 
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp(enable_software_secure_fake=True)
 
     def test_get_method_without_logged_in_user(self):

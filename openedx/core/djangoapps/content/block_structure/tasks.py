@@ -14,7 +14,7 @@ from opaque_keys.edx.keys import CourseKey
 from xblocks_contrib.problem.capa.responsetypes import LoncapaProblemError
 
 from openedx.core.djangoapps.content.block_structure import api
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger('edx.celery.task')
 

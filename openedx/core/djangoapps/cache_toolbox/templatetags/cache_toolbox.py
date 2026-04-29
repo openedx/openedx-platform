@@ -10,7 +10,7 @@ from django.template import (
     Node,
     TemplateSyntaxError,
     Variable,
-    resolve_variable,  # lint-amnesty, pylint: disable=no-name-in-module
+    resolve_variable,  # pylint: disable=no-name-in-module
 )
 
 register = template.Library()  # pylint: disable=invalid-name

@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib.auth import login as django_login
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import NON_FIELD_ERRORS, PermissionDenied
 from django.core.validators import ValidationError
 from django.db import transaction
@@ -25,7 +25,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django_countries import countries
 from django_ratelimit.decorators import ratelimit
 from edx_django_utils.monitoring import set_custom_attribute
-from edx_django_utils.user import generate_password  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_django_utils.user import generate_password  # pylint: disable=wrong-import-order
 from openedx_events.learning.data import UserData, UserPersonalData
 from openedx_events.learning.signals import STUDENT_REGISTRATION_COMPLETED
 from openedx_filters.learning.filters import StudentRegistrationRequested
@@ -554,7 +554,7 @@ class RegistrationView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
-        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # lint-amnesty, pylint: disable=http-response-with-content-type-json
+        return HttpResponse(RegistrationFormFactory().get_registration_form(request).to_json(),  # pylint: disable=http-response-with-content-type-json
                             content_type="application/json")
 
     @method_decorator(csrf_exempt)

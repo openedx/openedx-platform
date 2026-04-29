@@ -12,7 +12,7 @@ from lms.djangoapps.utils import _get_key
 
 
 @ddt.ddt
-class UtilsTests(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UtilsTests(TestCase):  # pylint: disable=missing-class-docstring
 
     @ddt.data(
         ['edX/DemoX/Demo_Course', CourseKey.from_string('edX/DemoX/Demo_Course'), CourseKey],

@@ -72,4 +72,4 @@ class Command(BaseCommand):
                 **kwargs
             )
         except InvalidKeyError as exc:
-            raise CommandError('Invalid Course Key: ' + str(exc))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError('Invalid Course Key: ' + str(exc))  # pylint: disable=raise-missing-from  # noqa: B904

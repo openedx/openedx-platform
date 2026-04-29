@@ -62,7 +62,7 @@ class MockXBlock:
         try:
             return self.field_map[attr]
         except KeyError:
-            raise AttributeError  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise AttributeError  # pylint: disable=raise-missing-from  # noqa: B904
 
     def get_children(self):
         """
@@ -217,7 +217,7 @@ def clear_registered_transformers_cache():
     """
     Test helper to clear out any cached values of registered transformers.
     """
-    TransformerRegistry.get_write_version_hash.cache.clear()  # lint-amnesty, pylint: disable=no-member
+    TransformerRegistry.get_write_version_hash.cache.clear()  # pylint: disable=no-member
 
 
 @contextmanager

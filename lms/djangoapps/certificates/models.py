@@ -20,13 +20,13 @@ from django.utils.translation import gettext_lazy as _
 from model_utils import Choices
 from model_utils.models import TimeStampedModel
 from opaque_keys.edx.django.models import CourseKeyField
-from openedx_events.learning.data import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.data import (  # pylint: disable=wrong-import-order
     CertificateData,
     CourseData,
     UserData,
     UserPersonalData,
 )
-from openedx_events.learning.signals import (  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx_events.learning.signals import (  # pylint: disable=wrong-import-order
     CERTIFICATE_CHANGED,
     CERTIFICATE_CREATED,
     CERTIFICATE_REVOKED,

@@ -9,7 +9,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.django_comment_common.utils import seed_permissions_roles
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = 'Seed default permisssions and roles.'
 
     def add_arguments(self, parser):

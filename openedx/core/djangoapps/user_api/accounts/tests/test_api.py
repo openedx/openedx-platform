@@ -12,7 +12,7 @@ import ddt
 import pytest
 from django.conf import settings
 from django.contrib.auth.hashers import make_password
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError
 from django.http import HttpResponse
@@ -68,7 +68,7 @@ def mock_render_to_response(template_name):
     return HttpResponse(template_name)
 
 
-class CreateAccountMixin:  # lint-amnesty, pylint: disable=missing-class-docstring
+class CreateAccountMixin:  # pylint: disable=missing-class-docstring
     def create_account(self, username, password, email):
         # pylint: disable=missing-docstring
         registration_url = reverse('user_api_registration')
@@ -85,7 +85,7 @@ class CreateAccountMixin:  # lint-amnesty, pylint: disable=missing-class-docstri
 @skip_unless_lms
 @ddt.ddt
 @patch('common.djangoapps.student.views.management.render_to_response',
-       Mock(side_effect=mock_render_to_response, autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+       Mock(side_effect=mock_render_to_response, autospec=True))  # pylint: disable=line-too-long
 class TestAccountApi(UserSettingsEventTestMixin, EmailTemplateTagMixin, CreateAccountMixin, RetirementTestCase):
     """
     These tests specifically cover the parts of the API methods that are not covered by test_views.py.

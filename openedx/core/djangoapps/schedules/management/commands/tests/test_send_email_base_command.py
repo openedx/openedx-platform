@@ -21,9 +21,9 @@ from openedx.core.djangolib.testing.utils import CacheIsolationTestCase, skip_un
 @skip_unless_lms
 @skipUnless('openedx.core.djangoapps.schedules.apps.SchedulesConfig' in settings.INSTALLED_APPS,
             "Can't test schedules if the app isn't installed")
-class TestSendEmailBaseCommand(CacheIsolationTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestSendEmailBaseCommand(CacheIsolationTestCase):  # pylint: disable=missing-class-docstring
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         self.command = SendEmailBaseCommand()
         self.site = SiteFactory()
         self.site_config = SiteConfigurationFactory.create(site=self.site)
@@ -69,4 +69,4 @@ class TestSendEmailBaseCommand(CacheIsolationTestCase):  # lint-amnesty, pylint:
             assert not kwarg.called
 
             for offset in self.command.offsets:
-                self.command.enqueue.assert_any_call(offset, arg, kwarg=kwarg)  # lint-amnesty, pylint: disable=no-member
+                self.command.enqueue.assert_any_call(offset, arg, kwarg=kwarg)  # pylint: disable=no-member

@@ -17,7 +17,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.entitlements.models import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.entitlements.models import (  # pylint: disable=line-too-long
     CourseEntitlement,
     CourseEntitlementPolicy,
     CourseEntitlementSupportDetail,
@@ -225,7 +225,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED, headers=headers
         )
 
-    def retrieve(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def retrieve(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Override the retrieve method to expire a record that is past the
         policy and is requested via the API before returning that record.
@@ -235,7 +235,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(entitlement)
         return Response(serializer.data)
 
-    def list(self, request, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def list(self, request, *args, **kwargs):  # pylint: disable=unused-argument
         """
         Override the list method to expire records that are past the
         policy and requested via the API before returning those records.
@@ -305,7 +305,7 @@ class EntitlementViewSet(viewsets.ModelViewSet):
                     )
             CourseEntitlementSupportDetail.objects.create(**support_detail)
 
-        return super().partial_update(request, *args, **kwargs)  # lint-amnesty, pylint: disable=no-member, super-with-arguments
+        return super().partial_update(request, *args, **kwargs)  # pylint: disable=no-member, super-with-arguments
 
 
 class EntitlementEnrollmentViewSet(viewsets.GenericViewSet):

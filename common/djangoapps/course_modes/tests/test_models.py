@@ -26,9 +26,9 @@ from common.djangoapps.course_modes.models import (
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -494,7 +494,7 @@ class CourseModeModelTest(TestCase):
         assert CourseMode.is_masters_only(self.course_key) == expected_is_masters_only
 
 
-class TestCourseOverviewIntegration(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestCourseOverviewIntegration(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     def test_course_overview_version_update(self):
         course = CourseFactory.create()
         course_overview = CourseOverview.get_from_id(course.id)
@@ -507,7 +507,7 @@ class TestCourseOverviewIntegration(ModuleStoreTestCase):  # lint-amnesty, pylin
         assert CourseMode.objects.filter(pk=course_mode.pk).exists()
 
 
-class TestDisplayPrices(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestDisplayPrices(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     @override_settings(PAID_COURSE_REGISTRATION_CURRENCY=["USD", "$"])
     def test_get_cosmetic_display_price(self):
         """

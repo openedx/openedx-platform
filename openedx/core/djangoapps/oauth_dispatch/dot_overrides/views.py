@@ -59,7 +59,7 @@ class EdxOAuth2AuthorizationView(AuthorizationView):
             kwargs['response_type'] = credentials['response_type']
             kwargs['state'] = credentials['state']
 
-            self.oauth2_data = kwargs  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+            self.oauth2_data = kwargs  # pylint: disable=attribute-defined-outside-init
             # following two loc are here only because of https://code.djangoproject.com/ticket/17795
             form = self.get_form(self.get_form_class())
             kwargs['form'] = form
@@ -69,7 +69,7 @@ class EdxOAuth2AuthorizationView(AuthorizationView):
             # This is useful for in-house applications-> assume an in-house applications
             # are already approved.
             if application.skip_authorization:
-                uri, headers, body, status = self.create_authorization_response(  # lint-amnesty, pylint: disable=unused-variable
+                uri, headers, body, status = self.create_authorization_response(  # pylint: disable=unused-variable
                     request=self.request, scopes=" ".join(scopes),
                     credentials=credentials, allow=True)
                 return OAuth2ResponseRedirect(uri, application.get_allowed_schemes())

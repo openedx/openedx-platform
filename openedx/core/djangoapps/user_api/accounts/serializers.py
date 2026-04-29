@@ -8,7 +8,7 @@ import logging
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms.models import model_to_dict
 from django.urls import reverse
@@ -49,7 +49,7 @@ PROFILE_IMAGE_KEY_PREFIX = 'image_url'
 LOGGER = logging.getLogger(__name__)
 
 
-class PhoneNumberSerializer(serializers.BaseSerializer):  # lint-amnesty, pylint: disable=abstract-method
+class PhoneNumberSerializer(serializers.BaseSerializer):  # pylint: disable=abstract-method
     """
     Class to serialize phone number into a digit only representation.
 
@@ -113,7 +113,7 @@ class SocialLinkSerializer(serializers.ModelSerializer):
         return platform
 
 
-class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class UserReadOnlySerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     Class that serializes the User model and UserProfile model together.
     """
@@ -129,7 +129,7 @@ class UserReadOnlySerializer(serializers.Serializer):  # lint-amnesty, pylint: d
 
         super().__init__(*args, **kwargs)
 
-    def to_representation(self, user):  # lint-amnesty, pylint: disable=arguments-differ
+    def to_representation(self, user):  # pylint: disable=arguments-differ
         """
         Overwrite to_native to handle custom logic since we are serializing three models as one here
         :param user: User object
@@ -474,7 +474,7 @@ class AccountLegacyProfileSerializer(serializers.HyperlinkedModelSerializer, Rea
             ])
 
         # Update the user's social links
-        requested_social_links = self._kwargs['data'].get('social_links')  # lint-amnesty, pylint: disable=no-member
+        requested_social_links = self._kwargs['data'].get('social_links')  # pylint: disable=no-member
         if requested_social_links:
             self._update_social_links(instance, requested_social_links)
 
@@ -554,7 +554,7 @@ class UserRetirementPartnerReportSerializer(serializers.Serializer):
         pass
 
 
-class PendingNameChangeSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method
+class PendingNameChangeSerializer(serializers.Serializer):  # pylint: disable=abstract-method
     """
     Serialize the PendingNameChange model
     """

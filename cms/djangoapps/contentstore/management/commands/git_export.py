@@ -50,7 +50,7 @@ class Command(BaseCommand):
         try:
             course_key = CourseKey.from_string(options['course_loc'])
         except InvalidKeyError:
-            raise CommandError(str(git_export_utils.GitExportError.BAD_COURSE))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(str(git_export_utils.GitExportError.BAD_COURSE))  # pylint: disable=raise-missing-from  # noqa: B904
 
         try:
             git_export_utils.export_to_git(
@@ -60,4 +60,4 @@ class Command(BaseCommand):
                 options.get('rdir', None)
             )
         except git_export_utils.GitExportError as ex:
-            raise CommandError(str(ex))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(str(ex))  # pylint: disable=raise-missing-from  # noqa: B904

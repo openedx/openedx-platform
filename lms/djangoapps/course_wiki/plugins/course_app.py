@@ -8,8 +8,8 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview, CourseOverviewTab
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.lib.courses import get_course_by_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.tabs import CourseTab, CourseTabList  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.tabs import CourseTab, CourseTabList  # pylint: disable=wrong-import-order
 
 # Import the User model only for type checking since importing it at runtime
 # will prevent the app from starting since the model is imported before

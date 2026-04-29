@@ -16,4 +16,4 @@ class CourseOverviewsConfig(AppConfig):
     def ready(self):
         # Import signals to activate signal handler which invalidates
         # the CourseOverview cache every time a course is published.
-        from . import signals  # lint-amnesty, pylint: disable=unused-import, unused-variable  # noqa: F401
+        from . import signals  # pylint: disable=unused-import, unused-variable  # noqa: F401

@@ -3,7 +3,7 @@ Test the test_bulk_user_org_email_optout management command
 """
 
 
-import io  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import io  # pylint: disable=unused-import  # noqa: F401
 import os
 import tempfile
 from contextlib import contextmanager

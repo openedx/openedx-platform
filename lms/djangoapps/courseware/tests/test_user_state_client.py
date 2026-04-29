@@ -19,7 +19,7 @@ from lms.djangoapps.courseware.user_state_client import (
     XBlockUserStateClient,
 )
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
 
 
@@ -730,7 +730,7 @@ class TestDjangoUserStateClient(UserStateClientTestBase, ModuleStoreTestCase):
     # Tell Django to clean out all databases, not just default
     databases = set(connections)
 
-    def _user(self, user_idx):  # lint-amnesty, pylint: disable=arguments-differ
+    def _user(self, user_idx):  # pylint: disable=arguments-differ
         return self.users[user_idx].username
 
     def _block_type(self, block):  # pylint: disable=arguments-differ

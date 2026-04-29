@@ -12,50 +12,50 @@ import ddt
 import pytest
 import pytz
 from bson import ObjectId
-from completion.models import BlockCompletion  # lint-amnesty, pylint: disable=wrong-import-order
-from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # lint-amnesty, pylint: disable=wrong-import-order
-from django.conf import settings  # lint-amnesty, pylint: disable=wrong-import-order
-from django.contrib.auth.models import AnonymousUser  # lint-amnesty, pylint: disable=wrong-import-order
-from django.http import Http404, HttpResponse  # lint-amnesty, pylint: disable=wrong-import-order
-from django.middleware.csrf import get_token  # lint-amnesty, pylint: disable=wrong-import-order
-from django.test.client import RequestFactory  # lint-amnesty, pylint: disable=wrong-import-order
-from django.test.utils import override_settings  # lint-amnesty, pylint: disable=wrong-import-order
-from django.urls import reverse  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.api import (  # lint-amnesty, pylint: disable=wrong-import-order
+from completion.models import BlockCompletion  # pylint: disable=wrong-import-order
+from completion.waffle import ENABLE_COMPLETION_TRACKING_SWITCH  # pylint: disable=wrong-import-order
+from django.conf import settings  # pylint: disable=wrong-import-order
+from django.contrib.auth.models import AnonymousUser  # pylint: disable=wrong-import-order
+from django.http import Http404, HttpResponse  # pylint: disable=wrong-import-order
+from django.middleware.csrf import get_token  # pylint: disable=wrong-import-order
+from django.test.client import RequestFactory  # pylint: disable=wrong-import-order
+from django.test.utils import override_settings  # pylint: disable=wrong-import-order
+from django.urls import reverse  # pylint: disable=wrong-import-order
+from edx_proctoring.api import (  # pylint: disable=wrong-import-order
     create_exam,
     create_exam_attempt,
     update_attempt_status,
 )
-from edx_proctoring.runtime import set_runtime_service  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_proctoring.tests.test_services import (  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_proctoring.runtime import set_runtime_service  # pylint: disable=wrong-import-order
+from edx_proctoring.tests.test_services import (  # pylint: disable=wrong-import-order
     MockCertificateService,
     MockCreditService,
     MockGradesService,
 )
-from edx_toggles.toggles.testutils import override_waffle_switch  # lint-amnesty, pylint: disable=wrong-import-order
-from edx_when.field_data import DateLookupFieldData  # lint-amnesty, pylint: disable=wrong-import-order
-from freezegun import freeze_time  # lint-amnesty, pylint: disable=wrong-import-order
-from milestones.tests.utils import MilestonesTestCaseMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.asides import AsideUsageKeyV2  # lint-amnesty, pylint: disable=wrong-import-order
-from opaque_keys.edx.keys import CourseKey, UsageKey  # lint-amnesty, pylint: disable=wrong-import-order
-from pyquery import PyQuery  # lint-amnesty, pylint: disable=wrong-import-order
-from web_fragments.fragment import Fragment  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.completable import CompletableXBlockMixin  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.core import XBlock, XBlockAside  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_toggles.toggles.testutils import override_waffle_switch  # pylint: disable=wrong-import-order
+from edx_when.field_data import DateLookupFieldData  # pylint: disable=wrong-import-order
+from freezegun import freeze_time  # pylint: disable=wrong-import-order
+from milestones.tests.utils import MilestonesTestCaseMixin  # pylint: disable=wrong-import-order
+from opaque_keys.edx.asides import AsideUsageKeyV2  # pylint: disable=wrong-import-order
+from opaque_keys.edx.keys import CourseKey, UsageKey  # pylint: disable=wrong-import-order
+from pyquery import PyQuery  # pylint: disable=wrong-import-order
+from web_fragments.fragment import Fragment  # pylint: disable=wrong-import-order
+from xblock.completable import CompletableXBlockMixin  # pylint: disable=wrong-import-order
+from xblock.core import XBlock, XBlockAside  # pylint: disable=wrong-import-order
 from xblock.exceptions import NoSuchServiceError
-from xblock.field_data import FieldData  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.fields import ScopeIds  # lint-amnesty, pylint: disable=wrong-import-order
-from xblock.runtime import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.field_data import FieldData  # pylint: disable=wrong-import-order
+from xblock.fields import ScopeIds  # pylint: disable=wrong-import-order
+from xblock.runtime import (  # pylint: disable=wrong-import-order
     DictKeyValueStore,
     KvsFieldData,
-    Mixologist,  # lint-amnesty, pylint: disable=wrong-import-order
+    Mixologist,  # pylint: disable=wrong-import-order
 )
-from xblock.test.tools import TestRuntime  # lint-amnesty, pylint: disable=wrong-import-order
+from xblock.test.tools import TestRuntime  # pylint: disable=wrong-import-order
 from xblocks_contrib.problem.capa.tests.response_xml_factory import (
-    OptionResponseXMLFactory,  # lint-amnesty, pylint: disable=reimported
+    OptionResponseXMLFactory,  # pylint: disable=reimported
 )
 
-from common.djangoapps.course_modes.models import CourseMode  # lint-amnesty, pylint: disable=reimported
+from common.djangoapps.course_modes.models import CourseMode  # pylint: disable=reimported
 from common.djangoapps.student.models import CourseEnrollment, anonymous_id_for_user
 from common.djangoapps.student.tests.factories import (
     BetaTesterFactory,
@@ -106,16 +106,16 @@ from xmodule.modulestore.tests.django_utils import (
     SharedModuleStoreTestCase,
     upload_file_to_course,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
     ToyCourseFactory,
     check_mongo_calls,
 )
-from xmodule.modulestore.tests.test_asides import AsideTestType  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.test_asides import AsideTestType  # pylint: disable=wrong-import-order
 from xmodule.services import RebindUserServiceError
-from xmodule.video_block import VideoBlock  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.video_block import VideoBlock  # pylint: disable=wrong-import-order
+from xmodule.x_module import STUDENT_VIEW, ModuleStoreRuntime  # pylint: disable=wrong-import-order
 
 TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
@@ -150,7 +150,7 @@ class PureXBlock(XBlock):
     """
     Pure XBlock to use in tests.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
 class GradedStatelessXBlock(XBlock):
@@ -184,7 +184,7 @@ class StubCompletableXBlock(CompletableXBlockMixin):
         """
         Mark the block's completion value using the completion API.
         """
-        return self.runtime.publish(  # lint-amnesty, pylint: disable=no-member
+        return self.runtime.publish(  # pylint: disable=no-member
             self,
             'completion',
             {'completion': json_data['completion']},
@@ -197,7 +197,7 @@ class StubCompletableXBlock(CompletableXBlockMixin):
 
         New code should use the completion event instead.
         """
-        return self.runtime.publish(self, 'progress', {})  # lint-amnesty, pylint: disable=no-member
+        return self.runtime.publish(self, 'progress', {})  # pylint: disable=no-member
 
 
 class XBlockWithoutCompletionAPI(XBlock):
@@ -316,7 +316,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
             )
 
         # Verify that handle ajax is called with the correct data
-        request.POST._mutable = True  # lint-amnesty, pylint: disable=protected-access
+        request.POST._mutable = True  # pylint: disable=protected-access
         request.POST['queuekey'] = fake_key
         self.mock_block.handle_ajax.assert_called_once_with(self.dispatch, request.POST)
 
@@ -523,7 +523,7 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
         )
 
         # grab what _field_data was originally set to
-        original_field_data = block._field_data  # lint-amnesty, pylint: disable=no-member, protected-access
+        original_field_data = block._field_data  # pylint: disable=no-member, protected-access
 
         render.get_block_for_descriptor(
             self.mock_user, request, block, field_data_cache, course.id, course=course
@@ -547,13 +547,13 @@ class BlockRenderTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
         # _field_data should now be wrapped by LmsFieldData
         # pylint: disable=protected-access
-        assert isinstance(block._field_data, LmsFieldData)  # lint-amnesty, pylint: disable=no-member
+        assert isinstance(block._field_data, LmsFieldData)  # pylint: disable=no-member
 
         # the LmsFieldData should now wrap OverrideFieldData
-        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source, OverrideFieldData)   # pylint: disable=no-member, line-too-long
 
         # the OverrideFieldData should point to the date FieldData
-        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # lint-amnesty, pylint: disable=no-member, line-too-long
+        assert isinstance(block._field_data._authored_data._source.fallback, DateLookupFieldData)    # pylint: disable=no-member, line-too-long
         assert block._field_data._authored_data._source.fallback._defaults \
             is block.runtime.service(block, 'field-data-unbound')
 
@@ -1059,16 +1059,16 @@ class TestTOC(ModuleStoreTestCase):
         Sets up the toy course in the modulestore and the request object.
         """
         self.course_key = ToyCourseFactory.create().id  # pylint: disable=attribute-defined-outside-init
-        self.chapter = 'Overview'  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.chapter = 'Overview'  # pylint: disable=attribute-defined-outside-init
         chapter_url = '{}/{}/{}'.format('/courses', self.course_key, self.chapter)
         factory = RequestFactoryNoCsrf()
-        self.request = factory.get(chapter_url)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.request = factory.get(chapter_url)  # pylint: disable=attribute-defined-outside-init
         self.request.user = UserFactory()
         self.modulestore = self.store._get_modulestore_for_courselike(self.course_key)  # pylint: disable=protected-access, attribute-defined-outside-init
         with self.modulestore.bulk_operations(self.course_key):
             with check_mongo_calls(num_finds, num_sends):
                 self.toy_course = self.store.get_course(self.course_key, depth=2)  # pylint: disable=attribute-defined-outside-init
-                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+                self.field_data_cache = FieldDataCache.cache_for_block_descendents(  # pylint: disable=attribute-defined-outside-init
                     self.course_key, self.request.user, self.toy_course, depth=2
                 )
 
@@ -1933,7 +1933,7 @@ class TestAnonymousStudentId(SharedModuleStoreTestCase, LoginEnrollmentTestCase)
         self.user = UserFactory()
 
     @patch('lms.djangoapps.courseware.block_render.has_access', Mock(return_value=True, autospec=True))
-    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _get_anonymous_id(self, course_id, xblock_class, should_get_deprecated_id: bool):  # pylint: disable=missing-function-docstring
         location = course_id.make_usage_key('dummy_category', 'dummy_name')
         mixed_class = Mixologist(settings.XBLOCK_MIXINS).mix(xblock_class)
         block = Mock(
@@ -2515,13 +2515,13 @@ class TestFilteredChildren(SharedModuleStoreTestCase):
 
         # Create a child for each user
         self.children_for_user = {
-            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # lint-amnesty, pylint: disable=no-member
+            user: BlockFactory(category='xblock', parent=self.parent).scope_ids.usage_id  # pylint: disable=no-member
             for user in self.users.values()
         }
 
         self.all_children = self.children_for_user.values()
 
-        return modulestore().get_item(self.parent.scope_ids.usage_id)  # lint-amnesty, pylint: disable=no-member
+        return modulestore().get_item(self.parent.scope_ids.usage_id)  # pylint: disable=no-member
 
     def _bind_block(self, block, user):
         """
@@ -2554,7 +2554,7 @@ class TestFilteredChildren(SharedModuleStoreTestCase):
             key = obj.scope_ids.usage_id
         elif isinstance(obj, UsageKey):
             key = obj
-        if key == self.parent.scope_ids.usage_id:  # lint-amnesty, pylint: disable=no-member
+        if key == self.parent.scope_ids.usage_id:  # pylint: disable=no-member
             return AccessResponse(True)
         return AccessResponse(key == self.children_for_user[user])
 
@@ -2613,7 +2613,7 @@ class TestDisabledXBlockTypes(ModuleStoreTestCase):
         """
         if not item_id:
             item = BlockFactory(category=category, parent=course)
-            item_id = item.scope_ids.usage_id  # lint-amnesty, pylint: disable=no-member
+            item_id = item.scope_ids.usage_id  # pylint: disable=no-member
 
         item = self.store.get_item(item_id)
         assert item.__class__.__name__ == block

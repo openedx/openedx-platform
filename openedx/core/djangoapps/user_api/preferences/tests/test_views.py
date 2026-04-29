@@ -149,7 +149,7 @@ class TestPreferencesAPI(UserAPITestCase):
             expected_status=204
         )
         response = self.send_get(self.client)
-        # lint-amnesty, pylint: disable=bad-option-value, unicode-format-string
+        # pylint: disable=bad-option-value, unicode-format-string
         pref_dict = {"dict_pref": "{'int_key': 10}", "string_pref": "value"}
         assert pref_dict == response.data
 
@@ -198,7 +198,7 @@ class TestPreferencesAPI(UserAPITestCase):
         # Verify that GET returns the updated preferences
         response = self.send_get(self.client)
         expected_preferences = {
-            "dict_pref": "{'int_key': 10}",  # lint-amnesty, pylint: disable=bad-option-value, unicode-format-string
+            "dict_pref": "{'int_key': 10}",  # pylint: disable=bad-option-value, unicode-format-string
             "string_pref": "updated_value",
             "new_pref": "new_value",
             "time_zone": "Europe/London",

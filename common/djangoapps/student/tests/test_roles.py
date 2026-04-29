@@ -300,7 +300,7 @@ class RolesTestCase(TestCase):
 
 
 @ddt.ddt
-class RoleCacheTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class RoleCacheTestCase(TestCase):  # pylint: disable=missing-class-docstring
 
     IN_KEY_STRING = 'course-v1:edX+toy+2012_Fall'
     IN_KEY = CourseKey.from_string(IN_KEY_STRING)
@@ -344,7 +344,7 @@ class RoleCacheTestCase(TestCase):  # lint-amnesty, pylint: disable=missing-clas
 
     @ddt.data(*ROLES)
     @ddt.unpack
-    def test_empty_cache(self, role, target):  # lint-amnesty, pylint: disable=unused-argument
+    def test_empty_cache(self, role, target):  # pylint: disable=unused-argument
         cache = RoleCache(self.user)
         assert not cache.has_role(*target)
 

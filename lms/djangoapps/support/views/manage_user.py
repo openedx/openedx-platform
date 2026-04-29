@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.generic import View
-from edx_django_utils.user import generate_password  # lint-amnesty, pylint: disable=wrong-import-order
+from edx_django_utils.user import generate_password  # pylint: disable=wrong-import-order
 from rest_framework.generics import GenericAPIView
 
 from common.djangoapps.edxmako.shortcuts import render_to_response

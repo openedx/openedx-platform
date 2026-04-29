@@ -11,7 +11,7 @@ from cms.djangoapps.contentstore.course_group_config import CONTENT_GROUP_CONFIG
 from cms.djangoapps.contentstore.tests.utils import CourseTestCase
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.authz.tests.mixins import CourseAuthzTestMixin
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 from ...mixins import PermissionAccessMixin
 
@@ -38,7 +38,7 @@ class CourseGroupConfigurationsViewTest(CourseTestCase, PermissionAccessMixin):
                 "First name",
                 "First description",
                 [Group(0, "Group A"), Group(1, "Group B"), Group(2, "Group C")],
-            ),  # lint-amnesty, pylint: disable=line-too-long
+            ),  # pylint: disable=line-too-long
         ]
         self.save_course()
 

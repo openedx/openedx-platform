@@ -17,7 +17,7 @@ from oauth2_provider.settings import oauth2_settings
 logger = logging.getLogger(__name__)
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
     help = "Clear expired access tokens and refresh tokens for Django OAuth Toolkit"
 
     def _add_boolean_flag(self, parser, name, default=False):
@@ -50,7 +50,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         self._add_boolean_flag(parser, 'grants', True)
         self._add_boolean_flag(parser, 'revoked-tokens', True)
 
-    def clear_table_data(self, query_set, batch_size, model, sleep_time):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def clear_table_data(self, query_set, batch_size, model, sleep_time):  # pylint: disable=missing-function-docstring
         total_deletions = 0
         deletion_count = 1  # we expect to delete at least one row to start out with
         while deletion_count:
@@ -70,14 +70,14 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         message = f'Final deletion count: Cleaned {total_deletions} rows from {model.__name__} table'
         logger.info(message)
 
-    def get_expiration_time(self, now):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_expiration_time(self, now):  # pylint: disable=missing-function-docstring
         refresh_token_expire_seconds = oauth2_settings.REFRESH_TOKEN_EXPIRE_SECONDS
         if not isinstance(refresh_token_expire_seconds, timedelta):
             try:
                 refresh_token_expire_seconds = timedelta(seconds=refresh_token_expire_seconds)
             except TypeError:
                 e = "REFRESH_TOKEN_EXPIRE_SECONDS must be either a timedelta or seconds"
-                raise ImproperlyConfigured(e)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ImproperlyConfigured(e)  # pylint: disable=raise-missing-from  # noqa: B904
             return now - refresh_token_expire_seconds
 
     def handle(self, *args, **options):

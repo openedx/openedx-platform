@@ -4,7 +4,7 @@ Tests for the `api_admin` api module.
 
 import json
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.test import TestCase
 from rest_framework.reverse import reverse
 
@@ -20,7 +20,7 @@ class ApiAccessRequestViewTests(TestCase):
     """
     password = 'test'
 
-    def setUp(self):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUp(self):  # pylint: disable=super-method-not-called
         """
         Perform operations common to all test cases.
         """

@@ -11,9 +11,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from lms.djangoapps.survey.models import SurveyForm
 from lms.djangoapps.survey.utils import check_survey_required_and_unanswered, is_survey_required_for_course
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class SurveyModelsTests(ModuleStoreTestCase):

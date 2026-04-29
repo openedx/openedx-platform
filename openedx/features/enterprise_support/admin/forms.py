@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from enterprise.admin.utils import validate_csv
 
 
-class CSVImportForm(forms.Form):  # lint-amnesty, pylint: disable=missing-class-docstring
+class CSVImportForm(forms.Form):  # pylint: disable=missing-class-docstring
     csv_file = forms.FileField(
         required=True,
         label=_('CSV File'),

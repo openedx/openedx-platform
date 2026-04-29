@@ -138,7 +138,7 @@ def perform_delegate_email_batches(entry_id, course_id, task_input, action_name)
     # code that doesn't need the entry_id.
     if course_id != entry.course_id:
         format_msg = "Course id conflict: explicit value %r does not match task value %r"
-        log.warning("Task %s: " + format_msg, task_id, course_id, entry.course_id)  # lint-amnesty, pylint: disable=logging-not-lazy
+        log.warning("Task %s: " + format_msg, task_id, course_id, entry.course_id)  # pylint: disable=logging-not-lazy
         raise ValueError(format_msg % (course_id, entry.course_id))
 
     # Fetch the CourseEmail.
@@ -166,7 +166,7 @@ def perform_delegate_email_batches(entry_id, course_id, task_input, action_name)
     # Sanity check that course for email_obj matches that of the task referencing it.
     if course_id != email_obj.course_id:
         format_msg = "Course id conflict: explicit value %r does not match email value %r"
-        log.warning("Task %s: " + format_msg, task_id, course_id, email_obj.course_id)  # lint-amnesty, pylint: disable=logging-not-lazy
+        log.warning("Task %s: " + format_msg, task_id, course_id, email_obj.course_id)  # pylint: disable=logging-not-lazy
         raise ValueError(format_msg % (course_id, email_obj.course_id))
 
     # Fetch the course object.
@@ -436,7 +436,7 @@ def _get_source_address(course_id, course_title, course_language, truncate=True)
     return from_addr
 
 
-def _send_course_email(entry_id, email_id, to_list, global_email_context, subtask_status):  # lint-amnesty, pylint: disable=too-many-statements
+def _send_course_email(entry_id, email_id, to_list, global_email_context, subtask_status):  # pylint: disable=too-many-statements
     """
     Performs the email sending task.
 
@@ -588,7 +588,7 @@ def _send_course_email(entry_id, email_id, to_list, global_email_context, subtas
                     f"EmailId: {email_id}, Recipient num: {recipient_num}/{total_recipients}, Recipient UserId: "
                     f"{current_recipient['pk']}"
                 )
-                if exc.smtp_code >= 400 and exc.smtp_code < 500:  # lint-amnesty, pylint: disable=no-else-raise
+                if exc.smtp_code >= 400 and exc.smtp_code < 500:  # pylint: disable=no-else-raise
                     # This will cause the outer handler to catch the exception and retry the entire task.
                     raise exc
                 else:
@@ -602,7 +602,7 @@ def _send_course_email(entry_id, email_id, to_list, global_email_context, subtas
 
             except SINGLE_EMAIL_FAILURE_ERRORS as exc:
                 # This will fall through and not retry the message.
-                if exc.response['Error']['Code'] in ['MessageRejected', 'MailFromDomainNotVerified', 'MailFromDomainNotVerifiedException', 'FromEmailAddressNotVerifiedException']:   # lint-amnesty, pylint: disable=line-too-long
+                if exc.response['Error']['Code'] in ['MessageRejected', 'MailFromDomainNotVerified', 'MailFromDomainNotVerifiedException', 'FromEmailAddressNotVerifiedException']:   # pylint: disable=line-too-long
                     total_recipients_failed += 1
                     log.exception(
                         f"BulkEmail ==> Status: Failed(SINGLE_EMAIL_FAILURE_ERRORS), Task: {parent_task_id}, SubTask: "
@@ -648,7 +648,7 @@ def _send_course_email(entry_id, email_id, to_list, global_email_context, subtas
     except INFINITE_RETRY_ERRORS as exc:
         # Increment the "retried_nomax" counter, update other counters with progress to date,
         # and set the state to RETRY:
-        if isinstance(exc, (SMTPDataError, SMTPSenderRefused)) or exc.response['Error']['Code'] in ['LimitExceededException']:   # lint-amnesty, pylint: disable=line-too-long
+        if isinstance(exc, (SMTPDataError, SMTPSenderRefused)) or exc.response['Error']['Code'] in ['LimitExceededException']:   # pylint: disable=line-too-long
             subtask_status.increment(retried_nomax=1, state=RETRY)
             return _submit_for_retry(
                 entry_id, email_id, to_list, global_email_context, exc, subtask_status, skip_retry_max=True

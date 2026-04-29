@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from unittest.mock import patch
 
@@ -7,7 +7,7 @@ from django.test import TestCase
 from common.djangoapps.track.backends.mongodb import MongoBackend
 
 
-class TestMongoBackend(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestMongoBackend(TestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         self.mongo_patcher = patch('common.djangoapps.track.backends.mongodb.MongoClient')

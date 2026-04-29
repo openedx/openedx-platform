@@ -5,7 +5,7 @@ Test the cancel_user_retirement_request management command
 
 import pytest
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management import CommandError, call_command
 
 from common.djangoapps.student.tests.factories import UserFactory

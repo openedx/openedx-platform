@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from django.urls import re_path
 
 from openedx.core.constants import COURSE_ID_PATTERN

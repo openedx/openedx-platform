@@ -12,7 +12,7 @@ import logging
 import re
 import sys
 
-import six  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+import six  # pylint: disable=unused-import  # noqa: F401
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
 from eventtracking import tracker
@@ -40,7 +40,7 @@ class TrackMiddleware(MiddlewareMixin):
     emitted events.
     """
 
-    def process_request(self, request):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def process_request(self, request):  # pylint: disable=missing-function-docstring
         try:
             self.enter_request_context(request)
 
@@ -81,7 +81,7 @@ class TrackMiddleware(MiddlewareMixin):
             event = event[:512]
 
             views.server_track(request, request.META['PATH_INFO'], event)
-        except:  # lint-amnesty, pylint: disable=bare-except
+        except:  # pylint: disable=bare-except
             ## Why do we have the overly broad except?
             ##
             ## I added instrumentation so if we drop events on the
@@ -93,7 +93,7 @@ class TrackMiddleware(MiddlewareMixin):
             event = {'event-type': 'exception', 'exception': repr(sys.exc_info()[0])}
             try:
                 views.server_track(request, request.META['PATH_INFO'], event)
-            except:  # lint-amnesty, pylint: disable=bare-except
+            except:  # pylint: disable=bare-except
                 # At this point, things are really broken. We really
                 # should fail return a 500 to the user here.  However,
                 # the interim decision is to just fail in order to be

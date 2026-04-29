@@ -5,15 +5,15 @@ integration environment.
 import logging
 from textwrap import dedent
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management.base import BaseCommand, CommandError
 from opaque_keys.edx.keys import CourseKey
 
 from cms.djangoapps.contentstore.management.commands.utils import user_from_str
 from cms.djangoapps.contentstore.views.course import create_new_course_in_store
 from openedx.core.djangoapps.catalog.utils import get_course_runs
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import DuplicateCourseError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import DuplicateCourseError  # pylint: disable=wrong-import-order
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class Command(BaseCommand):
         try:
             user_object = user_from_str(user)
         except User.DoesNotExist:
-            raise CommandError(f"No user {user} found.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f"No user {user} found.")  # pylint: disable=raise-missing-from  # noqa: B904
         return user_object
 
     def handle(self, *args, **options):

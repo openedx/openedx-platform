@@ -40,7 +40,7 @@ class XBlockPackageStorage(Storage):
         with resources.as_file(resources.files(self.module.rsplit('.', 1)[0]) / self.base_dir / name) as file_path:
             return str(file_path)
 
-    def exists(self, path):  # lint-amnesty, pylint: disable=arguments-differ
+    def exists(self, path):  # pylint: disable=arguments-differ
         """
         Returns True if the specified path exists.
         """
@@ -108,7 +108,7 @@ class XBlockPackageStorage(Storage):
         raise NotImplementedError("Deleting files from a package is not supported")
 
 
-class XBlockPipelineFinder(BaseFinder):  # lint-amnesty, pylint: disable=abstract-method
+class XBlockPipelineFinder(BaseFinder):  # pylint: disable=abstract-method
     """
     A static files finder that gets static assets from xblocks.
     """

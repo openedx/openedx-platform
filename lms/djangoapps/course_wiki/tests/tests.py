@@ -11,9 +11,9 @@ from lms.djangoapps.courseware.tests.tests import LoginEnrollmentTestCase
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.enterprise_support.tests.mixins.enterprise import EnterpriseTestConsentRequired
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCase, ModuleStoreTestCase):
@@ -228,4 +228,4 @@ class WikiRedirectTestCase(EnterpriseTestConsentRequired, LoginEnrollmentTestCas
                 (reverse('course_wiki', kwargs={'course_id': course_id}), 302),
                 (f'/courses/{course_id}/wiki/', 200),
         ):
-            self.verify_consent_required(self.client, url, status_code=status_code)  # lint-amnesty, pylint: disable=no-value-for-parameter
+            self.verify_consent_required(self.client, url, status_code=status_code)  # pylint: disable=no-value-for-parameter

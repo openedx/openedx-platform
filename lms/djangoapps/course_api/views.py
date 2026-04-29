@@ -142,7 +142,7 @@ class CourseListUserThrottle(UserRateThrottle):
         'staff': '40/minute',
     }
 
-    def check_for_switches(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def check_for_switches(self):  # pylint: disable=missing-function-docstring
         if USE_RATE_LIMIT_2_FOR_COURSE_LIST_API.is_enabled():
             self.THROTTLE_RATES = {
                 'user': '2/minute',
@@ -195,7 +195,7 @@ class LazyPageNumberPagination(NamespacedPageNumberPagination):
                 page_number=page_number, message=str(exc)
             )
             self.page.number = self.page.paginator.num_pages
-            raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise NotFound(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         return super().get_paginated_response(data)
 
@@ -224,19 +224,19 @@ class LazyPageNumberPagination(NamespacedPageNumberPagination):
 
         with function_trace('pagination_paginate_queryset_get_page'):
             try:
-                self.page = paginator.page(page_number)  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+                self.page = paginator.page(page_number)  # pylint: disable=attribute-defined-outside-init
             except InvalidPage as exc:
                 msg = self.invalid_page_message.format(
                     page_number=page_number, message=str(exc)
                 )
-                raise NotFound(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise NotFound(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
         with function_trace('pagination_paginate_queryset_get_num_pages'):
             if paginator.num_pages > 1 and self.template is not None:
                 # The browsable API should display pagination controls.
                 self.display_page_controls = True
 
-        self.request = request  # lint-amnesty, pylint: disable=attribute-defined-outside-init
+        self.request = request  # pylint: disable=attribute-defined-outside-init
 
         with function_trace('pagination_paginate_queryset_listify_page'):
             page_list = list(self.page)

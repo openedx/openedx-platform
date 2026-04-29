@@ -12,7 +12,7 @@ class CourseDeadlinesMobileSerializer(DatesBannerSerializer):
     """Serializer for course deadlines"""
     has_ended = serializers.SerializerMethodField()
 
-    def get_has_ended(self, _):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_has_ended(self, _):  # pylint: disable=missing-function-docstring
         course_key_string = self.context['view'].kwargs.get('course_key_string')
         course_key = CourseKey.from_string(course_key_string)
         course = CourseOverview.get_from_id(course_key)

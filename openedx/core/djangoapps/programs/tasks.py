@@ -272,7 +272,7 @@ def post_course_certificate_configuration(client, cert_config, certificate_avail
     retry_jitter=True,
 )
 @set_code_owner_attribute
-def award_program_certificates(self, username):  # lint-amnesty, pylint: disable=too-many-statements
+def award_program_certificates(self, username):  # pylint: disable=too-many-statements
     """
     This task is designed to be called whenever a student's completion status changes with respect to one or more
     courses (primarily, when a course certificate is awarded).
@@ -593,7 +593,7 @@ def award_course_certificate(self, username, course_run_key):
     retry_jitter=True,
 )
 @set_code_owner_attribute
-def revoke_program_certificates(self, username, course_key):  # lint-amnesty, pylint: disable=too-many-statements
+def revoke_program_certificates(self, username, course_key):  # pylint: disable=too-many-statements
     """
     This task is designed to be called whenever a student's course certificate is revoked.
 

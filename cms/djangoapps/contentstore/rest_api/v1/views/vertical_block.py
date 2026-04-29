@@ -14,8 +14,8 @@ from cms.djangoapps.contentstore.rest_api.v1.serializers import ContainerHandler
 from cms.djangoapps.contentstore.utils import get_container_handler_context
 from cms.djangoapps.contentstore.views.component import _get_item_in_course
 from openedx.core.lib.api.view_utils import view_auth_classes
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 from openassessment.data import OraAggregateData
 
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 DEFAULT_ORA_METRICS = {
     'total': 0,

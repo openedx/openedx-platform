@@ -83,7 +83,7 @@ def clean_course_id(model_form, is_required=True):
         course_key = CourseKey.from_string(cleaned_id)
     except InvalidKeyError:
         msg = f'Course id invalid. Entered course id was: "{cleaned_id}".'
-        raise forms.ValidationError(msg)  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise forms.ValidationError(msg)  # pylint: disable=raise-missing-from  # noqa: B904
 
     if not modulestore().has_course(course_key):
         msg = f'Course not found. Entered course id was: "{str(course_key)}".'

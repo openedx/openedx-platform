@@ -1,4 +1,4 @@
-#   Copyright (c) 2008 Mikeal Rogers  # lint-amnesty, pylint: disable=missing-module-docstring
+#   Copyright (c) 2008 Mikeal Rogers  # pylint: disable=missing-module-docstring
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
-from django.http import HttpResponse  # lint-amnesty, pylint: disable=unused-import
+from django.http import HttpResponse  # pylint: disable=unused-import
 from django.template import engines
 from django.urls import NoReverseMatch, reverse
 from edx_django_utils.monitoring import set_custom_attribute
 from six.moves.urllib.parse import urljoin
 
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
-from xmodule.util.xmodule_django import get_current_request_hostname  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.util.xmodule_django import get_current_request_hostname  # pylint: disable=wrong-import-order
 
 from . import Engines
 
@@ -85,7 +85,7 @@ def marketing_link(name):
     elif not enable_mktg_site and name in link_map:
         # don't try to reverse disabled marketing links
         if link_map[name] is not None:
-            host_name = get_current_request_hostname()  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+            host_name = get_current_request_hostname()  # pylint: disable=unused-variable  # noqa: F841
             if link_map[name].startswith('http'):
                 return link_map[name]
             else:

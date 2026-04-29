@@ -1,7 +1,7 @@
 # pylint: disable=missing-module-docstring
-import itertools  # lint-amnesty, pylint: disable=wrong-import-order
-from datetime import datetime, timedelta  # lint-amnesty, pylint: disable=wrong-import-order
-from unittest.mock import Mock  # lint-amnesty, pylint: disable=wrong-import-order
+import itertools  # pylint: disable=wrong-import-order
+from datetime import datetime, timedelta  # pylint: disable=wrong-import-order
+from unittest.mock import Mock  # pylint: disable=wrong-import-order
 from zoneinfo import ZoneInfo
 
 import ddt

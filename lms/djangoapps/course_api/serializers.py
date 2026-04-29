@@ -12,7 +12,7 @@ from rest_framework import serializers
 
 from common.djangoapps.student.models import CourseEnrollment
 from lms.djangoapps.certificates.api import can_show_certificate_available_date_field
-from openedx.core.djangoapps.content.course_overviews.models import (  # lint-amnesty, pylint: disable=unused-import
+from openedx.core.djangoapps.content.course_overviews.models import (  # pylint: disable=unused-import
     CourseOverview,  # noqa: F401
 )
 from openedx.core.djangoapps.models.course_details import CourseDetails
@@ -45,7 +45,7 @@ class _AbsolutMediaSerializer(_MediaSerializer):  # pylint: disable=abstract-met
 
     def __call__(self, serializer_field):
         self.context = serializer_field.context
-        return super(self).__call__(serializer_field)  # lint-amnesty, pylint: disable=bad-super-call
+        return super(self).__call__(serializer_field)  # pylint: disable=bad-super-call
 
     uri_absolute = serializers.SerializerMethodField(source="*")
 
@@ -66,7 +66,7 @@ class _AbsolutMediaSerializer(_MediaSerializer):  # pylint: disable=abstract-met
         # In order to use the AbsoluteURLField to have the same
         # behaviour what ImageSerializer provides, we need to set
         # the request for the field
-        field._context = {"request": self.context.get("request")}  # lint-amnesty, pylint: disable=protected-access
+        field._context = {"request": self.context.get("request")}  # pylint: disable=protected-access
 
         return field.to_representation(cdn_applied_uri)
 

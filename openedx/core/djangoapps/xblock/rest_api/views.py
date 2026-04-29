@@ -15,7 +15,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from opaque_keys.edx.keys import UsageKeyV2
 from rest_framework import permissions, serializers
-from rest_framework.decorators import api_view, permission_classes  # lint-amnesty, pylint: disable=unused-import
+from rest_framework.decorators import api_view, permission_classes  # pylint: disable=unused-import
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
 from rest_framework.fields import BooleanField
 from rest_framework.response import Response
@@ -257,7 +257,7 @@ def get_block_olx_view(
     return Response(XBlockOlxSerializer({"olx": olx}).data)
 
 
-def cors_allow_xblock_handler(sender, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+def cors_allow_xblock_handler(sender, request, **kwargs):  # pylint: disable=unused-argument
     """
     Sandboxed XBlocks need to be able to call XBlock handlers via POST,
     from a different domain. See 'xblock_handler' method for details and how security is
@@ -363,7 +363,7 @@ class BlockFieldsView(APIView):
         (Including any set to None.)
         """
         result = {}
-        for field in block.fields.values():  # lint-amnesty, pylint: disable=no-member
+        for field in block.fields.values():  # pylint: disable=no-member
             if field.scope == scope and field.is_set_on(block):
                 try:
                     result[field.name] = field.read_json(block)

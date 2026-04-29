@@ -6,7 +6,7 @@ import json
 import pickle
 from datetime import datetime
 from importlib import import_module
-from operator import itemgetter  # lint-amnesty, pylint: disable=wrong-import-order
+from operator import itemgetter  # pylint: disable=wrong-import-order
 from unittest.mock import patch
 
 import ddt
@@ -31,15 +31,15 @@ from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase, Mas
 from lms.djangoapps.courseware.tests.test_submitting_problems import ProblemSubmissionTestMixin
 from openedx.core.djangoapps.lang_pref import LANGUAGE_KEY
 from openedx.core.djangoapps.user_api.preferences.api import get_user_preference, set_user_preference
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
-from xmodule.partitions.partitions import Group, UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import Group, UserPartition  # pylint: disable=wrong-import-order
 
 
 class MasqueradeTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase, MasqueradeMixin):
@@ -439,7 +439,7 @@ class ReadOnlyKeyValueStore(DictKeyValueStore):
     def delete(self, key):
         assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
-    def set_many(self, update_dict):  # lint-amnesty, pylint: disable=arguments-differ, unused-argument
+    def set_many(self, update_dict):  # pylint: disable=arguments-differ, unused-argument
         assert False, "ReadOnlyKeyValueStore may not be modified."  # noqa: B011, PT015
 
 

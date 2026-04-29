@@ -9,7 +9,7 @@ from django.conf import settings
 from django.db import migrations, models
 
 
-class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Migration(migrations.Migration):  # pylint: disable=missing-class-docstring
 
     dependencies = [
         ('course_overviews', '0017_auto_20191002_0823'),
@@ -22,19 +22,19 @@ class Migration(migrations.Migration):  # lint-amnesty, pylint: disable=missing-
             name='HistoricalCourseEntitlementSupportDetail',
             fields=[
                 ('id', models.IntegerField(auto_created=True, blank=True, db_index=True, verbose_name='ID')),
-                ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),  # lint-amnesty, pylint: disable=line-too-long
-                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),  # lint-amnesty, pylint: disable=line-too-long
-                ('reason', models.CharField(choices=[('LEAVE', 'Learner requested leave session for expired entitlement'), ('CHANGE', 'Learner requested session change for expired entitlement'), ('LEARNER_NEW', 'Learner requested new entitlement'), ('COURSE_TEAM_NEW', 'Course team requested entitlement for learnerg'), ('OTHER', 'Other')], max_length=15)),  # lint-amnesty, pylint: disable=line-too-long
-                ('action', models.CharField(choices=[('REISSUE', 'Re-issue entitlement'), ('CREATE', 'Create new entitlement')], max_length=15)),  # lint-amnesty, pylint: disable=line-too-long
+                ('created', model_utils.fields.AutoCreatedField(default=django.utils.timezone.now, editable=False, verbose_name='created')),  # pylint: disable=line-too-long
+                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),  # pylint: disable=line-too-long
+                ('reason', models.CharField(choices=[('LEAVE', 'Learner requested leave session for expired entitlement'), ('CHANGE', 'Learner requested session change for expired entitlement'), ('LEARNER_NEW', 'Learner requested new entitlement'), ('COURSE_TEAM_NEW', 'Course team requested entitlement for learnerg'), ('OTHER', 'Other')], max_length=15)),  # pylint: disable=line-too-long
+                ('action', models.CharField(choices=[('REISSUE', 'Re-issue entitlement'), ('CREATE', 'Create new entitlement')], max_length=15)),  # pylint: disable=line-too-long
                 ('comments', models.TextField(null=True)),
                 ('history_id', models.AutoField(primary_key=True, serialize=False)),
                 ('history_date', models.DateTimeField()),
                 ('history_change_reason', models.CharField(max_length=100, null=True)),
-                ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),  # lint-amnesty, pylint: disable=line-too-long
-                ('entitlement', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='entitlements.CourseEntitlement')),  # lint-amnesty, pylint: disable=line-too-long
-                ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),  # lint-amnesty, pylint: disable=line-too-long
-                ('support_user', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),  # lint-amnesty, pylint: disable=line-too-long
-                ('unenrolled_run', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='course_overviews.CourseOverview')),  # lint-amnesty, pylint: disable=line-too-long
+                ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),  # pylint: disable=line-too-long
+                ('entitlement', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='entitlements.CourseEntitlement')),  # pylint: disable=line-too-long
+                ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),  # pylint: disable=line-too-long
+                ('support_user', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),  # pylint: disable=line-too-long
+                ('unenrolled_run', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='course_overviews.CourseOverview')),  # pylint: disable=line-too-long
             ],
             options={
                 'ordering': ('-history_date', '-history_id'),

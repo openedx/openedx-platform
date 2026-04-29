@@ -19,7 +19,7 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 log = logging.getLogger(__name__)
 
 
-class BaseSoftwareSecureTask(Task):  # lint-amnesty, pylint: disable=abstract-method
+class BaseSoftwareSecureTask(Task):  # pylint: disable=abstract-method
     """
     Base task class for use with Software Secure request.
 

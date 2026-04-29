@@ -50,7 +50,7 @@ TOY_BLOCK_INFO_TREE = [
         'Overview', "chapter", {"display_name": "Overview"}, [
             BlockInfo(
                 "Toy_Videos", "sequential", {
-                    "xml_attributes": {"filename": ["", None]}, "display_name": "Toy Videos", "format": "Lecture Sequence"  # lint-amnesty, pylint: disable=line-too-long
+                    "xml_attributes": {"filename": ["", None]}, "display_name": "Toy Videos", "format": "Lecture Sequence"  # pylint: disable=line-too-long
                 }, [
                     BlockInfo(
                         "secret:toylab", "html", {
@@ -66,7 +66,7 @@ TOY_BLOCK_INFO_TREE = [
                     ),
                     BlockInfo(
                         "toyjumpto", "html", {
-                            "data": "<a href=\"/jump_to_id/vertical_test\">This is a link to another page and some Chinese 四節比分和七年前</a> <p>Some more Chinese 四節比分和七年前</p>\n",  # lint-amnesty, pylint: disable=line-too-long
+                            "data": "<a href=\"/jump_to_id/vertical_test\">This is a link to another page and some Chinese 四節比分和七年前</a> <p>Some more Chinese 四節比分和七年前</p>\n",  # pylint: disable=line-too-long
                             "xml_attributes": {"filename": ["html/toyjumpto.xml", "html/toyjumpto.xml"]}
                         }, []),
                     BlockInfo(
@@ -91,7 +91,7 @@ TOY_BLOCK_INFO_TREE = [
                         }, []),
                     BlockInfo(
                         "with_styling", "html", {
-                            "data": "<p style=\"font:italic bold 72px/30px Georgia, serif; color: red; \">Red text here</p>",  # lint-amnesty, pylint: disable=line-too-long
+                            "data": "<p style=\"font:italic bold 72px/30px Georgia, serif; color: red; \">Red text here</p>",  # pylint: disable=line-too-long
                             "xml_attributes": {"filename": ["html/with_styling.xml", "html/with_styling.xml"]}
                         }, []),
                     BlockInfo(
@@ -108,7 +108,7 @@ TOY_BLOCK_INFO_TREE = [
                 "Welcome", "video", {"data": "", "youtube_id_1_0": "p2Q6BrNhdh8", "display_name": "Welcome"}, []
             ),
             BlockInfo(
-                "video_123456789012", "video", {"data": "", "youtube_id_1_0": "p2Q6BrNhdh8", "display_name": "Test Video"}, []  # lint-amnesty, pylint: disable=line-too-long
+                "video_123456789012", "video", {"data": "", "youtube_id_1_0": "p2Q6BrNhdh8", "display_name": "Test Video"}, []  # pylint: disable=line-too-long
             ),
             BlockInfo(
                 "video_4f66f493ac8f", "video", {"youtube_id_1_0": "p2Q6BrNhdh8"}, []

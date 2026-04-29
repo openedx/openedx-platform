@@ -7,7 +7,7 @@ import logging
 from celery import shared_task
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from edx_ace import ace
 from edx_ace.errors import RecoverableChannelDeliveryError
@@ -46,7 +46,7 @@ def check_pwned_password_and_send_track_event(
             'Unable to get response from pwned password api for user_id: "%s"',
             user_id,
         )
-        return {}  # lint-amnesty, pylint: disable=raise-missing-from
+        return {}  # pylint: disable=raise-missing-from
 
 
 @shared_task(bind=True, default_retry_delay=30, max_retries=2)
@@ -95,4 +95,4 @@ def send_activation_email(self, msg_string, from_address=None, site_id=None):
             from_address,
             dest_addr,
         )
-        raise Exception  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Exception  # pylint: disable=raise-missing-from  # noqa: B904

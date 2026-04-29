@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from factory.django import DjangoModelFactory
 
 from openedx.features.calendar_sync.models import UserCalendarSyncConfig

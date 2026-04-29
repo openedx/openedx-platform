@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import search
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.urls import reverse
 from edx_django_utils.monitoring import function_trace
 from edx_when.api import get_dates_for_course
@@ -27,8 +27,8 @@ from openedx.core.djangoapps.content.learning_sequences.api import get_course_ou
 from openedx.core.djangoapps.content.learning_sequences.data import CourseOutlineData
 from openedx.core.lib.api.view_utils import LazySequence
 from openedx.features.course_experience import course_home_url
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from .exceptions import OverEnrollmentLimitException
 from .permissions import can_view_courses_for_username

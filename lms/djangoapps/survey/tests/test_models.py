@@ -39,7 +39,7 @@ class SurveyModelsTests(TestCase):
         )
 
         self.test_survey_name = 'TestForm'
-        self.test_form = '<li><input name="field1" /></li><li><input name="field2" /></li><li><select name="ddl"><option>1</option></select></li>'  # lint-amnesty, pylint: disable=line-too-long
+        self.test_form = '<li><input name="field1" /></li><li><input name="field2" /></li><li><select name="ddl"><option>1</option></select></li>'  # pylint: disable=line-too-long
         self.test_form_update = '<input name="field1" />'
         self.course_id = 'foo/bar/baz'
 

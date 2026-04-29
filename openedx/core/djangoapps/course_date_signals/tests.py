@@ -1,6 +1,6 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 from datetime import timedelta
-from unittest.mock import patch  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import patch  # pylint: disable=wrong-import-order
 
 from edx_toggles.toggles.testutils import override_waffle_flag
 
@@ -18,7 +18,7 @@ from xmodule.modulestore.tests.factories import BlockFactory, CourseFactory
 from . import utils
 
 
-class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class SelfPacedDueDatesTests(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
     MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     def setUp(self):
@@ -37,7 +37,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
             (3, 'Section 3', timedelta(days=28)),
         ]
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=4)):
-            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # lint-amnesty, pylint: disable=line-too-long
+            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # pylint: disable=line-too-long
 
         assert actual == expected_sections
 
@@ -51,7 +51,7 @@ class SelfPacedDueDatesTests(ModuleStoreTestCase):  # lint-amnesty, pylint: disa
             (3, 'Section 3', timedelta(days=28)),
         ]
         with patch.object(utils, 'get_expected_duration', return_value=timedelta(weeks=4)):
-            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # lint-amnesty, pylint: disable=line-too-long
+            actual = [(idx, section.display_name, offset) for (idx, section, offset) in utils.spaced_out_sections(self.course)]  # pylint: disable=line-too-long
 
         assert actual == expected_sections
 

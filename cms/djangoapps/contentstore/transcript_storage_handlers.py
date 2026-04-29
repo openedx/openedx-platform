@@ -24,7 +24,7 @@ from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 from common.djangoapps.util.json_request import JsonResponse
 from openedx.core.djangoapps.video_config.models import VideoTranscriptEnabledFlag
 from openedx.core.djangoapps.video_config.transcripts_utils import (
-    Transcript,  # lint-amnesty, pylint: disable=wrong-import-order
+    Transcript,  # pylint: disable=wrong-import-order
 )
 from openedx.core.djangoapps.video_pipeline.api import update_3rd_party_transcription_service_credentials
 
@@ -64,7 +64,7 @@ def validate_transcript_credentials(provider, **credentials):
             must_have_props = ['api_key', 'username']
 
         missing = [
-            must_have_prop for must_have_prop in must_have_props if must_have_prop not in list(credentials.keys())   # lint-amnesty, pylint: disable=consider-iterating-dictionary
+            must_have_prop for must_have_prop in must_have_props if must_have_prop not in list(credentials.keys())   # pylint: disable=consider-iterating-dictionary
         ]
         if missing:
             error_message = '{missing} must be specified.'.format(missing=' and '.join(missing))
@@ -233,7 +233,7 @@ def validate_transcript_upload_data(data, files):
         data['language_code'] != data['new_language_code'] and
         data['new_language_code'] in get_available_transcript_languages(video_id=data['edx_video_id'])
     ):
-        error = _('A transcript with the "{language_code}" language code already exists.'.format(  # lint-amnesty, pylint: disable=translation-of-non-string
+        error = _('A transcript with the "{language_code}" language code already exists.'.format(  # pylint: disable=translation-of-non-string
             language_code=data['new_language_code']
         ))
     elif 'file' not in files:

@@ -11,7 +11,7 @@ from opaque_keys.edx.keys import CourseKey
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.student.models import CourseEnrollment
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
             try:
                 course_key = CourseKey.from_string(course_id)
             except InvalidKeyError:
-                raise CommandError(f'Course ID {course_id} is invalid.')  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise CommandError(f'Course ID {course_id} is invalid.')  # pylint: disable=raise-missing-from  # noqa: B904
 
             if modulestore().get_course(course_key) is None:
                 raise CommandError(f'The given course {course_id} does not exist.')

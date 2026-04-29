@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import logging
 import re
@@ -36,7 +36,7 @@ def try_staticfiles_lookup(path):
     """
     try:
         url = staticfiles_storage.url(path)
-    except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except
         log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
             path, str(err)))
         # Just return the original path; don't kill everything.
@@ -44,7 +44,7 @@ def try_staticfiles_lookup(path):
     return url
 
 
-def replace_jump_to_id_urls(text, course_id, jump_to_id_base_url):  # lint-amnesty, pylint: disable=unused-argument
+def replace_jump_to_id_urls(text, course_id, jump_to_id_base_url):  # pylint: disable=unused-argument
     """
     This will replace a link to another piece of courseware to a 'jump_to'
     URL that will redirect to the right place in the courseware
@@ -203,7 +203,7 @@ def replace_static_urls(
             exists_in_staticfiles_storage = False
             try:
                 exists_in_staticfiles_storage = staticfiles_storage.exists(rest)
-            except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as err:  # pylint: disable=broad-except
                 log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
                     rest, str(err)))
 
@@ -231,7 +231,7 @@ def replace_static_urls(
                 else:
                     url = staticfiles_storage.url(course_path)
             # And if that fails, assume that it's course content, and add manually data directory
-            except Exception as err:  # lint-amnesty, pylint: disable=broad-except
+            except Exception as err:  # pylint: disable=broad-except
                 log.warning("staticfiles_storage couldn't find path {}: {}".format(  # noqa: UP032
                     rest, str(err)))
                 url = "".join([prefix, course_path])

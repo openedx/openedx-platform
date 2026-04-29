@@ -2,7 +2,7 @@
 Views for Onboarding Status.
 """
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from edx_proctoring.statuses import ProctoredExamStudentAttemptStatus

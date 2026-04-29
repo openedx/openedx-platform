@@ -255,7 +255,7 @@ class WeightedSubsectionsGrader(CourseGrader):
         self.subgraders = subgraders
 
     @property
-    def sum_of_weights(self):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def sum_of_weights(self):  # pylint: disable=missing-function-docstring
         result = 0
         for _, _, weight in self.subgraders:  # noqa: F402
             result += weight
@@ -324,7 +324,7 @@ class AssignmentFormatGrader(CourseGrader):
     min_count = 2 would produce the labels "Assignment 3", "Assignment 4"
 
     """
-    def __init__(  # lint-amnesty, pylint: disable=super-init-not-called
+    def __init__(  # pylint: disable=super-init-not-called
             self,
             type,  # pylint: disable=redefined-builtin
             min_count,

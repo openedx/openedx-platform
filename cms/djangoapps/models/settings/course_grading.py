@@ -12,7 +12,7 @@ from eventtracking import tracker
 from cms.djangoapps.contentstore.signals.signals import GRADING_POLICY_CHANGED
 from cms.djangoapps.models.settings.waffle import material_recompute_only
 from common.djangoapps.track.event_transaction_utils import create_new_event_transaction_id
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger(__name__)
 
@@ -234,7 +234,7 @@ class CourseGradingModel:
 
         # 'minimum_grade_credit' cannot be set to None
         if minimum_grade_credit is not None:
-            minimum_grade_credit = minimum_grade_credit  # lint-amnesty, pylint: disable=self-assigning-variable
+            minimum_grade_credit = minimum_grade_credit  # pylint: disable=self-assigning-variable
 
             course.minimum_grade_credit = minimum_grade_credit
             modulestore().update_item(course, user.id)
@@ -275,7 +275,7 @@ class CourseGradingModel:
         }
 
     @staticmethod
-    def update_section_grader_type(block, grader_type, user):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def update_section_grader_type(block, grader_type, user):  # pylint: disable=missing-function-docstring
         if grader_type is not None and grader_type != 'notgraded':
             block.format = grader_type
             block.graded = True
@@ -288,7 +288,7 @@ class CourseGradingModel:
         return {'graderType': grader_type}
 
     @staticmethod
-    def convert_set_grace_period(course):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def convert_set_grace_period(course):  # pylint: disable=missing-function-docstring
         # 5 hours 59 minutes 59 seconds => converted to iso format
         rawgrace = course.graceperiod
         if rawgrace:
@@ -315,7 +315,7 @@ class CourseGradingModel:
             return None
 
     @staticmethod
-    def parse_grader(json_grader):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def parse_grader(json_grader):  # pylint: disable=missing-function-docstring
         # manual to clear out kruft
         result = {"type": json_grader["type"],
                   "min_count": int(json_grader.get('min_count', 0)),
@@ -327,7 +327,7 @@ class CourseGradingModel:
         return result
 
     @staticmethod
-    def jsonize_grader(i, grader):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def jsonize_grader(i, grader):  # pylint: disable=missing-function-docstring
         # Warning: converting weight to integer might give unwanted results due
         # to the reason how floating point arithmetic works
         # e.g, "0.29 * 100 = 28.999999999999996"
@@ -341,7 +341,7 @@ class CourseGradingModel:
         }
 
 
-def _grading_event_and_signal(course_key, user_id):  # lint-amnesty, pylint: disable=missing-function-docstring
+def _grading_event_and_signal(course_key, user_id):  # pylint: disable=missing-function-docstring
     name = GRADING_POLICY_CHANGED_EVENT_TYPE
     course = modulestore().get_course(course_key)
     grading_policy_hash = str(hash_grading_policy(course.grading_policy))
@@ -361,7 +361,7 @@ def _grading_event_and_signal(course_key, user_id):  # lint-amnesty, pylint: dis
     )
 
 
-def hash_grading_policy(grading_policy):  # lint-amnesty, pylint: disable=missing-function-docstring
+def hash_grading_policy(grading_policy):  # pylint: disable=missing-function-docstring
     ordered_policy = json.dumps(
         grading_policy,
         separators=(',', ':'),  # Remove spaces from separators for more compact representation

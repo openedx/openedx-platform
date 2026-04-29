@@ -1,4 +1,4 @@
-"""  # lint-amnesty, pylint: disable=cyclic-import
+"""  # pylint: disable=cyclic-import
 Student Views
 """
 
@@ -14,22 +14,22 @@ from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core.validators import ValidationError, validate_email
 from django.db import transaction
 from django.db.models.signals import post_save
-from django.dispatch import Signal, receiver  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from django.dispatch import Signal, receiver  # pylint: disable=unused-import  # noqa: F401
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import redirect
 from django.template.context_processors import csrf
 from django.urls import reverse
 from django.utils.translation import gettext as _
-from django.views.decorators.csrf import (  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+from django.views.decorators.csrf import (  # pylint: disable=unused-import  # noqa: F401
     csrf_exempt,
     ensure_csrf_cookie,
 )
-from django.views.decorators.http import (  # lint-amnesty, pylint: disable=unused-import
+from django.views.decorators.http import (  # pylint: disable=unused-import
     require_GET,
     require_http_methods,  # noqa: F401
     require_POST,
@@ -39,7 +39,7 @@ from edx_ace.recipient import Recipient
 from edx_django_utils import monitoring as monitoring_utils
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import (
-    SessionAuthenticationAllowInactiveUser,  # lint-amnesty, pylint: disable=wrong-import-order
+    SessionAuthenticationAllowInactiveUser,  # pylint: disable=wrong-import-order
 )
 from eventtracking import tracker
 
@@ -50,7 +50,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 
 from common.djangoapps.course_modes.models import CourseMode
-from common.djangoapps.edxmako.shortcuts import (  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.edxmako.shortcuts import (  # pylint: disable=unused-import
     marketing_link,
     render_to_response,
     render_to_string,  # noqa: F401
@@ -63,13 +63,13 @@ from common.djangoapps.student.helpers import (
     get_next_url_for_login_page,
     get_redirect_url_with_host,
 )
-from common.djangoapps.student.message_types import (  # lint-amnesty, pylint: disable=line-too-long
+from common.djangoapps.student.message_types import (  # pylint: disable=line-too-long
     AccountActivation,
     EmailChange,
     EmailChangeConfirmation,
     RecoveryEmailCreate,
 )
-from common.djangoapps.student.models import (  # lint-amnesty, pylint: disable=unused-import
+from common.djangoapps.student.models import (  # pylint: disable=unused-import
     AccountRecovery,
     CourseEnrollment,
     EnrollmentNotAllowed,
@@ -114,7 +114,7 @@ from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiv
 from openedx.features.course_experience.url_helpers import make_learning_mfe_courseware_url
 from openedx.features.discounts.applicability import FIRST_PURCHASE_DISCOUNT_OVERRIDE_FLAG
 from openedx.features.enterprise_support.utils import is_enterprise_learner
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 log = logging.getLogger("edx.student")
 
@@ -754,7 +754,7 @@ def validate_new_email(user, new_email):
     try:
         validate_email(new_email)
     except ValidationError:
-        raise ValueError(_('Valid e-mail address required.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Valid e-mail address required.'))  # pylint: disable=raise-missing-from  # noqa: B904
 
     if new_email == user.email:
         raise ValueError(_('Old email is the same as the new email.'))
@@ -850,7 +850,7 @@ def do_email_change_request(user, new_email, activation_key=None, secondary_emai
     except Exception:
         from_address = configuration_helpers.get_value('email_from_address', settings.DEFAULT_FROM_EMAIL)
         log.error('Unable to send email activation link to user from "%s"', from_address, exc_info=True)
-        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise ValueError(_('Unable to send email activation link. Please try again later.'))  # pylint: disable=raise-missing-from  # noqa: B904
 
     if not secondary_email_change_request:
         # When the email address change is complete, a "edx.user.settings.changed" event will be emitted.

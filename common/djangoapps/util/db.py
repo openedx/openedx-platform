@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """
 Utility functions related to databases.
 """
@@ -7,10 +7,10 @@ Utility functions related to databases.
 import random
 
 # TransactionManagementError used below actually *does* derive from the standard "Exception" class.
-# lint-amnesty, pylint: disable=bad-option-value, nonstandard-exception
+# pylint: disable=bad-option-value, nonstandard-exception
 from contextlib import contextmanager
 
-from django.db import DEFAULT_DB_ALIAS, transaction  # lint-amnesty, pylint: disable=unused-import
+from django.db import DEFAULT_DB_ALIAS, transaction  # pylint: disable=unused-import
 
 from openedx.core.lib.cache_utils import get_cache
 
@@ -76,7 +76,7 @@ class OuterAtomic(transaction.Atomic):
             # The inner atomic starts a savepoint around the test.
             # So, for tests only, there should be exactly one savepoint_id and two atomic_for_testcase_calls.
             # atomic_for_testcase_calls below is added in a monkey-patch for tests only.
-            if self.ALLOW_NESTED and (self.atomic_for_testcase_calls - len(connection.savepoint_ids)) < 1:  # lint-amnesty, pylint: disable=no-member
+            if self.ALLOW_NESTED and (self.atomic_for_testcase_calls - len(connection.savepoint_ids)) < 1:  # pylint: disable=no-member
                 raise transaction.TransactionManagementError('Cannot be inside an atomic block.')
 
             # Otherwise, this shouldn't be nested in any atomic block.

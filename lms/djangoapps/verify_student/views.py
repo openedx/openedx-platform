@@ -45,7 +45,7 @@ from openedx.core.djangoapps.commerce.utils import get_ecommerce_api_base_url, g
 from openedx.core.djangoapps.embargo import api as embargo_api
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.log_utils import audit_log
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 from .services import IDVerificationService
 
@@ -195,7 +195,7 @@ class PayAndVerifyView(View):
         return user.is_active or is_account_activation_requirement_disabled()
 
     @method_decorator(login_required)
-    def get(  # lint-amnesty, pylint: disable=too-many-statements
+    def get(  # pylint: disable=too-many-statements
         self, request, course_id,
         always_show_payment=False,
         current_step=None,
@@ -421,7 +421,7 @@ class PayAndVerifyView(View):
 
         return render_to_response("verify_student/pay_and_verify.html", context)
 
-    def add_utm_params_to_url(self, url):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def add_utm_params_to_url(self, url):  # pylint: disable=missing-function-docstring
         # utm_params is [(u'utm_content', u'course-v1:IDBx IDB20.1x 1T2017'),...
         utm_params = [item for item in self.request.GET.items() if 'utm_' in item[0]]
         # utm_params is utm_content=course-v1%3AIDBx+IDB20.1x+1T2017&...
@@ -1036,7 +1036,7 @@ class SubmitPhotosView(View):
 
 @require_POST
 @csrf_exempt  # SS does its own message signing, and their API won't have a cookie value
-def results_callback(request):  # lint-amnesty, pylint: disable=too-many-statements
+def results_callback(request):  # pylint: disable=too-many-statements
     """
     Software Secure will call this callback to tell us whether a user is
     verified to be who they said they are.
@@ -1097,13 +1097,13 @@ def results_callback(request):  # lint-amnesty, pylint: disable=too-many-stateme
         'platform_name': settings.PLATFORM_NAME,
     }
     if result == "PASS":
-        # If this verification is not an outdated version then make expiry email date of previous approved verification NULL  # lint-amnesty, pylint: disable=line-too-long
+        # If this verification is not an outdated version then make expiry email date of previous approved verification NULL  # pylint: disable=line-too-long
         # Setting expiry email date to NULL is important so that it does not get filtered in the management command
         # that sends email when verification expires : verify_student/send_verification_expiry_email
         if attempt.status != 'approved':
             verification = SoftwareSecurePhotoVerification.objects.filter(status='approved', user_id=attempt.user_id)
             if verification:
-                log.info(f'Making expiry email date of previous approved verification NULL for {attempt.user_id}')  # lint-amnesty, pylint: disable=line-too-long
+                log.info(f'Making expiry email date of previous approved verification NULL for {attempt.user_id}')  # pylint: disable=line-too-long
                 # The updated_at field in sspv model has auto_now set to True, which means any time save() is called on
                 # the model instance, `updated_at` will change. Some of the existing functionality of verification
                 # (showing your verification has expired on dashboard) relies on updated_at.

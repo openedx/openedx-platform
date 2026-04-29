@@ -6,7 +6,7 @@ Utility functions for course_wiki.
 from django.core.exceptions import ObjectDoesNotExist
 
 import lms.djangoapps.courseware
-from xmodule import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import modulestore  # pylint: disable=wrong-import-order
 
 
 def user_is_article_course_staff(user, article):

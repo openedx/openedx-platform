@@ -12,9 +12,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangoapps.user_api.accounts.utils import retrieve_last_sitewide_block_completed
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -26,7 +26,7 @@ from ..utils import format_social_link, validate_social_link
 class UserAccountSettingsTest(TestCase):
     """Unit tests for setting Social Media Links."""
 
-    def setUp(self):  # lint-amnesty, pylint: disable=useless-super-delegation
+    def setUp(self):  # pylint: disable=useless-super-delegation
         super().setUp()
 
     def validate_social_link(self, social_platform, link):

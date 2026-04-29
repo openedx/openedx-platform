@@ -124,7 +124,7 @@ class ItemTest(CourseTestCase):
 
     def create_xblock(
         self, parent_usage_key=None, display_name=None, category=None, boilerplate=None
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         data = {
             "parent_locator": str(self.usage_key)
             if parent_usage_key is None
@@ -1617,7 +1617,7 @@ class TestMoveItem(ItemTest):
             self.course,
             course_id=self.course.id,
         )
-        html.runtime._services["partitions"] = partitions_service  # lint-amnesty, pylint: disable=protected-access
+        html.runtime._services["partitions"] = partitions_service  # pylint: disable=protected-access
 
         # Set access settings so html will contradict vert2 when moved into that unit
         vert1.group_access = {self.course.user_partitions[0].id: [group2.id]}
@@ -2214,7 +2214,7 @@ class TestEditItem(TestEditItemSetup):
         published = modulestore().get_item(
             self.problem_usage_key,
             revision=ModuleStoreEnum.RevisionOption.published_only,
-        )  # lint-amnesty, pylint: disable=line-too-long
+        )  # pylint: disable=line-too-long
 
         # Update the draft version and check that published is different.
         self.client.ajax_post(
@@ -2651,7 +2651,7 @@ class TestComponentHandler(TestCase):
     def test_request_method(self, method):
         def check_handler(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             self.assertEqual(request.method, method)  # noqa: PT009
             return Response()
 
@@ -2667,7 +2667,7 @@ class TestComponentHandler(TestCase):
     def test_response_code(self, status_code):
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             return Response(status_code=status_code)
 
         self.block.handle = create_response
@@ -2690,7 +2690,7 @@ class TestComponentHandler(TestCase):
 
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             """create dummy response"""
             return Response(status_code=200)
 
@@ -2726,7 +2726,7 @@ class TestComponentHandler(TestCase):
 
         def create_response(
             handler, request, suffix
-        ):  # lint-amnesty, pylint: disable=unused-argument
+        ):  # pylint: disable=unused-argument
             """create dummy response"""
             return Response(status_code=200)
 

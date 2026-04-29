@@ -437,7 +437,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         """Test that the sequence metadata is returned correctly"""
         # rather than dealing with json serialization of the Mock object,
         # let's just disable the bookmarks service
-        self.sequence_3_1.runtime._services['bookmarks'] = None  # lint-amnesty, pylint: disable=protected-access
+        self.sequence_3_1.runtime._services['bookmarks'] = None  # pylint: disable=protected-access
         metadata = self.sequence_3_1.get_metadata()
         assert len(metadata['items']) == 3
         assert metadata['tag'] == 'sequential'

@@ -14,7 +14,7 @@ TEST_DATA_DIR = settings.COMMON_TEST_DATA_ROOT
 
 # This test is in the CMS module because the test configuration to use a draft
 # modulestore is dependent on django.
-class DraftReorderTestCase(ModuleStoreTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class DraftReorderTestCase(ModuleStoreTestCase):  # pylint: disable=missing-class-docstring
 
     def test_order(self):
         """

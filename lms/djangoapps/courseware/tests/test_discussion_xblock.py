@@ -109,7 +109,7 @@ class TestGetDjangoUser(TestDiscussionXBlock):
         of the user service.
         """
         actual_user = self.block.django_user
-        self.runtime.service.assert_called_once_with(  # lint-amnesty, pylint: disable=no-member
+        self.runtime.service.assert_called_once_with(  # pylint: disable=no-member
             self.block, 'user')
         assert actual_user == self.django_user
 

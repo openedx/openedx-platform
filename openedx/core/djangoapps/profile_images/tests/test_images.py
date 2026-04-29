@@ -1,10 +1,10 @@
 """
 Test cases for image processing functions in the profile image package.
 """
-import os  # lint-amnesty, pylint: disable=wrong-import-order
+import os  # pylint: disable=wrong-import-order
 from contextlib import closing
-from itertools import product  # lint-amnesty, pylint: disable=wrong-import-order
-from tempfile import NamedTemporaryFile  # lint-amnesty, pylint: disable=wrong-import-order
+from itertools import product  # pylint: disable=wrong-import-order
+from tempfile import NamedTemporaryFile  # pylint: disable=wrong-import-order
 from unittest import mock
 
 import ddt

@@ -5,7 +5,7 @@ Views to support bulk email functionalities like opt-out.
 
 import logging
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import Http404
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
@@ -35,13 +35,13 @@ def opt_out_email_updates(request, token, course_id):
         course_key = CourseKey.from_string(course_id)
         course = get_course_by_id(course_key, depth=0)
     except UnicodeDecodeError:
-        raise Http404("base64url")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404("base64url")  # pylint: disable=raise-missing-from  # noqa: B904
     except UsernameDecryptionException as exn:
-        raise Http404(str(exn))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404(str(exn))  # pylint: disable=raise-missing-from  # noqa: B904
     except User.DoesNotExist:
-        raise Http404("username")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404("username")  # pylint: disable=raise-missing-from  # noqa: B904
     except InvalidKeyError:
-        raise Http404("course")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise Http404("course")  # pylint: disable=raise-missing-from  # noqa: B904
 
     unsub_check = request.POST.get('unsubscribe', False)
     context = {

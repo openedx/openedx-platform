@@ -47,7 +47,7 @@ class MFEContextView(APIView):
 
         return optional_fields_context
 
-    def get(self, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, **kwargs):  # pylint: disable=unused-argument
         """
         Returns
         - dynamic registration fields
@@ -121,7 +121,7 @@ class SendAccountActivationEmail(APIView):
     authentication_classes = (SessionAuthenticationAllowInactiveUser,)
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def post(self, request, **kwargs):  # pylint: disable=unused-argument
         """
         Returns status code.
         Arguments:

@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=django-not-configured
+# pylint: disable=django-not-configured
 """Tests for course home page date summary blocks."""
 
 

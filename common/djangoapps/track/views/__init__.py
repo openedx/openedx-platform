@@ -1,9 +1,9 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 import json
 
 import six  # noqa: F401
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.http import HttpResponse
 from eventtracking import tracker as eventtracker
 from ipware.ip import get_client_ip
@@ -75,7 +75,7 @@ def user_track(request):
     """
     try:
         username = request.user.username
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         username = "anonymous"
 
     name = _get_request_value(request, 'event_type')
@@ -123,7 +123,7 @@ def server_track(request, event_type, event, page=None):
 
     try:
         username = request.user.username
-    except:  # lint-amnesty, pylint: disable=bare-except
+    except:  # pylint: disable=bare-except
         username = "anonymous"
 
     context_override = _get_course_context(page)

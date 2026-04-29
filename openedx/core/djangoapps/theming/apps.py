@@ -1,4 +1,4 @@
-# lint-amnesty, pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring
 
 from django.apps import AppConfig
 from edx_django_utils.plugins import PluginURLs
@@ -8,7 +8,7 @@ from openedx.core.djangoapps.plugins.constants import ProjectType
 plugin_urls_config = {PluginURLs.NAMESPACE: 'theming', PluginURLs.REGEX: r'^theming/'}
 
 
-class ThemingConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-docstring
+class ThemingConfig(AppConfig):  # pylint: disable=missing-class-docstring
     name = 'openedx.core.djangoapps.theming'
     plugin_app = {
         PluginURLs.CONFIG: {
@@ -20,4 +20,4 @@ class ThemingConfig(AppConfig):  # lint-amnesty, pylint: disable=missing-class-d
 
     def ready(self):
         # settings validations related to theming.
-        from . import checks  # lint-amnesty, pylint: disable=unused-import  # noqa: F401
+        from . import checks  # pylint: disable=unused-import  # noqa: F401

@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 import ddt
 from django.conf import settings
 from django.contrib.auth.hashers import UNUSABLE_PASSWORD_PREFIX, make_password
-from django.contrib.auth.models import AnonymousUser, User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import AnonymousUser, User  # pylint: disable=imported-auth-user
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.views import INTERNAL_RESET_SESSION_TOKEN, PasswordResetConfirmView
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -281,7 +281,7 @@ class ResetPasswordTests(EventTestMixin, CacheIsolationTestCase):
 
         cache.clear()
 
-    def request_password_reset(self, status, new_ip=None):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def request_password_reset(self, status, new_ip=None):  # pylint: disable=missing-function-docstring
         extra_args = {}
         if new_ip:
             extra_args = {'REMOTE_ADDR': new_ip}
@@ -840,7 +840,7 @@ class ResetPasswordAPITests(EventTestMixin, CacheIsolationTestCase):
     request_factory = RequestFactory()
     ENABLED_CACHES = ['default']
 
-    def setUp(self):  # lint-amnesty, pylint: disable=arguments-differ
+    def setUp(self):  # pylint: disable=arguments-differ
         super().setUp('openedx.core.djangoapps.user_authn.views.password_reset.tracker')
         self.user = UserFactory.create()
         self.user.save()

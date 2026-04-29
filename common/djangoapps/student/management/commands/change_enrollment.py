@@ -18,10 +18,10 @@ class RollbackException(Exception):
     """
     Exception raised explicitly to cause a database transaction rollback.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
 
     help = """
     Changes the enrollment status for students that meet
@@ -76,7 +76,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
         try:
             course_key = CourseKey.from_string(options['course_id'])
         except InvalidKeyError:
-            raise CommandError('Invalid or non-existant course id {}'.format(options['course_id']))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError('Invalid or non-existant course id {}'.format(options['course_id']))  # pylint: disable=raise-missing-from  # noqa: B904
 
         if not options['username'] and not options['email']:
             raise CommandError('You must include usernames (-u) or emails (-e) to select users to update')
@@ -97,7 +97,7 @@ class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docst
 
         self.report(error_users, success_users)
 
-    def update_enrollments(self, identifier, enrollment_args, options, error_users, success_users, enrollment_attrs=None):  # lint-amnesty, pylint: disable=line-too-long
+    def update_enrollments(self, identifier, enrollment_args, options, error_users, success_users, enrollment_attrs=None):  # pylint: disable=line-too-long
         """ Update enrollments for a specific user identifier (email or username). """
         users = options[identifier].split(",")
 

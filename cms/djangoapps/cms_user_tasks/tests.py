@@ -77,7 +77,7 @@ class TestUserTasks(APITestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         cls.user = UserFactory.create(username='test_user', email='test@example.com', password='password')
         cls.status = UserTaskStatus.objects.create(
             user=cls.user, task_id=str(uuid4()), task_class='test_rest_api.sample_task', name='SampleTask 2',
@@ -151,7 +151,7 @@ class TestUserTaskStopped(APITestCase):
     """
 
     @classmethod
-    def setUpTestData(cls):  # lint-amnesty, pylint: disable=super-method-not-called
+    def setUpTestData(cls):  # pylint: disable=super-method-not-called
         cls.user = UserFactory.create(username='test_user', email='test@example.com', password='password')
         cls.status = UserTaskStatus.objects.create(
             user=cls.user, task_id=str(uuid4()), task_class='test_rest_api.sample_task', name='SampleTask 2',

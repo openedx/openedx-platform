@@ -191,7 +191,7 @@ class OverrideFieldData(FieldData):
         enabled_providers = request_cache.data.get(cache_key, NOTSET)
         if enabled_providers == NOTSET:
             enabled_providers = tuple(
-                provider_class for provider_class in cls.provider_classes if provider_class.enabled_for(course)  # lint-amnesty, pylint: disable=not-an-iterable
+                provider_class for provider_class in cls.provider_classes if provider_class.enabled_for(course)  # pylint: disable=not-an-iterable
             )
             request_cache.data[cache_key] = enabled_providers
 
@@ -302,7 +302,7 @@ class OverrideModulestoreFieldData(OverrideFieldData):
 
         if enabled_providers is None:
             enabled_providers = [
-                provider_class for provider_class in cls.provider_classes if provider_class.enabled_for(block)  # lint-amnesty, pylint: disable=not-an-iterable
+                provider_class for provider_class in cls.provider_classes if provider_class.enabled_for(block)  # pylint: disable=not-an-iterable
             ]
             request_cache.data[cache_key] = enabled_providers
 

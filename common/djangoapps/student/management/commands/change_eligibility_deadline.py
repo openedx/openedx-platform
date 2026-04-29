@@ -21,10 +21,10 @@ class IncorrectDeadline(Exception):
     """
     Exception raised explicitly to use default date when date given by user is prior to today.
     """
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass
 
 
-class Command(BaseCommand):  # lint-amnesty, pylint: disable=missing-class-docstring
+class Command(BaseCommand):  # pylint: disable=missing-class-docstring
 
     help = """
     Changes the credit course eligibility deadline for a student in a particular course.

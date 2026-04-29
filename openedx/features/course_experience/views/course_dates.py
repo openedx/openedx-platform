@@ -19,7 +19,7 @@ class CourseDatesFragmentView(EdxFragmentView):
     """
     template_name = 'course_experience/course-dates-fragment.html'
 
-    def render_to_fragment(self, request, course_id=None, **kwargs):  # lint-amnesty, pylint: disable=arguments-differ
+    def render_to_fragment(self, request, course_id=None, **kwargs):  # pylint: disable=arguments-differ
         """
         Render the course dates fragment.
         """

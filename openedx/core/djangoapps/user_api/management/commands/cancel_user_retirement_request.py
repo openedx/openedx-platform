@@ -37,7 +37,7 @@ class Command(BaseCommand):
                 original_email=email_address
             )
         except UserRetirementStatus.DoesNotExist:
-            raise CommandError(f"No retirement request with email address '{email_address}' exists.")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError(f"No retirement request with email address '{email_address}' exists.")  # pylint: disable=raise-missing-from  # noqa: B904
 
         # Check if the user has started the retirement process -or- not.
         if retirement_status.current_state.state_name != 'PENDING':

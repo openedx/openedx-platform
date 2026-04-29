@@ -3,7 +3,7 @@ Unit tests for bulk-email-related models.
 """
 
 import datetime
-from unittest.mock import Mock, patch  # lint-amnesty, pylint: disable=wrong-import-order
+from unittest.mock import Mock, patch  # pylint: disable=wrong-import-order
 
 import ddt
 import pytest
@@ -34,13 +34,13 @@ from lms.djangoapps.bulk_email.models_api import is_bulk_email_disabled_for_cour
 from lms.djangoapps.bulk_email.tests.factories import TargetFactory
 from openedx.core.djangoapps.course_groups.models import CourseCohort
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
-@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # lint-amnesty, pylint: disable=line-too-long
+@patch('lms.djangoapps.bulk_email.models.html_to_text', Mock(return_value='Mocking CourseEmail.text_message', autospec=True))  # pylint: disable=line-too-long
 class CourseEmailTest(ModuleStoreTestCase):
     """Test the CourseEmail model."""
 
@@ -157,7 +157,7 @@ class CourseEmailTest(ModuleStoreTestCase):
         assert target.long_display() == 'Cohort: test cohort'
 
 
-class OptoutTest(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class OptoutTest(TestCase):  # pylint: disable=missing-class-docstring
     def test_is_user_opted_out_for_course(self):
         user = UserFactory.create()
         course_id = CourseKey.from_string('abc/123/doremi')

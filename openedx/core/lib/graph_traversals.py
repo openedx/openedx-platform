@@ -116,7 +116,7 @@ from collections import deque
 def traverse_topologically(
         start_node,
         get_parents,
-        get_children,  # lint-amnesty, pylint: disable=redefined-outer-name
+        get_children,  # pylint: disable=redefined-outer-name
         filter_func=None,
         yield_descendants_of_unyielded=False,
 ):
@@ -161,7 +161,7 @@ def traverse_topologically(
     )
 
 
-def traverse_pre_order(start_node, get_children, filter_func=None):  # lint-amnesty, pylint: disable=redefined-outer-name
+def traverse_pre_order(start_node, get_children, filter_func=None):  # pylint: disable=redefined-outer-name
     """
     Generator for yielding nodes of a tree (or directed acyclic graph)
     in a pre-order sort.
@@ -178,7 +178,7 @@ def traverse_pre_order(start_node, get_children, filter_func=None):  # lint-amne
     )
 
 
-def traverse_post_order(start_node, get_children, filter_func=None):  # lint-amnesty, pylint: disable=redefined-outer-name
+def traverse_post_order(start_node, get_children, filter_func=None):  # pylint: disable=redefined-outer-name
     """
     Generator for yielding nodes of a tree (or directed acyclic graph)
     in a post-order sort.
@@ -192,7 +192,7 @@ def traverse_post_order(start_node, get_children, filter_func=None):  # lint-amn
         An active iterator is needed in order to determine when all
         children are visited and so the node itself should be visited.
         """
-        def __init__(self, node, get_children):  # lint-amnesty, pylint: disable=redefined-outer-name
+        def __init__(self, node, get_children):  # pylint: disable=redefined-outer-name
             self.node = node
             self.children = iter(get_children(node))
 
@@ -237,7 +237,7 @@ def traverse_post_order(start_node, get_children, filter_func=None):  # lint-amn
 def _traverse_generic(
         start_node,
         get_parents,
-        get_children,  # lint-amnesty, pylint: disable=redefined-outer-name
+        get_children,  # pylint: disable=redefined-outer-name
         filter_func=None,
         yield_descendants_of_unyielded=False,
 ):

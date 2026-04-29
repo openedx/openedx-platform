@@ -256,7 +256,7 @@ class SignalIsolationMixin:
                     "You tried to enable signal '{}', but I don't recognize that "
                     "signal name. Did you mean one of these?: {}"
                 )
-                raise ValueError(err_msg.format(signal_name, all_signal_names))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+                raise ValueError(err_msg.format(signal_name, all_signal_names))  # pylint: disable=raise-missing-from  # noqa: B904
             signal.enable()
 
 

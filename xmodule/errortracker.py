@@ -80,6 +80,6 @@ def make_error_tracker():
     return ErrorLog(error_tracker, errors)
 
 
-def null_error_tracker(msg):  # lint-amnesty, pylint: disable=unused-argument
+def null_error_tracker(msg):  # pylint: disable=unused-argument
     '''A dummy error tracker that just ignores the messages'''
-    pass  # lint-amnesty, pylint: disable=unnecessary-pass
+    pass  # pylint: disable=unnecessary-pass

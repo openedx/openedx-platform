@@ -6,7 +6,7 @@ Third Party Auth REST API views
 from collections import namedtuple
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.db.models import Q
 from django.http import Http404
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
@@ -173,7 +173,7 @@ class UserView(BaseUserView):
               login.
     """
 
-    def get(self, request, username):  # lint-amnesty, pylint: disable=unused-argument
+    def get(self, request, username):  # pylint: disable=unused-argument
         """Read provider information for a user.
 
         Allows reading the list of providers for a specified user.

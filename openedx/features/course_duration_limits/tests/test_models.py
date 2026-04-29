@@ -38,7 +38,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         CourseModeFactory.create(course_id=self.course_overview.id, mode_slug='audit')
         CourseModeFactory.create(course_id=self.course_overview.id, mode_slug='verified')
         self.user = UserFactory.create()
-        super().setUp()  # lint-amnesty, pylint: disable=super-with-arguments
+        super().setUp()  # pylint: disable=super-with-arguments
 
     @ddt.data(
         (True, True),
@@ -67,7 +67,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         )
 
         if already_enrolled:
-            existing_enrollment = CourseEnrollmentFactory.create(  # lint-amnesty, pylint: disable=unused-variable
+            existing_enrollment = CourseEnrollmentFactory.create(  # pylint: disable=unused-variable
                 user=self.user,
                 course=self.course_overview,
             )
@@ -75,7 +75,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
             existing_enrollment = None  # noqa: F841
 
         user = self.user
-        course_key = self.course_overview.id  # lint-amnesty, pylint: disable=unused-variable  # noqa: F841
+        course_key = self.course_overview.id  # pylint: disable=unused-variable  # noqa: F841
 
         query_count = 9
 
@@ -210,7 +210,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
                             id=CourseLocator(test_org, 'test_course', f'run-{course_setting}')
                         )
                         CourseDurationLimitConfig.objects.create(
-                            course=test_course, enabled=course_setting, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC"))  # lint-amnesty, pylint: disable=line-too-long
+                            course=test_course, enabled=course_setting, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC"))  # pylint: disable=line-too-long
                         )
 
             with self.assertNumQueries(4):
@@ -268,7 +268,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
 
     def test_caching_site(self):
         site_cfg = SiteConfigurationFactory()
-        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         site_config.save()
 
         RequestCache.clear_all_namespaces()
@@ -309,7 +309,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         site_cfg = SiteConfigurationFactory.create(
             site_values={'course_org_filter': course.org}
         )
-        org_config = CourseDurationLimitConfig(org=course.org, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        org_config = CourseDurationLimitConfig(org=course.org, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         org_config.save()
 
         RequestCache.clear_all_namespaces()
@@ -345,7 +345,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         with self.assertNumQueries(0):
             assert not CourseDurationLimitConfig.current(org=course.org).enabled
 
-        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         site_config.save()
 
         RequestCache.clear_all_namespaces()
@@ -359,7 +359,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         site_cfg = SiteConfigurationFactory.create(
             site_values={'course_org_filter': course.org}
         )
-        course_config = CourseDurationLimitConfig(course=course, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        course_config = CourseDurationLimitConfig(course=course, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         course_config.save()
 
         RequestCache.clear_all_namespaces()
@@ -395,7 +395,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         with self.assertNumQueries(0):
             assert not CourseDurationLimitConfig.current(course_key=course.id).enabled
 
-        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        site_config = CourseDurationLimitConfig(site=site_cfg.site, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         site_config.save()
 
         RequestCache.clear_all_namespaces()
@@ -404,7 +404,7 @@ class TestCourseDurationLimitConfig(FilteredQueryCountMixin, CacheIsolationTestC
         with self.assertNumQueries(0):
             assert not CourseDurationLimitConfig.current(course_key=course.id).enabled
 
-        org_config = CourseDurationLimitConfig(org=course.org, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # lint-amnesty, pylint: disable=line-too-long
+        org_config = CourseDurationLimitConfig(org=course.org, enabled=True, enabled_as_of=datetime(2018, 1, 1, tzinfo=ZoneInfo("UTC")))  # pylint: disable=line-too-long
         org_config.save()
 
         RequestCache.clear_all_namespaces()

@@ -14,4 +14,4 @@ class ProgramsConfig(AppConfig):
 
     def ready(self):
         # noinspection PyUnresolvedReferences
-        from . import signals, tasks  # lint-amnesty, pylint: disable=unused-import, unused-variable  # noqa: F401
+        from . import signals, tasks  # pylint: disable=unused-import, unused-variable  # noqa: F401

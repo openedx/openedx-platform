@@ -35,7 +35,7 @@ def make_subscribed_threads_callback(subscribed_thread_ids, per_page=1):
     Creates a callback function for simulating user data.
     """
 
-    def callback(*args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def callback(*args, **kwargs):  # pylint: disable=unused-argument
         subscribed_thread_collection = [
             {"id": thread_id} for thread_id in subscribed_thread_ids
         ]
@@ -58,7 +58,7 @@ def make_subscribed_threads_callback(subscribed_thread_ids, per_page=1):
 @ddt.ddt
 class TaskTestCase(
     ModuleStoreTestCase, MockForumApiMixin
-):  # lint-amnesty, pylint: disable=missing-class-docstring
+):  # pylint: disable=missing-class-docstring
 
     @classmethod
     @mock.patch.dict(
@@ -112,7 +112,7 @@ class TaskTestCase(
     @classmethod
     def create_threads_and_comments(
         cls,
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         # Regular discussion threads and comments.
         cls.discussion_thread = {
             "id": cls.discussion_id,
@@ -334,7 +334,7 @@ class TaskTestCase(
 
     def _assert_rendered_email(
         self, message, comment
-    ):  # lint-amnesty, pylint: disable=missing-function-docstring
+    ):  # pylint: disable=missing-function-docstring
         # check that we can actually render the message
         with emulate_http_request(
             site=message.context["site"], user=self.thread_author

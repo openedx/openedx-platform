@@ -201,7 +201,7 @@ class CourseStructureTestCase(TransformerRegistryTestMixin, ModuleStoreTestCase)
         Returns: set[UsageKey]
         """
         xblocks = (blocks[ref] for ref in refs)
-        return {xblock.location for xblock in xblocks}  # lint-amnesty, pylint: disable=consider-using-set-comprehension
+        return {xblock.location for xblock in xblocks}  # pylint: disable=consider-using-set-comprehension
 
 
 class BlockParentsMapTestCase(TransformerRegistryTestMixin, ModuleStoreTestCase):

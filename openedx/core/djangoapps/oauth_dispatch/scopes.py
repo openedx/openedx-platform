@@ -12,7 +12,7 @@ class ApplicationModelScopes(SettingsScopes):
     """
     Scopes backend that determines available scopes using the ApplicationAccess model.
     """
-    def get_available_scopes(self, application=None, request=None, *args, **kwargs):  # lint-amnesty, pylint: disable=keyword-arg-before-vararg
+    def get_available_scopes(self, application=None, request=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         """ Returns valid scopes configured for the given application. """
         try:
             application_scopes = ApplicationAccess.get_scopes(application)

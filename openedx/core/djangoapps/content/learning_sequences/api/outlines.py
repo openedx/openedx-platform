@@ -232,7 +232,7 @@ def _get_course_context_for_outline(course_key: CourseKey) -> CourseContext:
         )
     except LearningContext.DoesNotExist:
         # Could happen if it hasn't been published.
-        raise CourseOutlineData.DoesNotExist(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+        raise CourseOutlineData.DoesNotExist(  # pylint: disable=raise-missing-from  # noqa: B904
             f"No CourseOutlineData for {course_key}"
         )
     return course_context
@@ -302,7 +302,7 @@ def get_user_course_outline_details(course_key: CourseKey,
     )
 
 
-def _get_user_course_outline_and_processors(course_key: CourseKey,  # lint-amnesty, pylint: disable=missing-function-docstring
+def _get_user_course_outline_and_processors(course_key: CourseKey,  # pylint: disable=missing-function-docstring
                                             user: types.User,
                                             at_time: datetime):
     """

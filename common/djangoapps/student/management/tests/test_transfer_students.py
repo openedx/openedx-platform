@@ -19,9 +19,9 @@ from common.djangoapps.student.signals import UNENROLL_DONE
 from common.djangoapps.student.tests.factories import UserFactory
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @skip_unless_lms
@@ -34,7 +34,7 @@ class TestTransferStudents(ModuleStoreTestCase):
     PASSWORD = 'test'
     signal_fired = False
 
-    def setUp(self, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def setUp(self, **kwargs):  # pylint: disable=unused-argument
         """
         Connect a stub receiver, and analytics event tracking.
         """
@@ -140,7 +140,7 @@ class TestTransferStudents(ModuleStoreTestCase):
             run=course_location.run
         )
 
-    def _create_and_purchase_verified(self, student, course_id):  # lint-amnesty, pylint: disable=unused-argument
+    def _create_and_purchase_verified(self, student, course_id):  # pylint: disable=unused-argument
         """
         Creates a verified mode for the course and purchases it for the student.
         """

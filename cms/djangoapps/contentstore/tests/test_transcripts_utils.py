@@ -19,14 +19,14 @@ from xblocks_contrib.video.exceptions import TranscriptsGenerationException
 
 from cms.djangoapps.contentstore.tests.utils import setup_caption_responses
 from common.djangoapps.student.tests.factories import UserFactory
-from openedx.core.djangoapps.video_config import transcripts_utils  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.content import StaticContent  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.contentstore.django import contentstore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.exceptions import NotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from openedx.core.djangoapps.video_config import transcripts_utils  # pylint: disable=wrong-import-order
+from xmodule.contentstore.content import StaticContent  # pylint: disable=wrong-import-order
+from xmodule.contentstore.django import contentstore  # pylint: disable=wrong-import-order
+from xmodule.exceptions import NotFoundError  # pylint: disable=wrong-import-order
 from xmodule.modulestore.tests.django_utils import (
-    SharedModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    SharedModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
 )
@@ -186,7 +186,7 @@ class TestYoutubeSubsBase(SharedModuleStoreTestCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.course = CourseFactory.create(
-            org=cls.org, number=cls.number, display_name=cls.display_name)  # lint-amnesty, pylint: disable=no-member
+            org=cls.org, number=cls.number, display_name=cls.display_name)  # pylint: disable=no-member
 
 
 @override_settings(CONTENTSTORE=TEST_DATA_CONTENTSTORE)
@@ -283,7 +283,7 @@ class TestDownloadYoutubeSubs(TestYoutubeSubsBase):
         transcripts_utils.download_youtube_subs(good_youtube_sub, self.course, settings)
 
         # Check assets status after importing subtitles.
-        for subs_id in good_youtube_subs.values():  # lint-amnesty, pylint: disable=undefined-variable  # noqa: F821
+        for subs_id in good_youtube_subs.values():  # pylint: disable=undefined-variable  # noqa: F821
             filename = f'subs_{subs_id}.srt.sjson'
             content_location = StaticContent.compute_location(
                 self.course.id, filename
@@ -293,7 +293,7 @@ class TestDownloadYoutubeSubs(TestYoutubeSubsBase):
         self.clear_sub_content(good_youtube_sub)
 
 
-class TestGenerateSubsFromSource(TestDownloadYoutubeSubs):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestGenerateSubsFromSource(TestDownloadYoutubeSubs):  # pylint: disable=test-inherits-tests
     """Tests for `generate_subs_from_source` function."""
 
     def test_success_generating_subs(self):
@@ -364,7 +364,7 @@ class TestGenerateSubsFromSource(TestDownloadYoutubeSubs):  # lint-amnesty, pyli
         self.assertEqual(exception_message, "Something wrong with SubRip transcripts file during parsing.")  # noqa: PT009  # pylint: disable=line-too-long
 
 
-class TestGenerateSrtFromSjson(TestDownloadYoutubeSubs):  # lint-amnesty, pylint: disable=test-inherits-tests
+class TestGenerateSrtFromSjson(TestDownloadYoutubeSubs):  # pylint: disable=test-inherits-tests
     """Tests for `generate_srt_from_sjson` function."""
 
     def test_success_generating_subs(self):
@@ -768,7 +768,7 @@ class TestGetTranscript(SharedModuleStoreTestCase):
         """
         Create srt file.
         """
-        srt_file = tempfile.NamedTemporaryFile(suffix=".srt")  # lint-amnesty, pylint: disable=consider-using-with
+        srt_file = tempfile.NamedTemporaryFile(suffix=".srt")  # pylint: disable=consider-using-with
         srt_file.content_type = transcripts_utils.Transcript.SRT
         srt_file.write(content)
         srt_file.seek(0)

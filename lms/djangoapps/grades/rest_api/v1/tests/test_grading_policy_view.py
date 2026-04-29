@@ -34,7 +34,7 @@ class GradingPolicyTestMixin:
         self.access_token = AccessTokenFactory.create(user=self.user, application=self.oauth_client).token
 
     @classmethod
-    def create_course_data(cls):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def create_course_data(cls):  # pylint: disable=missing-function-docstring
         cls.invalid_course_id = 'course-v1:foo+bar+baz'
         cls.course = CourseFactory.create(
             display_name='An Introduction to API Testing', grading_policy=cls.grading_policy

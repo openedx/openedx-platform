@@ -8,7 +8,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import ddt
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.sites.models import Site
 from django.core import mail
 from django.core.cache import cache
@@ -601,8 +601,8 @@ class TestPartnerReportingList(ModuleStoreTestCase):
         """
         Basic test to make sure that users in two different orgs are returned.
         """
-        user_dicts, users = self.create_partner_reporting_statuses()  # lint-amnesty, pylint: disable=unused-variable
-        additional_dicts, additional_users = self.create_partner_reporting_statuses(courses=(self.course_awesome_org,))  # lint-amnesty, pylint: disable=unused-variable
+        user_dicts, users = self.create_partner_reporting_statuses()  # pylint: disable=unused-variable
+        additional_dicts, additional_users = self.create_partner_reporting_statuses(courses=(self.course_awesome_org,))  # pylint: disable=unused-variable
         user_dicts += additional_dicts
 
         self.assert_status_and_user_list(user_dicts)
@@ -611,7 +611,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
         """
         Checks that only users in the correct is_being_processed state (False) are returned.
         """
-        user_dicts, users = self.create_partner_reporting_statuses()  # lint-amnesty, pylint: disable=unused-variable
+        user_dicts, users = self.create_partner_reporting_statuses()  # pylint: disable=unused-variable
 
         # These should not come back
         self.create_partner_reporting_statuses(courses=(self.course_awesome_org,), is_being_processed=True)
@@ -637,7 +637,7 @@ class TestPartnerReportingList(ModuleStoreTestCase):
         Checks that users are progressed to "is_being_processed" True upon being returned
         from this call.
         """
-        user_dicts, users = self.create_partner_reporting_statuses()  # lint-amnesty, pylint: disable=unused-variable
+        user_dicts, users = self.create_partner_reporting_statuses()  # pylint: disable=unused-variable
 
         # First time through we should get the users
         self.assert_status_and_user_list(user_dicts)
@@ -678,7 +678,7 @@ class TestAccountRetirementList(RetirementTestCase):
             try:
                 states_to_request = [s.state_name for s in states_to_request]
             except AttributeError:
-                states_to_request = states_to_request  # lint-amnesty, pylint: disable=self-assigning-variable
+                states_to_request = states_to_request  # pylint: disable=self-assigning-variable
 
         data = {'cool_off_days': cool_off_days, 'states': states_to_request}
         response = self.client.get(self.url, data, **self.headers)
@@ -919,7 +919,7 @@ class TestAccountRetirementsByStatusAndDate(RetirementTestCase):
         complete_state = RetirementState.objects.get(state_name='COMPLETE')
 
         # Create retirements for the last 10 days
-        for days_back in range(0, 10):  # lint-amnesty, pylint: disable=simplifiable-range
+        for days_back in range(0, 10):  # pylint: disable=simplifiable-range
             create_datetime = datetime.datetime.now(ZoneInfo("UTC")) - datetime.timedelta(days=days_back)
             ret = create_retirement_status(UserFactory(), state=complete_state, create_datetime=create_datetime)
             retirements.append(self._retirement_to_dict(ret))
@@ -1617,14 +1617,14 @@ class TestLMSAccountRetirementPost(RetirementTestCase, ModuleStoreTestCase):
         ArticleRevision.objects.create(ip_address="ipaddresss", user=self.test_user, article=article)
 
         # ManualEnrollmentAudit setup
-        course_enrollment = CourseEnrollment.enroll(user=self.test_user, course_key=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        course_enrollment = CourseEnrollment.enroll(user=self.test_user, course_key=self.course.id)  # pylint: disable=no-member
         ManualEnrollmentAudit.objects.create(
             enrollment=course_enrollment, reason=self.pii_standin, enrolled_email=self.pii_standin
         )
 
         # CreditRequest and CreditRequirementStatus setup
         provider = CreditProvider.objects.create(provider_id="Hogwarts")
-        credit_course = CreditCourse.objects.create(course_key=self.course.id)  # lint-amnesty, pylint: disable=no-member
+        credit_course = CreditCourse.objects.create(course_key=self.course.id)  # pylint: disable=no-member
         CreditRequest.objects.create(
             username=self.test_user.username,
             course=credit_course,

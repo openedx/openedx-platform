@@ -4,8 +4,8 @@
 from django.core.management import CommandError, call_command
 
 from cms.djangoapps.contentstore.tests.test_orphan import TestOrphanBase
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 class TestDeleteOrphan(TestOrphanBase):

@@ -13,8 +13,8 @@ from xblock.scorable import ShowCorrectness
 
 from lms.djangoapps.grades.models import BlockRecord, PersistentSubsectionGrade
 from lms.djangoapps.grades.scores import compute_percent, get_score, possibly_scored
-from xmodule import block_metadata_utils, graders  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.graders import AggregatedScore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule import block_metadata_utils, graders  # pylint: disable=wrong-import-order
+from xmodule.graders import AggregatedScore  # pylint: disable=wrong-import-order
 
 log = getLogger(__name__)
 
@@ -172,7 +172,7 @@ class NonZeroSubsectionGrade(SubsectionGradeBase, metaclass=ABCMeta):
         return compute_percent(self.graded_total.earned, self.graded_total.possible)
 
     @staticmethod
-    def _compute_block_score(  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _compute_block_score(  # pylint: disable=missing-function-docstring
             block_key,
             course_structure,
             submissions_scores,

@@ -1,5 +1,5 @@
 """
-This file contains helper functions for configuring module_store_setting settings and support for backward compatibility with older formats.  # lint-amnesty, pylint: disable=line-too-long
+This file contains helper functions for configuring module_store_setting settings and support for backward compatibility with older formats.  # pylint: disable=line-too-long
 """
 
 
@@ -110,10 +110,10 @@ def update_module_store_settings(
     """
     for store in module_store_setting['default']['OPTIONS']['stores']:
         if store['NAME'] == 'xml':
-            xml_store_options and store['OPTIONS'].update(xml_store_options)  # lint-amnesty, pylint: disable=expression-not-assigned
+            xml_store_options and store['OPTIONS'].update(xml_store_options)  # pylint: disable=expression-not-assigned
         else:
-            module_store_options and store['OPTIONS'].update(module_store_options)  # lint-amnesty, pylint: disable=expression-not-assigned
-            doc_store_settings and store['DOC_STORE_CONFIG'].update(doc_store_settings)  # lint-amnesty, pylint: disable=expression-not-assigned
+            module_store_options and store['OPTIONS'].update(module_store_options)  # pylint: disable=expression-not-assigned
+            doc_store_settings and store['DOC_STORE_CONFIG'].update(doc_store_settings)  # pylint: disable=expression-not-assigned
 
     if default_store:
         mixed_stores = get_mixed_stores(module_store_setting)

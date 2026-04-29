@@ -63,7 +63,7 @@ class _DispatchingView(View):
         Return the appropriate view from the requested backend.
         """
         if backend == self.dot_adapter.backend:
-            return self.dot_view.as_view()  # lint-amnesty, pylint: disable=no-member
+            return self.dot_view.as_view()  # pylint: disable=no-member
         else:
             raise KeyError(f'Failed to dispatch view. Invalid backend {backend}')
 

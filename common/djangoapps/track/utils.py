@@ -10,7 +10,7 @@ from pytz import UTC
 class DateTimeJSONEncoder(json.JSONEncoder):
     """JSON encoder aware of datetime.datetime and datetime.date objects"""
 
-    def default(self, obj):  # lint-amnesty, pylint: disable=arguments-differ, method-hidden
+    def default(self, obj):  # pylint: disable=arguments-differ, method-hidden
         """
         Serialize datetime and date objects of iso format.
 
@@ -20,7 +20,7 @@ class DateTimeJSONEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             if obj.tzinfo is None:
                 # Localize to UTC naive datetime objects
-                obj = UTC.localize(obj)  # lint-amnesty, pylint: disable=no-value-for-parameter
+                obj = UTC.localize(obj)  # pylint: disable=no-value-for-parameter
             else:
                 # Convert to UTC datetime objects from other timezones
                 obj = obj.astimezone(UTC)
@@ -28,4 +28,4 @@ class DateTimeJSONEncoder(json.JSONEncoder):
         elif isinstance(obj, date):
             return obj.isoformat()
 
-        return super().default(obj)  # lint-amnesty, pylint: disable=super-with-arguments
+        return super().default(obj)  # pylint: disable=super-with-arguments

@@ -9,9 +9,9 @@ from common.djangoapps.student.tests.factories import UserFactory
 from common.djangoapps.util import keyword_substitution as Ks
 from common.djangoapps.util.date_utils import get_default_time_display
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt

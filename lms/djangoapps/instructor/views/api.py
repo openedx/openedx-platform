@@ -18,7 +18,7 @@ import dateutil
 import edx_api_doc_tools as apidocs
 import pytz
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
@@ -37,17 +37,17 @@ from edx_rest_framework_extensions.auth.session.authentication import SessionAut
 from edx_when.api import get_date_for_block
 from opaque_keys import InvalidKeyError
 from opaque_keys.edx.keys import CourseKey, UsageKey
-from rest_framework import serializers, status  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework import serializers, status  # pylint: disable=wrong-import-order
 from rest_framework.exceptions import MethodNotAllowed
-from rest_framework.permissions import (  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.permissions import (  # pylint: disable=wrong-import-order
     BasePermission,
     IsAdminUser,
     IsAuthenticated,
 )
-from rest_framework.response import Response  # lint-amnesty, pylint: disable=wrong-import-order
-from rest_framework.views import APIView  # lint-amnesty, pylint: disable=wrong-import-order
+from rest_framework.response import Response  # pylint: disable=wrong-import-order
+from rest_framework.views import APIView  # pylint: disable=wrong-import-order
 from submissions import (
-    api as sub_api,  # installed from the edx-submissions repository  # lint-amnesty, pylint: disable=wrong-import-order
+    api as sub_api,  # installed from the edx-submissions repository  # pylint: disable=wrong-import-order
 )
 
 from common.djangoapps.course_modes.models import CourseMode
@@ -138,8 +138,8 @@ from openedx.core.lib.api.serializers import CourseKeyField
 from openedx.core.lib.api.view_utils import DeveloperErrorViewMixin, view_auth_classes
 from openedx.core.lib.courses import get_course_by_id
 from openedx.features.course_experience.url_helpers import get_learning_mfe_home_url
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.exceptions import ItemNotFoundError  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.exceptions import ItemNotFoundError  # pylint: disable=wrong-import-order
 
 from .. import permissions
 from .tools import (
@@ -317,7 +317,7 @@ class RegisterAndEnrollStudents(APIView):
             include_expired=False,
         )))
 
-        if 'students_list' in request.FILES:  # lint-amnesty, pylint: disable=too-many-nested-blocks
+        if 'students_list' in request.FILES:  # pylint: disable=too-many-nested-blocks
             students = []
 
             try:
@@ -514,7 +514,7 @@ class RegisterAndEnrollStudents(APIView):
                             'email': email,
                             'response': _('Invalid email {email_address}.').format(email_address=email),
                         })
-                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # lint-amnesty, pylint: disable=logging-not-lazy
+                        log.warning('Email address %s is associated with a retired user, so course enrollment was ' +  # pylint: disable=logging-not-lazy
                                     'blocked.', email)
                     else:
                         # This email does not yet exist, so we need to create a new account
@@ -3266,7 +3266,7 @@ class UpdateForumRoleMembership(APIView):
 
 
 @require_POST
-def get_user_invoice_preference(request, course_id):  # lint-amnesty, pylint: disable=unused-argument
+def get_user_invoice_preference(request, course_id):  # pylint: disable=unused-argument
     """
     Gets invoice copy user's preferences.
     """
@@ -4007,7 +4007,7 @@ def parse_request_data(request):
     try:
         data = json.loads(request.body.decode('utf8') or '{}')
     except ValueError:
-        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise ValueError(_('The record is not in the correct format. Please add a valid username or email address.'))  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
 
     return data
 
@@ -4024,7 +4024,7 @@ def get_student(username_or_email):
     try:
         student = get_user_by_username_or_email(username_or_email)
     except ObjectDoesNotExist:
-        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # lint-amnesty, pylint: disable=raise-missing-from,line-too-long  # noqa: B904
+        raise ValueError(_("{user} does not exist in the LMS. Please check your spelling and retry.").format(  # pylint: disable=raise-missing-from,line-too-long  # noqa: B904
             user=username_or_email
         ))
 
@@ -4343,7 +4343,7 @@ def re_validate_certificate(request, course_key, generated_certificate, student)
 
     certificate_invalidation = certs_api.get_certificate_invalidation_entry(generated_certificate)
     if not certificate_invalidation:
-        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # lint-amnesty, pylint: disable=raise-missing-from
+        raise ValueError(_("Certificate Invalidation does not exist, Please refresh the page and try again."))  # pylint: disable=raise-missing-from
 
     certificate_invalidation.deactivate()
 

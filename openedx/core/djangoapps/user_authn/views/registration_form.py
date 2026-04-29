@@ -9,7 +9,7 @@ from importlib import import_module
 
 from django import forms
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.exceptions import ImproperlyConfigured
 from django.core.validators import RegexValidator, ValidationError, slug_re
 from django.db.models import Model
@@ -121,7 +121,7 @@ class UsernameField(forms.CharField):
 
     default_validators = [validate_username]
 
-    def __init__(self, *args, **kwargs):  # lint-amnesty, pylint: disable=unused-argument
+    def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
         super().__init__(
             min_length=accounts.USERNAME_MIN_LENGTH,
             max_length=accounts.USERNAME_MAX_LENGTH,

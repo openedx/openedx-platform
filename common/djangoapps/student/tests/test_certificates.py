@@ -89,7 +89,7 @@ class CertificateDashboardMessageDisplayTest(CertificateDisplayTestBase):
         cls.course.save()
         cls.store.update_item(cls.course, cls.USERNAME)
 
-    def _check_message(self, visible_date):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def _check_message(self, visible_date):  # pylint: disable=missing-function-docstring
         response = self.client.get(reverse('dashboard'))
 
         is_past = visible_date < datetime.datetime.now(ZoneInfo("UTC"))

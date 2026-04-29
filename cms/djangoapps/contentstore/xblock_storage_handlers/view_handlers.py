@@ -450,7 +450,7 @@ def _save_xblock(
     publish=None,
     fields=None,
     summary_configuration_enabled=None,
-):  # lint-amnesty, pylint: disable=too-many-statements
+):  # pylint: disable=too-many-statements
     """
     Saves xblock w/ its fields. Has special processing for grader_type, publish, and nullout and Nones in metadata.
     nullout means to truly set the field to None whereas nones in metadata mean to unset them (so they revert
@@ -1142,7 +1142,7 @@ def _get_gating_info(course, xblock):
 
 
 @pluggable_override("OVERRIDE_CREATE_XBLOCK_INFO")
-def create_xblock_info(  # lint-amnesty, pylint: disable=too-many-statements
+def create_xblock_info(  # pylint: disable=too-many-statements
     xblock,
     data=None,
     metadata=None,

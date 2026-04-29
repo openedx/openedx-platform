@@ -54,14 +54,14 @@ class TestProgramProgressDetailView(ProgramsApiConfigMixin, SharedModuleStoreTes
         super().setUpClass()
 
         modulestore_course = ModuleStoreCourseFactory()
-        course_run = CourseRunFactory(key=str(modulestore_course.id))  # lint-amnesty, pylint: disable=no-member
+        course_run = CourseRunFactory(key=str(modulestore_course.id))  # pylint: disable=no-member
         course = CourseFactory(course_runs=[course_run])
 
         cls.program_data = ProgramFactory(uuid=cls.program_uuid, courses=[course])
         cls.pathway_data = PathwayFactory()
         cls.program_data["pathway_ids"] = [cls.pathway_data["id"]]
         cls.pathway_data["program_uuids"] = [cls.program_data["uuid"]]
-        del cls.pathway_data["programs"]  # lint-amnesty, pylint: disable=unsupported-delete-operation
+        del cls.pathway_data["programs"]  # pylint: disable=unsupported-delete-operation
 
     def setUp(self):
         super().setUp()

@@ -95,7 +95,7 @@ def submit_answers(request, survey_name):
     # scrub the answers to make sure nothing malicious from the user gets stored in
     # our database, e.g. JavaScript
     filtered_answers = {}
-    for answer_key in answers.keys():  # lint-amnesty, pylint: disable=consider-iterating-dictionary
+    for answer_key in answers.keys():  # pylint: disable=consider-iterating-dictionary
         # only allow known input fields
         if answer_key in allowed_field_names:
             filtered_answers[answer_key] = escape(answers[answer_key])

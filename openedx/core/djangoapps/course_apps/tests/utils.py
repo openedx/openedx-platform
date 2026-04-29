@@ -8,8 +8,8 @@ from opaque_keys.edx.keys import CourseKey
 from common.djangoapps.student.tests.factories import AdminFactory, CourseEnrollmentFactory, UserFactory
 from openedx.core.djangoapps.course_apps.plugins import CourseApp
 from openedx.core.djangolib.testing.utils import skip_unless_cms
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 def make_test_course_app(

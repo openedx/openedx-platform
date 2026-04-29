@@ -27,20 +27,20 @@ from cms.djangoapps.contentstore.utils import reverse_course_url, reverse_usage_
 from common.djangoapps.course_modes.models import CourseMode
 from common.djangoapps.course_modes.tests.factories import CourseModeFactory
 from openedx.core.djangoapps.models.course_details import CourseDetails
-from xmodule.library_tools import normalize_key_for_search  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore import ModuleStoreEnum  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.django import SignalHandler, modulestore  # lint-amnesty, pylint: disable=wrong-import-order
-from xmodule.modulestore.tests.django_utils import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.library_tools import normalize_key_for_search  # pylint: disable=wrong-import-order
+from xmodule.modulestore import ModuleStoreEnum  # pylint: disable=wrong-import-order
+from xmodule.modulestore.django import SignalHandler, modulestore  # pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.django_utils import (  # pylint: disable=wrong-import-order
     TEST_DATA_SPLIT_MODULESTORE,
     ModuleStoreTestCase,
     SharedModuleStoreTestCase,
 )
-from xmodule.modulestore.tests.factories import (  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import (  # pylint: disable=wrong-import-order
     BlockFactory,
     CourseFactory,
     LibraryFactory,
 )
-from xmodule.partitions.partitions import UserPartition  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.partitions.partitions import UserPartition  # pylint: disable=wrong-import-order
 
 COURSE_CHILD_STRUCTURE = {
     "course": "chapter",
@@ -57,7 +57,7 @@ def create_children(store, parent, category, load_factor):
         child_object = BlockFactory.create(
             parent_location=parent.location,
             category=category,
-            display_name=f"{category} {child_index} {time.clock()}",  # lint-amnesty, pylint: disable=no-member
+            display_name=f"{category} {child_index} {time.clock()}",  # pylint: disable=no-member
             modulestore=store,
             publish_item=True,
             start=datetime(2015, 3, 1, tzinfo=UTC),
@@ -89,7 +89,7 @@ class MixedWithOptionsTestCase(ModuleStoreTestCase):
 
     def setup_course_base(self, store):
         """ base version of setup_course_base is a no-op """
-        pass  # lint-amnesty, pylint: disable=unnecessary-pass
+        pass  # pylint: disable=unnecessary-pass
 
     @lazy
     def searcher(self):

@@ -47,9 +47,9 @@ class Command(BaseCommand):
         try:
             course_key = CourseKey.from_string(course_id)
         except InvalidKeyError:
-            raise CommandError("Unparsable course_id")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError("Unparsable course_id")  # pylint: disable=raise-missing-from  # noqa: B904
         except IndexError:
-            raise CommandError("Insufficient arguments")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise CommandError("Insufficient arguments")  # pylint: disable=raise-missing-from  # noqa: B904
 
         filename = options['output']
         pipe_results = False

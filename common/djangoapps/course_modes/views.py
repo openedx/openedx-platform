@@ -6,10 +6,10 @@ Views for the course_mode module
 import decimal
 import json
 import logging
-from urllib.parse import urljoin  # lint-amnesty, pylint: disable=wrong-import-order
+from urllib.parse import urljoin  # pylint: disable=wrong-import-order
 
 import six
-import waffle  # lint-amnesty, pylint: disable=invalid-django-waffle-import
+import waffle  # pylint: disable=invalid-django-waffle-import
 from babel.dates import format_datetime
 from babel.numbers import get_currency_symbol
 from django.conf import settings
@@ -42,7 +42,7 @@ from openedx.features.course_duration_limits.access import get_user_course_durat
 from openedx.features.course_duration_limits.models import CourseDurationLimitConfig
 from openedx.features.course_experience import course_home_url
 from openedx.features.enterprise_support.api import enterprise_customer_for_request
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 LOG = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ChooseModeView(View):
 
     @method_decorator(login_required)
     @method_decorator(transaction.atomic)
-    def get(self, request, course_id, error=None):  # lint-amnesty, pylint: disable=too-many-statements
+    def get(self, request, course_id, error=None):  # pylint: disable=too-many-statements
         """Displays the course mode choice page.
 
         Args:

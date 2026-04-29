@@ -17,7 +17,7 @@ from openedx.core.djangoapps.user_api.accounts.serializers import UserReadOnlySe
 LOGGER_NAME = "openedx.core.djangoapps.user_api.accounts.serializers"
 
 
-class UserReadOnlySerializerTest(TestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class UserReadOnlySerializerTest(TestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         super().setUp()
         request_factory = RequestFactory()

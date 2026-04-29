@@ -93,7 +93,7 @@ class LibraryBlocksView(GenericAPIView):
         try:
             result = api.create_library_block(library_key, user_id=request.user.id, **serializer.validated_data)
         except api.IncompatibleTypesError as err:
-            raise ValidationError(  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(  # pylint: disable=raise-missing-from  # noqa: B904
                 detail={'block_type': str(err)},
             )
 
@@ -322,7 +322,7 @@ class LibraryBlockAssetView(APIView):
         try:
             result = api.add_library_block_static_asset_file(usage_key, file_path, file_content, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class(result).data)
 
     @convert_exceptions
@@ -337,7 +337,7 @@ class LibraryBlockAssetView(APIView):
         try:
             api.delete_library_block_static_asset_file(usage_key, file_path, request.user)
         except ValueError:
-            raise ValidationError("Invalid file path")  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError("Invalid file path")  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -435,7 +435,7 @@ class LibraryBlockOlxView(APIView):
         try:
             version_num = api.set_library_block_olx(key, new_olx_str).version_num
         except ValueError as err:
-            raise ValidationError(detail=str(err))  # lint-amnesty, pylint: disable=raise-missing-from  # noqa: B904
+            raise ValidationError(detail=str(err))  # pylint: disable=raise-missing-from  # noqa: B904
         return Response(self.serializer_class({"olx": new_olx_str, "version_num": version_num}).data)
 
 

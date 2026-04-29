@@ -31,7 +31,7 @@ DEFAULT_TRANSITION_STATE = _DEFAULT_TRANSITION_STATE
 log = logging.getLogger(__name__)
 
 
-def create_manual_enrollment_audit(  # lint-amnesty, pylint: disable=missing-function-docstring
+def create_manual_enrollment_audit(  # pylint: disable=missing-function-docstring
     enrolled_by,
     user_email,
     state_transition,

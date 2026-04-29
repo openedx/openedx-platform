@@ -20,7 +20,7 @@ from openedx.core.lib.api.test_utils import ApiTestCase
     ZENDESK_OAUTH_ACCESS_TOKEN="abcdefghijklmnopqrstuvwxyz1234567890",
     ZENDESK_GROUP_ID_MAPPING={"Financial Assistance": 123},
 )
-class TestUtils(ApiTestCase):  # lint-amnesty, pylint: disable=missing-class-docstring
+class TestUtils(ApiTestCase):  # pylint: disable=missing-class-docstring
     def setUp(self):
         self.request_data = {
             'email': 'JohnQStudent@example.com',

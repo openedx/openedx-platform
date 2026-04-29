@@ -8,7 +8,7 @@ from typing import Callable, Dict, List  # noqa: UP035
 import requests
 from crum import get_current_request
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models.functions import Length
@@ -480,7 +480,7 @@ def verify_recaptcha_token(token: str) -> bool:
     except KeyError as e:
         logging.error(f"Unexpected response format from reCAPTCHA API. Missing key: {e}. Full response: {response}")
         return True
-    except Exception as e:  # lint-amnesty, pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         logging.error(f"An unexpected error occurred during reCAPTCHA assessment: {e}", exc_info=True)
         return True
 

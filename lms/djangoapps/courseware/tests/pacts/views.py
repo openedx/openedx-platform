@@ -58,8 +58,8 @@ def provider_state(request):
     """
 
     state_setup_mapping = {
-        'sequence position data exists for course_id course-v1:edX+DemoX+Demo_Course, sequence_id block-v1:edX+DemoX+Demo_Course+type@sequential+block@basic_questions and activeUnitIndex 0': ProviderState().course_setup,  # lint-amnesty, pylint: disable=line-too-long
-        'completion block data exists for course_id course-v1:edX+DemoX+Demo_Course, sequence_id block-v1:edX+DemoX+Demo_Course+type@sequential+block@basic_questions and usageId block-v1:edX+DemoX+Demo_Course+type@vertical+block@47dbd5f836544e61877a483c0b75606c': ProviderState().course_setup,  # lint-amnesty, pylint: disable=line-too-long
+        'sequence position data exists for course_id course-v1:edX+DemoX+Demo_Course, sequence_id block-v1:edX+DemoX+Demo_Course+type@sequential+block@basic_questions and activeUnitIndex 0': ProviderState().course_setup,  # pylint: disable=line-too-long
+        'completion block data exists for course_id course-v1:edX+DemoX+Demo_Course, sequence_id block-v1:edX+DemoX+Demo_Course+type@sequential+block@basic_questions and usageId block-v1:edX+DemoX+Demo_Course+type@vertical+block@47dbd5f836544e61877a483c0b75606c': ProviderState().course_setup,  # pylint: disable=line-too-long
     }
     request_body = json.loads(request.body)
     state = request_body.get('state')

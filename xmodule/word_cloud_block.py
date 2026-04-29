@@ -253,7 +253,7 @@ class _BuiltInWordCloudBlock(  # pylint: disable=abstract-method
             })
 
     @XBlock.supports('multi_device')
-    def student_view(self, context):  # lint-amnesty, pylint: disable=unused-argument
+    def student_view(self, context):  # pylint: disable=unused-argument
         """
         Renders the output that a student will see.
         """

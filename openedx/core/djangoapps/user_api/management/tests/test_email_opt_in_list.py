@@ -8,7 +8,7 @@ import tempfile
 from collections import defaultdict
 
 import ddt
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
@@ -19,9 +19,9 @@ from openedx.core.djangoapps.user_api.models import UserOrgTag
 from openedx.core.djangoapps.user_api.preferences.api import update_email_opt_in
 from openedx.core.djangolib.testing.utils import skip_unless_lms
 from xmodule.modulestore.tests.django_utils import (
-    ModuleStoreTestCase,  # lint-amnesty, pylint: disable=wrong-import-order
+    ModuleStoreTestCase,  # pylint: disable=wrong-import-order
 )
-from xmodule.modulestore.tests.factories import CourseFactory  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.tests.factories import CourseFactory  # pylint: disable=wrong-import-order
 
 
 @ddt.ddt
@@ -276,7 +276,7 @@ class EmailOptInListTest(ModuleStoreTestCase):
             call_command('email_opt_in_list', *args)
 
     def test_file_already_exists(self):
-        temp_file = tempfile.NamedTemporaryFile(delete=True)  # lint-amnesty, pylint: disable=consider-using-with
+        temp_file = tempfile.NamedTemporaryFile(delete=True)  # pylint: disable=consider-using-with
 
         def _cleanup():
             temp_file.close()

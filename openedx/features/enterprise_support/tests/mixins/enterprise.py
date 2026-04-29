@@ -1,4 +1,4 @@
-"""  # lint-amnesty, pylint: disable=cyclic-import
+"""  # pylint: disable=cyclic-import
 Mixins for the EnterpriseApiClient.
 """
 
@@ -78,7 +78,7 @@ class EnterpriseServiceMockMixin:
             status=500
         )
 
-    def mock_consent_response(  # lint-amnesty, pylint: disable=missing-function-docstring
+    def mock_consent_response(  # pylint: disable=missing-function-docstring
             self,
             username,
             course_id,

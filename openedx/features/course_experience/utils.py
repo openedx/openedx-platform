@@ -11,11 +11,11 @@ from lms.djangoapps.course_blocks.api import get_course_blocks
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from openedx.core.lib.cache_utils import request_cached
 from openedx.features.course_experience import RELATIVE_DATES_DISABLE_RESET_FLAG, RELATIVE_DATES_FLAG
-from xmodule.modulestore.django import modulestore  # lint-amnesty, pylint: disable=wrong-import-order
+from xmodule.modulestore.django import modulestore  # pylint: disable=wrong-import-order
 
 
 @request_cached()
-def get_course_outline_block_tree(request, course_id, user=None, allow_start_dates_in_future=False):  # lint-amnesty, pylint: disable=too-many-statements
+def get_course_outline_block_tree(request, course_id, user=None, allow_start_dates_in_future=False):  # pylint: disable=too-many-statements
     """
     Returns the root block of the course outline, with children as blocks.
 

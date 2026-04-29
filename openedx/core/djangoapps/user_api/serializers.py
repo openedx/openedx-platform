@@ -3,7 +3,7 @@ Django REST Framework serializers for the User API application
 """
 
 
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from rest_framework import serializers
 
 from lms.djangoapps.verify_student.models import ManualVerification, SoftwareSecurePhotoVerification
@@ -97,7 +97,7 @@ class CountryTimeZoneSerializer(serializers.Serializer):  # pylint: disable=abst
     description = serializers.CharField()
 
 
-class IDVerificationDetailsSerializer(serializers.Serializer):  # lint-amnesty, pylint: disable=abstract-method, missing-class-docstring
+class IDVerificationDetailsSerializer(serializers.Serializer):  # pylint: disable=abstract-method, missing-class-docstring
     type = serializers.SerializerMethodField()
     status = serializers.CharField()
     expiration_datetime = serializers.DateTimeField()
@@ -105,7 +105,7 @@ class IDVerificationDetailsSerializer(serializers.Serializer):  # lint-amnesty, 
     updated_at = serializers.DateTimeField()
     receipt_id = serializers.SerializerMethodField()
 
-    def get_type(self, obj):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_type(self, obj):  # pylint: disable=missing-function-docstring
         if isinstance(obj, SoftwareSecurePhotoVerification):
             return 'Software Secure'
         elif isinstance(obj, ManualVerification):
@@ -113,7 +113,7 @@ class IDVerificationDetailsSerializer(serializers.Serializer):  # lint-amnesty, 
         else:
             return 'SSO'
 
-    def get_message(self, obj):  # lint-amnesty, pylint: disable=missing-function-docstring
+    def get_message(self, obj):  # pylint: disable=missing-function-docstring
         if isinstance(obj, SoftwareSecurePhotoVerification):
             return obj.error_msg
         elif isinstance(obj, ManualVerification):

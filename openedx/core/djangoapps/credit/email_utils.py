@@ -13,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.contrib.auth.models import User  # lint-amnesty, pylint: disable=imported-auth-user
+from django.contrib.auth.models import User  # pylint: disable=imported-auth-user
 from django.contrib.staticfiles import finders
 from django.core.cache import cache
 from django.core.mail import EmailMessage, SafeMIMEText
@@ -33,7 +33,7 @@ from xmodule.modulestore.django import modulestore
 log = logging.getLogger(__name__)
 
 
-def send_credit_notifications(username, course_key):  # lint-amnesty, pylint: disable=too-many-statements
+def send_credit_notifications(username, course_key):  # pylint: disable=too-many-statements
     """Sends email notification to user on different phases during credit
     course e.g., credit eligibility, credit payment etc.
     """
