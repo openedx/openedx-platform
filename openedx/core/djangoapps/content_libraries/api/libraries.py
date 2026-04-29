@@ -212,6 +212,7 @@ class PublishableItem(LibraryItem):
     has_unpublished_changes: bool = False
     collections: list[CollectionMetadata] = dataclass_field(default_factory=list)
     can_stand_alone: bool = True
+    created_by: str | None = None
 
 
 @dataclass(frozen=True)

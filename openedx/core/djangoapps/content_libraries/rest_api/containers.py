@@ -17,6 +17,7 @@ from openedx_content import models_api as content_models
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_204_NO_CONTENT
+from rest_framework.views import APIView
 
 from openedx.core.djangoapps.content_libraries import api, permissions
 from openedx.core.lib.api.view_utils import view_auth_classes
@@ -436,3 +437,76 @@ class LibraryContainerHierarchy(GenericAPIView):
         )
         hierarchy = api.get_library_object_hierarchy(container_key)
         return Response(self.serializer_class(hierarchy).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryContainerDraftHistoryView(GenericAPIView):
+    """
+    View to get the draft change history of a library container.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
+        """
+        Get the draft change history for a library containers since its last publication.
+        """
+        api.require_permission_for_library_key(
+            container_key.lib_key,
+            request.user,
+            permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+        )
+        history = api.get_library_container_draft_history(container_key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryContainerPublishHistoryView(GenericAPIView):
+    """
+    View to get the publish history of a library container as a list of publish events.
+    """
+    serializer_class = serializers.LibraryPublishHistoryGroupSerializer
+
+    @convert_exceptions
+    def get(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
+        """
+        Get the publish history for a library container, ordered most-recent-first.
+
+        Each group in the response represents one publish event for one entity
+        (the container itself or a descendant component). Use entity_key from each
+        group together with the publish_history_entries/ endpoint to fetch the
+        individual draft change entries for that group.
+        """
+        api.require_permission_for_library_key(
+            container_key.lib_key,
+            request.user,
+            permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+        )
+        history = api.get_library_container_publish_history(container_key, request=request)
+        return Response(self.serializer_class(history, many=True).data)
+
+
+@method_decorator(non_atomic_requests, name="dispatch")
+@view_auth_classes()
+class LibraryContainerCreationEntryView(APIView):
+    """
+    View to get the creation entry for a library container.
+    """
+    serializer_class = serializers.LibraryHistoryEntrySerializer
+
+    @convert_exceptions
+    def get(self, request: RestRequest, container_key: LibraryContainerLocator) -> Response:
+        """
+        Get the creation entry for a library container (the moment it was first saved).
+        """
+        api.require_permission_for_library_key(
+            container_key.lib_key,
+            request.user,
+            permissions.CAN_VIEW_THIS_CONTENT_LIBRARY,
+        )
+        entry = api.get_library_container_creation_entry(container_key, request=request)
+        if entry is None:
+            return Response(None)
+        return Response(self.serializer_class(entry).data)
