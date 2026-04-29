@@ -1757,7 +1757,7 @@ xblock-utils==4.0.0
     #   -r requirements/edx/base.txt
     #   edx-sga
     #   xblock-poll
-xblocks-contrib==0.16.0
+git+https://github.com/openedx/xblocks-contrib.git@farhan/fix-video-block-issue
     # via -r requirements/edx/base.txt
 xmlsec==1.3.14
     # via
