@@ -302,6 +302,7 @@ cryptography==47.0.0
     #   pyjwt
     #   pyopenssl
     #   snowflake-connector-python
+    #   social-auth-core
 cssselect==1.4.0
     # via
     #   -r requirements/edx/testing.txt
@@ -956,7 +957,7 @@ gitdb==4.0.12
     # via
     #   -r requirements/edx/doc.txt
     #   gitpython
-gitpython==3.1.48
+gitpython==3.1.49
     # via -r requirements/edx/doc.txt
 glob2==0.7
     # via
@@ -1202,7 +1203,7 @@ libsass==0.10.0
     # via
     #   -c requirements/constraints.txt
     #   -r requirements/edx/assets.txt
-lti-consumer-xblock==11.0.1
+lti-consumer-xblock==11.1.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1233,7 +1234,7 @@ mailsnake==1.6.4
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
-mako==1.3.11
+mako==1.3.12
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -1995,7 +1996,7 @@ social-auth-app-django==5.4.1
     #   -r requirements/edx/testing.txt
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==4.8.7
+social-auth-core==4.9.0
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
@@ -2311,7 +2312,7 @@ xblock[django]==6.1.0
     #   xblock-google-drive
     #   xblock-utils
     #   xblocks-contrib
-xblock-drag-and-drop-v2==5.0.5
+xblock-drag-and-drop-v2==5.0.6
     # via
     #   -r requirements/edx/doc.txt
     #   -r requirements/edx/testing.txt
