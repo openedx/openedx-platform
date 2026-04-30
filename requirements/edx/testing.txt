@@ -100,14 +100,14 @@ bleach[css]==6.3.0
     #   ora2
     #   xblock-drag-and-drop-v2
     #   xblock-poll
-boto3==1.42.97
+boto3==1.43.0
     # via
     #   -r requirements/edx/base.txt
     #   django-ses
     #   fs-s3fs
     #   ora2
     #   snowflake-connector-python
-botocore==1.42.97
+botocore==1.43.0
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -428,7 +428,7 @@ django-oauth-toolkit==1.7.1
     #   -r requirements/edx/base.txt
     #   edx-enterprise
     #   enterprise-integrated-channels
-django-object-actions==5.0.0
+django-object-actions==5.0.1
     # via
     #   -r requirements/edx/base.txt
     #   edx-enterprise
@@ -925,7 +925,7 @@ lazy==1.6
     #   lti-consumer-xblock
     #   ora2
     #   xblock
-lti-consumer-xblock==11.1.0
+lti-consumer-xblock==11.2.0
     # via -r requirements/edx/base.txt
 lxml[html-clean]==5.3.2
     # via
@@ -1087,9 +1087,9 @@ openedx-filters==3.1.0
     #   edx-enterprise
     #   lti-consumer-xblock
     #   ora2
-openedx-forum==0.4.2
+openedx-forum==0.4.3
     # via -r requirements/edx/base.txt
-optimizely-sdk==5.4.0
+optimizely-sdk==5.5.0
     # via -r requirements/edx/base.txt
 ora2==7.0.0
     # via -r requirements/edx/base.txt
@@ -1461,7 +1461,7 @@ rules==3.5
     #   edx-enterprise
     #   edx-proctoring
     #   openedx-core
-s3transfer==0.16.1
+s3transfer==0.17.0
     # via
     #   -r requirements/edx/base.txt
     #   boto3
@@ -1529,7 +1529,7 @@ social-auth-app-django==5.4.1
     #   -r requirements/edx/base.txt
     #   edx-auth-backends
     #   edx-enterprise
-social-auth-core==4.9.0
+social-auth-core==4.9.1
     # via
     #   -r requirements/edx/base.txt
     #   edx-auth-backends
