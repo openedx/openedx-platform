@@ -348,7 +348,7 @@ def get_library_container_draft_history(
             version = record.new_version if record.new_version is not None else record.old_version
             # old_version is None only for the very first publish (entity had no prior published version)
             old_version_num = record.old_version.version_num if record.old_version else 0
-            # new_version is None for soft-delete publishes (component deleted without a new draft version)
+            # new_version is None for soft-delete publishes (container deleted without a new draft version)
             new_version_num = record.new_version.version_num if record.new_version else None
             item_type = get_entity_item_type(record.entity)
             results.append(LibraryHistoryEntry(
