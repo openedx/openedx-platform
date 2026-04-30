@@ -58,7 +58,8 @@ class NotificationType(TypedDict):
     info: NotRequired[str]
 
 
-# For help defining new notifications, see https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#creating-a-new-notification
+# For help defining new notifications, see
+# https://docs.openedx.org/en/latest/site_ops/how-tos/enable_notifications.html#creating-a-new-notification
 _COURSE_NOTIFICATION_TYPES = {
     'new_comment_on_response': {
         'notification_app': 'discussion',
