@@ -1422,16 +1422,8 @@ def grading_handler(request, course_key_string, grader_index=None):
         if not has_studio_read_access(request.user, course_key):
             raise PermissionDenied()
 
-        # Load the course block for use in rendering or context helpers.
-        course_block = get_course_and_check_access(course_key, request.user)
-
         if 'text/html' in request.META.get('HTTP_ACCEPT', '') and request.method == 'GET':
-            grading_url = get_grading_url(course_key)
-            if grading_url:
-                return redirect(grading_url)
-            # Fall back to legacy Studio page when MFE grading URL is not configured.
-            settings_context = get_course_settings(request, course_key, course_block)
-            return render_to_response('settings.html', settings_context)
+            return redirect(get_grading_url(course_key))
         elif 'application/json' in request.META.get('HTTP_ACCEPT', ''):
             if request.method == 'GET':
                 if grader_index is None:
