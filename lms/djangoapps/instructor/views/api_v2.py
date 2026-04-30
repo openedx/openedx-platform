@@ -2188,8 +2188,9 @@ class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # Extract just the learners for resolution
+            # Extract learners for resolution and build a notes lookup
             learners = [learner for learner, _ in learners_with_notes]
+            notes_by_learner = dict(learners_with_notes)
 
             # Resolve all usernames/emails to users upfront
             learner_to_user, user_errors = _resolve_learners_to_users(learners)
@@ -2203,8 +2204,7 @@ class BulkCertificateExceptionsView(DeveloperErrorViewMixin, APIView):
 
             # Create all exceptions using the certificates API
             for learner, user in exceptions_to_create:
-                # Find the notes for this learner
-                notes = next((n for l, n in learners_with_notes if l == learner), '')
+                notes = notes_by_learner.get(learner, '')
 
                 try:
                     certs_api.create_or_update_certificate_allowlist_entry(user, course_key, notes)
