@@ -7,11 +7,13 @@ import ddt
 from django.conf import settings
 from django.test.utils import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from edx_proctoring.api import (
     add_allowance_for_user,
     create_exam,
     create_exam_attempt,
 )
+from edx_proctoring.models import ProctoredExamStudentAttempt
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -84,18 +86,21 @@ class SpecialExamsListViewTest(ModuleStoreTestCase):
         assert timed['is_practice_exam'] is False
         assert timed['is_active'] is True
         assert timed['hide_after_due'] is False
+        assert timed['exam_type'] == 'timed'
 
         proctored = exams_by_name['Proctored Exam']
         assert proctored['id'] == self.proctored_exam_id
         assert proctored['time_limit_mins'] == 90
         assert proctored['is_proctored'] is True
         assert proctored['is_practice_exam'] is False
+        assert proctored['exam_type'] == 'proctored'
 
         practice = exams_by_name['Practice Exam']
         assert practice['id'] == self.practice_exam_id
         assert practice['time_limit_mins'] == 30
         assert practice['is_proctored'] is True
         assert practice['is_practice_exam'] is True
+        assert practice['exam_type'] == 'practice'
 
     def test_unauthenticated(self):
         self.client.force_authenticate(user=None)
@@ -215,6 +220,7 @@ class SpecialExamResetViewTest(ModuleStoreTestCase):
 
 @override_settings(**PROCTORING_SETTINGS)
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@ddt.ddt
 class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/{exam_id}/attempts"""
 
@@ -226,46 +232,52 @@ class SpecialExamAttemptsViewTest(ModuleStoreTestCase):
         self.student = UserFactory(username='student1', email='student1@example.com')
         self.client.force_authenticate(user=self.instructor)
         self.course_id = str(self.course.id)
-        self.exam_id = create_exam(
+
+    def _create_exam(self, is_proctored=False, is_practice_exam=False, content_suffix='exam1'):
+        return create_exam(
             course_id=self.course_id,
-            content_id='block-v1:test+test+test+type@sequential+block@exam1',
-            exam_name='Midterm Exam',
+            content_id=f'block-v1:test+test+test+type@sequential+block@{content_suffix}',
+            exam_name='Test Exam',
             time_limit_mins=60,
-            is_proctored=False,
+            is_proctored=is_proctored,
+            is_practice_exam=is_practice_exam,
         )
 
-    def _url(self, exam_id=None):
+    def _url(self, exam_id):
         return reverse('instructor_api_v2:special_exam_attempts', kwargs={
             'course_id': self.course_id,
-            'exam_id': exam_id or self.exam_id,
+            'exam_id': exam_id,
         })
 
-    def test_list_attempts(self):
-        create_exam_attempt(self.exam_id, self.student.id)
-        response = self.client.get(self._url())
+    @ddt.data(
+        (False, False, 'timed'),
+        (True, False, 'proctored'),
+        (True, True, 'practice'),
+    )
+    @ddt.unpack
+    def test_attempt_exam_type(self, is_proctored, is_practice_exam, expected_type):
+        exam_id = self._create_exam(is_proctored=is_proctored, is_practice_exam=is_practice_exam)
+        create_exam_attempt(exam_id, self.student.id)
+        response = self.client.get(self._url(exam_id))
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data['count'] == 1
-        assert data['results'][0]['exam_id'] == self.exam_id
+        assert data['results'][0]['exam_id'] == exam_id
+        assert data['results'][0]['exam_type'] == expected_type
         assert data['results'][0]['user']['username'] == 'student1'
 
     def test_list_attempts_filters_by_exam(self):
         """Only attempts for the requested exam_id are returned."""
-        other_exam_id = create_exam(
-            course_id=self.course_id,
-            content_id='block-v1:test+test+test+type@sequential+block@exam2',
-            exam_name='Final Exam',
-            time_limit_mins=120,
-            is_proctored=False,
-        )
-        create_exam_attempt(self.exam_id, self.student.id)
+        exam_id = self._create_exam(content_suffix='exam1')
+        other_exam_id = self._create_exam(content_suffix='exam2')
+        create_exam_attempt(exam_id, self.student.id)
         other_student = UserFactory(username='student2')
         create_exam_attempt(other_exam_id, other_student.id)
 
-        response = self.client.get(self._url())
+        response = self.client.get(self._url(exam_id))
         data = response.json()
         assert data['count'] == 1
-        assert data['results'][0]['exam_id'] == self.exam_id
+        assert data['results'][0]['exam_id'] == exam_id
 
 
 @override_settings(**PROCTORING_SETTINGS)
@@ -459,6 +471,7 @@ class ExamAllowanceViewTest(ModuleStoreTestCase):
 
 @override_settings(**PROCTORING_SETTINGS)
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@ddt.ddt
 class CourseAllowancesViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/allowances"""
 
@@ -543,9 +556,53 @@ class CourseAllowancesViewTest(ModuleStoreTestCase):
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    @ddt.data(
+        'username',
+        'user.username',
+        'email',
+        'user.email',
+        'exam_name',
+        'proctored_exam.exam_name',
+        'allowance_type',
+        'key',
+        'value',
+    )
+    def test_sort_allowances(self, ordering):
+        """Verify all ordering fields are accepted and reverse correctly."""
+        student2 = UserFactory(username='alice', email='alice@example.com')
+        exam_id_2 = create_exam(
+            course_id=self.course_id,
+            content_id='block-v1:test+test+test+type@sequential+block@exam2',
+            exam_name='AAA Exam',
+            time_limit_mins=30,
+            is_proctored=False,
+        )
+        add_allowance_for_user(self.exam_id, self.student.username, 'additional_time_granted', '30')
+        add_allowance_for_user(exam_id_2, student2.username, 'review_policy_exception', '60')
+        asc_response = self.client.get(self._url(), {'ordering': ordering})
+        desc_response = self.client.get(self._url(), {'ordering': f'-{ordering}'})
+        assert asc_response.status_code == status.HTTP_200_OK
+        asc_results = asc_response.json()['results']
+        desc_results = desc_response.json()['results']
+        assert len(asc_results) == 2
+        # All allowance fields differ between the two records, so order must reverse
+        assert asc_results[0] == desc_results[1]
+        assert asc_results[1] == desc_results[0]
+
+    def test_sort_allowances_descending(self):
+        student2 = UserFactory(username='alice', email='alice@example.com')
+        add_allowance_for_user(self.exam_id, self.student.username, 'additional_time_granted', '30')
+        add_allowance_for_user(self.exam_id, student2.username, 'additional_time_granted', '60')
+        response = self.client.get(self._url(), {'ordering': '-username'})
+        assert response.status_code == status.HTTP_200_OK
+        results = response.json()['results']
+        assert results[0]['user']['username'] == 'student1'
+        assert results[1]['user']['username'] == 'alice'
+
 
 @override_settings(**PROCTORING_SETTINGS)
 @patch.dict(settings.FEATURES, {'ENABLE_SPECIAL_EXAMS': True})
+@ddt.ddt
 class CourseExamAttemptsViewTest(ModuleStoreTestCase):
     """Tests for GET /api/instructor/v2/courses/{course_key}/special_exams/attempts"""
 
@@ -589,3 +646,59 @@ class CourseExamAttemptsViewTest(ModuleStoreTestCase):
         response = self.client.get(self._url(), {'search': 'nonexistent'})
         assert response.status_code == status.HTTP_200_OK
         assert response.json()['count'] == 0
+
+    @ddt.data(
+        'username',
+        'user.username',
+        'email',
+        'user.email',
+        'exam_name',
+        'proctored_exam.exam_name',
+        'time_limit',
+        'proctored_exam.time_limit_mins',
+        'type',
+        'started_at',
+        'start_time',
+        'completed_at',
+        'end_time',
+        'status',
+    )
+    def test_sort_attempts(self, ordering):
+        """Verify all ordering fields produce reversed results for asc vs desc."""
+        student2 = UserFactory(username='student2', email='student2@example.com')
+        exam_id_2 = create_exam(
+            course_id=self.course_id,
+            content_id='block-v1:test+test+test+type@sequential+block@exam2',
+            exam_name='Final Exam',
+            time_limit_mins=120,
+            is_proctored=True,
+        )
+        attempt_id_1 = create_exam_attempt(self.exam_id, self.student.id)
+        create_exam_attempt(exam_id_2, student2.id)
+
+        # Give attempt 1 a distinct completed_at and status so all fields differ
+        attempt = ProctoredExamStudentAttempt.objects.get(id=attempt_id_1)
+        attempt.started_at = timezone.now() - timezone.timedelta(hours=1)
+        attempt.completed_at = timezone.now()
+        attempt.status = 'submitted'
+        attempt.save()
+
+        asc_response = self.client.get(self._url(), {'ordering': ordering})
+        desc_response = self.client.get(self._url(), {'ordering': f'-{ordering}'})
+        assert asc_response.status_code == status.HTTP_200_OK
+        assert desc_response.status_code == status.HTTP_200_OK
+        asc_results = asc_response.json()['results']
+        desc_results = desc_response.json()['results']
+        assert len(asc_results) == 2
+        assert asc_results[0] == desc_results[1]
+        assert asc_results[1] == desc_results[0]
+
+    def test_sort_attempts_descending(self):
+        student2 = UserFactory(username='student2', email='student2@example.com')
+        create_exam_attempt(self.exam_id, self.student.id)
+        create_exam_attempt(self.exam_id, student2.id)
+        response = self.client.get(self._url(), {'ordering': '-username'})
+        assert response.status_code == status.HTTP_200_OK
+        results = response.json()['results']
+        assert results[0]['user']['username'] == 'student2'
+        assert results[1]['user']['username'] == 'student1'

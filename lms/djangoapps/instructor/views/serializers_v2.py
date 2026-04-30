@@ -51,6 +51,7 @@ class CourseInformationSerializerV2(serializers.Serializer):
     enrollment statistics, permissions, and dashboard configuration.
     """
     course_id = serializers.SerializerMethodField(help_text="Course run key")
+    username = serializers.SerializerMethodField(help_text="Username of the current authenticated user")
     display_name = serializers.SerializerMethodField(help_text="Course display name")
     org = serializers.SerializerMethodField(help_text="Organization identifier")
     course_number = serializers.SerializerMethodField(help_text="Course number")
@@ -328,6 +329,10 @@ class CourseInformationSerializerV2(serializers.Serializer):
         """Get course ID as string."""
         return str(data['course'].id)
 
+    def get_username(self, data):
+        """Get the username of the current authenticated user."""
+        return data['user'].username
+
     def get_display_name(self, data):
         """Get course display name."""
         return data['course'].display_name
@@ -530,7 +535,7 @@ class BlockDueDateSerializerV2(serializers.Serializer):
         block_id (str): The ID related to the block that needs the due date update.
         due_datetime (str): The new due date and time for the block.
         email_or_username (str): The email or username of the student whose access is being modified.
-        reason (str): Reason why updating this.
+        reason (str, optional): Reason why updating this.
     """
     block_id = serializers.CharField()
     due_datetime = serializers.CharField()
@@ -538,7 +543,7 @@ class BlockDueDateSerializerV2(serializers.Serializer):
         max_length=255,
         help_text="Email or username of user to change access"
     )
-    reason = serializers.CharField(required=False)
+    reason = serializers.CharField(required=False, allow_blank=True, default='')
 
     def validate_email_or_username(self, value):
         """
@@ -1166,6 +1171,23 @@ class ScoreOverrideRequestSerializer(serializers.Serializer):
         return super().to_internal_value(data)
 
 
+def derive_exam_type(exam_dict):
+    """
+    Derive exam type string from proctoring flags.
+
+    Args:
+        exam_dict: dict with 'is_proctored' and 'is_practice_exam' keys.
+
+    Returns:
+        'practice', 'proctored', or 'timed'.
+    """
+    if exam_dict.get('is_practice_exam'):
+        return 'practice'
+    if exam_dict.get('is_proctored'):
+        return 'proctored'
+    return 'timed'
+
+
 class SpecialExamSerializer(serializers.Serializer):
     """Serializer for proctored/timed exam data from edx_proctoring."""
     id = serializers.IntegerField()
@@ -1174,12 +1196,16 @@ class SpecialExamSerializer(serializers.Serializer):
     exam_name = serializers.CharField()
     time_limit_mins = serializers.IntegerField()
     due_date = serializers.DateTimeField(allow_null=True, required=False)
-    exam_type = serializers.CharField(required=False, default='')
+    exam_type = serializers.SerializerMethodField()
     is_proctored = serializers.BooleanField()
     is_practice_exam = serializers.BooleanField()
     is_active = serializers.BooleanField()
     hide_after_due = serializers.BooleanField()
     backend = serializers.CharField(allow_null=True, required=False)
+
+    def get_exam_type(self, obj):
+        """Derive exam type from proctoring flags."""
+        return derive_exam_type(obj)
 
 
 class ExamAttemptUserSerializer(serializers.Serializer):
@@ -1194,10 +1220,15 @@ class ExamAttemptSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     user = ExamAttemptUserSerializer()
     exam_id = serializers.IntegerField(source='proctored_exam.id')
+    exam_type = serializers.SerializerMethodField()
     status = serializers.CharField()
     start_time = serializers.DateTimeField(source='started_at', allow_null=True, required=False)
     end_time = serializers.DateTimeField(source='completed_at', allow_null=True, required=False)
     allowed_time_limit_mins = serializers.IntegerField(allow_null=True, required=False)
+
+    def get_exam_type(self, obj):
+        """Derive exam type from proctored_exam flags."""
+        return derive_exam_type(obj.get('proctored_exam', {}))
 
 
 class ProctoringSettingsSerializer(serializers.Serializer):

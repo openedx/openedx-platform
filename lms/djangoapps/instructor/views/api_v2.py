@@ -161,6 +161,7 @@ from .serializers_v2 import (
     TaskStatusSerializer,
     ToggleCertificateGenerationSerializer,
     UnitExtensionSerializer,
+    derive_exam_type,
 )
 from .tools import find_unit, get_units_with_due_date, keep_field_private, set_due_date_extension, title_or_url
 
@@ -4374,6 +4375,40 @@ class ExamAllowanceView(DeveloperErrorViewMixin, APIView):
         )
 
 
+def _sort_in_memory(items, ordering):
+    """
+    Sort a list of dicts by the given ordering param.
+
+    Supports dotted paths (e.g. 'user.username') and descending with '-' prefix.
+
+    Note: Sorting is done in Python because edx_proctoring's API functions
+    (get_all_exam_attempts, get_allowances_for_course) return pre-serialized
+    lists of dicts with no sorting parameter. Database-level sorting would
+    require changes to the edx-proctoring package:
+    https://github.com/openedx/edx-proctoring/issues/1320
+    """
+    if not ordering:
+        return items
+    descending = ordering.startswith('-')
+    field = ordering.lstrip('-')
+
+    def sort_key(item):
+        value = item
+        for part in field.split('.'):
+            if isinstance(value, dict):
+                value = value.get(part)
+            else:
+                value = None
+                break
+        # Return a tuple (is_none, value) so None values sort last
+        # and non-None values compare naturally within their type.
+        if value is None:
+            return (1, '')
+        return (0, value)
+
+    return sorted(items, key=sort_key, reverse=descending)
+
+
 class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
     """
     List or bulk-create exam allowances for a course.
@@ -4382,12 +4417,33 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances
         GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/allowances?ordering=-value
         POST /api/instructor/v2/courses/{course_id}/special_exams/allowances
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, email, exam_name, allowance_type, value.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAllowanceSerializer
+
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'allowance_type': 'key',
+        'key': 'key',
+        'value': 'value',
+    }
 
     def get_queryset(self):
         course_id = self.kwargs['course_id']
@@ -4399,6 +4455,11 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
                 if search in a.get('user', {}).get('username', '').lower()
                 or search in a.get('user', {}).get('email', '').lower()
             ]
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            allowances = _sort_in_memory(allowances, prefix + self.ORDERING_FIELDS[field])
         return allowances
 
     def post(self, request, course_id):
@@ -4431,23 +4492,62 @@ class CourseAllowancesView(DeveloperErrorViewMixin, ListAPIView):
 
 class CourseExamAttemptsView(DeveloperErrorViewMixin, ListAPIView):
     """
-    List all exam attempts across all exams in a course with optional search and pagination.
+    List all exam attempts across all exams in a course with optional search, sorting, and pagination.
 
     **Example Requests**
 
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?search=student1
+        GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?ordering=-started_at
         GET /api/instructor/v2/courses/{course_id}/special_exams/attempts?page=2&page_size=50
+
+    **Query Parameters**
+
+        search (optional): Filter by username or email.
+        ordering (optional): Sort by field. Prefix with '-' for descending.
+            Valid values: username, exam_name, time_limit, type, started_at, completed_at, status.
+        page (optional): Page number for pagination.
+        page_size (optional): Number of results per page.
     """
 
     permission_classes = (IsAuthenticated, permissions.InstructorPermission)
     permission_name = permissions.EXAM_RESULTS
     serializer_class = ExamAttemptSerializer
 
+    ORDERING_FIELDS = {
+        'username': 'user.username',
+        'user.username': 'user.username',
+        'email': 'user.email',
+        'user.email': 'user.email',
+        'exam_name': 'proctored_exam.exam_name',
+        'proctored_exam.exam_name': 'proctored_exam.exam_name',
+        'time_limit': 'proctored_exam.time_limit_mins',
+        'proctored_exam.time_limit_mins': 'proctored_exam.time_limit_mins',
+        'started_at': 'started_at',
+        'start_time': 'started_at',
+        'completed_at': 'completed_at',
+        'end_time': 'completed_at',
+        'status': 'status',
+    }
+
+    @staticmethod
+    def _get_exam_type(attempt):
+        """Derive exam type string for sorting purposes."""
+        return derive_exam_type(attempt.get('proctored_exam', {}))
+
     def get_queryset(self):
         course_id = self.kwargs['course_id']
         search = self.request.query_params.get('search', '').strip()
         if search:
-            # get_filtered_exam_attempts does server-side filtering by username/email
-            return get_filtered_exam_attempts(course_id, search)
-        return get_all_exam_attempts(course_id)
+            attempts = get_filtered_exam_attempts(course_id, search)
+        else:
+            attempts = get_all_exam_attempts(course_id)
+        ordering = self.request.query_params.get('ordering', '')
+        field = ordering.lstrip('-')
+        if field == 'type':
+            descending = ordering.startswith('-')
+            attempts = sorted(attempts, key=self._get_exam_type, reverse=descending)
+        elif field in self.ORDERING_FIELDS:
+            prefix = '-' if ordering.startswith('-') else ''
+            attempts = _sort_in_memory(attempts, prefix + self.ORDERING_FIELDS[field])
+        return attempts
